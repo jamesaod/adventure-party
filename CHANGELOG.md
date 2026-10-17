@@ -2,6 +2,13 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## R159 — Grease VFX/SFX
+
+- Grease now renders as a persistent animated glossy oil slick with an irregular puddle silhouette, moving specular streaks, and subtle oil-sheen colors.
+- Casting Grease produces a short target-hex splash ring and viscous droplet burst.
+- Added a synthesized wet magical splat / oily shimmer sound through the shared WebAudio SFX engine.
+- Grease mechanics, saving throws, duration, and affected hex remain unchanged.
+
 ## R158 — Initial Git baseline
 
 - Color Spray incantation set to **Coloris Aspersio**.
