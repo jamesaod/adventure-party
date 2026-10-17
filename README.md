@@ -57,3 +57,4 @@ Project notes live under [docs/](docs/).
 
 This repository is currently a development project and does **not** grant a general license to reuse or redistribute its contents. Third-party assets and reference-derived material may have their own licensing requirements and should be reviewed before public distribution.
 
+<!-- trigger Pages rebuild -->
