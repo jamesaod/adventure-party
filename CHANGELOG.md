@@ -1,0 +1,70 @@
+# Changelog
+
+Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
+
+## R158 — Initial Git baseline
+
+- Color Spray incantation set to **Coloris Aspersio**.
+- Universal spellcasting glow remains active for every successfully committed spell.
+- Current standalone development build promoted to the repository baseline.
+
+## Recent pre-Git milestones
+
+### R157
+- Reduced Wall of Fog exterior outline thickness.
+- Added a single exterior black outline around the complete Color Spray effect.
+
+### R156
+- Casting glow moved to the central spell-commit path so every successfully cast spell receives it, including spells without incantations.
+
+### R155
+- Mouse wheel rotates Wall of Fog orientation in 60° steps during targeting.
+- Live area preview reflects the selected orientation.
+
+### R154
+- Corrected Wall of Fog versus architectural-wall depth ordering.
+
+### R153
+- Wall of Fog stopped using conserved-volume flood filling.
+- Fog wall now terminates at map edges and solid obstacles.
+
+### R152
+- Added AD&D 2e-style confined-space Fireball volume behavior.
+- Indoor Fireball uses a larger confined-space volume budget and converts remaining indoor volume to reduced outdoor spread when escaping through openings.
+
+### R151
+- Wall of Fog incantation set to **Murus Nebula!**
+- Added animated fog and a single exterior outline.
+
+### R150
+- Added reusable architecture-aware volumetric propagation foundation.
+- Wall of Fog later diverged from this behavior in R153.
+
+### R149
+- Casting glow changed to white and reduced in opacity.
+
+### R148
+- Color Spray simplified into seven broad solid rainbow arcs.
+
+### R147
+- Casting glow changed to a one-second 0% → peak → 0% opacity envelope with distance falloff and no particles.
+
+### R144
+- Large particle-density pass for Fireball and fire-hit effects.
+
+### R143
+- Corrected Fireball transparency so underlying terrain remains visible through the flames.
+
+### R141
+- Fireball changed to one exterior outline around the full effect rather than per-lobe outlines.
+
+### R137
+- Corrected sprite/wall clipping.
+- Added spellcaster LOS repositioning.
+- Added Listen/Hear Noise handling for off-LOS hostile movement.
+
+## Older history
+
+Earlier numbered releases established the core combat engine, sprites, morale, initiative, ranged AI, spells, status effects, architectural Wall Test, LOS rendering, launcher, character UI, and other foundational systems.
+
+From this point forward, **Git commits and tags are the authoritative version history**.
