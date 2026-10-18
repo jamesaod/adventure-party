@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R191 — White-hot dragon breath
+
+- Retuned the Juvenile Red Dragon breath toward the supplied bright fire-jet reference while preserving the pixel/tactical presentation.
+- Increased flame sampling from 9 to 13 lobes per tactical breath cell and reduced positional jitter so the effect reads as one continuous projected jet.
+- Shifted the heat palette toward pale yellow and near-white, enlarged the hot inner core, and made the main flame body nearly opaque.
+- Added an additive blurred bloom pass plus a final hot additive pass so the breath reads as self-luminous rather than simply orange/yellow.
+- Added dark gray smoke concentrated in the final third of the cone, leaving the mouth and near field clean and bright.
+- Increased flame grain density and ember count while slightly reducing ember opacity so the jet itself remains the dominant visual.
+- Breath mechanics, damage, saving throws, recharge, wall interaction, targeting cells, SFX, dragon poses, and multi-hex hover behavior are unchanged.
+
 ## R190 — Dedicated Red Dragon standing and attack poses
 
 - Replaced the prior juvenile Red Dragon art with the user-supplied standing sprite.

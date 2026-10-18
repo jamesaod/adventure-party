@@ -2010,7 +2010,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R190';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R191';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2024,8 +2024,8 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R190';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R190';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R191';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R191';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -20968,15 +20968,20 @@ function drawDragonBreathFx(){
     return hash32(a,b,c,d)/4294967295;
   }
 
+  /*
+    R191 white-hot breath palette. The inner half of the jet now spends much
+    more of its range in pale yellow / near-white values, while saturated red
+    and orange are pushed toward the outside of the volume.
+  */
   const flamePalette=[
-    [91,17,7],
-    [145,28,7],
-    [211,51,8],
-    [245,85,11],
-    [255,128,18],
-    [255,177,30],
-    [255,218,73],
-    [255,244,170]
+    [112,18,6],
+    [176,34,6],
+    [229,67,7],
+    [255,112,12],
+    [255,171,30],
+    [255,218,78],
+    [255,244,174],
+    [255,255,236]
   ];
 
   const visibleCells=(fx.cells || [])
@@ -21012,7 +21017,7 @@ function drawDragonBreathFx(){
     const depth=Math.max(0,Math.min(1,step/Math.max(1,Number(fx.rangeHexes)||9)));
     const lane=Math.abs(Number(cell.breathLane)||0);
     const rowStart=Math.max(0,(step-1)/step);
-    const samples=9;
+    const samples=13;
 
     for(let sample=0;sample<samples;sample++){
       const local=(sample+1)/samples;
@@ -21026,27 +21031,27 @@ function drawDragonBreathFx(){
       const h4=hash01(cell.x+149,cell.y+29,sample,frame+47);
 
       const radius=(
-        14+
-        22*depth+
+        17+
+        26*depth+
         lane*4+
         h3*6
-      )*Math.max(0.34,growth);
+      )*Math.max(0.38,growth);
 
       /*
-        R189 density pass: broader, taller lobes with less positional jitter.
-        Nine samples per breath cell now overlap heavily, closing the gaps
-        between tactical rows and making the weapon read as one solid cone.
+        R191: thirteen closely spaced samples and reduced jitter fuse the breath
+        into a continuous high-energy jet. The volume still widens with range,
+        but there are no deliberate gaps between neighboring flame lobes.
       */
-      const rx=radius*(1.16+0.14*h1);
-      const ry=radius*(0.76+0.14*h4);
-      const jitterX=(h1-0.5)*7*(0.35+depth);
-      const jitterY=(h2-0.5)*5*(0.35+depth);
+      const rx=radius*(1.24+0.10*h1);
+      const ry=radius*(0.84+0.10*h4);
+      const jitterX=(h1-0.5)*4.5*(0.28+depth);
+      const jitterY=(h2-0.5)*3.5*(0.28+depth);
 
-      const centerHeat=Math.max(0,1-depth*0.72-lane*0.12);
+      const centerHeat=Math.max(0,1-depth*0.58-lane*0.10);
       let colorIndex=Math.round(
         2+
-        centerHeat*4+
-        (h4>0.67 ? 1 : h4<0.24 ? -1 : 0)
+        centerHeat*5+
+        (h4>0.62 ? 1 : h4<0.18 ? -1 : 0)
       );
       colorIndex=Math.max(0,Math.min(flamePalette.length-1,colorIndex));
       const [r,g,b]=flamePalette[colorIndex];
@@ -21064,16 +21069,16 @@ function drawDragonBreathFx(){
       );
       bodyCtx.fill();
 
-      if(centerHeat>0.26 && h1>0.18){
-        const innerIndex=Math.min(flamePalette.length-1,colorIndex+2);
+      if(centerHeat>0.14 && h1>0.06){
+        const innerIndex=Math.min(flamePalette.length-1,colorIndex+3);
         const [ir,ig,ib]=flamePalette[innerIndex];
         bodyCtx.fillStyle=`rgba(${ir},${ig},${ib},1)`;
         bodyCtx.beginPath();
         bodyCtx.ellipse(
           px+jitterX-rx*0.10,
           py+jitterY-ry*0.12,
-          rx*0.66,
-          ry*0.60,
+          rx*0.78,
+          ry*0.72,
           0,
           0,
           Math.PI*2
@@ -21095,7 +21100,7 @@ function drawDragonBreathFx(){
     const py=mouth.y+(first.y-mouth.y)*q;
     const radius=(7+i*1.8)*Math.max(0.35,growth);
 
-    bodyCtx.fillStyle=i<2 ? "rgba(255,244,170,1)" : "rgba(255,177,30,1)";
+    bodyCtx.fillStyle=i<3 ? "rgba(255,255,238,1)" : "rgba(255,224,90,1)";
     bodyCtx.beginPath();
     bodyCtx.ellipse(px,py,radius*1.25,radius*0.58,0,0,Math.PI*2);
     bodyCtx.fill();
@@ -21132,17 +21137,88 @@ function drawDragonBreathFx(){
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=0.92*fade;
-  ctx.drawImage(outlineCanvas,0,0);
-  ctx.globalAlpha=0.75*fade;
+
+  /*
+    R191 smoke belongs behind the flame and concentrates in the last third of
+    the cone. Near the mouth the breath stays clean and white-hot; farther out
+    the exhaust rolls upward into dark gray soot.
+  */
+  const smokeCells=visibleCells.filter(cell=>
+    (Number(cell.breathStep)||0) >=
+    Math.ceil((Number(fx.rangeHexes)||9)*0.62)
+  );
+
+  for(const cell of smokeCells){
+    const c=hexCenter(cell.x,cell.y);
+    const depth=Math.max(
+      0,
+      Math.min(1,(Number(cell.breathStep)||1)/(Number(fx.rangeHexes)||9))
+    );
+
+    for(let puff=0;puff<3;puff++){
+      const h1=hash01(cell.x+307,cell.y-179,puff,frame+5);
+      const h2=hash01(cell.x-211,cell.y+263,puff,frame+17);
+      const h3=hash01(cell.x+97,cell.y+151,puff,frame+29);
+      const age=(t+h1*0.22)%1;
+      const smokeRadius=(10+22*depth+9*h3)*(0.72+0.35*growth);
+      const sx=c.x+(h1-0.5)*(20+depth*32);
+      const sy=c.y-13-(age*(20+depth*30))+(h2-0.5)*10;
+      const smokeAlpha=(0.10+0.18*depth)*(1-age*0.72)*fade;
+
+      ctx.globalAlpha=smokeAlpha;
+      ctx.fillStyle=puff===0 ? "#16191d" : puff===1 ? "#282b2f" : "#3a3b3d";
+      ctx.beginPath();
+      ctx.ellipse(
+        sx,
+        sy,
+        smokeRadius*1.15,
+        smokeRadius*0.72,
+        0,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+    }
+  }
+
+  /*
+    Bright bloom pass: a blurred additive copy of the complete flame body sits
+    behind the crisp Fireball-style volume. This is what makes the breath read
+    as self-luminous instead of merely painted yellow/orange.
+  */
+  ctx.save();
+  ctx.globalCompositeOperation="lighter";
+  ctx.filter="blur(7px)";
+  ctx.globalAlpha=0.34*fade;
   ctx.drawImage(bodyCanvas,0,0);
+  ctx.filter="blur(3px)";
+  ctx.globalAlpha=0.22*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+  ctx.restore();
+
+  /* Keep the game-style outside contour, but soften it so it does not choke the glow. */
+  ctx.globalAlpha=0.58*fade;
+  ctx.drawImage(outlineCanvas,0,0);
+
+  /* Main flame body is now nearly opaque, preserving the near-white core. */
+  ctx.globalAlpha=0.90*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+
+  /*
+    Final additive hot pass lifts the core above normal canvas brightness
+    without changing the tactical footprint.
+  */
+  ctx.globalCompositeOperation="lighter";
+  ctx.globalAlpha=0.24*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+  ctx.globalCompositeOperation="source-over";
   ctx.globalAlpha=1;
 
   /*
     Fire-only grain pass, matching the Fireball treatment but stretched along
     the breath cells rather than distributed around a spherical blast center.
   */
-  const grainCount=Math.max(180,Math.round(340*growth));
+  const grainCount=Math.max(220,Math.round(420*growth));
   for(let i=0;i<grainCount;i++){
     const cell=visibleCells[i%visibleCells.length];
     const c=hexCenter(cell.x,cell.y);
@@ -21155,10 +21231,10 @@ function drawDragonBreathFx(){
     const size=h3>0.82 ? 3 : 2;
 
     ctx.fillStyle=i%4===0
-      ? `rgba(255,232,112,${0.68*fade})`
+      ? `rgba(255,255,232,${0.78*fade})`
       : i%4===1
-        ? `rgba(255,132,20,${0.66*fade})`
-        : `rgba(176,38,7,${0.58*fade})`;
+        ? `rgba(255,214,92,${0.72*fade})`
+        : `rgba(238,82,8,${0.54*fade})`;
     ctx.fillRect(Math.round(px),Math.round(py),size,size);
   }
 
@@ -21166,7 +21242,7 @@ function drawDragonBreathFx(){
     Dense deterministic ember field. Particles rise while continuing forward,
     making the breath read as a fast projected flame volume rather than smoke.
   */
-  const particleCount=460;
+  const particleCount=520;
   const lastCell=visibleCells[visibleCells.length-1];
   const far=hexCenter(lastCell.x,lastCell.y);
   const dirX=far.x-mouth.x;
@@ -21193,7 +21269,7 @@ function drawDragonBreathFx(){
     const py=mouth.y+dirY*along+ny*spread*0.35-rise;
     const sizeRoll=hash01(fx.source.x-131,fx.source.y+41,i,47);
     const size=sizeRoll>0.92 ? 3 : (sizeRoll>0.48 ? 2 : 1);
-    const alpha=Math.max(0,1-life)*0.78*fade;
+    const alpha=Math.max(0,1-life)*0.66*fade;
 
     ctx.fillStyle=i%3===0
       ? `rgba(255,236,132,${alpha})`
