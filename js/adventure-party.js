@@ -15728,18 +15728,22 @@ async function castFireballFromScroll(action,targetHex){
     damage message or icon before taking the same Fireball blast.
   */
   const results=affected.map(unit=>{
-    const saveTarget=spellSaveTargetForUnit(unit);
-    const saveRoll=d(20);
-    const saved=saveRoll>=saveTarget;
-    const damage=saved
-      ? Math.floor(rolledDamage/2)
-      : rolledDamage;
+    const immune=unitImmuneToDamageType(unit,"fire");
+    const saveTarget=immune ? null : spellSaveTargetForUnit(unit);
+    const saveRoll=immune ? null : d(20);
+    const saved=!immune && saveRoll>=saveTarget;
+    const damage=immune
+      ? 0
+      : saved
+        ? Math.floor(rolledDamage/2)
+        : rolledDamage;
 
-    return {unit,saveTarget,saveRoll,saved,damage};
+    return {unit,immune,saveTarget,saveRoll,saved,damage};
   });
 
   for(const result of results){
     const {unit,damage}=result;
+    if(damage<=0) continue;
     unit.hp=Math.max(0,unit.hp-damage);
     onUnitDamaged(unit,damage);
     registerElementalDamageFx(unit,"fire",damage);
@@ -15759,10 +15763,20 @@ async function castFireballFromScroll(action,targetHex){
   );
 
   for(const result of results){
-    const {unit,saveTarget,saveRoll,saved,damage}=result;
+    const {unit,immune,saveTarget,saveRoll,saved,damage}=result;
+
+    if(immune){
+      log(
+        unit.name+" is immune to fire and takes no Fireball damage.",
+        "system"
+      );
+      continue;
+    }
+
     log(
-      `${unit.name}: save vs. spell ${saveRoll} vs ${saveTarget} — `+
-      `${saved ? "success, half damage" : "failure, full damage"}; ${damage} damage.`,
+      unit.name+": save vs. spell "+saveRoll+" vs "+saveTarget+" — "+
+      (saved ? "success, half damage" : "failure, full damage")+
+      "; "+damage+" damage.",
       saved ? "system" : "bad"
     );
   }
@@ -18797,6 +18811,20 @@ function updateUnitInfoPanel(){
           ? `<span>Group Morale</span><span>${game.enemyGroupMorale?.moraleLabel || inspected.moraleLabel || "Average (8-10)"} — target ${game.enemyGroupMorale?.baseMorale ?? inspected.morale}${game.enemyGroupMorale?.broken ? " — BROKEN" : ""}</span>`
           : `<span>Morale</span><span>${inspected.moraleLabel || inspected.morale || "—"}</span>`
       );
+
+    if(inspected.type==="juvenile-red-dragon"){
+      const breathState=dragonBreathReady(inspected)
+        ? "READY"
+        : "Recharging — last used round "+inspected.breathWeapon.lastUsedRound;
+
+      ui.unitInfoRows.innerHTML+=
+        "<span>Routine</span><span>Claw 1d10+4 / Claw 1d10+4 / Bite 3d10+4</span>"+
+        "<span>Breath</span><span>90' cone — 8d10+4 fire — save vs Breath for half</span>"+
+        "<span>Breath Cycle</span><span>Once every 3 rounds — "+breathState+"</span>"+
+        "<span>Defense</span><span>Immune to fire; MR Nil</span>"+
+        "<span>Innate</span><span>Affect Normal Fires 3/day; Pyrotechnics 3/day</span>"+
+        "<span>Flight</span><span>30 (C); Jump 3</span>";
+    }
   }
 
   renderUnitStatusEffects(inspected);
