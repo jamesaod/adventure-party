@@ -1401,7 +1401,7 @@ function scheduleLightRainSpatter(active){
       band.frequency.value=3300+Math.random()*2400;
       band.Q.value=0.7+Math.random()*0.9;
 
-      const peak=0.018+Math.random()*0.045;
+      const peak=0.040+Math.random()*0.090;
       gain.gain.setValueAtTime(0.0001,now);
       gain.gain.exponentialRampToValueAtTime(peak,now+0.004);
       gain.gain.exponentialRampToValueAtTime(0.0001,now+0.035+Math.random()*0.035);
@@ -1409,7 +1409,7 @@ function scheduleLightRainSpatter(active){
       drop.connect(high);
       high.connect(band);
       band.connect(gain);
-      gain.connect(active.bus);
+      gain.connect(active.spatterBus || active.bus);
 
       drop.start(now,Math.random()*0.8,0.10);
       drop.stop(now+0.11);
@@ -1465,21 +1465,29 @@ function startRainAmbience(severity){
   hissHigh.connect(hissGain);
   hissGain.connect(bus);
 
+  const spatterBus=audioCtx.createGain();
+  spatterBus.gain.value=0.72;
+  spatterBus.connect(weatherGain);
+
   const now=audioCtx.currentTime;
 
-  /* R176: rain master level reduced another 50% from the R175 mix. */
-  bus.gain.exponentialRampToValueAtTime(0.075+0.06*intensity,now+0.35);
+  /*
+    R178: continuous rain bed reduced another 50%.
+    Spatter is routed independently so individual plops stay clearly audible.
+  */
+  bus.gain.exponentialRampToValueAtTime(0.0375+0.03*intensity,now+0.35);
   body.start(now);
   hiss.start(now);
 
   const active={
     bus,
+    spatterBus,
     sources:[body,hiss],
-    nodes:[bodyHigh,bodyLow,bodyGain,hissHigh,hissGain,bus],
+    nodes:[bodyHigh,bodyLow,bodyGain,hissHigh,hissGain,bus,spatterBus],
     timers:[]
   };
 
-  /* Light rain gets a distinct irregular patter/spatter layer. */
+  /* Light rain keeps the irregular patter/spatter layer, now on its own louder bus. */
   if(severity.id==="light"){
     scheduleLightRainSpatter(active);
   }
