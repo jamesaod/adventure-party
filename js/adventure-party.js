@@ -176,6 +176,23 @@ function showLauncher(){
 }
 
 let selectedCombatCondition="grass";
+let selectedMobEncounter="kobolds";
+
+function updateCombatMobSelection(){
+  const label=document.getElementById("combatMobSetLabel");
+  const button=document.getElementById("largeMobTestButton");
+  const large=selectedMobEncounter==="large-test";
+
+  if(label){
+    label.textContent=large ? "7-Hex Test MOB" : "Kobold Encounter";
+  }
+
+  if(button){
+    button.textContent=large ? "Use Kobold Encounter" : "Use 7-Hex Test MOB";
+    button.classList.toggle("selected",large);
+    button.setAttribute("aria-pressed",large ? "true" : "false");
+  }
+}
 
 function updateCombatConditionSelection(){
   document.querySelectorAll("[data-combat-condition]").forEach(button=>{
@@ -196,6 +213,7 @@ function showCombatConditions(){
   xpLootScreen?.classList.remove("active");
   combatConditionsScreen.classList.add("active");
   updateCombatConditionSelection();
+  updateCombatMobSelection();
   updateAudioIndicators();
 }
 
@@ -339,6 +357,14 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
     selectedCombatCondition=button.dataset.combatCondition || "grass";
     updateCombatConditionSelection();
   });
+});
+
+document.getElementById("largeMobTestButton")?.addEventListener("click",()=>{
+  selectedMobEncounter=
+    selectedMobEncounter==="large-test"
+      ? "kobolds"
+      : "large-test";
+  updateCombatMobSelection();
 });
 
 document.getElementById("beginBattleButton")?.addEventListener("click",()=>{
@@ -1220,6 +1246,9 @@ function triggerDeathFx(entity){
   }
 
   deathFx={
+    unitId:entity.id,
+    footprintId:entity.footprintId || "single",
+    facingHex:facingDirectionIndex(entity),
     x:entity.x,
     y:entity.y,
     started:performance.now()
@@ -1949,7 +1978,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R185';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R186';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2128,6 +2157,16 @@ const UNIT_POSE_DEFINITIONS={
     }
   },
   orc:{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcStandSprite,
+      attack:orcAttackSprite
+    }
+  },
+  "large-test-mob":{
     defaultPose:"stand",
     actionPose:"attack",
     actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
@@ -4162,6 +4201,185 @@ const HEX_DIRS=[
   {x: 0,y: 1,name:"SE"}
 ];
 
+/*
+  R186 — MULTI-HEX UNIT FOOTPRINTS
+  --------------------------------
+  A creature remains one combat entity (one initiative slot, HP pool, AI state,
+  status list, and XP award) while occupying one or more tactical hexes.
+
+  Offsets are axial coordinates relative to the entity's pivot hex. The helper
+  layer supports rotation for future elongated creatures; the first live test
+  footprint is the symmetric 7-hex cluster (center + all six neighbors).
+*/
+const UNIT_FOOTPRINTS=Object.freeze({
+  single:Object.freeze({
+    id:"single",
+    rotates:false,
+    offsets:Object.freeze([{x:0,y:0}])
+  }),
+  hex7:Object.freeze({
+    id:"hex7",
+    rotates:false,
+    offsets:Object.freeze([
+      {x:0,y:0},
+      {x:1,y:0},
+      {x:1,y:-1},
+      {x:0,y:-1},
+      {x:-1,y:0},
+      {x:-1,y:1},
+      {x:0,y:1}
+    ])
+  })
+});
+
+function unitFootprintDefinition(unit){
+  return UNIT_FOOTPRINTS[unit?.footprintId] || UNIT_FOOTPRINTS.single;
+}
+
+function rotateAxialOffset(offset,steps=0){
+  let x=Number(offset?.x)||0;
+  let z=Number(offset?.y)||0;
+  let y=-x-z;
+  const count=((Math.round(steps)%6)+6)%6;
+
+  for(let i=0;i<count;i++){
+    const nextX=-z;
+    const nextY=-x;
+    const nextZ=-y;
+    x=nextX;
+    y=nextY;
+    z=nextZ;
+  }
+
+  return {x,y:z};
+}
+
+function footprintOffsetsForFacing(unit,facingHex=facingDirectionIndex(unit)){
+  const footprint=unitFootprintDefinition(unit);
+  if(!footprint.rotates){
+    return footprint.offsets.map(offset=>({...offset}));
+  }
+
+  return footprint.offsets.map(offset=>
+    rotateAxialOffset(offset,facingHex)
+  );
+}
+
+function occupiedHexesAt(
+  unit,
+  x=unit?.x,
+  y=unit?.y,
+  facingHex=facingDirectionIndex(unit)
+){
+  if(!Number.isFinite(x) || !Number.isFinite(y)) return [];
+
+  return footprintOffsetsForFacing(unit,facingHex).map(offset=>({
+    x:x+offset.x,
+    y:y+offset.y
+  }));
+}
+
+function occupiedHexes(unit){
+  return occupiedHexesAt(unit);
+}
+
+function unitOccupiesHex(unit,x,y){
+  return !!unit && occupiedHexes(unit).some(cell=>
+    cell.x===x && cell.y===y
+  );
+}
+
+function unitFootprintCellCount(unit){
+  return unitFootprintDefinition(unit).offsets.length;
+}
+
+function unitDistance(a,b){
+  if(!a || !b) return Infinity;
+  const aCells=occupiedHexesAt(a,a.x,a.y);
+  const bCells=occupiedHexesAt(b,b.x,b.y);
+  let best=Infinity;
+
+  for(const ac of aCells){
+    for(const bc of bCells){
+      best=Math.min(best,hexDistance(ac,bc));
+    }
+  }
+
+  return best;
+}
+
+function unitDistanceAt(unit,x,y,target){
+  if(!unit || !target) return Infinity;
+  const sourceCells=occupiedHexesAt(unit,x,y);
+  const targetCells=occupiedHexesAt(target,target.x,target.y);
+  let best=Infinity;
+
+  for(const source of sourceCells){
+    for(const destination of targetCells){
+      best=Math.min(best,hexDistance(source,destination));
+    }
+  }
+
+  return best;
+}
+
+function unitDepthSortPoint(unit){
+  const centers=occupiedHexes(unit).map(cell=>hexCenter(cell.x,cell.y));
+  if(!centers.length) return hexCenter(unit?.x||0,unit?.y||0);
+
+  return {
+    x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length,
+    y:Math.max(...centers.map(point=>point.y))
+  };
+}
+
+function unitFootprintScreenCenter(unit){
+  const centers=occupiedHexes(unit).map(cell=>hexCenter(cell.x,cell.y));
+  if(!centers.length) return hexCenter(unit?.x||0,unit?.y||0);
+
+  return {
+    x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length,
+    y:centers.reduce((sum,point)=>sum+point.y,0)/centers.length
+  };
+}
+
+function canUnitStandAt(unit,x,y,facingHex=facingDirectionIndex(unit)){
+  if(!unit) return false;
+
+  for(const cell of occupiedHexesAt(unit,x,y,facingHex)){
+    if(!inside(cell.x,cell.y) || isWall(cell.x,cell.y)){
+      return false;
+    }
+
+    if(occupiedByAnyUnit(cell.x,cell.y,unit.id)){
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function unitTransitionBlocked(
+  unit,
+  from,
+  to,
+  facingHex=facingDirectionIndex(unit)
+){
+  if(!unit || !from || !to) return true;
+  if(!canUnitStandAt(unit,to.x,to.y,facingHex)) return true;
+
+  const sourceCells=occupiedHexesAt(unit,from.x,from.y,facingHex);
+  const targetCells=occupiedHexesAt(unit,to.x,to.y,facingHex);
+
+  for(let i=0;i<Math.min(sourceCells.length,targetCells.length);i++){
+    if(architecturalWallBlocksStep(sourceCells[i],targetCells[i])){
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const ATTACK_SECTOR_LABELS=[
   "FRONT",
   "FRONT-LEFT",
@@ -4633,7 +4851,39 @@ function wallPolygonSegments(vertices){
 }
 
 function canMeleeReach(a,b){
-  return isAdjacent(a,b) && !architecturalWallBlocksStep(a,b);
+  if(!a || !b) return false;
+
+  const aCells=occupiedHexesAt(a,a.x,a.y);
+  const bCells=occupiedHexesAt(b,b.x,b.y);
+
+  return aCells.some(ac=>
+    bCells.some(bc=>
+      hexDistance(ac,bc)===1 &&
+      !architecturalWallBlocksStep(ac,bc)
+    )
+  );
+}
+
+function canMeleeAttackTarget(attacker,target){
+  if(!attacker || !target) return false;
+  const reach=Math.max(1,Number(attacker.meleeRange)||1);
+
+  if(reach===1){
+    return canMeleeReach(attacker,target);
+  }
+
+  return unitDistance(attacker,target)<=reach;
+}
+
+function approachDistanceAt(unit,x,y,target){
+  if(!unit || !target) return Infinity;
+  const proxy={...unit,x,y};
+
+  if(canMeleeAttackTarget(proxy,target)){
+    return 0;
+  }
+
+  return unitDistance(proxy,target);
 }
 
 function drawArchitecturalFloorRegions(){
@@ -5109,22 +5359,21 @@ function centerCameraOn(entity){
 function maybeRecenterCamera(entity){
   if(!entity) return false;
 
-  const c=hexCenter(entity.x,entity.y);
+  const centers=occupiedHexesAt(entity,entity.x,entity.y).map(cell=>
+    hexCenter(cell.x,cell.y)
+  );
 
   const marginX=HEX_W*CAMERA_EDGE_HEXES;
   const marginY=HEX_ROW*CAMERA_EDGE_HEXES;
 
-  const nearLeft   = c.x <= marginX;
-  const nearRight  = c.x >= canvas.width-marginX;
-  const nearTop    = c.y <= marginY;
-  const nearBottom = c.y >= canvas.height-marginY;
+  const nearEdge=centers.some(c=>
+    c.x<=marginX ||
+    c.x>=canvas.width-marginX ||
+    c.y<=marginY ||
+    c.y>=canvas.height-marginY
+  );
 
-  if(
-    nearLeft ||
-    nearRight ||
-    nearTop ||
-    nearBottom
-  ){
+  if(nearEdge){
     centerCameraOn(entity);
     return true;
   }
@@ -5146,10 +5395,12 @@ function isHexOnBattlefieldScreen(x,y,padding=0){
 function isEntityOnBattlefieldScreen(entity,padding=0){
   return !!(
     entity &&
-    isHexOnBattlefieldScreen(
-      entity.x,
-      entity.y,
-      padding
+    occupiedHexes(entity).some(cell=>
+      isHexOnBattlefieldScreen(
+        cell.x,
+        cell.y,
+        padding
+      )
     )
   );
 }
@@ -7641,9 +7892,7 @@ function hexLineCells(a,b){
   );
 }
 
-function lineOfSightBlocked(source,target){
-  if(!source || !target) return false;
-
+function lineOfSightBlockedBetweenHexes(source,target){
   if(architecturalWallBlocksLOS(source,target)){
     return true;
   }
@@ -7654,6 +7903,27 @@ function lineOfSightBlocked(source,target){
     index>0 &&
     hasFogAtHex(cell.x,cell.y)
   );
+}
+
+function lineOfSightBlocked(source,target){
+  if(!source || !target) return false;
+
+  const sourceCells=occupiedHexesAt(source,source.x,source.y);
+  const targetCells=occupiedHexesAt(target,target.x,target.y);
+
+  /*
+    R186: a large creature is visible/targetable when at least one occupied
+    body hex has a clear ray to at least one occupied source hex.
+  */
+  for(const sourceCell of sourceCells){
+    for(const targetCell of targetCells){
+      if(!lineOfSightBlockedBetweenHexes(sourceCell,targetCell)){
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 /* ============================================================
@@ -7886,16 +8156,17 @@ function isUnitVisibleToFriendlyParty(unit){
   const observers=friendlyVisibilityObservers();
   if(!observers.length) return true;
 
-  return observers.some(observer=>{
-    if(!observer?.alive || observer.fled) return false;
-    if(fogBlocksVisibilityToHex(observer,unit.x,unit.y)) return false;
+  return observers.some(observer=>
+    occupiedHexes(unit).some(cell=>{
+      if(fogBlocksVisibilityToHex(observer,cell.x,cell.y)) return false;
 
-    return !architecturalWallBlocksWorldLine(
-      worldPointForHex(observer.x,observer.y),
-      worldPointForHex(unit.x,unit.y),
-      "los"
-    );
-  });
+      return !architecturalWallBlocksWorldLine(
+        worldPointForHex(observer.x,observer.y),
+        worldPointForHex(cell.x,cell.y),
+        "los"
+      );
+    })
+  );
 }
 
 function shouldRenderUnitUnderPartyVisibility(unit){
@@ -8090,12 +8361,14 @@ function contractScreenPolygonTowardObserver(points,observerScreen,amount){
 
   return points.map(point=>{
     /*
-      R185: every INNER feather band retreats toward the observer, including
-      vertices created by wall hits. The true LOS polygon (inset 0) still ends
-      exactly at the masonry, so no hidden space is revealed. Allowing the
-      inner bands to retreat removes the former hard dark/light seam along
-      north/south wall faces while keeping the fade entirely on the visible side.
+      R133: wall-hit vertices are hard anchors. Feather layers may retreat
+      through open space, but they are never allowed to pull the LOS boundary
+      away from the exact masonry corner/edge that created the occlusion.
     */
+    if(point.isWall){
+      return {...point};
+    }
+
     const dx=observerScreen.x-point.x;
     const dy=observerScreen.y-point.y;
     const len=Math.hypot(dx,dy)||1;
@@ -8161,26 +8434,22 @@ function drawWallTestLineOfSightMask(){
   };
 
   /*
-    R185: party LOS is still a union and the feather remains entirely INSIDE
-    the true visibility polygon. More, smaller bands create a softer transition
-    without reducing the 70% darkness of fully unseen terrain or exposing any
-    geometry beyond an occluding wall.
+    Party LOS is a union. Each friendly polygon removes darkness from the same
+    mask. The feather is intentionally INSIDE the true LOS boundary: unseen
+    space stays at the requested 70% right up to a wall, while the visible
+    side fades gently toward full brightness over roughly 80 screen pixels.
+    This also avoids revealing slivers behind solid walls.
   */
   maskCtx.globalCompositeOperation="destination-out";
 
   const featherBands=[
-    {inset:0,   alpha:0.04},
-    {inset:10,  alpha:0.05},
-    {inset:20,  alpha:0.07},
-    {inset:30,  alpha:0.09},
-    {inset:40,  alpha:0.12},
-    {inset:50,  alpha:0.16},
-    {inset:62,  alpha:0.21},
-    {inset:74,  alpha:0.28},
-    {inset:86,  alpha:0.37},
-    {inset:98,  alpha:0.50},
-    {inset:110, alpha:0.68},
-    {inset:124, alpha:1.00}
+    {inset:0,  alpha:0.08},
+    {inset:12, alpha:0.13},
+    {inset:24, alpha:0.20},
+    {inset:38, alpha:0.30},
+    {inset:52, alpha:0.43},
+    {inset:66, alpha:0.62},
+    {inset:82, alpha:1.00}
   ];
 
   for(const {screenPolygon,observerScreen} of visibilitySets){
@@ -8334,11 +8603,16 @@ function drawVisibleArchitecturalWallsOverLOS(){
     if(!enemy?.alive || enemy.fled) continue;
     if(!shouldRenderUnitUnderPartyVisibility(enemy)) continue;
 
-    const c=hexCenter(enemy.x,enemy.y);
+    const depth=unitDepthSortPoint(enemy);
     foreground.push({
-      sortY:c.y,
-      sortX:c.x,
-      fn:()=>enemy.type==="orc" ? drawOrc(enemy) : drawKobold(enemy)
+      sortY:depth.y,
+      sortX:depth.x,
+      fn:()=>
+        enemy.type==="orc"
+          ? drawOrc(enemy)
+          : enemy.type==="large-test-mob"
+            ? drawLargeTestMob(enemy)
+            : drawKobold(enemy)
     });
   }
 
@@ -8507,14 +8781,13 @@ function livingUnitsInAreaCells(cells){
   );
 
   /*
-    Intentionally no faction filter:
-    damaging area spells use this helper so allies, enemies, and the
-    caster are all valid victims whenever their hex is inside the blast.
+    R186: a multi-hex unit is included once when ANY occupied cell intersects
+    the area. Several covered body hexes never multiply damage or saving throws.
   */
   return allUnits().filter(unit=>
     unit?.alive &&
     !unit.fled &&
-    cellKeys.has(key(unit.x,unit.y))
+    occupiedHexes(unit).some(cell=>cellKeys.has(key(cell.x,cell.y)))
   );
 }
 
@@ -9417,7 +9690,7 @@ function handleTurnControlEffects(actor){
     return true;
   }
 
-  if(hasGreaseAtHex(actor.x,actor.y)){
+  if(occupiedHexes(actor).some(cell=>hasGreaseAtHex(cell.x,cell.y))){
     const stood=greaseSaveForUnit(actor,game.player);
 
     if(!stood){
@@ -10745,7 +11018,7 @@ function nearestLivingPartyTarget(fromUnit){
   return livingPartyMembers()
     .slice()
     .sort((a,b)=>
-      hexDistance(fromUnit,a)-hexDistance(fromUnit,b) ||
+      unitDistance(fromUnit,a)-unitDistance(fromUnit,b) ||
       a.id.localeCompare(b.id)
     )[0] || null;
 }
@@ -11101,6 +11374,129 @@ function makeOrc(index,position){
   };
 }
 
+
+function makeLargeMobTest(position){
+  /*
+    R186 temporary rules-neutral harness for validating the multi-hex engine.
+    This is NOT a final monster stat block or final art asset. It deliberately
+    uses the existing Orc sprite pair while the Dragon/test creature art is
+    being prepared.
+  */
+  return {
+    id:"large-mob-test-01",
+    type:"large-test-mob",
+    species:"large-test",
+    controller:"mob",
+    sizeCategory:"huge",
+    footprintId:"hex7",
+    faction:"enemy",
+    alignment:"neutral evil",
+    name:"7-Hex Test MOB",
+
+    hp:36,
+    maxHp:36,
+    hitDiceValue:8,
+    hitDiceLabel:"8",
+
+    ac:4,
+    thaco:13,
+    move:5,
+    halfMove:2,
+
+    weapon:"Bite",
+    weaponCatalogId:null,
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d10",
+    weaponDamageL:"1d10",
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:20,
+    moraleLabel:"Test — does not flee",
+    xpValue:120,
+
+    poseName:"stand",
+    poseUntil:0,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
+
+    /* Temporary presentation values until a purpose-built large sprite exists. */
+    testRenderWidth:104,
+    testRenderHeight:112,
+    hpBarWidth:76,
+    hpBarOffsetY:102
+  };
+}
+
+function makeLargeMobTestEncounter(condition="grass"){
+  const candidates=
+    condition==="wall"
+      ? [
+          {x:8,y:0},
+          {x:9,y:-2},
+          {x:7,y:2},
+          {x:-9,y:1}
+        ]
+      : [
+          {x:8,y:0},
+          {x:8,y:-2},
+          {x:6,y:3},
+          {x:-8,y:1},
+          {x:3,y:7}
+        ];
+
+  for(const position of candidates){
+    const unit=makeLargeMobTest(position);
+    const cells=occupiedHexes(unit);
+
+    if(
+      cells.every(cell=>
+        inside(cell.x,cell.y) &&
+        !isWall(cell.x,cell.y) &&
+        hexDistance(cell,{x:0,y:0})>=2
+      )
+    ){
+      lastMobDeployment={
+        direction:"7-HEX TEST",
+        anchorDistance:hexDistance(position,{x:0,y:0}),
+        anchor:{...position},
+        clusterRadius:1,
+        count:1
+      };
+      return [unit];
+    }
+  }
+
+  throw new Error("Unable to place the 7-Hex Test MOB on this battlefield.");
+}
+
 function axialRing(radius){
   if(radius===0) return [{x:0,y:0}];
 
@@ -11443,8 +11839,7 @@ function livingUnitAt(x,y){
   return allUnits().find(unit=>
     unit?.alive &&
     !unit.fled &&
-    unit.x===x &&
-    unit.y===y
+    unitOccupiesHex(unit,x,y)
   ) || null;
 }
 
@@ -11475,40 +11870,17 @@ function enemyAtHex(x,y,excludeId=null){
     k.id!==excludeId &&
     k.alive &&
     !k.fled &&
-    k.x===x &&
-    k.y===y
+    unitOccupiesHex(k,x,y)
   ) || null;
 }
 
 function occupiedByAnyUnit(x,y,excludeId=null){
-  if(
-    game?.player?.alive &&
-    game.player.id!==excludeId &&
-    game.player.x===x &&
-    game.player.y===y
-  ){
-    return true;
-  }
-
-  if(
-    (game?.allies || []).some(unit=>
-      unit.id!==excludeId &&
-      unit.alive &&
-      !unit.fled &&
-      unit.x===x &&
-      unit.y===y
-    )
-  ){
-    return true;
-  }
-
-  return game?.enemies.some(unit=>
-    unit.id!==excludeId &&
-    unit.alive &&
+  return allUnits().some(unit=>
+    unit?.id!==excludeId &&
+    unit?.alive &&
     !unit.fled &&
-    unit.x===x &&
-    unit.y===y
-  ) || false;
+    unitOccupiesHex(unit,x,y)
+  );
 }
 
 function countNeutralizedEnemies(){
@@ -11551,15 +11923,30 @@ function newGame(condition=selectedCombatCondition){
   }
 
   const player=makeFighter();
+
+  /*
+    R186: configure terrain before encounter placement so a large footprint can
+    validate every occupied cell against architectural walls at spawn time.
+  */
+  configureArchitecturalWalls(condition);
+
   /*
     R179 combat setup cleanup: the default battle test now starts with Carl
     as the sole player character. Ranger and Mage definitions remain in the
     engine for future roster selection but are not spawned automatically.
   */
-  const kobolds=condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3);
+  const kobolds=
+    selectedMobEncounter==="kobolds"
+      ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
+      : [];
+
+  const enemies=
+    selectedMobEncounter==="large-test"
+      ? makeLargeMobTestEncounter(condition)
+      : [...kobolds];
+
   /* R114: Orcs remain defined in the engine but are removed from this combat simulation. */
   lastOrcDeployment=null;
-  const enemies=[...kobolds];
 
   camera.x=player.x;
   camera.y=player.y;
@@ -11579,26 +11966,25 @@ function newGame(condition=selectedCombatCondition){
     areaEffects:[],
 
     /*
-      R136 Monstrous Manual Kobold morale:
-      - printed morale is Average (8-10); 9 remains the representative midpoint
-        used by this combat test;
-      - the Kobold entry specifically requires a morale check when losses reduce
-        them to only a 3:2 numerical advantage over their opponents.
+      R136 Monstrous Manual Kobold morale applies only to the Kobold encounter.
+      Large-MOB test encounters use per-unit morale and do not share this group
+      state.
     */
-    enemyGroupMorale:{
-      id:"kobold-group",
-      label:"Kobold group",
-      baseMorale:kobolds[0]?.morale ?? 9,
-      moraleLabel:"Average (8-10)",
-      initialCount:kobolds.length,
-      manualRatioThreshold:1.5,
-      manualRatioChecked:false,
-      broken:false,
-      checks:0
-    }
+    enemyGroupMorale:kobolds.length
+      ? {
+          id:"kobold-group",
+          label:"Kobold group",
+          baseMorale:kobolds[0]?.morale ?? 9,
+          moraleLabel:"Average (8-10)",
+          initialCount:kobolds.length,
+          manualRatioThreshold:1.5,
+          manualRatioChecked:false,
+          broken:false,
+          checks:0
+        }
+      : null
   };
 
-  configureArchitecturalWalls(condition);
   lastPlayerVisibilityObserverId=null;
 
   aimMode=false;
@@ -11680,27 +12066,43 @@ function newGame(condition=selectedCombatCondition){
     "system"
   );
 
-  log(
-    `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
-    "system"
-  );
+  if(selectedMobEncounter==="large-test"){
+    const large=enemies[0];
+    log(
+      `7-Hex Test MOB deployed as one combat entity across ${unitFootprintCellCount(large)} occupied hexes; `+
+      `${large.maxHp} HP, AC ${large.ac}, THAC0 ${large.thaco}, Move ${large.move}.`,
+      "system"
+    );
+    log(
+      "Multi-hex test rules: one initiative slot, one HP pool, one target identity, one save/damage resolution per area effect.",
+      "system"
+    );
+  }else{
+    log(
+      `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
+      "system"
+    );
 
-  log(
-    `3 Kobold Body Guards deployed: AC 6, THAC0 20, Move 6, 4 HP each; Short Sword 1d6, shield, leather armor; XP 15.`,
-    "system"
-  );
+    log(
+      `3 Kobold Body Guards deployed: AC 6, THAC0 20, Move 6, 4 HP each; Short Sword 1d6, shield, leather armor; XP 15.`,
+      "system"
+    );
 
-  log(
-    `3 Kobold Slingers deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; Sling with 10 sling bullets; XP 7.`,
-    "system"
-  );
-
+    log(
+      `3 Kobold Slingers deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; Sling with 10 sling bullets; XP 7.`,
+      "system"
+    );
+  }
 
   if(lastMobDeployment){
     log(
-      `Kobold deployment: ${lastMobDeployment.direction}, `+
-      `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
-      `cluster radius ${lastMobDeployment.clusterRadius}.`,
+      selectedMobEncounter==="large-test"
+        ? `Large MOB pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
+        : (
+            `Kobold deployment: ${lastMobDeployment.direction}, `+
+            `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+            `cluster radius ${lastMobDeployment.clusterRadius}.`
+          ),
       "system"
     );
   }
@@ -11982,7 +12384,7 @@ function endTurn(){
 
 
 function longbowRangeBand(attacker,defender){
-  const distance=hexDistance(attacker,defender);
+  const distance=unitDistance(attacker,defender);
   const increment=Math.max(
     1,
     attacker.missileRangeIncrementHexes || 7
@@ -12304,7 +12706,7 @@ function nearestEnemyForFriendlyNpc(npc){
   return activeEnemies()
     .slice()
     .sort((a,b)=>
-      hexDistance(npc,a)-hexDistance(npc,b) ||
+      unitDistance(npc,a)-unitDistance(npc,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -12327,7 +12729,7 @@ function bestSafeFireballTarget(mage,source=mage){
   let best=null;
 
   for(const centerEnemy of activeEnemies()){
-    if(hexDistance(source,centerEnemy)>range) continue;
+    if(unitDistance(source,centerEnemy)>range) continue;
     if(lineOfSightBlocked(source,centerEnemy)) continue;
 
     const cells=fireballBlastCells(centerEnemy);
@@ -12357,7 +12759,7 @@ function bestSafeSleepTarget(mage,source=mage){
   let best=null;
 
   for(const centerEnemy of activeEnemies()){
-    if(hexDistance(source,centerEnemy)>range) continue;
+    if(unitDistance(source,centerEnemy)>range) continue;
     if(lineOfSightBlocked(source,centerEnemy)) continue;
 
     /* Sleep's implemented area is one complete 7-hex radius-1 cluster. */
@@ -12410,11 +12812,11 @@ function bestMageOffensiveActionFrom(mage,source=mage){
     const range=spellRangeHexes(spell,mage.level);
     const target=activeEnemies()
       .filter(enemy=>
-        hexDistance(source,enemy)<=range &&
+        unitDistance(source,enemy)<=range &&
         !lineOfSightBlocked(source,enemy)
       )
       .sort((a,b)=>
-        hexDistance(source,a)-hexDistance(source,b) ||
+        unitDistance(source,a)-unitDistance(source,b) ||
         a.hp-b.hp ||
         a.id.localeCompare(b.id)
       )[0] || null;
@@ -12424,7 +12826,7 @@ function bestMageOffensiveActionFrom(mage,source=mage){
         spellId:"magic-missile",
         targetHex:{x:target.x,y:target.y},
         target,
-        score:1000-Math.min(999,hexDistance(source,target))
+        score:1000-Math.min(999,unitDistance(source,target))
       };
     }
   }
@@ -12442,7 +12844,7 @@ function bestMageVisibleEnemyFrom(mage,source=mage){
       !lineOfSightBlocked(source,enemy)
     )
     .sort((a,b)=>
-      hexDistance(source,a)-hexDistance(source,b) ||
+      unitDistance(source,a)-unitDistance(source,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -12672,10 +13074,17 @@ function rangedAiOpponents(unit){
     : livingPartyMembers();
 }
 
+function rangedAiSourceEntity(unit,source){
+  if(!unit || !source) return source;
+  if(source===unit) return unit;
+  return {...unit,x:source.x,y:source.y};
+}
+
 function rangedAiRangeBandFrom(unit,source,target){
   if(!unit || !source || !target) return {distance:Infinity,band:"OUT",penalty:null};
 
-  const distance=hexDistance(source,target);
+  const sourceEntity=rangedAiSourceEntity(unit,source);
+  const distance=unitDistance(sourceEntity,target);
 
   if(unit.rangedWeapon==="Sling"){
     const shortRange=Math.max(1,unit.slingShortRange||4);
@@ -12702,11 +13111,13 @@ function rangedAiRangeBandFrom(unit,source,target){
 }
 
 function rangedAiPositionThreatened(unit,source){
+  const sourceEntity=rangedAiSourceEntity(unit,source);
+
   return rangedAiOpponents(unit).some(enemy=>
     enemy.alive &&
     !enemy.fled &&
-    hexDistance(source,enemy)<=1 &&
-    !architecturalWallBlocksStep(source,enemy)
+    unitDistance(sourceEntity,enemy)<=1 &&
+    canMeleeReach(sourceEntity,enemy)
   );
 }
 
@@ -12728,6 +13139,7 @@ function rangedAiCanAttackFrom(unit,source,target){
     return false;
   }
 
+  const sourceEntity=rangedAiSourceEntity(unit,source);
   const range=rangedAiRangeBandFrom(unit,source,target);
   if(range.penalty===null) return false;
 
@@ -12736,14 +13148,16 @@ function rangedAiCanAttackFrom(unit,source,target){
     return false;
   }
 
-  return !lineOfSightBlocked(source,target);
+  return !lineOfSightBlocked(sourceEntity,target);
 }
 
 function bestRangedAiTargetFrom(unit,source=unit){
+  const sourceEntity=rangedAiSourceEntity(unit,source);
+
   return rangedAiOpponents(unit)
     .filter(target=>rangedAiCanAttackFrom(unit,source,target))
     .sort((a,b)=>
-      hexDistance(source,a)-hexDistance(source,b) ||
+      unitDistance(sourceEntity,a)-unitDistance(sourceEntity,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -12784,15 +13198,15 @@ function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
         path:reconstruct(cur),
         target,
         firingHex:{x:cur.x,y:cur.y},
-        distance:hexDistance(cur,target)
+        distance:unitDistanceAt(unit,cur.x,cur.y,target)
       };
     }
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
       const na={x:cur.x+a.x,y:cur.y+a.y};
       const nb={x:cur.x+b.x,y:cur.y+b.y};
-      const da=Math.min(...targets.map(target=>hexDistance(na,target)));
-      const db=Math.min(...targets.map(target=>hexDistance(nb,target)));
+      const da=Math.min(...targets.map(target=>unitDistanceAt(unit,na.x,na.y,target)));
+      const db=Math.min(...targets.map(target=>unitDistanceAt(unit,nb.x,nb.y,target)));
       return da-db || a.x-b.x || a.y-b.y;
     });
 
@@ -12801,9 +13215,7 @@ function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
       const nk=key(next.x,next.y);
 
       if(seen.has(nk)) continue;
-      if(isWall(next.x,next.y)) continue;
-      if(architecturalWallBlocksStep(cur,next)) continue;
-      if(occupiedByAnyUnit(next.x,next.y,unit.id)) continue;
+      if(unitTransitionBlocked(unit,cur,next)) continue;
 
       seen.add(nk);
       came.set(nk,{x:cur.x,y:cur.y});
@@ -12978,7 +13390,7 @@ async function friendlyNpcTurn(npc){
 }
 
 function slingRangeBand(attacker,defender){
-  const distance=hexDistance(attacker,defender);
+  const distance=unitDistance(attacker,defender);
 
   if(distance<=attacker.slingShortRange){
     return {distance,band:"SHORT",penalty:0};
@@ -13015,7 +13427,7 @@ function mobCanMissileAttack(mob,target){
     return false;
   }
 
-  const distance=hexDistance(mob,target);
+  const distance=unitDistance(mob,target);
 
   /* R113 Slingers are dedicated missile troops and may fire from 2+ hexes. */
   if(mob.type==="kobold-slinger"){
@@ -13404,7 +13816,7 @@ function attack(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0};
   }
 
-  if(hexDistance(attacker,defender)<=1 && architecturalWallBlocksStep(attacker,defender)){
+  if(unitDistance(attacker,defender)<=1 && !canMeleeReach(attacker,defender)){
     setCombatMessage("A wall blocks the melee attack.");
     return {hit:false,killed:false,damage:0,blockedByWall:true};
   }
@@ -13901,7 +14313,9 @@ function unitCanMakeLeavingHexFreeAttack(attacker,mover){
     Number(attacker.meleeRange)||1
   );
 
-  return hexDistance(attacker,mover)<=reach;
+  return reach===1
+    ? canMeleeReach(attacker,mover)
+    : unitDistance(attacker,mover)<=reach;
 }
 
 function leavingHexFreeAttackers(mover){
@@ -14522,8 +14936,7 @@ function unitAtHex(x,y){
   if(
     game?.player?.alive &&
     !game.player.fled &&
-    game.player.x===x &&
-    game.player.y===y
+    unitOccupiesHex(game.player,x,y)
   ){
     return game.player;
   }
@@ -14531,8 +14944,7 @@ function unitAtHex(x,y){
   const ally=(game?.allies || []).find(unit=>
     unit.alive &&
     !unit.fled &&
-    unit.x===x &&
-    unit.y===y
+    unitOccupiesHex(unit,x,y)
   );
 
   if(ally){
@@ -14798,7 +15210,7 @@ async function castMagicMissileFromScroll(action,target){
   const casterLevel=Math.max(1,action.casterLevel||6);
   const rangeYards=magicMissileRangeYards(casterLevel);
   const rangeHexes=yardsToTacticalHexes(rangeYards);
-  const distance=hexDistance(caster,target);
+  const distance=unitDistance(caster,target);
 
   if(distance>rangeHexes){
     setCombatMessage(`${target.name} is out of Magic Missile range (${rangeHexes} hexes).`);
@@ -15441,7 +15853,7 @@ function validCreatureTargetWithinRange(caster,target,spell,casterLevel,allowFri
   }
 
   const range=spellRangeHexes(spell,casterLevel);
-  return hexDistance(caster,target)<=range;
+  return unitDistance(caster,target)<=range;
 }
 
 async function castArmorSpell(action,target){
@@ -16342,11 +16754,19 @@ async function activateAimTarget(){
     target.alive &&
     canMeleeReach(actor,target)
   ){
-    const dx=target.x-actor.x;
-    const dy=target.y-actor.y;
-    exitAimMode(false,false);
-    await tryPlayerMove(dx,dy);
-    return true;
+    const contact=occupiedHexes(target).find(cell=>
+      hexDistance(actor,cell)===1 &&
+      !architecturalWallBlocksStep(actor,cell)
+    );
+
+    if(contact){
+      exitAimMode(false,false);
+      await tryPlayerMove(
+        contact.x-actor.x,
+        contact.y-actor.y
+      );
+      return true;
+    }
   }
 
   updateUi();
@@ -16503,7 +16923,7 @@ async function triggerMobGuardsAgainst(target){
       mob.guard &&
       canMobGuard(mob) &&
       !wasAdjacentWhenGuardSet(mob,target) &&
-      hexDistance(mob,target)<=Math.max(1,mob.meleeRange||1)
+      canMeleeAttackTarget(mob,target)
     )
     .sort((a,b)=>a.id.localeCompare(b.id));
 
@@ -16555,13 +16975,16 @@ async function triggerMobGuardsAgainst(target){
 }
 
 function passableForPath(x,y,mover,target){
-  if(isWall(x,y)) return false;
-
-  if(target && x===target.x && y===target.y){
-    return false;
+  if(!mover){
+    return !isWall(x,y) && !occupiedByAnyUnit(x,y,null);
   }
 
-  return !occupiedByAnyUnit(x,y,mover?.id);
+  /*
+    R186: pathfinding validates the mover's COMPLETE destination footprint.
+    Target cells require no special case because overlap with the target's
+    footprint is rejected by canUnitStandAt().
+  */
+  return canUnitStandAt(mover,x,y);
 }
 
 /* Open-map shortest path. With no obstacles, repeatedly choosing the
@@ -16581,13 +17004,20 @@ function pathToAdjacent(start,target,mover){
   while(queue.length && guard<3000){
     guard++;
     const cur=queue.shift();
+    const curMover=mover ? {...mover,x:cur.x,y:cur.y} : cur;
 
-    if(canMeleeReach(cur,target)){
+    if(canMeleeReach(curMover,target)){
       end=cur;
       break;
     }
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
+      if(mover){
+        const da=unitDistanceAt(mover,cur.x+a.x,cur.y+a.y,target);
+        const db=unitDistanceAt(mover,cur.x+b.x,cur.y+b.y,target);
+        return da-db;
+      }
+
       const da=hexDistance({x:cur.x+a.x,y:cur.y+a.y},target);
       const db=hexDistance({x:cur.x+b.x,y:cur.y+b.y},target);
       return da-db;
@@ -16597,14 +17027,15 @@ function pathToAdjacent(start,target,mover){
       const nx=cur.x+dir.x;
       const ny=cur.y+dir.y;
       const k=key(nx,ny);
+      const next={x:nx,y:ny};
 
       if(seen.has(k)) continue;
-      if(architecturalWallBlocksStep(cur,{x:nx,y:ny})) continue;
+      if(mover && unitTransitionBlocked(mover,cur,next)) continue;
       if(!passableForPath(nx,ny,mover,target)) continue;
 
       seen.add(k);
       came.set(k,cur);
-      queue.push({x:nx,y:ny});
+      queue.push(next);
     }
   }
 
@@ -16627,7 +17058,6 @@ function pathToAdjacent(start,target,mover){
 }
 
 
-
 function mobPathToPartyTarget(mob,target){
   if(!mob || !target) return null;
 
@@ -16646,7 +17076,7 @@ function selectMobPartyTarget(mob){
   const candidates=livingPartyMembers()
     .slice()
     .sort((a,b)=>
-      hexDistance(mob,a)-hexDistance(mob,b) ||
+      unitDistance(mob,a)-unitDistance(mob,b) ||
       a.id.localeCompare(b.id)
     );
 
@@ -16687,7 +17117,11 @@ function pathToHex(start,target,mover){
     return [{x:start.x,y:start.y}];
   }
 
-  if(occupiedByAnyUnit(target.x,target.y,mover?.id)){
+  if(mover && !canUnitStandAt(mover,target.x,target.y)){
+    return [{x:start.x,y:start.y}];
+  }
+
+  if(!mover && occupiedByAnyUnit(target.x,target.y,null)){
     return [{x:start.x,y:start.y}];
   }
 
@@ -16722,16 +17156,22 @@ function pathToHex(start,target,mover){
     for(const dir of dirs){
       const nx=cur.x+dir.x;
       const ny=cur.y+dir.y;
-      const k=key(nx,ny);
+      const nk=key(nx,ny);
+      const next={x:nx,y:ny};
 
-      if(seen.has(k)) continue;
-      if(isWall(nx,ny)) continue;
-      if(architecturalWallBlocksStep(cur,{x:nx,y:ny})) continue;
-      if(occupiedByAnyUnit(nx,ny,mover?.id)) continue;
+      if(seen.has(nk)) continue;
 
-      seen.add(k);
-      came.set(k,cur);
-      queue.push({x:nx,y:ny});
+      if(mover){
+        if(unitTransitionBlocked(mover,cur,next)) continue;
+      }else{
+        if(isWall(nx,ny)) continue;
+        if(architecturalWallBlocksStep(cur,next)) continue;
+        if(occupiedByAnyUnit(nx,ny,null)) continue;
+      }
+
+      seen.add(nk);
+      came.set(nk,cur);
+      queue.push(next);
     }
   }
 
@@ -16753,7 +17193,6 @@ function pathToHex(start,target,mover){
   return path;
 }
 
-
 function pathToClosestReachable(start,target,mover,maxSteps){
   const startNode={
     x:start.x,
@@ -16763,11 +17202,12 @@ function pathToClosestReachable(start,target,mover,maxSteps){
 
   const queue=[startNode];
   const came=new Map();
-  const stepsByKey=new Map([[key(start.x,start.y),0]]);
   const seen=new Set([key(start.x,start.y)]);
 
   let best=startNode;
-  let bestDistance=hexDistance(startNode,target);
+  let bestDistance=mover
+    ? approachDistanceAt(mover,startNode.x,startNode.y,target)
+    : hexDistance(startNode,target);
 
   while(queue.length){
     const cur=queue.shift();
@@ -16775,14 +17215,12 @@ function pathToClosestReachable(start,target,mover,maxSteps){
     if(cur.steps>=maxSteps) continue;
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
-      const da=hexDistance(
-        {x:cur.x+a.x,y:cur.y+a.y},
-        target
-      );
-      const db=hexDistance(
-        {x:cur.x+b.x,y:cur.y+b.y},
-        target
-      );
+      const da=mover
+        ? approachDistanceAt(mover,cur.x+a.x,cur.y+a.y,target)
+        : hexDistance({x:cur.x+a.x,y:cur.y+a.y},target);
+      const db=mover
+        ? approachDistanceAt(mover,cur.x+b.x,cur.y+b.y,target)
+        : hexDistance({x:cur.x+b.x,y:cur.y+b.y},target);
       return da-db;
     });
 
@@ -16790,21 +17228,28 @@ function pathToClosestReachable(start,target,mover,maxSteps){
       const nx=cur.x+dir.x;
       const ny=cur.y+dir.y;
       const nk=key(nx,ny);
+      const next={x:nx,y:ny};
 
       if(seen.has(nk)) continue;
-      if(isWall(nx,ny)) continue;
-      if(architecturalWallBlocksStep(cur,{x:nx,y:ny})) continue;
-      if(occupiedByAnyUnit(nx,ny,mover?.id)) continue;
+
+      if(mover){
+        if(unitTransitionBlocked(mover,cur,next)) continue;
+      }else{
+        if(isWall(nx,ny)) continue;
+        if(architecturalWallBlocksStep(cur,next)) continue;
+        if(occupiedByAnyUnit(nx,ny,null)) continue;
+      }
 
       const steps=cur.steps+1;
       const node={x:nx,y:ny,steps};
 
       seen.add(nk);
       came.set(nk,{x:cur.x,y:cur.y});
-      stepsByKey.set(nk,steps);
       queue.push(node);
 
-      const distance=hexDistance(node,target);
+      const distance=mover
+        ? approachDistanceAt(mover,nx,ny,target)
+        : hexDistance(node,target);
 
       if(
         distance<bestDistance ||
@@ -16856,7 +17301,14 @@ function clickPathStep(targetHex){
 
   if(clickedEnemy){
     if(canMeleeReach(p,clickedEnemy)){
-      tryPlayerMove(clickedEnemy.x-p.x,clickedEnemy.y-p.y);
+      const contact=occupiedHexes(clickedEnemy).find(cell=>
+        hexDistance(p,cell)===1 &&
+        !architecturalWallBlocksStep(p,cell)
+      );
+
+      if(contact){
+        tryPlayerMove(contact.x-p.x,contact.y-p.y);
+      }
       return;
     }
     path=pathToAdjacent(p,clickedEnemy,p);
@@ -16914,13 +17366,12 @@ function fleeStep(unit,threat){
     }))
     .filter(pos=>
       inside(pos.x,pos.y) &&
-      !architecturalWallBlocksStep(unit,pos) &&
-      !occupiedByAnyUnit(pos.x,pos.y,unit.id)
+      !unitTransitionBlocked(unit,unit,pos)
     )
     .map(pos=>({
       ...pos,
       distance:threat
-        ? hexDistance(pos,threat)
+        ? unitDistanceAt(unit,pos.x,pos.y,threat)
         : 0
     }));
 
@@ -17022,7 +17473,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       return true;
     }
 
-    if(!next.escape && architecturalWallBlocksStep(entity,next)){
+    if(!next.escape && unitTransitionBlocked(entity,entity,next)){
       return false;
     }
 
@@ -17102,7 +17553,7 @@ async function animateMobAlongPath(mob,path,maxSteps){
   for(let i=1;i<=steps;i++){
     if(game.over || !mob.alive || mob.fled) return false;
 
-    if(architecturalWallBlocksStep(mob,path[i])) return false;
+    if(unitTransitionBlocked(mob,mob,path[i])) return false;
 
     const canLeave=await performLeavingHexFreeAttacks(
       mob,
@@ -17173,10 +17624,12 @@ function rangedRetreatStep(unit,threat){
     .map(dir=>({x:unit.x+dir.x,y:unit.y+dir.y}))
     .filter(pos=>
       inside(pos.x,pos.y) &&
-      !architecturalWallBlocksStep(unit,pos) &&
-      !occupiedByAnyUnit(pos.x,pos.y,unit.id)
+      !unitTransitionBlocked(unit,unit,pos)
     )
-    .map(pos=>({...pos,distance:threat ? hexDistance(pos,threat) : 0}))
+    .map(pos=>({
+      ...pos,
+      distance:threat ? unitDistanceAt(unit,pos.x,pos.y,threat) : 0
+    }))
     .sort((a,b)=>b.distance-a.distance || a.x-b.x || a.y-b.y);
   return options[0] || null;
 }
@@ -17254,7 +17707,7 @@ async function mobTurn(mob){
       return;
     }
 
-    const distance=hexDistance(mob,target);
+    const distance=unitDistance(mob,target);
 
     log(
       isMapEdgeHex(mob.x,mob.y)
@@ -17267,7 +17720,7 @@ async function mobTurn(mob){
     return;
   }
 
-  const startingDistance=hexDistance(mob,target);
+  const startingDistance=unitDistance(mob,target);
 
   /*
     R127 Kobold Slinger AI: Slingers are dedicated ranged troops. If they do
@@ -17362,7 +17815,7 @@ async function mobTurn(mob){
   }
 
   /* Already in melee range: attack immediately. */
-  if(startingDistance<=Math.max(1,mob.meleeRange||1)){
+  if(canMeleeAttackTarget(mob,target)){
     if(maybeTriggerPlayerGuard(mob)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
@@ -17408,14 +17861,14 @@ async function mobTurn(mob){
     }
   }
 
-  const endingDistance=hexDistance(mob,target);
+  const endingDistance=unitDistance(mob,target);
 
   /*
     If the mob managed to reach melee range without exceeding half movement,
     it attacks. Otherwise its action becomes Guard.
   */
   if(
-    endingDistance<=Math.max(1,mob.meleeRange||1) &&
+    canMeleeAttackTarget(mob,target) &&
     steps<=mob.halfMove
   ){
     if(maybeTriggerPlayerGuard(mob)){
@@ -17473,7 +17926,7 @@ async function mobTurn(mob){
   if(canMobGuard(mob)){
     enterMobGuard(
       mob,
-      endingDistance<=Math.max(1,mob.meleeRange||1)
+      canMeleeAttackTarget(mob,target)
         ? "full movement prevents an immediate attack"
         : "the target is still outside melee range"
     );
@@ -17784,6 +18237,7 @@ function updateUnitInfoPanel(){
       `<span>Facing</span><span>${facingText}</span>`+
       `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
       `<span>Controller</span><span>MOB</span>`+
+      `<span>Footprint</span><span>${unitFootprintCellCount(inspected)} hex${unitFootprintCellCount(inspected)===1 ? "" : "es"}</span>`+
       `<span>HD</span><span>${inspected.hitDiceLabel || "—"}</span>`+
       `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
       `<span>AC</span><span>${inspected.ac}</span>`+
@@ -18838,17 +19292,19 @@ function drawFloor(){
 }
 
 function drawActiveHex(entity,color){
-  const top=hexScreenVertices(entity.x,entity.y);
+  for(const cell of occupiedHexes(entity)){
+    const top=hexScreenVertices(cell.x,cell.y);
 
-  polygonPath(top);
-  ctx.fillStyle=color==="player"
-    ? "rgba(121,231,231,0.10)"
-    : "rgba(223,107,107,0.10)";
-  ctx.fill();
+    polygonPath(top);
+    ctx.fillStyle=color==="player"
+      ? "rgba(121,231,231,0.10)"
+      : "rgba(223,107,107,0.10)";
+    ctx.fill();
 
-  ctx.strokeStyle=color==="player" ? "#79e7e7" : color;
-  ctx.lineWidth=3;
-  ctx.stroke();
+    ctx.strokeStyle=color==="player" ? "#79e7e7" : color;
+    ctx.lineWidth=3;
+    ctx.stroke();
+  }
 }
 
 function drawHpBar(entity,color){
@@ -18861,11 +19317,12 @@ function drawHpBar(entity,color){
     return;
   }
 
-  const c=hexCenter(entity.x,entity.y);
-  const width=34;
+  const c=unitFootprintScreenCenter(entity);
+  const large=unitFootprintCellCount(entity)>1;
+  const width=Math.max(34,Number(entity.hpBarWidth)||(large ? 64 : 34));
   const ratio=Math.max(0,Math.min(1,entity.hp/entity.maxHp));
   const px=c.x-width/2;
-  const py=c.y-39;
+  const py=c.y-(Number(entity.hpBarOffsetY)||(large ? 78 : 39));
 
   ctx.fillStyle="#17151a";
   ctx.fillRect(px,py,width,4);
@@ -19539,6 +19996,78 @@ function drawOrc(orc){
     getSpriteAssetSpec(orcAssetId)?.nativeFacing || unitPoseNativeFacing(orc,"right"),
     orc,
     runtimeAnchorForAsset(orcAssetId)
+  );
+}
+
+
+
+function drawLargeTestMob(mob){
+  const footprint=occupiedHexes(mob);
+  const center=unitFootprintScreenCenter(mob);
+
+  if(game.active===mob.id){
+    drawActiveHex(mob,"#e08058");
+  }
+
+  if(mob.alive){
+    drawHpBar(mob,"#e08058");
+  }
+
+  /*
+    Temporary R186 footprint visualization. The translucent body cells make the
+    spatial mask explicit while we validate movement/targeting. A future Dragon
+    sprite will replace this diagnostic overlay without changing occupancy.
+  */
+  ctx.save();
+  for(const cell of footprint){
+    if(
+      game?.condition==="wall" &&
+      !isHexVisibleToFriendlyParty(cell.x,cell.y)
+    ){
+      continue;
+    }
+
+    const top=hexScreenVertices(cell.x,cell.y);
+    polygonPath(top);
+    ctx.fillStyle="rgba(170,70,46,0.09)";
+    ctx.fill();
+    ctx.strokeStyle="rgba(224,128,88,0.42)";
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  const attackPose=activeUnitPoseName(mob)==="attack";
+  const sprite=attackPose ? orcAttackSprite : orcStandSprite;
+
+  if(!sprite?.complete || !sprite.naturalWidth){
+    return;
+  }
+
+  const drawW=Math.max(1,Number(mob.testRenderWidth)||104);
+  const drawH=Math.max(1,Number(mob.testRenderHeight)||112);
+  const anchor={
+    x:center.x,
+    y:center.y+48
+  };
+
+  ctx.save();
+  ctx.translate(center.x,center.y+36);
+  ctx.fillStyle="rgba(0,0,0,0.42)";
+  ctx.beginPath();
+  ctx.ellipse(0,0,82,24,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  drawSpriteFacing(
+    sprite,
+    anchor,
+    drawW,
+    drawH,
+    mob.facing,
+    "right",
+    mob,
+    {x:0.5,y:1}
   );
 }
 
@@ -20726,10 +21255,25 @@ function drawAreaDamageFx(){
 
 function drawDeathFx(){
   if(!deathFx) return;
-  if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(deathFx.x,deathFx.y)) return;
   if(!deathMarkerSprite.complete || !deathMarkerSprite.naturalWidth) return;
 
-  const c=hexCenter(deathFx.x,deathFx.y);
+  const deathSubject={
+    id:deathFx.unitId,
+    footprintId:deathFx.footprintId || "single",
+    facingHex:deathFx.facingHex,
+    x:deathFx.x,
+    y:deathFx.y
+  };
+
+  if(
+    game?.condition==="wall" &&
+    !occupiedHexes(deathSubject).some(cell=>
+      isHexVisibleToFriendlyParty(cell.x,cell.y)
+    )
+  ){
+    return;
+  }
+  const c=unitFootprintScreenCenter(deathSubject);
   const elapsed=performance.now()-deathFx.started;
 
   if(elapsed<0 || elapsed>1000) return;
@@ -20976,15 +21520,17 @@ function draw(){
     if(!enemy.alive || enemy.fled) continue;
     if(!shouldRenderUnitUnderPartyVisibility(enemy)) continue;
 
-    const c=hexCenter(enemy.x,enemy.y);
+    const depth=unitDepthSortPoint(enemy);
 
     actors.push({
-      sortY:c.y,
-      sortX:c.x,
+      sortY:depth.y,
+      sortX:depth.x,
       fn:()=>
         enemy.type==="orc"
           ? drawOrc(enemy)
-          : drawKobold(enemy)
+          : enemy.type==="large-test-mob"
+            ? drawLargeTestMob(enemy)
+            : drawKobold(enemy)
     });
   }
 

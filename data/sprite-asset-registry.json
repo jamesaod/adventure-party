@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R183",
-  "description": "Adventure Party sprite asset specifications through R183. Carl uses the exact 64x64 conversion derived directly from the user-uploaded source image.",
+  "release": "R186",
+  "description": "Adventure Party sprite asset specifications through R186. R186 adds engine-level multi-hex unit footprints and a temporary 7-hex test MOB using existing Orc art; no new sprite asset is introduced.",
   "assets": {
     "fighter": {
       "source": {
