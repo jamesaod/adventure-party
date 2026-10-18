@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R190 — Dedicated Red Dragon standing and attack poses
+
+- Replaced the prior juvenile Red Dragon art with the user-supplied standing sprite.
+- Added the user-supplied attacking sprite as a true action pose for breath attacks and the claw/claw/bite routine.
+- Removed the source-image background programmatically while preserving the original pixel artwork; no generative image editing was used.
+- Measured the user's seven-hex placement reference instead of estimating scale: the new dragon renders at 89 px wide, 104 px tall standing / 107 px tall attacking, with its bottom anchor 41 px below the footprint centroid and a 3 px facing-aware lateral bias.
+- The new source art faces left natively, so engine mirroring now uses left as the canonical dragon facing.
+- Dragon breath VFX now originates from a muzzle position measured against the attacking sprite.
+- R189 full-footprint hover behavior and dense Fireball-style breath rendering remain unchanged.
+
 ## R189 — Multi-hex hover and denser dragon breath
 
 - Hovering any visible multi-hex MOB now highlights every hex in its occupied footprint instead of only the single hex beneath the pointer.
