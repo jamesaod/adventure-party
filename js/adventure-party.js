@@ -1242,6 +1242,255 @@ window.addEventListener("keydown",()=>{
 const canvas=document.getElementById("battlefield");
 const ctx=canvas.getContext("2d");
 
+/* ============================================================
+   R170 — BATTLEFIELD WEATHER MANAGER
+   Visual prototype only: weather does not modify combat rules yet.
+   The shared state is intentionally structured so sound, visibility,
+   missile modifiers, terrain effects, and spell interactions can be
+   attached later without rewriting the VFX layer.
+   ============================================================ */
+
+const WEATHER_TYPES=[
+  {id:"clear",label:"CLEAR"},
+  {id:"rain",label:"RAIN"},
+  {id:"snow",label:"SNOW"},
+  {id:"wind",label:"WIND"}
+];
+
+const WEATHER_SEVERITIES=[
+  {id:"light",label:"LIGHT",intensity:0.55,windStrength:0.45},
+  {id:"moderate",label:"MODERATE",intensity:0.82,windStrength:0.72},
+  {id:"heavy",label:"HEAVY",intensity:1.0,windStrength:1.0}
+];
+
+const weatherState={
+  typeIndex:0,
+  severityIndex:0,
+  windDirection:1,
+  mechanicsEnabled:false
+};
+
+const weatherTypeButton=document.getElementById("weatherTypeButton");
+const weatherSeverityButton=document.getElementById("weatherSeverityButton");
+
+let weatherAnimationFrame=null;
+let weatherLastFrame=0;
+
+function currentWeatherType(){
+  return WEATHER_TYPES[weatherState.typeIndex] || WEATHER_TYPES[0];
+}
+
+function currentWeatherSeverity(){
+  return WEATHER_SEVERITIES[weatherState.severityIndex] || WEATHER_SEVERITIES[0];
+}
+
+function getWeatherSnapshot(){
+  const type=currentWeatherType();
+  const severity=currentWeatherSeverity();
+  return {
+    type:type.id,
+    severity:severity.id,
+    intensity:severity.intensity,
+    windDirection:weatherState.windDirection,
+    windStrength:severity.windStrength,
+    mechanicsEnabled:weatherState.mechanicsEnabled
+  };
+}
+
+function weatherHash(seed){
+  const value=Math.sin(seed*12.9898+78.233)*43758.5453123;
+  return value-Math.floor(value);
+}
+
+function weatherWrap(value,range){
+  return ((value%range)+range)%range;
+}
+
+function updateWeatherTestControls(){
+  const type=currentWeatherType();
+  const severity=currentWeatherSeverity();
+  if(weatherTypeButton){
+    weatherTypeButton.textContent="WX: "+type.label;
+    weatherTypeButton.classList.toggle("active",type.id!=="clear");
+    weatherTypeButton.setAttribute("aria-label","Weather type: "+type.label+". Activate to cycle.");
+  }
+  if(weatherSeverityButton){
+    weatherSeverityButton.textContent="SEV: "+severity.label;
+    weatherSeverityButton.classList.toggle("active",type.id!=="clear");
+    weatherSeverityButton.setAttribute("aria-label","Weather severity: "+severity.label+". Activate to cycle.");
+  }
+}
+
+function weatherAnimationTick(now){
+  if(currentWeatherType().id==="clear"){
+    weatherAnimationFrame=null;
+    weatherLastFrame=0;
+    return;
+  }
+  if(!weatherLastFrame || now-weatherLastFrame>=32){
+    weatherLastFrame=now;
+    if(game && document.getElementById("combatScreen")?.classList.contains("active")){
+      draw();
+    }
+  }
+  weatherAnimationFrame=requestAnimationFrame(weatherAnimationTick);
+}
+
+function syncWeatherAnimation(){
+  if(currentWeatherType().id==="clear"){
+    if(weatherAnimationFrame!==null){
+      cancelAnimationFrame(weatherAnimationFrame);
+      weatherAnimationFrame=null;
+    }
+    weatherLastFrame=0;
+    if(game) draw();
+    return;
+  }
+  if(weatherAnimationFrame===null){
+    weatherAnimationFrame=requestAnimationFrame(weatherAnimationTick);
+  }
+  if(game) draw();
+}
+
+function cycleWeatherType(){
+  weatherState.typeIndex=(weatherState.typeIndex+1)%WEATHER_TYPES.length;
+  updateWeatherTestControls();
+  syncWeatherAnimation();
+}
+
+function cycleWeatherSeverity(){
+  weatherState.severityIndex=(weatherState.severityIndex+1)%WEATHER_SEVERITIES.length;
+  updateWeatherTestControls();
+  syncWeatherAnimation();
+}
+
+weatherTypeButton?.addEventListener("click",cycleWeatherType);
+weatherSeverityButton?.addEventListener("click",cycleWeatherSeverity);
+updateWeatherTestControls();
+
+function drawRainWeather(now,severity){
+  const width=canvas.width;
+  const height=canvas.height;
+  const counts=[72,132,220];
+  const count=counts[weatherState.severityIndex] || counts[0];
+  const wind=severity.windStrength*weatherState.windDirection;
+  ctx.fillStyle="rgba(28,38,54,"+(0.035+severity.intensity*0.045)+")";
+  ctx.fillRect(0,0,width,height);
+  ctx.lineCap="butt";
+  for(let i=0;i<count;i++){
+    const r0=weatherHash(i+11.3);
+    const r1=weatherHash(i+91.7);
+    const r2=weatherHash(i+213.1);
+    const depth=0.55+r2*0.75;
+    const fallSpeed=(0.20+r1*0.11)*depth*(0.85+severity.intensity*0.35);
+    const driftSpeed=0.020*wind*depth;
+    const x=weatherWrap(r0*width+now*driftSpeed,width+120)-60;
+    const y=weatherWrap(r1*height+now*fallSpeed,height+70)-35;
+    const length=(7+r2*11)*depth*(0.85+severity.intensity*0.35);
+    const slant=length*(0.18+0.24*wind);
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x+slant,y+length);
+    ctx.strokeStyle="rgba(184,210,229,"+(0.16+0.28*depth*severity.intensity)+")";
+    ctx.lineWidth=depth>1.05 ? 1.4 : 1;
+    ctx.stroke();
+    if(i%17===0 && y>height*0.70 && y<height-8){
+      const splash=2+depth*1.5;
+      ctx.beginPath();
+      ctx.moveTo(x-splash,y+length*0.18);
+      ctx.lineTo(x,y);
+      ctx.lineTo(x+splash,y+length*0.18);
+      ctx.strokeStyle="rgba(204,224,238,"+(0.12+0.20*severity.intensity)+")";
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+  }
+}
+
+function drawSnowWeather(now,severity){
+  const width=canvas.width;
+  const height=canvas.height;
+  const counts=[54,96,156];
+  const count=counts[weatherState.severityIndex] || counts[0];
+  const wind=severity.windStrength*weatherState.windDirection;
+  ctx.fillStyle="rgba(202,214,225,"+(0.018+severity.intensity*0.025)+")";
+  ctx.fillRect(0,0,width,height);
+  for(let i=0;i<count;i++){
+    const r0=weatherHash(i+33.8);
+    const r1=weatherHash(i+144.2);
+    const r2=weatherHash(i+301.6);
+    const depth=0.55+r2*0.95;
+    const fallSpeed=(0.020+r1*0.028)*depth*(0.75+severity.intensity*0.35);
+    const phase=r2*Math.PI*2;
+    const sway=Math.sin(now*0.00115+phase+i*0.11)*(5+8*r1);
+    const windDrift=now*0.0065*wind*depth;
+    const x=weatherWrap(r0*width+sway+windDrift,width+80)-40;
+    const y=weatherWrap(r1*height+now*fallSpeed,height+50)-25;
+    const size=Math.max(1,Math.round(1+depth*1.2));
+    ctx.globalAlpha=0.32+0.42*severity.intensity*Math.min(1,depth);
+    ctx.fillStyle=r2>0.72 ? "#f1f3ef" : "#dbe3e8";
+    ctx.fillRect(Math.round(x),Math.round(y),size,size);
+    if(depth>1.15 && i%4===0){
+      ctx.fillRect(Math.round(x-size),Math.round(y+1),1,1);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawWindWeather(now,severity){
+  const width=canvas.width;
+  const height=canvas.height;
+  const counts=[24,42,68];
+  const count=counts[weatherState.severityIndex] || counts[0];
+  const direction=weatherState.windDirection;
+  const speed=(0.055+severity.windStrength*0.075)*direction;
+  ctx.fillStyle="rgba(129,112,83,"+(0.010+severity.intensity*0.018)+")";
+  ctx.fillRect(0,0,width,height);
+  for(let i=0;i<count;i++){
+    const r0=weatherHash(i+65.1);
+    const r1=weatherHash(i+178.4);
+    const r2=weatherHash(i+412.9);
+    const depth=0.55+r2*0.9;
+    const gust=0.35+0.65*(0.5+0.5*Math.sin(now*0.0018+i*0.71));
+    const x=weatherWrap(r0*width+now*speed*depth,width+180)-90;
+    const y=r1*height+Math.sin(now*0.0011+i)*8*depth;
+    const length=(12+34*r2)*depth*(0.75+severity.intensity*0.45)*gust;
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x+length*direction,y-(2+r2*4));
+    ctx.strokeStyle="rgba(210,196,162,"+(0.06+0.18*severity.intensity*gust)+")";
+    ctx.lineWidth=depth>1.1 ? 1.2 : 1;
+    ctx.stroke();
+    if(i%3===0){
+      const moteX=x+length*0.55*direction;
+      const moteY=y-2-r2*3;
+      ctx.fillStyle="rgba(190,163,113,"+(0.14+0.22*severity.intensity*gust)+")";
+      ctx.fillRect(Math.round(moteX),Math.round(moteY),depth>1.15?2:1,1);
+    }
+  }
+}
+
+function drawWeatherVfx(now=performance.now()){
+  const type=currentWeatherType();
+  if(type.id==="clear") return;
+  const severity=currentWeatherSeverity();
+  ctx.save();
+  if(type.id==="rain"){
+    drawRainWeather(now,severity);
+  }else if(type.id==="snow"){
+    drawSnowWeather(now,severity);
+  }else if(type.id==="wind"){
+    drawWindWeather(now,severity);
+  }
+  ctx.restore();
+}
+
+window.AdventurePartyWeather={
+  getState:getWeatherSnapshot,
+  cycleType:cycleWeatherType,
+  cycleSeverity:cycleWeatherSeverity
+};
+
 const battleWrap=canvas.closest(".battle-wrap");
 const CANVAS_ASPECT=canvas.width/canvas.height;
 
@@ -20384,6 +20633,9 @@ function draw(){
     diagonal shadow across the front of a wall the party can actually see.
   */
   drawVisibleArchitecturalWallsOverLOS();
+
+  /* R170 weather is battlefield-only; UI text remains above it. */
+  drawWeatherVfx(performance.now());
   drawCombatMessageBox();
 
   /*
