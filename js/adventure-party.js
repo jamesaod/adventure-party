@@ -1371,7 +1371,7 @@ updateWeatherTestControls();
 function drawRainWeather(now,severity){
   const width=canvas.width;
   const height=canvas.height;
-  const counts=[72,132,220];
+  const counts=[216,396,660];
   const count=counts[weatherState.severityIndex] || counts[0];
   const wind=severity.windStrength*weatherState.windDirection;
   ctx.fillStyle="rgba(28,38,54,"+(0.035+severity.intensity*0.045)+")";
@@ -1387,10 +1387,12 @@ function drawRainWeather(now,severity){
     const x=weatherWrap(r0*width+now*driftSpeed,width+120)-60;
     const y=weatherWrap(r1*height+now*fallSpeed,height+70)-35;
     const length=(7+r2*11)*depth*(0.85+severity.intensity*0.35);
-    const slant=length*(0.18+0.24*wind);
+    const motionMagnitude=Math.hypot(driftSpeed,fallSpeed) || 1;
+    const lineDx=length*(driftSpeed/motionMagnitude);
+    const lineDy=length*(fallSpeed/motionMagnitude);
     ctx.beginPath();
     ctx.moveTo(x,y);
-    ctx.lineTo(x+slant,y+length);
+    ctx.lineTo(x+lineDx,y+lineDy);
     ctx.strokeStyle="rgba(184,210,229,"+(0.16+0.28*depth*severity.intensity)+")";
     ctx.lineWidth=depth>1.05 ? 1.4 : 1;
     ctx.stroke();
@@ -1410,7 +1412,7 @@ function drawRainWeather(now,severity){
 function drawSnowWeather(now,severity){
   const width=canvas.width;
   const height=canvas.height;
-  const counts=[54,96,156];
+  const counts=[162,288,468];
   const count=counts[weatherState.severityIndex] || counts[0];
   const wind=severity.windStrength*weatherState.windDirection;
   ctx.fillStyle="rgba(202,214,225,"+(0.018+severity.intensity*0.025)+")";
@@ -1440,7 +1442,7 @@ function drawSnowWeather(now,severity){
 function drawWindWeather(now,severity){
   const width=canvas.width;
   const height=canvas.height;
-  const counts=[24,42,68];
+  const counts=[72,126,204];
   const count=counts[weatherState.severityIndex] || counts[0];
   const direction=weatherState.windDirection;
   const speed=(0.055+severity.windStrength*0.075)*direction;
