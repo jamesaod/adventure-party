@@ -23,3 +23,14 @@ Historical R-number milestones before repository initialization are summarized i
 ## Safety
 
 Before large mechanical changes, preserve a known-good commit so regressions can be compared or reverted cleanly.
+
+## Connector access troubleshooting
+
+If repository automation unexpectedly appears unavailable:
+
+1. Confirm the ChatGPT **GitHub** plugin is still installed and enabled under Settings → Plugins.
+2. Confirm the GitHub account/repository connection still includes `jamesaod/adventure-party`.
+3. Before assuming access is lost, test the repository connector directly with a repository metadata/read call.
+4. If that succeeds, continue with the normal branch → commit → PR → validation → auto-merge workflow.
+
+This recovered the apparent connector-access issue during R179 without reinstalling the plugin.
