@@ -121,6 +121,7 @@ function updateLauncherSelection(){
 
 function showLauncher(){
   currentScreen="launcher";
+  stopWeatherAudio();
   classReportOpen=false;
   characterSheetOpen=false;
   spellCastOverlayOpen=false;
@@ -217,6 +218,7 @@ function showCombat(condition=selectedCombatCondition){
     newGame(selectedCombatCondition);
     fitBattleCanvas();
     requestAnimationFrame(draw);
+    syncWeatherAudio();
   }catch(error){
     console.error("Combat initialization failed:",error);
 
@@ -359,8 +361,12 @@ let audioEnabled=true;
 let audioCtx=null;
 let musicGain=null;
 let sfxGain=null;
+let weatherGain=null;
 let noiseBuffer=null;
 let audioReady=false;
+
+let activeWeatherAudio=null;
+let activeWeatherAudioSignature="";
 
 let musicPlaying=false;
 let titleSources=[];
@@ -411,6 +417,10 @@ function ensureAudioContext(){
   sfxGain.gain.value=0.65;
   sfxGain.connect(audioCtx.destination);
 
+  weatherGain=audioCtx.createGain();
+  weatherGain.gain.value=0.52;
+  weatherGain.connect(audioCtx.destination);
+
   const length=Math.floor(audioCtx.sampleRate*1.0);
   noiseBuffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate);
   const data=noiseBuffer.getChannelData(0);
@@ -429,6 +439,8 @@ function ensureAudioContext(){
       if(currentScreen==="launcher" && audioEnabled){
         startTitleMusic();
       }
+
+      syncWeatherAudio();
     }
   });
 
@@ -457,6 +469,8 @@ async function unlockAudio(){
     if(currentScreen==="launcher" && audioEnabled){
       startTitleMusic();
     }
+
+    syncWeatherAudio();
   }
 
   updateAudioIndicators();
@@ -1240,20 +1254,25 @@ soundToggle.addEventListener("click",async(event)=>{
 
   if(!audioEnabled){
     stopTitleMusic();
+    stopWeatherAudio();
 
     if(musicGain) musicGain.gain.value=0;
     if(sfxGain) sfxGain.gain.value=0;
+    if(weatherGain) weatherGain.gain.value=0;
   }else{
     ensureAudioContext();
 
     if(musicGain) musicGain.gain.value=0.13;
     if(sfxGain) sfxGain.gain.value=0.65;
+    if(weatherGain) weatherGain.gain.value=0.52;
 
     await unlockAudio();
 
     if(currentScreen==="launcher"){
       startTitleMusic();
     }
+
+    syncWeatherAudio();
   }
 
   updateAudioIndicators();
@@ -1315,6 +1334,198 @@ const weatherSeverityButton=document.getElementById("weatherSeverityButton");
 
 let weatherAnimationFrame=null;
 let weatherLastFrame=0;
+
+/*
+  R173 procedural weather ambience.
+  This intentionally uses the existing Web Audio noise buffer instead of
+  external audio files so weather remains parameter-driven, license-safe,
+  and fully compatible with the automated repository workflow.
+*/
+function stopWeatherAudio(){
+  const active=activeWeatherAudio;
+  activeWeatherAudio=null;
+  activeWeatherAudioSignature="";
+
+  if(!active || !audioCtx) return;
+
+  const now=audioCtx.currentTime;
+  try{
+    active.bus.gain.cancelScheduledValues(now);
+    active.bus.gain.setValueAtTime(Math.max(0.0001,active.bus.gain.value),now);
+    active.bus.gain.exponentialRampToValueAtTime(0.0001,now+0.16);
+  }catch{}
+
+  setTimeout(()=>{
+    for(const node of active.sources || []){
+      try{ node.stop(); }catch{}
+      try{ node.disconnect(); }catch{}
+    }
+    for(const node of active.nodes || []){
+      try{ node.disconnect(); }catch{}
+    }
+  },190);
+}
+
+function createLoopingNoiseSource(){
+  if(!audioCtx || !noiseBuffer) return null;
+  const source=audioCtx.createBufferSource();
+  source.buffer=noiseBuffer;
+  source.loop=true;
+  return source;
+}
+
+function startRainAmbience(severity){
+  if(!audioCtx || !weatherGain) return null;
+
+  const bus=audioCtx.createGain();
+  const intensity=severity.intensity;
+  bus.gain.value=0.0001;
+  bus.connect(weatherGain);
+
+  const body=createLoopingNoiseSource();
+  const bodyHigh=audioCtx.createBiquadFilter();
+  const bodyLow=audioCtx.createBiquadFilter();
+  const bodyGain=audioCtx.createGain();
+
+  bodyHigh.type="highpass";
+  bodyHigh.frequency.value=520;
+  bodyLow.type="lowpass";
+  bodyLow.frequency.value=6200;
+  bodyGain.gain.value=0.17+0.18*intensity;
+
+  body.connect(bodyHigh);
+  bodyHigh.connect(bodyLow);
+  bodyLow.connect(bodyGain);
+  bodyGain.connect(bus);
+
+  const hiss=createLoopingNoiseSource();
+  const hissHigh=audioCtx.createBiquadFilter();
+  const hissGain=audioCtx.createGain();
+
+  hissHigh.type="highpass";
+  hissHigh.frequency.value=2600;
+  hissGain.gain.value=0.035+0.06*intensity;
+
+  hiss.connect(hissHigh);
+  hissHigh.connect(hissGain);
+  hissGain.connect(bus);
+
+  const now=audioCtx.currentTime;
+  bus.gain.exponentialRampToValueAtTime(0.30+0.24*intensity,now+0.35);
+  body.start(now);
+  hiss.start(now);
+
+  return {bus,sources:[body,hiss],nodes:[bodyHigh,bodyLow,bodyGain,hissHigh,hissGain,bus]};
+}
+
+function startSnowAmbience(severity){
+  if(!audioCtx || !weatherGain) return null;
+
+  const bus=audioCtx.createGain();
+  const intensity=severity.intensity;
+  bus.gain.value=0.0001;
+  bus.connect(weatherGain);
+
+  const air=createLoopingNoiseSource();
+  const high=audioCtx.createBiquadFilter();
+  const low=audioCtx.createBiquadFilter();
+  const airGain=audioCtx.createGain();
+
+  high.type="highpass";
+  high.frequency.value=1150;
+  low.type="lowpass";
+  low.frequency.value=3900;
+  airGain.gain.value=0.045+0.055*intensity;
+
+  air.connect(high);
+  high.connect(low);
+  low.connect(airGain);
+  airGain.connect(bus);
+
+  const now=audioCtx.currentTime;
+  bus.gain.exponentialRampToValueAtTime(0.10+0.12*intensity,now+0.55);
+  air.start(now);
+
+  return {bus,sources:[air],nodes:[high,low,airGain,bus]};
+}
+
+function startWindAmbience(severity){
+  if(!audioCtx || !weatherGain) return null;
+
+  const bus=audioCtx.createGain();
+  const intensity=severity.intensity;
+  bus.gain.value=0.0001;
+  bus.connect(weatherGain);
+
+  const wind=createLoopingNoiseSource();
+  const band=audioCtx.createBiquadFilter();
+  const low=audioCtx.createBiquadFilter();
+  const windGain=audioCtx.createGain();
+
+  band.type="bandpass";
+  band.frequency.value=560+220*intensity;
+  band.Q.value=0.55;
+  low.type="lowpass";
+  low.frequency.value=2200+900*intensity;
+  windGain.gain.value=0.18+0.14*intensity;
+
+  wind.connect(band);
+  band.connect(low);
+  low.connect(windGain);
+  windGain.connect(bus);
+
+  const lfo=audioCtx.createOscillator();
+  const lfoDepth=audioCtx.createGain();
+  lfo.type="sine";
+  lfo.frequency.value=0.13+0.08*intensity;
+  lfoDepth.gain.value=0.045+0.035*intensity;
+  lfo.connect(lfoDepth);
+  lfoDepth.connect(bus.gain);
+
+  const now=audioCtx.currentTime;
+  bus.gain.exponentialRampToValueAtTime(0.25+0.22*intensity,now+0.45);
+  wind.start(now);
+  lfo.start(now);
+
+  return {bus,sources:[wind,lfo],nodes:[band,low,windGain,lfoDepth,bus]};
+}
+
+function syncWeatherAudio(){
+  if(
+    !audioEnabled ||
+    !audioReady ||
+    !audioCtx ||
+    currentScreen!=="combat"
+  ){
+    stopWeatherAudio();
+    return;
+  }
+
+  const type=currentWeatherType();
+  const severity=currentWeatherSeverity();
+
+  if(type.id==="clear"){
+    stopWeatherAudio();
+    return;
+  }
+
+  const signature=type.id+":"+severity.id;
+  if(activeWeatherAudio && activeWeatherAudioSignature===signature) return;
+
+  stopWeatherAudio();
+
+  if(type.id==="rain"){
+    activeWeatherAudio=startRainAmbience(severity);
+  }else if(type.id==="snow"){
+    activeWeatherAudio=startSnowAmbience(severity);
+  }else if(type.id==="wind"){
+    activeWeatherAudio=startWindAmbience(severity);
+  }
+
+  if(activeWeatherAudio){
+    activeWeatherAudioSignature=signature;
+  }
+}
 
 function currentWeatherType(){
   return WEATHER_TYPES[weatherState.typeIndex] || WEATHER_TYPES[0];
@@ -1396,12 +1607,14 @@ function cycleWeatherType(){
   weatherState.typeIndex=(weatherState.typeIndex+1)%WEATHER_TYPES.length;
   updateWeatherTestControls();
   syncWeatherAnimation();
+  syncWeatherAudio();
 }
 
 function cycleWeatherSeverity(){
   weatherState.severityIndex=(weatherState.severityIndex+1)%WEATHER_SEVERITIES.length;
   updateWeatherTestControls();
   syncWeatherAnimation();
+  syncWeatherAudio();
 }
 
 weatherTypeButton?.addEventListener("click",cycleWeatherType);
