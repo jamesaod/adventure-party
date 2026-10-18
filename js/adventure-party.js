@@ -2710,11 +2710,11 @@ const pixelEditorAssets=[
     gameImage:fighterSprite,
     originalSrc:FIGHTER_SPRITE_SRC,
     spec:{
-      sourceWidth:50,sourceHeight:68,
+      sourceWidth:64,sourceHeight:64,
       workspaceWidth:64,workspaceHeight:64,
-      renderWidth:26,renderHeight:35,
+      renderWidth:32,renderHeight:35,
       anchorX:32,anchorY:64,
-      scaleMode:"fit",lockAspect:true,nativeFacing:"left"
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
   },
@@ -18974,7 +18974,14 @@ function runtimeAnchorForAsset(id){
 }
 
 function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity=null,anchor=null){
-  if(!image.complete) return;
+  if(
+    !image ||
+    !image.complete ||
+    !image.naturalWidth ||
+    !image.naturalHeight
+  ){
+    return;
+  }
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
@@ -18995,13 +19002,17 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
 
   const spriteAnchor=anchor || {x:0.5,y:1};
 
-  ctx.drawImage(
-    renderSource,
-    -Math.round(drawW*spriteAnchor.x),
-    -Math.round(drawH*spriteAnchor.y),
-    drawW,
-    drawH
-  );
+  try{
+    ctx.drawImage(
+      renderSource,
+      -Math.round(drawW*spriteAnchor.x),
+      -Math.round(drawH*spriteAnchor.y),
+      drawW,
+      drawH
+    );
+  }catch(error){
+    console.error("Sprite draw skipped because the image source is invalid.",error);
+  }
 
   ctx.restore();
 }
