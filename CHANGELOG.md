@@ -3,6 +3,13 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R189 — Multi-hex hover and denser dragon breath
+
+- Hovering any visible multi-hex MOB now highlights every hex in its occupied footprint instead of only the single hex beneath the pointer.
+- Wall/LOS visibility safeguards remain intact so hover highlighting does not reveal hidden hostile footprints.
+- Dragon breath density is substantially increased: nine overlapping lobe samples per tactical breath cell, larger overlapping flame volumes, reduced jitter, broader hot-core fills, heavier grain, and more than twice the ember particle count.
+- Breath weapon rules and affected tactical cells are unchanged.
+
 ## R188 — Dragon placement and Fireball-style breath VFX
 
 - Retuned the Juvenile Red Dragon sprite to match the user-supplied seven-hex scale/placement template: approximately two hexes wide with its feet planted inside the lower half of the occupied footprint.

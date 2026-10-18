@@ -2010,7 +2010,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R188';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R189';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2024,7 +2024,7 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R187: temporary juvenile red dragon art for the 7-hex large-MOB test. */
-const JUVENILE_RED_DRAGON_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R188';
+const JUVENILE_RED_DRAGON_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R189';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -19721,6 +19721,34 @@ function drawHexGridLine(x,y){
   ctx.stroke();
 }
 
+
+/*
+  R189 — MULTI-HEX HOVER FOOTPRINT
+  --------------------------------
+  Hovering any occupied cell of a visible multi-hex unit highlights its entire
+  occupied footprint. Hidden hostile units in the wall/LOS test do not expand
+  the hover footprint, preventing hover UI from revealing an unseen creature.
+*/
+function hoverHighlightCells(){
+  if(!hoverHex || aimMode) return [];
+
+  const hoveredUnit=unitAtHex(hoverHex.x,hoverHex.y);
+  if(!hoveredUnit || unitFootprintCellCount(hoveredUnit)<=1){
+    return [hoverHex];
+  }
+
+  if(
+    hoveredUnit.controller==="mob" &&
+    game?.condition==="wall" &&
+    !mobPositionVisibleToFriendlyParty(hoveredUnit)
+  ){
+    return [hoverHex];
+  }
+
+  return occupiedHexes(hoveredUnit)
+    .filter(cell=>inside(cell.x,cell.y));
+}
+
 function drawFloor(){
   const tileSet=activeCombatTerrainTileSet();
 
@@ -19739,11 +19767,11 @@ function drawFloor(){
     drawHexGridLine(tile.x,tile.y);
   }
 
-  if(hoverHex && !aimMode){
-    const top=hexScreenVertices(hoverHex.x,hoverHex.y);
+  for(const cell of hoverHighlightCells()){
+    const top=hexScreenVertices(cell.x,cell.y);
 
     polygonPath(top);
-    ctx.fillStyle="rgba(229,205,131,0.08)";
+    ctx.fillStyle="rgba(229,205,131,0.10)";
     ctx.fill();
 
     ctx.strokeStyle="#d6c56f";
@@ -19832,11 +19860,11 @@ function drawFloor(){
     drawHexGridLine(tile.x,tile.y);
   }
 
-  if(hoverHex && !aimMode){
-    const top=hexScreenVertices(hoverHex.x,hoverHex.y);
+  for(const cell of hoverHighlightCells()){
+    const top=hexScreenVertices(cell.x,cell.y);
 
     polygonPath(top);
-    ctx.fillStyle="rgba(229,205,131,0.08)";
+    ctx.fillStyle="rgba(229,205,131,0.10)";
     ctx.fill();
 
     ctx.strokeStyle="#a69c6d";
@@ -20940,7 +20968,7 @@ function drawDragonBreathFx(){
     const depth=Math.max(0,Math.min(1,step/Math.max(1,Number(fx.rangeHexes)||9)));
     const lane=Math.abs(Number(cell.breathLane)||0);
     const rowStart=Math.max(0,(step-1)/step);
-    const samples=4;
+    const samples=9;
 
     for(let sample=0;sample<samples;sample++){
       const local=(sample+1)/samples;
@@ -20954,16 +20982,21 @@ function drawDragonBreathFx(){
       const h4=hash01(cell.x+149,cell.y+29,sample,frame+47);
 
       const radius=(
-        10+
-        17*depth+
-        lane*3+
-        h3*5
-      )*Math.max(0.30,growth);
+        14+
+        22*depth+
+        lane*4+
+        h3*6
+      )*Math.max(0.34,growth);
 
-      const rx=radius*(1.06+0.12*h1);
-      const ry=radius*(0.62+0.12*h4);
-      const jitterX=(h1-0.5)*12*(0.45+depth);
-      const jitterY=(h2-0.5)*8*(0.45+depth);
+      /*
+        R189 density pass: broader, taller lobes with less positional jitter.
+        Nine samples per breath cell now overlap heavily, closing the gaps
+        between tactical rows and making the weapon read as one solid cone.
+      */
+      const rx=radius*(1.16+0.14*h1);
+      const ry=radius*(0.76+0.14*h4);
+      const jitterX=(h1-0.5)*7*(0.35+depth);
+      const jitterY=(h2-0.5)*5*(0.35+depth);
 
       const centerHeat=Math.max(0,1-depth*0.72-lane*0.12);
       let colorIndex=Math.round(
@@ -20987,7 +21020,7 @@ function drawDragonBreathFx(){
       );
       bodyCtx.fill();
 
-      if(centerHeat>0.34 && h1>0.30){
+      if(centerHeat>0.26 && h1>0.18){
         const innerIndex=Math.min(flamePalette.length-1,colorIndex+2);
         const [ir,ig,ib]=flamePalette[innerIndex];
         bodyCtx.fillStyle=`rgba(${ir},${ig},${ib},1)`;
@@ -20995,8 +21028,8 @@ function drawDragonBreathFx(){
         bodyCtx.ellipse(
           px+jitterX-rx*0.10,
           py+jitterY-ry*0.12,
-          rx*0.55,
-          ry*0.50,
+          rx*0.66,
+          ry*0.60,
           0,
           0,
           Math.PI*2
@@ -21065,7 +21098,7 @@ function drawDragonBreathFx(){
     Fire-only grain pass, matching the Fireball treatment but stretched along
     the breath cells rather than distributed around a spherical blast center.
   */
-  const grainCount=Math.max(80,Math.round(150*growth));
+  const grainCount=Math.max(180,Math.round(340*growth));
   for(let i=0;i<grainCount;i++){
     const cell=visibleCells[i%visibleCells.length];
     const c=hexCenter(cell.x,cell.y);
@@ -21089,7 +21122,7 @@ function drawDragonBreathFx(){
     Dense deterministic ember field. Particles rise while continuing forward,
     making the breath read as a fast projected flame volume rather than smoke.
   */
-  const particleCount=190;
+  const particleCount=460;
   const lastCell=visibleCells[visibleCells.length-1];
   const far=hexCenter(lastCell.x,lastCell.y);
   const dirX=far.x-mouth.x;
@@ -21108,7 +21141,7 @@ function drawDragonBreathFx(){
     const along=hash01(fx.source.x-43,fx.source.y+67,i,13);
     if(along>growth+0.08) continue;
 
-    const spread=(8+along*34)*(
+    const spread=(12+along*48)*(
       hash01(fx.source.x+19,fx.source.y+149,i,23)-0.5
     );
     const rise=life*(10+hash01(fx.source.x+89,fx.source.y-17,i,31)*32);
