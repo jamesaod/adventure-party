@@ -12135,6 +12135,7 @@ function newGame(condition=selectedCombatCondition){
   projectileFx=null;
   areaDamageFx=null;
   fireballExplosionFx=null;
+  dragonBreathFx=null;
   colorSprayFx=null;
   magicEffectFx=[];
   castingGlowFx=[];
@@ -20791,6 +20792,108 @@ function drawProjectileFx(){
   ctx.restore();
 }
 
+
+function drawDragonBreathFx(){
+  if(!dragonBreathFx) return;
+
+  const fx=dragonBreathFx;
+  const now=performance.now();
+  const elapsed=Math.max(0,now-fx.started);
+  const progress=Math.min(1,elapsed/fx.duration);
+  const front=Math.min(1,progress*1.75);
+  const fade=
+    progress<0.14
+      ? progress/0.14
+      : progress>0.76
+        ? Math.max(0,(1-progress)/0.24)
+        : 1;
+
+  if(fade<=0) return;
+
+  const sourceCenter=hexCenter(fx.source.x,fx.source.y);
+  const visibleCells=fx.cells.filter(cell=>
+    (cell.breathStep/fx.rangeHexes)<=front+0.05
+  );
+
+  ctx.save();
+  ctx.globalCompositeOperation="source-over";
+
+  for(const cell of visibleCells){
+    const c=hexCenter(cell.x,cell.y);
+    const depth=Math.max(0,Math.min(1,cell.breathStep/fx.rangeHexes));
+    const phase=
+      now*0.025 +
+      cell.x*1.71 +
+      cell.y*2.37 +
+      cell.breathLane*0.83;
+    const flicker=0.88+0.12*Math.sin(phase);
+    const radius=(14+13*depth)*flicker;
+
+    ctx.globalAlpha=0.78*fade;
+    ctx.fillStyle="#8f1708";
+    ctx.beginPath();
+    ctx.ellipse(c.x,c.y-5,radius*1.35,radius*0.70,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha=0.88*fade;
+    ctx.fillStyle="#ef4108";
+    ctx.beginPath();
+    ctx.ellipse(c.x,c.y-7,radius*1.02,radius*0.54,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha=0.96*fade;
+    ctx.fillStyle="#ff9b13";
+    ctx.beginPath();
+    ctx.ellipse(
+      c.x+Math.sin(phase*1.7)*3,
+      c.y-9,
+      radius*0.68,
+      radius*0.36,
+      0,0,Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.fillStyle="#fff1a0";
+    ctx.beginPath();
+    ctx.ellipse(
+      c.x-Math.cos(phase*1.3)*2,
+      c.y-10,
+      Math.max(3,radius*0.30),
+      Math.max(2,radius*0.17),
+      0,0,Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.globalAlpha=0.72*fade;
+    for(let spark=0;spark<3;spark++){
+      const sx=
+        c.x +
+        Math.sin(phase+spark*2.1)*(9+depth*12);
+      const sy=
+        c.y-12 -
+        ((elapsed*0.035 + spark*7 + cell.breathStep*3)%22);
+      ctx.fillStyle=spark===0 ? "#fff0a0" : "#ff7b0a";
+      ctx.fillRect(Math.round(sx),Math.round(sy),3,3);
+    }
+  }
+
+  if(visibleCells.length){
+    const first=hexCenter(visibleCells[0].x,visibleCells[0].y);
+    const t=Math.min(1,front*3);
+    const x=sourceCenter.x+(first.x-sourceCenter.x)*0.48*t;
+    const y=sourceCenter.y+(first.y-sourceCenter.y)*0.48*t-11;
+
+    ctx.globalAlpha=0.90*fade;
+    ctx.fillStyle="#fff6c8";
+    ctx.beginPath();
+    ctx.arc(x,y,8+4*Math.sin(now*0.04),0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+
 function drawFireballExplosionFx(){
   if(!fireballExplosionFx) return;
 
@@ -22083,6 +22186,7 @@ function draw(){
   drawColorSprayFx();
   drawMagicEffectFx();
   drawAreaDamageFx();
+  drawDragonBreathFx();
   drawFireballExplosionFx();
   drawFireDamageFx();
 
