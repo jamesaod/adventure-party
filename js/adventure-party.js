@@ -19277,19 +19277,6 @@ function drawFighter(p){
     runtimeAnchorForAsset("fighter")
   );
 
-  /* Simple placeholder flame aura around the sword side. */
-  const side=p.facing==="right" ? 1 : -1;
-  const flicker=(Math.floor(performance.now()/90)%2)*2;
-
-  ctx.save();
-  ctx.globalCompositeOperation="lighter";
-  ctx.fillStyle="#ffb229";
-  ctx.fillRect(c.x+side*(drawW/2+2),c.y-drawH+10-flicker,3,9);
-  ctx.fillStyle="#ff5a1f";
-  ctx.fillRect(c.x+side*(drawW/2+4),c.y-drawH+15+flicker,2,7);
-  ctx.fillStyle="#fff19a";
-  ctx.fillRect(c.x+side*(drawW/2+1),c.y-drawH+12,2,4);
-  ctx.restore();
 }
 
 
