@@ -1,5 +1,7 @@
 "use strict";
 
+// R169 required-check auto-merge gate test.
+
 // R169 auto-merge workflow test: no gameplay behavior changed.
 
 // R168 workflow test: incremental repository update confirmed.
