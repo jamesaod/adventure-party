@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R192 — Tighter conical dragon breath
+
+- Rebuilt the dragon-breath visual body as a true geometric cone from the attack-sprite muzzle instead of filling the tactical breath cells.
+- Gameplay targeting still uses the same wall-aware breath cells; only the presentation geometry changed.
+- Replaced the large R191 circles with much smaller overlapping flame lobes distributed continuously along 52 cone slices.
+- The visual cone now widens gradually with distance instead of jumping from one tactical lane to three, removing the hex-fill appearance.
+- Added a narrow independent white-hot center stream so the brightest flame stays on the cone axis.
+- Smoke, grain, and embers now sample the mathematical cone rather than individual hex cells.
+- Retained the R191 near-white palette, additive bloom, distal smoke, dragon attack pose, SFX, damage, saves, recharge, and multi-hex hover behavior.
+
 ## R191 — White-hot dragon breath
 
 - Retuned the Juvenile Red Dragon breath toward the supplied bright fire-jet reference while preserving the pixel/tactical presentation.

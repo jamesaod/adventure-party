@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R191",
-  "description": "Adventure Party sprite asset specifications through R191. R191 retains the R190 Red Dragon standing/attack sprites and scale data while upgrading the breath presentation to a white-hot, self-luminous flame jet with distal smoke.",
+  "release": "R192",
+  "description": "Adventure Party sprite asset specifications through R192. R192 retains the R190 dragon pose assets and replaces the breath visual body with a true geometric cone of smaller flame lobes while preserving the R191 white-hot glow and distal smoke.",
   "assets": {
     "fighter": {
       "source": {
