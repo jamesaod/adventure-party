@@ -25,6 +25,48 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
   if (!index.includes(ref)) fail(`index.html does not reference ${ref}`);
 }
 
+if (index.includes("Single-File Engine") || index.includes("Build R121")) {
+  fail("Launcher contains obsolete single-file/R121 build metadata.");
+}
+
+const buildMatch = index.match(
+  /<script id="buildMetadata" type="application\/json">\s*([\s\S]*?)\s*<\/script>/
+);
+
+if (!buildMatch) {
+  fail("index.html is missing embedded buildMetadata JSON.");
+} else {
+  try {
+    const build = JSON.parse(buildMatch[1]);
+
+    if (build.architecture !== "Multi-File Engine") {
+      fail(`Unexpected build architecture: ${build.architecture}`);
+    }
+
+    if (!/^R\d+$/.test(build.release || "")) {
+      fail(`Invalid build release: ${build.release}`);
+    }
+
+    if (!build.builtAt || !Number.isFinite(Date.parse(build.builtAt))) {
+      fail(`Invalid build timestamp: ${build.builtAt}`);
+    }
+
+    const headRef = process.env.GITHUB_HEAD_REF || "";
+    const branchRelease = headRef.match(/^r(\d+)(?:-|$)/i);
+
+    if (branchRelease) {
+      const expectedRelease = "R" + branchRelease[1];
+      if (build.release !== expectedRelease) {
+        fail(
+          `Build metadata release ${build.release} does not match PR branch ${headRef} (${expectedRelease}).`
+        );
+      }
+    }
+  } catch (error) {
+    fail(`Embedded buildMetadata JSON is invalid: ${error.message}`);
+  }
+}
+
 let registry;
 try {
   registry = JSON.parse(fs.readFileSync("data/sprite-asset-registry.json", "utf8"));
