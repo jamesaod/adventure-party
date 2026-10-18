@@ -8695,14 +8695,13 @@ function livingUnitsInAreaCells(cells){
   );
 
   /*
-    Intentionally no faction filter:
-    damaging area spells use this helper so allies, enemies, and the
-    caster are all valid victims whenever their hex is inside the blast.
+    R186: a multi-hex unit is included once when ANY occupied cell intersects
+    the area. Several covered body hexes never multiply damage or saving throws.
   */
   return allUnits().filter(unit=>
     unit?.alive &&
     !unit.fled &&
-    cellKeys.has(key(unit.x,unit.y))
+    occupiedHexes(unit).some(cell=>cellKeys.has(key(cell.x,cell.y)))
   );
 }
 
@@ -9605,7 +9604,7 @@ function handleTurnControlEffects(actor){
     return true;
   }
 
-  if(hasGreaseAtHex(actor.x,actor.y)){
+  if(occupiedHexes(actor).some(cell=>hasGreaseAtHex(cell.x,cell.y))){
     const stood=greaseSaveForUnit(actor,game.player);
 
     if(!stood){
@@ -11289,6 +11288,129 @@ function makeOrc(index,position){
   };
 }
 
+
+function makeLargeMobTest(position){
+  /*
+    R186 temporary rules-neutral harness for validating the multi-hex engine.
+    This is NOT a final monster stat block or final art asset. It deliberately
+    uses the existing Orc sprite pair while the Dragon/test creature art is
+    being prepared.
+  */
+  return {
+    id:"large-mob-test-01",
+    type:"large-test-mob",
+    species:"large-test",
+    controller:"mob",
+    sizeCategory:"huge",
+    footprintId:"hex7",
+    faction:"enemy",
+    alignment:"neutral evil",
+    name:"7-Hex Test MOB",
+
+    hp:36,
+    maxHp:36,
+    hitDiceValue:8,
+    hitDiceLabel:"8",
+
+    ac:4,
+    thaco:13,
+    move:5,
+    halfMove:2,
+
+    weapon:"Bite",
+    weaponCatalogId:null,
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d10",
+    weaponDamageL:"1d10",
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:20,
+    moraleLabel:"Test — does not flee",
+    xpValue:120,
+
+    poseName:"stand",
+    poseUntil:0,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
+
+    /* Temporary presentation values until a purpose-built large sprite exists. */
+    testRenderWidth:104,
+    testRenderHeight:112,
+    hpBarWidth:76,
+    hpBarOffsetY:102
+  };
+}
+
+function makeLargeMobTestEncounter(condition="grass"){
+  const candidates=
+    condition==="wall"
+      ? [
+          {x:8,y:0},
+          {x:9,y:-2},
+          {x:7,y:2},
+          {x:-9,y:1}
+        ]
+      : [
+          {x:8,y:0},
+          {x:8,y:-2},
+          {x:6,y:3},
+          {x:-8,y:1},
+          {x:3,y:7}
+        ];
+
+  for(const position of candidates){
+    const unit=makeLargeMobTest(position);
+    const cells=occupiedHexes(unit);
+
+    if(
+      cells.every(cell=>
+        inside(cell.x,cell.y) &&
+        !isWall(cell.x,cell.y) &&
+        hexDistance(cell,{x:0,y:0})>=2
+      )
+    ){
+      lastMobDeployment={
+        direction:"7-HEX TEST",
+        anchorDistance:hexDistance(position,{x:0,y:0}),
+        anchor:{...position},
+        clusterRadius:1,
+        count:1
+      };
+      return [unit];
+    }
+  }
+
+  throw new Error("Unable to place the 7-Hex Test MOB on this battlefield.");
+}
+
 function axialRing(radius){
   if(radius===0) return [{x:0,y:0}];
 
@@ -11631,8 +11753,7 @@ function livingUnitAt(x,y){
   return allUnits().find(unit=>
     unit?.alive &&
     !unit.fled &&
-    unit.x===x &&
-    unit.y===y
+    unitOccupiesHex(unit,x,y)
   ) || null;
 }
 
@@ -11663,40 +11784,17 @@ function enemyAtHex(x,y,excludeId=null){
     k.id!==excludeId &&
     k.alive &&
     !k.fled &&
-    k.x===x &&
-    k.y===y
+    unitOccupiesHex(k,x,y)
   ) || null;
 }
 
 function occupiedByAnyUnit(x,y,excludeId=null){
-  if(
-    game?.player?.alive &&
-    game.player.id!==excludeId &&
-    game.player.x===x &&
-    game.player.y===y
-  ){
-    return true;
-  }
-
-  if(
-    (game?.allies || []).some(unit=>
-      unit.id!==excludeId &&
-      unit.alive &&
-      !unit.fled &&
-      unit.x===x &&
-      unit.y===y
-    )
-  ){
-    return true;
-  }
-
-  return game?.enemies.some(unit=>
-    unit.id!==excludeId &&
-    unit.alive &&
+  return allUnits().some(unit=>
+    unit?.id!==excludeId &&
+    unit?.alive &&
     !unit.fled &&
-    unit.x===x &&
-    unit.y===y
-  ) || false;
+    unitOccupiesHex(unit,x,y)
+  );
 }
 
 function countNeutralizedEnemies(){
@@ -14710,8 +14808,7 @@ function unitAtHex(x,y){
   if(
     game?.player?.alive &&
     !game.player.fled &&
-    game.player.x===x &&
-    game.player.y===y
+    unitOccupiesHex(game.player,x,y)
   ){
     return game.player;
   }
@@ -14719,8 +14816,7 @@ function unitAtHex(x,y){
   const ally=(game?.allies || []).find(unit=>
     unit.alive &&
     !unit.fled &&
-    unit.x===x &&
-    unit.y===y
+    unitOccupiesHex(unit,x,y)
   );
 
   if(ally){
