@@ -2165,6 +2165,16 @@ const UNIT_POSE_DEFINITIONS={
       stand:orcStandSprite,
       attack:orcAttackSprite
     }
+  },
+  "large-test-mob":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcStandSprite,
+      attack:orcAttackSprite
+    }
   }
 };
 
@@ -10985,7 +10995,7 @@ function nearestLivingPartyTarget(fromUnit){
   return livingPartyMembers()
     .slice()
     .sort((a,b)=>
-      hexDistance(fromUnit,a)-hexDistance(fromUnit,b) ||
+      unitDistance(fromUnit,a)-unitDistance(fromUnit,b) ||
       a.id.localeCompare(b.id)
     )[0] || null;
 }
@@ -12351,7 +12361,7 @@ function endTurn(){
 
 
 function longbowRangeBand(attacker,defender){
-  const distance=hexDistance(attacker,defender);
+  const distance=unitDistance(attacker,defender);
   const increment=Math.max(
     1,
     attacker.missileRangeIncrementHexes || 7
@@ -12673,7 +12683,7 @@ function nearestEnemyForFriendlyNpc(npc){
   return activeEnemies()
     .slice()
     .sort((a,b)=>
-      hexDistance(npc,a)-hexDistance(npc,b) ||
+      unitDistance(npc,a)-unitDistance(npc,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -12696,7 +12706,7 @@ function bestSafeFireballTarget(mage,source=mage){
   let best=null;
 
   for(const centerEnemy of activeEnemies()){
-    if(hexDistance(source,centerEnemy)>range) continue;
+    if(unitDistance(source,centerEnemy)>range) continue;
     if(lineOfSightBlocked(source,centerEnemy)) continue;
 
     const cells=fireballBlastCells(centerEnemy);
@@ -12726,7 +12736,7 @@ function bestSafeSleepTarget(mage,source=mage){
   let best=null;
 
   for(const centerEnemy of activeEnemies()){
-    if(hexDistance(source,centerEnemy)>range) continue;
+    if(unitDistance(source,centerEnemy)>range) continue;
     if(lineOfSightBlocked(source,centerEnemy)) continue;
 
     /* Sleep's implemented area is one complete 7-hex radius-1 cluster. */
@@ -12779,11 +12789,11 @@ function bestMageOffensiveActionFrom(mage,source=mage){
     const range=spellRangeHexes(spell,mage.level);
     const target=activeEnemies()
       .filter(enemy=>
-        hexDistance(source,enemy)<=range &&
+        unitDistance(source,enemy)<=range &&
         !lineOfSightBlocked(source,enemy)
       )
       .sort((a,b)=>
-        hexDistance(source,a)-hexDistance(source,b) ||
+        unitDistance(source,a)-unitDistance(source,b) ||
         a.hp-b.hp ||
         a.id.localeCompare(b.id)
       )[0] || null;
@@ -12793,7 +12803,7 @@ function bestMageOffensiveActionFrom(mage,source=mage){
         spellId:"magic-missile",
         targetHex:{x:target.x,y:target.y},
         target,
-        score:1000-Math.min(999,hexDistance(source,target))
+        score:1000-Math.min(999,unitDistance(source,target))
       };
     }
   }
@@ -12811,7 +12821,7 @@ function bestMageVisibleEnemyFrom(mage,source=mage){
       !lineOfSightBlocked(source,enemy)
     )
     .sort((a,b)=>
-      hexDistance(source,a)-hexDistance(source,b) ||
+      unitDistance(source,a)-unitDistance(source,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -13074,8 +13084,8 @@ function rangedAiPositionThreatened(unit,source){
   return rangedAiOpponents(unit).some(enemy=>
     enemy.alive &&
     !enemy.fled &&
-    hexDistance(source,enemy)<=1 &&
-    !architecturalWallBlocksStep(source,enemy)
+    unitDistance(source,enemy)<=1 &&
+    canMeleeReach(source,enemy)
   );
 }
 
@@ -13112,7 +13122,7 @@ function bestRangedAiTargetFrom(unit,source=unit){
   return rangedAiOpponents(unit)
     .filter(target=>rangedAiCanAttackFrom(unit,source,target))
     .sort((a,b)=>
-      hexDistance(source,a)-hexDistance(source,b) ||
+      unitDistance(source,a)-unitDistance(source,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -13347,7 +13357,7 @@ async function friendlyNpcTurn(npc){
 }
 
 function slingRangeBand(attacker,defender){
-  const distance=hexDistance(attacker,defender);
+  const distance=unitDistance(attacker,defender);
 
   if(distance<=attacker.slingShortRange){
     return {distance,band:"SHORT",penalty:0};
@@ -13773,7 +13783,7 @@ function attack(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0};
   }
 
-  if(hexDistance(attacker,defender)<=1 && architecturalWallBlocksStep(attacker,defender)){
+  if(unitDistance(attacker,defender)<=1 && !canMeleeReach(attacker,defender)){
     setCombatMessage("A wall blocks the melee attack.");
     return {hit:false,killed:false,damage:0,blockedByWall:true};
   }
@@ -16870,7 +16880,7 @@ async function triggerMobGuardsAgainst(target){
       mob.guard &&
       canMobGuard(mob) &&
       !wasAdjacentWhenGuardSet(mob,target) &&
-      hexDistance(mob,target)<=Math.max(1,mob.meleeRange||1)
+      unitDistance(mob,target)<=Math.max(1,mob.meleeRange||1)
     )
     .sort((a,b)=>a.id.localeCompare(b.id));
 
@@ -17313,13 +17323,12 @@ function fleeStep(unit,threat){
     }))
     .filter(pos=>
       inside(pos.x,pos.y) &&
-      !architecturalWallBlocksStep(unit,pos) &&
-      !occupiedByAnyUnit(pos.x,pos.y,unit.id)
+      !unitTransitionBlocked(unit,unit,pos)
     )
     .map(pos=>({
       ...pos,
       distance:threat
-        ? hexDistance(pos,threat)
+        ? unitDistanceAt(unit,pos.x,pos.y,threat)
         : 0
     }));
 
@@ -17572,10 +17581,12 @@ function rangedRetreatStep(unit,threat){
     .map(dir=>({x:unit.x+dir.x,y:unit.y+dir.y}))
     .filter(pos=>
       inside(pos.x,pos.y) &&
-      !architecturalWallBlocksStep(unit,pos) &&
-      !occupiedByAnyUnit(pos.x,pos.y,unit.id)
+      !unitTransitionBlocked(unit,unit,pos)
     )
-    .map(pos=>({...pos,distance:threat ? hexDistance(pos,threat) : 0}))
+    .map(pos=>({
+      ...pos,
+      distance:threat ? unitDistanceAt(unit,pos.x,pos.y,threat) : 0
+    }))
     .sort((a,b)=>b.distance-a.distance || a.x-b.x || a.y-b.y);
   return options[0] || null;
 }
