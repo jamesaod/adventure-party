@@ -20914,17 +20914,6 @@ function drawDragonBreathFx(){
 
   const now=performance.now();
   const elapsed=Math.max(0,now-fx.started);
-
-  /*
-    R188: use the same construction method as the current Fireball:
-      • stepped animation frames
-      • one offscreen body made from overlapping flame volumes
-      • one outside-only two-pixel black silhouette
-      • 75% translucent flame body
-      • deterministic grain and dense ember particles
-    The geometry is directional instead of spherical, producing one continuous
-    widening cone rather than a chain of independently drawn cell puffs.
-  */
   const frameMs=58;
   const frame=Math.floor(elapsed/frameMs);
   const steppedElapsed=Math.min(fx.duration,frame*frameMs);
@@ -20939,12 +20928,6 @@ function drawDragonBreathFx(){
   if(growth<=0 || fade<=0) return;
 
   const presentation=dragonPresentationMetrics(dragon,"attack");
-
-  /*
-    R190 mouth position measured from the new attacking sprite. The head is on
-    the leading side of the source image; these offsets place the cone at the
-    muzzle rather than the torso. Horizontal offset mirrors with facing.
-  */
   const mouth={
     x:presentation.anchor.x+
       (dragon.facing==="left" ? -1 : 1)*presentation.width*0.36,
@@ -20968,11 +20951,6 @@ function drawDragonBreathFx(){
     return hash32(a,b,c,d)/4294967295;
   }
 
-  /*
-    R191 white-hot breath palette. The inner half of the jet now spends much
-    more of its range in pale yellow / near-white values, while saturated red
-    and orange are pushed toward the outside of the volume.
-  */
   const flamePalette=[
     [112,18,6],
     [176,34,6],
@@ -20984,19 +20962,58 @@ function drawDragonBreathFx(){
     [255,255,236]
   ];
 
+  /*
+    R192 separates gameplay geometry from presentation geometry.
+    fx.cells still controls who is hit and how walls constrain the breath, but
+    the visible flame is now built as one true geometric cone from the muzzle.
+  */
   const visibleCells=(fx.cells || [])
     .filter(cell=>
       Number(cell.breathStep||0) <=
       Math.max(1,Math.ceil((Number(fx.rangeHexes)||9)*growth))
     )
-    .slice()
-    .sort((a,b)=>
-      a.breathStep-b.breathStep ||
-      a.breathLane-b.breathLane ||
-      a.x-b.x || a.y-b.y
-    );
+    .slice();
 
   if(!visibleCells.length) return;
+
+  const maxVisibleStep=Math.max(
+    ...visibleCells.map(cell=>Math.max(1,Number(cell.breathStep)||1))
+  );
+  const farRow=visibleCells.filter(cell=>
+    (Number(cell.breathStep)||1)===maxVisibleStep
+  );
+  const farCenterCell=
+    farRow.find(cell=>(Number(cell.breathLane)||0)===0) ||
+    farRow[Math.floor(farRow.length/2)] ||
+    visibleCells[visibleCells.length-1];
+
+  const farCenter=hexCenter(farCenterCell.x,farCenterCell.y);
+  farCenter.y-=7;
+
+  const fullDx=farCenter.x-mouth.x;
+  const fullDy=farCenter.y-mouth.y;
+  const fullLength=Math.max(1,Math.hypot(fullDx,fullDy));
+  const dirX=fullDx/fullLength;
+  const dirY=fullDy/fullLength;
+  const normalX=-dirY;
+  const normalY=dirX;
+  const directionAngle=Math.atan2(dirY,dirX);
+
+  /*
+    End width is deliberately narrower than the raw 3-hex tactical footprint.
+    The VFX now reads as a projected cone instead of a group of filled hexes.
+  */
+  const fullEndHalfWidth=Math.min(
+    62,
+    Math.max(34,fullLength*0.115)
+  );
+  const currentLength=fullLength*growth;
+  const currentEndHalfWidth=4+(fullEndHalfWidth-4)*growth;
+
+  const coneEnd={
+    x:mouth.x+dirX*currentLength,
+    y:mouth.y+dirY*currentLength
+  };
 
   const bodyCanvas=document.createElement("canvas");
   bodyCanvas.width=ctx.canvas.width;
@@ -21005,106 +21022,168 @@ function drawDragonBreathFx(){
   bodyCtx.imageSmoothingEnabled=false;
 
   /*
-    Fill each tactical breath cell with several overlapping Fireball-style
-    flame volumes. Sampling the full path segment from the mouth to each row
-    makes adjacent rows fuse into a single continuous cone.
+    Hard presentation clip: every flame lobe is clipped inside one tapered cone.
+    This prevents the outer silhouette from following individual tactical hexes.
   */
-  for(const cell of visibleCells){
-    const end=hexCenter(cell.x,cell.y);
-    end.y-=7;
+  bodyCtx.save();
+  bodyCtx.beginPath();
+  bodyCtx.moveTo(
+    mouth.x+normalX*3,
+    mouth.y+normalY*3
+  );
+  bodyCtx.lineTo(
+    coneEnd.x+normalX*currentEndHalfWidth,
+    coneEnd.y+normalY*currentEndHalfWidth
+  );
+  bodyCtx.lineTo(
+    coneEnd.x-normalX*currentEndHalfWidth,
+    coneEnd.y-normalY*currentEndHalfWidth
+  );
+  bodyCtx.lineTo(
+    mouth.x-normalX*3,
+    mouth.y-normalY*3
+  );
+  bodyCtx.closePath();
+  bodyCtx.clip();
 
-    const step=Math.max(1,Number(cell.breathStep)||1);
-    const depth=Math.max(0,Math.min(1,step/Math.max(1,Number(fx.rangeHexes)||9)));
-    const lane=Math.abs(Number(cell.breathLane)||0);
-    const rowStart=Math.max(0,(step-1)/step);
-    const samples=13;
+  /*
+    R192 uses many small lobes along continuous cone slices. Lobe radius is
+    roughly half the R191 value, and the number of cross-cone samples grows
+    gradually with distance rather than jumping when the tactical footprint
+    widens from one lane to three.
+  */
+  const sliceCount=52;
+  const visibleSlices=Math.max(2,Math.ceil(sliceCount*growth));
 
-    for(let sample=0;sample<samples;sample++){
-      const local=(sample+1)/samples;
-      const pathT=rowStart+(1-rowStart)*local;
-      const px=mouth.x+(end.x-mouth.x)*pathT;
-      const py=mouth.y+(end.y-mouth.y)*pathT;
+  for(let slice=0;slice<visibleSlices;slice++){
+    const q=(slice+1)/sliceCount;
+    const centerX=mouth.x+dirX*fullLength*q;
+    const centerY=mouth.y+dirY*fullLength*q;
+    const halfWidth=4+(fullEndHalfWidth-4)*q;
+    const acrossCount=3+Math.round(q*5);
 
-      const h1=hash01(cell.x,cell.y,sample,frame%5);
-      const h2=hash01(cell.x+71,cell.y-37,sample,frame+19);
-      const h3=hash01(cell.x-43,cell.y+113,sample,frame+31);
-      const h4=hash01(cell.x+149,cell.y+29,sample,frame+47);
+    for(let across=0;across<acrossCount;across++){
+      const lateralNorm=
+        acrossCount===1
+          ? 0
+          : (across/(acrossCount-1))*2-1;
+
+      const h1=hash01(slice,across,frame%7,11);
+      const h2=hash01(slice+71,across-37,frame+19,23);
+      const h3=hash01(slice-43,across+113,frame+31,37);
+      const h4=hash01(slice+149,across+29,frame+47,53);
+
+      const lateral=
+        lateralNorm*halfWidth*0.88+
+        (h1-0.5)*2.8;
+      const alongJitter=(h2-0.5)*2.3;
+
+      const px=
+        centerX+
+        dirX*alongJitter+
+        normalX*lateral;
+      const py=
+        centerY+
+        dirY*alongJitter+
+        normalY*lateral;
 
       const radius=(
-        17+
-        26*depth+
-        lane*4+
-        h3*6
-      )*Math.max(0.38,growth);
+        5.4+
+        q*3.7+
+        h3*1.7
+      )*Math.max(0.48,Math.min(1,growth*1.18));
 
-      /*
-        R191: thirteen closely spaced samples and reduced jitter fuse the breath
-        into a continuous high-energy jet. The volume still widens with range,
-        but there are no deliberate gaps between neighboring flame lobes.
-      */
-      const rx=radius*(1.24+0.10*h1);
-      const ry=radius*(0.84+0.10*h4);
-      const jitterX=(h1-0.5)*4.5*(0.28+depth);
-      const jitterY=(h2-0.5)*3.5*(0.28+depth);
+      const rx=radius*(1.13+0.08*h1);
+      const ry=radius*(0.72+0.08*h4);
 
-      const centerHeat=Math.max(0,1-depth*0.58-lane*0.10);
+      const lateralHeat=1-Math.min(1,Math.abs(lateralNorm));
+      const heat=Math.max(
+        0,
+        0.96-
+        q*0.18-
+        (1-lateralHeat)*0.62
+      );
+
       let colorIndex=Math.round(
         2+
-        centerHeat*5+
-        (h4>0.62 ? 1 : h4<0.18 ? -1 : 0)
+        heat*5+
+        (h4>0.70 ? 1 : h4<0.18 ? -1 : 0)
       );
-      colorIndex=Math.max(0,Math.min(flamePalette.length-1,colorIndex));
-      const [r,g,b]=flamePalette[colorIndex];
+      colorIndex=Math.max(
+        0,
+        Math.min(flamePalette.length-1,colorIndex)
+      );
 
+      const [r,g,b]=flamePalette[colorIndex];
       bodyCtx.fillStyle=`rgba(${r},${g},${b},1)`;
       bodyCtx.beginPath();
       bodyCtx.ellipse(
-        px+jitterX,
-        py+jitterY,
+        px,
+        py,
         rx,
         ry,
-        0,
+        directionAngle,
         0,
         Math.PI*2
       );
       bodyCtx.fill();
-
-      if(centerHeat>0.14 && h1>0.06){
-        const innerIndex=Math.min(flamePalette.length-1,colorIndex+3);
-        const [ir,ig,ib]=flamePalette[innerIndex];
-        bodyCtx.fillStyle=`rgba(${ir},${ig},${ib},1)`;
-        bodyCtx.beginPath();
-        bodyCtx.ellipse(
-          px+jitterX-rx*0.10,
-          py+jitterY-ry*0.12,
-          rx*0.78,
-          ry*0.72,
-          0,
-          0,
-          Math.PI*2
-        );
-        bodyCtx.fill();
-      }
     }
+
+    /*
+      Narrow white-hot center stream. It is independent of the outer lobes,
+      keeping the brightest material on the centerline instead of filling the
+      whole cone.
+    */
+    const coreH=hash01(slice,frame,83,97);
+    const coreRadius=(3.0+q*1.9)*(0.82+coreH*0.18);
+    const coreX=centerX+normalX*(coreH-0.5)*1.5;
+    const coreY=centerY+normalY*(coreH-0.5)*1.5;
+
+    bodyCtx.fillStyle=
+      q<0.62
+        ? "rgba(255,255,244,1)"
+        : "rgba(255,245,184,1)";
+    bodyCtx.beginPath();
+    bodyCtx.ellipse(
+      coreX,
+      coreY,
+      coreRadius*1.75,
+      coreRadius*0.82,
+      directionAngle,
+      0,
+      Math.PI*2
+    );
+    bodyCtx.fill();
   }
 
   /*
-    Add a compact white-hot ignition bridge at the mouth so the volume visibly
-    begins at the dragon instead of at the first tactical cell center.
+    Compact muzzle bridge keeps the VFX visually attached to the attacking
+    sprite while preserving the narrow cone origin.
   */
-  const first=hexCenter(visibleCells[0].x,visibleCells[0].y);
-  first.y-=7;
-  for(let i=0;i<4;i++){
-    const q=(i+1)/5;
-    const px=mouth.x+(first.x-mouth.x)*q;
-    const py=mouth.y+(first.y-mouth.y)*q;
-    const radius=(7+i*1.8)*Math.max(0.35,growth);
+  for(let i=0;i<5;i++){
+    const q=(i+1)/70;
+    const px=mouth.x+dirX*fullLength*q;
+    const py=mouth.y+dirY*fullLength*q;
+    const radius=(3.6+i*0.7)*Math.max(0.55,growth);
 
-    bodyCtx.fillStyle=i<3 ? "rgba(255,255,238,1)" : "rgba(255,224,90,1)";
+    bodyCtx.fillStyle=
+      i<4
+        ? "rgba(255,255,246,1)"
+        : "rgba(255,225,96,1)";
     bodyCtx.beginPath();
-    bodyCtx.ellipse(px,py,radius*1.25,radius*0.58,0,0,Math.PI*2);
+    bodyCtx.ellipse(
+      px,
+      py,
+      radius*1.55,
+      radius*0.70,
+      directionAngle,
+      0,
+      Math.PI*2
+    );
     bodyCtx.fill();
   }
+
+  bodyCtx.restore();
 
   const silhouetteCanvas=document.createElement("canvas");
   silhouetteCanvas.width=bodyCanvas.width;
@@ -21114,7 +21193,12 @@ function drawDragonBreathFx(){
   silhouetteCtx.drawImage(bodyCanvas,0,0);
   silhouetteCtx.globalCompositeOperation="source-in";
   silhouetteCtx.fillStyle="rgba(0,0,0,1)";
-  silhouetteCtx.fillRect(0,0,silhouetteCanvas.width,silhouetteCanvas.height);
+  silhouetteCtx.fillRect(
+    0,
+    0,
+    silhouetteCanvas.width,
+    silhouetteCanvas.height
+  );
   silhouetteCtx.globalCompositeOperation="source-over";
 
   const outlineCanvas=document.createElement("canvas");
@@ -21139,148 +21223,191 @@ function drawDragonBreathFx(){
   ctx.imageSmoothingEnabled=false;
 
   /*
-    R191 smoke belongs behind the flame and concentrates in the last third of
-    the cone. Near the mouth the breath stays clean and white-hot; farther out
-    the exhaust rolls upward into dark gray soot.
+    Smoke now follows the cone's centerline rather than tactical cells, so the
+    far exhaust cannot reintroduce a hex-shaped silhouette.
   */
-  const smokeCells=visibleCells.filter(cell=>
-    (Number(cell.breathStep)||0) >=
-    Math.ceil((Number(fx.rangeHexes)||9)*0.62)
-  );
+  const smokePuffCount=22;
+  for(let puff=0;puff<smokePuffCount;puff++){
+    const h1=hash01(puff,frame+307,5,13);
+    const h2=hash01(puff+97,frame-179,17,29);
+    const h3=hash01(puff-211,frame+263,31,43);
 
-  for(const cell of smokeCells){
-    const c=hexCenter(cell.x,cell.y);
-    const depth=Math.max(
+    const q=0.64+h1*0.36;
+    if(q>growth+0.02) continue;
+
+    const halfWidth=4+(fullEndHalfWidth-4)*q;
+    const lateral=(h2-0.5)*halfWidth*1.30;
+    const age=(t+h3*0.24)%1;
+
+    const sx=
+      mouth.x+
+      dirX*fullLength*q+
+      normalX*lateral;
+    const sy=
+      mouth.y+
+      dirY*fullLength*q+
+      normalY*lateral-
+      age*(18+q*24);
+
+    const smokeRadius=(
+      7+
+      q*11+
+      hash01(puff,frame,59,71)*5
+    )*(0.78+0.28*growth);
+    const smokeAlpha=(0.10+q*0.12)*(1-age*0.72)*fade;
+
+    ctx.globalAlpha=smokeAlpha;
+    ctx.fillStyle=
+      puff%3===0
+        ? "#171a1e"
+        : puff%3===1
+          ? "#292c30"
+          : "#3a3c3f";
+    ctx.beginPath();
+    ctx.ellipse(
+      sx,
+      sy,
+      smokeRadius*1.15,
+      smokeRadius*0.72,
       0,
-      Math.min(1,(Number(cell.breathStep)||1)/(Number(fx.rangeHexes)||9))
+      0,
+      Math.PI*2
     );
-
-    for(let puff=0;puff<3;puff++){
-      const h1=hash01(cell.x+307,cell.y-179,puff,frame+5);
-      const h2=hash01(cell.x-211,cell.y+263,puff,frame+17);
-      const h3=hash01(cell.x+97,cell.y+151,puff,frame+29);
-      const age=(t+h1*0.22)%1;
-      const smokeRadius=(10+22*depth+9*h3)*(0.72+0.35*growth);
-      const sx=c.x+(h1-0.5)*(20+depth*32);
-      const sy=c.y-13-(age*(20+depth*30))+(h2-0.5)*10;
-      const smokeAlpha=(0.10+0.18*depth)*(1-age*0.72)*fade;
-
-      ctx.globalAlpha=smokeAlpha;
-      ctx.fillStyle=puff===0 ? "#16191d" : puff===1 ? "#282b2f" : "#3a3b3d";
-      ctx.beginPath();
-      ctx.ellipse(
-        sx,
-        sy,
-        smokeRadius*1.15,
-        smokeRadius*0.72,
-        0,
-        0,
-        Math.PI*2
-      );
-      ctx.fill();
-    }
+    ctx.fill();
   }
 
-  /*
-    Bright bloom pass: a blurred additive copy of the complete flame body sits
-    behind the crisp Fireball-style volume. This is what makes the breath read
-    as self-luminous instead of merely painted yellow/orange.
-  */
+  /* R191 white-hot bloom retained around the tighter R192 cone. */
   ctx.save();
   ctx.globalCompositeOperation="lighter";
-  ctx.filter="blur(7px)";
-  ctx.globalAlpha=0.34*fade;
+  ctx.filter="blur(6px)";
+  ctx.globalAlpha=0.31*fade;
   ctx.drawImage(bodyCanvas,0,0);
-  ctx.filter="blur(3px)";
-  ctx.globalAlpha=0.22*fade;
+  ctx.filter="blur(2px)";
+  ctx.globalAlpha=0.19*fade;
   ctx.drawImage(bodyCanvas,0,0);
   ctx.restore();
 
-  /* Keep the game-style outside contour, but soften it so it does not choke the glow. */
-  ctx.globalAlpha=0.58*fade;
+  ctx.globalAlpha=0.55*fade;
   ctx.drawImage(outlineCanvas,0,0);
 
-  /* Main flame body is now nearly opaque, preserving the near-white core. */
-  ctx.globalAlpha=0.90*fade;
+  ctx.globalAlpha=0.92*fade;
   ctx.drawImage(bodyCanvas,0,0);
 
-  /*
-    Final additive hot pass lifts the core above normal canvas brightness
-    without changing the tactical footprint.
-  */
   ctx.globalCompositeOperation="lighter";
-  ctx.globalAlpha=0.24*fade;
+  ctx.globalAlpha=0.25*fade;
   ctx.drawImage(bodyCanvas,0,0);
   ctx.globalCompositeOperation="source-over";
   ctx.globalAlpha=1;
 
   /*
-    Fire-only grain pass, matching the Fireball treatment but stretched along
-    the breath cells rather than distributed around a spherical blast center.
+    Grain samples uniformly inside the presentation cone instead of selecting
+    tactical cells. This preserves the pixel texture without exposing hex rows.
   */
-  const grainCount=Math.max(220,Math.round(420*growth));
+  const grainCount=Math.max(180,Math.round(340*growth));
   for(let i=0;i<grainCount;i++){
-    const cell=visibleCells[i%visibleCells.length];
-    const c=hexCenter(cell.x,cell.y);
-    const depth=Math.max(0,Math.min(1,(cell.breathStep||1)/(fx.rangeHexes||9)));
-    const h1=hash01(cell.x+11,cell.y-17,i,3);
-    const h2=hash01(cell.x-29,cell.y+7,i,9);
-    const h3=hash01(cell.x+53,cell.y+91,i,15);
-    const px=c.x+(h1-0.5)*(22+depth*34);
-    const py=c.y-8+(h2-0.5)*(12+depth*22);
-    const size=h3>0.82 ? 3 : 2;
+    const q=hash01(i,fx.source.x+11,fx.source.y-17,3)*growth;
+    const h2=hash01(i,fx.source.x-29,fx.source.y+7,9);
+    const h3=hash01(i,fx.source.x+53,fx.source.y+91,15);
+    const halfWidth=4+(fullEndHalfWidth-4)*q;
+    const lateral=(h2-0.5)*2*halfWidth*0.90;
 
-    ctx.fillStyle=i%4===0
-      ? `rgba(255,255,232,${0.78*fade})`
-      : i%4===1
-        ? `rgba(255,214,92,${0.72*fade})`
-        : `rgba(238,82,8,${0.54*fade})`;
-    ctx.fillRect(Math.round(px),Math.round(py),size,size);
+    const px=
+      mouth.x+
+      dirX*fullLength*q+
+      normalX*lateral;
+    const py=
+      mouth.y+
+      dirY*fullLength*q+
+      normalY*lateral;
+    const size=h3>0.84 ? 3 : 2;
+    const lateralNorm=
+      halfWidth>0
+        ? Math.min(1,Math.abs(lateral)/halfWidth)
+        : 0;
+
+    ctx.fillStyle=
+      lateralNorm<0.34
+        ? `rgba(255,255,232,${0.74*fade})`
+        : lateralNorm<0.72
+          ? `rgba(255,210,82,${0.64*fade})`
+          : `rgba(235,78,8,${0.48*fade})`;
+
+    ctx.fillRect(
+      Math.round(px),
+      Math.round(py),
+      size,
+      size
+    );
   }
 
   /*
-    Dense deterministic ember field. Particles rise while continuing forward,
-    making the breath read as a fast projected flame volume rather than smoke.
+    Embers also follow the cone mathematically. They may drift beyond the flame
+    edge as they rise, but their source distribution remains conical.
   */
-  const particleCount=520;
-  const lastCell=visibleCells[visibleCells.length-1];
-  const far=hexCenter(lastCell.x,lastCell.y);
-  const dirX=far.x-mouth.x;
-  const dirY=far.y-mouth.y;
-  const dirLen=Math.hypot(dirX,dirY)||1;
-  const nx=-dirY/dirLen;
-  const ny=dirX/dirLen;
-
+  const particleCount=420;
   for(let i=0;i<particleCount;i++){
     const born=hash01(fx.source.x+211,fx.source.y-97,i,7)*0.46;
     if(t<born) continue;
 
-    const life=Math.max(0,Math.min(1,(t-born)/Math.max(0.01,1-born)));
+    const life=Math.max(
+      0,
+      Math.min(1,(t-born)/Math.max(0.01,1-born))
+    );
     if(life>=1) continue;
 
-    const along=hash01(fx.source.x-43,fx.source.y+67,i,13);
-    if(along>growth+0.08) continue;
+    const q=hash01(fx.source.x-43,fx.source.y+67,i,13);
+    if(q>growth+0.07) continue;
 
-    const spread=(12+along*48)*(
+    const halfWidth=4+(fullEndHalfWidth-4)*Math.min(1,q);
+    const lateral=(
       hash01(fx.source.x+19,fx.source.y+149,i,23)-0.5
-    );
-    const rise=life*(10+hash01(fx.source.x+89,fx.source.y-17,i,31)*32);
-    const px=mouth.x+dirX*along+nx*spread;
-    const py=mouth.y+dirY*along+ny*spread*0.35-rise;
-    const sizeRoll=hash01(fx.source.x-131,fx.source.y+41,i,47);
-    const size=sizeRoll>0.92 ? 3 : (sizeRoll>0.48 ? 2 : 1);
-    const alpha=Math.max(0,1-life)*0.66*fade;
+    )*2*halfWidth*1.08;
 
-    ctx.fillStyle=i%3===0
-      ? `rgba(255,236,132,${alpha})`
-      : i%3===1
-        ? `rgba(255,132,20,${alpha})`
-        : `rgba(196,45,8,${alpha})`;
+    const rise=life*(
+      9+
+      hash01(fx.source.x+89,fx.source.y-17,i,31)*30
+    );
+
+    const px=
+      mouth.x+
+      dirX*fullLength*q+
+      normalX*lateral;
+    const py=
+      mouth.y+
+      dirY*fullLength*q+
+      normalY*lateral-
+      rise;
+
+    const sizeRoll=hash01(fx.source.x-131,fx.source.y+41,i,47);
+    const size=
+      sizeRoll>0.94
+        ? 3
+        : sizeRoll>0.55
+          ? 2
+          : 1;
+    const alpha=Math.max(0,1-life)*0.62*fade;
+
+    ctx.fillStyle=
+      i%3===0
+        ? `rgba(255,242,150,${alpha})`
+        : i%3===1
+          ? `rgba(255,132,20,${alpha})`
+          : `rgba(196,45,8,${alpha})`;
 
     if(i%4===0){
-      ctx.fillRect(Math.round(px),Math.round(py),size,Math.max(2,size+2));
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        Math.max(2,size+2)
+      );
     }else{
-      ctx.fillRect(Math.round(px),Math.round(py),size,size);
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        size
+      );
     }
   }
 
