@@ -4864,6 +4864,28 @@ function canMeleeReach(a,b){
   );
 }
 
+function canMeleeAttackTarget(attacker,target){
+  if(!attacker || !target) return false;
+  const reach=Math.max(1,Number(attacker.meleeRange)||1);
+
+  if(reach===1){
+    return canMeleeReach(attacker,target);
+  }
+
+  return unitDistance(attacker,target)<=reach;
+}
+
+function approachDistanceAt(unit,x,y,target){
+  if(!unit || !target) return Infinity;
+  const proxy={...unit,x,y};
+
+  if(canMeleeAttackTarget(proxy,target)){
+    return 0;
+  }
+
+  return unitDistance(proxy,target);
+}
+
 function drawArchitecturalFloorRegions(){
   if(!architecturalSpaces.length) return;
 
@@ -14291,7 +14313,9 @@ function unitCanMakeLeavingHexFreeAttack(attacker,mover){
     Number(attacker.meleeRange)||1
   );
 
-  return unitDistance(attacker,mover)<=reach;
+  return reach===1
+    ? canMeleeReach(attacker,mover)
+    : unitDistance(attacker,mover)<=reach;
 }
 
 function leavingHexFreeAttackers(mover){
@@ -16899,7 +16923,7 @@ async function triggerMobGuardsAgainst(target){
       mob.guard &&
       canMobGuard(mob) &&
       !wasAdjacentWhenGuardSet(mob,target) &&
-      unitDistance(mob,target)<=Math.max(1,mob.meleeRange||1)
+      canMeleeAttackTarget(mob,target)
     )
     .sort((a,b)=>a.id.localeCompare(b.id));
 
@@ -17182,7 +17206,7 @@ function pathToClosestReachable(start,target,mover,maxSteps){
 
   let best=startNode;
   let bestDistance=mover
-    ? unitDistanceAt(mover,startNode.x,startNode.y,target)
+    ? approachDistanceAt(mover,startNode.x,startNode.y,target)
     : hexDistance(startNode,target);
 
   while(queue.length){
@@ -17192,10 +17216,10 @@ function pathToClosestReachable(start,target,mover,maxSteps){
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
       const da=mover
-        ? unitDistanceAt(mover,cur.x+a.x,cur.y+a.y,target)
+        ? approachDistanceAt(mover,cur.x+a.x,cur.y+a.y,target)
         : hexDistance({x:cur.x+a.x,y:cur.y+a.y},target);
       const db=mover
-        ? unitDistanceAt(mover,cur.x+b.x,cur.y+b.y,target)
+        ? approachDistanceAt(mover,cur.x+b.x,cur.y+b.y,target)
         : hexDistance({x:cur.x+b.x,y:cur.y+b.y},target);
       return da-db;
     });
@@ -17224,7 +17248,7 @@ function pathToClosestReachable(start,target,mover,maxSteps){
       queue.push(node);
 
       const distance=mover
-        ? unitDistanceAt(mover,nx,ny,target)
+        ? approachDistanceAt(mover,nx,ny,target)
         : hexDistance(node,target);
 
       if(
@@ -17791,7 +17815,7 @@ async function mobTurn(mob){
   }
 
   /* Already in melee range: attack immediately. */
-  if(startingDistance<=Math.max(1,mob.meleeRange||1)){
+  if(canMeleeAttackTarget(mob,target)){
     if(maybeTriggerPlayerGuard(mob)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
@@ -17844,7 +17868,7 @@ async function mobTurn(mob){
     it attacks. Otherwise its action becomes Guard.
   */
   if(
-    endingDistance<=Math.max(1,mob.meleeRange||1) &&
+    canMeleeAttackTarget(mob,target) &&
     steps<=mob.halfMove
   ){
     if(maybeTriggerPlayerGuard(mob)){
@@ -17902,7 +17926,7 @@ async function mobTurn(mob){
   if(canMobGuard(mob)){
     enterMobGuard(
       mob,
-      endingDistance<=Math.max(1,mob.meleeRange||1)
+      canMeleeAttackTarget(mob,target)
         ? "full movement prevents an immediate attack"
         : "the target is still outside melee range"
     );
