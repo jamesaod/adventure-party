@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R190",
-  "description": "Adventure Party sprite asset specifications through R190. R190 replaces the juvenile red dragon art with dedicated standing and attack poses and records scale/anchor measurements derived from the user's seven-hex placement reference.",
+  "release": "R191",
+  "description": "Adventure Party sprite asset specifications through R191. R191 retains the R190 Red Dragon standing/attack sprites and scale data while upgrading the breath presentation to a white-hot, self-luminous flame jet with distal smoke.",
   "assets": {
     "fighter": {
       "source": {
