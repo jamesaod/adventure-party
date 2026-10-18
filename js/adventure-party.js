@@ -13051,10 +13051,17 @@ function rangedAiOpponents(unit){
     : livingPartyMembers();
 }
 
+function rangedAiSourceEntity(unit,source){
+  if(!unit || !source) return source;
+  if(source===unit) return unit;
+  return {...unit,x:source.x,y:source.y};
+}
+
 function rangedAiRangeBandFrom(unit,source,target){
   if(!unit || !source || !target) return {distance:Infinity,band:"OUT",penalty:null};
 
-  const distance=hexDistance(source,target);
+  const sourceEntity=rangedAiSourceEntity(unit,source);
+  const distance=unitDistance(sourceEntity,target);
 
   if(unit.rangedWeapon==="Sling"){
     const shortRange=Math.max(1,unit.slingShortRange||4);
@@ -13081,11 +13088,13 @@ function rangedAiRangeBandFrom(unit,source,target){
 }
 
 function rangedAiPositionThreatened(unit,source){
+  const sourceEntity=rangedAiSourceEntity(unit,source);
+
   return rangedAiOpponents(unit).some(enemy=>
     enemy.alive &&
     !enemy.fled &&
-    unitDistance(source,enemy)<=1 &&
-    canMeleeReach(source,enemy)
+    unitDistance(sourceEntity,enemy)<=1 &&
+    canMeleeReach(sourceEntity,enemy)
   );
 }
 
@@ -13107,6 +13116,7 @@ function rangedAiCanAttackFrom(unit,source,target){
     return false;
   }
 
+  const sourceEntity=rangedAiSourceEntity(unit,source);
   const range=rangedAiRangeBandFrom(unit,source,target);
   if(range.penalty===null) return false;
 
@@ -13115,14 +13125,16 @@ function rangedAiCanAttackFrom(unit,source,target){
     return false;
   }
 
-  return !lineOfSightBlocked(source,target);
+  return !lineOfSightBlocked(sourceEntity,target);
 }
 
 function bestRangedAiTargetFrom(unit,source=unit){
+  const sourceEntity=rangedAiSourceEntity(unit,source);
+
   return rangedAiOpponents(unit)
     .filter(target=>rangedAiCanAttackFrom(unit,source,target))
     .sort((a,b)=>
-      unitDistance(source,a)-unitDistance(source,b) ||
+      unitDistance(sourceEntity,a)-unitDistance(sourceEntity,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
     )[0] || null;
@@ -15175,7 +15187,7 @@ async function castMagicMissileFromScroll(action,target){
   const casterLevel=Math.max(1,action.casterLevel||6);
   const rangeYards=magicMissileRangeYards(casterLevel);
   const rangeHexes=yardsToTacticalHexes(rangeYards);
-  const distance=hexDistance(caster,target);
+  const distance=unitDistance(caster,target);
 
   if(distance>rangeHexes){
     setCombatMessage(`${target.name} is out of Magic Missile range (${rangeHexes} hexes).`);
@@ -15818,7 +15830,7 @@ function validCreatureTargetWithinRange(caster,target,spell,casterLevel,allowFri
   }
 
   const range=spellRangeHexes(spell,casterLevel);
-  return hexDistance(caster,target)<=range;
+  return unitDistance(caster,target)<=range;
 }
 
 async function castArmorSpell(action,target){
@@ -16719,11 +16731,19 @@ async function activateAimTarget(){
     target.alive &&
     canMeleeReach(actor,target)
   ){
-    const dx=target.x-actor.x;
-    const dy=target.y-actor.y;
-    exitAimMode(false,false);
-    await tryPlayerMove(dx,dy);
-    return true;
+    const contact=occupiedHexes(target).find(cell=>
+      hexDistance(actor,cell)===1 &&
+      !architecturalWallBlocksStep(actor,cell)
+    );
+
+    if(contact){
+      exitAimMode(false,false);
+      await tryPlayerMove(
+        contact.x-actor.x,
+        contact.y-actor.y
+      );
+      return true;
+    }
   }
 
   updateUi();
