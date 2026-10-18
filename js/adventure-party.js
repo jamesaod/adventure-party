@@ -17735,6 +17735,430 @@ async function animateMobAlongPath(mob,path,maxSteps){
 }
 
 
+
+function dragonBreathReady(dragon){
+  const breath=dragon?.breathWeapon;
+  if(!breath || !game) return false;
+
+  const cooldown=Math.max(1,Number(breath.cooldownRounds)||3);
+  const last=Number(breath.lastUsedRound);
+  return !Number.isFinite(last) || (game.round-last)>=cooldown;
+}
+
+function dragonBreathSourceHex(dragon,target){
+  const directionIndex=hexDirectionIndexToward(dragon,target);
+  const dir=HEX_DIRS[directionIndex] || HEX_DIRS[0];
+
+  return {
+    x:dragon.x+dir.x,
+    y:dragon.y+dir.y,
+    directionIndex
+  };
+}
+
+/*
+  R187 maps the AD&D 2e 90-foot, 5-to-30-foot fire cone to the current
+  10-foot tactical hex scale. From the front body hex, the plume extends
+  nine hexes. The final four rows widen to three tactical cells.
+*/
+function dragonBreathCells(dragon,target){
+  if(!dragon?.breathWeapon || !target) return [];
+
+  const range=Math.max(1,Number(dragon.breathWeapon.rangeHexes)||9);
+  const source=dragonBreathSourceHex(dragon,target);
+  const forward=HEX_DIRS[source.directionIndex] || HEX_DIRS[0];
+  const left=HEX_DIRS[(source.directionIndex+5)%6];
+  const right=HEX_DIRS[(source.directionIndex+1)%6];
+  const ownCells=new Set(occupiedHexes(dragon).map(cell=>key(cell.x,cell.y)));
+  const result=[];
+  const seen=new Set();
+
+  const addCell=(cell,step,lane)=>{
+    if(
+      !inside(cell.x,cell.y) ||
+      isWall(cell.x,cell.y) ||
+      ownCells.has(key(cell.x,cell.y)) ||
+      hexDistance(source,cell)>range ||
+      architecturalWallBlocksLOS(source,cell)
+    ){
+      return;
+    }
+
+    const cellKey=key(cell.x,cell.y);
+    if(seen.has(cellKey)) return;
+    seen.add(cellKey);
+    result.push({
+      x:cell.x,
+      y:cell.y,
+      breathStep:step,
+      breathLane:lane
+    });
+  };
+
+  for(let step=1;step<=range;step++){
+    const center={
+      x:source.x+forward.x*step,
+      y:source.y+forward.y*step
+    };
+
+    addCell(center,step,0);
+
+    if(step>=6){
+      addCell(
+        {x:center.x+left.x,y:center.y+left.y},
+        step,-1
+      );
+      addCell(
+        {x:center.x+right.x,y:center.y+right.y},
+        step,1
+      );
+    }
+  }
+
+  return result.sort((a,b)=>
+    a.breathStep-b.breathStep ||
+    a.breathLane-b.breathLane ||
+    a.x-b.x ||
+    a.y-b.y
+  );
+}
+
+function bestDragonBreathPlan(dragon){
+  if(!dragonBreathReady(dragon)) return null;
+
+  const party=livingPartyMembers();
+  if(!party.length) return null;
+
+  const partyIds=new Set(party.map(unit=>unit.id));
+  const plans=[];
+
+  for(const target of party){
+    const cells=dragonBreathCells(dragon,target);
+    const affected=livingUnitsInAreaCells(cells)
+      .filter(unit=>unit.id!==dragon.id);
+    const partyVictims=affected.filter(unit=>partyIds.has(unit.id));
+
+    if(!partyVictims.length) continue;
+
+    const collateral=affected.filter(unit=>
+      unit.controller==="mob" &&
+      unit.id!==dragon.id &&
+      !partyIds.has(unit.id)
+    ).length;
+
+    plans.push({
+      target,
+      cells,
+      affected,
+      partyVictims,
+      collateral,
+      score:
+        partyVictims.length*1000 -
+        collateral*500 -
+        unitDistance(dragon,target)
+    });
+  }
+
+  plans.sort((a,b)=>
+    b.score-a.score ||
+    b.partyVictims.length-a.partyVictims.length ||
+    unitDistance(dragon,a.target)-unitDistance(dragon,b.target)
+  );
+
+  return plans[0] || null;
+}
+
+async function animateDragonBreath(dragon,plan){
+  const duration=1050;
+  const started=performance.now();
+  const source=dragonBreathSourceHex(dragon,plan.target);
+
+  dragonBreathFx={
+    dragonId:dragon.id,
+    source,
+    directionIndex:source.directionIndex,
+    cells:plan.cells.map(cell=>({...cell})),
+    rangeHexes:Math.max(1,Number(dragon.breathWeapon?.rangeHexes)||9),
+    started,
+    duration
+  };
+
+  playDragonBreathSound();
+
+  while(true){
+    const elapsed=performance.now()-started;
+    draw();
+    if(elapsed>=duration) break;
+    await sleep(16);
+  }
+
+  dragonBreathFx=null;
+  draw();
+}
+
+async function juvenileRedDragonBreathAttack(dragon,plan){
+  if(!dragon?.alive || !plan?.cells?.length) return false;
+
+  const breath=dragon.breathWeapon;
+  faceEntityToward(dragon,plan.target);
+  triggerUnitAttackPose(dragon);
+  setUnitActionBanner(dragon,"Breathing Fire");
+
+  breath.lastUsedRound=game.round;
+
+  const rolledDamage=rollDiceExpression(
+    breath.damageExpression || "8d10+4"
+  ).total;
+
+  const affected=livingUnitsInAreaCells(plan.cells)
+    .filter(unit=>unit.id!==dragon.id);
+
+  const results=affected.map(unit=>{
+    const immune=unitImmuneToDamageType(unit,breath.damageType || "fire");
+
+    if(immune){
+      return {
+        unit,
+        immune:true,
+        saveTarget:null,
+        saveRoll:null,
+        saved:false,
+        damage:0
+      };
+    }
+
+    const saveTarget=breathSaveTargetForUnit(unit);
+    const saveRoll=d(20);
+    const saved=saveRoll>=saveTarget;
+    const damage=saved
+      ? Math.floor(rolledDamage/2)
+      : rolledDamage;
+
+    return {
+      unit,
+      immune:false,
+      saveTarget,
+      saveRoll,
+      saved,
+      damage
+    };
+  });
+
+  for(const result of results){
+    const unit=result.unit;
+    const damage=result.damage;
+    if(damage<=0) continue;
+
+    unit.hp=Math.max(0,unit.hp-damage);
+    onUnitDamaged(unit,damage);
+    registerElementalDamageFx(unit,"fire",damage);
+  }
+
+  updateUi();
+  draw();
+
+  log(
+    dragon.name+" breathes a "+(breath.rangeFeet || 90)+"' cone of fire: "+
+    (breath.damageExpression || "8d10+4")+" = "+rolledDamage+
+    " damage before saves; "+affected.length+" creature"+
+    (affected.length===1 ? "" : "s")+" caught.",
+    "bad"
+  );
+
+  for(const result of results){
+    if(result.immune){
+      log(
+        result.unit.name+" is immune to fire and takes no breath-weapon damage.",
+        "system"
+      );
+      continue;
+    }
+
+    log(
+      result.unit.name+": save vs. breath "+result.saveRoll+" vs "+
+      result.saveTarget+" — "+
+      (result.saved ? "success, half damage" : "failure, full damage")+
+      "; "+result.damage+" damage.",
+      result.saved ? "system" : "bad"
+    );
+  }
+
+  setCombatMessage(
+    affected.length
+      ? dragon.name.toUpperCase()+" BREATHES FIRE — "+affected.length+
+        " TARGET"+(affected.length===1 ? "" : "S")+" IN THE CONE"
+      : dragon.name.toUpperCase()+" BREATHES FIRE",
+    1000,
+    1300,
+    "player-damage"
+  );
+
+  await animateDragonBreath(dragon,plan);
+
+  const killed=results.filter(result=>
+    result.damage>0 &&
+    result.unit.hp<=0 &&
+    result.unit.alive
+  );
+
+  for(const result of killed){
+    const unit=result.unit;
+    unit.alive=false;
+
+    if(unit.controller==="mob"){
+      markEnemyNeutralized(unit);
+    }
+
+    log(unit.name+" goes down and is dying in the dragonfire.","bad");
+    playAgonySound(unit);
+    playDeathSound(unit);
+    triggerDeathFx(unit);
+    updateUi();
+    draw();
+    await waitForDeathActionPause();
+  }
+
+  checkPartyDefeat();
+  return true;
+}
+
+async function juvenileRedDragonMeleeRoutine(dragon,target){
+  const attacks=[
+    {name:"Claw",damage:"1d10"},
+    {name:"Claw",damage:"1d10"},
+    {name:"Bite",damage:"3d10"}
+  ];
+
+  const original={
+    weapon:dragon.weapon,
+    weaponDamageSM:dragon.weaponDamageSM,
+    weaponDamageL:dragon.weaponDamageL
+  };
+
+  let lastResult=null;
+
+  for(const attackSpec of attacks){
+    if(
+      game.over ||
+      !dragon.alive ||
+      !target?.alive ||
+      !canMeleeAttackTarget(dragon,target)
+    ){
+      break;
+    }
+
+    dragon.weapon=attackSpec.name;
+    dragon.weaponDamageSM=attackSpec.damage;
+    dragon.weaponDamageL=attackSpec.damage;
+
+    lastResult=attack(
+      dragon,
+      target,
+      {actionLabel:attackSpec.name}
+    );
+
+    if(lastResult?.killed || lastResult?.criticalMiss){
+      await waitForCombatActionPause();
+    }else{
+      await sleep(190);
+    }
+  }
+
+  dragon.weapon=original.weapon;
+  dragon.weaponDamageSM=original.weaponDamageSM;
+  dragon.weaponDamageL=original.weaponDamageL;
+
+  return lastResult;
+}
+
+async function juvenileRedDragonTurn(dragon,target){
+  let breathPlan=bestDragonBreathPlan(dragon);
+
+  if(breathPlan){
+    await juvenileRedDragonBreathAttack(dragon,breathPlan);
+    if(!game.over) endTurn();
+    return;
+  }
+
+  if(canMeleeAttackTarget(dragon,target)){
+    if(maybeTriggerPlayerGuard(dragon)){
+      await sleep(Math.max(240,combatActionPauseRemaining()));
+      if(game.over) return;
+      if(!dragon.alive){
+        endTurn();
+        return;
+      }
+    }
+
+    await juvenileRedDragonMeleeRoutine(dragon,target);
+    if(!game.over) endTurn();
+    return;
+  }
+
+  const path=pathToClosestReachable(
+    dragon,
+    target,
+    dragon,
+    dragon.move
+  );
+  const steps=Math.max(0,path.length-1);
+
+  if(steps>0){
+    await animateMobAlongPath(dragon,path,steps);
+
+    if(game.over) return;
+    if(!dragon.alive){
+      endTurn();
+      return;
+    }
+  }
+
+  if(steps<=dragon.halfMove){
+    breathPlan=bestDragonBreathPlan(dragon);
+
+    if(breathPlan){
+      await juvenileRedDragonBreathAttack(dragon,breathPlan);
+      if(!game.over) endTurn();
+      return;
+    }
+
+    if(canMeleeAttackTarget(dragon,target)){
+      if(maybeTriggerPlayerGuard(dragon)){
+        await sleep(Math.max(240,combatActionPauseRemaining()));
+        if(game.over) return;
+        if(!dragon.alive){
+          endTurn();
+          return;
+        }
+      }
+
+      await juvenileRedDragonMeleeRoutine(dragon,target);
+      if(!game.over) endTurn();
+      return;
+    }
+  }
+
+  if(steps>0){
+    log(
+      dragon.name+" closes to "+unitDistance(dragon,target)+
+      " hexes from "+target.name+".",
+      "system"
+    );
+  }
+
+  if(canMobGuard(dragon)){
+    enterMobGuard(
+      dragon,
+      dragonBreathReady(dragon)
+        ? "closing for a breath-weapon lane"
+        : "breath weapon is recharging"
+    );
+  }
+
+  if(!game.over) endTurn();
+}
+
+
 function rangedRetreatStep(unit,threat){
   const options=HEX_DIRS
     .map(dir=>({x:unit.x+dir.x,y:unit.y+dir.y}))
@@ -17837,6 +18261,11 @@ async function mobTurn(mob){
   }
 
   const startingDistance=unitDistance(mob,target);
+
+  if(mob.type==="juvenile-red-dragon"){
+    await juvenileRedDragonTurn(mob,target);
+    return;
+  }
 
   /*
     R127 Kobold Slinger AI: Slingers are dedicated ranged troops. If they do
