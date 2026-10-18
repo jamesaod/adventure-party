@@ -3,6 +3,18 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R193 — Enlarge visual transformation
+
+- Added full visual presentation for the already-implemented 1st-level Wizard spell Enlarge.
+- The affected unit sprite grows from its current size to the spell's final size over exactly 1 second.
+- Enlarge changes sprite render size only; occupied hexes, collision, pathfinding, melee reach, targeting footprint, and multi-hex occupancy remain unchanged.
+- The growing unit uses the same white silhouette-glow treatment as the casting effect during the entire transformation.
+- Added a synthesized one-second rising "growing" SFX synchronized to the enlargement.
+- When Enlarge expires, the spell effect is removed normally but a retained transient visual interpolates the unit sprite back to normal size over 1 second.
+- Expiration uses the same white glow in reverse and a matching descending "shrinking" SFX.
+- HP bars move upward with the enlarged presentation so they remain above the scaled sprite.
+- Existing Enlarge rules remain intact: 10% size increase per caster level, 5 rounds/level duration, hostile save to negate, unchanged HP/AC/attack rolls, and proportional weapon base-damage scaling.
+
 ## R192 — Tighter conical dragon breath
 
 - Rebuilt the dragon-breath visual body as a true geometric cone from the attack-sprite muzzle instead of filling the tactical breath cells.
