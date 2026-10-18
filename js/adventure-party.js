@@ -73,6 +73,46 @@ const spellbookScreen=document.getElementById("spellbookScreen");
 const classbookScreen=document.getElementById("classbookScreen");
 const launcherButtons=[...document.querySelectorAll(".launcher-menu button")];
 
+function renderBuildMetadata(){
+  const source=document.getElementById("buildMetadata");
+  const label=document.getElementById("buildLabel");
+  if(!source || !label) return;
+
+  try{
+    const build=JSON.parse(source.textContent || "{}");
+    const builtAt=new Date(build.builtAt);
+
+    if(
+      typeof build.architecture!=="string" ||
+      typeof build.release!=="string" ||
+      !Number.isFinite(builtAt.getTime())
+    ){
+      throw new Error("Invalid build metadata.");
+    }
+
+    const dateText=new Intl.DateTimeFormat(undefined,{
+      year:"numeric",
+      month:"short",
+      day:"numeric"
+    }).format(builtAt);
+
+    const timeText=new Intl.DateTimeFormat(undefined,{
+      hour:"numeric",
+      minute:"2-digit"
+    }).format(builtAt);
+
+    label.innerHTML=
+      build.architecture+"<br>"+
+      "Build "+build.release+"<br>"+
+      dateText+" • "+timeText;
+  }catch(error){
+    label.textContent="BUILD METADATA ERROR";
+    console.error(error);
+  }
+}
+
+renderBuildMetadata();
+
 function updateLauncherSelection(){
   launcherButtons.forEach((button,index)=>{
     button.classList.toggle("selected",index===launcherSelection);
