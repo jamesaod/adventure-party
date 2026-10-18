@@ -25,6 +25,11 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
   if (!index.includes(ref)) fail(`index.html does not reference ${ref}`);
 }
 
+const cssVersion=index.match(/css\/adventure-party\.css\?v=(R\d+)/)?.[1] || null;
+const jsVersion=index.match(/js\/adventure-party\.js\?v=(R\d+)/)?.[1] || null;
+if (!cssVersion || !jsVersion) fail("Versioned CSS/JS asset URLs are required.");
+if (cssVersion !== jsVersion) fail(`CSS/JS asset versions differ: ${cssVersion} vs ${jsVersion}`);
+
 if (index.includes("Single-File Engine") || index.includes("Build R121")) {
   fail("Launcher contains obsolete single-file/R121 build metadata.");
 }
@@ -60,6 +65,9 @@ if (!buildMatch) {
         fail(
           `Build metadata release ${build.release} does not match PR branch ${headRef} (${expectedRelease}).`
         );
+      }
+      if (cssVersion !== expectedRelease || jsVersion !== expectedRelease) {
+        fail(`Asset cache-buster versions must match ${expectedRelease}; got CSS ${cssVersion} / JS ${jsVersion}.`);
       }
     }
   } catch (error) {
