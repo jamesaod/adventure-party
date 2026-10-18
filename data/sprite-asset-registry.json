@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R179",
-  "description": "Adventure Party sprite asset specifications through R179. Source, workspace, render size, and anchor remain independent.",
+  "release": "R182",
+  "description": "Adventure Party sprite asset specifications through R182. Carl now uses the verified 64x64 repository fighter asset with an embedded decode fallback.",
   "assets": {
     "fighter": {
       "source": {
