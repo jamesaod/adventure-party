@@ -4295,6 +4295,21 @@ function unitDistance(a,b){
   return best;
 }
 
+function unitDistanceAt(unit,x,y,target){
+  if(!unit || !target) return Infinity;
+  const sourceCells=occupiedHexesAt(unit,x,y);
+  const targetCells=occupiedHexesAt(target,target.x,target.y);
+  let best=Infinity;
+
+  for(const source of sourceCells){
+    for(const destination of targetCells){
+      best=Math.min(best,hexDistance(source,destination));
+    }
+  }
+
+  return best;
+}
+
 function unitDepthSortPoint(unit){
   const centers=occupiedHexes(unit).map(cell=>hexCenter(cell.x,cell.y));
   if(!centers.length) return hexCenter(unit?.x||0,unit?.y||0);
@@ -4823,7 +4838,17 @@ function wallPolygonSegments(vertices){
 }
 
 function canMeleeReach(a,b){
-  return isAdjacent(a,b) && !architecturalWallBlocksStep(a,b);
+  if(!a || !b) return false;
+
+  const aCells=occupiedHexesAt(a,a.x,a.y);
+  const bCells=occupiedHexesAt(b,b.x,b.y);
+
+  return aCells.some(ac=>
+    bCells.some(bc=>
+      hexDistance(ac,bc)===1 &&
+      !architecturalWallBlocksStep(ac,bc)
+    )
+  );
 }
 
 function drawArchitecturalFloorRegions(){
@@ -7831,9 +7856,7 @@ function hexLineCells(a,b){
   );
 }
 
-function lineOfSightBlocked(source,target){
-  if(!source || !target) return false;
-
+function lineOfSightBlockedBetweenHexes(source,target){
   if(architecturalWallBlocksLOS(source,target)){
     return true;
   }
@@ -7844,6 +7867,27 @@ function lineOfSightBlocked(source,target){
     index>0 &&
     hasFogAtHex(cell.x,cell.y)
   );
+}
+
+function lineOfSightBlocked(source,target){
+  if(!source || !target) return false;
+
+  const sourceCells=occupiedHexesAt(source,source.x,source.y);
+  const targetCells=occupiedHexesAt(target,target.x,target.y);
+
+  /*
+    R186: a large creature is visible/targetable when at least one occupied
+    body hex has a clear ray to at least one occupied source hex.
+  */
+  for(const sourceCell of sourceCells){
+    for(const targetCell of targetCells){
+      if(!lineOfSightBlockedBetweenHexes(sourceCell,targetCell)){
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 /* ============================================================
@@ -8076,16 +8120,17 @@ function isUnitVisibleToFriendlyParty(unit){
   const observers=friendlyVisibilityObservers();
   if(!observers.length) return true;
 
-  return observers.some(observer=>{
-    if(!observer?.alive || observer.fled) return false;
-    if(fogBlocksVisibilityToHex(observer,unit.x,unit.y)) return false;
+  return observers.some(observer=>
+    occupiedHexes(unit).some(cell=>{
+      if(fogBlocksVisibilityToHex(observer,cell.x,cell.y)) return false;
 
-    return !architecturalWallBlocksWorldLine(
-      worldPointForHex(observer.x,observer.y),
-      worldPointForHex(unit.x,unit.y),
-      "los"
-    );
-  });
+      return !architecturalWallBlocksWorldLine(
+        worldPointForHex(observer.x,observer.y),
+        worldPointForHex(cell.x,cell.y),
+        "los"
+      );
+    })
+  );
 }
 
 function shouldRenderUnitUnderPartyVisibility(unit){
@@ -14217,7 +14262,7 @@ function unitCanMakeLeavingHexFreeAttack(attacker,mover){
     Number(attacker.meleeRange)||1
   );
 
-  return hexDistance(attacker,mover)<=reach;
+  return unitDistance(attacker,mover)<=reach;
 }
 
 function leavingHexFreeAttackers(mover){
