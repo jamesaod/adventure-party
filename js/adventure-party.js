@@ -13376,7 +13376,7 @@ function mobCanMissileAttack(mob,target){
     return false;
   }
 
-  const distance=hexDistance(mob,target);
+  const distance=unitDistance(mob,target);
 
   /* R113 Slingers are dedicated missile troops and may fire from 2+ hexes. */
   if(mob.type==="kobold-slinger"){
@@ -16914,13 +16914,16 @@ async function triggerMobGuardsAgainst(target){
 }
 
 function passableForPath(x,y,mover,target){
-  if(isWall(x,y)) return false;
-
-  if(target && x===target.x && y===target.y){
-    return false;
+  if(!mover){
+    return !isWall(x,y) && !occupiedByAnyUnit(x,y,null);
   }
 
-  return !occupiedByAnyUnit(x,y,mover?.id);
+  /*
+    R186: pathfinding validates the mover's COMPLETE destination footprint.
+    Target cells require no special case because overlap with the target's
+    footprint is rejected by canUnitStandAt().
+  */
+  return canUnitStandAt(mover,x,y);
 }
 
 /* Open-map shortest path. With no obstacles, repeatedly choosing the
@@ -16940,13 +16943,20 @@ function pathToAdjacent(start,target,mover){
   while(queue.length && guard<3000){
     guard++;
     const cur=queue.shift();
+    const curMover=mover ? {...mover,x:cur.x,y:cur.y} : cur;
 
-    if(canMeleeReach(cur,target)){
+    if(canMeleeReach(curMover,target)){
       end=cur;
       break;
     }
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
+      if(mover){
+        const da=unitDistanceAt(mover,cur.x+a.x,cur.y+a.y,target);
+        const db=unitDistanceAt(mover,cur.x+b.x,cur.y+b.y,target);
+        return da-db;
+      }
+
       const da=hexDistance({x:cur.x+a.x,y:cur.y+a.y},target);
       const db=hexDistance({x:cur.x+b.x,y:cur.y+b.y},target);
       return da-db;
@@ -16956,14 +16966,15 @@ function pathToAdjacent(start,target,mover){
       const nx=cur.x+dir.x;
       const ny=cur.y+dir.y;
       const k=key(nx,ny);
+      const next={x:nx,y:ny};
 
       if(seen.has(k)) continue;
-      if(architecturalWallBlocksStep(cur,{x:nx,y:ny})) continue;
+      if(mover && unitTransitionBlocked(mover,cur,next)) continue;
       if(!passableForPath(nx,ny,mover,target)) continue;
 
       seen.add(k);
       came.set(k,cur);
-      queue.push({x:nx,y:ny});
+      queue.push(next);
     }
   }
 
@@ -16986,7 +16997,6 @@ function pathToAdjacent(start,target,mover){
 }
 
 
-
 function mobPathToPartyTarget(mob,target){
   if(!mob || !target) return null;
 
@@ -17005,7 +17015,7 @@ function selectMobPartyTarget(mob){
   const candidates=livingPartyMembers()
     .slice()
     .sort((a,b)=>
-      hexDistance(mob,a)-hexDistance(mob,b) ||
+      unitDistance(mob,a)-unitDistance(mob,b) ||
       a.id.localeCompare(b.id)
     );
 
@@ -17046,7 +17056,11 @@ function pathToHex(start,target,mover){
     return [{x:start.x,y:start.y}];
   }
 
-  if(occupiedByAnyUnit(target.x,target.y,mover?.id)){
+  if(mover && !canUnitStandAt(mover,target.x,target.y)){
+    return [{x:start.x,y:start.y}];
+  }
+
+  if(!mover && occupiedByAnyUnit(target.x,target.y,null)){
     return [{x:start.x,y:start.y}];
   }
 
@@ -17081,16 +17095,22 @@ function pathToHex(start,target,mover){
     for(const dir of dirs){
       const nx=cur.x+dir.x;
       const ny=cur.y+dir.y;
-      const k=key(nx,ny);
+      const nk=key(nx,ny);
+      const next={x:nx,y:ny};
 
-      if(seen.has(k)) continue;
-      if(isWall(nx,ny)) continue;
-      if(architecturalWallBlocksStep(cur,{x:nx,y:ny})) continue;
-      if(occupiedByAnyUnit(nx,ny,mover?.id)) continue;
+      if(seen.has(nk)) continue;
 
-      seen.add(k);
-      came.set(k,cur);
-      queue.push({x:nx,y:ny});
+      if(mover){
+        if(unitTransitionBlocked(mover,cur,next)) continue;
+      }else{
+        if(isWall(nx,ny)) continue;
+        if(architecturalWallBlocksStep(cur,next)) continue;
+        if(occupiedByAnyUnit(nx,ny,null)) continue;
+      }
+
+      seen.add(nk);
+      came.set(nk,cur);
+      queue.push(next);
     }
   }
 
@@ -17112,7 +17132,6 @@ function pathToHex(start,target,mover){
   return path;
 }
 
-
 function pathToClosestReachable(start,target,mover,maxSteps){
   const startNode={
     x:start.x,
@@ -17122,11 +17141,12 @@ function pathToClosestReachable(start,target,mover,maxSteps){
 
   const queue=[startNode];
   const came=new Map();
-  const stepsByKey=new Map([[key(start.x,start.y),0]]);
   const seen=new Set([key(start.x,start.y)]);
 
   let best=startNode;
-  let bestDistance=hexDistance(startNode,target);
+  let bestDistance=mover
+    ? unitDistanceAt(mover,startNode.x,startNode.y,target)
+    : hexDistance(startNode,target);
 
   while(queue.length){
     const cur=queue.shift();
@@ -17134,14 +17154,12 @@ function pathToClosestReachable(start,target,mover,maxSteps){
     if(cur.steps>=maxSteps) continue;
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
-      const da=hexDistance(
-        {x:cur.x+a.x,y:cur.y+a.y},
-        target
-      );
-      const db=hexDistance(
-        {x:cur.x+b.x,y:cur.y+b.y},
-        target
-      );
+      const da=mover
+        ? unitDistanceAt(mover,cur.x+a.x,cur.y+a.y,target)
+        : hexDistance({x:cur.x+a.x,y:cur.y+a.y},target);
+      const db=mover
+        ? unitDistanceAt(mover,cur.x+b.x,cur.y+b.y,target)
+        : hexDistance({x:cur.x+b.x,y:cur.y+b.y},target);
       return da-db;
     });
 
@@ -17149,21 +17167,28 @@ function pathToClosestReachable(start,target,mover,maxSteps){
       const nx=cur.x+dir.x;
       const ny=cur.y+dir.y;
       const nk=key(nx,ny);
+      const next={x:nx,y:ny};
 
       if(seen.has(nk)) continue;
-      if(isWall(nx,ny)) continue;
-      if(architecturalWallBlocksStep(cur,{x:nx,y:ny})) continue;
-      if(occupiedByAnyUnit(nx,ny,mover?.id)) continue;
+
+      if(mover){
+        if(unitTransitionBlocked(mover,cur,next)) continue;
+      }else{
+        if(isWall(nx,ny)) continue;
+        if(architecturalWallBlocksStep(cur,next)) continue;
+        if(occupiedByAnyUnit(nx,ny,null)) continue;
+      }
 
       const steps=cur.steps+1;
       const node={x:nx,y:ny,steps};
 
       seen.add(nk);
       came.set(nk,{x:cur.x,y:cur.y});
-      stepsByKey.set(nk,steps);
       queue.push(node);
 
-      const distance=hexDistance(node,target);
+      const distance=mover
+        ? unitDistanceAt(mover,nx,ny,target)
+        : hexDistance(node,target);
 
       if(
         distance<bestDistance ||
@@ -17215,7 +17240,14 @@ function clickPathStep(targetHex){
 
   if(clickedEnemy){
     if(canMeleeReach(p,clickedEnemy)){
-      tryPlayerMove(clickedEnemy.x-p.x,clickedEnemy.y-p.y);
+      const contact=occupiedHexes(clickedEnemy).find(cell=>
+        hexDistance(p,cell)===1 &&
+        !architecturalWallBlocksStep(p,cell)
+      );
+
+      if(contact){
+        tryPlayerMove(contact.x-p.x,contact.y-p.y);
+      }
       return;
     }
     path=pathToAdjacent(p,clickedEnemy,p);
@@ -17381,7 +17413,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       return true;
     }
 
-    if(!next.escape && architecturalWallBlocksStep(entity,next)){
+    if(!next.escape && unitTransitionBlocked(entity,entity,next)){
       return false;
     }
 
@@ -17461,7 +17493,7 @@ async function animateMobAlongPath(mob,path,maxSteps){
   for(let i=1;i<=steps;i++){
     if(game.over || !mob.alive || mob.fled) return false;
 
-    if(architecturalWallBlocksStep(mob,path[i])) return false;
+    if(unitTransitionBlocked(mob,mob,path[i])) return false;
 
     const canLeave=await performLeavingHexFreeAttacks(
       mob,
@@ -17613,7 +17645,7 @@ async function mobTurn(mob){
       return;
     }
 
-    const distance=hexDistance(mob,target);
+    const distance=unitDistance(mob,target);
 
     log(
       isMapEdgeHex(mob.x,mob.y)
@@ -17626,7 +17658,7 @@ async function mobTurn(mob){
     return;
   }
 
-  const startingDistance=hexDistance(mob,target);
+  const startingDistance=unitDistance(mob,target);
 
   /*
     R127 Kobold Slinger AI: Slingers are dedicated ranged troops. If they do
@@ -17767,7 +17799,7 @@ async function mobTurn(mob){
     }
   }
 
-  const endingDistance=hexDistance(mob,target);
+  const endingDistance=unitDistance(mob,target);
 
   /*
     If the mob managed to reach melee range without exceeding half movement,
