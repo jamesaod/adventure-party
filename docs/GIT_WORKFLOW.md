@@ -66,3 +66,21 @@ For every new or replacement sprite:
 10. Visually confirm the rendered in-game asset before starting unrelated feature work.
 
 The R179–R183 regression showed that browser caching, malformed binary transfer, and ambiguous intermediate assets can each produce a visually wrong or broken sprite even when surrounding code is correct. Treat sprite identity and decodeability as release-blocking checks.
+
+
+### Binary sprite transfer recovery
+
+R190 exposed a second failure mode: an interrupted or oversized binary transfer can create a Git blob that exists at the expected path but contains a truncated PNG or a bad IDAT CRC. GitHub itself may accept that blob; the repository PNG-integrity validator is the release gate that catches it.
+
+When sprite validation reports bad CRC, truncated PNG chunk, or another binary-integrity failure:
+
+1. Stop retrying the same repository blob. Repeated commits of already-corrupted bytes only produce repeated validation failures and notification emails.
+2. Return to the locally verified source file and decode it fully before upload.
+3. Record the source dimensions and a local checksum when practical.
+4. For pixel art, prefer a compact validated indexed/palette PNG when it preserves the intended pixels and transparency. Smaller binary payloads reduce connector-transfer risk.
+5. Create a new Git blob from the verified bytes and replace the affected tree entry; do not reuse the failed blob SHA.
+6. Let CI validate the replacement before making any additional sprite or gameplay changes.
+7. Merge only after the PNG-integrity job passes. A failed PR validation does not mean the current playable main build is broken.
+8. If the connection is interrupted during upload, inspect the branch head and Actions history before retrying; the operation may have completed even though the chat response was lost.
+
+R190 was recovered by replacing the corrupted dragon pose blobs with compact, locally validated PNGs. The next validation run passed, and only then was the pull request merged.
