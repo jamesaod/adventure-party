@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "release": "R167",
-  "description": "Adventure Party sprite asset specifications after R167 multi-file repository migration. Source, workspace, render size, and anchor remain independent.",
+  "release": "R179",
+  "description": "Adventure Party sprite asset specifications through R179. Source, workspace, render size, and anchor remain independent.",
   "assets": {
     "fighter": {
       "source": {
-        "width": 50,
-        "height": 68
+        "width": 64,
+        "height": 64
       },
       "workspace": {
         "width": 64,
         "height": 64
       },
       "render": {
-        "width": 26,
+        "width": 32,
         "height": 35
       },
       "anchor": {
@@ -22,7 +22,7 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "left"
+      "nativeFacing": "right"
     },
     "kobold-stand": {
       "source": {

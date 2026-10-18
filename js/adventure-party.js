@@ -11537,8 +11537,11 @@ function newGame(condition=selectedCombatCondition){
   }
 
   const player=makeFighter();
-  const friendlyRanger=makeFriendlyElvenRanger();
-  const testMage=makeTestPartyMage();
+  /*
+    R179 combat setup cleanup: the default battle test now starts with Carl
+    as the sole player character. Ranger and Mage definitions remain in the
+    engine for future roster selection but are not spawned automatically.
+  */
   const kobolds=condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3);
   /* R114: Orcs remain defined in the engine but are removed from this combat simulation. */
   lastOrcDeployment=null;
@@ -11552,7 +11555,7 @@ function newGame(condition=selectedCombatCondition){
     over:false,
     condition,
     player,
-    allies:[friendlyRanger,testMage],
+    allies:[],
     enemies,
     order:[],
     turnIndex:0,

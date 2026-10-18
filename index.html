@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Adventure Party (working title)</title>
-<link rel="stylesheet" href="css/adventure-party.css?v=R178">
+<link rel="stylesheet" href="css/adventure-party.css?v=R179">
 </head>
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R178","builtAt":"2026-10-18T10:29:16-04:00"}
+{"architecture":"Multi-File Engine","release":"R179","builtAt":"2026-10-18T10:44:46-04:00"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -336,19 +336,28 @@
         Choose the battlefield conditions for the Combat System Test.
       </div>
 
-      <div class="combat-condition-grid" role="radiogroup" aria-label="Combat conditions">
+      <div class="combat-battlefield-row" role="radiogroup" aria-label="Battlefield">
+        <span class="combat-setup-label">Battlefield</span>
         <button id="conditionGrass" class="combat-condition-choice selected" type="button" data-combat-condition="grass" aria-pressed="true">
-          <h2>Grassy Battlefield</h2>
-          <p>The current open-field tactical test: unobstructed movement, ranged fire, spell areas, morale, and Kobold encounter behavior.</p>
-          <span class="condition-tag">OPEN FIELD</span>
+          Grassy Battlefield
         </button>
-
         <button id="conditionWall" class="combat-condition-choice" type="button" data-combat-condition="wall" aria-pressed="false">
-          <h2>Wall Test</h2>
-          <p>A rectangular indoor stone-room prototype laid independently over the hex movement graph. Indoor space uses a continuous grey floor and excludes trees; wall-bisected half hexes are non-passable, the doorway remains usable, and solid walls block movement / line of sight.</p>
-          <span class="condition-tag">90° WALL PROTOTYPE</span>
+          Wall Test
         </button>
       </div>
+
+      <section class="combat-roster-placeholder" aria-label="Future combat roster setup">
+        <div class="combat-roster-row">
+          <span class="combat-setup-label">Player Characters</span>
+          <span class="combat-roster-current">Dungeon Crawler Carl</span>
+          <button class="combat-roster-add" type="button" disabled>+ ADD — COMING SOON</button>
+        </div>
+        <div class="combat-roster-row">
+          <span class="combat-setup-label">MOBs</span>
+          <span class="combat-roster-current">Kobold Encounter</span>
+          <button class="combat-roster-add" type="button" disabled>+ ADD — COMING SOON</button>
+        </div>
+      </section>
 
       <div class="combat-condition-actions">
         <button id="beginBattleButton" class="combat-condition-begin" type="button">Begin Battle</button>
@@ -568,7 +577,7 @@
   </div>
 </section>
 
-<script src="js/adventure-party.js?v=R178"></script>
+<script src="js/adventure-party.js?v=R179"></script>
 
 </body>
 </html>
