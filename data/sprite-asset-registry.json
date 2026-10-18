@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R189",
-  "description": "Adventure Party sprite asset specifications through R189. R189 keeps the R188 dragon sprite scale/placement and adds full-footprint hover highlighting plus a denser Fireball-style dragon-breath presentation.",
+  "release": "R190",
+  "description": "Adventure Party sprite asset specifications through R190. R190 replaces the juvenile red dragon art with dedicated standing and attack poses and records scale/anchor measurements derived from the user's seven-hex placement reference.",
   "assets": {
     "fighter": {
       "source": {
@@ -236,24 +236,45 @@
     },
     "juvenile-red-dragon": {
       "source": {
-        "width": 160,
-        "height": 160
+        "width": 161,
+        "height": 189
       },
       "workspace": {
-        "width": 160,
-        "height": 160
+        "width": 161,
+        "height": 189
       },
       "render": {
-        "width": 126,
-        "height": 126
+        "width": 89,
+        "height": 104
       },
       "anchor": {
-        "x": 80,
-        "y": 160
+        "x": 81,
+        "y": 189
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "left"
+    },
+    "juvenile-red-dragon-attack": {
+      "source": {
+        "width": 161,
+        "height": 194
+      },
+      "workspace": {
+        "width": 161,
+        "height": 194
+      },
+      "render": {
+        "width": 89,
+        "height": 107
+      },
+      "anchor": {
+        "x": 81,
+        "y": 194
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "left"
     }
   }
 }
