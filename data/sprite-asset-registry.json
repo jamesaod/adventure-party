@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R188",
-  "description": "Adventure Party sprite asset specifications through R188. R188 retunes the juvenile red dragon render scale and placement to the user-supplied seven-hex reference template; the underlying sprite asset is unchanged.",
+  "release": "R189",
+  "description": "Adventure Party sprite asset specifications through R189. R189 keeps the R188 dragon sprite scale/placement and adds full-footprint hover highlighting plus a denser Fireball-style dragon-breath presentation.",
   "assets": {
     "fighter": {
       "source": {
