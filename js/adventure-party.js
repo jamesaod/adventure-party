@@ -19721,6 +19721,34 @@ function drawHexGridLine(x,y){
   ctx.stroke();
 }
 
+
+/*
+  R189 — MULTI-HEX HOVER FOOTPRINT
+  --------------------------------
+  Hovering any occupied cell of a visible multi-hex unit highlights its entire
+  occupied footprint. Hidden hostile units in the wall/LOS test do not expand
+  the hover footprint, preventing hover UI from revealing an unseen creature.
+*/
+function hoverHighlightCells(){
+  if(!hoverHex || aimMode) return [];
+
+  const hoveredUnit=unitAtHex(hoverHex.x,hoverHex.y);
+  if(!hoveredUnit || unitFootprintCellCount(hoveredUnit)<=1){
+    return [hoverHex];
+  }
+
+  if(
+    hoveredUnit.controller==="mob" &&
+    game?.condition==="wall" &&
+    !mobPositionVisibleToFriendlyParty(hoveredUnit)
+  ){
+    return [hoverHex];
+  }
+
+  return occupiedHexes(hoveredUnit)
+    .filter(cell=>inside(cell.x,cell.y));
+}
+
 function drawFloor(){
   const tileSet=activeCombatTerrainTileSet();
 
@@ -19739,11 +19767,11 @@ function drawFloor(){
     drawHexGridLine(tile.x,tile.y);
   }
 
-  if(hoverHex && !aimMode){
-    const top=hexScreenVertices(hoverHex.x,hoverHex.y);
+  for(const cell of hoverHighlightCells()){
+    const top=hexScreenVertices(cell.x,cell.y);
 
     polygonPath(top);
-    ctx.fillStyle="rgba(229,205,131,0.08)";
+    ctx.fillStyle="rgba(229,205,131,0.10)";
     ctx.fill();
 
     ctx.strokeStyle="#d6c56f";
@@ -19832,11 +19860,11 @@ function drawFloor(){
     drawHexGridLine(tile.x,tile.y);
   }
 
-  if(hoverHex && !aimMode){
-    const top=hexScreenVertices(hoverHex.x,hoverHex.y);
+  for(const cell of hoverHighlightCells()){
+    const top=hexScreenVertices(cell.x,cell.y);
 
     polygonPath(top);
-    ctx.fillStyle="rgba(229,205,131,0.08)";
+    ctx.fillStyle="rgba(229,205,131,0.10)";
     ctx.fill();
 
     ctx.strokeStyle="#a69c6d";
@@ -20940,7 +20968,7 @@ function drawDragonBreathFx(){
     const depth=Math.max(0,Math.min(1,step/Math.max(1,Number(fx.rangeHexes)||9)));
     const lane=Math.abs(Number(cell.breathLane)||0);
     const rowStart=Math.max(0,(step-1)/step);
-    const samples=4;
+    const samples=9;
 
     for(let sample=0;sample<samples;sample++){
       const local=(sample+1)/samples;
@@ -20954,16 +20982,21 @@ function drawDragonBreathFx(){
       const h4=hash01(cell.x+149,cell.y+29,sample,frame+47);
 
       const radius=(
-        10+
-        17*depth+
-        lane*3+
-        h3*5
-      )*Math.max(0.30,growth);
+        14+
+        22*depth+
+        lane*4+
+        h3*6
+      )*Math.max(0.34,growth);
 
-      const rx=radius*(1.06+0.12*h1);
-      const ry=radius*(0.62+0.12*h4);
-      const jitterX=(h1-0.5)*12*(0.45+depth);
-      const jitterY=(h2-0.5)*8*(0.45+depth);
+      /*
+        R189 density pass: broader, taller lobes with less positional jitter.
+        Nine samples per breath cell now overlap heavily, closing the gaps
+        between tactical rows and making the weapon read as one solid cone.
+      */
+      const rx=radius*(1.16+0.14*h1);
+      const ry=radius*(0.76+0.14*h4);
+      const jitterX=(h1-0.5)*7*(0.35+depth);
+      const jitterY=(h2-0.5)*5*(0.35+depth);
 
       const centerHeat=Math.max(0,1-depth*0.72-lane*0.12);
       let colorIndex=Math.round(
@@ -20987,7 +21020,7 @@ function drawDragonBreathFx(){
       );
       bodyCtx.fill();
 
-      if(centerHeat>0.34 && h1>0.30){
+      if(centerHeat>0.26 && h1>0.18){
         const innerIndex=Math.min(flamePalette.length-1,colorIndex+2);
         const [ir,ig,ib]=flamePalette[innerIndex];
         bodyCtx.fillStyle=`rgba(${ir},${ig},${ib},1)`;
@@ -20995,8 +21028,8 @@ function drawDragonBreathFx(){
         bodyCtx.ellipse(
           px+jitterX-rx*0.10,
           py+jitterY-ry*0.12,
-          rx*0.55,
-          ry*0.50,
+          rx*0.66,
+          ry*0.60,
           0,
           0,
           Math.PI*2
@@ -21065,7 +21098,7 @@ function drawDragonBreathFx(){
     Fire-only grain pass, matching the Fireball treatment but stretched along
     the breath cells rather than distributed around a spherical blast center.
   */
-  const grainCount=Math.max(80,Math.round(150*growth));
+  const grainCount=Math.max(180,Math.round(340*growth));
   for(let i=0;i<grainCount;i++){
     const cell=visibleCells[i%visibleCells.length];
     const c=hexCenter(cell.x,cell.y);
@@ -21089,7 +21122,7 @@ function drawDragonBreathFx(){
     Dense deterministic ember field. Particles rise while continuing forward,
     making the breath read as a fast projected flame volume rather than smoke.
   */
-  const particleCount=190;
+  const particleCount=460;
   const lastCell=visibleCells[visibleCells.length-1];
   const far=hexCenter(lastCell.x,lastCell.y);
   const dirX=far.x-mouth.x;
@@ -21108,7 +21141,7 @@ function drawDragonBreathFx(){
     const along=hash01(fx.source.x-43,fx.source.y+67,i,13);
     if(along>growth+0.08) continue;
 
-    const spread=(8+along*34)*(
+    const spread=(12+along*48)*(
       hash01(fx.source.x+19,fx.source.y+149,i,23)-0.5
     );
     const rise=life*(10+hash01(fx.source.x+89,fx.source.y-17,i,31)*32);
