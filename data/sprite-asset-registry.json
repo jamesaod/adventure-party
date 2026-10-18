@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R192",
-  "description": "Adventure Party sprite asset specifications through R192. R192 retains the R190 dragon pose assets and replaces the breath visual body with a true geometric cone of smaller flame lobes while preserving the R191 white-hot glow and distal smoke.",
+  "release": "R193",
+  "description": "Adventure Party sprite asset specifications through R193. R193 adds presentation-only Enlarge scaling: the unit sprite grows and shrinks over one second with a casting-style glow while its tactical hex footprint remains unchanged.",
   "assets": {
     "fighter": {
       "source": {
