@@ -1035,6 +1035,75 @@ function playDragonBreathSound(){
   Sleep uses a bright, soft two-tone shimmer now; future magical status
   effects can reuse this hook with their own kind-specific timbre.
 */
+/*
+  R193 Enlarge transition SFX.
+  Growth uses a one-second rising resonant sweep; expiration plays the same
+  idea in reverse so the audio motion matches the sprite-scale animation.
+*/
+function playEnlargeTransitionSound(direction="grow"){
+  queueSfx(()=>{
+    const now=audioCtx.currentTime;
+    const growing=direction!=="shrink";
+    const duration=1.0;
+
+    const low=audioCtx.createOscillator();
+    const high=audioCtx.createOscillator();
+    const lowGain=audioCtx.createGain();
+    const highGain=audioCtx.createGain();
+
+    low.type="sine";
+    high.type="triangle";
+
+    if(growing){
+      low.frequency.setValueAtTime(92,now);
+      low.frequency.exponentialRampToValueAtTime(180,now+0.52);
+      low.frequency.exponentialRampToValueAtTime(290,now+duration);
+
+      high.frequency.setValueAtTime(180,now);
+      high.frequency.exponentialRampToValueAtTime(420,now+0.58);
+      high.frequency.exponentialRampToValueAtTime(690,now+duration);
+    }else{
+      low.frequency.setValueAtTime(290,now);
+      low.frequency.exponentialRampToValueAtTime(180,now+0.48);
+      low.frequency.exponentialRampToValueAtTime(92,now+duration);
+
+      high.frequency.setValueAtTime(690,now);
+      high.frequency.exponentialRampToValueAtTime(420,now+0.42);
+      high.frequency.exponentialRampToValueAtTime(180,now+duration);
+    }
+
+    lowGain.gain.setValueAtTime(0.0001,now);
+    lowGain.gain.exponentialRampToValueAtTime(0.085,now+0.08);
+    lowGain.gain.exponentialRampToValueAtTime(0.060,now+0.68);
+    lowGain.gain.exponentialRampToValueAtTime(0.0001,now+duration);
+
+    highGain.gain.setValueAtTime(0.0001,now);
+    highGain.gain.exponentialRampToValueAtTime(0.045,now+0.12);
+    highGain.gain.exponentialRampToValueAtTime(0.032,now+0.72);
+    highGain.gain.exponentialRampToValueAtTime(0.0001,now+duration);
+
+    low.connect(lowGain);
+    high.connect(highGain);
+    lowGain.connect(sfxGain);
+    highGain.connect(sfxGain);
+
+    low.start(now);
+    high.start(now);
+    low.stop(now+duration+0.02);
+    high.stop(now+duration+0.02);
+
+    noiseVoice(
+      0.92,
+      0.020,
+      "bandpass",
+      growing ? 720 : 520,
+      0.8,
+      0.04
+    );
+  });
+}
+
+
 function playMagicEffectSound(kind="generic",index=0){
   queueSfx(()=>{
     const now=audioCtx.currentTime;
@@ -5230,6 +5299,8 @@ let magicEffectFx=[];
 */
 let castingGlowFx=[];
 let fireDamageFx=[];
+/* R193: one-second grow/shrink sprite-scale animation for Enlarge. */
+let enlargeTransitionFx=[];
 let transientUnitFxFrame=null;
 
 /* R95: requestAnimationFrame id used only while persistent animated status FX are active. */
@@ -7396,11 +7467,16 @@ function getSpellEntry(id){
 function pruneTransientUnitFx(now=performance.now()){
   castingGlowFx=castingGlowFx.filter(fx=>now<fx.until);
   fireDamageFx=fireDamageFx.filter(fx=>now<fx.until);
+  enlargeTransitionFx=enlargeTransitionFx.filter(fx=>now<fx.until);
 }
 
 function hasTransientUnitFx(now=performance.now()){
   pruneTransientUnitFx(now);
-  return castingGlowFx.length>0 || fireDamageFx.length>0;
+  return (
+    castingGlowFx.length>0 ||
+    fireDamageFx.length>0 ||
+    enlargeTransitionFx.length>0
+  );
 }
 
 function transientUnitFxTick(){
@@ -7457,6 +7533,80 @@ function activeCastingGlowFx(unit){
   if(!unit?.id) return null;
   const now=performance.now();
   return castingGlowFx.find(fx=>fx.unitId===unit.id && now<fx.until) || null;
+}
+
+/*
+  R193 Enlarge presentation.
+  The logical footprint never changes: only the sprite render dimensions are
+  interpolated. Feet/anchor stay planted on the same tactical hex.
+*/
+function triggerEnlargeTransition(
+  unit,
+  fromScale,
+  toScale,
+  direction="grow",
+  durationMs=1000
+){
+  if(!unit?.id || !unit.alive || unit.fled) return false;
+
+  const started=performance.now();
+  const duration=Math.max(1,Number(durationMs)||1000);
+
+  enlargeTransitionFx=enlargeTransitionFx.filter(fx=>fx.unitId!==unit.id);
+  enlargeTransitionFx.push({
+    unitId:unit.id,
+    started,
+    until:started+duration,
+    duration,
+    fromScale:Math.max(0.1,Number(fromScale)||1),
+    toScale:Math.max(0.1,Number(toScale)||1),
+    direction
+  });
+
+  playEnlargeTransitionSound(direction);
+  ensureTransientUnitFxLoop();
+  return true;
+}
+
+function activeEnlargeTransitionFx(unit){
+  if(!unit?.id) return null;
+  const now=performance.now();
+  return enlargeTransitionFx.find(
+    fx=>fx.unitId===unit.id && now<fx.until
+  ) || null;
+}
+
+function enlargeVisualScale(unit){
+  if(!unit) return 1;
+
+  const transition=activeEnlargeTransitionFx(unit);
+  if(transition){
+    const now=performance.now();
+    const raw=Math.max(
+      0,
+      Math.min(
+        1,
+        (now-transition.started)/Math.max(1,transition.duration)
+      )
+    );
+    /* Smoothstep keeps the size change soft at both ends of the 1-second cue. */
+    const eased=raw*raw*(3-2*raw);
+
+    return (
+      transition.fromScale+
+      (transition.toScale-transition.fromScale)*eased
+    );
+  }
+
+  const effect=getUnitEffect(unit,"enlarge");
+  if(!effect) return 1;
+
+  return Math.max(
+    1,
+    Number(effect.data?.sizeMultiplier) ||
+    Number(effect.data?.damageMultiplier) ||
+    1
+  );
 }
 
 function triggerFireDamageFx(unit,damage=1){
@@ -7665,10 +7815,42 @@ function expireTimedUnitEffects(){
     for(const key of ["buffs","debuffs"]){
       if(!Array.isArray(unit[key])) continue;
 
-      unit[key]=unit[key].filter(effect=>
-        !Number.isFinite(effect?.expiresRound) ||
-        game.round<effect.expiresRound
-      );
+      const retained=[];
+
+      for(const effect of unit[key]){
+        const expired=
+          Number.isFinite(effect?.expiresRound) &&
+          game.round>=effect.expiresRound;
+
+        if(!expired){
+          retained.push(effect);
+          continue;
+        }
+
+        /*
+          R193: Enlarge expires visually instead of snapping back to 100%.
+          The effect can be removed immediately because the transient transition
+          retains its starting scale independently for the one-second shrink.
+        */
+        if(effect?.id==="enlarge"){
+          const fromScale=Math.max(
+            1,
+            Number(effect.data?.sizeMultiplier) ||
+            Number(effect.data?.damageMultiplier) ||
+            1
+          );
+
+          triggerEnlargeTransition(
+            unit,
+            fromScale,
+            1,
+            "shrink",
+            1000
+          );
+        }
+      }
+
+      unit[key]=retained;
     }
   }
 
@@ -16132,6 +16314,7 @@ async function castEnlargeSpell(action,target){
   }
 
   const multiplier=1+(0.10*level);
+  const priorScale=enlargeVisualScale(target);
 
   addUnitEffect(target,{
     id:"enlarge",
@@ -16141,9 +16324,23 @@ async function castEnlargeSpell(action,target){
     detail:`Size ${Math.round(multiplier*100)}%; weapon base damage ×${multiplier.toFixed(1)}`,
     data:{
       casterLevel:level,
-      damageMultiplier:multiplier
+      damageMultiplier:multiplier,
+      sizeMultiplier:multiplier
     }
   });
+
+  /*
+    R193: visual scale follows the same percentage as the spell's size increase.
+    Occupied hexes, pathfinding, melee reach, and collision footprint are not
+    changed by this presentation-only sprite scaling.
+  */
+  triggerEnlargeTransition(
+    target,
+    Math.max(1,priorScale),
+    multiplier,
+    multiplier>=priorScale ? "grow" : "shrink",
+    1000
+  );
 
   setCombatMessage(`${target.name} grows to ${Math.round(multiplier*100)}% normal size.`,COMBAT_MESSAGE_MIN_HOLD_MS);
   await waitForCombatActionPause();
@@ -19943,7 +20140,9 @@ function drawHpBar(entity,color){
   const width=Math.max(34,Number(entity.hpBarWidth)||(large ? 64 : 34));
   const ratio=Math.max(0,Math.min(1,entity.hp/entity.maxHp));
   const px=c.x-width/2;
-  const py=c.y-(Number(entity.hpBarOffsetY)||(large ? 78 : 39));
+  const baseOffset=Number(entity.hpBarOffsetY)||(large ? 78 : 39);
+  const visualScale=enlargeVisualScale(entity);
+  const py=c.y-(baseOffset*Math.max(1,visualScale));
 
   ctx.fillStyle="#17151a";
   ctx.fillRect(px,py,width,4);
@@ -19956,7 +20155,13 @@ function drawHpBar(entity,color){
   ctx.strokeRect(px,py,width,4);
 }
 
-function drawCastingGlowSilhouette(image,drawW,drawH,fx){
+function drawCastingGlowSilhouette(
+  image,
+  drawW,
+  drawH,
+  fx,
+  anchor={x:0.5,y:1}
+){
   if(!fx || !image?.complete || drawW<=0 || drawH<=0) return;
 
   const now=performance.now();
@@ -19984,8 +20189,9 @@ function drawCastingGlowSilhouette(image,drawW,drawH,fx){
   mctx.fillRect(0,0,w,h);
   mctx.globalCompositeOperation="source-over";
 
-  const baseX=-Math.round(drawW/2)-pad;
-  const baseY=-drawH-pad;
+  const spriteAnchor=anchor || {x:0.5,y:1};
+  const baseX=-Math.round(drawW*spriteAnchor.x)-pad;
+  const baseY=-Math.round(drawH*spriteAnchor.y)-pad;
 
   ctx.save();
   /* R149: source-over preserves the white glow color as opacity falls off. */
@@ -20078,6 +20284,15 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
 
   const shouldFlip=facing!==nativeFacing;
   const renderSource=image._crispRenderSource || image;
+  const spriteAnchor=anchor || {x:0.5,y:1};
+
+  /*
+    R193: Enlarge changes only presentation size. The translated world anchor
+    remains unchanged, so the unit continues to occupy its original footprint.
+  */
+  const enlargeScale=enlargeVisualScale(entity);
+  const visualDrawW=Math.max(1,drawW*enlargeScale);
+  const visualDrawH=Math.max(1,drawH*enlargeScale);
 
   ctx.translate(c.x,c.y);
 
@@ -20085,20 +20300,31 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     ctx.scale(-1,1);
   }
 
-  const castingFx=activeCastingGlowFx(entity);
-  if(castingFx){
-    drawCastingGlowSilhouette(renderSource,drawW,drawH,castingFx);
-  }
+  /*
+    The target glows throughout the grow/shrink transition using the same
+    silhouette treatment as spellcasting. If both happen together, Enlarge
+    takes precedence so the glow follows the changing sprite dimensions.
+  */
+  const transitionFx=activeEnlargeTransitionFx(entity);
+  const glowFx=transitionFx || activeCastingGlowFx(entity);
 
-  const spriteAnchor=anchor || {x:0.5,y:1};
+  if(glowFx){
+    drawCastingGlowSilhouette(
+      renderSource,
+      visualDrawW,
+      visualDrawH,
+      glowFx,
+      spriteAnchor
+    );
+  }
 
   try{
     ctx.drawImage(
       renderSource,
-      -Math.round(drawW*spriteAnchor.x),
-      -Math.round(drawH*spriteAnchor.y),
-      drawW,
-      drawH
+      -Math.round(visualDrawW*spriteAnchor.x),
+      -Math.round(visualDrawH*spriteAnchor.y),
+      visualDrawW,
+      visualDrawH
     );
   }catch(error){
     console.error("Sprite draw skipped because the image source is invalid.",error);
