@@ -967,6 +967,12 @@ button, input, select, textarea {
   border-color:#494655;
 }
 
+.weather-test-control {
+  padding:4px 6px;
+  font-size:12px;
+  letter-spacing:.2px;
+}
+
 .kv {
   display:grid;
   grid-template-columns:1fr auto;
