@@ -999,6 +999,38 @@ function playFireballExplosionSound(){
 }
 
 /*
+  R187 juvenile Red Dragon breath SFX.
+  Synthesized in-engine: low chest-growl plus turbulent filtered flame noise.
+*/
+function playDragonBreathSound(){
+  queueSfx(()=>{
+    const now=audioCtx.currentTime;
+    const duration=1.05;
+
+    const growl=audioCtx.createOscillator();
+    const growlGain=audioCtx.createGain();
+
+    growl.type="sawtooth";
+    growl.frequency.setValueAtTime(92,now);
+    growl.frequency.exponentialRampToValueAtTime(43,now+0.72);
+
+    growlGain.gain.setValueAtTime(0.0001,now);
+    growlGain.gain.exponentialRampToValueAtTime(0.075,now+0.035);
+    growlGain.gain.exponentialRampToValueAtTime(0.045,now+0.38);
+    growlGain.gain.exponentialRampToValueAtTime(0.0001,now+0.88);
+
+    growl.connect(growlGain);
+    growlGain.connect(sfxGain);
+    growl.start(now);
+    growl.stop(now+0.92);
+
+    noiseVoice(duration,0.18,"bandpass",1150,0.8,0);
+    noiseVoice(0.82,0.10,"highpass",2450,0.55,0.03);
+    noiseVoice(0.58,0.075,"lowpass",520,1.05,0.18);
+  });
+}
+
+/*
   R93 reusable magical status-effect sound.
   Sleep uses a bright, soft two-tone shimmer now; future magical status
   effects can reuse this hook with their own kind-specific timbre.
@@ -5174,6 +5206,8 @@ let areaDamageFx=null;
 /* R94: Sleep 7-hex cluster + depth-sorted volumetric Wall of Fog. */
 /* R104: persistent Unconscious and Confusion status VFX added; R103 spell VFX retained. */
 let fireballExplosionFx=null;
+/* R187: animated tactical cone for juvenile Red Dragon fire breath. */
+let dragonBreathFx=null;
 /* R100: short-lived fan-shaped prismatic Color Spray overlay. */
 let colorSprayFx=null;
 let magicEffectFx=[];
@@ -7745,6 +7779,37 @@ function rollSpellSave(target,sourceUnit=null,extraModifier=0){
     targetNumber,
     success:modifiedRoll>=targetNumber
   };
+}
+
+function breathSaveTargetForUnit(unit){
+  if(unit?.saves?.breath){
+    return unit.saves.breath;
+  }
+
+  if(unit?.id==="player"){
+    return (
+      unit.saves ||
+      warriorSavingThrows(unit.level || 1)
+    ).breath;
+  }
+
+  if(unit?.controller==="mob"){
+    return warriorSavingThrows(
+      Math.max(1,Math.ceil(Number(unit.hitDiceValue)||1))
+    ).breath;
+  }
+
+  return warriorSavingThrows(
+    Math.max(1,Number(unit?.level)||1)
+  ).breath;
+}
+
+function unitImmuneToDamageType(unit,damageType){
+  const wanted=String(damageType || "").toLowerCase();
+  return Array.isArray(unit?.damageImmunities) &&
+    unit.damageImmunities.some(type=>
+      String(type || "").toLowerCase()===wanted
+    );
 }
 
 function attackComesFromFront(defender,attacker){
