@@ -1467,8 +1467,8 @@ function startRainAmbience(severity){
 
   const now=audioCtx.currentTime;
 
-  /* R175: rain master level reduced to 50% of the R173 mix. */
-  bus.gain.exponentialRampToValueAtTime(0.15+0.12*intensity,now+0.35);
+  /* R176: rain master level reduced another 50% from the R175 mix. */
+  bus.gain.exponentialRampToValueAtTime(0.075+0.06*intensity,now+0.35);
   body.start(now);
   hiss.start(now);
 
