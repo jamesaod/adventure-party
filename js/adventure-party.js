@@ -1246,6 +1246,9 @@ function triggerDeathFx(entity){
   }
 
   deathFx={
+    unitId:entity.id,
+    footprintId:entity.footprintId || "single",
+    facingHex:facingDirectionIndex(entity),
     x:entity.x,
     y:entity.y,
     started:performance.now()
@@ -8567,11 +8570,16 @@ function drawVisibleArchitecturalWallsOverLOS(){
     if(!enemy?.alive || enemy.fled) continue;
     if(!shouldRenderUnitUnderPartyVisibility(enemy)) continue;
 
-    const c=hexCenter(enemy.x,enemy.y);
+    const depth=unitDepthSortPoint(enemy);
     foreground.push({
-      sortY:c.y,
-      sortX:c.x,
-      fn:()=>enemy.type==="orc" ? drawOrc(enemy) : drawKobold(enemy)
+      sortY:depth.y,
+      sortX:depth.x,
+      fn:()=>
+        enemy.type==="orc"
+          ? drawOrc(enemy)
+          : enemy.type==="large-test-mob"
+            ? drawLargeTestMob(enemy)
+            : drawKobold(enemy)
     });
   }
 
@@ -19229,17 +19237,19 @@ function drawFloor(){
 }
 
 function drawActiveHex(entity,color){
-  const top=hexScreenVertices(entity.x,entity.y);
+  for(const cell of occupiedHexes(entity)){
+    const top=hexScreenVertices(cell.x,cell.y);
 
-  polygonPath(top);
-  ctx.fillStyle=color==="player"
-    ? "rgba(121,231,231,0.10)"
-    : "rgba(223,107,107,0.10)";
-  ctx.fill();
+    polygonPath(top);
+    ctx.fillStyle=color==="player"
+      ? "rgba(121,231,231,0.10)"
+      : "rgba(223,107,107,0.10)";
+    ctx.fill();
 
-  ctx.strokeStyle=color==="player" ? "#79e7e7" : color;
-  ctx.lineWidth=3;
-  ctx.stroke();
+    ctx.strokeStyle=color==="player" ? "#79e7e7" : color;
+    ctx.lineWidth=3;
+    ctx.stroke();
+  }
 }
 
 function drawHpBar(entity,color){
@@ -19252,11 +19262,12 @@ function drawHpBar(entity,color){
     return;
   }
 
-  const c=hexCenter(entity.x,entity.y);
-  const width=34;
+  const c=unitFootprintScreenCenter(entity);
+  const large=unitFootprintCellCount(entity)>1;
+  const width=Math.max(34,Number(entity.hpBarWidth)||(large ? 64 : 34));
   const ratio=Math.max(0,Math.min(1,entity.hp/entity.maxHp));
   const px=c.x-width/2;
-  const py=c.y-39;
+  const py=c.y-(Number(entity.hpBarOffsetY)||(large ? 78 : 39));
 
   ctx.fillStyle="#17151a";
   ctx.fillRect(px,py,width,4);
@@ -19930,6 +19941,71 @@ function drawOrc(orc){
     getSpriteAssetSpec(orcAssetId)?.nativeFacing || unitPoseNativeFacing(orc,"right"),
     orc,
     runtimeAnchorForAsset(orcAssetId)
+  );
+}
+
+
+
+function drawLargeTestMob(mob){
+  const footprint=occupiedHexes(mob);
+  const center=unitFootprintScreenCenter(mob);
+
+  if(game.active===mob.id){
+    drawActiveHex(mob,"#e08058");
+  }
+
+  if(mob.alive){
+    drawHpBar(mob,"#e08058");
+  }
+
+  /*
+    Temporary R186 footprint visualization. The translucent body cells make the
+    spatial mask explicit while we validate movement/targeting. A future Dragon
+    sprite will replace this diagnostic overlay without changing occupancy.
+  */
+  ctx.save();
+  for(const cell of footprint){
+    const top=hexScreenVertices(cell.x,cell.y);
+    polygonPath(top);
+    ctx.fillStyle="rgba(170,70,46,0.09)";
+    ctx.fill();
+    ctx.strokeStyle="rgba(224,128,88,0.42)";
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  const attackPose=activeUnitPoseName(mob)==="attack";
+  const sprite=attackPose ? orcAttackSprite : orcStandSprite;
+
+  if(!sprite?.complete || !sprite.naturalWidth){
+    return;
+  }
+
+  const drawW=Math.max(1,Number(mob.testRenderWidth)||104);
+  const drawH=Math.max(1,Number(mob.testRenderHeight)||112);
+  const anchor={
+    x:center.x,
+    y:center.y+48
+  };
+
+  ctx.save();
+  ctx.translate(center.x,center.y+36);
+  ctx.fillStyle="rgba(0,0,0,0.42)";
+  ctx.beginPath();
+  ctx.ellipse(0,0,82,24,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  drawSpriteFacing(
+    sprite,
+    anchor,
+    drawW,
+    drawH,
+    mob.facing,
+    "right",
+    mob,
+    {x:0.5,y:1}
   );
 }
 
@@ -21120,7 +21196,14 @@ function drawDeathFx(){
   if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(deathFx.x,deathFx.y)) return;
   if(!deathMarkerSprite.complete || !deathMarkerSprite.naturalWidth) return;
 
-  const c=hexCenter(deathFx.x,deathFx.y);
+  const deathSubject={
+    id:deathFx.unitId,
+    footprintId:deathFx.footprintId || "single",
+    facingHex:deathFx.facingHex,
+    x:deathFx.x,
+    y:deathFx.y
+  };
+  const c=unitFootprintScreenCenter(deathSubject);
   const elapsed=performance.now()-deathFx.started;
 
   if(elapsed<0 || elapsed>1000) return;
@@ -21367,15 +21450,17 @@ function draw(){
     if(!enemy.alive || enemy.fled) continue;
     if(!shouldRenderUnitUnderPartyVisibility(enemy)) continue;
 
-    const c=hexCenter(enemy.x,enemy.y);
+    const depth=unitDepthSortPoint(enemy);
 
     actors.push({
-      sortY:c.y,
-      sortX:c.x,
+      sortY:depth.y,
+      sortX:depth.x,
       fn:()=>
         enemy.type==="orc"
           ? drawOrc(enemy)
-          : drawKobold(enemy)
+          : enemy.type==="large-test-mob"
+            ? drawLargeTestMob(enemy)
+            : drawKobold(enemy)
     });
   }
 
