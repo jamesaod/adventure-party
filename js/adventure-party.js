@@ -1817,8 +1817,8 @@ function drawSnowWeather(now,severity){
 function drawWindWeather(now,severity){
   const width=canvas.width;
   const height=canvas.height;
-  /* R175: stronger visual wind field for readability. */
-  const counts=[144,252,408];
+  /* R177: wind VFX density increased 3x from the R175 field for stronger readability. */
+  const counts=[432,756,1224];
   const count=counts[weatherState.severityIndex] || counts[0];
   const direction=weatherState.windDirection;
   const speed=(0.055+severity.windStrength*0.075)*direction;
