@@ -5337,22 +5337,21 @@ function centerCameraOn(entity){
 function maybeRecenterCamera(entity){
   if(!entity) return false;
 
-  const c=hexCenter(entity.x,entity.y);
+  const centers=occupiedHexesAt(entity,entity.x,entity.y).map(cell=>
+    hexCenter(cell.x,cell.y)
+  );
 
   const marginX=HEX_W*CAMERA_EDGE_HEXES;
   const marginY=HEX_ROW*CAMERA_EDGE_HEXES;
 
-  const nearLeft   = c.x <= marginX;
-  const nearRight  = c.x >= canvas.width-marginX;
-  const nearTop    = c.y <= marginY;
-  const nearBottom = c.y >= canvas.height-marginY;
+  const nearEdge=centers.some(c=>
+    c.x<=marginX ||
+    c.x>=canvas.width-marginX ||
+    c.y<=marginY ||
+    c.y>=canvas.height-marginY
+  );
 
-  if(
-    nearLeft ||
-    nearRight ||
-    nearTop ||
-    nearBottom
-  ){
+  if(nearEdge){
     centerCameraOn(entity);
     return true;
   }
@@ -5374,10 +5373,12 @@ function isHexOnBattlefieldScreen(x,y,padding=0){
 function isEntityOnBattlefieldScreen(entity,padding=0){
   return !!(
     entity &&
-    isHexOnBattlefieldScreen(
-      entity.x,
-      entity.y,
-      padding
+    occupiedHexes(entity).some(cell=>
+      isHexOnBattlefieldScreen(
+        cell.x,
+        cell.y,
+        padding
+      )
     )
   );
 }
@@ -13175,15 +13176,15 @@ function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
         path:reconstruct(cur),
         target,
         firingHex:{x:cur.x,y:cur.y},
-        distance:hexDistance(cur,target)
+        distance:unitDistanceAt(unit,cur.x,cur.y,target)
       };
     }
 
     const dirs=[...HEX_DIRS].sort((a,b)=>{
       const na={x:cur.x+a.x,y:cur.y+a.y};
       const nb={x:cur.x+b.x,y:cur.y+b.y};
-      const da=Math.min(...targets.map(target=>hexDistance(na,target)));
-      const db=Math.min(...targets.map(target=>hexDistance(nb,target)));
+      const da=Math.min(...targets.map(target=>unitDistanceAt(unit,na.x,na.y,target)));
+      const db=Math.min(...targets.map(target=>unitDistanceAt(unit,nb.x,nb.y,target)));
       return da-db || a.x-b.x || a.y-b.y;
     });
 
@@ -13192,9 +13193,7 @@ function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
       const nk=key(next.x,next.y);
 
       if(seen.has(nk)) continue;
-      if(isWall(next.x,next.y)) continue;
-      if(architecturalWallBlocksStep(cur,next)) continue;
-      if(occupiedByAnyUnit(next.x,next.y,unit.id)) continue;
+      if(unitTransitionBlocked(unit,cur,next)) continue;
 
       seen.add(nk);
       came.set(nk,{x:cur.x,y:cur.y});
@@ -18214,6 +18213,7 @@ function updateUnitInfoPanel(){
       `<span>Facing</span><span>${facingText}</span>`+
       `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
       `<span>Controller</span><span>MOB</span>`+
+      `<span>Footprint</span><span>${unitFootprintCellCount(inspected)} hex${unitFootprintCellCount(inspected)===1 ? "" : "es"}</span>`+
       `<span>HD</span><span>${inspected.hitDiceLabel || "—"}</span>`+
       `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
       `<span>AC</span><span>${inspected.ac}</span>`+
@@ -19996,6 +19996,13 @@ function drawLargeTestMob(mob){
   */
   ctx.save();
   for(const cell of footprint){
+    if(
+      game?.condition==="wall" &&
+      !isHexVisibleToFriendlyParty(cell.x,cell.y)
+    ){
+      continue;
+    }
+
     const top=hexScreenVertices(cell.x,cell.y);
     polygonPath(top);
     ctx.fillStyle="rgba(170,70,46,0.09)";
@@ -21224,7 +21231,6 @@ function drawAreaDamageFx(){
 
 function drawDeathFx(){
   if(!deathFx) return;
-  if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(deathFx.x,deathFx.y)) return;
   if(!deathMarkerSprite.complete || !deathMarkerSprite.naturalWidth) return;
 
   const deathSubject={
@@ -21234,6 +21240,15 @@ function drawDeathFx(){
     x:deathFx.x,
     y:deathFx.y
   };
+
+  if(
+    game?.condition==="wall" &&
+    !occupiedHexes(deathSubject).some(cell=>
+      isHexVisibleToFriendlyParty(cell.x,cell.y)
+    )
+  ){
+    return;
+  }
   const c=unitFootprintScreenCenter(deathSubject);
   const elapsed=performance.now()-deathFx.started;
 
