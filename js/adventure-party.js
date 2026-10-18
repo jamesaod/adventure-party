@@ -1348,6 +1348,10 @@ function stopWeatherAudio(){
 
   if(!active || !audioCtx) return;
 
+  for(const timer of active.timers || []){
+    clearTimeout(timer);
+  }
+
   const now=audioCtx.currentTime;
   try{
     active.bus.gain.cancelScheduledValues(now);
@@ -1372,6 +1376,57 @@ function createLoopingNoiseSource(){
   source.buffer=noiseBuffer;
   source.loop=true;
   return source;
+}
+
+function scheduleLightRainSpatter(active){
+  if(!active || !audioCtx || !noiseBuffer) return;
+
+  const scheduleNext=()=>{
+    if(activeWeatherAudio!==active || currentWeatherType().id!=="rain") return;
+
+    const delay=70+Math.random()*230;
+    const timer=setTimeout(()=>{
+      if(activeWeatherAudio!==active || currentWeatherType().id!=="rain") return;
+
+      const now=audioCtx.currentTime;
+      const drop=audioCtx.createBufferSource();
+      const high=audioCtx.createBiquadFilter();
+      const band=audioCtx.createBiquadFilter();
+      const gain=audioCtx.createGain();
+
+      drop.buffer=noiseBuffer;
+      high.type="highpass";
+      high.frequency.value=1800+Math.random()*1600;
+      band.type="bandpass";
+      band.frequency.value=3300+Math.random()*2400;
+      band.Q.value=0.7+Math.random()*0.9;
+
+      const peak=0.018+Math.random()*0.045;
+      gain.gain.setValueAtTime(0.0001,now);
+      gain.gain.exponentialRampToValueAtTime(peak,now+0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001,now+0.035+Math.random()*0.035);
+
+      drop.connect(high);
+      high.connect(band);
+      band.connect(gain);
+      gain.connect(active.bus);
+
+      drop.start(now,Math.random()*0.8,0.10);
+      drop.stop(now+0.11);
+      drop.onended=()=>{
+        try{ drop.disconnect(); }catch{}
+        try{ high.disconnect(); }catch{}
+        try{ band.disconnect(); }catch{}
+        try{ gain.disconnect(); }catch{}
+      };
+
+      scheduleNext();
+    },delay);
+
+    active.timers.push(timer);
+  };
+
+  scheduleNext();
 }
 
 function startRainAmbience(severity){
@@ -1411,11 +1466,25 @@ function startRainAmbience(severity){
   hissGain.connect(bus);
 
   const now=audioCtx.currentTime;
-  bus.gain.exponentialRampToValueAtTime(0.30+0.24*intensity,now+0.35);
+
+  /* R175: rain master level reduced to 50% of the R173 mix. */
+  bus.gain.exponentialRampToValueAtTime(0.15+0.12*intensity,now+0.35);
   body.start(now);
   hiss.start(now);
 
-  return {bus,sources:[body,hiss],nodes:[bodyHigh,bodyLow,bodyGain,hissHigh,hissGain,bus]};
+  const active={
+    bus,
+    sources:[body,hiss],
+    nodes:[bodyHigh,bodyLow,bodyGain,hissHigh,hissGain,bus],
+    timers:[]
+  };
+
+  /* Light rain gets a distinct irregular patter/spatter layer. */
+  if(severity.id==="light"){
+    scheduleLightRainSpatter(active);
+  }
+
+  return active;
 }
 
 function startSnowAmbience(severity){
@@ -1449,6 +1518,36 @@ function startSnowAmbience(severity){
   return {bus,sources:[air],nodes:[high,low,airGain,bus]};
 }
 
+function scheduleRandomWindGust(active,severity){
+  if(!active || !audioCtx) return;
+
+  const scheduleNext=()=>{
+    if(activeWeatherAudio!==active || currentWeatherType().id!=="wind") return;
+
+    const delay=1200+Math.random()*3200;
+    const timer=setTimeout(()=>{
+      if(activeWeatherAudio!==active || currentWeatherType().id!=="wind") return;
+
+      const now=audioCtx.currentTime;
+      const rise=0.55+Math.random()*1.15;
+      const fall=0.8+Math.random()*1.8;
+      const peak=0.88+Math.random()*(0.38+0.25*severity.intensity);
+      const settle=0.62+Math.random()*0.18;
+
+      active.gustGain.gain.cancelScheduledValues(now);
+      active.gustGain.gain.setValueAtTime(Math.max(0.05,active.gustGain.gain.value),now);
+      active.gustGain.gain.linearRampToValueAtTime(peak,now+rise);
+      active.gustGain.gain.linearRampToValueAtTime(settle,now+rise+fall);
+
+      scheduleNext();
+    },delay);
+
+    active.timers.push(timer);
+  };
+
+  scheduleNext();
+}
+
 function startWindAmbience(severity){
   if(!audioCtx || !weatherGain) return null;
 
@@ -1461,6 +1560,8 @@ function startWindAmbience(severity){
   const band=audioCtx.createBiquadFilter();
   const low=audioCtx.createBiquadFilter();
   const windGain=audioCtx.createGain();
+  const sineGain=audioCtx.createGain();
+  const gustGain=audioCtx.createGain();
 
   band.type="bandpass";
   band.frequency.value=560+220*intensity;
@@ -1469,25 +1570,46 @@ function startWindAmbience(severity){
   low.frequency.value=2200+900*intensity;
   windGain.gain.value=0.18+0.14*intensity;
 
+  sineGain.gain.value=0.72;
+  gustGain.gain.value=0.72;
+
   wind.connect(band);
   band.connect(low);
   low.connect(windGain);
-  windGain.connect(bus);
+  windGain.connect(sineGain);
+  sineGain.connect(gustGain);
+  gustGain.connect(bus);
 
+  /*
+    Broad sine-wave breathing establishes the natural rise/fall pattern.
+    Random gust envelopes below then vary amplitude and timing so the wind
+    never repeats as a perfectly mechanical oscillator.
+  */
   const lfo=audioCtx.createOscillator();
   const lfoDepth=audioCtx.createGain();
   lfo.type="sine";
-  lfo.frequency.value=0.13+0.08*intensity;
-  lfoDepth.gain.value=0.045+0.035*intensity;
+  lfo.frequency.value=0.055+0.035*intensity;
+  lfoDepth.gain.value=0.24+0.08*intensity;
   lfo.connect(lfoDepth);
-  lfoDepth.connect(bus.gain);
+  lfoDepth.connect(sineGain.gain);
 
   const now=audioCtx.currentTime;
-  bus.gain.exponentialRampToValueAtTime(0.25+0.22*intensity,now+0.45);
+
+  /* R175: wind master level reduced to 50% of the R173 mix. */
+  bus.gain.exponentialRampToValueAtTime(0.125+0.11*intensity,now+0.45);
   wind.start(now);
   lfo.start(now);
 
-  return {bus,sources:[wind,lfo],nodes:[band,low,windGain,lfoDepth,bus]};
+  const active={
+    bus,
+    gustGain,
+    sources:[wind,lfo],
+    nodes:[band,low,windGain,sineGain,gustGain,lfoDepth,bus],
+    timers:[]
+  };
+
+  scheduleRandomWindGust(active,severity);
+  return active;
 }
 
 function syncWeatherAudio(){
@@ -1695,7 +1817,8 @@ function drawSnowWeather(now,severity){
 function drawWindWeather(now,severity){
   const width=canvas.width;
   const height=canvas.height;
-  const counts=[72,126,204];
+  /* R175: stronger visual wind field for readability. */
+  const counts=[144,252,408];
   const count=counts[weatherState.severityIndex] || counts[0];
   const direction=weatherState.windDirection;
   const speed=(0.055+severity.windStrength*0.075)*direction;
@@ -1709,17 +1832,17 @@ function drawWindWeather(now,severity){
     const gust=0.35+0.65*(0.5+0.5*Math.sin(now*0.0018+i*0.71));
     const x=weatherWrap(r0*width+now*speed*depth,width+180)-90;
     const y=r1*height+Math.sin(now*0.0011+i)*8*depth;
-    const length=(12+34*r2)*depth*(0.75+severity.intensity*0.45)*gust;
+    const length=(16+44*r2)*depth*(0.82+severity.intensity*0.52)*gust;
     ctx.beginPath();
     ctx.moveTo(x,y);
     ctx.lineTo(x+length*direction,y-(2+r2*4));
-    ctx.strokeStyle="rgba(210,196,162,"+(0.06+0.18*severity.intensity*gust)+")";
+    ctx.strokeStyle="rgba(210,196,162,"+(0.09+0.24*severity.intensity*gust)+")";
     ctx.lineWidth=depth>1.1 ? 1.2 : 1;
     ctx.stroke();
     if(i%3===0){
       const moteX=x+length*0.55*direction;
       const moteY=y-2-r2*3;
-      ctx.fillStyle="rgba(190,163,113,"+(0.14+0.22*severity.intensity*gust)+")";
+      ctx.fillStyle="rgba(190,163,113,"+(0.19+0.28*severity.intensity*gust)+")";
       ctx.fillRect(Math.round(moteX),Math.round(moteY),depth>1.15?2:1,1);
     }
   }
