@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R186",
-  "description": "Adventure Party sprite asset specifications through R186. R186 adds engine-level multi-hex unit footprints and a temporary 7-hex test MOB using existing Orc art; no new sprite asset is introduced.",
+  "release": "R187",
+  "description": "Adventure Party sprite asset specifications through R187. R187 replaces the temporary Orc-backed 7-hex test MOB with a dedicated juvenile red dragon sprite and keeps the multi-hex footprint architecture.",
   "assets": {
     "fighter": {
       "source": {
@@ -231,6 +231,27 @@
         "y": 48
       },
       "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right"
+    },
+    "juvenile-red-dragon": {
+      "source": {
+        "width": 160,
+        "height": 160
+      },
+      "workspace": {
+        "width": 160,
+        "height": 160
+      },
+      "render": {
+        "width": 190,
+        "height": 190
+      },
+      "anchor": {
+        "x": 80,
+        "y": 160
+      },
+      "scaleMode": "fit",
       "lockAspect": true,
       "nativeFacing": "right"
     }

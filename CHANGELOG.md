@@ -2,6 +2,16 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+
+## R187 — Juvenile Red Dragon multi-hex test
+
+- Replaced the temporary Orc-backed 7-hex test MOB with a dedicated transparent juvenile red dragon sprite.
+- Implemented the AD&D 2e juvenile red dragon combat profile for the test: 15 HD, AC -3, THAC0 7, movement 9, Fanatic morale, fire immunity, and 12,000 XP.
+- Added the full claw/claw/bite routine with the juvenile +4 physical-damage combat modifier.
+- Added a 90-foot cone of fire breath weapon at 8d10+4, save vs. breath for half, usable once every three rounds.
+- Added wall-aware multi-hex breath targeting, procedural animated flame-cone VFX, and synthesized WebAudio breath SFX.
+- Fireball now respects creature fire immunity.
+
 ## R159 — Grease VFX/SFX
 
 - Grease now renders as a persistent animated glossy oil slick with an irregular puddle silhouette, moving specular streaks, and subtle oil-sheen colors.

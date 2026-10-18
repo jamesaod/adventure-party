@@ -184,11 +184,11 @@ function updateCombatMobSelection(){
   const large=selectedMobEncounter==="large-test";
 
   if(label){
-    label.textContent=large ? "7-Hex Test MOB" : "Kobold Encounter";
+    label.textContent=large ? "Juvenile Red Dragon" : "Kobold Encounter";
   }
 
   if(button){
-    button.textContent=large ? "Use Kobold Encounter" : "Use 7-Hex Test MOB";
+    button.textContent=large ? "Use Kobold Encounter" : "Use Juvenile Red Dragon";
     button.classList.toggle("selected",large);
     button.setAttribute("aria-pressed",large ? "true" : "false");
   }
@@ -995,6 +995,38 @@ function playFireballExplosionSound(){
       1.1,
       0
     );
+  });
+}
+
+/*
+  R187 juvenile Red Dragon breath SFX.
+  Synthesized in-engine: low chest-growl plus turbulent filtered flame noise.
+*/
+function playDragonBreathSound(){
+  queueSfx(()=>{
+    const now=audioCtx.currentTime;
+    const duration=1.05;
+
+    const growl=audioCtx.createOscillator();
+    const growlGain=audioCtx.createGain();
+
+    growl.type="sawtooth";
+    growl.frequency.setValueAtTime(92,now);
+    growl.frequency.exponentialRampToValueAtTime(43,now+0.72);
+
+    growlGain.gain.setValueAtTime(0.0001,now);
+    growlGain.gain.exponentialRampToValueAtTime(0.075,now+0.035);
+    growlGain.gain.exponentialRampToValueAtTime(0.045,now+0.38);
+    growlGain.gain.exponentialRampToValueAtTime(0.0001,now+0.88);
+
+    growl.connect(growlGain);
+    growlGain.connect(sfxGain);
+    growl.start(now);
+    growl.stop(now+0.92);
+
+    noiseVoice(duration,0.18,"bandpass",1150,0.8,0);
+    noiseVoice(0.82,0.10,"highpass",2450,0.55,0.03);
+    noiseVoice(0.58,0.075,"lowpass",520,1.05,0.18);
   });
 }
 
@@ -1978,7 +2010,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R186';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R187';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -1990,6 +2022,9 @@ const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
 const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
+
+/* R187: temporary juvenile red dragon art for the 7-hex large-MOB test. */
+const JUVENILE_RED_DRAGON_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R187';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -2047,6 +2082,9 @@ orcStandSprite.src=ORC_STAND_SPRITE_SRC;
 
 const orcAttackSprite=new Image();
 orcAttackSprite.src=ORC_ATTACK_SPRITE_SRC;
+
+const juvenileRedDragonSprite=new Image();
+juvenileRedDragonSprite.src=JUVENILE_RED_DRAGON_SPRITE_SRC;
 
 /* R157: user-provided death marker sprite replaces the old skull-and-crossbones overlay. */
 const deathMarkerSprite=new Image();
@@ -2109,6 +2147,7 @@ function prepareCrispPixelSprite(image){
   koboldBodyguardAttackSprite,
   koboldSlingerStandSprite,
   koboldSlingerAttackSprite,
+  juvenileRedDragonSprite,
   deathMarkerSprite
 ].forEach(prepareCrispPixelSprite);
 
@@ -2166,14 +2205,14 @@ const UNIT_POSE_DEFINITIONS={
       attack:orcAttackSprite
     }
   },
-  "large-test-mob":{
+  "juvenile-red-dragon":{
     defaultPose:"stand",
     actionPose:"attack",
     actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
     nativeFacing:"right",
     sprites:{
-      stand:orcStandSprite,
-      attack:orcAttackSprite
+      stand:juvenileRedDragonSprite,
+      attack:juvenileRedDragonSprite
     }
   }
 };
@@ -5167,6 +5206,8 @@ let areaDamageFx=null;
 /* R94: Sleep 7-hex cluster + depth-sorted volumetric Wall of Fog. */
 /* R104: persistent Unconscious and Confusion status VFX added; R103 spell VFX retained. */
 let fireballExplosionFx=null;
+/* R187: animated tactical cone for juvenile Red Dragon fire breath. */
+let dragonBreathFx=null;
 /* R100: short-lived fan-shaped prismatic Color Spray overlay. */
 let colorSprayFx=null;
 let magicEffectFx=[];
@@ -6971,7 +7012,7 @@ function getArmorCatalogEntry(id){
 }
 
 function targetUsesLargeWeaponDamage(target){
-  return target?.sizeCategory==="large";
+  return ["large","huge","gargantuan"].includes(target?.sizeCategory);
 }
 
 function damageExpressionForSize(entry,target){
@@ -7738,6 +7779,37 @@ function rollSpellSave(target,sourceUnit=null,extraModifier=0){
     targetNumber,
     success:modifiedRoll>=targetNumber
   };
+}
+
+function breathSaveTargetForUnit(unit){
+  if(unit?.saves?.breath){
+    return unit.saves.breath;
+  }
+
+  if(unit?.id==="player"){
+    return (
+      unit.saves ||
+      warriorSavingThrows(unit.level || 1)
+    ).breath;
+  }
+
+  if(unit?.controller==="mob"){
+    return warriorSavingThrows(
+      Math.max(1,Math.ceil(Number(unit.hitDiceValue)||1))
+    ).breath;
+  }
+
+  return warriorSavingThrows(
+    Math.max(1,Number(unit?.level)||1)
+  ).breath;
+}
+
+function unitImmuneToDamageType(unit,damageType){
+  const wanted=String(damageType || "").toLowerCase();
+  return Array.isArray(unit?.damageImmunities) &&
+    unit.damageImmunities.some(type=>
+      String(type || "").toLowerCase()===wanted
+    );
 }
 
 function attackComesFromFront(defender,attacker){
@@ -8610,7 +8682,7 @@ function drawVisibleArchitecturalWallsOverLOS(){
       fn:()=>
         enemy.type==="orc"
           ? drawOrc(enemy)
-          : enemy.type==="large-test-mob"
+          : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
             : drawKobold(enemy)
     });
@@ -11377,42 +11449,66 @@ function makeOrc(index,position){
 
 function makeLargeMobTest(position){
   /*
-    R186 temporary rules-neutral harness for validating the multi-hex engine.
-    This is NOT a final monster stat block or final art asset. It deliberately
-    uses the existing Orc sprite pair while the Dragon/test creature art is
-    being prepared.
+    R187 juvenile Red Dragon test creature.
+
+    AD&D 2e Monstrous Manual / Dragon, General:
+      Age category 4 (Juvenile), 15 HD, AC -3, MV 9 / Fl 30 (C) / Jp 3,
+      claw/claw/bite, 1d10/1d10/3d10, +4 age-category combat damage modifier,
+      Fanatic morale, fire immunity, and an 8d10+4 cone of fire.
+    The tactical test keeps R186's symmetric 7-hex footprint.
   */
+  let hp=0;
+  for(let i=0;i<15;i++) hp+=d(8);
+
   return {
-    id:"large-mob-test-01",
-    type:"large-test-mob",
-    species:"large-test",
+    id:"juvenile-red-dragon-01",
+    type:"juvenile-red-dragon",
+    species:"red-dragon",
+    creatureType:"dragon",
     controller:"mob",
-    sizeCategory:"huge",
+    sizeCategory:"gargantuan",
+    adndSize:"G",
     footprintId:"hex7",
     faction:"enemy",
-    alignment:"neutral evil",
-    name:"7-Hex Test MOB",
+    alignment:"chaotic evil",
+    name:"Juvenile Red Dragon",
 
-    hp:36,
-    maxHp:36,
-    hitDiceValue:8,
-    hitDiceLabel:"8",
+    ageCategory:4,
+    ageLabel:"Juvenile (26-50 years)",
+    intelligence:"Exceptional (15-16)",
 
-    ac:4,
-    thaco:13,
-    move:5,
-    halfMove:2,
+    hp,
+    maxHp:hp,
+
+    hitDiceValue:15,
+    hitDiceLabel:"15",
+
+    ac:-3,
+    thaco:7,
+
+    move:9,
+    flyMove:30,
+    flyManeuverability:"C",
+    jumpMove:3,
+    halfMove:4,
 
     weapon:"Bite",
     weaponCatalogId:null,
     weaponInHand:"melee",
     meleeRange:1,
-    weaponDamageSM:"1d10",
-    weaponDamageL:"1d10",
+    weaponDamageSM:"3d10",
+    weaponDamageL:"3d10",
+
     attackBonus:0,
-    damageBonus:0,
+    damageBonus:4,
     weaponHitBonus:0,
     weaponDamageBonus:0,
+    attacksPerRound:3,
+    attackRoutine:"Claw / Claw / Bite",
+    naturalAttacks:{
+      claw:"1d10",
+      bite:"3d10"
+    },
 
     rangedWeapon:null,
     missileCatalogId:null,
@@ -11422,9 +11518,30 @@ function makeLargeMobTest(position){
     missileRateOfFire:0,
     missileRangeIncrementFt:0,
 
-    morale:20,
-    moraleLabel:"Test — does not flee",
-    xpValue:120,
+    breathWeapon:{
+      name:"Cone of Fire",
+      damageExpression:"8d10+4",
+      damageType:"fire",
+      rangeFeet:90,
+      rangeHexes:9,
+      mouthWidthFeet:5,
+      endWidthFeet:30,
+      save:"breath",
+      saveForHalf:true,
+      cooldownRounds:3,
+      lastUsedRound:-999
+    },
+
+    damageImmunities:["fire"],
+    specialAbilities:[
+      "Affect Normal Fires 3/day",
+      "Pyrotechnics 3/day"
+    ],
+    magicResistance:0,
+
+    morale:18,
+    moraleLabel:"Fanatic (17-18)",
+    xpValue:12000,
 
     poseName:"stand",
     poseUntil:0,
@@ -11447,11 +11564,10 @@ function makeLargeMobTest(position){
     facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
     facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
 
-    /* Temporary presentation values until a purpose-built large sprite exists. */
-    testRenderWidth:104,
-    testRenderHeight:112,
-    hpBarWidth:76,
-    hpBarOffsetY:102
+    testRenderWidth:190,
+    testRenderHeight:190,
+    hpBarWidth:104,
+    hpBarOffsetY:126
   };
 }
 
@@ -11484,7 +11600,7 @@ function makeLargeMobTestEncounter(condition="grass"){
       )
     ){
       lastMobDeployment={
-        direction:"7-HEX TEST",
+        direction:"JUVENILE RED DRAGON",
         anchorDistance:hexDistance(position,{x:0,y:0}),
         anchor:{...position},
         clusterRadius:1,
@@ -11494,7 +11610,7 @@ function makeLargeMobTestEncounter(condition="grass"){
     }
   }
 
-  throw new Error("Unable to place the 7-Hex Test MOB on this battlefield.");
+  throw new Error("Unable to place the Juvenile Red Dragon on this battlefield.");
 }
 
 function axialRing(radius){
@@ -12019,6 +12135,7 @@ function newGame(condition=selectedCombatCondition){
   projectileFx=null;
   areaDamageFx=null;
   fireballExplosionFx=null;
+  dragonBreathFx=null;
   colorSprayFx=null;
   magicEffectFx=[];
   castingGlowFx=[];
@@ -12069,7 +12186,7 @@ function newGame(condition=selectedCombatCondition){
   if(selectedMobEncounter==="large-test"){
     const large=enemies[0];
     log(
-      `7-Hex Test MOB deployed as one combat entity across ${unitFootprintCellCount(large)} occupied hexes; `+
+      `Juvenile Red Dragon deployed as one combat entity across ${unitFootprintCellCount(large)} occupied hexes; `+
       `${large.maxHp} HP, AC ${large.ac}, THAC0 ${large.thaco}, Move ${large.move}.`,
       "system"
     );
@@ -12097,7 +12214,7 @@ function newGame(condition=selectedCombatCondition){
   if(lastMobDeployment){
     log(
       selectedMobEncounter==="large-test"
-        ? `Large MOB pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
+        ? `Red Dragon pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
         : (
             `Kobold deployment: ${lastMobDeployment.direction}, `+
             `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
@@ -15611,18 +15728,22 @@ async function castFireballFromScroll(action,targetHex){
     damage message or icon before taking the same Fireball blast.
   */
   const results=affected.map(unit=>{
-    const saveTarget=spellSaveTargetForUnit(unit);
-    const saveRoll=d(20);
-    const saved=saveRoll>=saveTarget;
-    const damage=saved
-      ? Math.floor(rolledDamage/2)
-      : rolledDamage;
+    const immune=unitImmuneToDamageType(unit,"fire");
+    const saveTarget=immune ? null : spellSaveTargetForUnit(unit);
+    const saveRoll=immune ? null : d(20);
+    const saved=!immune && saveRoll>=saveTarget;
+    const damage=immune
+      ? 0
+      : saved
+        ? Math.floor(rolledDamage/2)
+        : rolledDamage;
 
-    return {unit,saveTarget,saveRoll,saved,damage};
+    return {unit,immune,saveTarget,saveRoll,saved,damage};
   });
 
   for(const result of results){
     const {unit,damage}=result;
+    if(damage<=0) continue;
     unit.hp=Math.max(0,unit.hp-damage);
     onUnitDamaged(unit,damage);
     registerElementalDamageFx(unit,"fire",damage);
@@ -15642,10 +15763,20 @@ async function castFireballFromScroll(action,targetHex){
   );
 
   for(const result of results){
-    const {unit,saveTarget,saveRoll,saved,damage}=result;
+    const {unit,immune,saveTarget,saveRoll,saved,damage}=result;
+
+    if(immune){
+      log(
+        unit.name+" is immune to fire and takes no Fireball damage.",
+        "system"
+      );
+      continue;
+    }
+
     log(
-      `${unit.name}: save vs. spell ${saveRoll} vs ${saveTarget} — `+
-      `${saved ? "success, half damage" : "failure, full damage"}; ${damage} damage.`,
+      unit.name+": save vs. spell "+saveRoll+" vs "+saveTarget+" — "+
+      (saved ? "success, half damage" : "failure, full damage")+
+      "; "+damage+" damage.",
       saved ? "system" : "bad"
     );
   }
@@ -17619,6 +17750,430 @@ async function animateMobAlongPath(mob,path,maxSteps){
 }
 
 
+
+function dragonBreathReady(dragon){
+  const breath=dragon?.breathWeapon;
+  if(!breath || !game) return false;
+
+  const cooldown=Math.max(1,Number(breath.cooldownRounds)||3);
+  const last=Number(breath.lastUsedRound);
+  return !Number.isFinite(last) || (game.round-last)>=cooldown;
+}
+
+function dragonBreathSourceHex(dragon,target){
+  const directionIndex=hexDirectionIndexToward(dragon,target);
+  const dir=HEX_DIRS[directionIndex] || HEX_DIRS[0];
+
+  return {
+    x:dragon.x+dir.x,
+    y:dragon.y+dir.y,
+    directionIndex
+  };
+}
+
+/*
+  R187 maps the AD&D 2e 90-foot, 5-to-30-foot fire cone to the current
+  10-foot tactical hex scale. From the front body hex, the plume extends
+  nine hexes. The final four rows widen to three tactical cells.
+*/
+function dragonBreathCells(dragon,target){
+  if(!dragon?.breathWeapon || !target) return [];
+
+  const range=Math.max(1,Number(dragon.breathWeapon.rangeHexes)||9);
+  const source=dragonBreathSourceHex(dragon,target);
+  const forward=HEX_DIRS[source.directionIndex] || HEX_DIRS[0];
+  const left=HEX_DIRS[(source.directionIndex+5)%6];
+  const right=HEX_DIRS[(source.directionIndex+1)%6];
+  const ownCells=new Set(occupiedHexes(dragon).map(cell=>key(cell.x,cell.y)));
+  const result=[];
+  const seen=new Set();
+
+  const addCell=(cell,step,lane)=>{
+    if(
+      !inside(cell.x,cell.y) ||
+      isWall(cell.x,cell.y) ||
+      ownCells.has(key(cell.x,cell.y)) ||
+      hexDistance(source,cell)>range+(lane===0 ? 0 : 1) ||
+      architecturalWallBlocksLOS(source,cell)
+    ){
+      return;
+    }
+
+    const cellKey=key(cell.x,cell.y);
+    if(seen.has(cellKey)) return;
+    seen.add(cellKey);
+    result.push({
+      x:cell.x,
+      y:cell.y,
+      breathStep:step,
+      breathLane:lane
+    });
+  };
+
+  for(let step=1;step<=range;step++){
+    const center={
+      x:source.x+forward.x*step,
+      y:source.y+forward.y*step
+    };
+
+    addCell(center,step,0);
+
+    if(step>=6){
+      addCell(
+        {x:center.x+left.x,y:center.y+left.y},
+        step,-1
+      );
+      addCell(
+        {x:center.x+right.x,y:center.y+right.y},
+        step,1
+      );
+    }
+  }
+
+  return result.sort((a,b)=>
+    a.breathStep-b.breathStep ||
+    a.breathLane-b.breathLane ||
+    a.x-b.x ||
+    a.y-b.y
+  );
+}
+
+function bestDragonBreathPlan(dragon){
+  if(!dragonBreathReady(dragon)) return null;
+
+  const party=livingPartyMembers();
+  if(!party.length) return null;
+
+  const partyIds=new Set(party.map(unit=>unit.id));
+  const plans=[];
+
+  for(const target of party){
+    const cells=dragonBreathCells(dragon,target);
+    const affected=livingUnitsInAreaCells(cells)
+      .filter(unit=>unit.id!==dragon.id);
+    const partyVictims=affected.filter(unit=>partyIds.has(unit.id));
+
+    if(!partyVictims.length) continue;
+
+    const collateral=affected.filter(unit=>
+      unit.controller==="mob" &&
+      unit.id!==dragon.id &&
+      !partyIds.has(unit.id)
+    ).length;
+
+    plans.push({
+      target,
+      cells,
+      affected,
+      partyVictims,
+      collateral,
+      score:
+        partyVictims.length*1000 -
+        collateral*500 -
+        unitDistance(dragon,target)
+    });
+  }
+
+  plans.sort((a,b)=>
+    b.score-a.score ||
+    b.partyVictims.length-a.partyVictims.length ||
+    unitDistance(dragon,a.target)-unitDistance(dragon,b.target)
+  );
+
+  return plans[0] || null;
+}
+
+async function animateDragonBreath(dragon,plan){
+  const duration=1050;
+  const started=performance.now();
+  const source=dragonBreathSourceHex(dragon,plan.target);
+
+  dragonBreathFx={
+    dragonId:dragon.id,
+    source,
+    directionIndex:source.directionIndex,
+    cells:plan.cells.map(cell=>({...cell})),
+    rangeHexes:Math.max(1,Number(dragon.breathWeapon?.rangeHexes)||9),
+    started,
+    duration
+  };
+
+  playDragonBreathSound();
+
+  while(true){
+    const elapsed=performance.now()-started;
+    draw();
+    if(elapsed>=duration) break;
+    await sleep(16);
+  }
+
+  dragonBreathFx=null;
+  draw();
+}
+
+async function juvenileRedDragonBreathAttack(dragon,plan){
+  if(!dragon?.alive || !plan?.cells?.length) return false;
+
+  const breath=dragon.breathWeapon;
+  faceEntityToward(dragon,plan.target);
+  triggerUnitAttackPose(dragon);
+  setUnitActionBanner(dragon,"Breathing Fire");
+
+  breath.lastUsedRound=game.round;
+
+  const rolledDamage=rollDiceExpression(
+    breath.damageExpression || "8d10+4"
+  ).total;
+
+  const affected=livingUnitsInAreaCells(plan.cells)
+    .filter(unit=>unit.id!==dragon.id);
+
+  const results=affected.map(unit=>{
+    const immune=unitImmuneToDamageType(unit,breath.damageType || "fire");
+
+    if(immune){
+      return {
+        unit,
+        immune:true,
+        saveTarget:null,
+        saveRoll:null,
+        saved:false,
+        damage:0
+      };
+    }
+
+    const saveTarget=breathSaveTargetForUnit(unit);
+    const saveRoll=d(20);
+    const saved=saveRoll>=saveTarget;
+    const damage=saved
+      ? Math.floor(rolledDamage/2)
+      : rolledDamage;
+
+    return {
+      unit,
+      immune:false,
+      saveTarget,
+      saveRoll,
+      saved,
+      damage
+    };
+  });
+
+  for(const result of results){
+    const unit=result.unit;
+    const damage=result.damage;
+    if(damage<=0) continue;
+
+    unit.hp=Math.max(0,unit.hp-damage);
+    onUnitDamaged(unit,damage);
+    registerElementalDamageFx(unit,"fire",damage);
+  }
+
+  updateUi();
+  draw();
+
+  log(
+    dragon.name+" breathes a "+(breath.rangeFeet || 90)+"' cone of fire: "+
+    (breath.damageExpression || "8d10+4")+" = "+rolledDamage+
+    " damage before saves; "+affected.length+" creature"+
+    (affected.length===1 ? "" : "s")+" caught.",
+    "bad"
+  );
+
+  for(const result of results){
+    if(result.immune){
+      log(
+        result.unit.name+" is immune to fire and takes no breath-weapon damage.",
+        "system"
+      );
+      continue;
+    }
+
+    log(
+      result.unit.name+": save vs. breath "+result.saveRoll+" vs "+
+      result.saveTarget+" — "+
+      (result.saved ? "success, half damage" : "failure, full damage")+
+      "; "+result.damage+" damage.",
+      result.saved ? "system" : "bad"
+    );
+  }
+
+  setCombatMessage(
+    affected.length
+      ? dragon.name.toUpperCase()+" BREATHES FIRE — "+affected.length+
+        " TARGET"+(affected.length===1 ? "" : "S")+" IN THE CONE"
+      : dragon.name.toUpperCase()+" BREATHES FIRE",
+    1000,
+    1300,
+    "player-damage"
+  );
+
+  await animateDragonBreath(dragon,plan);
+
+  const killed=results.filter(result=>
+    result.damage>0 &&
+    result.unit.hp<=0 &&
+    result.unit.alive
+  );
+
+  for(const result of killed){
+    const unit=result.unit;
+    unit.alive=false;
+
+    if(unit.controller==="mob"){
+      markEnemyNeutralized(unit);
+    }
+
+    log(unit.name+" goes down and is dying in the dragonfire.","bad");
+    playAgonySound(unit);
+    playDeathSound(unit);
+    triggerDeathFx(unit);
+    updateUi();
+    draw();
+    await waitForDeathActionPause();
+  }
+
+  checkPartyDefeat();
+  return true;
+}
+
+async function juvenileRedDragonMeleeRoutine(dragon,target){
+  const attacks=[
+    {name:"Claw",damage:"1d10"},
+    {name:"Claw",damage:"1d10"},
+    {name:"Bite",damage:"3d10"}
+  ];
+
+  const original={
+    weapon:dragon.weapon,
+    weaponDamageSM:dragon.weaponDamageSM,
+    weaponDamageL:dragon.weaponDamageL
+  };
+
+  let lastResult=null;
+
+  for(const attackSpec of attacks){
+    if(
+      game.over ||
+      !dragon.alive ||
+      !target?.alive ||
+      !canMeleeAttackTarget(dragon,target)
+    ){
+      break;
+    }
+
+    dragon.weapon=attackSpec.name;
+    dragon.weaponDamageSM=attackSpec.damage;
+    dragon.weaponDamageL=attackSpec.damage;
+
+    lastResult=attack(
+      dragon,
+      target,
+      {actionLabel:attackSpec.name}
+    );
+
+    if(lastResult?.killed || lastResult?.criticalMiss){
+      await waitForCombatActionPause();
+    }else{
+      await sleep(190);
+    }
+  }
+
+  dragon.weapon=original.weapon;
+  dragon.weaponDamageSM=original.weaponDamageSM;
+  dragon.weaponDamageL=original.weaponDamageL;
+
+  return lastResult;
+}
+
+async function juvenileRedDragonTurn(dragon,target){
+  let breathPlan=bestDragonBreathPlan(dragon);
+
+  if(breathPlan){
+    await juvenileRedDragonBreathAttack(dragon,breathPlan);
+    if(!game.over) endTurn();
+    return;
+  }
+
+  if(canMeleeAttackTarget(dragon,target)){
+    if(maybeTriggerPlayerGuard(dragon)){
+      await sleep(Math.max(240,combatActionPauseRemaining()));
+      if(game.over) return;
+      if(!dragon.alive){
+        endTurn();
+        return;
+      }
+    }
+
+    await juvenileRedDragonMeleeRoutine(dragon,target);
+    if(!game.over) endTurn();
+    return;
+  }
+
+  const path=pathToClosestReachable(
+    dragon,
+    target,
+    dragon,
+    dragon.move
+  );
+  const steps=Math.max(0,path.length-1);
+
+  if(steps>0){
+    await animateMobAlongPath(dragon,path,steps);
+
+    if(game.over) return;
+    if(!dragon.alive){
+      endTurn();
+      return;
+    }
+  }
+
+  if(steps<=dragon.halfMove){
+    breathPlan=bestDragonBreathPlan(dragon);
+
+    if(breathPlan){
+      await juvenileRedDragonBreathAttack(dragon,breathPlan);
+      if(!game.over) endTurn();
+      return;
+    }
+
+    if(canMeleeAttackTarget(dragon,target)){
+      if(maybeTriggerPlayerGuard(dragon)){
+        await sleep(Math.max(240,combatActionPauseRemaining()));
+        if(game.over) return;
+        if(!dragon.alive){
+          endTurn();
+          return;
+        }
+      }
+
+      await juvenileRedDragonMeleeRoutine(dragon,target);
+      if(!game.over) endTurn();
+      return;
+    }
+  }
+
+  if(steps>0){
+    log(
+      dragon.name+" closes to "+unitDistance(dragon,target)+
+      " hexes from "+target.name+".",
+      "system"
+    );
+  }
+
+  if(canMobGuard(dragon)){
+    enterMobGuard(
+      dragon,
+      dragonBreathReady(dragon)
+        ? "closing for a breath-weapon lane"
+        : "breath weapon is recharging"
+    );
+  }
+
+  if(!game.over) endTurn();
+}
+
+
 function rangedRetreatStep(unit,threat){
   const options=HEX_DIRS
     .map(dir=>({x:unit.x+dir.x,y:unit.y+dir.y}))
@@ -17721,6 +18276,11 @@ async function mobTurn(mob){
   }
 
   const startingDistance=unitDistance(mob,target);
+
+  if(mob.type==="juvenile-red-dragon"){
+    await juvenileRedDragonTurn(mob,target);
+    return;
+  }
 
   /*
     R127 Kobold Slinger AI: Slingers are dedicated ranged troops. If they do
@@ -18251,6 +18811,20 @@ function updateUnitInfoPanel(){
           ? `<span>Group Morale</span><span>${game.enemyGroupMorale?.moraleLabel || inspected.moraleLabel || "Average (8-10)"} — target ${game.enemyGroupMorale?.baseMorale ?? inspected.morale}${game.enemyGroupMorale?.broken ? " — BROKEN" : ""}</span>`
           : `<span>Morale</span><span>${inspected.moraleLabel || inspected.morale || "—"}</span>`
       );
+
+    if(inspected.type==="juvenile-red-dragon"){
+      const breathState=dragonBreathReady(inspected)
+        ? "READY"
+        : "Recharging — last used round "+inspected.breathWeapon.lastUsedRound;
+
+      ui.unitInfoRows.innerHTML+=
+        "<span>Routine</span><span>Claw 1d10+4 / Claw 1d10+4 / Bite 3d10+4</span>"+
+        "<span>Breath</span><span>90' cone — 8d10+4 fire — save vs Breath for half</span>"+
+        "<span>Breath Cycle</span><span>Once every 3 rounds — "+breathState+"</span>"+
+        "<span>Defense</span><span>Immune to fire; MR Nil</span>"+
+        "<span>Innate</span><span>Affect Normal Fires 3/day; Pyrotechnics 3/day</span>"+
+        "<span>Flight</span><span>30 (C); Jump 3</span>";
+    }
   }
 
   renderUnitStatusEffects(inspected);
@@ -20014,9 +20588,8 @@ function drawLargeTestMob(mob){
   }
 
   /*
-    Temporary R186 footprint visualization. The translucent body cells make the
-    spatial mask explicit while we validate movement/targeting. A future Dragon
-    sprite will replace this diagnostic overlay without changing occupancy.
+    Keep a very faint footprint wash while the multi-hex system is under test.
+    The dragon itself has no baked or separately rendered ground shadow.
   */
   ctx.save();
   for(const cell of footprint){
@@ -20029,35 +20602,25 @@ function drawLargeTestMob(mob){
 
     const top=hexScreenVertices(cell.x,cell.y);
     polygonPath(top);
-    ctx.fillStyle="rgba(170,70,46,0.09)";
+    ctx.fillStyle="rgba(170,70,46,0.035)";
     ctx.fill();
-    ctx.strokeStyle="rgba(224,128,88,0.42)";
-    ctx.lineWidth=1.5;
+    ctx.strokeStyle="rgba(224,128,88,0.18)";
+    ctx.lineWidth=1;
     ctx.stroke();
   }
   ctx.restore();
 
-  const attackPose=activeUnitPoseName(mob)==="attack";
-  const sprite=attackPose ? orcAttackSprite : orcStandSprite;
-
+  const sprite=juvenileRedDragonSprite;
   if(!sprite?.complete || !sprite.naturalWidth){
     return;
   }
 
-  const drawW=Math.max(1,Number(mob.testRenderWidth)||104);
-  const drawH=Math.max(1,Number(mob.testRenderHeight)||112);
+  const drawW=Math.max(1,Number(mob.testRenderWidth)||190);
+  const drawH=Math.max(1,Number(mob.testRenderHeight)||190);
   const anchor={
     x:center.x,
-    y:center.y+48
+    y:center.y+66
   };
-
-  ctx.save();
-  ctx.translate(center.x,center.y+36);
-  ctx.fillStyle="rgba(0,0,0,0.42)";
-  ctx.beginPath();
-  ctx.ellipse(0,0,82,24,0,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
 
   drawSpriteFacing(
     sprite,
@@ -20256,6 +20819,108 @@ function drawProjectileFx(){
 
   ctx.restore();
 }
+
+
+function drawDragonBreathFx(){
+  if(!dragonBreathFx) return;
+
+  const fx=dragonBreathFx;
+  const now=performance.now();
+  const elapsed=Math.max(0,now-fx.started);
+  const progress=Math.min(1,elapsed/fx.duration);
+  const front=Math.min(1,progress*1.75);
+  const fade=
+    progress<0.14
+      ? progress/0.14
+      : progress>0.76
+        ? Math.max(0,(1-progress)/0.24)
+        : 1;
+
+  if(fade<=0) return;
+
+  const sourceCenter=hexCenter(fx.source.x,fx.source.y);
+  const visibleCells=fx.cells.filter(cell=>
+    (cell.breathStep/fx.rangeHexes)<=front+0.05
+  );
+
+  ctx.save();
+  ctx.globalCompositeOperation="source-over";
+
+  for(const cell of visibleCells){
+    const c=hexCenter(cell.x,cell.y);
+    const depth=Math.max(0,Math.min(1,cell.breathStep/fx.rangeHexes));
+    const phase=
+      now*0.025 +
+      cell.x*1.71 +
+      cell.y*2.37 +
+      cell.breathLane*0.83;
+    const flicker=0.88+0.12*Math.sin(phase);
+    const radius=(14+13*depth)*flicker;
+
+    ctx.globalAlpha=0.78*fade;
+    ctx.fillStyle="#8f1708";
+    ctx.beginPath();
+    ctx.ellipse(c.x,c.y-5,radius*1.35,radius*0.70,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha=0.88*fade;
+    ctx.fillStyle="#ef4108";
+    ctx.beginPath();
+    ctx.ellipse(c.x,c.y-7,radius*1.02,radius*0.54,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha=0.96*fade;
+    ctx.fillStyle="#ff9b13";
+    ctx.beginPath();
+    ctx.ellipse(
+      c.x+Math.sin(phase*1.7)*3,
+      c.y-9,
+      radius*0.68,
+      radius*0.36,
+      0,0,Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.fillStyle="#fff1a0";
+    ctx.beginPath();
+    ctx.ellipse(
+      c.x-Math.cos(phase*1.3)*2,
+      c.y-10,
+      Math.max(3,radius*0.30),
+      Math.max(2,radius*0.17),
+      0,0,Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.globalAlpha=0.72*fade;
+    for(let spark=0;spark<3;spark++){
+      const sx=
+        c.x +
+        Math.sin(phase+spark*2.1)*(9+depth*12);
+      const sy=
+        c.y-12 -
+        ((elapsed*0.035 + spark*7 + cell.breathStep*3)%22);
+      ctx.fillStyle=spark===0 ? "#fff0a0" : "#ff7b0a";
+      ctx.fillRect(Math.round(sx),Math.round(sy),3,3);
+    }
+  }
+
+  if(visibleCells.length){
+    const first=hexCenter(visibleCells[0].x,visibleCells[0].y);
+    const t=Math.min(1,front*3);
+    const x=sourceCenter.x+(first.x-sourceCenter.x)*0.48*t;
+    const y=sourceCenter.y+(first.y-sourceCenter.y)*0.48*t-11;
+
+    ctx.globalAlpha=0.90*fade;
+    ctx.fillStyle="#fff6c8";
+    ctx.beginPath();
+    ctx.arc(x,y,8+4*Math.sin(now*0.04),0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 
 function drawFireballExplosionFx(){
   if(!fireballExplosionFx) return;
@@ -21528,7 +22193,7 @@ function draw(){
       fn:()=>
         enemy.type==="orc"
           ? drawOrc(enemy)
-          : enemy.type==="large-test-mob"
+          : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
             : drawKobold(enemy)
     });
@@ -21549,6 +22214,7 @@ function draw(){
   drawColorSprayFx();
   drawMagicEffectFx();
   drawAreaDamageFx();
+  drawDragonBreathFx();
   drawFireballExplosionFx();
   drawFireDamageFx();
 
