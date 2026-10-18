@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R182",
-  "description": "Adventure Party sprite asset specifications through R182. Carl now uses the verified 64x64 repository fighter asset with an embedded decode fallback.",
+  "release": "R183",
+  "description": "Adventure Party sprite asset specifications through R183. Carl uses the exact 64x64 conversion derived directly from the user-uploaded source image.",
   "assets": {
     "fighter": {
       "source": {
