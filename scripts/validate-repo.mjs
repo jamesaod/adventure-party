@@ -125,6 +125,9 @@ const jsVersion=index.match(/js\/adventure-party\.js\?v=(R\d+)/)?.[1] || null;
 if (!cssVersion || !jsVersion) fail("Versioned CSS/JS asset URLs are required.");
 if (cssVersion !== jsVersion) fail(`CSS/JS asset versions differ: ${cssVersion} vs ${jsVersion}`);
 
+const fighterAssetVersion = fs.readFileSync("js/adventure-party.js","utf8").match(/assets\/sprites\/fighter\.png\?v=(R\d+)/)?.[1] || null;
+if (!fighterAssetVersion) fail("Versioned fighter sprite URL is required.");
+
 if (index.includes("Single-File Engine") || index.includes("Build R121")) {
   fail("Launcher contains obsolete single-file/R121 build metadata.");
 }
@@ -163,6 +166,9 @@ if (!buildMatch) {
       }
       if (cssVersion !== expectedRelease || jsVersion !== expectedRelease) {
         fail(`Asset cache-buster versions must match ${expectedRelease}; got CSS ${cssVersion} / JS ${jsVersion}.`);
+      }
+      if (fighterAssetVersion !== expectedRelease) {
+        fail(`Fighter sprite cache-buster must match ${expectedRelease}; got ${fighterAssetVersion}.`);
       }
     }
   } catch (error) {
