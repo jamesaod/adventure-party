@@ -11837,15 +11837,30 @@ function newGame(condition=selectedCombatCondition){
   }
 
   const player=makeFighter();
+
+  /*
+    R186: configure terrain before encounter placement so a large footprint can
+    validate every occupied cell against architectural walls at spawn time.
+  */
+  configureArchitecturalWalls(condition);
+
   /*
     R179 combat setup cleanup: the default battle test now starts with Carl
     as the sole player character. Ranger and Mage definitions remain in the
     engine for future roster selection but are not spawned automatically.
   */
-  const kobolds=condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3);
+  const kobolds=
+    selectedMobEncounter==="kobolds"
+      ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
+      : [];
+
+  const enemies=
+    selectedMobEncounter==="large-test"
+      ? makeLargeMobTestEncounter(condition)
+      : [...kobolds];
+
   /* R114: Orcs remain defined in the engine but are removed from this combat simulation. */
   lastOrcDeployment=null;
-  const enemies=[...kobolds];
 
   camera.x=player.x;
   camera.y=player.y;
@@ -11865,26 +11880,25 @@ function newGame(condition=selectedCombatCondition){
     areaEffects:[],
 
     /*
-      R136 Monstrous Manual Kobold morale:
-      - printed morale is Average (8-10); 9 remains the representative midpoint
-        used by this combat test;
-      - the Kobold entry specifically requires a morale check when losses reduce
-        them to only a 3:2 numerical advantage over their opponents.
+      R136 Monstrous Manual Kobold morale applies only to the Kobold encounter.
+      Large-MOB test encounters use per-unit morale and do not share this group
+      state.
     */
-    enemyGroupMorale:{
-      id:"kobold-group",
-      label:"Kobold group",
-      baseMorale:kobolds[0]?.morale ?? 9,
-      moraleLabel:"Average (8-10)",
-      initialCount:kobolds.length,
-      manualRatioThreshold:1.5,
-      manualRatioChecked:false,
-      broken:false,
-      checks:0
-    }
+    enemyGroupMorale:kobolds.length
+      ? {
+          id:"kobold-group",
+          label:"Kobold group",
+          baseMorale:kobolds[0]?.morale ?? 9,
+          moraleLabel:"Average (8-10)",
+          initialCount:kobolds.length,
+          manualRatioThreshold:1.5,
+          manualRatioChecked:false,
+          broken:false,
+          checks:0
+        }
+      : null
   };
 
-  configureArchitecturalWalls(condition);
   lastPlayerVisibilityObserverId=null;
 
   aimMode=false;
@@ -11966,27 +11980,43 @@ function newGame(condition=selectedCombatCondition){
     "system"
   );
 
-  log(
-    `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
-    "system"
-  );
+  if(selectedMobEncounter==="large-test"){
+    const large=enemies[0];
+    log(
+      `7-Hex Test MOB deployed as one combat entity across ${unitFootprintCellCount(large)} occupied hexes; `+
+      `${large.maxHp} HP, AC ${large.ac}, THAC0 ${large.thaco}, Move ${large.move}.`,
+      "system"
+    );
+    log(
+      "Multi-hex test rules: one initiative slot, one HP pool, one target identity, one save/damage resolution per area effect.",
+      "system"
+    );
+  }else{
+    log(
+      `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
+      "system"
+    );
 
-  log(
-    `3 Kobold Body Guards deployed: AC 6, THAC0 20, Move 6, 4 HP each; Short Sword 1d6, shield, leather armor; XP 15.`,
-    "system"
-  );
+    log(
+      `3 Kobold Body Guards deployed: AC 6, THAC0 20, Move 6, 4 HP each; Short Sword 1d6, shield, leather armor; XP 15.`,
+      "system"
+    );
 
-  log(
-    `3 Kobold Slingers deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; Sling with 10 sling bullets; XP 7.`,
-    "system"
-  );
-
+    log(
+      `3 Kobold Slingers deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; Sling with 10 sling bullets; XP 7.`,
+      "system"
+    );
+  }
 
   if(lastMobDeployment){
     log(
-      `Kobold deployment: ${lastMobDeployment.direction}, `+
-      `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
-      `cluster radius ${lastMobDeployment.clusterRadius}.`,
+      selectedMobEncounter==="large-test"
+        ? `Large MOB pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
+        : (
+            `Kobold deployment: ${lastMobDeployment.direction}, `+
+            `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+            `cluster radius ${lastMobDeployment.clusterRadius}.`
+          ),
       "system"
     );
   }
