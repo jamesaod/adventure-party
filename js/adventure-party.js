@@ -2010,7 +2010,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R189';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R190';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2023,8 +2023,9 @@ const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
 const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
-/* R187: temporary juvenile red dragon art for the 7-hex large-MOB test. */
-const JUVENILE_RED_DRAGON_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R189';
+/* R190: dedicated juvenile red dragon standing + attack poses. */
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R190';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R190';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -2083,8 +2084,11 @@ orcStandSprite.src=ORC_STAND_SPRITE_SRC;
 const orcAttackSprite=new Image();
 orcAttackSprite.src=ORC_ATTACK_SPRITE_SRC;
 
-const juvenileRedDragonSprite=new Image();
-juvenileRedDragonSprite.src=JUVENILE_RED_DRAGON_SPRITE_SRC;
+const juvenileRedDragonStandSprite=new Image();
+juvenileRedDragonStandSprite.src=JUVENILE_RED_DRAGON_STAND_SPRITE_SRC;
+
+const juvenileRedDragonAttackSprite=new Image();
+juvenileRedDragonAttackSprite.src=JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC;
 
 /* R157: user-provided death marker sprite replaces the old skull-and-crossbones overlay. */
 const deathMarkerSprite=new Image();
@@ -2147,7 +2151,8 @@ function prepareCrispPixelSprite(image){
   koboldBodyguardAttackSprite,
   koboldSlingerStandSprite,
   koboldSlingerAttackSprite,
-  juvenileRedDragonSprite,
+  juvenileRedDragonStandSprite,
+  juvenileRedDragonAttackSprite,
   deathMarkerSprite
 ].forEach(prepareCrispPixelSprite);
 
@@ -2208,11 +2213,16 @@ const UNIT_POSE_DEFINITIONS={
   "juvenile-red-dragon":{
     defaultPose:"stand",
     actionPose:"attack",
-    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
-    nativeFacing:"right",
+    /*
+      R190: keep the attack pose up for the complete 1.05 s breath animation.
+      Repeated melee attacks refresh this timer, so the full claw/claw/bite
+      sequence also remains in the action pose.
+    */
+    actionDurationMs:1100,
+    nativeFacing:"left",
     sprites:{
-      stand:juvenileRedDragonSprite,
-      attack:juvenileRedDragonSprite
+      stand:juvenileRedDragonStandSprite,
+      attack:juvenileRedDragonAttackSprite
     }
   }
 };
@@ -11565,14 +11575,18 @@ function makeLargeMobTest(position){
     facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
 
     /*
-      R188: scale/anchor tuned from the user's seven-hex placement template.
-      The visible dragon spans roughly two hex widths, with its feet planted
-      inside the lower half of the seven-cell footprint rather than below it.
+      R190: measured from the user's new attack-pose placement reference.
+      The reference seven-hex block is 1.8125× the engine footprint scale.
+      Converting the 161 px source width back to engine scale gives 89 px.
+      Standing / attack heights preserve their separate source aspect ratios.
     */
-    testRenderWidth:126,
-    testRenderHeight:126,
-    hpBarWidth:84,
-    hpBarOffsetY:98
+    dragonRenderWidth:89,
+    dragonStandRenderHeight:104,
+    dragonAttackRenderHeight:107,
+    dragonAnchorOffsetX:3,
+    dragonAnchorOffsetY:41,
+    hpBarWidth:72,
+    hpBarOffsetY:72
   };
 }
 
@@ -20036,6 +20050,11 @@ function pixelAssetIdForUnitPose(unit,poseName=null){
   if(unit.type==="orc"){
     return pose==="attack" ? "orc-attack" : "orc-stand";
   }
+  if(unit.type==="juvenile-red-dragon"){
+    return pose==="attack"
+      ? "juvenile-red-dragon-attack"
+      : "juvenile-red-dragon";
+  }
   return null;
 }
 
@@ -20608,9 +20627,44 @@ function drawOrc(orc){
 
 
 
+function dragonPresentationMetrics(mob,poseName=activeUnitPoseName(mob) || "stand"){
+  const center=unitFootprintScreenCenter(mob);
+  const attack=poseName==="attack";
+  const width=Math.max(1,Number(mob?.dragonRenderWidth)||89);
+  const height=Math.max(
+    1,
+    Number(
+      attack
+        ? mob?.dragonAttackRenderHeight
+        : mob?.dragonStandRenderHeight
+    ) || (attack ? 107 : 104)
+  );
+  const lateral=Math.max(0,Number(mob?.dragonAnchorOffsetX)||3);
+  const vertical=Math.max(0,Number(mob?.dragonAnchorOffsetY)||41);
+
+  /*
+    The supplied placement reference faces left. Mirroring the sprite should
+    mirror its small lateral placement bias as well, so the body remains
+    centered over the seven occupied cells in either facing.
+  */
+  const anchor={
+    x:center.x+(mob?.facing==="left" ? -lateral : lateral),
+    y:center.y+vertical
+  };
+
+  return {
+    poseName,
+    attack,
+    center,
+    width,
+    height,
+    anchor,
+    nativeFacing:"left"
+  };
+}
+
 function drawLargeTestMob(mob){
   const footprint=occupiedHexes(mob);
-  const center=unitFootprintScreenCenter(mob);
 
   if(game.active===mob.id){
     drawActiveHex(mob,"#e08058");
@@ -20643,31 +20697,22 @@ function drawLargeTestMob(mob){
   }
   ctx.restore();
 
-  const sprite=juvenileRedDragonSprite;
+  const poseName=activeUnitPoseName(mob) || "stand";
+  const sprite=unitPoseSprite(mob,juvenileRedDragonStandSprite);
+
   if(!sprite?.complete || !sprite.naturalWidth){
     return;
   }
 
-  /*
-    R188: template-derived placement. The seven-hex cluster is 192×105 px at
-    the current tactical scale. The reference dragon occupies about 64% of the
-    cluster width and plants its feet about one-third of a hex-row below the
-    footprint centroid.
-  */
-  const drawW=Math.max(1,Number(mob.testRenderWidth)||126);
-  const drawH=Math.max(1,Number(mob.testRenderHeight)||126);
-  const anchor={
-    x:center.x,
-    y:center.y+36
-  };
+  const presentation=dragonPresentationMetrics(mob,poseName);
 
   drawSpriteFacing(
     sprite,
-    anchor,
-    drawW,
-    drawH,
+    presentation.anchor,
+    presentation.width,
+    presentation.height,
     mob.facing,
-    "right",
+    presentation.nativeFacing,
     mob,
     {x:0.5,y:1}
   );
@@ -20893,18 +20938,17 @@ function drawDragonBreathFx(){
 
   if(growth<=0 || fade<=0) return;
 
-  const drawW=Math.max(1,Number(dragon.testRenderWidth)||126);
-  const drawH=Math.max(1,Number(dragon.testRenderHeight)||126);
-  const footprintCenter=unitFootprintScreenCenter(dragon);
-  const spriteBottomY=footprintCenter.y+36;
+  const presentation=dragonPresentationMetrics(dragon,"attack");
 
   /*
-    Approximate the mouth from the same bottom-center sprite anchor used by
-    drawLargeTestMob(). Mirroring follows the current left/right sprite facing.
+    R190 mouth position measured from the new attacking sprite. The head is on
+    the leading side of the source image; these offsets place the cone at the
+    muzzle rather than the torso. Horizontal offset mirrors with facing.
   */
   const mouth={
-    x:footprintCenter.x+(dragon.facing==="left" ? -1 : 1)*drawW*0.18,
-    y:spriteBottomY-drawH*0.55
+    x:presentation.anchor.x+
+      (dragon.facing==="left" ? -1 : 1)*presentation.width*0.36,
+    y:presentation.anchor.y-presentation.height*0.41
   };
 
   function hash32(a,b,c,d){
