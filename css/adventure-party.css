@@ -1740,23 +1740,38 @@ button, input, select, textarea {
   line-height:1.5;
 }
 
-.combat-condition-grid {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:18px;
-  flex:1;
-  align-items:stretch;
+.combat-battlefield-row,
+.combat-roster-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+
+.combat-battlefield-row {
+  padding:14px;
+  border:2px solid #716d80;
+  background:#0c0b12;
+}
+
+.combat-setup-label {
+  flex:0 0 155px;
+  color:var(--gold);
+  font-size:14px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
 }
 
 .combat-condition-choice {
-  border:3px solid #77758a;
+  border:2px solid #77758a;
   background:linear-gradient(#171626,#0c0b14);
   color:#ddd7be;
-  padding:24px 20px;
+  padding:10px 14px;
   cursor:pointer;
-  text-align:left;
+  text-align:center;
   font:inherit;
-  box-shadow:inset 0 0 0 2px #242238;
+  min-width:190px;
+  box-shadow:inset 0 0 0 1px #242238;
 }
 
 .combat-condition-choice:hover,
@@ -1768,28 +1783,32 @@ button, input, select, textarea {
 }
 
 .combat-condition-choice.selected {
-  box-shadow:inset 0 0 0 2px #403b67, 0 0 0 2px rgba(121,231,231,0.18);
-}
-
-.combat-condition-choice h2 {
   color:var(--gold);
-  margin:0 0 14px;
-  font-size:22px;
+  box-shadow:inset 0 0 0 1px #403b67, 0 0 0 2px rgba(121,231,231,0.18);
 }
 
-.combat-condition-choice p {
-  margin:0;
-  line-height:1.55;
-  font-size:13px;
+.combat-roster-placeholder {
+  margin-top:14px;
+  display:grid;
+  gap:8px;
+  padding:14px;
+  border:2px solid #514d60;
+  background:#0b0a11;
 }
 
-.combat-condition-choice .condition-tag {
-  display:inline-block;
-  margin-top:16px;
-  padding:5px 8px;
-  border:1px solid #69637c;
+.combat-roster-current {
   color:var(--cyan);
-  font-size:11px;
+  min-width:190px;
+}
+
+.combat-roster-add {
+  border:1px solid #4b4856;
+  background:#15131c;
+  color:#6e6a76;
+  padding:8px 10px;
+  font:inherit;
+  font-size:12px;
+  cursor:not-allowed;
 }
 
 .combat-condition-actions,
@@ -1880,6 +1899,22 @@ button, input, select, textarea {
 }
 
 @media (max-width:760px){
-  .combat-condition-grid,
   .xp-loot-summary { grid-template-columns:1fr; }
+
+  .combat-battlefield-row,
+  .combat-roster-row {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .combat-setup-label {
+    flex:0 0 auto;
+  }
+
+  .combat-condition-choice,
+  .combat-roster-current,
+  .combat-roster-add {
+    width:100%;
+    min-width:0;
+  }
 }
