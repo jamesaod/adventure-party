@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import zlib from "node:zlib";
 
 function fail(message) {
   console.error(`VALIDATION FAILED: ${message}`);
@@ -7,6 +8,96 @@ function fail(message) {
 
 function requireFile(path) {
   if (!fs.existsSync(path)) fail(`Missing required file: ${path}`);
+}
+
+function crc32(buffer) {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) {
+      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function validatePng(path) {
+  const data = fs.readFileSync(path);
+  const signature = Buffer.from([137,80,78,71,13,10,26,10]);
+
+  if (data.length < 20 || !data.subarray(0,8).equals(signature)) {
+    fail(`${path} is not a valid PNG stream.`);
+    return;
+  }
+
+  let offset = 8;
+  let sawIHDR = false;
+  let sawIEND = false;
+  const idatParts = [];
+
+  while (offset < data.length) {
+    if (offset + 12 > data.length) {
+      fail(`${path} has a truncated PNG chunk header.`);
+      return;
+    }
+
+    const length = data.readUInt32BE(offset);
+    const chunkEnd = offset + 12 + length;
+    if (chunkEnd > data.length) {
+      fail(`${path} has a truncated PNG chunk.`);
+      return;
+    }
+
+    const typeBuffer = data.subarray(offset + 4, offset + 8);
+    const type = typeBuffer.toString("ascii");
+    const chunkData = data.subarray(offset + 8, offset + 8 + length);
+    const expectedCrc = data.readUInt32BE(offset + 8 + length);
+    const actualCrc = crc32(Buffer.concat([typeBuffer, chunkData]));
+
+    if (actualCrc !== expectedCrc) {
+      fail(`${path} has a bad CRC in PNG chunk ${type}.`);
+      return;
+    }
+
+    if (type === "IHDR") {
+      if (sawIHDR || length !== 13) {
+        fail(`${path} has an invalid IHDR chunk.`);
+        return;
+      }
+      sawIHDR = true;
+    } else if (type === "IDAT") {
+      idatParts.push(chunkData);
+    } else if (type === "IEND") {
+      sawIEND = true;
+      break;
+    }
+
+    offset = chunkEnd;
+  }
+
+  if (!sawIHDR || !sawIEND || idatParts.length === 0) {
+    fail(`${path} is missing required PNG chunks.`);
+    return;
+  }
+
+  try {
+    zlib.inflateSync(Buffer.concat(idatParts));
+  } catch (error) {
+    fail(`${path} has an invalid compressed image stream: ${error.message}`);
+  }
+}
+
+function collectPngs(dir) {
+  const results = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes:true})) {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      results.push(...collectPngs(path));
+    } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".png")) {
+      results.push(path);
+    }
+  }
+  return results;
 }
 
 const requiredFiles = [
@@ -19,6 +110,10 @@ const requiredFiles = [
 ];
 
 for (const path of requiredFiles) requireFile(path);
+
+for (const pngPath of collectPngs("assets")) {
+  validatePng(pngPath);
+}
 
 const index = fs.readFileSync("index.html", "utf8");
 for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
