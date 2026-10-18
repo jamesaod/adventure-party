@@ -1991,6 +1991,9 @@ const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
 const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
+/* R187: temporary juvenile red dragon art for the 7-hex large-MOB test. */
+const JUVENILE_RED_DRAGON_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R187';
+
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
 const KOBOLD_NORMAL_ATTACK_SPRITE_SRC='assets/sprites/kobold-attack.png';
@@ -2047,6 +2050,9 @@ orcStandSprite.src=ORC_STAND_SPRITE_SRC;
 
 const orcAttackSprite=new Image();
 orcAttackSprite.src=ORC_ATTACK_SPRITE_SRC;
+
+const juvenileRedDragonSprite=new Image();
+juvenileRedDragonSprite.src=JUVENILE_RED_DRAGON_SPRITE_SRC;
 
 /* R157: user-provided death marker sprite replaces the old skull-and-crossbones overlay. */
 const deathMarkerSprite=new Image();
@@ -2109,6 +2115,7 @@ function prepareCrispPixelSprite(image){
   koboldBodyguardAttackSprite,
   koboldSlingerStandSprite,
   koboldSlingerAttackSprite,
+  juvenileRedDragonSprite,
   deathMarkerSprite
 ].forEach(prepareCrispPixelSprite);
 
@@ -2166,14 +2173,14 @@ const UNIT_POSE_DEFINITIONS={
       attack:orcAttackSprite
     }
   },
-  "large-test-mob":{
+  "juvenile-red-dragon":{
     defaultPose:"stand",
     actionPose:"attack",
     actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
     nativeFacing:"right",
     sprites:{
-      stand:orcStandSprite,
-      attack:orcAttackSprite
+      stand:juvenileRedDragonSprite,
+      attack:juvenileRedDragonSprite
     }
   }
 };
@@ -6971,7 +6978,7 @@ function getArmorCatalogEntry(id){
 }
 
 function targetUsesLargeWeaponDamage(target){
-  return target?.sizeCategory==="large";
+  return ["large","huge","gargantuan"].includes(target?.sizeCategory);
 }
 
 function damageExpressionForSize(entry,target){
@@ -8610,7 +8617,7 @@ function drawVisibleArchitecturalWallsOverLOS(){
       fn:()=>
         enemy.type==="orc"
           ? drawOrc(enemy)
-          : enemy.type==="large-test-mob"
+          : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
             : drawKobold(enemy)
     });
@@ -11377,42 +11384,66 @@ function makeOrc(index,position){
 
 function makeLargeMobTest(position){
   /*
-    R186 temporary rules-neutral harness for validating the multi-hex engine.
-    This is NOT a final monster stat block or final art asset. It deliberately
-    uses the existing Orc sprite pair while the Dragon/test creature art is
-    being prepared.
+    R187 juvenile Red Dragon test creature.
+
+    AD&D 2e Monstrous Manual / Dragon, General:
+      Age category 4 (Juvenile), 15 HD, AC -3, MV 9 / Fl 30 (C) / Jp 3,
+      claw/claw/bite, 1d10/1d10/3d10, +4 age-category combat damage modifier,
+      Fanatic morale, fire immunity, and an 8d10+4 cone of fire.
+    The tactical test keeps R186's symmetric 7-hex footprint.
   */
+  let hp=0;
+  for(let i=0;i<15;i++) hp+=d(8);
+
   return {
-    id:"large-mob-test-01",
-    type:"large-test-mob",
-    species:"large-test",
+    id:"juvenile-red-dragon-01",
+    type:"juvenile-red-dragon",
+    species:"red-dragon",
+    creatureType:"dragon",
     controller:"mob",
-    sizeCategory:"huge",
+    sizeCategory:"gargantuan",
+    adndSize:"G",
     footprintId:"hex7",
     faction:"enemy",
-    alignment:"neutral evil",
-    name:"7-Hex Test MOB",
+    alignment:"chaotic evil",
+    name:"Juvenile Red Dragon",
 
-    hp:36,
-    maxHp:36,
-    hitDiceValue:8,
-    hitDiceLabel:"8",
+    ageCategory:4,
+    ageLabel:"Juvenile (26-50 years)",
+    intelligence:"Exceptional (15-16)",
 
-    ac:4,
-    thaco:13,
-    move:5,
-    halfMove:2,
+    hp,
+    maxHp:hp,
+
+    hitDiceValue:15,
+    hitDiceLabel:"15",
+
+    ac:-3,
+    thaco:7,
+
+    move:9,
+    flyMove:30,
+    flyManeuverability:"C",
+    jumpMove:3,
+    halfMove:4,
 
     weapon:"Bite",
     weaponCatalogId:null,
     weaponInHand:"melee",
     meleeRange:1,
-    weaponDamageSM:"1d10",
-    weaponDamageL:"1d10",
+    weaponDamageSM:"3d10",
+    weaponDamageL:"3d10",
+
     attackBonus:0,
-    damageBonus:0,
+    damageBonus:4,
     weaponHitBonus:0,
     weaponDamageBonus:0,
+    attacksPerRound:3,
+    attackRoutine:"Claw / Claw / Bite",
+    naturalAttacks:{
+      claw:"1d10",
+      bite:"3d10"
+    },
 
     rangedWeapon:null,
     missileCatalogId:null,
@@ -11422,9 +11453,30 @@ function makeLargeMobTest(position){
     missileRateOfFire:0,
     missileRangeIncrementFt:0,
 
-    morale:20,
-    moraleLabel:"Test — does not flee",
-    xpValue:120,
+    breathWeapon:{
+      name:"Cone of Fire",
+      damageExpression:"8d10+4",
+      damageType:"fire",
+      rangeFeet:90,
+      rangeHexes:9,
+      mouthWidthFeet:5,
+      endWidthFeet:30,
+      save:"breath",
+      saveForHalf:true,
+      cooldownRounds:3,
+      lastUsedRound:-999
+    },
+
+    damageImmunities:["fire"],
+    specialAbilities:[
+      "Affect Normal Fires 3/day",
+      "Pyrotechnics 3/day"
+    ],
+    magicResistance:0,
+
+    morale:18,
+    moraleLabel:"Fanatic (17-18)",
+    xpValue:12000,
 
     poseName:"stand",
     poseUntil:0,
@@ -11447,11 +11499,10 @@ function makeLargeMobTest(position){
     facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
     facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
 
-    /* Temporary presentation values until a purpose-built large sprite exists. */
-    testRenderWidth:104,
-    testRenderHeight:112,
-    hpBarWidth:76,
-    hpBarOffsetY:102
+    testRenderWidth:190,
+    testRenderHeight:190,
+    hpBarWidth:104,
+    hpBarOffsetY:126
   };
 }
 
@@ -20014,9 +20065,8 @@ function drawLargeTestMob(mob){
   }
 
   /*
-    Temporary R186 footprint visualization. The translucent body cells make the
-    spatial mask explicit while we validate movement/targeting. A future Dragon
-    sprite will replace this diagnostic overlay without changing occupancy.
+    Keep a very faint footprint wash while the multi-hex system is under test.
+    The dragon itself has no baked or separately rendered ground shadow.
   */
   ctx.save();
   for(const cell of footprint){
@@ -20029,35 +20079,25 @@ function drawLargeTestMob(mob){
 
     const top=hexScreenVertices(cell.x,cell.y);
     polygonPath(top);
-    ctx.fillStyle="rgba(170,70,46,0.09)";
+    ctx.fillStyle="rgba(170,70,46,0.035)";
     ctx.fill();
-    ctx.strokeStyle="rgba(224,128,88,0.42)";
-    ctx.lineWidth=1.5;
+    ctx.strokeStyle="rgba(224,128,88,0.18)";
+    ctx.lineWidth=1;
     ctx.stroke();
   }
   ctx.restore();
 
-  const attackPose=activeUnitPoseName(mob)==="attack";
-  const sprite=attackPose ? orcAttackSprite : orcStandSprite;
-
+  const sprite=juvenileRedDragonSprite;
   if(!sprite?.complete || !sprite.naturalWidth){
     return;
   }
 
-  const drawW=Math.max(1,Number(mob.testRenderWidth)||104);
-  const drawH=Math.max(1,Number(mob.testRenderHeight)||112);
+  const drawW=Math.max(1,Number(mob.testRenderWidth)||190);
+  const drawH=Math.max(1,Number(mob.testRenderHeight)||190);
   const anchor={
     x:center.x,
-    y:center.y+48
+    y:center.y+66
   };
-
-  ctx.save();
-  ctx.translate(center.x,center.y+36);
-  ctx.fillStyle="rgba(0,0,0,0.42)";
-  ctx.beginPath();
-  ctx.ellipse(0,0,82,24,0,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
 
   drawSpriteFacing(
     sprite,
@@ -21528,7 +21568,7 @@ function draw(){
       fn:()=>
         enemy.type==="orc"
           ? drawOrc(enemy)
-          : enemy.type==="large-test-mob"
+          : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
             : drawKobold(enemy)
     });
