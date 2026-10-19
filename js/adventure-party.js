@@ -17990,6 +17990,71 @@ function validCreatureTargetWithinRange(caster,target,spell,casterLevel,allowFri
   return unitDistance(caster,target)<=range;
 }
 
+async function castCharmPersonSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("charm-person");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(
+    !validCreatureTargetWithinRange(caster,target,spell,level,false) ||
+    !isCharmPersonEligible(target)
+  ){
+    setCombatMessage(
+      "Charm Person requires a living hostile humanoid of Medium size or smaller within 12 hexes."
+    );
+    return false;
+  }
+
+  if(lineOfSightBlocked(caster,target)){
+    setCombatMessage("Line of sight is blocked to that target.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  pendingAimAction=null;
+  exitAimMode(false,false);
+  setUnitActionBanner(caster,"Casting Charm Person");
+
+  const save=rollSpellSave(target,caster);
+
+  setLastRoll(
+    `Charm Person save: d20 ${save.rawRoll}`+
+    `${save.modifier ? ` ${save.modifier>=0 ? "+" : ""}${save.modifier}` : ""}`+
+    ` = ${save.modifiedRoll} vs ${save.targetNumber}`
+  );
+
+  if(save.success){
+    playMagicEffectSound("charm");
+    setCombatMessage(
+      `${target.name} resists Charm Person.`,
+      COMBAT_MESSAGE_MIN_HOLD_MS
+    );
+    log(
+      `${target.name} saves against Charm Person and remains hostile.`,
+      "system"
+    );
+    await waitForCombatActionPause();
+  }else{
+    applyCharmPersonAllegiance(target,caster);
+
+    setCombatMessage(
+      `${target.name} is CHARMED and changes sides!`,
+      COMBAT_MESSAGE_MIN_HOLD_MS
+    );
+    log(
+      `${target.name} is charmed by ${caster.name}; it now fights its former allies under AI control.`,
+      "good"
+    );
+
+    await animateMagicEffectOnUnits([target],"charm");
+    ensurePersistentStatusFxLoop();
+  }
+
+  finishTestSpellCast(caster,"Charm Person",action);
+  return true;
+}
+
 async function castArmorSpell(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("armor");
@@ -18859,6 +18924,8 @@ async function castPreparedCombatSpell(action,targetHex,targetUnit){
       return await castArmorSpell(action,targetUnit);
     case "burning-hands":
       return await castBurningHandsSpell(action,targetHex);
+    case "charm-person":
+      return await castCharmPersonSpell(action,targetUnit);
     case "chill-touch":
       return await castChillTouchSpell(action);
     case "color-spray":
@@ -24177,6 +24244,16 @@ function persistentShieldUnits(){
   );
 }
 
+function persistentCharmUnits(){
+  if(!game || game.over) return [];
+
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled &&
+    !!getUnitEffect(unit,"charm-person")
+  );
+}
+
 function persistentLightUnits(){
   if(!game || game.over) return [];
   return allUnits().filter(unit=>
@@ -24192,6 +24269,7 @@ function hasPersistentStatusFx(){
     persistentUnconsciousUnits().length>0 ||
     persistentConfusionUnits().length>0 ||
     persistentTauntUnits().length>0 ||
+    persistentCharmUnits().length>0 ||
     persistentShieldUnits().length>0 ||
     persistentLightUnits().length>0 ||
     illuminationAreaEffects().length>0
@@ -24635,6 +24713,48 @@ function drawPersistentTauntStatusFx(){
   }
 }
 
+function drawPersistentCharmStatusFx(){
+  const units=persistentCharmUnits();
+  if(!units.length) return;
+
+  const now=performance.now();
+
+  for(let index=0;index<units.length;index++){
+    const unit=units[index];
+    if(!shouldRenderUnitUnderPartyVisibility(unit)) continue;
+
+    const center=hexCenter(unit.x,unit.y);
+    const phase=(now/1000)+(index*0.37);
+    const pulse=(Math.sin(phase*Math.PI*2*0.85)+1)/2;
+
+    for(let heart=0;heart<2;heart++){
+      const angle=phase*1.55+heart*Math.PI;
+      const hx=center.x+Math.cos(angle)*11;
+      const hy=center.y-35+Math.sin(angle)*4;
+      const size=2.8+(pulse*0.7);
+
+      ctx.save();
+      ctx.translate(hx,hy);
+      ctx.scale(size,size);
+
+      ctx.beginPath();
+      ctx.moveTo(0,0.8);
+      ctx.bezierCurveTo(-1.4,-0.2,-1.6,-1.2,-0.7,-1.5);
+      ctx.bezierCurveTo(-0.1,-1.7,0.3,-1.25,0,-0.75);
+      ctx.bezierCurveTo(0.3,-1.25,0.9,-1.7,1.45,-1.35);
+      ctx.bezierCurveTo(2.0,-0.85,1.35,0.15,0,1.35);
+      ctx.closePath();
+
+      ctx.lineWidth=0.62;
+      ctx.strokeStyle="rgba(12,6,14,0.92)";
+      ctx.fillStyle=`rgba(239,112,220,${0.72+0.18*pulse})`;
+      ctx.stroke();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
 
 
 function persistentStatusFxTick(){
@@ -25070,6 +25190,7 @@ function draw(){
   drawPersistentUnconsciousStatusFx();
   drawPersistentConfusionStatusFx();
   drawPersistentTauntStatusFx();
+  drawPersistentCharmStatusFx();
   drawColorSprayFx();
   drawMagicEffectFx();
   drawAreaDamageFx();
