@@ -3,6 +3,18 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R221 — Kobold prone normalization and amorphous cloud tops
+
+- Fixed Kobold-family prone rendering so Normal Kobolds, Body Guards, and Slingers all use the shared `kobold-prone` render profile instead of accidentally inheriting standing-pose dimensions.
+- Hardened `drawKobold()` so the shared prone sprite always receives prone-specific size, anchor, and contact-shadow treatment even if pose metadata becomes stale.
+- Kept the existing shared prone art and tactical prone-state rules unchanged; this is a render/presentation correction rather than a gameplay change.
+- Reworked fog/cloud upper-body rendering to remove the rectangular per-hex column that produced visible corners and stacked-box silhouettes.
+- Cloud bodies now use overlapping rounded cross-sections, animated billows, multi-lobed caps, and neighbor-to-neighbor bridge puffs so connected cells read as one amorphous cloud bank.
+- The tactical bottom footprint remains hex-based and readable; Wall of Fog, Fog Cloud, and Stinking Cloud gameplay occupancy, LOS blocking, saving throws, and movement rules are unchanged.
+- Rebuilt fog/cloud outlines from the same rounded geometry so the outline no longer reintroduces the old boxy top silhouette.
+- Preserved the R219 Stinking Cloud body opacity of 0.125 and existing fog/cloud color treatment.
+
+
 ## R220 — Intelligence-based MOB hazard awareness
 
 - Added a reusable MOB hazard-awareness system instead of spell-specific avoidance logic.
