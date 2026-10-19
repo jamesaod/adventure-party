@@ -13941,8 +13941,8 @@ async function longbowAttack(attacker,defender){
   }
 
   if(projectilePathBlocked(attacker,defender)){
-    setCombatMessage(`${attacker.name} cannot fire through a solid wall or window.`);
-    return {hit:false,killed:false,damage:0,blockedByFog:true};
+    setCombatMessage(`${attacker.name} does not have a clear firing lane.`);
+    return {hit:false,killed:false,damage:0,blockedByObstacle:true};
   }
 
   const range=longbowRangeBand(attacker,defender);
@@ -14998,7 +14998,7 @@ async function slingAttack(attacker,defender){
   }
 
   if(projectilePathBlocked(attacker,defender)){
-    setCombatMessage(`${attacker.name} cannot fire through a solid wall or window.`);
+    setCombatMessage(`${attacker.name} does not have a clear firing lane.`);
     return;
   }
 
