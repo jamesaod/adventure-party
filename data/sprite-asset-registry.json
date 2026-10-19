@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R205",
-  "description": "Adventure Party asset specifications through R205. R205 projects the credited PamNawi stone-floor texture into the battlefield's axial/isometric plane at 17.5% scale (half the R204 repeat size) and adds dark-grey geometric thresholds across authored doorway gaps to hide exposed outdoor terrain beneath open wall entrances.",
+  "release": "R206",
+  "description": "Adventure Party asset specifications through R206. R206 makes doorway thresholds exactly wall-thickness and wall-aligned, models the west entrance as an authored vertical doorway, changes indoor hex borders to black, and adds a two-pixel black outline around the union of upward-facing wall-cap surfaces while preserving R205 floor tiling and prior lighting fixes.",
   "assets": {
     "fighter": {
       "source": {
