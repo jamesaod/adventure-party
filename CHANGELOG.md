@@ -3,6 +3,19 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+
+## R200 — Directional wall light and true window planes
+
+- Wall illumination now paints only the physical half-face oriented toward each light source; the opposite side of the same wall is no longer brightened by that source.
+- The old-wood wall sprite is scaled across the wall's complete visible slab height and vertically aligned so the top of the supplied texture reaches the actual top of the wall.
+- North/south windows now cut a complete rectangular aperture through the rendered wall before the window frame/glass is drawn.
+- The window art is placed on the wall center plane rather than pasted onto a surface face.
+- East/west window planes are treated as edge-on in the current projection: their face-on texture and rectangular cutout are suppressed visually, while their authored LOS/illumination aperture remains active.
+- Pure white window pixels remain translucent glass; source alpha outside the authored frame is preserved.
+- Doorways remain literal geometric wall gaps from R199.
+- Combat event log layout now permits true internal scrolling, and new entries are re-pinned to the bottom after layout/paint so the newest event remains visible.
+
+
 ## R199 — Centered wider windows and geometric doorways
 
 - Removed the R198 doorway texture from the runtime presentation. Doorways now use the earlier architectural treatment: a literal gap between wall segments.
