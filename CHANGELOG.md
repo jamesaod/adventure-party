@@ -4,6 +4,16 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R203 — Centered windows and reliable newest-log visibility
+
+- Window planes are now centered vertically on the wall face instead of sitting at two-thirds wall height.
+- The window aperture and rendered frame/glass continue to share the same centered geometry.
+- Combat log now reserves explicit bottom padding plus a small terminal spacer, so the newest event cannot sit flush against the lower viewport edge.
+- Bottom pinning still occurs immediately and across two animation frames, with an additional delayed correction for late font/layout reflow.
+- Existing R202 wall lighting, wall-cap, corner-seam, doorway, LOS, and projectile behavior is unchanged.
+
+
+
 ## R202 — Hard wall shadows and readable corners
 
 - Added a second, conservative architectural light-occlusion pass. Every solid wall subsection now casts an extruded world-space shadow volume away from each point light, and that shadow is subtracted from the rendered light layer.
