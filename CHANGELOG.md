@@ -4,6 +4,19 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R204 — Stone interior floor, indoor grid color, and visible-face wall lighting
+
+- Added PamNawi's "Handpainted Stone Floor Texture" (CC BY 4.0) as the Wall Test building's indoor floor material.
+- Added repository-level third-party attribution in `ATTRIBUTIONS.md` and linked it from the README.
+- Uses the original PamNawi `StoneFloorTexture.png`, not the later Nicoto-corrected variant.
+- The texture is scaled to 35% and tiled continuously in world space so it does not swim when the camera moves.
+- Indoor portions of tactical hex borders are repainted grey; portions remaining over outdoor terrain stay green, including boundary hexes split by the building footprint.
+- Added a camera-facing wall-surface test for dynamic illumination. Horizontal walls only show glow when the light source is on the visible face side; sources on the hidden/opposite side no longer brighten the visible wall face.
+- East/west wall faces remain effectively edge-on and do not receive broad wall-face glow.
+- R203 window centering and combat-log fixes remain unchanged.
+
+
+
 ## R203 — Centered windows and reliable newest-log visibility
 
 - Window planes are now centered vertically on the wall face instead of sitting at two-thirds wall height.
