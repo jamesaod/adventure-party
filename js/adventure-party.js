@@ -13157,7 +13157,7 @@ function pinCombatLogToBottom(){
   if(!logBox) return;
 
   const pin=()=>{
-    pinCombatLogToBottom();
+    logBox.scrollTop=logBox.scrollHeight;
   };
 
   /*
