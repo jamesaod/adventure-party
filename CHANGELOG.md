@@ -3,6 +3,15 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R214 — EB Garamond Bold UI typography
+
+- Replaced the local Gold Box font dependency with EB Garamond Bold (700) as the project-wide UI typeface.
+- Loads EB Garamond 700 through the Google Fonts web-font endpoint; no local OS font installation or project TTF is required.
+- Updated the root UI font stack to EB Garamond with Georgia/Times serif fallbacks and set the interface to weight 700.
+- Updated canvas-rendered combat messages, battlefield barks, scale-test labels, and other canvas text to use EB Garamond Bold as well as DOM/CSS UI.
+- Replaced the launcher Gold Box local-font check with an EB Garamond web-font status check and serif fallback state.
+
+
 ## R213 — Stinking Cloud audio and continuous fog animation
 
 - Added a dedicated procedural magical casting sound for Stinking Cloud.
