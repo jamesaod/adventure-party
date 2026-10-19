@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R204",
-  "description": "Adventure Party asset specifications through R204. R204 adds the CC BY 4.0 PamNawi handpainted stone floor as a world-anchored indoor material, greys tactical hex borders only where they cross indoor floor, and prevents dynamic wall glow from appearing on the visible wall face when the light source is actually on the hidden/opposite side.",
+  "release": "R205",
+  "description": "Adventure Party asset specifications through R205. R205 projects the credited PamNawi stone-floor texture into the battlefield's axial/isometric plane at 17.5% scale (half the R204 repeat size) and adds dark-grey geometric thresholds across authored doorway gaps to hide exposed outdoor terrain beneath open wall entrances.",
   "assets": {
     "fighter": {
       "source": {
