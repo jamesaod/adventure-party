@@ -3,6 +3,19 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R217 — Shared obscuring-volume line of sight
+
+- Added one shared obscuring-volume LOS system for Wall of Fog, Fog Cloud, Stinking Cloud, and effective magical Darkness.
+- Normal sight now traces from tactical hex center to tactical hex center through the same obstruction query used by targeting and projectile-lane checks.
+- A creature standing inside dense fog/darkness can see its own tactical hex but cannot acquire a normal-vision target outside that hex, matching the few-feet visibility abstraction on the 10-foot tactical grid.
+- From outside a cloud, entering any obscuring hex terminates LOS; creatures occupying the cloud are hidden from observers outside it, and terrain/units beyond the cloud remain under the LOS blackout.
+- Fog presentation is explicitly separated from fog gameplay opacity: visible cloud volumes are repainted after the LOS mask so the fog itself remains visible even though sight does not continue through it.
+- Generalized the LOS blackout to open battlefields when an obscuring volume is active. Open maps without fog/darkness remain visually unchanged.
+- Enemy rendering now obeys party visibility behind fog on both indoor and outdoor battlefields; friendly party members remain represented for player awareness.
+- Missile/projectile firing lanes and LOS-dependent spell targeting use the same obscuring-volume centerline rule.
+- Preserved R215's center-based tactical visibility and R216's rendering-only exception for non-passable wall-bisected boundary hexes.
+
+
 ## R216 — Visible-side correction for wall-bisected hexes
 
 - Fixed dark wedges appearing on the viewer-facing side of architectural walls after the R215 center-only LOS change.
