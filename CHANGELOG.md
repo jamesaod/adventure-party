@@ -16,6 +16,7 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 - Panic, Spook, and Taunt reduce hazard avoidance so urgent/compelled behavior can rationally accept dangerous routes.
 - MOBs learn from personal exposure and from witnessing another creature suffer a persistent-area consequence; lower-Intelligence creatures therefore become more cautious after seeing or experiencing a hazard.
 - Hazard knowledge is spatially honest: recognizing a spell does not reveal portions of its area hidden behind walls or other obscuration; only perceived/experienced cells receive path cost.
+- A MOB that creates its own persistent hazard is granted authored knowledge of that effect's footprint, while other MOBs still need perception, recognition, or experience.
 - Added per-MOB last-known target memory. MOBs update exact target position only while they have current LOS; once sight is lost they pursue the remembered position for an Intelligence-dependent number of rounds instead of tracking hidden movement perfectly.
 - Obscuring area creation snapshots visible targets before LOS is cut so Wall of Fog/Fog Cloud/Stinking Cloud produce useful last-known-position behavior.
 - Player movement updates MOB target memory before and after the step, preserving the last visible hex when the player disappears behind an obstruction.
