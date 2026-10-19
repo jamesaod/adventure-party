@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R207",
-  "description": "Adventure Party asset specifications through R207. R207 reduces visible architectural wall-face illumination intensity by 50% relative to R206 while leaving terrain/floor illumination, wall occlusion, LOS, shadows, thresholds, and other rendering unchanged.",
+  "release": "R208",
+  "description": "Adventure Party asset specifications through R208. R208 adds Charm Person as a combat-ready Level 1 Wizard spell with SSI Gold Box-style battle-only allegiance conversion, faction-aware MOB targeting and Guard behavior, persistent Charm status VFX, and automatic restoration of original allegiance when combat ends.",
   "assets": {
     "fighter": {
       "source": {

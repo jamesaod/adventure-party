@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R207';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R208';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,12 +2093,12 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R207';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R207';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R208';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R208';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R207';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R207';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R208';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R208';
 
 /*
   R204 third-party floor texture.
@@ -8248,6 +8248,26 @@ const SPELL_CATALOG={
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:131,pdfPage:132}
   },
 
+  "charm-person":{
+    id:"charm-person",
+    name:"Charm Person",
+    spellGroup:"Wizard",
+    level:1,
+    school:"Enchantment/Charm",
+    incantation:"Amicus Esto!",
+    components:["V","S"],
+    duration:"One battle",
+    castingTime:1,
+    savingThrow:"Neg.",
+    areaOfEffect:"1 living humanoid, Medium-sized or smaller",
+    range:{fixedHexes:12},
+    combatImplemented:true,
+    targetMode:"hostile-creature",
+    damageSummary:"Failed save: target changes sides for the battle and remains AI-controlled.",
+    description:"Adventure Party follows SSI Pool of Radiance's tactical Charm Person behavior: a failed save makes one eligible humanoid fight for the caster's side for the current battle. The charmed creature remains AI-controlled and does not join the party after combat.",
+    source:{book:"AD&D 2nd Edition Player's Handbook / SSI Pool of Radiance combat adaptation",printedPage:132,pdfPage:133}
+  },
+
   "chill-touch":{
     id:"chill-touch",
     name:"Chill Touch",
@@ -8817,8 +8837,36 @@ function getUnitEffect(unit,id){
   ].find(effect=>effect?.id===id) || null;
 }
 
+function restoreCharmPersonAllegiance(unit,effect=getUnitEffect(unit,"charm-person")){
+  if(!unit || !effect) return false;
+
+  unit.faction=
+    effect.data?.originalFaction ||
+    unit.originalFaction ||
+    "enemy";
+
+  unit.guard=false;
+  unit.guardBaselineAdjacentIds=[];
+  return true;
+}
+
+function restoreAllCharmPersonAllegiances(){
+  if(!game) return;
+
+  for(const unit of allUnits()){
+    if(getUnitEffect(unit,"charm-person")){
+      removeUnitEffect(unit,"charm-person");
+    }
+  }
+}
+
 function removeUnitEffect(unit,id){
   if(!unit || !id) return false;
+
+  const charmEffect=
+    id==="charm-person"
+      ? getUnitEffect(unit,id)
+      : null;
 
   let removed=false;
 
@@ -8828,6 +8876,10 @@ function removeUnitEffect(unit,id){
     const before=unit[key].length;
     unit[key]=unit[key].filter(effect=>effect?.id!==id);
     removed=removed || unit[key].length!==before;
+  }
+
+  if(removed && charmEffect){
+    restoreCharmPersonAllegiance(unit,charmEffect);
   }
 
   return removed;
@@ -8856,8 +8908,16 @@ function addUnitEffect(unit,{
 
   effectListFor(unit,kind).push(effect);
 
-  /* R104: persistent status FX start from the status lifecycle itself. */
-  if(["sleep","unconscious","confusion","confused","taunt","shield","light"].includes(id)){
+  if([
+    "sleep",
+    "unconscious",
+    "confusion",
+    "confused",
+    "taunt",
+    "shield",
+    "light",
+    "charm-person"
+  ].includes(id)){
     queueMicrotask(()=>ensurePersistentStatusFxLoop());
   }
 
@@ -8942,6 +9002,74 @@ function isEvilAlignment(unit){
 
 function isUndeadUnit(unit){
   return unit?.creatureType==="undead" || unit?.undead===true;
+}
+
+function isCharmPersonEligible(unit){
+  if(
+    !unit ||
+    !unit.alive ||
+    unit.fled ||
+    isUndeadUnit(unit)
+  ){
+    return false;
+  }
+
+  const size=String(unit.sizeCategory || "").toLowerCase();
+  if(size && !["tiny","small","medium"].includes(size)){
+    return false;
+  }
+
+  if(unit.creatureType==="humanoid"){
+    return true;
+  }
+
+  const species=String(unit.species || unit.race || "").toLowerCase();
+
+  return [
+    "human",
+    "elf",
+    "half-elf",
+    "dwarf",
+    "gnome",
+    "halfling",
+    "orc",
+    "kobold",
+    "goblin",
+    "hobgoblin"
+  ].includes(species);
+}
+
+function applyCharmPersonAllegiance(target,caster){
+  if(!target || !caster) return null;
+
+  const originalFaction=target.faction;
+
+  removeUnitEffect(target,"taunt");
+
+  if(
+    target.fleeing &&
+    getUnitEffect(target,MORALE_PANIC_EFFECT_ID)
+  ){
+    setMoraleFleeing(target,false);
+  }
+
+  addUnitEffect(target,{
+    id:"charm-person",
+    name:"Charmed",
+    kind:"buff",
+    detail:`Fights for ${caster.name}'s side; AI-controlled until battle ends`,
+    data:{
+      sourceUnitId:caster.id,
+      originalFaction,
+      charmedFaction:caster.faction
+    }
+  });
+
+  target.faction=caster.faction;
+  target.guard=false;
+  target.guardBaselineAdjacentIds=[];
+
+  return getUnitEffect(target,"charm-person");
 }
 
 function spellHitDiceValue(unit){
@@ -9791,7 +9919,7 @@ function wallTestVisibilityObserver(){
 
 function isFriendlyCombatUnit(unit){
   if(!unit || !game) return false;
-  return unit===game.player || (game.allies || []).includes(unit);
+  return unit.faction===game.player.faction;
 }
 
 function visibilitySampleWorldPointsForHex(x,y){
@@ -10480,6 +10608,10 @@ function spellRangeHexes(spell,casterLevel){
 
   if(spell?.range?.type==="touch") return 1;
   if(spell?.range?.type==="self") return 0;
+
+  if(Number.isFinite(spell?.range?.fixedHexes)){
+    return Math.max(0,Math.floor(spell.range.fixedHexes));
+  }
 
   if(Number.isFinite(spell?.range?.fixedFeet)){
     return Math.max(
@@ -11604,6 +11736,7 @@ function formatSpellRange(spell){
 
   if(spell.range.type==="self") return "0 / caster";
   if(spell.range.type==="touch") return "Touch";
+  if(Number.isFinite(spell.range.fixedHexes)) return `${spell.range.fixedHexes} tactical hexes`;
   if(Number.isFinite(spell.range.fixedFeet)) return `${spell.range.fixedFeet} feet`;
   if(Number.isFinite(spell.range.fixedYards)) return `${spell.range.fixedYards} yards`;
 
@@ -12902,6 +13035,7 @@ function makeKobold(index,position){
     id:`kobold-${String(index+1).padStart(2,"0")}`,
     type:"kobold",
     species:"kobold",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"small",
     faction:"enemy",
@@ -12975,6 +13109,7 @@ function makeKoboldBodyguard(index,position){
     id:`kobold-bodyguard-${String(index+1).padStart(2,"0")}`,
     type:"kobold-bodyguard",
     species:"kobold",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"small",
     faction:"enemy",
@@ -13054,6 +13189,7 @@ function makeKoboldSlinger(index,position){
     id:`kobold-slinger-${String(index+1).padStart(2,"0")}`,
     type:"kobold-slinger",
     species:"kobold",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"small",
     faction:"enemy",
@@ -13152,6 +13288,7 @@ function makeOrc(index,position){
   return {
     id:`orc-${String(index+1).padStart(2,"0")}`,
     type:"orc",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"medium",
     faction:"enemy",
@@ -13779,6 +13916,28 @@ function allUnits(){
     : [];
 }
 
+function activeCombatants(){
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled
+  );
+}
+
+function hostileCombatantsFor(unit){
+  if(!unit) return [];
+
+  return activeCombatants().filter(other=>
+    other.id!==unit.id &&
+    other.faction!==unit.faction
+  );
+}
+
+function combatantsOnFaction(faction){
+  return activeCombatants().filter(unit=>
+    unit.faction===faction
+  );
+}
+
 function livingUnitAt(x,y){
   return allUnits().find(unit=>
     unit?.alive &&
@@ -13798,9 +13957,15 @@ function getUnitById(id){
 }
 
 function activeEnemies(){
-  return game
-    ? game.enemies.filter(k=>k.alive && !k.fled)
-    : [];
+  if(!game) return [];
+
+  const playerFaction=game.player?.faction || "player";
+
+  return game.enemies.filter(unit=>
+    unit.alive &&
+    !unit.fled &&
+    unit.faction!==playerFaction
+  );
 }
 
 function livingEnemies(){
@@ -13810,11 +13975,16 @@ function livingEnemies(){
 }
 
 function enemyAtHex(x,y,excludeId=null){
-  return game?.enemies.find(k=>
-    k.id!==excludeId &&
-    k.alive &&
-    !k.fled &&
-    unitOccupiesHex(k,x,y)
+  if(!game) return null;
+
+  const playerFaction=game.player?.faction || "player";
+
+  return game.enemies.find(unit=>
+    unit.id!==excludeId &&
+    unit.alive &&
+    !unit.fled &&
+    unit.faction!==playerFaction &&
+    unitOccupiesHex(unit,x,y)
   ) || null;
 }
 
@@ -13847,9 +14017,9 @@ function checkCombatVictory(){
     setTimeout(()=>{
       finishCombat(
         "Victory",
-        `All ${game.enemies.length} hostile units are dead or have fled. `+
+        "No hostile combatants remain; enemies are dead, have fled, or have changed sides. "+
         livingPartyMembers()
-          .map(unit=>`${unit.name} ${unit.hp}/${unit.maxHp} HP`)
+          .map(unit=>unit.name+" "+unit.hp+"/"+unit.maxHp+" HP")
           .join("; ")+"."
       );
     },deathFx ? 1000 : 100);
@@ -15012,11 +15182,7 @@ async function friendlyMageTurn(mage){
    legal hex that has both weapon range and clear line of sight to any enemy.
    ============================================================ */
 function rangedAiOpponents(unit){
-  if(!unit) return [];
-
-  return unit.faction==="player"
-    ? activeEnemies()
-    : livingPartyMembers();
+  return hostileCombatantsFor(unit);
 }
 
 function rangedAiSourceEntity(unit,source){
@@ -15991,13 +16157,20 @@ function koboldGroupMoraleState(){
 
 function koboldGroupLivingCount(){
   if(!game) return 0;
-  return game.enemies.filter(unit=>isKoboldUnit(unit) && unit.alive && !unit.fled).length;
+
+  const playerFaction=game.player?.faction || "player";
+
+  return game.enemies.filter(unit=>
+    isKoboldUnit(unit) &&
+    unit.alive &&
+    !unit.fled &&
+    unit.faction!==playerFaction
+  ).length;
 }
 
 function koboldOppositionLivingCount(){
   if(!game) return 0;
-  return [game.player,...(game.allies || [])]
-    .filter(unit=>unit && unit.alive && !unit.fled).length;
+  return combatantsOnFaction(game.player.faction).length;
 }
 
 function buildKoboldGroupMoraleCheck({
@@ -16896,7 +17069,11 @@ function unitAtHex(x,y){
     return ally;
   }
 
-  return enemyAtHex(x,y);
+  return game?.enemies.find(unit=>
+    unit.alive &&
+    !unit.fled &&
+    unitOccupiesHex(unit,x,y)
+  ) || null;
 }
 
 function activeUnit(){
@@ -17815,6 +17992,71 @@ function validCreatureTargetWithinRange(caster,target,spell,casterLevel,allowFri
   return unitDistance(caster,target)<=range;
 }
 
+async function castCharmPersonSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("charm-person");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(
+    !validCreatureTargetWithinRange(caster,target,spell,level,false) ||
+    !isCharmPersonEligible(target)
+  ){
+    setCombatMessage(
+      "Charm Person requires a living hostile humanoid of Medium size or smaller within 12 hexes."
+    );
+    return false;
+  }
+
+  if(lineOfSightBlocked(caster,target)){
+    setCombatMessage("Line of sight is blocked to that target.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  pendingAimAction=null;
+  exitAimMode(false,false);
+  setUnitActionBanner(caster,"Casting Charm Person");
+
+  const save=rollSpellSave(target,caster);
+
+  setLastRoll(
+    `Charm Person save: d20 ${save.rawRoll}`+
+    `${save.modifier ? ` ${save.modifier>=0 ? "+" : ""}${save.modifier}` : ""}`+
+    ` = ${save.modifiedRoll} vs ${save.targetNumber}`
+  );
+
+  if(save.success){
+    playMagicEffectSound("charm");
+    setCombatMessage(
+      `${target.name} resists Charm Person.`,
+      COMBAT_MESSAGE_MIN_HOLD_MS
+    );
+    log(
+      `${target.name} saves against Charm Person and remains hostile.`,
+      "system"
+    );
+    await waitForCombatActionPause();
+  }else{
+    applyCharmPersonAllegiance(target,caster);
+
+    setCombatMessage(
+      `${target.name} is CHARMED and changes sides!`,
+      COMBAT_MESSAGE_MIN_HOLD_MS
+    );
+    log(
+      `${target.name} is charmed by ${caster.name}; it now fights its former allies under AI control.`,
+      "good"
+    );
+
+    await animateMagicEffectOnUnits([target],"charm");
+    ensurePersistentStatusFxLoop();
+  }
+
+  finishTestSpellCast(caster,"Charm Person",action);
+  return true;
+}
+
 async function castArmorSpell(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("armor");
@@ -18684,6 +18926,8 @@ async function castPreparedCombatSpell(action,targetHex,targetUnit){
       return await castArmorSpell(action,targetUnit);
     case "burning-hands":
       return await castBurningHandsSpell(action,targetHex);
+    case "charm-person":
+      return await castCharmPersonSpell(action,targetUnit);
     case "chill-touch":
       return await castChillTouchSpell(action);
     case "color-spray":
@@ -18809,16 +19053,8 @@ function waitCurrentUnit(){
 function adjacentHostileIdsFor(unit){
   if(!game || !unit) return [];
 
-  const hostiles=unit.faction==="player"
-    ? activeEnemies()
-    : livingPartyMembers();
-
-  return hostiles
-    .filter(other=>
-      other.alive &&
-      !other.fled &&
-      canMeleeReach(unit,other)
-    )
+  return hostileCombatantsFor(unit)
+    .filter(other=>canMeleeReach(unit,other))
     .map(other=>other.id);
 }
 
@@ -18861,6 +19097,7 @@ function maybeTriggerPlayerGuard(mob){
       isPlayerControlledUnit(unit) &&
       unit.guard &&
       mob?.alive && !mob.fled &&
+      mob.faction!==unit.faction &&
       canMeleeReach(unit,mob) &&
       !wasAdjacentWhenGuardSet(unit,mob)
     )
@@ -18920,10 +19157,11 @@ async function triggerMobGuardsAgainst(target){
     return;
   }
 
-  const guards=activeEnemies()
+  const guards=activeCombatants()
     .filter(mob=>
       mob.controller==="mob" &&
       mob.guard &&
+      mob.faction!==target.faction &&
       canMobGuard(mob) &&
       !wasAdjacentWhenGuardSet(mob,target) &&
       canMeleeAttackTarget(mob,target)
@@ -19076,7 +19314,7 @@ function mobPathToPartyTarget(mob,target){
 }
 
 function selectMobPartyTarget(mob){
-  const candidates=livingPartyMembers()
+  const candidates=hostileCombatantsFor(mob)
     .slice()
     .sort((a,b)=>
       unitDistance(mob,a)-unitDistance(mob,b) ||
@@ -19541,6 +19779,18 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       }
     }
 
+    /*
+      R208: MOB Guard reactions are allegiance-driven. This is normally a
+      no-op for enemy-on-enemy movement, but lets former allies react when a
+      charmed MOB enters their Guard range (and vice versa).
+    */
+    if(entity.controller==="mob"){
+      await triggerMobGuardsAgainst(entity);
+      if(game.over || !entity.alive){
+        return false;
+      }
+    }
+
     if(mode!=="silent"){
       await sleep(delay);
     }
@@ -19612,6 +19862,9 @@ async function animateMobAlongPath(mob,path,maxSteps){
       if(game.over) return false;
       if(!mob.alive) return false;
     }
+
+    await triggerMobGuardsAgainst(mob);
+    if(game.over || !mob.alive) return false;
 
     if(mode!=="silent"){
       await sleep(105);
@@ -20091,7 +20344,15 @@ async function mobTurn(mob){
   const target=targetChoice.target;
 
   if(!target){
-    checkPartyDefeat();
+    if(mob.faction===game.player.faction){
+      checkCombatVictory();
+    }else{
+      checkPartyDefeat();
+    }
+
+    if(!game.over){
+      endTurn();
+    }
     return;
   }
 
@@ -20448,6 +20709,8 @@ function finishCombat(title,text){
     aiTimer=null;
   }
 
+  restoreAllCharmPersonAllegiances();
+
   let xpAwarded=0;
   let xpText="";
 
@@ -20483,6 +20746,11 @@ function unitStatus(unit){
   }
 
   if(unit.controller==="mob"){
+    if(getUnitEffect(unit,"charm-person")){
+      if(unit.guard) return "CHARMED — GUARDING";
+      if(game.active===unit.id) return "ACTIVE — CHARMED AI";
+      return "CHARMED — FRIENDLY AI";
+    }
     if(unit.fleeing) return "FLEEING";
     if(unit.guard) return "GUARDING";
     if(game.active===unit.id) return "ACTIVE";
@@ -20668,7 +20936,7 @@ function updateUnitInfoPanel(){
       `<span>Type</span><span>${inspected.name}</span>`+
       `<span>Facing</span><span>${facingText}</span>`+
       `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
-      `<span>Controller</span><span>MOB</span>`+
+      `<span>Controller</span><span>${getUnitEffect(inspected,"charm-person") ? "Charmed AI" : "MOB"}</span>`+
       `<span>Footprint</span><span>${unitFootprintCellCount(inspected)} hex${unitFootprintCellCount(inspected)===1 ? "" : "es"}</span>`+
       `<span>HD</span><span>${inspected.hitDiceLabel || "—"}</span>`+
       `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
@@ -23998,6 +24266,16 @@ function persistentShieldUnits(){
   );
 }
 
+function persistentCharmUnits(){
+  if(!game || game.over) return [];
+
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled &&
+    !!getUnitEffect(unit,"charm-person")
+  );
+}
+
 function persistentLightUnits(){
   if(!game || game.over) return [];
   return allUnits().filter(unit=>
@@ -24013,6 +24291,7 @@ function hasPersistentStatusFx(){
     persistentUnconsciousUnits().length>0 ||
     persistentConfusionUnits().length>0 ||
     persistentTauntUnits().length>0 ||
+    persistentCharmUnits().length>0 ||
     persistentShieldUnits().length>0 ||
     persistentLightUnits().length>0 ||
     illuminationAreaEffects().length>0
@@ -24456,6 +24735,48 @@ function drawPersistentTauntStatusFx(){
   }
 }
 
+function drawPersistentCharmStatusFx(){
+  const units=persistentCharmUnits();
+  if(!units.length) return;
+
+  const now=performance.now();
+
+  for(let index=0;index<units.length;index++){
+    const unit=units[index];
+    if(!shouldRenderUnitUnderPartyVisibility(unit)) continue;
+
+    const center=hexCenter(unit.x,unit.y);
+    const phase=(now/1000)+(index*0.37);
+    const pulse=(Math.sin(phase*Math.PI*2*0.85)+1)/2;
+
+    for(let heart=0;heart<2;heart++){
+      const angle=phase*1.55+heart*Math.PI;
+      const hx=center.x+Math.cos(angle)*11;
+      const hy=center.y-35+Math.sin(angle)*4;
+      const size=2.8+(pulse*0.7);
+
+      ctx.save();
+      ctx.translate(hx,hy);
+      ctx.scale(size,size);
+
+      ctx.beginPath();
+      ctx.moveTo(0,0.8);
+      ctx.bezierCurveTo(-1.4,-0.2,-1.6,-1.2,-0.7,-1.5);
+      ctx.bezierCurveTo(-0.1,-1.7,0.3,-1.25,0,-0.75);
+      ctx.bezierCurveTo(0.3,-1.25,0.9,-1.7,1.45,-1.35);
+      ctx.bezierCurveTo(2.0,-0.85,1.35,0.15,0,1.35);
+      ctx.closePath();
+
+      ctx.lineWidth=0.62;
+      ctx.strokeStyle="rgba(12,6,14,0.92)";
+      ctx.fillStyle=`rgba(239,112,220,${0.72+0.18*pulse})`;
+      ctx.stroke();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
 
 
 function persistentStatusFxTick(){
@@ -24891,6 +25212,7 @@ function draw(){
   drawPersistentUnconsciousStatusFx();
   drawPersistentConfusionStatusFx();
   drawPersistentTauntStatusFx();
+  drawPersistentCharmStatusFx();
   drawColorSprayFx();
   drawMagicEffectFx();
   drawAreaDamageFx();
