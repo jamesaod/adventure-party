@@ -3,6 +3,22 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R224 — Hypnotic Pattern persistent VFX
+
+- Added a dedicated persistent battlefield visual for Hypnotic Pattern without changing its established gameplay resolution.
+- Hypnotic Pattern now creates a presentation-only seven-hex visual registry instead of entering `game.areaEffects`, preventing the R212 last-cast area-ownership rules from displacing unrelated Web, Grease, fog, Darkness, or other gameplay areas.
+- The spell renders as a floating prismatic air-volume with five slowly weaving ribbon loops, seven rotating luminous arc segments, a softly pulsing central hypnotic focus, and 32 drifting colored motes.
+- Added a restrained ground shimmer beneath the spell so its tactical footprint remains readable without turning the effect into a flat ground decal.
+- The airborne volume renders only from cells currently visible to the friendly party, so Hypnotic Pattern does not reveal hidden portions of the battlefield through walls, fog, Darkness, or other LOS blockers.
+- Creatures that fail their save display separate head-level prismatic rings and rotating glints, clearly distinguishing the spell's area from the units actually fascinated by it.
+- Damage still removes the affected creature's Hypnotic Pattern debuff and therefore removes that creature's entrancement marker immediately.
+- The pattern remains visible for the same three-round tactical window used by the existing Hypnotic Pattern implementation, even if every creature succeeds on its save.
+- The persistent status animation loop now remains active while Hypnotic Pattern visuals or fascinated creatures are present.
+- AIM tile inspection now reports Hypnotic Pattern on affected tactical hexes with its control-effect rules, duration, and source caster when known.
+- Hypnotic Pattern remains intentionally silent: no Latin incantation is assigned because its AD&D 2e components are S, M only.
+- Added `AdventurePartyHypnoticPatternFx` diagnostics for active visuals, affected units, and presentation metrics.
+
+
 ## R223 — LOS-aware Stinking Cloud and AIM tile effects
 
 - Stinking Cloud now uses two presentation opacity levels without changing its gameplay rules.
