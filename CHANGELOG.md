@@ -3,6 +3,25 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R223 — LOS-aware Stinking Cloud and AIM tile effects
+
+- Stinking Cloud now uses two presentation opacity levels without changing its gameplay rules.
+- Party-visible Stinking Cloud cells retain the R219/R221 low body opacity of 0.125 so visible units remain readable through the green cloud.
+- Stinking Cloud cells outside current friendly-party LOS render at 0.50 opacity, restoring a much denser cloud only over hidden tactical space.
+- Wall of Fog and Fog Cloud opacity are unchanged.
+- Because friendly-party visibility is a union of living friendly observers, a party member standing inside Stinking Cloud keeps its own visible cell at the low opacity while unseen neighboring cloud cells remain dense.
+- AIM mode now inspects the tactical hex itself instead of preserving stale unit information when the aimed hex is empty or contains a hidden enemy.
+- Persistent area effects occupying the aimed hex are shown in the right-side information panel, including fog/cloud effects, Grease, Web, Darkness, Flaming Sphere, and radial illumination fields.
+- AIM tile-effect cards include the effect name, tactical rule summary, remaining duration when available, and source creature when known.
+- When a visible unit occupies the aimed hex, normal unit statistics/status effects remain intact and the hex coordinates, LOS state, and area-effect cards are appended beneath them.
+- Hidden enemies remain hidden from AIM inspection; environmental effect information does not reveal an unseen creature.
+- Added `AdventurePartyAimTileEffects` diagnostics for effect-at-hex inspection and Stinking Cloud opacity queries.
+- Added the reviewed Latin incantation set to all implemented Level-2 Wizard spells with verbal components; Hypnotic Pattern remains intentionally silent because its components are S, M only.
+- Level-2 incantations now include `Caecitas!`, `Imago Tremula!`, `Lux Perpetua!`, `Orbis Tenebrarum!`, `Nubes Foetida!`, `Rete Araneum!`, and the remainder of the approved set through the shared spell-incantation framework.
+- Juvenile Red Dragon breath VFX now places the outer fast-moving flame lobes directly on the mathematical cone boundary, so roughly half of each edge lobe overlaps beyond the cone edge instead of being hard-clipped inside it.
+- Dragon breath flame density is substantially increased: 72 longitudinal slices with 4–12 lobes per slice, a denser muzzle bridge, 32 smoke puffs, up to 520 grain samples, and 680 ember particles.
+
+
 ## R222 — Authoritative perception and radial Darkness
 
 - Added one authoritative automated-combat perception query that combines invisibility/special vision, blindness, architecture, fog/clouds, magical Darkness, and multi-hex occupied footprints.

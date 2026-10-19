@@ -673,7 +673,11 @@ drawFogVolumeCell=function(cell,effect=null){
 
   const globalOpacity=
     isStinkingCloud
-      ? 0.125
+      ? (
+          typeof r223StinkingCloudOpacityForCell==="function"
+            ? r223StinkingCloudOpacityForCell(cell,effect)
+            : 0.125
+        )
       : 0.5;
 
   ctx.save();
