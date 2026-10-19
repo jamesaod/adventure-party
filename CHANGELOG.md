@@ -4,6 +4,17 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R202 — Hard wall shadows and readable corners
+
+- Added a second, conservative architectural light-occlusion pass. Every solid wall subsection now casts an extruded world-space shadow volume away from each point light, and that shadow is subtracted from the rendered light layer.
+- This makes the solid wall surface authoritative even when a visibility ray lands exactly on a wall endpoint/corner and avoids the repeated light bleed seen through solid wall sections.
+- Light-transmitting gaps still work geometrically: full doorway gaps and window-glass apertures are omitted from the light-blocking wall subsections, so only those openings can transmit illumination.
+- Old-wood texture is now limited to vertical wall faces. Wall tops use the flat cap material again and no longer display the repeating wood-board texture.
+- Added explicit two-pixel vertical seams at connected 90-degree wall joints. Straight wall runs remain seamless, while inside/building corners regain the vertical depth cue needed to distinguish the two meeting wall planes.
+- R201 hex-aligned doorway/window placement and window projectile blocking remain unchanged.
+
+
+
 ## R201 — Exact wall light clipping and hex-aligned openings
 
 - Replaced Wall Test illumination's per-hex wall clipping with a continuous world-space light visibility polygon built from the actual thick architectural wall faces.

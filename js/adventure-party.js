@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R201';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R202';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,12 +2093,12 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R201';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R201';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R202';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R202';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R201';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R201';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R202';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R202';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -5679,6 +5679,45 @@ function drawWallOpeningOnLayer(layerCtx,wall,opening){
   return true;
 }
 
+function architecturalCornerSeamPoints(wall){
+  if(!wall) return [];
+
+  const dx=wall.b.x-wall.a.x;
+  const dy=wall.b.y-wall.a.y;
+
+  /*
+    Draw the seam from the horizontal wall face only so each 90-degree joint
+    receives exactly one vertical line rather than two overlapping seams.
+  */
+  if(Math.abs(dx)<Math.abs(dy)) return [];
+
+  const endpointMatches=(point,otherPoint)=>
+    Math.hypot(
+      point.x-otherPoint.x,
+      point.y-otherPoint.y
+    )<0.5;
+
+  return [wall.a,wall.b].filter(point=>
+    architecturalWalls.some(other=>{
+      if(!other || other===wall) return false;
+
+      const odx=other.b.x-other.a.x;
+      const ody=other.b.y-other.a.y;
+
+      /* Require a clearly non-parallel/near-perpendicular connected wall. */
+      const cross=Math.abs((dx*ody)-(dy*odx));
+      const lenA=Math.hypot(dx,dy)||1;
+      const lenB=Math.hypot(odx,ody)||1;
+      if(cross/(lenA*lenB)<0.60) return false;
+
+      return (
+        endpointMatches(point,other.a) ||
+        endpointMatches(point,other.b)
+      );
+    })
+  );
+}
+
 
 /*
   R197 structure-level wall outline.
@@ -5873,14 +5912,11 @@ function drawArchitecturalWallSegment(wall){
   }
 
   /*
-    Extend the authored old-wood material through the wall's topmost pixels.
-    Stone walls keep their flat cap color; old wood uses the same vertically
-    aligned texture so the supplied sprite starts at the actual top edge.
+    R202: repeating material belongs only on vertical wall faces.
+    The wall top is a separate flat cap surface and must not inherit the wood
+    boards/pattern from the vertical sprite.
   */
-  lctx.strokeStyle=
-    wall.material==="old-wood"
-      ? wallPaint
-      : capColor;
+  lctx.strokeStyle=capColor;
   lctx.lineWidth=thickness;
 
   for(const solid of solidSegments){
@@ -5906,6 +5942,27 @@ function drawArchitecturalWallSegment(wall){
     if(opening.type!=="window") continue;
     drawWallOpeningOnLayer(lctx,wall,opening);
   }
+
+  /*
+    R202 internal/joined corner readability:
+    a dark vertical seam marks connected 90-degree wall joints. This restores
+    the depth cue the union-outline pass intentionally removed from connected
+    masonry while keeping ordinary straight wall segments seamless.
+  */
+  lctx.save();
+  lctx.strokeStyle="#050507";
+  lctx.lineWidth=2;
+  lctx.lineCap="butt";
+
+  for(const corner of architecturalCornerSeamPoints(wall)){
+    const point=screenPointForWorld(corner);
+    lctx.beginPath();
+    lctx.moveTo(point.x,point.y-height);
+    lctx.lineTo(point.x,point.y);
+    lctx.stroke();
+  }
+
+  lctx.restore();
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
@@ -9033,11 +9090,112 @@ function addStaticLightSpellSource(caster,target,casterLevel){
   });
 }
 
+function tracePolygonOnContext(targetCtx,points){
+  if(!targetCtx || !Array.isArray(points) || points.length<3) return false;
+
+  targetCtx.beginPath();
+  targetCtx.moveTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length;i++){
+    targetCtx.lineTo(points[i].x,points[i].y);
+  }
+  targetCtx.closePath();
+  return true;
+}
+
+function convexHullWorldPoints(points){
+  const clean=(points || [])
+    .filter(point=>Number.isFinite(point?.x) && Number.isFinite(point?.y))
+    .map(point=>({x:point.x,y:point.y}))
+    .sort((a,b)=>a.x-b.x || a.y-b.y);
+
+  if(clean.length<=2) return clean;
+
+  const cross=(o,a,b)=>
+    (a.x-o.x)*(b.y-o.y)-
+    (a.y-o.y)*(b.x-o.x);
+
+  const lower=[];
+  for(const point of clean){
+    while(
+      lower.length>=2 &&
+      cross(lower[lower.length-2],lower[lower.length-1],point)<=0
+    ){
+      lower.pop();
+    }
+    lower.push(point);
+  }
+
+  const upper=[];
+  for(let i=clean.length-1;i>=0;i--){
+    const point=clean[i];
+    while(
+      upper.length>=2 &&
+      cross(upper[upper.length-2],upper[upper.length-1],point)<=0
+    ){
+      upper.pop();
+    }
+    upper.push(point);
+  }
+
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+function architecturalLightShadowPolygonWorld(sourceWorld,blocker){
+  if(!sourceWorld || !blocker) return [];
+
+  const vertices=architecturalWallWorldVertices(blocker);
+  if(vertices.length<3) return [];
+
+  /*
+    R202: extrude every wall-rectangle vertex directly away from the point
+    light. The convex hull of the wall plus those far points is a conservative
+    geometric shadow volume. Because wallBlockingSubsegments("light") splits
+    around doors and windows, those openings naturally remain unshadowed.
+  */
+  const extrusionDistance=Math.max(
+    canvas.width,
+    canvas.height,
+    HEX_W*VIEW_RADIUS*3
+  )*3;
+
+  const farPoints=vertices.map(vertex=>{
+    const dx=vertex.x-sourceWorld.x;
+    const dy=vertex.y-sourceWorld.y;
+    const len=Math.hypot(dx,dy)||1;
+
+    return {
+      x:vertex.x+(dx/len)*extrusionDistance,
+      y:vertex.y+(dy/len)*extrusionDistance
+    };
+  });
+
+  return convexHullWorldPoints(
+    vertices.concat(farPoints)
+  );
+}
+
 function drawTerrainIlluminationLayer(tiles){
   if(!game) return;
 
   const sources=illuminationSources();
   if(!sources.length) return;
+
+  const lightCanvas=
+    drawTerrainIlluminationLayer.lightCanvas ||
+    (drawTerrainIlluminationLayer.lightCanvas=document.createElement("canvas"));
+
+  if(
+    lightCanvas.width!==canvas.width ||
+    lightCanvas.height!==canvas.height
+  ){
+    lightCanvas.width=canvas.width;
+    lightCanvas.height=canvas.height;
+  }
+
+  const lightCtx=lightCanvas.getContext("2d");
+  lightCtx.imageSmoothingEnabled=false;
 
   for(const source of sources){
     const center=hexCenter(source.x,source.y);
@@ -9046,7 +9204,67 @@ function drawTerrainIlluminationLayer(tiles){
     const color=source.color || [255,244,188];
     const sourceAlpha=0.18*Math.min(1.25,source.intensity||1);
 
-    const gradient=ctx.createRadialGradient(
+    /*
+      Preserve the established open-field renderer exactly. R202's hard
+      shadow-volume method is architectural/Wall-Test-only.
+    */
+    if(game.condition!=="wall"){
+      const gradient=ctx.createRadialGradient(
+        center.x,
+        center.y-4,
+        2,
+        center.x,
+        center.y-4,
+        screenRadius
+      );
+
+      gradient.addColorStop(
+        0,
+        `rgba(${color[0]},${color[1]},${color[2]},${sourceAlpha})`
+      );
+      gradient.addColorStop(
+        0.48,
+        `rgba(${color[0]},${color[1]},${color[2]},${sourceAlpha*0.72})`
+      );
+      gradient.addColorStop(
+        1,
+        `rgba(${color[0]},${color[1]},${color[2]},0)`
+      );
+
+      for(const tile of tiles){
+        const contribution=illuminationContributionFromSource(
+          source,
+          tile.x,
+          tile.y
+        );
+        if(contribution<=0) continue;
+
+        const top=hexScreenVertices(tile.x,tile.y);
+        const tileCenter=hexCenter(tile.x,tile.y);
+
+        ctx.save();
+        polygonPath(top);
+        ctx.clip();
+        ctx.globalCompositeOperation="lighter";
+        ctx.globalAlpha=Math.min(1,0.58+contribution*0.42);
+        ctx.fillStyle=gradient;
+        ctx.fillRect(
+          tileCenter.x-HEX_W/2-2,
+          tileCenter.y-HEX_H/2-2,
+          HEX_W+4,
+          HEX_H+4
+        );
+        ctx.restore();
+      }
+
+      continue;
+    }
+
+    lightCtx.clearRect(0,0,lightCanvas.width,lightCanvas.height);
+    lightCtx.globalCompositeOperation="source-over";
+    lightCtx.globalAlpha=1;
+
+    const gradient=lightCtx.createRadialGradient(
       center.x,
       center.y-4,
       2,
@@ -9068,59 +9286,49 @@ function drawTerrainIlluminationLayer(tiles){
       `rgba(${color[0]},${color[1]},${color[2]},0)`
     );
 
-    if(game.condition==="wall"){
-      /*
-        R201 exact architectural light clip. The gradient is clipped by a
-        continuous ray polygon built from thick wall faces and LIGHT-specific
-        openings. This stops the hex-level spill visible in R200.
-      */
-      const worldPolygon=wallTestVisibilityPolygonWorld(source,"light");
-      if(worldPolygon.length<3) continue;
+    /*
+      Wall Test begins with one continuous light field. Solid architecture then
+      removes authoritative hard shadow volumes from it. This is deliberately
+      independent of whole-hex reachability, which was the source of the bleed.
+    */
+    lightCtx.fillStyle=gradient;
+    lightCtx.fillRect(
+      center.x-screenRadius,
+      center.y-screenRadius-4,
+      screenRadius*2,
+      screenRadius*2
+    );
 
-      const screenPolygon=worldPolygon.map(point=>
-        screenPointForWorld(point)
-      );
+    const sourceWorld=worldPointForHex(source.x,source.y);
 
-      ctx.save();
-      polygonPath(screenPolygon);
-      ctx.clip();
-      ctx.globalCompositeOperation="lighter";
-      ctx.fillStyle=gradient;
-      ctx.fillRect(
-        center.x-screenRadius,
-        center.y-screenRadius-4,
-        screenRadius*2,
-        screenRadius*2
-      );
-      ctx.restore();
-      continue;
+    lightCtx.save();
+    lightCtx.globalCompositeOperation="destination-out";
+    lightCtx.globalAlpha=1;
+    lightCtx.fillStyle="rgba(0,0,0,1)";
+
+    for(const wall of architecturalWalls){
+      for(const blocker of wallBlockingSubsegments(wall,"light")){
+        const shadowWorld=
+          architecturalLightShadowPolygonWorld(sourceWorld,blocker);
+        if(shadowWorld.length<3) continue;
+
+        const shadowScreen=shadowWorld.map(point=>
+          screenPointForWorld(point)
+        );
+
+        if(tracePolygonOnContext(lightCtx,shadowScreen)){
+          lightCtx.fill();
+        }
+      }
     }
 
-    for(const tile of tiles){
-      const contribution=illuminationContributionFromSource(
-        source,
-        tile.x,
-        tile.y
-      );
-      if(contribution<=0) continue;
+    lightCtx.restore();
 
-      const top=hexScreenVertices(tile.x,tile.y);
-      const tileCenter=hexCenter(tile.x,tile.y);
-
-      ctx.save();
-      polygonPath(top);
-      ctx.clip();
-      ctx.globalCompositeOperation="lighter";
-      ctx.globalAlpha=Math.min(1,0.58+contribution*0.42);
-      ctx.fillStyle=gradient;
-      ctx.fillRect(
-        tileCenter.x-HEX_W/2-2,
-        tileCenter.y-HEX_H/2-2,
-        HEX_W+4,
-        HEX_H+4
-      );
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+    ctx.globalAlpha=1;
+    ctx.drawImage(lightCanvas,0,0);
+    ctx.restore();
   }
 }
 
