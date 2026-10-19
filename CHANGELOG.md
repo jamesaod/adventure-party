@@ -3,6 +3,17 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R219 — Spell-effect focus, visible AI pacing, and Stinking Cloud transparency
+
+- Camera focus now follows a unit when a spell effect resolves on that unit, including persistent-area saving throws, direct spell damage, sequential area-damage results, targeted buffs/debuffs, and shared magic-effect VFX.
+- Multi-target magic-effect VFX retain overlapping animation but use a readable camera handoff as each target's effect begins.
+- Automated unit movement now takes twice as long per step while the destination is visible to the friendly party.
+- Heard-but-unseen movement keeps its prior timing, and fully unseen movement remains immediate so hidden movement does not leak tactical information.
+- Visible automated escape movement also receives the doubled presentation beat before the unit leaves the battlefield.
+- Stinking Cloud body opacity is now 0.125, which is 75% less opaque than the original 0.50 fog body opacity and 50% more transparent than R218's 0.25 setting.
+- Wall of Fog and Fog Cloud remain at their existing opacity, and the green Stinking Cloud footprint outline remains unchanged.
+
+
 ## R218 — Stinking Cloud opacity and title MIDI disable
 
 - Reduced Stinking Cloud's rendered body opacity by 50% relative to R217, from a 0.50 global cloud alpha to 0.25.
