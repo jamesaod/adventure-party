@@ -5912,11 +5912,6 @@ function drawArchitecturalWallSegment(wall){
   }
 
   /*
-    Extend the authored old-wood material through the wall's topmost pixels.
-    Stone walls keep their flat cap color; old wood uses the same vertically
-    aligned texture so the supplied sprite starts at the actual top edge.
-  */
-  /*
     R202: repeating material belongs only on vertical wall faces.
     The wall top is a separate flat cap surface and must not inherit the wood
     boards/pattern from the vertical sprite.
@@ -9203,15 +9198,71 @@ function drawTerrainIlluminationLayer(tiles){
   lightCtx.imageSmoothingEnabled=false;
 
   for(const source of sources){
-    lightCtx.clearRect(0,0,lightCanvas.width,lightCanvas.height);
-    lightCtx.globalCompositeOperation="source-over";
-    lightCtx.globalAlpha=1;
-
     const center=hexCenter(source.x,source.y);
     const radiusHexes=Math.max(1,Number(source.radiusHexes)||1);
     const screenRadius=(radiusHexes+0.70)*HEX_W;
     const color=source.color || [255,244,188];
     const sourceAlpha=0.18*Math.min(1.25,source.intensity||1);
+
+    /*
+      Preserve the established open-field renderer exactly. R202's hard
+      shadow-volume method is architectural/Wall-Test-only.
+    */
+    if(game.condition!=="wall"){
+      const gradient=ctx.createRadialGradient(
+        center.x,
+        center.y-4,
+        2,
+        center.x,
+        center.y-4,
+        screenRadius
+      );
+
+      gradient.addColorStop(
+        0,
+        `rgba(${color[0]},${color[1]},${color[2]},${sourceAlpha})`
+      );
+      gradient.addColorStop(
+        0.48,
+        `rgba(${color[0]},${color[1]},${color[2]},${sourceAlpha*0.72})`
+      );
+      gradient.addColorStop(
+        1,
+        `rgba(${color[0]},${color[1]},${color[2]},0)`
+      );
+
+      for(const tile of tiles){
+        const contribution=illuminationContributionFromSource(
+          source,
+          tile.x,
+          tile.y
+        );
+        if(contribution<=0) continue;
+
+        const top=hexScreenVertices(tile.x,tile.y);
+        const tileCenter=hexCenter(tile.x,tile.y);
+
+        ctx.save();
+        polygonPath(top);
+        ctx.clip();
+        ctx.globalCompositeOperation="lighter";
+        ctx.globalAlpha=Math.min(1,0.58+contribution*0.42);
+        ctx.fillStyle=gradient;
+        ctx.fillRect(
+          tileCenter.x-HEX_W/2-2,
+          tileCenter.y-HEX_H/2-2,
+          HEX_W+4,
+          HEX_H+4
+        );
+        ctx.restore();
+      }
+
+      continue;
+    }
+
+    lightCtx.clearRect(0,0,lightCanvas.width,lightCanvas.height);
+    lightCtx.globalCompositeOperation="source-over";
+    lightCtx.globalAlpha=1;
 
     const gradient=lightCtx.createRadialGradient(
       center.x,
@@ -9236,10 +9287,9 @@ function drawTerrainIlluminationLayer(tiles){
     );
 
     /*
-      Start with one continuous light field. Wall-test architecture then cuts
-      hard shadow volumes out of it. This is deliberately independent of the
-      per-hex reachability test so a reachable hex can no longer paint light
-      through the solid portion of a wall.
+      Wall Test begins with one continuous light field. Solid architecture then
+      removes authoritative hard shadow volumes from it. This is deliberately
+      independent of whole-hex reachability, which was the source of the bleed.
     */
     lightCtx.fillStyle=gradient;
     lightCtx.fillRect(
@@ -9249,38 +9299,30 @@ function drawTerrainIlluminationLayer(tiles){
       screenRadius*2
     );
 
-    if(game.condition==="wall"){
-      const sourceWorld=worldPointForHex(source.x,source.y);
+    const sourceWorld=worldPointForHex(source.x,source.y);
 
-      /*
-        R202 second-stage hard occlusion:
-        subtract a shadow volume behind EVERY solid light-blocking wall piece.
-        This makes solid wall geometry authoritative even if the visibility
-        polygon/ray endpoints are numerically ambiguous at a corner.
-      */
-      lightCtx.save();
-      lightCtx.globalCompositeOperation="destination-out";
-      lightCtx.globalAlpha=1;
-      lightCtx.fillStyle="rgba(0,0,0,1)";
+    lightCtx.save();
+    lightCtx.globalCompositeOperation="destination-out";
+    lightCtx.globalAlpha=1;
+    lightCtx.fillStyle="rgba(0,0,0,1)";
 
-      for(const wall of architecturalWalls){
-        for(const blocker of wallBlockingSubsegments(wall,"light")){
-          const shadowWorld=
-            architecturalLightShadowPolygonWorld(sourceWorld,blocker);
-          if(shadowWorld.length<3) continue;
+    for(const wall of architecturalWalls){
+      for(const blocker of wallBlockingSubsegments(wall,"light")){
+        const shadowWorld=
+          architecturalLightShadowPolygonWorld(sourceWorld,blocker);
+        if(shadowWorld.length<3) continue;
 
-          const shadowScreen=shadowWorld.map(point=>
-            screenPointForWorld(point)
-          );
+        const shadowScreen=shadowWorld.map(point=>
+          screenPointForWorld(point)
+        );
 
-          if(tracePolygonOnContext(lightCtx,shadowScreen)){
-            lightCtx.fill();
-          }
+        if(tracePolygonOnContext(lightCtx,shadowScreen)){
+          lightCtx.fill();
         }
       }
-
-      lightCtx.restore();
     }
+
+    lightCtx.restore();
 
     ctx.save();
     ctx.globalCompositeOperation="lighter";
