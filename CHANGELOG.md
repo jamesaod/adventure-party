@@ -10,6 +10,7 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 - MOB Intelligence now controls hazard recognition, memory, and avoidance strength using AD&D-style bands from instinctive through exceptional.
 - Current Kobolds, Kobold Body Guards, Kobold Slingers, and Orcs use Intelligence 9 (Average); the Juvenile Red Dragon uses Intelligence 16 (Exceptional). Future monsters can provide a numeric Intelligence score or standard AD&D Intelligence label.
 - Pathfinding for MOB melee pursuit, limited-turn advance, ranged firing-lane search, retreat, and fleeing now applies weighted hazard costs rather than treating hazards as universally impassable.
+- Multi-hex MOBs evaluate the strongest known hazard under any occupied destination hex, so large creatures do not ignore hazards merely because their anchor/center hex is clear.
 - Grease/Web/Stinking Cloud risk incorporates the creature's expected saving-throw vulnerability; Web also considers Strength-based escape ability, Stinking Cloud respects undead poison immunity while retaining LOS risk, and Flaming Sphere respects fire immunity.
 - Ranged and caster roles strongly prefer routes that preserve line of sight around fog/cloud/darkness, while melee creatures are more willing to push through ordinary fog when the detour is expensive.
 - Panic, Spook, and Taunt reduce hazard avoidance so urgent/compelled behavior can rationally accept dangerous routes.
