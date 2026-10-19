@@ -4,6 +4,20 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R201 — Exact wall light clipping and hex-aligned openings
+
+- Replaced Wall Test illumination's per-hex wall clipping with a continuous world-space light visibility polygon built from the actual thick architectural wall faces.
+- Dynamic light now stops at the near face of solid walls instead of allowing an illuminated hex to paint pixels past the wall.
+- Doorway and window apertures are still honored by the light polygon: door gaps and glass transmit illumination, solid wall surface does not.
+- Added explicit opening-to-hex anchoring. North, south, and east windows are centered on actual tactical hex centers rather than arbitrary percentages between centers.
+- Rebuilt the south doorway as a literal one-hex-wide wall gap centered on hex (-3,5). Its edges land on that hex's left/right borders, so the doorway is visually open and fully passable like the west entrance.
+- The south window is centered over adjacent hex (-2,5), preventing overlap with the widened doorway.
+- Split architectural ray rules into vision, light, and projectile modes.
+- Window glass passes vision and light but blocks physical missile fire. Longbows, slings, and ranged AI now require a clear projectile lane; doorways remain valid firing openings.
+- Spell LOS behavior is unchanged in this revision and continues to use vision LOS.
+
+
+
 ## R200 — Directional wall light and true window planes
 
 - Wall illumination now paints only the physical half-face oriented toward each light source; the opposite side of the same wall is no longer brightened by that source.
