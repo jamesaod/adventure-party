@@ -9338,6 +9338,24 @@ async function resolvePersistentAreaSave(
   return {failed:false,haltMovement:false};
 }
 
+function currentCombatTurnToken(){
+  if(!game) return "";
+  return `${game.round}:${game.turnIndex}:${game.active || ""}`;
+}
+
+function markAreaEffectActionLost(unit){
+  if(!unit) return;
+  unit.areaEffectActionLostTurnToken=currentCombatTurnToken();
+}
+
+function areaEffectActionLostThisTurn(unit){
+  return !!(
+    unit &&
+    unit.areaEffectActionLostTurnToken &&
+    unit.areaEffectActionLostTurnToken===currentCombatTurnToken()
+  );
+}
+
 async function resolvePersistentAreaMovementStep(unit){
   for(const effect of persistentSavingAreaEffectsForUnit(unit)){
     const result=await resolvePersistentAreaSave(
@@ -9347,6 +9365,7 @@ async function resolvePersistentAreaMovementStep(unit){
     );
 
     if(result.haltMovement){
+      markAreaEffectActionLost(unit);
       return result;
     }
   }
@@ -16213,6 +16232,10 @@ async function friendlyMageTurn(mage){
 
       if(game.over) return;
       if(!mage.alive){ endTurn(); return; }
+      if(areaEffectActionLostThisTurn(mage)){
+        if(!game.over) endTurn();
+        return;
+      }
 
       visibleEnemy=bestMageVisibleEnemyFrom(mage,mage);
 
@@ -16541,6 +16564,10 @@ async function friendlyNpcTurn(npc){
 
       if(game.over) return;
       if(!npc.alive){ endTurn(); return; }
+      if(areaEffectActionLostThisTurn(npc)){
+        if(!game.over) endTurn();
+        return;
+      }
 
       if(!canMoveAndFire){
         if(!game.over) endTurn();
@@ -22643,6 +22670,10 @@ async function juvenileRedDragonTurn(dragon,target){
       endTurn();
       return;
     }
+    if(areaEffectActionLostThisTurn(dragon)){
+      if(!game.over) endTurn();
+      return;
+    }
   }
 
   if(steps<=dragon.halfMove){
@@ -22842,6 +22873,10 @@ async function mobTurn(mob){
 
           if(game.over) return;
           if(!mob.alive){ endTurn(); return; }
+          if(areaEffectActionLostThisTurn(mob)){
+            if(!game.over) endTurn();
+            return;
+          }
 
           if(!canMoveAndFire){
             if(!game.over) endTurn();
@@ -22942,6 +22977,10 @@ async function mobTurn(mob){
 
     if(!mob.alive){
       endTurn();
+      return;
+    }
+    if(areaEffectActionLostThisTurn(mob)){
+      if(!game.over) endTurn();
       return;
     }
   }
