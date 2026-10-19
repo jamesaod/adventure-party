@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R208';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R209';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,12 +2093,12 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R208';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R208';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R209';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R209';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R208';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R208';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R209';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R209';
 
 /*
   R204 third-party floor texture.
@@ -8214,6 +8214,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Conjuration",
+    incantation:"Armatura!",
     components:["V","S","M"],
     materialComponent:"A piece of finely cured leather blessed by a priest",
     duration:"Special",
@@ -8234,6 +8235,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Alteration",
+    incantation:"Manus Ardentes!",
     components:["V","S"],
     duration:"Instantaneous",
     castingTime:1,
@@ -8254,7 +8256,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Enchantment/Charm",
-    incantation:"Amicus Esto!",
+    incantation:"Hominem Fascina!",
     components:["V","S"],
     duration:"One battle",
     castingTime:1,
@@ -8274,6 +8276,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Necromancy",
+    incantation:"Tactus Frigidus!",
     components:["V","S"],
     duration:"3 rounds + 1 round/level",
     castingTime:1,
@@ -8293,6 +8296,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Alteration",
+    incantation:"Coloris Aspersio!",
     components:["V","S","M"],
     materialComponent:"A pinch each of red, yellow, and blue powder or sand",
     duration:"Instantaneous",
@@ -8313,6 +8317,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Alteration",
+    incantation:"Auge!",
     components:["V","S","M"],
     materialComponent:"A pinch of powdered iron",
     duration:"5 rounds/level",
@@ -8333,6 +8338,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Conjuration",
+    incantation:"Oleum Lubricum!",
     components:["V","S","M"],
     materialComponent:"A bit of pork rind or butter",
     duration:"3 rounds + 1 round/level",
@@ -8353,6 +8359,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Alteration",
+    incantation:"Lux!",
     components:["V","M"],
     materialComponent:"A firefly or a piece of phosphorescent moss",
     duration:"1 turn/level",
@@ -8395,6 +8402,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Abjuration",
+    incantation:"Praesidium Contra Malum!",
     components:["V","S","M"],
     materialComponent:"Powdered silver for the protective circle",
     duration:"2 rounds/level",
@@ -8415,6 +8423,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Evocation",
+    incantation:"Scutum!",
     components:["V","S"],
     duration:"5 rounds/level",
     castingTime:1,
@@ -8434,6 +8443,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Alteration",
+    incantation:"Tactus Fulminis!",
     components:["V","S"],
     duration:"Special",
     castingTime:1,
@@ -8453,6 +8463,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Enchantment/Charm",
+    incantation:"Somnus!",
     components:["V","S","M"],
     materialComponent:"Fine sand, rose petals, or a live cricket",
     duration:"5 rounds/level",
@@ -8473,6 +8484,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Illusion/Phantasm",
+    incantation:"Pavor!",
     components:["V","S"],
     duration:"Special",
     castingTime:1,
@@ -8492,6 +8504,7 @@ const SPELL_CATALOG={
     spellGroup:"Wizard",
     level:1,
     school:"Enchantment",
+    incantation:"Provoca!",
     components:["V","S","M"],
     materialComponent:"A slug",
     duration:"1 round",
@@ -8527,6 +8540,412 @@ const SPELL_CATALOG={
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:139,pdfPage:140}
   },
 
+
+  /* ============================================================
+     R209 — AD&D 2E WIZARD LEVEL 2 COMBAT SPELL EXPANSION
+     Knock and Wizard Lock are intentionally deferred until functional doors.
+     ============================================================ */
+
+  "blindness":{
+    id:"blindness",
+    name:"Blindness",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Illusion/Phantasm",
+    components:["V"],
+    duration:"Special",
+    castingTime:2,
+    savingThrow:"Neg.",
+    areaOfEffect:"1 creature",
+    range:{baseYards:30,yardsPerCasterLevel:10},
+    combatImplemented:true,
+    targetMode:"hostile-creature",
+    damageSummary:"Permanent blindness until removed; −4 attacks and AC worsened by 4.",
+    description:"Blinds one creature on a failed saving throw. Unlike the Light spell's eye-blinding effect, this spell does not impose a saving-throw penalty.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:181,pdfPage:182}
+  },
+
+  "blur":{
+    id:"blur",
+    name:"Blur",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Illusion/Phantasm",
+    components:["V","S"],
+    duration:"3 rounds + 1 round/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"Caster",
+    range:{type:"self"},
+    combatImplemented:true,
+    targetMode:"self",
+    damageSummary:"First attack by each attacker suffers −4 to hit; later attacks −2; +1 vs direct spell saves.",
+    description:"The caster's outline shifts and wavers. Each attacker suffers a larger penalty on its first attack against the blurred caster and a smaller penalty thereafter.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:181,pdfPage:182}
+  },
+
+  "continual-light":{
+    id:"continual-light",
+    name:"Continual Light",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Alteration",
+    components:["V","S"],
+    duration:"Permanent",
+    castingTime:2,
+    savingThrow:"Special",
+    areaOfEffect:"60-foot radius",
+    range:{fixedYards:60},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Permanent magical illumination; can blind a creature when centered on its eyes.",
+    description:"Creates a permanent 60-foot-radius magical light. A creature occupying the aimed hex can be illuminated or blinded; otherwise the light is anchored to the aimed battlefield hex.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:181,pdfPage:182}
+  },
+
+  "darkness-15-radius":{
+    id:"darkness-15-radius",
+    name:"Darkness, 15' Radius",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Alteration",
+    components:["V","S","M"],
+    duration:"1 turn + 1 round/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"15-foot radius",
+    range:{baseYards:0,yardsPerCasterLevel:10},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Creates impenetrable magical darkness; overlapping magical Light can negate it.",
+    description:"Creates a compact battlefield zone of magical darkness. The tactical implementation blocks sight, projectiles, and illumination through the affected hexes unless magical Light overlaps the darkness.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:181,pdfPage:182}
+  },
+
+  "deafness":{
+    id:"deafness",
+    name:"Deafness",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Illusion/Phantasm",
+    components:["V","S","M"],
+    duration:"Special",
+    castingTime:2,
+    savingThrow:"Neg.",
+    areaOfEffect:"1 creature",
+    range:{fixedYards:60},
+    combatImplemented:true,
+    targetMode:"hostile-creature",
+    damageSummary:"Failed save deafens the target; verbal spells have a 20% chance to miscast.",
+    description:"Deafens a creature on a failed saving throw. A deafened spellcaster has a 20% chance to spoil any spell requiring a verbal component.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:181,pdfPage:182}
+  },
+
+  "detect-invisibility":{
+    id:"detect-invisibility",
+    name:"Detect Invisibility",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Divination",
+    components:["V","S","M"],
+    duration:"5 rounds/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"10-foot-wide path",
+    range:{type:"self"},
+    combatImplemented:true,
+    targetMode:"self",
+    damageSummary:"Reveals invisible creatures within 10 yards/level when line of sight is otherwise clear.",
+    description:"Allows the caster to perceive invisible creatures within the spell's detection range. Glitterdust also reveals invisible creatures independently of this spell.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:182,pdfPage:183}
+  },
+
+  "flaming-sphere":{
+    id:"flaming-sphere",
+    name:"Flaming Sphere",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Evocation",
+    components:["V","S","M"],
+    duration:"1 round/level",
+    castingTime:2,
+    savingThrow:"Neg.",
+    areaOfEffect:"3-foot-radius sphere",
+    range:{fixedYards:10},
+    combatImplemented:true,
+    targetMode:"ground",
+    friendlyFire:true,
+    damageSummary:"2d4 fire on contact; 1d4 heat to adjacent creatures; save negates each exposure.",
+    description:"Creates a rolling sphere of fire. In the tactical engine it automatically follows the nearest visible hostile at the start of its caster's turn, moving up to three hexes while respecting walls.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:182,pdfPage:183}
+  },
+
+  "fog-cloud":{
+    id:"fog-cloud",
+    name:"Fog Cloud",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Alteration",
+    components:["V","S"],
+    duration:"4 rounds + 1 round/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"20-foot cube/level",
+    range:{fixedYards:10},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Stationary opaque fog blocks tactical line of sight and projectiles.",
+    description:"Creates a stationary bank of dense mist. The combat abstraction uses a seven-hex cloud cluster and the existing volumetric fog/LOS system.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:183,pdfPage:184}
+  },
+
+  "glitterdust":{
+    id:"glitterdust",
+    name:"Glitterdust",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Conjuration/Summoning",
+    components:["V","S","M"],
+    duration:"1d4 rounds + 1 round/level",
+    castingTime:2,
+    savingThrow:"Special",
+    areaOfEffect:"20-foot cube",
+    range:{baseYards:0,yardsPerCasterLevel:10},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Reveals invisible creatures; failed save blinds for 1d4+1 rounds.",
+    description:"Coats creatures in sparkling dust, revealing invisibility for the dust's duration. Each affected creature saves separately against temporary blindness.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:183,pdfPage:184}
+  },
+
+  "hypnotic-pattern":{
+    id:"hypnotic-pattern",
+    name:"Hypnotic Pattern",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Illusion/Phantasm",
+    components:["S","M"],
+    duration:"Special",
+    castingTime:2,
+    savingThrow:"Neg.",
+    areaOfEffect:"30-foot cube",
+    range:{fixedYards:30},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Fascinates up to 24 HD of creatures; damage immediately breaks the fascination.",
+    description:"Creates a mesmerizing pattern. The combat implementation holds affected creatures through the caster's initial concentration window and two follow-up rounds; damage immediately frees a victim.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:183,pdfPage:184}
+  },
+
+  "invisibility":{
+    id:"invisibility",
+    name:"Invisibility",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Illusion/Phantasm",
+    components:["V","S","M"],
+    duration:"Special",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"Creature touched",
+    range:{type:"touch"},
+    combatImplemented:true,
+    targetMode:"touch-creature",
+    damageSummary:"Target cannot normally be seen or targeted; attacking or casting an offensive spell ends the effect.",
+    description:"Makes one touched creature invisible. Detect Invisibility and Glitterdust defeat the concealment; hostile action breaks the spell.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:184,pdfPage:185}
+  },
+
+  "melfs-acid-arrow":{
+    id:"melfs-acid-arrow",
+    name:"Melf's Acid Arrow",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Conjuration/Summoning",
+    components:["V","S","M"],
+    duration:"Special",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"1 creature",
+    range:{fixedYards:180},
+    combatImplemented:true,
+    targetMode:"hostile-creature",
+    damageSummary:"Ranged attack for 2d4 acid, plus 2d4 per additional round at higher caster levels.",
+    description:"Launches a magical acid arrow using the attack chance of a fighter of the caster's level. A hit continues burning for one additional round per three caster levels.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:186,pdfPage:187}
+  },
+
+  "mirror-image":{
+    id:"mirror-image",
+    name:"Mirror Image",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Illusion/Phantasm",
+    components:["V","S"],
+    duration:"3 rounds/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"6-foot radius",
+    range:{type:"self"},
+    combatImplemented:true,
+    targetMode:"self",
+    damageSummary:"Creates 1d4 + 1 image per 3 caster levels, maximum 8; struck images vanish.",
+    description:"Creates moving duplicates around the caster. Successful physical or magical projectile attacks can destroy an image instead of harming the caster.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:186,pdfPage:187}
+  },
+
+  "pyrotechnics":{
+    id:"pyrotechnics",
+    name:"Pyrotechnics",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Alteration",
+    components:["V","S","M"],
+    duration:"Special",
+    castingTime:2,
+    savingThrow:"Special",
+    areaOfEffect:"Special",
+    range:{fixedYards:120},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Transforms a fire source into blinding fireworks; current combat mode extinguishes the source.",
+    description:"Requires a persistent fire source. The current combat implementation uses the fireworks form: the source is extinguished and exposed creatures that fail saves are blinded. The smoke-form choice is reserved for the future environmental-action selector.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:186,pdfPage:187}
+  },
+
+  "ray-of-enfeeblement":{
+    id:"ray-of-enfeeblement",
+    name:"Ray of Enfeeblement",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Enchantment/Charm",
+    components:["V","S"],
+    duration:"1 round/level",
+    castingTime:2,
+    savingThrow:"Neg.",
+    areaOfEffect:"1 creature",
+    range:{baseYards:10,yardsPerCasterLevel:5},
+    combatImplemented:true,
+    targetMode:"hostile-creature",
+    damageSummary:"Failed save: −2 attack rolls and −1 weapon damage for the duration.",
+    description:"Weakens the target's physical combat ability. The tactical engine applies the AD&D combat penalties directly to attack and weapon-damage resolution.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:187,pdfPage:188}
+  },
+
+  "scare":{
+    id:"scare",
+    name:"Scare",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Enchantment/Charm",
+    components:["V","S","M"],
+    duration:"1d4 rounds + 1 round/level",
+    castingTime:2,
+    savingThrow:"Special",
+    areaOfEffect:"15-foot radius",
+    range:{baseYards:30,yardsPerCasterLevel:10},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Creatures under 6 HD flee in fear; undead and extraplanar creatures are immune.",
+    description:"Creates an area of supernatural fear. Eligible creatures flee for the duration; elves, half-elves, and priests receive the saving throw provided by the spell.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:187,pdfPage:188}
+  },
+
+  "spectral-hand":{
+    id:"spectral-hand",
+    name:"Spectral Hand",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Necromancy",
+    components:["V","S"],
+    duration:"2 rounds/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"1 spectral hand",
+    range:{type:"self"},
+    combatImplemented:true,
+    targetMode:"self",
+    damageSummary:"Delivers eligible touch attacks at range with +2 to hit.",
+    description:"Creates a floating hand that can deliver touch attacks at 30 yards + 5 yards/level. The current combat integration extends Shocking Grasp through the hand and reserves 1d4 of the caster's hit points until the spell ends.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:188,pdfPage:189}
+  },
+
+  "stinking-cloud":{
+    id:"stinking-cloud",
+    name:"Stinking Cloud",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Evocation",
+    components:["V","S","M"],
+    duration:"1 round/level",
+    castingTime:2,
+    savingThrow:"Special",
+    areaOfEffect:"20-foot cube",
+    range:{fixedYards:30},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Dense cloud blocks sight; failed poison save causes disabling nausea for 1d4+1 rounds after exposure.",
+    description:"Creates a nauseating cloud using the volumetric fog system. Creatures exposed at the start of their turn save against poison; failure prevents action and continues after leaving the cloud.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:188,pdfPage:189}
+  },
+
+  "strength":{
+    id:"strength",
+    name:"Strength",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Alteration",
+    components:["V","S","M"],
+    duration:"1 hour/level",
+    castingTime:2,
+    savingThrow:"None",
+    areaOfEffect:"Creature touched",
+    range:{type:"touch"},
+    combatImplemented:true,
+    targetMode:"touch-creature",
+    damageSummary:"Raises Strength: Warriors +1d8, Priests/Rogues +1d6, Wizards +1d4, capped at 18 in the tactical model.",
+    description:"Temporarily increases Strength according to class group. Attack and melee-damage bonuses update from the effective Strength score while the spell lasts.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:188,pdfPage:189}
+  },
+
+  "tashas-hideous-laughter":{
+    id:"tashas-hideous-laughter",
+    name:"Tasha's Uncontrollable Hideous Laughter",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Enchantment/Charm",
+    components:["V","S","M"],
+    duration:"1 round/level",
+    castingTime:2,
+    savingThrow:"Neg.",
+    areaOfEffect:"1 creature/3 levels in a 30-foot cube",
+    range:{fixedYards:60},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Failed targets collapse laughing, lose two actions, then suffer −2 attack and damage for the remaining duration.",
+    description:"Overwhelms intelligent creatures with helpless laughter. Intelligence modifies the saving throw; creatures of Intelligence 4 or less are immune.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:189,pdfPage:190}
+  },
+
+  "web":{
+    id:"web",
+    name:"Web",
+    spellGroup:"Wizard",
+    level:2,
+    school:"Evocation",
+    components:["V","S","M"],
+    duration:"2 turns/level",
+    castingTime:2,
+    savingThrow:"Special",
+    areaOfEffect:"Up to eight 10-foot cubes",
+    range:{baseYards:0,yardsPerCasterLevel:5},
+    combatImplemented:true,
+    targetMode:"ground",
+    damageSummary:"Creates restraining webs; save at −2 on exposure, then Strength controls escape rate.",
+    description:"Fills a seven-hex tactical cluster with sticky webs. Creatures failing their initial save are restrained and must spend later actions forcing their way free according to effective Strength. Fire destroys affected webbing.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:189,pdfPage:190}
+  },
+
   "fireball":{
     id:"fireball",
     name:"Fireball",
@@ -8559,6 +8978,270 @@ const SPELL_CATALOG={
 function getSpellEntry(id){
   return id ? SPELL_CATALOG[id] || null : null;
 }
+
+
+/* ============================================================
+   R209 — SHARED LEVEL 2 SPELL COMBAT SUPPORT
+   ============================================================ */
+
+function effectiveStrength(unit){
+  const base=Math.max(1,Number(unit?.stats?.str)||10);
+  const strengthEffect=getUnitEffect(unit,"strength-spell");
+  const laughter=getUnitEffect(unit,"hideous-laughter");
+  const gain=Math.max(0,Number(strengthEffect?.data?.strengthGain)||0);
+  const laughterPenalty=
+    laughter && game && game.round>Number(laughter.data?.disabledUntilRound||-Infinity)
+      ? 2
+      : 0;
+  return clamp(base+gain-laughterPenalty,1,18);
+}
+
+function strengthSpellCombatDelta(unit){
+  if(!unit?.stats) return {hit:0,damage:0};
+  const baseScore=Math.max(1,Number(unit.stats.str)||10);
+  const base=strengthMods(baseScore,Number(unit.stats.strExceptional)||0);
+  const effective=strengthMods(effectiveStrength(unit),0);
+  return {
+    hit:effective.hit-base.hit,
+    damage:effective.damage-base.damage
+  };
+}
+
+function physicalDamageEffectModifier(attacker,attackKind="melee"){
+  let modifier=0;
+
+  if(getUnitEffect(attacker,"ray-enfeeblement")){
+    modifier-=1;
+  }
+
+  const laughter=getUnitEffect(attacker,"hideous-laughter");
+  if(
+    laughter &&
+    game &&
+    game.round>Number(laughter.data?.disabledUntilRound||-Infinity)
+  ){
+    modifier-=2;
+  }
+
+  if(attackKind==="melee" && getUnitEffect(attacker,"strength-spell")){
+    modifier+=strengthSpellCombatDelta(attacker).damage;
+  }
+
+  return modifier;
+}
+
+function blurAttackPenalty(attacker,defender){
+  const blur=getUnitEffect(defender,"blur");
+  if(!blur || !attacker?.id) return 0;
+
+  if(!blur.data || typeof blur.data!=="object") blur.data={};
+  if(!blur.data.attackers || typeof blur.data.attackers!=="object"){
+    blur.data.attackers={};
+  }
+
+  const first=!blur.data.attackers[attacker.id];
+  blur.data.attackers[attacker.id]=true;
+  return first ? -4 : -2;
+}
+
+function interceptWithMirrorImage(defender,attacker=null){
+  const effect=getUnitEffect(defender,"mirror-image");
+  const images=Math.max(0,Number(effect?.data?.images)||0);
+  if(!effect || images<=0) return false;
+
+  const selection=d(images+1);
+  if(selection>1) return false;
+
+  effect.data.images=images-1;
+  effect.detail=`${effect.data.images} image${effect.data.images===1 ? "" : "s"} remaining`;
+
+  playMagicEffectSound("mirror-image");
+  log(
+    `${attacker?.name || "An attack"} destroys one of ${defender.name}'s Mirror Images.`,
+    "system"
+  );
+
+  if(effect.data.images<=0){
+    removeUnitEffect(defender,"mirror-image");
+  }
+
+  return true;
+}
+
+function breakInvisibility(unit,reason="hostile action"){
+  if(!unit || !getUnitEffect(unit,"invisibility")) return false;
+  removeUnitEffect(unit,"invisibility");
+  log(`${unit.name}'s Invisibility ends after ${reason}.`,"system");
+  return true;
+}
+
+function spellBreaksInvisibility(spell){
+  if(!spell) return false;
+  if(["hostile-creature","adjacent-hostile","direction"].includes(spell.targetMode)){
+    return true;
+  }
+
+  return new Set([
+    "fireball","grease","sleep","color-spray","burning-hands","taunt",
+    "darkness-15-radius","flaming-sphere","glitterdust","hypnotic-pattern",
+    "pyrotechnics","scare","stinking-cloud","tashas-hideous-laughter","web"
+  ]).has(spell.id);
+}
+
+function unitVisibleToObserver(observer,target){
+  if(!observer || !target) return false;
+  if(observer.id===target.id) return true;
+
+  const invisible=getUnitEffect(target,"invisibility");
+  if(!invisible) return true;
+  if(getUnitEffect(target,"glitterdust")) return true;
+
+  const detect=getUnitEffect(observer,"detect-invisibility");
+  if(!detect) return false;
+
+  const range=Math.max(1,Number(detect.data?.rangeHexes)||1);
+  if(unitDistance(observer,target)>range) return false;
+
+  return !lineOfSightBlockedBetweenHexes(observer,target);
+}
+
+function poisonSaveTargetForUnit(unit){
+  const save=Number(unit?.saves?.death);
+  return Number.isFinite(save) ? save : spellSaveTargetForUnit(unit);
+}
+
+function rollPoisonSave(target,sourceUnit=null,extraModifier=0){
+  const targetNumber=poisonSaveTargetForUnit(target);
+  const rawRoll=d(20);
+  const modifier=spellSaveRollModifier(target,sourceUnit,extraModifier);
+  const modifiedRoll=rawRoll+modifier;
+  return {
+    rawRoll,
+    modifier,
+    modifiedRoll,
+    targetNumber,
+    success:modifiedRoll>=targetNumber
+  };
+}
+
+function darknessEffects(){
+  return (game?.areaEffects || []).filter(effect=>effect?.type==="darkness");
+}
+
+function webEffects(){
+  return (game?.areaEffects || []).filter(effect=>effect?.type==="web");
+}
+
+function flamingSphereEffects(){
+  return (game?.areaEffects || []).filter(effect=>effect?.type==="flaming-sphere");
+}
+
+function stinkingCloudEffects(){
+  return (game?.areaEffects || []).filter(
+    effect=>effect?.type==="fog" && effect?.spellKind==="stinking-cloud"
+  );
+}
+
+function magicalLightGeometricallyOverlapsHex(x,y){
+  return illuminationSources().some(source=>
+    hexDistance(source,{x,y})<=Math.max(1,Number(source.radiusHexes)||1)
+  );
+}
+
+function hasEffectiveDarknessAtHex(x,y){
+  const covered=darknessEffects().some(effect=>areaEffectContains(effect,x,y));
+  if(!covered) return false;
+  return !magicalLightGeometricallyOverlapsHex(x,y);
+}
+
+function hasObscuringMagicAtHex(x,y){
+  return hasFogAtHex(x,y) || hasEffectiveDarknessAtHex(x,y);
+}
+
+function webEffectAtHex(x,y){
+  return webEffects().find(effect=>areaEffectContains(effect,x,y)) || null;
+}
+
+function stinkingCloudAtUnit(unit){
+  return stinkingCloudEffects().find(effect=>
+    occupiedHexes(unit).some(cell=>areaEffectContains(effect,cell.x,cell.y))
+  ) || null;
+}
+
+function applySpellDamage(source,target,damage,sourceName,damageType="magic"){
+  const amount=Math.max(0,Math.floor(Number(damage)||0));
+  if(!target?.alive || amount<=0) return {damage:0,killed:false};
+
+  if(unitImmuneToDamageType(target,damageType)){
+    setCombatMessage(`${target.name} is immune to ${sourceName}.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    return {damage:0,killed:false,immune:true};
+  }
+
+  target.hp=Math.max(0,target.hp-amount);
+  onUnitDamaged(target,amount);
+  registerElementalDamageFx(target,damageType,amount);
+
+  setCombatMessage(
+    `${source?.name || sourceName} damages ${target.name} for ${amount} damage`,
+    COMBAT_MESSAGE_MIN_HOLD_MS,
+    COMBAT_MESSAGE_DISPLAY_MS,
+    target.id==="player" ? "player-damage" : "normal"
+  );
+  log(`${sourceName} deals ${amount} ${damageType} damage to ${target.name}.`,"system");
+
+  if(target.hp>0){
+    updateUi();
+    draw();
+    return {damage:amount,killed:false};
+  }
+
+  target.alive=false;
+  playAgonySound(target);
+  playDeathSound(target);
+  triggerDeathFx(target);
+
+  if(target.controller==="mob"){
+    markEnemyNeutralized(target);
+    if(isKoboldUnit(target) && activeEnemies().length>0){
+      scheduleKoboldGroupMoraleCheck({
+        casualties:1,
+        magicCasualties:1,
+        source:sourceName
+      });
+    }
+  }
+
+  if(target.faction===game?.player?.faction){
+    checkPartyDefeat();
+  }else{
+    checkCombatVictory();
+  }
+
+  updateUi();
+  draw();
+  return {damage:amount,killed:true};
+}
+
+async function finishFailedSpellCommit(caster,action){
+  pendingAimAction=null;
+  exitAimMode(false,false);
+  spellCastInProgress=false;
+  updateUi();
+  draw();
+  await waitForCombatActionPause();
+  if(!game.over) endTurn();
+  return true;
+}
+
+function visualMirrorOffsets(count){
+  const offsets=[
+    {x:-10,y:-2},{x:10,y:-2},{x:-6,y:-7},{x:6,y:-7},
+    {x:-14,y:-5},{x:14,y:-5},{x:0,y:-10},{x:0,y:4}
+  ];
+  return offsets.slice(0,Math.max(0,Math.min(offsets.length,count)));
+}
+
+
 
 function pruneTransientUnitFx(now=performance.now()){
   castingGlowFx=castingGlowFx.filter(fx=>now<fx.until);
@@ -8766,6 +9449,28 @@ function commitSpellCast(caster,spell,action,durationMs=1800){
     action.spellCommitted=true;
   }
 
+  if(
+    getUnitEffect(caster,"deafness") &&
+    (spell.components || []).includes("V")
+  ){
+    const miscastRoll=d(100);
+    setLastRoll(`Deafness verbal-spell check: d100 ${miscastRoll} vs 20%`);
+
+    if(miscastRoll<=20){
+      if(action) action.spellMiscast=true;
+      setCombatMessage(
+        `${caster.name} cannot hear the incantation clearly — ${spell.name} is spoiled!`,
+        COMBAT_MESSAGE_MIN_HOLD_MS
+      );
+      log(`${caster.name}'s Deafness causes ${spell.name} to miscast.`,"bad");
+      return false;
+    }
+  }
+
+  if(spellBreaksInvisibility(spell)){
+    breakInvisibility(caster,`casting ${spell.name}`);
+  }
+
   speakSpellIncantation(caster,spell,durationMs);
   return true;
 }
@@ -8868,6 +9573,11 @@ function removeUnitEffect(unit,id){
       ? getUnitEffect(unit,id)
       : null;
 
+  const spectralHand=
+    id==="spectral-hand"
+      ? getUnitEffect(unit,id)
+      : null;
+
   let removed=false;
 
   for(const key of ["buffs","debuffs"]){
@@ -8880,6 +9590,13 @@ function removeUnitEffect(unit,id){
 
   if(removed && charmEffect){
     restoreCharmPersonAllegiance(unit,charmEffect);
+  }
+
+  if(removed && spectralHand){
+    const reserved=Math.max(0,Number(spectralHand.data?.reservedHp)||0);
+    if(reserved>0 && unit.alive){
+      unit.hp=Math.min(unit.maxHp || unit.hp+reserved,unit.hp+reserved);
+    }
   }
 
   return removed;
@@ -8968,6 +9685,13 @@ function expireTimedUnitEffects(){
           The effect can be removed immediately because the transient transition
           retains its starting scale independently for the one-second shrink.
         */
+        if(effect?.id==="spectral-hand"){
+          const reserved=Math.max(0,Number(effect.data?.reservedHp)||0);
+          if(reserved>0 && unit.alive){
+            unit.hp=Math.min(unit.maxHp || unit.hp+reserved,unit.hp+reserved);
+          }
+        }
+
         if(effect?.id==="enlarge"){
           const fromScale=Math.max(
             1,
@@ -9108,8 +9832,11 @@ function spellSaveTargetForUnit(unit){
 function attackEffectModifier(attacker,defender){
   let modifier=0;
 
-  if(getUnitEffect(attacker,"blind")){
-    modifier-=4;
+  const blind=getUnitEffect(attacker,"blind");
+  if(blind){
+    modifier+=Number.isFinite(blind.data?.attackPenalty)
+      ? Number(blind.data.attackPenalty)
+      : -4;
   }
 
   const chillDebuff=getUnitEffect(attacker,"chill-touch-strength-loss");
@@ -9117,6 +9844,28 @@ function attackEffectModifier(attacker,defender){
     const loss=Number(chillDebuff.data?.strengthLoss)||0;
     modifier-=Math.floor(loss/2);
   }
+
+  if(getUnitEffect(attacker,"ray-enfeeblement")){
+    modifier-=2;
+  }
+
+  const laughter=getUnitEffect(attacker,"hideous-laughter");
+  if(
+    laughter &&
+    game &&
+    game.round>Number(laughter.data?.disabledUntilRound||-Infinity)
+  ){
+    modifier-=2;
+  }
+
+  if(
+    attacker?.weaponInHand!=="ranged" &&
+    getUnitEffect(attacker,"strength-spell")
+  ){
+    modifier+=strengthSpellCombatDelta(attacker).hit;
+  }
+
+  modifier+=blurAttackPenalty(attacker,defender);
 
   if(
     getUnitEffect(defender,"protection-from-evil") &&
@@ -9126,8 +9875,7 @@ function attackEffectModifier(attacker,defender){
   }
 
   /* AD&D 2e: direct rear physical attacks gain +2 to hit. */
-  modifier+=
-    attackPositionData(attacker,defender).rearAttackBonus;
+  modifier+=attackPositionData(attacker,defender).rearAttackBonus;
 
   return modifier;
 }
@@ -9135,8 +9883,15 @@ function attackEffectModifier(attacker,defender){
 function spellSaveRollModifier(target,sourceUnit=null,extraModifier=0){
   let modifier=extraModifier;
 
-  if(getUnitEffect(target,"blind")){
-    modifier-=4;
+  const blind=getUnitEffect(target,"blind");
+  if(blind){
+    modifier+=Number.isFinite(blind.data?.savePenalty)
+      ? Number(blind.data.savePenalty)
+      : -4;
+  }
+
+  if(getUnitEffect(target,"blur") && sourceUnit){
+    modifier+=1;
   }
 
   if(
@@ -9229,17 +9984,15 @@ function effectiveArmorClassForAttack(attacker,defender,attackKind="melee"){
     usingNormalEquipmentAc=false;
   }
 
-  if(getUnitEffect(defender,"blind")){
-    ac+=4;
+  const blind=getUnitEffect(defender,"blind");
+  if(blind){
+    ac+=Number.isFinite(blind.data?.acPenalty)
+      ? Number(blind.data.acPenalty)
+      : 4;
   }
 
-  const position=
-    attackPositionData(attacker,defender);
+  const position=attackPositionData(attacker,defender);
 
-  /*
-    Direct rear attacks deny a BENEFICIAL Dexterity AC adjustment.
-    A low-Dexterity penalty is not a bonus and therefore remains.
-  */
   if(position.dexterityBonusDenied){
     const dexDefensiveAdjustment=
       dexterityAdjustments(defender?.stats?.dex ?? 10).defensive;
@@ -9249,11 +10002,6 @@ function effectiveArmorClassForAttack(attacker,defender,attackKind="melee"){
     }
   }
 
-  /*
-    Physical shields do not protect REAR or either REAR-FLANK sector.
-    Defender AC normally already contains the shield benefit, so add it
-    back when the attack arrives through an unprotected sector.
-  */
   if(position.shieldDenied && usingNormalEquipmentAc){
     const shieldBonus=
       armorClassBreakdown(defender).shieldBonus ||
@@ -9265,12 +10013,8 @@ function effectiveArmorClassForAttack(attacker,defender,attackKind="melee"){
     }
   }
 
-  /* The Shield spell remains a frontal barrier. */
   const shield=getUnitEffect(defender,"shield");
-  if(
-    shield &&
-    position.frontProtected
-  ){
+  if(shield && position.frontProtected){
     let shieldAc=4;
 
     if(attackKind==="small-device-missile"){
@@ -9332,12 +10076,15 @@ function illuminationSources(){
   for(const unit of allUnits()){
     if(!unit?.alive || unit.fled) continue;
 
-    const effect=getUnitEffect(unit,"light");
+    const effect=
+      getUnitEffect(unit,"continual-light") ||
+      getUnitEffect(unit,"light");
     if(!effect) continue;
 
     sources.push({
       id:`unit-light:${unit.id}`,
       sourceKind:"unit",
+      sourceName:effect.name || "Light",
       unitId:unit.id,
       x:unit.x,
       y:unit.y,
@@ -9363,6 +10110,7 @@ function illuminationSources(){
     sources.push({
       id:effect.id || `area-light:${effect.x},${effect.y}`,
       sourceKind:"area",
+      sourceName:effect.sourceName || "Light",
       x:effect.x,
       y:effect.y,
       radiusHexes:Math.max(
@@ -9434,11 +10182,13 @@ function dynamicIlluminationAtHex(x,y){
 }
 
 function illuminationAtHex(x,y){
+  if(hasEffectiveDarknessAtHex(x,y)){
+    return 0;
+  }
+
   const ambient=ambientIlluminationLevel();
   const dynamic=dynamicIlluminationAtHex(x,y);
 
-  /* Dynamic light fills the unlit portion of ambient light rather than simply
-     adding arbitrary brightness above 100%. */
   return Math.max(
     0,
     Math.min(1,ambient+(1-ambient)*Math.min(1,dynamic))
@@ -9808,7 +10558,7 @@ function lineOfSightBlockedBetweenHexes(source,target){
 
   return cells.some((cell,index)=>
     index>0 &&
-    hasFogAtHex(cell.x,cell.y)
+    hasObscuringMagicAtHex(cell.x,cell.y)
   );
 }
 
@@ -9828,20 +10578,24 @@ function lightBlockedBetweenHexes(source,target){
   const cells=hexLineCells(source,target);
   return cells.some((cell,index)=>
     index>0 &&
-    hasFogAtHex(cell.x,cell.y)
+    hasObscuringMagicAtHex(cell.x,cell.y)
   );
 }
 
 function lineOfSightBlocked(source,target){
   if(!source || !target) return false;
 
+  if(
+    source?.id &&
+    target?.id &&
+    !unitVisibleToObserver(source,target)
+  ){
+    return true;
+  }
+
   const sourceCells=occupiedHexesAt(source,source.x,source.y);
   const targetCells=occupiedHexesAt(target,target.x,target.y);
 
-  /*
-    R186: a large creature is visible/targetable when at least one occupied
-    body hex has a clear ray to at least one occupied source hex.
-  */
   for(const sourceCell of sourceCells){
     for(const targetCell of targetCells){
       if(!lineOfSightBlockedBetweenHexes(sourceCell,targetCell)){
@@ -9869,12 +10623,20 @@ function projectilePathBlockedBetweenHexes(source,target){
   const cells=hexLineCells(source,target);
   return cells.some((cell,index)=>
     index>0 &&
-    hasFogAtHex(cell.x,cell.y)
+    hasObscuringMagicAtHex(cell.x,cell.y)
   );
 }
 
 function projectilePathBlocked(source,target){
   if(!source || !target) return false;
+
+  if(
+    source?.id &&
+    target?.id &&
+    !unitVisibleToObserver(source,target)
+  ){
+    return true;
+  }
 
   const sourceCells=occupiedHexesAt(source,source.x,source.y);
   const targetCells=occupiedHexesAt(target,target.x,target.y);
@@ -10119,11 +10881,19 @@ function isHexVisibleToFriendlyParty(x,y){
 
 function isUnitVisibleToFriendlyParty(unit){
   if(!unit) return false;
-  if(game?.condition!=="wall") return true;
   if(isFriendlyCombatUnit(unit)) return true;
 
   const observers=friendlyVisibilityObservers();
   if(!observers.length) return true;
+
+  if(
+    getUnitEffect(unit,"invisibility") &&
+    !observers.some(observer=>unitVisibleToObserver(observer,unit))
+  ){
+    return false;
+  }
+
+  if(game?.condition!=="wall") return true;
 
   return observers.some(observer=>
     occupiedHexes(unit).some(cell=>{
@@ -10943,14 +11713,33 @@ function onUnitDamaged(unit,damage){
   }
 }
 
-function applyBlindEffect(unit,rounds,sourceName="Light"){
+function applyBlindEffect(unit,rounds,sourceName="Light",options={}){
+  const hasDuration=
+    typeof rounds==="number" &&
+    Number.isFinite(rounds);
+
+  const attackPenalty=
+    Number.isFinite(options.attackPenalty)
+      ? Number(options.attackPenalty)
+      : -4;
+  const savePenalty=
+    Number.isFinite(options.savePenalty)
+      ? Number(options.savePenalty)
+      : -4;
+  const acPenalty=
+    Number.isFinite(options.acPenalty)
+      ? Number(options.acPenalty)
+      : 4;
+
   addUnitEffect(unit,{
     id:"blind",
     name:"Blinded",
     kind:"debuff",
-    expiresRound:game.round+Math.max(1,rounds),
-    detail:`${sourceName}: −4 attacks, −4 saves, AC worsened by 4`,
-    data:{sourceName}
+    expiresRound:hasDuration ? game.round+Math.max(1,rounds) : null,
+    detail:
+      `${sourceName}: ${formatSignedAdjustment(attackPenalty)} attacks, `+
+      `${formatSignedAdjustment(savePenalty)} saves, AC worsened by ${acPenalty}`,
+    data:{sourceName,attackPenalty,savePenalty,acPenalty}
   });
 }
 
@@ -13001,6 +13790,7 @@ function livingPartyMembers(){
 
 function nearestLivingPartyTarget(fromUnit){
   return livingPartyMembers()
+    .filter(target=>unitVisibleToObserver(fromUnit,target))
     .slice()
     .sort((a,b)=>
       unitDistance(fromUnit,a)-unitDistance(fromUnit,b) ||
@@ -13928,7 +14718,8 @@ function hostileCombatantsFor(unit){
 
   return activeCombatants().filter(other=>
     other.id!==unit.id &&
-    other.faction!==unit.faction
+    other.faction!==unit.faction &&
+    unitVisibleToObserver(unit,other)
   );
 }
 
@@ -15238,7 +16029,8 @@ function rangedAiCanAttackFrom(unit,source,target){
     !source ||
     !target?.alive ||
     target.fled ||
-    target.faction===unit.faction
+    target.faction===unit.faction ||
+    !unitVisibleToObserver(unit,target)
   ){
     return false;
   }
@@ -15254,7 +16046,6 @@ function rangedAiCanAttackFrom(unit,source,target){
   const range=rangedAiRangeBandFrom(unit,source,target);
   if(range.penalty===null) return false;
 
-  /* Dedicated Slingers will not stand toe-to-toe and sling at range 1. */
   if(unit.type==="kobold-slinger" && range.distance<=1){
     return false;
   }
@@ -16675,6 +17466,7 @@ function cancelAllQuickCommands(reason=""){
 
 function chooseQuickCommandTarget(player){
   const enemies=activeEnemies()
+    .filter(target=>unitVisibleToObserver(player,target))
     .slice()
     .sort((a,b)=>
       hexDistance(player,a)-hexDistance(player,b) ||
@@ -17307,7 +18099,7 @@ async function castMagicMissileFromScroll(action,target){
 
   if(shield){
     spellCastInProgress=true;
-    commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+    if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
     pendingAimAction=null;
     exitAimMode(false,false);
 
@@ -17343,7 +18135,7 @@ async function castMagicMissileFromScroll(action,target){
   const damageRolls=[];
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   updateUi();
@@ -17702,7 +18494,7 @@ async function castFireballFromScroll(action,targetHex){
   const friendlyTargets=affected.filter(unit=>unit.faction===caster.faction);
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   updateUi();
@@ -18013,7 +18805,7 @@ async function castCharmPersonSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Charm Person");
@@ -18068,7 +18860,7 @@ async function castArmorSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18107,7 +18899,7 @@ async function castShieldSpell(action){
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18132,7 +18924,7 @@ async function castChillTouchSpell(action){
   const rounds=3+level;
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18167,7 +18959,7 @@ async function castEnlargeSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18228,7 +19020,7 @@ async function castProtectionFromEvilSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18264,7 +19056,7 @@ async function castLightSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18402,7 +19194,7 @@ async function castBurningHandsSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Burning Hands");
@@ -18463,7 +19255,7 @@ async function castColorSpraySpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Color Spray");
@@ -18560,7 +19352,7 @@ async function castGreaseSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18615,7 +19407,7 @@ async function castSleepSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Sleep");
@@ -18701,7 +19493,7 @@ async function castSpookSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18743,7 +19535,7 @@ async function castTauntSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18801,7 +19593,7 @@ async function castShockingGraspSpell(action,target){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -18877,7 +19669,7 @@ async function castWallOfFogSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  commitSpellCast(caster,getSpellEntry(action?.spellId),action);
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -19780,7 +20572,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
     }
 
     /*
-      R208: MOB Guard reactions are allegiance-driven. This is normally a
+      R209: MOB Guard reactions are allegiance-driven. This is normally a
       no-op for enemy-on-enemy movement, but lets former allies react when a
       charmed MOB enters their Guard range (and vice versa).
     */
@@ -22239,10 +23031,6 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   const renderSource=image._crispRenderSource || image;
   const spriteAnchor=anchor || {x:0.5,y:1};
 
-  /*
-    R193: Enlarge changes only presentation size. The translated world anchor
-    remains unchanged, so the unit continues to occupy its original footprint.
-  */
   const enlargeScale=enlargeVisualScale(entity);
   const visualDrawW=Math.max(1,drawW*enlargeScale);
   const visualDrawH=Math.max(1,drawH*enlargeScale);
@@ -22253,11 +23041,37 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     ctx.scale(-1,1);
   }
 
-  /*
-    The target glows throughout the grow/shrink transition using the same
-    silhouette treatment as spellcasting. If both happen together, Enlarge
-    takes precedence so the glow follows the changing sprite dimensions.
-  */
+  const invisible=!!getUnitEffect(entity,"invisibility");
+  if(invisible){
+    ctx.globalAlpha=0.30;
+  }
+
+  const mirror=getUnitEffect(entity,"mirror-image");
+  const imageCount=Math.max(0,Number(mirror?.data?.images)||0);
+
+  if(imageCount>0){
+    const baseX=-Math.round(visualDrawW*spriteAnchor.x);
+    const baseY=-Math.round(visualDrawH*spriteAnchor.y);
+    const inheritedAlpha=ctx.globalAlpha;
+
+    ctx.save();
+    ctx.globalAlpha=inheritedAlpha*0.45;
+    for(const offset of visualMirrorOffsets(Math.min(4,imageCount))){
+      try{
+        ctx.drawImage(
+          renderSource,
+          baseX+offset.x,
+          baseY+offset.y,
+          visualDrawW,
+          visualDrawH
+        );
+      }catch(error){
+        console.error("Mirror Image sprite draw skipped.",error);
+      }
+    }
+    ctx.restore();
+  }
+
   const transitionFx=activeEnlargeTransitionFx(entity);
   const glowFx=transitionFx || activeCastingGlowFx(entity);
 
