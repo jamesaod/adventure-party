@@ -3,6 +3,15 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R216 — Visible-side correction for wall-bisected hexes
+
+- Fixed dark wedges appearing on the viewer-facing side of architectural walls after the R215 center-only LOS change.
+- Normal playable tactical hexes remain strictly binary: the center determines whether the entire hex is visible or under the 70% blackout.
+- Wall-bisected hexes are already non-passable architectural boundary cells, so their render mask now uses the continuous wall-blocked LOS polygon only inside that blocked cell.
+- This presentation-only exception reveals the physically visible side of a wall boundary without revealing the obscured side.
+- Gameplay LOS, targeting, hidden-unit detection, multi-hex visibility, and magical fog/cloud blocking remain governed by the R215 center-based rule.
+
+
 ## R215 — Hex-center line-of-sight visibility
 
 - Reworked Wall Test LOS from a continuously revealed/feathered world-space cone into binary tactical-hex visibility.
