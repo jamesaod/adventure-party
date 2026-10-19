@@ -10,7 +10,7 @@ python -m http.server 8000
 
 Then open `http://localhost:8000/`.
 
-The project intentionally remains dependency-free.
+The project code intentionally remains dependency-free. R204 currently loads the credited PamNawi stone-floor PNG from its OpenGameArt source at runtime; see the attribution file below.
 
 ## Third-party assets
 
