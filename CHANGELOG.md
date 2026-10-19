@@ -4,6 +4,19 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R206 — Wall-aligned thresholds, black indoor grid, and cap union outline
+
+- Threshold depth now matches architectural wall thickness exactly, centered on the wall axis with no extra overhang.
+- Converted the existing west-wall entrance into an authored vertical doorway opening on one continuous wall, preserving the same passable gap while allowing the shared threshold renderer to handle it.
+- Doorway thresholds now render correctly for horizontal and vertical walls using the same tangent/normal geometry.
+- Indoor tactical hex-border portions are now black; outdoor portions remain green.
+- Added a dedicated two-pixel black outline around the union of all upward-facing wall-cap surfaces.
+- Cap outlines use the combined wall-top mask, so connected wall tops read as one shape rather than receiving per-segment borders.
+- Doorway gaps are respected by the cap union outline.
+- R205 isometric floor tiling and R204 corrected wall-lighting behavior remain unchanged.
+
+
+
 ## R205 — Isometric stone-floor tiling and doorway thresholds
 
 - Reprojected the PamNawi stone-floor repeating texture into the same axial/isometric surface basis used by the tactical battlefield instead of leaving the source tile screen-aligned.
