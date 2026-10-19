@@ -4755,7 +4755,11 @@ function configureArchitecturalWalls(mode){
     Height is presentation geometry only; movement/LOS/volume blocking is
     unchanged.
   */
-  const common={height:45,thickness:9,material:"stone",blocksMovement:true,blocksLOS:true,blocksVolume:true};
+  /*
+    R197: settle wall presentation at 35 px high after visual review.
+    Movement, LOS, volume blocking, and footprint geometry remain unchanged.
+  */
+  const common={height:35,thickness:9,material:"stone",blocksMovement:true,blocksLOS:true,blocksVolume:true};
 
   architecturalWalls=[
     {...common,id:"north",a:{x:r.left,y:r.top},b:{x:r.right,y:r.top}},
@@ -5206,39 +5210,103 @@ function architecturalWallLightContributions(wall){
 }
 
 
+/*
+  R197 structure-level wall outline.
+
+  Every wall segment is first rasterized into one shared opaque mask. We dilate
+  that UNION silhouette by two pixels and subtract the original mask, leaving
+  only the exterior perimeter. Joined segments therefore have no internal black
+  seams: the whole connected wall structure reads as one stylized shape.
+*/
+function drawArchitecturalWallShapeOutline(wallsToOutline=architecturalWalls){
+  const walls=(wallsToOutline || []).filter(Boolean);
+  if(!walls.length) return;
+
+  const mask=document.createElement("canvas");
+  mask.width=ctx.canvas.width;
+  mask.height=ctx.canvas.height;
+  const mctx=mask.getContext("2d");
+  mctx.imageSmoothingEnabled=false;
+  mctx.lineCap="square";
+  mctx.lineJoin="miter";
+  mctx.strokeStyle="rgba(255,255,255,1)";
+
+  for(const wall of walls){
+    const a=screenPointForWorld(wall.a);
+    const b=screenPointForWorld(wall.b);
+    const height=Math.max(1,Math.round(wall.height || 35));
+    const thickness=Math.max(3,Number(wall.thickness)||9);
+
+    mctx.lineWidth=thickness;
+
+    /*
+      Sweep the complete vertical slab, including the solid top cap elevation.
+      Because every segment goes into the SAME mask, intersections are merged
+      before the outline is created.
+    */
+    for(let z=0;z<=height;z++){
+      mctx.beginPath();
+      mctx.moveTo(a.x,a.y-z);
+      mctx.lineTo(b.x,b.y-z);
+      mctx.stroke();
+    }
+  }
+
+  const outline=document.createElement("canvas");
+  outline.width=mask.width;
+  outline.height=mask.height;
+  const octx=outline.getContext("2d");
+  octx.imageSmoothingEnabled=false;
+
+  /* Two-pixel dilation of the complete union silhouette. */
+  for(let dy=-2;dy<=2;dy++){
+    for(let dx=-2;dx<=2;dx++){
+      if(dx===0 && dy===0) continue;
+      if((dx*dx)+(dy*dy)>4) continue;
+      octx.drawImage(mask,dx,dy);
+    }
+  }
+
+  /* Keep only pixels OUTSIDE the original wall structure. */
+  octx.globalCompositeOperation="destination-out";
+  octx.drawImage(mask,0,0);
+  octx.globalCompositeOperation="source-over";
+
+  octx.globalCompositeOperation="source-in";
+  octx.fillStyle="#050507";
+  octx.fillRect(0,0,outline.width,outline.height);
+  octx.globalCompositeOperation="source-over";
+
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha=1;
+  ctx.drawImage(outline,0,0);
+  ctx.restore();
+}
+
+
 function drawArchitecturalWallSegment(wall){
   const a=screenPointForWorld(wall.a);
   const b=screenPointForWorld(wall.b);
-  const height=Math.max(1,Math.round(wall.height || 45));
+  const height=Math.max(1,Math.round(wall.height || 35));
   const thickness=Math.max(3,wall.thickness || 9);
-  const outlineWidth=2;
 
   const bodyColor="#555860";
   const capColor="#888b92";
-  const outlineColor="#050507";
 
   ctx.save();
   ctx.lineCap="square";
   ctx.lineJoin="miter";
 
   /*
-    R196: draw one black slab slightly larger than the masonry, then repaint
-    the solid wall body inside it. Because both sweeps are continuous, this
-    leaves a clean two-pixel silhouette around the wall segment without the
-    horizontal banding produced by the former per-height shade ramp.
+    R197 solid unbanded masonry body.
+    No per-segment black perimeter, base seam, or vertical end seams are drawn;
+    the only black border comes from drawArchitecturalWallShapeOutline(), which
+    outlines the union silhouette of the complete connected wall structure.
   */
-  ctx.strokeStyle=outlineColor;
-  ctx.lineWidth=thickness+(outlineWidth*2);
-  for(let z=0;z<height;z++){
-    ctx.beginPath();
-    ctx.moveTo(a.x,a.y-z);
-    ctx.lineTo(b.x,b.y-z);
-    ctx.stroke();
-  }
-
-  /* Solid, unbanded vertical masonry face. */
   ctx.strokeStyle=bodyColor;
   ctx.lineWidth=thickness;
+
   for(let z=0;z<height;z++){
     ctx.beginPath();
     ctx.moveTo(a.x,a.y-z);
@@ -5247,10 +5315,8 @@ function drawArchitecturalWallSegment(wall){
   }
 
   /*
-    R196: dynamic illumination is applied only to wall surfaces oriented toward
-    a light source. A radial gradient is reused through the wall's vertical
-    sweep, so the lit portion fades naturally with source distance along long
-    segments rather than brightening the entire segment uniformly.
+    R197 wall illumination is half the R196 intensity. Surface-facing,
+    distance falloff, source color, and wall occlusion behavior are unchanged.
   */
   const lightContributions=architecturalWallLightContributions(wall);
 
@@ -5261,10 +5327,8 @@ function drawArchitecturalWallSegment(wall){
     const radiusPx=
       (Math.max(1,Number(source.radiusHexes)||1)+0.55)*HEX_W;
     const color=source.color || [255,244,188];
-    const strength=Math.max(
-      0,
-      Math.min(1.35,contribution.intensity)
-    );
+    const strength=
+      Math.max(0,Math.min(1.35,contribution.intensity))*0.50;
 
     const gradient=ctx.createRadialGradient(
       sourceScreen.x,
@@ -5304,36 +5368,13 @@ function drawArchitecturalWallSegment(wall){
   }
 
   /*
-    Solid top cap. The old highlight stripe is intentionally gone: one cap
-    color is surrounded by the same two-pixel black outline as the wall body.
+    One flat solid cap color. No extra highlight stripe and no black segment
+    edge is painted here, preventing cap-to-cap seams at joined corners.
   */
-  ctx.strokeStyle=outlineColor;
-  ctx.lineWidth=thickness+(outlineWidth*2);
-  ctx.beginPath();
-  ctx.moveTo(a.x,a.y-height);
-  ctx.lineTo(b.x,b.y-height);
-  ctx.stroke();
-
   ctx.strokeStyle=capColor;
   ctx.lineWidth=thickness;
   ctx.beginPath();
   ctx.moveTo(a.x,a.y-height);
-  ctx.lineTo(b.x,b.y-height);
-  ctx.stroke();
-
-  /* Explicit 2 px perimeter seams make every authored wall segment readable. */
-  ctx.strokeStyle=outlineColor;
-  ctx.lineWidth=2;
-
-  ctx.beginPath();
-  ctx.moveTo(a.x,a.y);
-  ctx.lineTo(b.x,b.y);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(a.x,a.y);
-  ctx.lineTo(a.x,a.y-height);
-  ctx.moveTo(b.x,b.y);
   ctx.lineTo(b.x,b.y-height);
   ctx.stroke();
 
@@ -9246,10 +9287,17 @@ function drawVisibleArchitecturalWallsOverLOS(){
     while masonry closer to the viewer still covers fog.
   */
   const foreground=[];
+  const visibleWalls=architecturalWalls.filter(
+    wall=>isArchitecturalWallVisibleToFriendlyParty(wall)
+  );
 
-  for(const wall of architecturalWalls){
-    if(!isArchitecturalWallVisibleToFriendlyParty(wall)) continue;
+  /*
+    R197: repeat the same exterior-only union outline after the LOS blackout,
+    but only for architecture currently visible to the party.
+  */
+  drawArchitecturalWallShapeOutline(visibleWalls);
 
+  for(const wall of visibleWalls){
     const a=screenPointForWorld(wall.a);
     const b=screenPointForWorld(wall.b);
     foreground.push({
@@ -23552,6 +23600,13 @@ function draw(){
   drawFloor();
   drawWallTestFloorPlan();
   drawArchitecturalWallShadows();
+
+  /*
+    R197: outline the union silhouette once before wall bodies enter the shared
+    depth queue. Units/fog can still correctly cover the outline afterward.
+  */
+  drawArchitecturalWallShapeOutline(architecturalWalls);
+
   drawSpellAreaEffects();
 
   const actors=[];
