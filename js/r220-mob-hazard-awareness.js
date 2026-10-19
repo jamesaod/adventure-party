@@ -289,7 +289,8 @@ function r220HazardKnowledgeEntry(mob,effect,definition){
       lastSeenRound:null,
       lastExperiencedRound:null,
       lastObservedRound:null,
-      perceptionToken:null
+      perceptionToken:null,
+      seenCells:Object.create(null)
     };
   }
 
@@ -298,7 +299,16 @@ function r220HazardKnowledgeEntry(mob,effect,definition){
   if(entry.perceptionToken!==token){
     entry.perceptionToken=token;
 
-    if(r220MobCanPerceiveHazardEffect(mob,effect)){
+    let perceivedAny=false;
+
+    for(const cell of effect.cells || []){
+      if(!r220MobCanPerceiveHazardCell(mob,cell)) continue;
+
+      perceivedAny=true;
+      entry.seenCells[key(cell.x,cell.y)]=true;
+    }
+
+    if(perceivedAny){
       entry.perceived=true;
       entry.lastSeenRound=game?.round || 0;
 
@@ -331,6 +341,7 @@ function r220LearnHazardFromExperience(mob,effect,{failed=false}={}){
   entry.experienced=true;
   entry.recognized=true;
   entry.lastExperiencedRound=game?.round || 0;
+  entry.seenCells[key(mob.x,mob.y)]=true;
 
   if(failed){
     entry.observedConsequence=true;
@@ -364,6 +375,7 @@ function r220WitnessHazardConsequence(victim,effect,result){
 
     entry.perceived=true;
     entry.lastSeenRound=game.round;
+    entry.seenCells[key(victim.x,victim.y)]=true;
 
     if(result?.failed || result?.haltMovement){
       entry.observedConsequence=true;
@@ -376,9 +388,21 @@ function r220WitnessHazardConsequence(victim,effect,result){
   }
 }
 
-function r220HazardAwareness(mob,effect,definition){
+function r220HazardAwareness(mob,effect,definition,cell=null){
   const entry=r220HazardKnowledgeEntry(mob,effect,definition);
   if(!entry) return 0;
+
+  /*
+    Knowledge of an effect does not reveal its hidden geometry. A cell behind
+    a wall/cloud has no path cost until the MOB has actually perceived or
+    experienced that part of the effect.
+  */
+  if(
+    cell &&
+    !entry.seenCells[key(cell.x,cell.y)]
+  ){
+    return 0;
+  }
 
   const intelligence=r220MobIntelligenceScore(mob);
 
@@ -480,8 +504,13 @@ function r220MobUrgencyMultiplier(mob){
   return 1;
 }
 
-function r220HazardCostForEffect(mob,effect,definition){
-  const awareness=r220HazardAwareness(mob,effect,definition);
+function r220HazardCostForEffect(mob,effect,definition,cell=null){
+  const awareness=r220HazardAwareness(
+    mob,
+    effect,
+    definition,
+    cell
+  );
   if(awareness<=0) return 0;
 
   const role=r220MobRole(mob);
@@ -504,7 +533,12 @@ function r220MobHazardCostAt(mob,x,y){
   return r220HazardsAtCell(x,y)
     .reduce(
       (total,{effect,definition})=>
-        total+r220HazardCostForEffect(mob,effect,definition),
+        total+r220HazardCostForEffect(
+          mob,
+          effect,
+          definition,
+          {x,y}
+        ),
       0
     );
 }
@@ -522,6 +556,50 @@ function r220RefreshCurrentCellHazardExperience(mob){
     }
   }
 }
+
+
+/*
+  Give the current test MOBs explicit intelligence scores. Future monsters can
+  supply stats.int, intelligenceScore, or a standard AD&D intelligence label.
+*/
+const r220BaseMakeKobold=makeKobold;
+makeKobold=function(index,position){
+  const unit=r220BaseMakeKobold(index,position);
+  unit.intelligenceScore=9;
+  unit.intelligence=unit.intelligence || "Average (8-10)";
+  return unit;
+};
+
+const r220BaseMakeKoboldBodyguard=makeKoboldBodyguard;
+makeKoboldBodyguard=function(index,position){
+  const unit=r220BaseMakeKoboldBodyguard(index,position);
+  unit.intelligenceScore=9;
+  unit.intelligence=unit.intelligence || "Average (8-10)";
+  return unit;
+};
+
+const r220BaseMakeKoboldSlinger=makeKoboldSlinger;
+makeKoboldSlinger=function(index,position){
+  const unit=r220BaseMakeKoboldSlinger(index,position);
+  unit.intelligenceScore=9;
+  unit.intelligence=unit.intelligence || "Average (8-10)";
+  return unit;
+};
+
+const r220BaseMakeOrc=makeOrc;
+makeOrc=function(index,position){
+  const unit=r220BaseMakeOrc(index,position);
+  unit.intelligenceScore=9;
+  unit.intelligence=unit.intelligence || "Average (8-10)";
+  return unit;
+};
+
+const r220BaseMakeLargeMobTest=makeLargeMobTest;
+makeLargeMobTest=function(position){
+  const unit=r220BaseMakeLargeMobTest(position);
+  unit.intelligenceScore=16;
+  return unit;
+};
 
 
 /* ============================================================
@@ -940,6 +1018,52 @@ function r220WeightedClosestReachable(mob,target,maxSteps){
 
   return r220ReconstructPath(came,start,best);
 }
+
+
+function r220ObserveVisibleTargetsForAllMobs(){
+  if(!game) return;
+
+  for(const mob of game.enemies || []){
+    if(mob?.controller!=="mob" || !mob.alive || mob.fled) continue;
+    r220RefreshTargetMemory(mob);
+  }
+}
+
+/*
+  Preserve last-known positions immediately before an obscuring area appears,
+  then let intelligent MOBs perceive/recognize the new hazard after it exists.
+*/
+const r220BaseAddAreaEffect=addAreaEffect;
+addAreaEffect=function(effect){
+  const definition=r220HazardDefinition(effect);
+
+  if(definition){
+    r220ObserveVisibleTargetsForAllMobs();
+  }
+
+  const added=r220BaseAddAreaEffect(effect);
+
+  if(added && definition){
+    for(const mob of game?.enemies || []){
+      if(mob?.controller!=="mob" || !mob.alive || mob.fled) continue;
+      r220HazardKnowledgeEntry(mob,added,definition);
+    }
+  }
+
+  return added;
+};
+
+/*
+  Player movement is an information event: MOBs remember the pre-move location
+  and update to the new location only if it remains visible afterward.
+*/
+const r220BaseTryPlayerMove=tryPlayerMove;
+tryPlayerMove=async function(dx,dy){
+  r220ObserveVisibleTargetsForAllMobs();
+  const result=await r220BaseTryPlayerMove(dx,dy);
+  r220ObserveVisibleTargetsForAllMobs();
+  return result;
+};
 
 
 /* ============================================================
