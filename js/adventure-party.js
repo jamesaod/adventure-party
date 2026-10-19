@@ -19779,6 +19779,18 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       }
     }
 
+    /*
+      R208: MOB Guard reactions are allegiance-driven. This is normally a
+      no-op for enemy-on-enemy movement, but lets former allies react when a
+      charmed MOB enters their Guard range (and vice versa).
+    */
+    if(entity.controller==="mob"){
+      await triggerMobGuardsAgainst(entity);
+      if(game.over || !entity.alive){
+        return false;
+      }
+    }
+
     if(mode!=="silent"){
       await sleep(delay);
     }
@@ -19850,6 +19862,9 @@ async function animateMobAlongPath(mob,path,maxSteps){
       if(game.over) return false;
       if(!mob.alive) return false;
     }
+
+    await triggerMobGuardsAgainst(mob);
+    if(game.over || !mob.alive) return false;
 
     if(mode!=="silent"){
       await sleep(105);
