@@ -8990,7 +8990,7 @@ function effectiveStrength(unit){
   const laughter=getUnitEffect(unit,"hideous-laughter");
   const gain=Math.max(0,Number(strengthEffect?.data?.strengthGain)||0);
   const laughterPenalty=
-    laughter && game && game.round>Number(laughter.data?.disabledUntilRound||-Infinity)
+    laughter && Number(laughter.data?.disabledActionsRemaining)<=0
       ? 2
       : 0;
   return clamp(base+gain-laughterPenalty,1,18);
@@ -9015,11 +9015,7 @@ function physicalDamageEffectModifier(attacker,attackKind="melee"){
   }
 
   const laughter=getUnitEffect(attacker,"hideous-laughter");
-  if(
-    laughter &&
-    game &&
-    game.round>Number(laughter.data?.disabledUntilRound||-Infinity)
-  ){
+  if(laughter && Number(laughter.data?.disabledActionsRemaining)<=0){
     modifier-=2;
   }
 
@@ -9050,7 +9046,7 @@ function interceptWithMirrorImage(defender,attacker=null){
   if(!effect || images<=0) return false;
 
   const selection=d(images+1);
-  if(selection>1) return false;
+  if(selection===1) return false;
 
   effect.data.images=images-1;
   effect.detail=`${effect.data.images} image${effect.data.images===1 ? "" : "s"} remaining`;
@@ -9417,6 +9413,7 @@ function triggerFireDamageFx(unit,damage=1){
 function registerElementalDamageFx(unit,damageType,damage){
   if(String(damageType||"").toLowerCase()==="fire" && Number(damage)>0){
     triggerFireDamageFx(unit,damage);
+    igniteWebAtUnit(unit,"fire damage");
   }
 }
 
@@ -9850,11 +9847,7 @@ function attackEffectModifier(attacker,defender){
   }
 
   const laughter=getUnitEffect(attacker,"hideous-laughter");
-  if(
-    laughter &&
-    game &&
-    game.round>Number(laughter.data?.disabledUntilRound||-Infinity)
-  ){
+  if(laughter && Number(laughter.data?.disabledActionsRemaining)<=0){
     modifier-=2;
   }
 
@@ -9874,7 +9867,6 @@ function attackEffectModifier(attacker,defender){
     modifier-=2;
   }
 
-  /* AD&D 2e: direct rear physical attacks gain +2 to hit. */
   modifier+=attackPositionData(attacker,defender).rearAttackBonus;
 
   return modifier;
@@ -10852,7 +10844,7 @@ function wallTestVisibilityPolygonWorld(observer,mode="los"){
 function fogBlocksVisibilityToHex(observer,x,y){
   const cells=hexLineCells(observer,{x,y});
   return cells.some((cell,index)=>
-    index>0 && hasFogAtHex(cell.x,cell.y)
+    index>0 && hasObscuringMagicAtHex(cell.x,cell.y)
   );
 }
 
@@ -11698,6 +11690,11 @@ function onUnitDamaged(unit,damage){
     log(`${unit.name} awakens because it was wounded.`,"system");
   }
 
+  if(getUnitEffect(unit,"hypnotic-pattern")){
+    removeUnitEffect(unit,"hypnotic-pattern");
+    log(`${unit.name} is freed from Hypnotic Pattern by damage.`,"system");
+  }
+
   const armor=getUnitEffect(unit,"armor-spell");
   if(armor){
     armor.data.damageTaken=
@@ -12216,23 +12213,75 @@ function createWallOfFogCells(caster,targetHex,casterLevel,orientationIndex=null
 function drawSpellAreaEffects(){
   if(!game?.areaEffects?.length) return;
 
-  /*
-    R94: persistent ground effects remain on the floor pass. Fog is no longer
-    painted as a translucent floor decal; it is inserted into the actor/depth
-    sort as a volumetric obstruction by drawFogVolumeCell().
-  */
   for(const effect of game.areaEffects){
-    if(effect.type!=="grease") continue;
+    if(!["grease","darkness","web","flaming-sphere"].includes(effect.type)) continue;
 
     for(const cell of effect.cells || []){
       if(!inside(cell.x,cell.y)) continue;
       const top=hexScreenVertices(cell.x,cell.y);
-      polygonPath(top);
-      ctx.fillStyle="rgba(164,150,75,0.32)";
-      ctx.fill();
-      ctx.strokeStyle="rgba(230,214,120,0.85)";
-      ctx.lineWidth=2;
-      ctx.stroke();
+      const center=hexCenter(cell.x,cell.y);
+
+      if(effect.type==="grease"){
+        polygonPath(top);
+        ctx.fillStyle="rgba(164,150,75,0.32)";
+        ctx.fill();
+        ctx.strokeStyle="rgba(230,214,120,0.85)";
+        ctx.lineWidth=2;
+        ctx.stroke();
+        continue;
+      }
+
+      if(effect.type==="darkness"){
+        polygonPath(top);
+        ctx.fillStyle=hasEffectiveDarknessAtHex(cell.x,cell.y)
+          ? "rgba(0,0,8,0.82)"
+          : "rgba(45,42,60,0.28)";
+        ctx.fill();
+        ctx.strokeStyle="rgba(18,14,32,0.92)";
+        ctx.lineWidth=2;
+        ctx.stroke();
+        continue;
+      }
+
+      if(effect.type==="web"){
+        polygonPath(top);
+        ctx.fillStyle="rgba(220,225,220,0.10)";
+        ctx.fill();
+        ctx.strokeStyle="rgba(235,238,232,0.86)";
+        ctx.lineWidth=1.3;
+        for(let i=0;i<top.length;i++){
+          const a=top[i];
+          const b=top[(i+3)%top.length];
+          ctx.beginPath();
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(center.x,center.y,7,0,Math.PI*2);
+        ctx.stroke();
+        continue;
+      }
+
+      if(effect.type==="flaming-sphere"){
+        const pulse=1+0.10*Math.sin(performance.now()*0.012);
+        ctx.save();
+        ctx.globalAlpha=0.94;
+        ctx.fillStyle="rgba(255,94,12,0.92)";
+        ctx.beginPath();
+        ctx.arc(center.x,center.y-9,9*pulse,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle="rgba(255,211,58,0.92)";
+        ctx.beginPath();
+        ctx.arc(center.x,center.y-11,5.5*pulse,0,Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle="rgba(75,20,3,0.95)";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.arc(center.x,center.y-9,10*pulse,0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
   }
 }
@@ -12432,6 +12481,8 @@ function greaseSaveForUnit(unit,sourceUnit=null){
 
 function handleTurnControlEffects(actor){
   if(!actor || !actor.alive) return false;
+
+  if(handleLevelTwoTurnEffects(actor)) return true;
 
   if(getUnitEffect(actor,"sleep")){
     setCombatMessage(`${actor.name} is asleep and cannot act.`,COMBAT_MESSAGE_MIN_HOLD_MS);
@@ -15414,6 +15465,8 @@ async function longbowAttack(attacker,defender){
 
   triggerUnitAttackPose(attacker);
 
+  breakInvisibility(attacker,"making a Longbow attack");
+
   /* R97: do not play the successful-hit transient until the roll is known to hit. */
   const rawRoll=d(20);
 
@@ -15494,6 +15547,13 @@ async function longbowAttack(attacker,defender){
     };
   }
 
+  if(interceptWithMirrorImage(defender,attacker)){
+    playMissSound();
+    setCombatMessage(`${defender.name}'s Mirror Image is struck by the arrow.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    flashAttack(attacker,defender,false);
+    return {hit:false,killed:false,damage:0,mirrorImage:true};
+  }
+
   const bow=getMissileCatalogEntry("bow-long");
   const damageExpression=damageExpressionForSize(
     bow,
@@ -15504,7 +15564,7 @@ async function longbowAttack(attacker,defender){
     damageExpression
   );
 
-  const damage=Math.max(1,damageRoll.total);
+  const damage=Math.max(1,damageRoll.total+physicalDamageEffectModifier(attacker,"missile"));
 
   defender.hp=Math.max(
     0,
@@ -16477,6 +16537,8 @@ async function slingAttack(attacker,defender){
     updateUi();
   }
 
+  breakInvisibility(attacker,"making a Sling attack");
+
   /* Roll the physical attack die BEFORE applying any modifier. */
   const rawRoll=d(20);
 
@@ -16553,11 +16615,18 @@ async function slingAttack(attacker,defender){
     return;
   }
 
+  if(interceptWithMirrorImage(defender,attacker)){
+    playMissSound();
+    setCombatMessage(`${defender.name}'s Mirror Image is struck by the sling shot.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    flashAttack(attacker,defender,false);
+    return;
+  }
+
   playRockImpactSound();
 
   const damageExpression=missileDamageExpression(attacker,defender);
   const damageRoll=rollDiceExpression(damageExpression);
-  const damage=Math.max(1,damageRoll.total);
+  const damage=Math.max(1,damageRoll.total+physicalDamageEffectModifier(attacker,"missile"));
 
   defender.hp=Math.max(0,defender.hp-damage);
   onUnitDamaged(defender,damage);
@@ -16723,6 +16792,8 @@ function attack(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0,blockedByWall:true};
   }
 
+  breakInvisibility(attacker,"making a melee attack");
+
   const position=
     attackPositionData(attacker,defender);
 
@@ -16816,6 +16887,13 @@ function attack(attacker,defender,options={}){
     };
   }
 
+  if(interceptWithMirrorImage(defender,attacker)){
+    playMissSound();
+    setCombatMessage(`${defender.name}'s Mirror Image is struck instead.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    flashAttack(attacker,defender,false);
+    return {hit:false,killed:false,damage:0,mirrorImage:true,attackSector:position.label,attackPosition:position};
+  }
+
   /* Confirmed melee hit: retain the existing successful-hit sound. */
   playAttackSound();
 
@@ -16823,7 +16901,7 @@ function attack(attacker,defender,options={}){
   const baseRoll=rollDiceExpression(baseExpression);
   const enlargedMultiplier=enlargedDamageMultiplier(attacker);
   const scaledBaseDamage=Math.ceil(baseRoll.total*enlargedMultiplier);
-  const weaponBonus=(attacker.damageBonus||0)+(attacker.weaponDamageBonus||0);
+  const weaponBonus=(attacker.damageBonus||0)+(attacker.weaponDamageBonus||0)+physicalDamageEffectModifier(attacker,"melee");
   const bonusRoll=
     attacker.bonusDamageExpression
       ? rollDiceExpression(attacker.bonusDamageExpression)
@@ -18099,7 +18177,7 @@ async function castMagicMissileFromScroll(action,target){
 
   if(shield){
     spellCastInProgress=true;
-    if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+    if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
     pendingAimAction=null;
     exitAimMode(false,false);
 
@@ -18133,49 +18211,59 @@ async function castMagicMissileFromScroll(action,target){
 
   const missileCount=magicMissileCountForCasterLevel(casterLevel);
   const damageRolls=[];
+  let imageHits=0;
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   updateUi();
 
   await focusRangedAttacker(caster);
-
   setUnitActionBanner(caster,"Casting Magic Missile");
-
   playAttackSound();
 
   for(let i=0;i<missileCount;i++){
     await animateMagicMissile(caster,target,i,missileCount);
     playMagicMissileHitSound(i);
-    damageRolls.push(rollDiceExpression(spell.missileDamage).total);
+
+    if(interceptWithMirrorImage(target,caster)){
+      imageHits++;
+      damageRolls.push(0);
+    }else{
+      damageRolls.push(rollDiceExpression(spell.missileDamage).total);
+    }
+
     await sleep(90);
   }
 
   const totalDamage=damageRolls.reduce((sum,value)=>sum+value,0);
-  target.hp=Math.max(0,target.hp-totalDamage);
-  onUnitDamaged(target,totalDamage);
 
-  await focusDamagedTargetIfOffscreen(target);
+  if(totalDamage>0){
+    target.hp=Math.max(0,target.hp-totalDamage);
+    onUnitDamaged(target,totalDamage);
+    await focusDamagedTargetIfOffscreen(target);
+  }
 
   if(action.itemName){
     removeOneInventoryItem(caster,action.itemName);
   }
 
   setCombatMessage(
-    `${caster.name} damages ${target.name} for ${totalDamage} damage`,
+    totalDamage>0
+      ? `${caster.name} damages ${target.name} for ${totalDamage} damage`+
+        (imageHits ? `; ${imageHits} missile${imageHits===1 ? "" : "s"} hit images` : "")
+      : `Mirror Images absorb all ${missileCount} Magic Missiles.`,
     COMBAT_MESSAGE_MIN_HOLD_MS
   );
 
   log(
     `${caster.name} uses ${action.itemName || spell.name}: ${missileCount} Magic Missiles `+
-    `(${damageRolls.join(" + ")}) strike ${target.name} for ${totalDamage} damage. `+
-    `No attack roll; no saving throw.`,
+    `(${damageRolls.join(" + ")}) resolve against ${target.name}; ${imageHits} image hit${imageHits===1 ? "" : "s"}.`,
     "good"
   );
 
-  if(target.hp<=0){
+  if(target.hp<=0 && target.alive){
     target.alive=false;
     setCombatMessage(`${target.name} goes down and is dying`,COMBAT_MESSAGE_MIN_HOLD_MS);
     playAgonySound(target);
@@ -18183,10 +18271,7 @@ async function castMagicMissileFromScroll(action,target){
     triggerDeathFx(target);
     markEnemyNeutralized(target);
 
-    if(
-      isKoboldUnit(target) &&
-      activeEnemies().length>0
-    ){
+    if(isKoboldUnit(target) && activeEnemies().length>0){
       scheduleKoboldGroupMoraleCheck({
         casualties:1,
         magicCasualties:1,
@@ -18490,6 +18575,7 @@ async function castFireballFromScroll(action,targetHex){
 
   const radiusHexes=fireballRadiusHexes();
   const blastCells=fireballBlastCells(targetHex);
+  burnWebCells(blastCells,"Fireball");
   const affected=livingUnitsInAreaCells(blastCells);
   const friendlyTargets=affected.filter(unit=>unit.faction===caster.faction);
 
@@ -18783,6 +18869,320 @@ function validCreatureTargetWithinRange(caster,target,spell,casterLevel,allowFri
   const range=spellRangeHexes(spell,casterLevel);
   return unitDistance(caster,target)<=range;
 }
+
+
+/* ============================================================
+   R209 — LEVEL 2 SPELL RESOLUTION / TURN SUPPORT
+   ============================================================ */
+
+function skipTurnForSpellStatus(actor,label,message){
+  setCombatMessage(message,COMBAT_MESSAGE_MIN_HOLD_MS);
+  setUnitActionBanner(actor,label);
+  aiTimer=setTimeout(()=>{
+    aiTimer=null;
+    if(!game.over) endTurn();
+  },Math.max(350,combatActionPauseRemaining()));
+  return true;
+}
+
+function burnWebCells(cells,sourceName="fire"){
+  if(!game || !Array.isArray(cells) || !cells.length) return 0;
+  const burnedKeys=new Set(cells.map(cell=>key(cell.x,cell.y)));
+  let removedCells=0;
+
+  for(const effect of webEffects()){
+    const before=(effect.cells || []).length;
+    effect.cells=(effect.cells || []).filter(cell=>!burnedKeys.has(key(cell.x,cell.y)));
+    removedCells+=before-effect.cells.length;
+  }
+
+  game.areaEffects=(game.areaEffects || []).filter(effect=>
+    effect.type!=="web" || (effect.cells || []).length>0
+  );
+
+  if(removedCells>0){
+    for(const unit of allUnits()){
+      if(
+        getUnitEffect(unit,"webbed") &&
+        !occupiedHexes(unit).some(cell=>webEffectAtHex(cell.x,cell.y))
+      ){
+        removeUnitEffect(unit,"webbed");
+      }
+    }
+    log(`${sourceName} burns away ${removedCells} web hex${removedCells===1 ? "" : "es"}.`,"system");
+    draw();
+  }
+
+  return removedCells;
+}
+
+function igniteWebAtUnit(unit,sourceName="fire"){
+  if(!unit) return 0;
+  return burnWebCells(occupiedHexes(unit),sourceName);
+}
+
+function resolveFlamingSphereExposure(effect,caster){
+  const center=effect?.cells?.[0];
+  if(!center) return;
+
+  burnWebCells([center],"Flaming Sphere");
+
+  for(const unit of allUnits()){
+    if(!unit?.alive || unit.fled) continue;
+
+    const distances=occupiedHexes(unit).map(cell=>hexDistance(cell,center));
+    const minDistance=distances.length ? Math.min(...distances) : Infinity;
+    if(minDistance>1) continue;
+
+    const save=rollSpellSave(unit,caster);
+    if(save.success){
+      log(`${unit.name} avoids the worst of Flaming Sphere.`,"system");
+      continue;
+    }
+
+    const damage=minDistance===0
+      ? rollDiceExpression("2d4").total
+      : rollDiceExpression("1d4").total;
+
+    applySpellDamage(caster,unit,damage,"Flaming Sphere","fire");
+  }
+}
+
+function moveFlamingSpheresForCaster(caster){
+  if(!caster?.alive) return;
+
+  for(const effect of flamingSphereEffects().filter(
+    entry=>entry.sourceUnitId===caster.id
+  )){
+    const center=effect.cells?.[0];
+    if(!center) continue;
+
+    const targets=hostileCombatantsFor(caster)
+      .slice()
+      .sort((a,b)=>
+        hexDistance(center,a)-hexDistance(center,b) ||
+        a.id.localeCompare(b.id)
+      );
+
+    const target=targets[0];
+    if(target){
+      const targetCell=occupiedHexes(target)
+        .slice()
+        .sort((a,b)=>hexDistance(center,a)-hexDistance(center,b))[0] || target;
+
+      const path=hexLineCells(center,targetCell);
+      let cursor={...center};
+
+      for(const next of path.slice(1,4)){
+        if(!inside(next.x,next.y)) break;
+        if(architecturalWallBlocksStep(cursor,next)) break;
+        cursor={x:next.x,y:next.y};
+      }
+
+      effect.cells=[cursor];
+    }
+
+    resolveFlamingSphereExposure(effect,caster);
+  }
+}
+
+function resolveStinkingCloudExposure(actor,effect){
+  if(!actor?.alive || isUndeadUnit(actor)) return false;
+
+  const source=getUnitById(effect?.sourceUnitId) || null;
+  const save=rollPoisonSave(actor,source);
+
+  setLastRoll(
+    `Stinking Cloud poison save: d20 ${save.rawRoll}`+
+    `${save.modifier ? ` ${formatSignedAdjustment(save.modifier)}` : ""}`+
+    ` = ${save.modifiedRoll} vs ${save.targetNumber}`
+  );
+
+  if(save.success){
+    log(`${actor.name} resists Stinking Cloud this round.`,"system");
+    return false;
+  }
+
+  const rounds=d(4)+1;
+  addUnitEffect(actor,{
+    id:"nauseated",
+    name:"Nauseated",
+    kind:"debuff",
+    expiresRound:game.round+rounds,
+    detail:`Stinking Cloud: unable to attack or cast for ${rounds} round${rounds===1 ? "" : "s"}`,
+    data:{sourceUnitId:effect?.sourceUnitId}
+  });
+  return true;
+}
+
+function handleWebTurn(actor){
+  const existing=getUnitEffect(actor,"webbed");
+  const standingInWeb=occupiedHexes(actor).some(cell=>webEffectAtHex(cell.x,cell.y));
+
+  if(existing && !standingInWeb){
+    removeUnitEffect(actor,"webbed");
+    return false;
+  }
+
+  if(!existing && standingInWeb){
+    const web=occupiedHexes(actor)
+      .map(cell=>webEffectAtHex(cell.x,cell.y))
+      .find(Boolean);
+    const source=getUnitById(web?.sourceUnitId) || null;
+    const save=rollSpellSave(actor,source,-2);
+
+    if(save.success){
+      log(`${actor.name} avoids becoming trapped in Web.`,"system");
+      return false;
+    }
+
+    addUnitEffect(actor,{
+      id:"webbed",
+      name:"Webbed",
+      kind:"debuff",
+      detail:"Restrained by magical webbing",
+      data:{
+        sourceUnitId:web?.sourceUnitId,
+        escapeProgress:0,
+        requiredFeet:10
+      }
+    });
+  }
+
+  const webbed=getUnitEffect(actor,"webbed");
+  if(!webbed) return false;
+
+  const strength=effectiveStrength(actor);
+  const size=String(actor.sizeCategory||"medium").toLowerCase();
+  let progress=0;
+
+  if(["large","huge","gargantuan"].includes(size)){
+    progress=10;
+  }else if(strength>=18){
+    progress=2;
+  }else if(strength>=13){
+    progress=1;
+  }
+
+  webbed.data.escapeProgress=
+    Math.max(0,Number(webbed.data.escapeProgress)||0)+progress;
+
+  if(webbed.data.escapeProgress>=Number(webbed.data.requiredFeet||10)){
+    removeUnitEffect(actor,"webbed");
+    return skipTurnForSpellStatus(
+      actor,
+      "Breaking Free",
+      `${actor.name} tears free of the Web but spends the action escaping.`
+    );
+  }
+
+  webbed.detail=
+    progress>0
+      ? `Escape progress: ${webbed.data.escapeProgress}/${webbed.data.requiredFeet} ft (STR ${strength})`
+      : `STR ${strength} is too low to break free without help`;
+
+  return skipTurnForSpellStatus(
+    actor,
+    "Webbed",
+    `${actor.name} struggles against the Web and cannot act.`
+  );
+}
+
+function handleLevelTwoTurnEffects(actor){
+  if(!actor?.alive) return false;
+
+  const acid=getUnitEffect(actor,"acid-arrow");
+  if(acid){
+    const remaining=Math.max(0,Number(acid.data?.remainingTicks)||0);
+    if(remaining>0){
+      const source=getUnitById(acid.data?.sourceUnitId) || null;
+      const damage=rollDiceExpression("2d4").total;
+      acid.data.remainingTicks=remaining-1;
+      acid.detail=`${acid.data.remainingTicks} acid round${acid.data.remainingTicks===1 ? "" : "s"} remaining`;
+      applySpellDamage(source,actor,damage,"Melf's Acid Arrow","acid");
+
+      if(acid.data.remainingTicks<=0){
+        removeUnitEffect(actor,"acid-arrow");
+      }
+
+      if(!actor.alive){
+        return skipTurnForSpellStatus(
+          actor,
+          "Killed by Acid",
+          `${actor.name} succumbs to the lingering acid.`
+        );
+      }
+    }
+  }
+
+  if(getUnitEffect(actor,"nauseated")){
+    return skipTurnForSpellStatus(
+      actor,
+      "Nauseated",
+      `${actor.name} is overcome by nausea and cannot attack or cast.`
+    );
+  }
+
+  if(getUnitEffect(actor,"hypnotic-pattern")){
+    return skipTurnForSpellStatus(
+      actor,
+      "Fascinated",
+      `${actor.name} is fascinated by the Hypnotic Pattern and cannot act.`
+    );
+  }
+
+  const laughter=getUnitEffect(actor,"hideous-laughter");
+  if(laughter && Number(laughter.data?.disabledActionsRemaining)>0){
+    laughter.data.disabledActionsRemaining=
+      Math.max(0,Number(laughter.data.disabledActionsRemaining)-1);
+    laughter.detail=
+      laughter.data.disabledActionsRemaining>0
+        ? `Collapsed laughing; ${laughter.data.disabledActionsRemaining} disabled action remaining`
+        : "Recovered footing; −2 attack and damage for remaining duration";
+
+    return skipTurnForSpellStatus(
+      actor,
+      "Hideous Laughter",
+      `${actor.name} collapses in uncontrollable laughter.`
+    );
+  }
+
+  const scare=getUnitEffect(actor,"scare");
+  if(scare){
+    const source=getUnitById(scare.data?.sourceUnitId) || game.player;
+    setUnitActionBanner(actor,"Fleeing from Scare");
+
+    aiTimer=setTimeout(async()=>{
+      aiTimer=null;
+      await animateEntitySteps(
+        actor,
+        actor.move || 6,
+        ()=>fleeStep(actor,source),
+        105
+      );
+      if(!game.over) endTurn();
+    },120);
+
+    return true;
+  }
+
+  const cloud=stinkingCloudAtUnit(actor);
+  if(cloud && resolveStinkingCloudExposure(actor,cloud)){
+    return skipTurnForSpellStatus(
+      actor,
+      "Nauseated",
+      `${actor.name} retches in the Stinking Cloud and cannot act.`
+    );
+  }
+
+  if(handleWebTurn(actor)){
+    return true;
+  }
+
+  moveFlamingSpheresForCaster(actor);
+  return false;
+}
+
 
 async function castCharmPersonSpell(action,target){
   const caster=spellCasterForAction(action);
@@ -19580,31 +19980,47 @@ async function castTauntSpell(action,target){
 
 async function castShockingGraspSpell(action,target){
   const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("shocking-grasp");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+  const hand=getUnitEffect(caster,"spectral-hand");
+  const adjacent=!!target && canMeleeReach(caster,target);
+  const handRange=Math.max(0,Number(hand?.data?.rangeHexes)||0);
+  const throughHand=
+    !!hand &&
+    !!target &&
+    unitDistance(caster,target)<=handRange &&
+    !lineOfSightBlocked(caster,target);
 
   if(
     !target ||
     target.faction===caster.faction ||
     !target.alive ||
-    !canMeleeReach(caster,target)
+    (!adjacent && !throughHand)
   ){
-    setCombatMessage("Shocking Grasp requires an adjacent hostile creature.");
+    setCombatMessage(
+      hand
+        ? `Shocking Grasp requires a hostile creature within Spectral Hand range (${handRange} hexes).`
+        : "Shocking Grasp requires an adjacent hostile creature."
+    );
     return false;
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
-  const position=
-    attackPositionData(caster,target);
-
+  const position=attackPositionData(caster,target);
   faceEntityToward(caster,target);
-  setUnitActionBanner(caster,`Casting Shocking Grasp — ${position.label}`);
+  setUnitActionBanner(
+    caster,
+    throughHand && !adjacent
+      ? "Spectral Hand delivers Shocking Grasp"
+      : `Casting Shocking Grasp — ${position.label}`
+  );
 
   const rawRoll=d(20);
-  const attackBonus=attackEffectModifier(caster,target);
+  const attackBonus=attackEffectModifier(caster,target)+(throughHand && !adjacent ? 2 : 0);
   const targetAC=effectiveArmorClassForAttack(caster,target,"melee");
   const targetNumber=caster.thaco-targetAC;
   const resolution=resolveMeleeAttackD20(rawRoll,targetNumber,attackBonus);
@@ -19620,41 +20036,26 @@ async function castShockingGraspSpell(action,target){
     }
 
     await waitForCombatActionPause();
-    finishTestSpellCast(caster,"Shocking Grasp",action);
+    finishTestSpellCast(caster,spell.name,action);
+    return true;
+  }
+
+  if(interceptWithMirrorImage(target,caster)){
+    setCombatMessage(`${target.name}'s Mirror Image absorbs Shocking Grasp.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    await waitForCombatActionPause();
+    finishTestSpellCast(caster,spell.name,action);
     return true;
   }
 
   const damage=d(8)+level;
-  target.hp=Math.max(0,target.hp-damage);
-  onUnitDamaged(target,damage);
+  const result=applySpellDamage(caster,target,damage,"Shocking Grasp","electricity");
 
-  if(rawRoll===20){
-    setCriticalRollNotification(caster,target,rawRoll,damage,target.hp<=0);
-  }else{
-    setCombatMessage(`${caster.name} shocks ${target.name} for ${damage} damage.`,COMBAT_MESSAGE_MIN_HOLD_MS);
-  }
-
-  if(target.hp<=0){
-    target.alive=false;
-    playAgonySound(target);
-    playDeathSound(target);
-    triggerDeathFx(target);
-
-    if(target.controller==="mob"){
-      markEnemyNeutralized(target);
-
-      if(isKoboldUnit(target) && activeEnemies().length>0){
-        scheduleKoboldGroupMoraleCheck({
-          casualties:1,
-          magicCasualties:1,
-          source:"Shocking Grasp"
-        });
-      }
-    }
+  if(rawRoll===20 && !result.killed){
+    setCriticalRollNotification(caster,target,rawRoll,damage,false);
   }
 
   await waitForCombatActionPause();
-  finishTestSpellCast(caster,"Shocking Grasp",action);
+  finishTestSpellCast(caster,spell.name,action);
   return true;
 }
 
@@ -19704,46 +20105,1001 @@ async function castWallOfFogSpell(action,targetHex){
   return true;
 }
 
+
+/* ============================================================
+   R209 — WIZARD LEVEL 2 COMBAT SPELL CASTERS
+   ============================================================ */
+
+async function castBlindnessSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("blindness");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(!validCreatureTargetWithinRange(caster,target,spell,level,false)){
+    setCombatMessage("Blindness requires a hostile creature within range.");
+    return false;
+  }
+  if(lineOfSightBlocked(caster,target)){
+    setCombatMessage("Line of sight is blocked to that target.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const save=rollSpellSave(target,caster);
+  if(save.success){
+    setCombatMessage(`${target.name} resists Blindness.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  }else{
+    applyBlindEffect(target,null,"Blindness",{attackPenalty:-4,savePenalty:0,acPenalty:4});
+    setCombatMessage(`${target.name} is blinded!`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    await animateMagicEffectOnUnits([target],"blindness");
+  }
+
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castBlurSpell(action){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("blur");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+  const rounds=3+level;
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  addUnitEffect(caster,{
+    id:"blur",
+    name:"Blur",
+    kind:"buff",
+    expiresRound:game.round+rounds,
+    detail:"First attack by each attacker −4; later attacks −2; +1 vs direct magic",
+    data:{attackers:{}}
+  });
+
+  playMagicEffectSound("blur");
+  setCombatMessage(`${caster.name}'s outline blurs and shifts.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castContinualLightSpell(action,targetHex,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("continual-light");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Continual Light target is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const lightData={
+    ...makeLightSpellEffectData(level),
+    illuminationRadiusHexes:6,
+    illuminationIntensity:1.15
+  };
+
+  if(target?.alive){
+    if(target.faction===caster.faction){
+      addUnitEffect(target,{
+        id:"continual-light",
+        name:"Continual Light",
+        kind:"buff",
+        expiresRound:null,
+        detail:"Permanent magical light; 60-foot illumination radius",
+        data:lightData
+      });
+      setCombatMessage(`${target.name} shines with Continual Light.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    }else{
+      const save=rollSpellSave(target,caster);
+      if(save.success){
+        addAreaEffect({
+          id:`continual-light:${Date.now()}`,
+          type:"illumination",
+          sourceName:"Continual Light",
+          x:targetHex.x,
+          y:targetHex.y,
+          radiusHexes:6,
+          intensity:1.15,
+          color:[255,248,190],
+          expiresRound:null,
+          sourceUnitId:caster.id
+        });
+        setCombatMessage(`${target.name} saves; Continual Light remains at the target point.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+      }else{
+        applyBlindEffect(target,null,"Continual Light");
+        addUnitEffect(target,{
+          id:"continual-light",
+          name:"Continual Light",
+          kind:"debuff",
+          expiresRound:null,
+          detail:"Permanent magical light centered on the eyes",
+          data:lightData
+        });
+        setCombatMessage(`${target.name} is blinded by Continual Light!`,COMBAT_MESSAGE_MIN_HOLD_MS);
+      }
+    }
+  }else{
+    addAreaEffect({
+      id:`continual-light:${Date.now()}`,
+      type:"illumination",
+      sourceName:"Continual Light",
+      x:targetHex.x,
+      y:targetHex.y,
+      radiusHexes:6,
+      intensity:1.15,
+      color:[255,248,190],
+      expiresRound:null,
+      sourceUnitId:caster.id
+    });
+    setCombatMessage("Continual Light anchors to the battlefield.",COMBAT_MESSAGE_MIN_HOLD_MS);
+  }
+
+  playMagicEffectSound("light");
+  ensurePersistentStatusFxLoop();
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castDarknessSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("darkness-15-radius");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Darkness center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to the Darkness center.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  addAreaEffect({
+    id:`darkness:${Date.now()}`,
+    type:"darkness",
+    name:"Darkness, 15' Radius",
+    cells:hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y)),
+    expiresRound:game.round+10+level,
+    sourceUnitId:caster.id
+  });
+
+  playMagicEffectSound("darkness");
+  setCombatMessage("Magical Darkness swallows the area.",COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castDeafnessSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("deafness");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(!validCreatureTargetWithinRange(caster,target,spell,level,false)){
+    setCombatMessage("Deafness requires a hostile creature within range.");
+    return false;
+  }
+  if(lineOfSightBlocked(caster,target)){
+    setCombatMessage("Line of sight is blocked to that target.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const save=rollSpellSave(target,caster);
+  if(save.success){
+    setCombatMessage(`${target.name} resists Deafness.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  }else{
+    addUnitEffect(target,{
+      id:"deafness",
+      name:"Deafened",
+      kind:"debuff",
+      expiresRound:null,
+      detail:"20% chance to miscast spells with verbal components",
+      data:{sourceUnitId:caster.id}
+    });
+    setCombatMessage(`${target.name} is deafened.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    await animateMagicEffectOnUnits([target],"deafness");
+  }
+
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castDetectInvisibilitySpell(action){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("detect-invisibility");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+  const rounds=5*level;
+  const rangeHexes=yardsToTacticalHexes(10*level);
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  addUnitEffect(caster,{
+    id:"detect-invisibility",
+    name:"Detect Invisibility",
+    kind:"buff",
+    expiresRound:game.round+rounds,
+    detail:`Detect invisible creatures within ${rangeHexes} hexes`,
+    data:{rangeHexes}
+  });
+
+  playMagicEffectSound("detect");
+  setCombatMessage(`${caster.name} can perceive invisible creatures.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castFlamingSphereSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("flaming-sphere");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Flaming Sphere target is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const effect=addAreaEffect({
+    id:`flaming-sphere:${Date.now()}`,
+    type:"flaming-sphere",
+    name:"Flaming Sphere",
+    cells:[{x:targetHex.x,y:targetHex.y}],
+    expiresRound:game.round+level,
+    sourceUnitId:caster.id
+  });
+
+  resolveFlamingSphereExposure(effect,caster);
+  playFireballExplosionSound();
+  setCombatMessage("A Flaming Sphere rolls into being.",COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castFogCloudSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("fog-cloud");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Fog Cloud center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
+  addAreaEffect({
+    id:`fog-cloud:${Date.now()}`,
+    type:"fog",
+    spellKind:"fog-cloud",
+    name:"Fog Cloud",
+    cells,
+    visualHeightPx:HEX_W,
+    expiresRound:game.round+4+level,
+    sourceUnitId:caster.id
+  });
+
+  setCombatMessage(`Fog Cloud fills ${cells.length} battlefield hexes.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castGlitterdustSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("glitterdust");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Glitterdust center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const cells=hexesWithinRadius(targetHex,1);
+  const targets=livingUnitsInAreaCells(cells);
+  const dustRounds=d(4)+level;
+  const blinded=[];
+
+  for(const unit of targets){
+    addUnitEffect(unit,{
+      id:"glitterdust",
+      name:"Glitterdust",
+      kind:"debuff",
+      expiresRound:game.round+dustRounds,
+      detail:"Sparkling dust reveals invisibility",
+      data:{sourceUnitId:caster.id}
+    });
+
+    const save=rollSpellSave(unit,caster);
+    if(!save.success){
+      const blindRounds=d(4)+1;
+      applyBlindEffect(unit,blindRounds,"Glitterdust");
+      blinded.push(unit);
+    }
+  }
+
+  if(targets.length){
+    await animateMagicEffectOnUnits(targets,"glitterdust");
+  }
+
+  setCombatMessage(
+    `Glitterdust coats ${targets.length} creature${targets.length===1 ? "" : "s"}; ${blinded.length} blinded.`,
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castHypnoticPatternSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("hypnotic-pattern");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Hypnotic Pattern center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  let hdRemaining=24;
+  const targets=livingUnitsInAreaCells(hexesWithinRadius(targetHex,1))
+    .slice()
+    .sort((a,b)=>spellHitDiceValue(a)-spellHitDiceValue(b));
+  const affected=[];
+
+  for(const unit of targets){
+    const hd=spellHitDiceValue(unit);
+    if(hd>hdRemaining) continue;
+    const save=rollSpellSave(unit,caster);
+    if(save.success) continue;
+
+    hdRemaining-=hd;
+    addUnitEffect(unit,{
+      id:"hypnotic-pattern",
+      name:"Hypnotic Pattern",
+      kind:"debuff",
+      expiresRound:game.round+3,
+      detail:"Fascinated; cannot act; damage breaks the effect",
+      data:{sourceUnitId:caster.id}
+    });
+    affected.push(unit);
+  }
+
+  if(affected.length){
+    await animateMagicEffectOnUnits(affected,"hypnotic-pattern");
+  }
+  setCombatMessage(
+    affected.length
+      ? `${affected.length} creature${affected.length===1 ? "" : "s"} stare helplessly at the Hypnotic Pattern.`
+      : "No creature succumbs to the Hypnotic Pattern.",
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castInvisibilitySpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("invisibility");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(!validCreatureTargetWithinRange(caster,target,spell,level,true)){
+    setCombatMessage("Invisibility requires self or an adjacent creature.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  addUnitEffect(target,{
+    id:"invisibility",
+    name:"Invisible",
+    kind:"buff",
+    expiresRound:null,
+    detail:"Cannot normally be seen or targeted; hostile action ends the effect",
+    data:{sourceUnitId:caster.id}
+  });
+
+  playMagicEffectSound("invisibility");
+  setCombatMessage(`${target.name} fades from sight.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castMelfsAcidArrowSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("melfs-acid-arrow");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(!validCreatureTargetWithinRange(caster,target,spell,level,false)){
+    setCombatMessage("Melf's Acid Arrow requires a hostile creature within range.");
+    return false;
+  }
+  if(projectilePathBlocked(caster,target)){
+    setCombatMessage("The Acid Arrow does not have a clear firing lane.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+  setUnitActionBanner(caster,"Casting Melf's Acid Arrow");
+
+  const rawRoll=d(20);
+  const fighterThaco=Math.max(1,21-level);
+  const targetAC=effectiveArmorClassForAttack(caster,target,"small-device-missile");
+  const targetNumber=fighterThaco-targetAC;
+  const modifier=attackEffectModifier(caster,target);
+  const resolution=resolveMissileAttackD20(rawRoll,targetNumber,modifier);
+
+  playNaturalAttackRollSound(rawRoll);
+  await animateMagicMissile(caster,target,0,1);
+
+  if(!resolution.hit){
+    playMissSound();
+    setCombatMessage("Melf's Acid Arrow misses.",COMBAT_MESSAGE_MIN_HOLD_MS);
+  }else if(interceptWithMirrorImage(target,caster)){
+    setCombatMessage(`${target.name}'s Mirror Image absorbs the Acid Arrow.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  }else{
+    const damage=rollDiceExpression("2d4").total;
+    const result=applySpellDamage(caster,target,damage,"Melf's Acid Arrow","acid");
+    const remainingTicks=Math.floor(level/3);
+
+    if(!result.killed && remainingTicks>0){
+      addUnitEffect(target,{
+        id:"acid-arrow",
+        name:"Acid Arrow",
+        kind:"debuff",
+        expiresRound:game.round+remainingTicks+1,
+        detail:`${remainingTicks} additional acid round${remainingTicks===1 ? "" : "s"} remaining`,
+        data:{sourceUnitId:caster.id,remainingTicks}
+      });
+    }
+
+    await animateMagicEffectOnUnits([target],"acid");
+  }
+
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castMirrorImageSpell(action){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("mirror-image");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+  const images=Math.min(8,d(4)+Math.floor(level/3));
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  addUnitEffect(caster,{
+    id:"mirror-image",
+    name:"Mirror Image",
+    kind:"buff",
+    expiresRound:game.round+3*level,
+    detail:`${images} images remaining`,
+    data:{images}
+  });
+
+  playMagicEffectSound("mirror-image");
+  setCombatMessage(`${images} Mirror Images surround ${caster.name}.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castPyrotechnicsSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("pyrotechnics");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Pyrotechnics target is out of range.");
+    return false;
+  }
+
+  const fireSource=flamingSphereEffects().find(effect=>
+    areaEffectContains(effect,targetHex.x,targetHex.y)
+  );
+
+  if(!fireSource){
+    setCombatMessage("Pyrotechnics currently requires an active Flaming Sphere as its fire source.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  game.areaEffects=(game.areaEffects || []).filter(effect=>effect!==fireSource);
+
+  const blinded=[];
+  for(const unit of allUnits()){
+    if(!unit?.alive || unit.fled || unit.id===caster.id) continue;
+    if(unitDistance(unit,targetHex)>12) continue;
+    if(lineOfSightBlockedBetweenHexes(targetHex,unit)) continue;
+
+    const save=rollSpellSave(unit,caster);
+    if(!save.success){
+      const rounds=d(4)+1;
+      applyBlindEffect(unit,rounds,"Pyrotechnics");
+      blinded.push(unit);
+    }
+  }
+
+  playFireballExplosionSound();
+  if(blinded.length){
+    await animateMagicEffectOnUnits(blinded,"pyrotechnics");
+  }
+  setCombatMessage(
+    `Pyrotechnics erupts in fireworks; ${blinded.length} creature${blinded.length===1 ? "" : "s"} blinded.`,
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castRayOfEnfeeblementSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("ray-of-enfeeblement");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(!validCreatureTargetWithinRange(caster,target,spell,level,false)){
+    setCombatMessage("Ray of Enfeeblement requires a hostile creature within range.");
+    return false;
+  }
+  if(lineOfSightBlocked(caster,target)){
+    setCombatMessage("Line of sight is blocked to that target.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const save=rollSpellSave(target,caster);
+  if(save.success){
+    setCombatMessage(`${target.name} resists Ray of Enfeeblement.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  }else{
+    addUnitEffect(target,{
+      id:"ray-enfeeblement",
+      name:"Enfeebled",
+      kind:"debuff",
+      expiresRound:game.round+level,
+      detail:"−2 attack rolls; −1 weapon damage",
+      data:{sourceUnitId:caster.id}
+    });
+    await animateMagicEffectOnUnits([target],"enfeeblement");
+    setCombatMessage(`${target.name} is enfeebled.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  }
+
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castScareSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("scare");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Scare center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const duration=d(4)+level;
+  const affected=[];
+
+  for(const unit of livingUnitsInAreaCells(hexesWithinRadius(targetHex,1))){
+    if(unit.id===caster.id) continue;
+    if(spellHitDiceValue(unit)>=6) continue;
+    if(isUndeadUnit(unit) || unit.isExtraplanar || unit.extraplanar) continue;
+
+    const race=String(unit.race||"").toLowerCase();
+    const group=String(unit.classGroup||"").toLowerCase();
+    const receivesSave=race.includes("elf") || group==="priest";
+    if(receivesSave && rollSpellSave(unit,caster).success) continue;
+
+    addUnitEffect(unit,{
+      id:"scare",
+      name:"Scared",
+      kind:"debuff",
+      expiresRound:game.round+duration,
+      detail:"Compelled to flee",
+      data:{sourceUnitId:caster.id}
+    });
+    affected.push(unit);
+  }
+
+  if(affected.length){
+    await animateMagicEffectOnUnits(affected,"fear");
+  }
+  setCombatMessage(
+    affected.length
+      ? `${affected.length} creature${affected.length===1 ? "" : "s"} flee from Scare.`
+      : "Scare affects no eligible creatures.",
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castSpectralHandSpell(action){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("spectral-hand");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+  const reserve=Math.min(d(4),Math.max(0,(caster.hp||1)-1));
+  const rangeHexes=yardsToTacticalHexes(30+5*level);
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  if(reserve>0){
+    caster.hp=Math.max(1,caster.hp-reserve);
+  }
+
+  addUnitEffect(caster,{
+    id:"spectral-hand",
+    name:"Spectral Hand",
+    kind:"buff",
+    expiresRound:game.round+2*level,
+    detail:`Touch attacks to ${rangeHexes} hexes at +2; ${reserve} HP reserved`,
+    data:{rangeHexes,reservedHp:reserve,casterLevel:level}
+  });
+
+  playMagicEffectSound("spectral-hand");
+  setCombatMessage("A ghostly Spectral Hand forms beside the caster.",COMBAT_MESSAGE_MIN_HOLD_MS);
+  updateUi();
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castStinkingCloudSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("stinking-cloud");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Stinking Cloud center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
+  const effect=addAreaEffect({
+    id:`stinking-cloud:${Date.now()}`,
+    type:"fog",
+    spellKind:"stinking-cloud",
+    name:"Stinking Cloud",
+    cells,
+    visualHeightPx:HEX_W,
+    expiresRound:game.round+level,
+    sourceUnitId:caster.id
+  });
+
+  const nauseated=[];
+  for(const unit of livingUnitsInAreaCells(cells)){
+    if(resolveStinkingCloudExposure(unit,effect)){
+      nauseated.push(unit);
+    }
+  }
+
+  setCombatMessage(
+    `Stinking Cloud billows out; ${nauseated.length} creature${nauseated.length===1 ? "" : "s"} overcome.`,
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castStrengthSpell(action,target){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("strength");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(!validCreatureTargetWithinRange(caster,target,spell,level,true)){
+    setCombatMessage("Strength requires self or an adjacent creature.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const group=String(target.classGroup||target.className||"Wizard").toLowerCase();
+  const die=group.includes("warrior") || group.includes("fighter") || group.includes("ranger")
+    ? 8
+    : group.includes("priest") || group.includes("cleric") || group.includes("rogue") || group.includes("thief")
+      ? 6
+      : 4;
+  const rawGain=d(die);
+  const base=Math.max(1,Number(target.stats?.str)||10);
+  const gain=Math.max(0,Math.min(rawGain,18-base));
+
+  addUnitEffect(target,{
+    id:"strength-spell",
+    name:"Strength",
+    kind:"buff",
+    expiresRound:game.round+60*level,
+    detail:`Strength ${base} → ${base+gain} (+${gain})`,
+    data:{strengthGain:gain,rawGain,die}
+  });
+
+  playMagicEffectSound("strength");
+  setCombatMessage(
+    gain>0
+      ? `${target.name}'s Strength rises by ${gain}.`
+      : `${target.name} is already at the tactical Strength cap.`,
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castTashasHideousLaughterSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("tashas-hideous-laughter");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Hideous Laughter center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const maxTargets=Math.max(1,Math.floor(level/3));
+  const candidates=livingUnitsInAreaCells(hexesWithinRadius(targetHex,1))
+    .filter(unit=>unit.id!==caster.id)
+    .sort((a,b)=>hexDistance(a,targetHex)-hexDistance(b,targetHex));
+  const affected=[];
+
+  for(const unit of candidates){
+    if(affected.length>=maxTargets) break;
+    const intelligence=Math.max(1,Number(unit.stats?.int)||3);
+    if(intelligence<=4) continue;
+
+    const savePenalty=
+      intelligence<=7 ? -6 :
+      intelligence<=12 ? -4 :
+      intelligence<=14 ? -2 : 0;
+
+    if(rollSpellSave(unit,caster,savePenalty).success) continue;
+
+    addUnitEffect(unit,{
+      id:"hideous-laughter",
+      name:"Hideous Laughter",
+      kind:"debuff",
+      expiresRound:game.round+level,
+      detail:"Collapsed laughing; 2 disabled actions, then −2 attack and damage",
+      data:{sourceUnitId:caster.id,disabledActionsRemaining:2}
+    });
+    affected.push(unit);
+  }
+
+  if(affected.length){
+    await animateMagicEffectOnUnits(affected,"laughter");
+  }
+  setCombatMessage(
+    affected.length
+      ? `${affected.map(unit=>unit.name).join(", ")} collapse in hideous laughter.`
+      : "No creature succumbs to Hideous Laughter.",
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+async function castWebSpell(action,targetHex){
+  const caster=spellCasterForAction(action);
+  const spell=getSpellEntry("web");
+  const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+
+  if(hexDistance(caster,targetHex)>spellRangeHexes(spell,level)){
+    setCombatMessage("Web center is out of range.");
+    return false;
+  }
+  if(lineOfSightBlockedBetweenHexes(caster,targetHex)){
+    setCombatMessage("Line of sight is blocked to that hex.");
+    return false;
+  }
+
+  spellCastInProgress=true;
+  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  pendingAimAction=null;
+  exitAimMode(false,false);
+
+  const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
+  addAreaEffect({
+    id:`web:${Date.now()}`,
+    type:"web",
+    name:"Web",
+    cells,
+    expiresRound:game.round+20*level,
+    sourceUnitId:caster.id
+  });
+
+  const trapped=[];
+  for(const unit of livingUnitsInAreaCells(cells)){
+    const save=rollSpellSave(unit,caster,-2);
+    if(save.success) continue;
+
+    addUnitEffect(unit,{
+      id:"webbed",
+      name:"Webbed",
+      kind:"debuff",
+      detail:"Restrained by magical webbing",
+      data:{sourceUnitId:caster.id,escapeProgress:0,requiredFeet:10}
+    });
+    trapped.push(unit);
+  }
+
+  setCombatMessage(
+    `Web fills ${cells.length} hexes; ${trapped.length} creature${trapped.length===1 ? "" : "s"} trapped.`,
+    COMBAT_MESSAGE_MIN_HOLD_MS
+  );
+  await waitForCombatActionPause();
+  finishTestSpellCast(caster,spell.name,action);
+  return true;
+}
+
+
 async function castPreparedCombatSpell(action,targetHex,targetUnit){
   const spell=getSpellEntry(action?.spellId);
-
   if(!spell) return false;
 
   switch(spell.id){
-    case "magic-missile":
-      return await castMagicMissileFromScroll(action,targetUnit);
-    case "fireball":
-      return await castFireballFromScroll(action,targetHex);
-    case "armor":
-      return await castArmorSpell(action,targetUnit);
-    case "burning-hands":
-      return await castBurningHandsSpell(action,targetHex);
-    case "charm-person":
-      return await castCharmPersonSpell(action,targetUnit);
-    case "chill-touch":
-      return await castChillTouchSpell(action);
-    case "color-spray":
-      return await castColorSpraySpell(action,targetHex);
-    case "enlarge":
-      return await castEnlargeSpell(action,targetUnit);
-    case "grease":
-      return await castGreaseSpell(action,targetHex);
-    case "light":
-      return await castLightSpell(action,targetUnit);
-    case "protection-from-evil":
-      return await castProtectionFromEvilSpell(action,targetUnit);
-    case "shield":
-      return await castShieldSpell(action);
-    case "shocking-grasp":
-      return await castShockingGraspSpell(action,targetUnit);
-    case "sleep":
-      return await castSleepSpell(action,targetHex);
-    case "spook":
-      return await castSpookSpell(action,targetUnit);
-    case "taunt":
-      return await castTauntSpell(action,targetUnit);
-    case "wall-of-fog":
-      return await castWallOfFogSpell(action,targetHex);
+    case "magic-missile": return await castMagicMissileFromScroll(action,targetUnit);
+    case "armor": return await castArmorSpell(action,targetUnit);
+    case "burning-hands": return await castBurningHandsSpell(action,targetHex);
+    case "charm-person": return await castCharmPersonSpell(action,targetUnit);
+    case "chill-touch": return await castChillTouchSpell(action);
+    case "color-spray": return await castColorSpraySpell(action,targetHex);
+    case "enlarge": return await castEnlargeSpell(action,targetUnit);
+    case "grease": return await castGreaseSpell(action,targetHex);
+    case "light": return await castLightSpell(action,targetUnit);
+    case "protection-from-evil": return await castProtectionFromEvilSpell(action,targetUnit);
+    case "shield": return await castShieldSpell(action);
+    case "shocking-grasp": return await castShockingGraspSpell(action,targetUnit);
+    case "sleep": return await castSleepSpell(action,targetHex);
+    case "spook": return await castSpookSpell(action,targetUnit);
+    case "taunt": return await castTauntSpell(action,targetUnit);
+    case "wall-of-fog": return await castWallOfFogSpell(action,targetHex);
+
+    case "blindness": return await castBlindnessSpell(action,targetUnit);
+    case "blur": return await castBlurSpell(action);
+    case "continual-light": return await castContinualLightSpell(action,targetHex,targetUnit);
+    case "darkness-15-radius": return await castDarknessSpell(action,targetHex);
+    case "deafness": return await castDeafnessSpell(action,targetUnit);
+    case "detect-invisibility": return await castDetectInvisibilitySpell(action);
+    case "flaming-sphere": return await castFlamingSphereSpell(action,targetHex);
+    case "fog-cloud": return await castFogCloudSpell(action,targetHex);
+    case "glitterdust": return await castGlitterdustSpell(action,targetHex);
+    case "hypnotic-pattern": return await castHypnoticPatternSpell(action,targetHex);
+    case "invisibility": return await castInvisibilitySpell(action,targetUnit);
+    case "melfs-acid-arrow": return await castMelfsAcidArrowSpell(action,targetUnit);
+    case "mirror-image": return await castMirrorImageSpell(action);
+    case "pyrotechnics": return await castPyrotechnicsSpell(action,targetHex);
+    case "ray-of-enfeeblement": return await castRayOfEnfeeblementSpell(action,targetUnit);
+    case "scare": return await castScareSpell(action,targetHex);
+    case "spectral-hand": return await castSpectralHandSpell(action);
+    case "stinking-cloud": return await castStinkingCloudSpell(action,targetHex);
+    case "strength": return await castStrengthSpell(action,targetUnit);
+    case "tashas-hideous-laughter": return await castTashasHideousLaughterSpell(action,targetHex);
+    case "web": return await castWebSpell(action,targetHex);
+
+    case "fireball": return await castFireballFromScroll(action,targetHex);
   }
 
   return false;
