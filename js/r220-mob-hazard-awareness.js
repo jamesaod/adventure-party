@@ -1074,7 +1074,29 @@ addAreaEffect=function(effect){
   if(added && definition){
     for(const mob of game?.enemies || []){
       if(mob?.controller!=="mob" || !mob.alive || mob.fled) continue;
-      r220HazardKnowledgeEntry(mob,added,definition);
+
+      const entry=r220HazardKnowledgeEntry(
+        mob,
+        added,
+        definition
+      );
+
+      /*
+        A MOB that created the effect knows what it cast and where it placed
+        it; this is authored knowledge rather than hidden-map omniscience.
+      */
+      if(
+        entry &&
+        added.sourceUnitId===mob.id
+      ){
+        entry.perceived=true;
+        entry.recognized=true;
+        entry.lastSeenRound=game?.round || 0;
+
+        for(const cell of added.cells || []){
+          entry.seenCells[key(cell.x,cell.y)]=true;
+        }
+      }
     }
   }
 
