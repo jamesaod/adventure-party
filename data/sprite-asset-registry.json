@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R195",
-  "description": "Adventure Party sprite asset specifications through R195. R195 retains the R194 Shield presentation and introduces a reusable battlefield illumination layer plus persistent Light spell terrain and unit VFX.",
+  "release": "R196",
+  "description": "Adventure Party sprite asset specifications through R196. R196 keeps the R195 illumination system and updates architectural wall presentation with 50% greater height, solid top caps, 2 px black segment outlines, and light-facing wall illumination.",
   "assets": {
     "fighter": {
       "source": {
