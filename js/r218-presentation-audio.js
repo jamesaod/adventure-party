@@ -10,6 +10,50 @@
     context, SFX, weather audio, and the global SND toggle remain available.
 */
 
+/*
+  ATTACK PRESENTATION PACING
+  --------------------------
+  The shared unit pose duration was already 1000 ms, but turn progression could
+  advance after roughly 180 ms and move the camera away while the pose timer was
+  still active. Hold combat progression for the full attack-pose presentation
+  so players actually see the complete one-second attack.
+
+  Longer authored actions (for example the dragon's 1100 ms breath pose) keep
+  their longer duration rather than being shortened to one second.
+*/
+let r218AttackPresentationUntil=0;
+
+const r218BaseTriggerUnitAttackPose=triggerUnitAttackPose;
+const r218BaseCombatActionPauseRemaining=combatActionPauseRemaining;
+
+triggerUnitAttackPose=function(unit){
+  const triggered=r218BaseTriggerUnitAttackPose(unit);
+  if(!triggered) return false;
+
+  const definition=unitPoseDefinition(unit);
+  const duration=Math.max(
+    1000,
+    Number(definition?.actionDurationMs) || 1000
+  );
+
+  r218AttackPresentationUntil=Math.max(
+    r218AttackPresentationUntil,
+    performance.now()+duration
+  );
+
+  return true;
+};
+
+combatActionPauseRemaining=function(){
+  const existingPause=r218BaseCombatActionPauseRemaining();
+  const attackPause=Math.max(
+    0,
+    Math.ceil(r218AttackPresentationUntil-performance.now())
+  );
+
+  return Math.max(existingPause,attackPause);
+};
+
 /* Disable the title MIDI-derived music path without disturbing shared SFX. */
 const r218StopLegacyTitleMusic=stopTitleMusic;
 
