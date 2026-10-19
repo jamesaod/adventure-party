@@ -3,6 +3,25 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R220 — Intelligence-based MOB hazard awareness
+
+- Added a reusable MOB hazard-awareness system instead of spell-specific avoidance logic.
+- Registered Grease, Web, Wall of Fog, Fog Cloud, Stinking Cloud, magical Darkness, and Flaming Sphere as tactical hazards with severity, recognition threshold, consequence type, and melee/ranged/caster role modifiers.
+- MOB Intelligence now controls hazard recognition, memory, and avoidance strength using AD&D-style bands from instinctive through exceptional.
+- Current Kobolds, Kobold Body Guards, Kobold Slingers, and Orcs use Intelligence 9 (Average); the Juvenile Red Dragon uses Intelligence 16 (Exceptional). Future monsters can provide a numeric Intelligence score or standard AD&D Intelligence label.
+- Pathfinding for MOB melee pursuit, limited-turn advance, ranged firing-lane search, retreat, and fleeing now applies weighted hazard costs rather than treating hazards as universally impassable.
+- Grease/Web/Stinking Cloud risk incorporates the creature's expected saving-throw vulnerability; Web also considers Strength-based escape ability, Stinking Cloud respects undead poison immunity while retaining LOS risk, and Flaming Sphere respects fire immunity.
+- Ranged and caster roles strongly prefer routes that preserve line of sight around fog/cloud/darkness, while melee creatures are more willing to push through ordinary fog when the detour is expensive.
+- Panic, Spook, and Taunt reduce hazard avoidance so urgent/compelled behavior can rationally accept dangerous routes.
+- MOBs learn from personal exposure and from witnessing another creature suffer a persistent-area consequence; lower-Intelligence creatures therefore become more cautious after seeing or experiencing a hazard.
+- Hazard knowledge is spatially honest: recognizing a spell does not reveal portions of its area hidden behind walls or other obscuration; only perceived/experienced cells receive path cost.
+- Added per-MOB last-known target memory. MOBs update exact target position only while they have current LOS; once sight is lost they pursue the remembered position for an Intelligence-dependent number of rounds instead of tracking hidden movement perfectly.
+- Obscuring area creation snapshots visible targets before LOS is cut so Wall of Fog/Fog Cloud/Stinking Cloud produce useful last-known-position behavior.
+- Player movement updates MOB target memory before and after the step, preserving the last visible hex when the player disappears behind an obstruction.
+- MOB melee attacks now require current sight of the target rather than exploiting an exact hidden coordinate. The Juvenile Red Dragon likewise only plans breath attacks against currently perceived party members.
+- Added a public `AdventurePartyMobHazards` debug/introspection hook so future hazards can be registered and inspected without rewriting core MOB AI.
+
+
 ## R219 — Spell-effect focus, visible AI pacing, and Stinking Cloud transparency
 
 - Camera focus now follows a unit when a spell effect resolves on that unit, including persistent-area saving throws, direct spell damage, sequential area-damage results, targeted buffs/debuffs, and shared magic-effect VFX.
