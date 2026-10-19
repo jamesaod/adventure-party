@@ -7266,8 +7266,8 @@ const SPELL_CATALOG={
     range:{fixedYards:60},
     combatImplemented:true,
     targetMode:"creature",
-    damageSummary:"Combat use: hostile creature can be blinded; −4 attacks/saves and AC worsened by 4.",
-    description:"Creates torchlike light. When centered on a creature's visual organs, a failed save blinds it, penalizing attacks and saves by 4 and worsening AC by 4.",
+    damageSummary:"Creates a 20-foot illumination radius; hostile creature can be blinded; −4 attacks/saves and AC worsened by 4.",
+    description:"Creates torchlike light with a 20-foot illumination radius. When centered on a creature's visual organs, a failed save blinds it, penalizing attacks and saves by 4 and worsening AC by 4. The light source illuminates nearby battlefield terrain for the spell's duration.",
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:136,pdfPage:137}
   },
 
@@ -7781,7 +7781,7 @@ function addUnitEffect(unit,{
   effectListFor(unit,kind).push(effect);
 
   /* R104: persistent status FX start from the status lifecycle itself. */
-  if(["sleep","unconscious","confusion","confused","taunt","shield"].includes(id)){
+  if(["sleep","unconscious","confusion","confused","taunt","shield","light"].includes(id)){
     queueMicrotask(()=>ensurePersistentStatusFxLoop());
   }
 
@@ -8087,6 +8087,276 @@ function enlargedDamageMultiplier(unit){
     ? Math.max(1,Number(effect.data?.damageMultiplier)||1)
     : 1;
 }
+
+/*
+  R195 — ILLUMINATION SYSTEM
+  -------------------------
+  Illumination is now a reusable battlefield query rather than a one-off Light
+  spell drawing. Sources may be attached to moving units or exist as static
+  area effects. Future torches, fire, Darkness, day/night, glowing equipment,
+  infravision rules, etc. can reuse these functions.
+
+  R195 intentionally does NOT change party line-of-sight or detection rules.
+  LOS answers "can a ray reach this hex?"; illumination answers "how brightly
+  is that reachable terrain lit?" Those systems can be combined later.
+*/
+const ILLUMINATION_RULES=Object.freeze({
+  lightSpellRadiusHexes:2, /* 20 feet at 10 feet per tactical hex. */
+  lightSpellIntensity:1,
+  indoorAmbient:0.42,
+  outdoorAmbient:0.88,
+  illuminatedThreshold:0.58
+});
+
+function ambientIlluminationLevel(){
+  return game?.condition==="wall"
+    ? ILLUMINATION_RULES.indoorAmbient
+    : ILLUMINATION_RULES.outdoorAmbient;
+}
+
+function illuminationAreaEffects(){
+  return (game?.areaEffects || []).filter(
+    effect=>effect?.type==="illumination"
+  );
+}
+
+function illuminationSources(){
+  if(!game) return [];
+
+  const sources=[];
+
+  for(const unit of allUnits()){
+    if(!unit?.alive || unit.fled) continue;
+
+    const effect=getUnitEffect(unit,"light");
+    if(!effect) continue;
+
+    sources.push({
+      id:`unit-light:${unit.id}`,
+      sourceKind:"unit",
+      unitId:unit.id,
+      x:unit.x,
+      y:unit.y,
+      radiusHexes:Math.max(
+        1,
+        Number(effect.data?.illuminationRadiusHexes) ||
+        ILLUMINATION_RULES.lightSpellRadiusHexes
+      ),
+      intensity:Math.max(
+        0,
+        Number(effect.data?.illuminationIntensity) ||
+        ILLUMINATION_RULES.lightSpellIntensity
+      ),
+      color:Array.isArray(effect.data?.lightColor)
+        ? effect.data.lightColor
+        : [255,244,188]
+    });
+  }
+
+  for(const effect of illuminationAreaEffects()){
+    if(!inside(effect.x,effect.y)) continue;
+
+    sources.push({
+      id:effect.id || `area-light:${effect.x},${effect.y}`,
+      sourceKind:"area",
+      x:effect.x,
+      y:effect.y,
+      radiusHexes:Math.max(
+        1,
+        Number(effect.radiusHexes) ||
+        ILLUMINATION_RULES.lightSpellRadiusHexes
+      ),
+      intensity:Math.max(
+        0,
+        Number(effect.intensity) ||
+        ILLUMINATION_RULES.lightSpellIntensity
+      ),
+      color:Array.isArray(effect.color)
+        ? effect.color
+        : [255,244,188]
+    });
+  }
+
+  return sources;
+}
+
+function illuminationSourceReachesHex(source,x,y){
+  if(!source || !inside(x,y)) return false;
+
+  const distance=hexDistance(
+    {x:source.x,y:source.y},
+    {x,y}
+  );
+
+  if(distance>source.radiusHexes) return false;
+
+  /*
+    Light does not pass through architectural LOS blockers. This lets the new
+    mechanic illuminate rooms/corridors without bleeding through solid walls.
+  */
+  if(
+    game?.condition==="wall" &&
+    lineOfSightBlockedBetweenHexes(
+      {x:source.x,y:source.y},
+      {x,y}
+    )
+  ){
+    return false;
+  }
+
+  return true;
+}
+
+function illuminationContributionFromSource(source,x,y){
+  if(!illuminationSourceReachesHex(source,x,y)) return 0;
+
+  const distance=hexDistance(
+    {x:source.x,y:source.y},
+    {x,y}
+  );
+  const radius=Math.max(1,Number(source.radiusHexes)||1);
+
+  /* Smooth radial falloff: center 100%, edge remains visibly illuminated. */
+  const normalized=Math.max(0,Math.min(1,distance/(radius+0.45)));
+  const falloff=1-(normalized*normalized);
+
+  return Math.max(0,Number(source.intensity)||0)*falloff;
+}
+
+function dynamicIlluminationAtHex(x,y){
+  let total=0;
+
+  for(const source of illuminationSources()){
+    total+=illuminationContributionFromSource(source,x,y);
+  }
+
+  return Math.max(0,Math.min(1.5,total));
+}
+
+function illuminationAtHex(x,y){
+  const ambient=ambientIlluminationLevel();
+  const dynamic=dynamicIlluminationAtHex(x,y);
+
+  /* Dynamic light fills the unlit portion of ambient light rather than simply
+     adding arbitrary brightness above 100%. */
+  return Math.max(
+    0,
+    Math.min(1,ambient+(1-ambient)*Math.min(1,dynamic))
+  );
+}
+
+function isHexIlluminated(x,y){
+  return illuminationAtHex(x,y)>=ILLUMINATION_RULES.illuminatedThreshold;
+}
+
+function makeLightSpellEffectData(casterLevel){
+  return {
+    casterLevel:Math.max(1,Number(casterLevel)||1),
+    illuminationRadiusHexes:ILLUMINATION_RULES.lightSpellRadiusHexes,
+    illuminationIntensity:ILLUMINATION_RULES.lightSpellIntensity,
+    lightColor:[255,244,188]
+  };
+}
+
+function lightSpellBehindTargetHex(caster,target){
+  const directionIndex=hexDirectionIndexToward(caster,target);
+  const dir=HEX_DIRS[directionIndex] || HEX_DIRS[0];
+  const behind={
+    x:target.x+dir.x,
+    y:target.y+dir.y
+  };
+
+  return inside(behind.x,behind.y)
+    ? behind
+    : {x:target.x,y:target.y};
+}
+
+function addStaticLightSpellSource(caster,target,casterLevel){
+  const position=lightSpellBehindTargetHex(caster,target);
+  const durationRounds=10*Math.max(1,Number(casterLevel)||1);
+
+  return addAreaEffect({
+    id:`light-spell-static:${caster.id}:${game.round}:${target.id}`,
+    type:"illumination",
+    sourceName:"Light",
+    x:position.x,
+    y:position.y,
+    radiusHexes:ILLUMINATION_RULES.lightSpellRadiusHexes,
+    intensity:ILLUMINATION_RULES.lightSpellIntensity,
+    color:[255,244,188],
+    expiresRound:game.round+durationRounds
+  });
+}
+
+function drawTerrainIlluminationLayer(tiles){
+  if(!game) return;
+
+  const sources=illuminationSources();
+  if(!sources.length) return;
+
+  /*
+    Each source uses one aligned screen-space radial gradient, then clips that
+    gradient independently to every terrain hex the source can actually reach.
+    Adjacent lit hexes therefore share the same gradient values and read as one
+    continuous pool of light instead of separate colored hex fills.
+  */
+  for(const source of sources){
+    const center=hexCenter(source.x,source.y);
+    const radiusHexes=Math.max(1,Number(source.radiusHexes)||1);
+    const screenRadius=(radiusHexes+0.70)*HEX_W;
+    const color=source.color || [255,244,188];
+    const sourceAlpha=0.18*Math.min(1.25,source.intensity||1);
+
+    const gradient=ctx.createRadialGradient(
+      center.x,
+      center.y-4,
+      2,
+      center.x,
+      center.y-4,
+      screenRadius
+    );
+
+    gradient.addColorStop(
+      0,
+      `rgba(${color[0]},${color[1]},${color[2]},${sourceAlpha})`
+    );
+    gradient.addColorStop(
+      0.48,
+      `rgba(${color[0]},${color[1]},${color[2]},${sourceAlpha*0.72})`
+    );
+    gradient.addColorStop(
+      1,
+      `rgba(${color[0]},${color[1]},${color[2]},0)`
+    );
+
+    for(const tile of tiles){
+      const contribution=illuminationContributionFromSource(
+        source,
+        tile.x,
+        tile.y
+      );
+      if(contribution<=0) continue;
+
+      const top=hexScreenVertices(tile.x,tile.y);
+      const c=hexCenter(tile.x,tile.y);
+
+      ctx.save();
+      polygonPath(top);
+      ctx.clip();
+      ctx.globalCompositeOperation="lighter";
+      ctx.globalAlpha=Math.min(1,0.58+contribution*0.42);
+      ctx.fillStyle=gradient;
+      ctx.fillRect(
+        c.x-HEX_W/2-2,
+        c.y-HEX_H/2-2,
+        HEX_W+4,
+        HEX_H+4
+      );
+      ctx.restore();
+    }
+  }
+}
+
 
 function fogEffects(){
   return (game?.areaEffects || []).filter(effect=>effect.type==="fog");
@@ -16382,6 +16652,7 @@ async function castLightSpell(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("light");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
+  const durationRounds=10*level;
 
   if(!validCreatureTargetWithinRange(caster,target,spell,level,true)){
     setCombatMessage("Light target is out of range.");
@@ -16403,23 +16674,51 @@ async function castLightSpell(action,target){
       id:"light",
       name:"Light",
       kind:"buff",
-      expiresRound:game.round+10*level,
-      detail:"Illuminated; darkness subsystem not yet active",
-      data:{casterLevel:level}
+      expiresRound:game.round+durationRounds,
+      detail:"20-foot illumination radius",
+      data:makeLightSpellEffectData(level)
     });
 
-    setCombatMessage(`${target.name} is illuminated by Light.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+    playMagicEffectSound("light");
+    setCombatMessage(
+      `${target.name} shines with magical Light.`,
+      COMBAT_MESSAGE_MIN_HOLD_MS
+    );
   }else{
     const save=rollSpellSave(target,caster);
 
     if(save.success){
-      setCombatMessage(`${target.name} saves; Light forms immediately behind it.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+      const source=addStaticLightSpellSource(caster,target,level);
+      playMagicEffectSound("light");
+
+      setCombatMessage(
+        `${target.name} saves; Light forms behind it and illuminates the area.`,
+        COMBAT_MESSAGE_MIN_HOLD_MS
+      );
+
+      if(source){
+        ensurePersistentStatusFxLoop();
+      }
     }else{
-      applyBlindEffect(target,10*level,"Light");
-      setCombatMessage(`${target.name} is blinded by Light.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+      applyBlindEffect(target,durationRounds,"Light");
+      addUnitEffect(target,{
+        id:"light",
+        name:"Light",
+        kind:"debuff",
+        expiresRound:game.round+durationRounds,
+        detail:"20-foot illumination radius; centered on the eyes",
+        data:makeLightSpellEffectData(level)
+      });
+
+      playMagicEffectSound("light");
+      setCombatMessage(
+        `${target.name} is blinded and illuminated by Light.`,
+        COMBAT_MESSAGE_MIN_HOLD_MS
+      );
     }
   }
 
+  ensurePersistentStatusFxLoop();
   await waitForCombatActionPause();
   finishTestSpellCast(caster,"Light",action);
   return true;
@@ -20067,6 +20366,9 @@ function drawFloor(){
   /* R123: continuous indoor floors overlay and split the outdoor hex textures. */
   drawArchitecturalFloorRegions();
 
+  /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
+  drawTerrainIlluminationLayer(tiles);
+
   for(const tile of tiles){
     drawHexGridLine(tile.x,tile.y);
   }
@@ -22313,13 +22615,24 @@ function persistentShieldUnits(){
   );
 }
 
+function persistentLightUnits(){
+  if(!game || game.over) return [];
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled &&
+    !!getUnitEffect(unit,"light")
+  );
+}
+
 function hasPersistentStatusFx(){
   return (
     persistentSleepUnits().length>0 ||
     persistentUnconsciousUnits().length>0 ||
     persistentConfusionUnits().length>0 ||
     persistentTauntUnits().length>0 ||
-    persistentShieldUnits().length>0
+    persistentShieldUnits().length>0 ||
+    persistentLightUnits().length>0 ||
+    illuminationAreaEffects().length>0
   );
 }
 
@@ -22490,6 +22803,99 @@ function drawPersistentConfusionStatusFx(){
   magical barrier slightly forward of the unit's sprite. The barrier scales
   with Enlarge presentation size but never changes the unit's occupied hexes.
 */
+/*
+  R195 persistent Light spell combat VFX.
+  The terrain-light pool is handled by the illumination system; this layer is
+  the visible magical source attached to the affected unit.
+*/
+function drawPersistentLightSpellFx(){
+  const units=persistentLightUnits();
+  if(!units.length) return;
+
+  const now=performance.now();
+
+  for(let index=0;index<units.length;index++){
+    const unit=units[index];
+    if(!shouldRenderUnitUnderPartyVisibility(unit)) continue;
+
+    const c=unitFootprintScreenCenter(unit);
+    const scale=Math.max(1,enlargeVisualScale(unit));
+    const phase=(now/1000)+(index*0.37);
+    const pulse=(Math.sin(phase*Math.PI*2*0.72)+1)/2;
+    const centerY=c.y-22*scale;
+
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+
+    /* Soft body halo. */
+    const glowRadius=(18+3*pulse)*scale;
+    const gradient=ctx.createRadialGradient(
+      c.x,
+      centerY,
+      1,
+      c.x,
+      centerY,
+      glowRadius
+    );
+    gradient.addColorStop(
+      0,
+      `rgba(255,255,226,${0.22+0.08*pulse})`
+    );
+    gradient.addColorStop(
+      0.42,
+      `rgba(255,238,154,${0.13+0.05*pulse})`
+    );
+    gradient.addColorStop(
+      1,
+      "rgba(255,226,110,0)"
+    );
+
+    ctx.fillStyle=gradient;
+    ctx.beginPath();
+    ctx.arc(c.x,centerY,glowRadius,0,Math.PI*2);
+    ctx.fill();
+
+    /* Four restrained rays keep the effect readable as magical light. */
+    ctx.strokeStyle=`rgba(255,249,205,${0.20+0.12*pulse})`;
+    ctx.lineWidth=1.1*scale;
+
+    for(let ray=0;ray<4;ray++){
+      const angle=(Math.PI/2)*ray+phase*0.22;
+      const inner=(10+2*pulse)*scale;
+      const outer=(16+4*pulse)*scale;
+
+      ctx.beginPath();
+      ctx.moveTo(
+        c.x+Math.cos(angle)*inner,
+        centerY+Math.sin(angle)*inner
+      );
+      ctx.lineTo(
+        c.x+Math.cos(angle)*outer,
+        centerY+Math.sin(angle)*outer
+      );
+      ctx.stroke();
+    }
+
+    /* Slow orbiting motes. */
+    for(let mote=0;mote<3;mote++){
+      const angle=
+        phase*1.35+
+        (Math.PI*2*mote/3);
+      const orbit=(13+(mote%2)*4)*scale;
+      const mx=c.x+Math.cos(angle)*orbit;
+      const my=centerY+Math.sin(angle)*orbit*0.58;
+
+      ctx.fillStyle=`rgba(255,255,222,${0.62+0.18*pulse})`;
+      ctx.beginPath();
+      ctx.arc(mx,my,1.2*scale,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+
 function drawPersistentShieldSpellFx(){
   const units=persistentShieldUnits();
   if(!units.length) return;
@@ -23088,6 +23494,7 @@ function draw(){
     actor.fn();
   }
 
+  drawPersistentLightSpellFx();
   drawPersistentShieldSpellFx();
   drawPersistentSleepStatusFx();
   drawPersistentUnconsciousStatusFx();
