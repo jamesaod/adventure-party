@@ -3,6 +3,14 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R210 — Web duration balance cap
+
+- Reduced Web's tactical duration to 1 round per caster level, with a maximum duration of 6 rounds.
+- Web now expires after 1–6 rounds instead of using the original 2-turns-per-level duration in combat.
+- The spell catalog, Spell Book duration text, runtime area-effect expiration, and combat cast message all use the same capped duration rule.
+- Web's initial save vs. spell at −2, Strength-based escape progress, fire interaction, area footprint, and all other behavior remain unchanged.
+
+
 ## R209 — Level 1 incantations and Level 2 Wizard combat expansion
 
 - Added the approved Latin-style spoken incantations for Level 1 Wizard spells that previously lacked them: Armor, Burning Hands, Charm Person, Chill Touch, Enlarge, Grease, Light, Protection From Evil, Shield, Shocking Grasp, Sleep, Spook, and Taunt.
