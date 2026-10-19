@@ -3,6 +3,18 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R215 — Hex-center line-of-sight visibility
+
+- Reworked Wall Test LOS from a continuously revealed/feathered world-space cone into binary tactical-hex visibility.
+- Architectural LOS is still generated as a continuous wall-blocked visibility polygon for each living friendly observer, but only the center point of a hex is tested against that polygon.
+- If a hex center is visible, the entire hex is rendered fully visible; if the center is not visible, the entire hex remains under the 70% LOS blackout.
+- Removed the former seven-point per-hex visibility sampling and the feathered LOS-mask bands, eliminating partial hex reveals around corners.
+- Hex visibility, hidden-unit logic, friendly-fire warning visibility, and battlefield masking now use the same center-based rule.
+- Multi-hex units become visible when the center of any occupied hex is visible to the party; once detected, the entity is rendered whole rather than clipped by the LOS boundary.
+- Obscuring magical effects still block gameplay sight along the center-to-center hex path.
+- Fog volumes use the same center-in-architectural-LOS test for foreground rendering while ignoring their own self-obscuration, allowing the visible face of a cloud to remain drawable.
+
+
 ## R214 — EB Garamond Bold UI typography
 
 - Replaced the local Gold Box font dependency with EB Garamond Bold (700) as the project-wide UI typeface.
