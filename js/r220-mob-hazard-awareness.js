@@ -341,7 +341,12 @@ function r220LearnHazardFromExperience(mob,effect,{failed=false}={}){
   entry.experienced=true;
   entry.recognized=true;
   entry.lastExperiencedRound=game?.round || 0;
-  entry.seenCells[key(mob.x,mob.y)]=true;
+
+  for(const cell of occupiedHexes(mob)){
+    if(areaEffectContains(effect,cell.x,cell.y)){
+      entry.seenCells[key(cell.x,cell.y)]=true;
+    }
+  }
 
   if(failed){
     entry.observedConsequence=true;
@@ -546,13 +551,21 @@ function r220MobHazardCostAt(mob,x,y){
 function r220RefreshCurrentCellHazardExperience(mob){
   if(mob?.controller!=="mob" || !mob.alive || mob.fled) return;
 
-  for(const {effect,definition} of r220HazardsAtCell(mob.x,mob.y)){
-    if(
-      definition.kind==="wall-of-fog" ||
-      definition.kind==="fog-cloud" ||
-      definition.kind==="darkness"
-    ){
-      r220LearnHazardFromExperience(mob,effect,{failed:false});
+  const visitedEffects=new Set();
+
+  for(const cell of occupiedHexes(mob)){
+    for(const {effect,definition} of r220HazardsAtCell(cell.x,cell.y)){
+      const id=r220HazardId(effect);
+      if(visitedEffects.has(id)) continue;
+      visitedEffects.add(id);
+
+      if(
+        definition.kind==="wall-of-fog" ||
+        definition.kind==="fog-cloud" ||
+        definition.kind==="darkness"
+      ){
+        r220LearnHazardFromExperience(mob,effect,{failed:false});
+      }
     }
   }
 }
@@ -768,7 +781,22 @@ function r220PursuitPointForTarget(mob,target){
    ============================================================ */
 
 function r220MobStepCost(mob,next){
-  return 1+r220MobHazardCostAt(mob,next.x,next.y);
+  const footprint=occupiedHexesAt(mob,next.x,next.y);
+  let hazardCost=0;
+
+  /*
+    Large creatures evaluate the complete destination footprint. Use the
+    strongest occupied-cell hazard cost rather than multiplying risk merely
+    because a seven-hex creature covers more map cells.
+  */
+  for(const cell of footprint){
+    hazardCost=Math.max(
+      hazardCost,
+      r220MobHazardCostAt(mob,cell.x,cell.y)
+    );
+  }
+
+  return 1+hazardCost;
 }
 
 function r220ReconstructPath(came,start,end){
