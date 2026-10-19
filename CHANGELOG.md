@@ -4,6 +4,18 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R205 — Isometric stone-floor tiling and doorway thresholds
+
+- Reprojected the PamNawi stone-floor repeating texture into the same axial/isometric surface basis used by the tactical battlefield instead of leaving the source tile screen-aligned.
+- Reduced the stone-floor source scale from 35% to 17.5%, exactly halving the R204 repeat size.
+- The transformed tile remains anchored to world origin, so camera movement does not cause texture swimming.
+- Added a generic dark-grey threshold renderer for authored doorway gaps.
+- Each threshold spans the complete doorway width and the full wall slab depth plus a small overlap, covering outdoor terrain that previously showed halfway through the open entrance.
+- Thresholds are presentation-only and do not change doorway movement, LOS, light transmission, or projectile behavior.
+- R204 wall-lighting correction and indoor grey/outdoor green hex-border behavior remain unchanged.
+
+
+
 ## R204 — Stone interior floor, indoor grid color, and visible-face wall lighting
 
 - Added PamNawi's "Handpainted Stone Floor Texture" (CC BY 4.0) as the Wall Test building's indoor floor material.
