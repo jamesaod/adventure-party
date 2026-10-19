@@ -11,6 +11,8 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 - Disabled the title MIDI-derived music sequencer for now.
 - Preserved the shared Web Audio context, combat SFX, spell sounds, weather audio, and the global SND toggle.
 - Existing screen-router calls to start/stop title music remain compatibility-safe no-ops so removing the MIDI player does not disturb navigation or audio unlock behavior.
+- Attack presentation pacing now holds combat progression for the full one-second standard attack pose instead of allowing the next turn/camera recenter to begin after the shorter generic turn delay.
+- Authored attack poses longer than one second, such as the Juvenile Red Dragon breath pose, retain their longer duration.
 
 
 ## R217 — Shared obscuring-volume line of sight
