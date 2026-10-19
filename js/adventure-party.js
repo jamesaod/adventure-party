@@ -8934,15 +8934,17 @@ const SPELL_CATALOG={
     level:2,
     school:"Evocation",
     components:["V","S","M"],
-    duration:"2 turns/level",
+    duration:"1 round/level (maximum 6 rounds)",
+    durationRoundsPerCasterLevel:1,
+    maxDurationRounds:6,
     castingTime:2,
     savingThrow:"Special",
     areaOfEffect:"Up to eight 10-foot cubes",
     range:{baseYards:0,yardsPerCasterLevel:5},
     combatImplemented:true,
     targetMode:"ground",
-    damageSummary:"Creates restraining webs; save at −2 on exposure, then Strength controls escape rate.",
-    description:"Fills a seven-hex tactical cluster with sticky webs. Creatures failing their initial save are restrained and must spend later actions forcing their way free according to effective Strength. Fire destroys affected webbing.",
+    damageSummary:"Creates restraining webs for 1 round/caster level (maximum 6); save at −2 on exposure, then Strength controls escape rate.",
+    description:"Fills a seven-hex tactical cluster with sticky webs for 1 round per caster level, to a maximum of 6 rounds. Creatures failing their initial save are restrained and must spend later actions forcing their way free according to effective Strength. Fire destroys affected webbing.",
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:189,pdfPage:190}
   },
 
@@ -21021,12 +21023,20 @@ async function castWebSpell(action,targetHex){
   exitAimMode(false,false);
 
   const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
+  const durationRounds=Math.min(
+    Math.max(1,Number(spell.maxDurationRounds)||6),
+    Math.max(
+      1,
+      Math.floor(Number(level)||1)*
+      Math.max(1,Number(spell.durationRoundsPerCasterLevel)||1)
+    )
+  );
   addAreaEffect({
     id:`web:${Date.now()}`,
     type:"web",
     name:"Web",
     cells,
-    expiresRound:game.round+20*level,
+    expiresRound:game.round+durationRounds,
     sourceUnitId:caster.id
   });
 
@@ -21046,7 +21056,7 @@ async function castWebSpell(action,targetHex){
   }
 
   setCombatMessage(
-    `Web fills ${cells.length} hexes; ${trapped.length} creature${trapped.length===1 ? "" : "s"} trapped.`,
+    `Web fills ${cells.length} hexes for ${durationRounds} round${durationRounds===1 ? "" : "s"}; ${trapped.length} creature${trapped.length===1 ? "" : "s"} trapped.`,
     COMBAT_MESSAGE_MIN_HOLD_MS
   );
   await waitForCombatActionPause();
