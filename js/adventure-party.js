@@ -1148,6 +1148,102 @@ function playMagicEffectSound(kind="generic",index=0){
 
 
 /*
+  R213 Stinking Cloud audio.
+  The cast uses a low magical swell with an unstable upper shimmer; failed
+  poison saves use a short cough/cough/gag pattern. Both ride the shared SFX
+  bus and therefore obey the existing global audio control.
+*/
+function playStinkingCloudCastSound(){
+  queueSfx(()=>{
+    const now=audioCtx.currentTime;
+
+    const low=audioCtx.createOscillator();
+    const high=audioCtx.createOscillator();
+    const lowGain=audioCtx.createGain();
+    const highGain=audioCtx.createGain();
+    const lowFilter=audioCtx.createBiquadFilter();
+
+    low.type="triangle";
+    high.type="sine";
+
+    low.frequency.setValueAtTime(155,now);
+    low.frequency.exponentialRampToValueAtTime(92,now+0.62);
+
+    high.frequency.setValueAtTime(610,now+0.03);
+    high.frequency.exponentialRampToValueAtTime(930,now+0.20);
+    high.frequency.exponentialRampToValueAtTime(410,now+0.58);
+
+    lowFilter.type="lowpass";
+    lowFilter.frequency.setValueAtTime(520,now);
+    lowFilter.Q.setValueAtTime(0.8,now);
+
+    lowGain.gain.setValueAtTime(0.0001,now);
+    lowGain.gain.exponentialRampToValueAtTime(0.11,now+0.05);
+    lowGain.gain.exponentialRampToValueAtTime(0.0001,now+0.66);
+
+    highGain.gain.setValueAtTime(0.0001,now+0.025);
+    highGain.gain.exponentialRampToValueAtTime(0.052,now+0.09);
+    highGain.gain.exponentialRampToValueAtTime(0.0001,now+0.62);
+
+    low.connect(lowFilter);
+    lowFilter.connect(lowGain);
+    high.connect(highGain);
+    lowGain.connect(sfxGain);
+    highGain.connect(sfxGain);
+
+    low.start(now);
+    low.stop(now+0.68);
+    high.start(now+0.025);
+    high.stop(now+0.64);
+
+    noiseVoice(0.58,0.048,"bandpass",760,0.65,0.02);
+    noiseVoice(0.32,0.025,"highpass",1900,0.8,0.18);
+  });
+}
+
+function playStinkingCloudCoughGagSound(){
+  queueSfx(()=>{
+    const base=audioCtx.currentTime;
+    const jitter=0.93+Math.random()*0.14;
+
+    const cough=(delay,startHz,endHz,volume,duration)=>{
+      const start=base+delay;
+      const osc=audioCtx.createOscillator();
+      const filter=audioCtx.createBiquadFilter();
+      const gain=audioCtx.createGain();
+
+      osc.type="sawtooth";
+      osc.frequency.setValueAtTime(startHz*jitter,start);
+      osc.frequency.exponentialRampToValueAtTime(endHz*jitter,start+duration);
+
+      filter.type="bandpass";
+      filter.frequency.setValueAtTime(920,start);
+      filter.Q.setValueAtTime(1.1,start);
+
+      gain.gain.setValueAtTime(0.0001,start);
+      gain.gain.exponentialRampToValueAtTime(volume,start+0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(sfxGain);
+
+      osc.start(start);
+      osc.stop(start+duration+0.02);
+    };
+
+    cough(0.00,185,92,0.075,0.13);
+    cough(0.17,205,86,0.068,0.15);
+    cough(0.39,150,68,0.090,0.24);
+
+    noiseVoice(0.12,0.070,"bandpass",1250,1.4,0.00);
+    noiseVoice(0.13,0.064,"bandpass",1120,1.3,0.17);
+    noiseVoice(0.22,0.082,"lowpass",720,0.9,0.39);
+  });
+}
+
+
+/*
   R100 Color Spray SFX: one short prismatic sweep for the whole fan.
   Three staggered tones plus a light air texture create a magical "spectrum"
   cue without tying the sound to any individual victim.
@@ -1464,6 +1560,73 @@ const weatherSeverityButton=document.getElementById("weatherSeverityButton");
 
 let weatherAnimationFrame=null;
 let weatherLastFrame=0;
+
+/*
+  R213 animated fog redraw loop.
+  Fog rendering already derives its drift/billow positions from performance.now(),
+  but previously only mouse/UI redraws (or the weather loop) advanced the image.
+  This loop keeps all active fog spell volumes animated even in clear weather.
+*/
+let fogAnimationFrame=null;
+let fogLastFrame=0;
+
+function hasAnimatedFogSpell(){
+  return !!(
+    game &&
+    (game.areaEffects || []).some(effect=>
+      effect?.type==="fog" &&
+      Array.isArray(effect.cells) &&
+      effect.cells.length>0
+    )
+  );
+}
+
+function fogAnimationTick(now){
+  if(
+    currentScreen!=="combat" ||
+    !game ||
+    game.over ||
+    !hasAnimatedFogSpell()
+  ){
+    fogAnimationFrame=null;
+    fogLastFrame=0;
+    return;
+  }
+
+  /*
+    Weather already redraws at the same cadence. When weather is active, let
+    that loop carry the fog animation so two simultaneous loops do not double
+    the render workload.
+  */
+  const weatherOwnsRedraw=
+    currentWeatherType().id!=="clear" &&
+    weatherAnimationFrame!==null;
+
+  if(
+    !weatherOwnsRedraw &&
+    (!fogLastFrame || now-fogLastFrame>=32)
+  ){
+    fogLastFrame=now;
+    draw();
+  }
+
+  fogAnimationFrame=requestAnimationFrame(fogAnimationTick);
+}
+
+function ensureFogAnimationLoop(){
+  if(
+    fogAnimationFrame!==null ||
+    currentScreen!=="combat" ||
+    !game ||
+    game.over ||
+    !hasAnimatedFogSpell()
+  ){
+    return false;
+  }
+
+  fogAnimationFrame=requestAnimationFrame(fogAnimationTick);
+  return true;
+}
 
 /*
   R173 procedural weather ambience.
@@ -9328,9 +9491,11 @@ async function resolvePersistentAreaSave(
       }
     });
 
+    playStinkingCloudCoughGagSound();
+
     await presentPersistentAreaFailure(
       unit,
-      `${unit.name} is NAUSEATED — another poison save is required at the start of the next turn.`
+      `${unit.name} is NAUSEATED — coughing and gagging; another poison save is required at the start of the next turn.`
     );
     return {failed:true,haltMovement:true,statusId:"nauseated"};
   }
@@ -11944,6 +12109,11 @@ function addAreaEffect(effect){
   */
   replaceOverlappingAreaEffectHexes(effect);
   game.areaEffects.push(effect);
+
+  if(effect?.type==="fog"){
+    ensureFogAnimationLoop();
+  }
+
   draw();
   return effect;
 }
@@ -21133,6 +21303,8 @@ async function castStinkingCloudSpell(action,targetHex){
     sourceUnitId:caster.id
   });
 
+  playStinkingCloudCastSound();
+
   const nauseated=[];
   for(const unit of livingUnitsInAreaCells(cells)){
     if(await resolveStinkingCloudExposure(unit,effect)){
@@ -27526,6 +27698,8 @@ function drawUnitBarks(){
 
 function draw(){
   if(!game) return;
+
+  ensureFogAnimationLoop();
 
   const tiles=visibleHexes();
 
