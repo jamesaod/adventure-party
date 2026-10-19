@@ -3,6 +3,21 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R198 — Old-wood walls, windows, and doorway
+
+- Added the user-supplied old wooden wall tile as the repeating material for the Wall Test building.
+- Added the user-supplied window and doorway artwork without generative alteration; pure-white pixels are interpreted semantically at runtime.
+- Window white panes are rendered as translucent glass and cut through the wall face so terrain/units remain visible behind them.
+- Window glass allows LOS and illumination to pass, while still blocking movement and physical volumetric propagation.
+- Doorway white space is fully open: movement, LOS, illumination, and volumetric effects can pass through it.
+- Window visual placement is horizontally centered on its opening position and vertically centered at two-thirds of the 35 px wall height.
+- Added one centered north-facing window, one centered east-facing window, one south-facing window, and one south doorway on the test building.
+- The south doorway and south window are separated along the same wall so both can be inspected at once.
+- Architectural wall blocking is now opening-aware through reusable wall subsegments, including the LOS blackout ray geometry.
+- The existing west-side open entrance remains in place for regression comparison.
+- Doorway-aware wall shadows leave the open passage unshadowed.
+- R197's 2 px exterior-only building outline, 35 px wall height, solid wall cap, and reduced wall-light response remain intact.
+
 ## R197 — Clean architectural wall silhouette
 
 - Reduced architectural wall height from 45 px to 35 px after visual review.
