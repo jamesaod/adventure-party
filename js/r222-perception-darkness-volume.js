@@ -369,6 +369,536 @@ attack=function(attacker,defender,options={}){
 
 
 /* ============================================================
+   PERCEPTION-AWARE MOB PATH PLANNING
+   ============================================================ */
+
+function r222PlanningCellBlocked(mob,cell){
+  if(
+    !mob ||
+    !cell ||
+    !inside(cell.x,cell.y) ||
+    isWall(cell.x,cell.y)
+  ){
+    return true;
+  }
+
+  for(const other of allUnits()){
+    if(
+      !other ||
+      other.id===mob.id ||
+      !other.alive ||
+      other.fled ||
+      !unitOccupiesHex(
+        other,
+        cell.x,
+        cell.y
+      )
+    ){
+      continue;
+    }
+
+    /*
+      MOBs always know where their allies are. A hostile creature blocks route
+      planning only if the MOB can currently perceive it. Hidden hostiles are
+      therefore not silently used as invisible pathfinding obstacles.
+    */
+    if(other.faction===mob.faction){
+      return true;
+    }
+
+    if(
+      r222UnitCurrentlyVisible(
+        mob,
+        other
+      )
+    ){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function r222PlanningCanStandAt(
+  mob,
+  x,
+  y,
+  facingHex=facingDirectionIndex(mob)
+){
+  if(!mob) return false;
+
+  for(
+    const cell of occupiedHexesAt(
+      mob,
+      x,
+      y,
+      facingHex
+    )
+  ){
+    if(
+      r222PlanningCellBlocked(
+        mob,
+        cell
+      )
+    ){
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function r222PlanningTransitionBlocked(
+  mob,
+  from,
+  to,
+  facingHex=facingDirectionIndex(mob)
+){
+  if(!mob || !from || !to){
+    return true;
+  }
+
+  if(
+    !r222PlanningCanStandAt(
+      mob,
+      to.x,
+      to.y,
+      facingHex
+    )
+  ){
+    return true;
+  }
+
+  const sourceCells=
+    occupiedHexesAt(
+      mob,
+      from.x,
+      from.y,
+      facingHex
+    );
+
+  const targetCells=
+    occupiedHexesAt(
+      mob,
+      to.x,
+      to.y,
+      facingHex
+    );
+
+  for(
+    let i=0;
+    i<Math.min(
+      sourceCells.length,
+      targetCells.length
+    );
+    i++
+  ){
+    if(
+      architecturalWallBlocksStep(
+        sourceCells[i],
+        targetCells[i]
+      )
+    ){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+/*
+  R220's weighted search remains authoritative for Intelligence/hazard cost,
+  but its occupancy gate is replaced with perception-aware planning. This means
+  an unseen adjacent enemy no longer causes a MOB to magically route around the
+  occupied hex. If the MOB actually tries to enter that hidden occupied hex,
+  the normal movement execution still stops at the physical collision.
+*/
+r220WeightedPathSearch=function(
+  mob,
+  start,
+  {
+    goalTest,
+    maxSteps=Infinity,
+    heuristic=null
+  }={}
+){
+  if(
+    !mob ||
+    typeof goalTest!=="function"
+  ){
+    return null;
+  }
+
+  const startKey=
+    key(start.x,start.y);
+
+  const frontier=[{
+    x:start.x,
+    y:start.y,
+    steps:0,
+    cost:0,
+    priority:0
+  }];
+
+  const bestCost=
+    new Map([[startKey,0]]);
+
+  const bestSteps=
+    new Map([[startKey,0]]);
+
+  const came=new Map();
+  let guard=0;
+
+  while(
+    frontier.length &&
+    guard<6000
+  ){
+    guard++;
+
+    frontier.sort((a,b)=>
+      a.priority-b.priority ||
+      a.cost-b.cost ||
+      a.steps-b.steps
+    );
+
+    const cur=
+      frontier.shift();
+
+    const curKey=
+      key(cur.x,cur.y);
+
+    if(
+      cur.cost>
+      (
+        bestCost.get(curKey) ??
+        Infinity
+      )+
+      1e-9
+    ){
+      continue;
+    }
+
+    if(goalTest(cur)){
+      return {
+        path:r220ReconstructPath(
+          came,
+          start,
+          cur
+        ),
+        node:cur,
+        cost:cur.cost
+      };
+    }
+
+    if(cur.steps>=maxSteps){
+      continue;
+    }
+
+    for(const dir of HEX_DIRS){
+      const next={
+        x:cur.x+dir.x,
+        y:cur.y+dir.y
+      };
+
+      if(!inside(next.x,next.y)){
+        continue;
+      }
+
+      if(
+        r222PlanningTransitionBlocked(
+          mob,
+          cur,
+          next
+        )
+      ){
+        continue;
+      }
+
+      const nextSteps=
+        cur.steps+1;
+
+      const nextCost=
+        cur.cost+
+        r220MobStepCost(
+          mob,
+          next
+        );
+
+      const nk=
+        key(next.x,next.y);
+
+      const knownCost=
+        bestCost.get(nk);
+
+      const knownSteps=
+        bestSteps.get(nk);
+
+      if(
+        knownCost!==undefined &&
+        (
+          nextCost>knownCost+1e-9 ||
+          (
+            Math.abs(
+              nextCost-knownCost
+            )<=1e-9 &&
+            knownSteps!==undefined &&
+            nextSteps>=knownSteps
+          )
+        )
+      ){
+        continue;
+      }
+
+      bestCost.set(
+        nk,
+        nextCost
+      );
+
+      bestSteps.set(
+        nk,
+        nextSteps
+      );
+
+      came.set(
+        nk,
+        {x:cur.x,y:cur.y}
+      );
+
+      const h=
+        typeof heuristic==="function"
+          ? Math.max(
+              0,
+              Number(
+                heuristic(next)
+              )||0
+            )
+          : 0;
+
+      frontier.push({
+        x:next.x,
+        y:next.y,
+        steps:nextSteps,
+        cost:nextCost,
+        priority:
+          nextCost+
+          h*0.01
+      });
+    }
+  }
+
+  return null;
+};
+
+
+r220WeightedClosestReachable=function(
+  mob,
+  target,
+  maxSteps
+){
+  const point=
+    r220PursuitPointForTarget(
+      mob,
+      target
+    );
+
+  if(!point){
+    return [{
+      x:mob.x,
+      y:mob.y
+    }];
+  }
+
+  const start={
+    x:mob.x,
+    y:mob.y
+  };
+
+  const frontier=[{
+    x:start.x,
+    y:start.y,
+    steps:0,
+    cost:0
+  }];
+
+  const came=new Map();
+
+  const bestCost=
+    new Map([
+      [key(start.x,start.y),0]
+    ]);
+
+  const bestSteps=
+    new Map([
+      [key(start.x,start.y),0]
+    ]);
+
+  let best=frontier[0];
+  let bestScore=Infinity;
+  let guard=0;
+
+  const distanceFor=(node)=>{
+    if(point.visible){
+      return approachDistanceAt(
+        mob,
+        node.x,
+        node.y,
+        target
+      );
+    }
+
+    return Math.max(
+      0,
+      hexDistance(
+        node,
+        point
+      )-1
+    );
+  };
+
+  const scoreFor=(node)=>
+    distanceFor(node)*12+
+    node.cost;
+
+  bestScore=
+    scoreFor(best);
+
+  while(
+    frontier.length &&
+    guard<5000
+  ){
+    guard++;
+
+    frontier.sort((a,b)=>
+      a.cost-b.cost ||
+      a.steps-b.steps
+    );
+
+    const cur=
+      frontier.shift();
+
+    const ck=
+      key(cur.x,cur.y);
+
+    if(
+      cur.cost>
+      (
+        bestCost.get(ck) ??
+        Infinity
+      )+
+      1e-9
+    ){
+      continue;
+    }
+
+    const score=
+      scoreFor(cur);
+
+    if(
+      score<bestScore-1e-9 ||
+      (
+        Math.abs(
+          score-bestScore
+        )<=1e-9 &&
+        cur.steps<best.steps
+      )
+    ){
+      best=cur;
+      bestScore=score;
+    }
+
+    if(cur.steps>=maxSteps){
+      continue;
+    }
+
+    for(const dir of HEX_DIRS){
+      const next={
+        x:cur.x+dir.x,
+        y:cur.y+dir.y
+      };
+
+      if(!inside(next.x,next.y)){
+        continue;
+      }
+
+      if(
+        r222PlanningTransitionBlocked(
+          mob,
+          cur,
+          next
+        )
+      ){
+        continue;
+      }
+
+      const nextSteps=
+        cur.steps+1;
+
+      const nextCost=
+        cur.cost+
+        r220MobStepCost(
+          mob,
+          next
+        );
+
+      const nk=
+        key(next.x,next.y);
+
+      const known=
+        bestCost.get(nk);
+
+      const knownSteps=
+        bestSteps.get(nk);
+
+      if(
+        known!==undefined &&
+        (
+          nextCost>known+1e-9 ||
+          (
+            Math.abs(
+              nextCost-known
+            )<=1e-9 &&
+            knownSteps!==undefined &&
+            nextSteps>=knownSteps
+          )
+        )
+      ){
+        continue;
+      }
+
+      bestCost.set(
+        nk,
+        nextCost
+      );
+
+      bestSteps.set(
+        nk,
+        nextSteps
+      );
+
+      came.set(
+        nk,
+        {x:cur.x,y:cur.y}
+      );
+
+      frontier.push({
+        x:next.x,
+        y:next.y,
+        steps:nextSteps,
+        cost:nextCost
+      });
+    }
+  }
+
+  return r220ReconstructPath(
+    came,
+    start,
+    best
+  );
+};
+
+
+/* ============================================================
    DARKNESS PRESENTATION HELPERS
    ============================================================ */
 
