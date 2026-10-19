@@ -3,6 +3,23 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R211 — Stinking Cloud palette and recurring nausea saves
+
+- Recolored Stinking Cloud from ordinary grey fog to a dedicated animated mixture of olive, moss, deep green, yellow-green, and pale sickly-green billows while preserving normal Wall of Fog/Fog Cloud colors.
+- Stinking Cloud's nausea no longer lasts for a fixed 1d4+1 rounds after a failed save.
+- A nauseated creature now makes a fresh saving throw vs. poison at the start of every affected turn; success removes Nauseated immediately and allows the creature to act, while failure costs that turn.
+- Creatures currently inside Stinking Cloud that are not already nauseated still make the normal exposure save at the start of their turn.
+- A creature already making its nausea recovery save does not make a second Stinking Cloud save during the same turn.
+
+
+## R210 — Web duration balance cap
+
+- Reduced Web's tactical duration to 1 round per caster level, with a maximum duration of 6 rounds.
+- Web now expires after 1–6 rounds instead of using the original 2-turns-per-level duration in combat.
+- The spell catalog, Spell Book duration text, runtime area-effect expiration, and combat cast message all use the same capped duration rule.
+- Web's initial save vs. spell at −2, Strength-based escape progress, fire interaction, area footprint, and all other behavior remain unchanged.
+
+
 ## R209 — Level 1 incantations and Level 2 Wizard combat expansion
 
 - Added the approved Latin-style spoken incantations for Level 1 Wizard spells that previously lacked them: Armor, Burning Hands, Charm Person, Chill Touch, Enlarge, Grease, Light, Protection From Evil, Shield, Shocking Grasp, Sleep, Spook, and Taunt.

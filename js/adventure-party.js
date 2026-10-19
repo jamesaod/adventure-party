@@ -8884,8 +8884,8 @@ const SPELL_CATALOG={
     range:{fixedYards:30},
     combatImplemented:true,
     targetMode:"ground",
-    damageSummary:"Dense cloud blocks sight; failed poison save causes disabling nausea for 1d4+1 rounds after exposure.",
-    description:"Creates a nauseating cloud using the volumetric fog system. Creatures exposed at the start of their turn save against poison; failure prevents action and continues after leaving the cloud.",
+    damageSummary:"Dense cloud blocks sight; failed poison save causes disabling nausea, with a new poison save each affected round.",
+    description:"Creates a nauseating green cloud using the volumetric fog system. Creatures exposed at the start of their turn save against poison; failure prevents action. A nauseated creature rolls a fresh poison save at the start of each later turn, recovering immediately on a success even after leaving the cloud.",
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:188,pdfPage:189}
   },
 
@@ -8934,15 +8934,17 @@ const SPELL_CATALOG={
     level:2,
     school:"Evocation",
     components:["V","S","M"],
-    duration:"2 turns/level",
+    duration:"1 round/level (maximum 6 rounds)",
+    durationRoundsPerCasterLevel:1,
+    maxDurationRounds:6,
     castingTime:2,
     savingThrow:"Special",
     areaOfEffect:"Up to eight 10-foot cubes",
     range:{baseYards:0,yardsPerCasterLevel:5},
     combatImplemented:true,
     targetMode:"ground",
-    damageSummary:"Creates restraining webs; save at −2 on exposure, then Strength controls escape rate.",
-    description:"Fills a seven-hex tactical cluster with sticky webs. Creatures failing their initial save are restrained and must spend later actions forcing their way free according to effective Strength. Fire destroys affected webbing.",
+    damageSummary:"Creates restraining webs for 1 round/caster level (maximum 6); save at −2 on exposure, then Strength controls escape rate.",
+    description:"Fills a seven-hex tactical cluster with sticky webs for 1 round per caster level, to a maximum of 6 rounds. Creatures failing their initial save are restrained and must spend later actions forcing their way free according to effective Strength. Fire destroys affected webbing.",
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:189,pdfPage:190}
   },
 
@@ -11312,7 +11314,7 @@ function drawVisibleArchitecturalWallsOverLOS(){
       foreground.push({
         sortY,
         sortX:c.x,
-        fn:()=>drawFogVolumeCell(cell)
+        fn:()=>drawFogVolumeCell(cell,effect)
       });
     }
 
@@ -12286,7 +12288,7 @@ function drawSpellAreaEffects(){
   }
 }
 
-function drawFogVolumeCell(cell){
+function drawFogVolumeCell(cell,effect=null){
   if(
     !cell ||
     !inside(cell.x,cell.y) ||
@@ -12300,31 +12302,42 @@ function drawFogVolumeCell(cell){
   const top=hexScreenVertices(cell.x,cell.y);
   const time=performance.now();
   const seedBase=(Math.abs(cell.x*73856093 ^ cell.y*19349663)>>>0);
+  const isStinkingCloud=effect?.spellKind==="stinking-cloud";
 
   ctx.save();
   /*
-    R150: Wall of Fog remains a gameplay LOS obstruction, but its rendered
-    volume is 50% transparent so terrain and any depth-visible sprites can be
-    seen through the cloud.
+    Fog remains a gameplay LOS obstruction, but its rendered volume is 50%
+    transparent so terrain and any depth-visible sprites can be seen through it.
   */
   ctx.globalAlpha=0.5;
 
-  /*
-    R151: animate the fog so the body subtly churns and breathes rather than
-    reading as a static stack of mist. The whole cell still composites at
-    half opacity for readability.
-  */
   polygonPath(top);
-  ctx.fillStyle="rgba(207,216,218,0.84)";
+  ctx.fillStyle=isStinkingCloud
+    ? "rgba(72,112,42,0.88)"
+    : "rgba(207,216,218,0.84)";
   ctx.fill();
 
   const drift=Math.sin((time*0.0017)+(cell.x*0.61)+(cell.y*0.43))*3.0;
   const grad=ctx.createLinearGradient(c.x,c.y-height-4,c.x,c.y+7);
-  grad.addColorStop(0,"rgba(236,241,242,0.60)");
-  grad.addColorStop(0.45,"rgba(214,223,225,0.82)");
-  grad.addColorStop(1,"rgba(188,199,201,0.88)");
+  if(isStinkingCloud){
+    grad.addColorStop(0,"rgba(174,199,74,0.68)");
+    grad.addColorStop(0.42,"rgba(102,151,54,0.84)");
+    grad.addColorStop(0.72,"rgba(63,116,43,0.88)");
+    grad.addColorStop(1,"rgba(37,82,42,0.92)");
+  }else{
+    grad.addColorStop(0,"rgba(236,241,242,0.60)");
+    grad.addColorStop(0.45,"rgba(214,223,225,0.82)");
+    grad.addColorStop(1,"rgba(188,199,201,0.88)");
+  }
   ctx.fillStyle=grad;
   ctx.fillRect(c.x-HEX_W*0.48+drift*0.18,c.y-height-2,HEX_W*0.96,height+10);
+
+  const stinkingPuffColors=[
+    [188,205,77],
+    [126,170,58],
+    [82,139,48],
+    [48,101,45]
+  ];
 
   /* Billowing animated puffs. */
   for(let i=0;i<8;i++){
@@ -12342,9 +12355,15 @@ function drawFogVolumeCell(cell){
 
     ctx.beginPath();
     ctx.ellipse(px,py,rx,ry,0,0,Math.PI*2);
-    ctx.fillStyle=i%2
-      ? `rgba(225,232,233,${0.74*alphaPulse})`
-      : `rgba(197,207,209,${0.78*alphaPulse})`;
+
+    if(isStinkingCloud){
+      const puff=stinkingPuffColors[(seedBase+i)%stinkingPuffColors.length];
+      ctx.fillStyle=`rgba(${puff[0]},${puff[1]},${puff[2]},${0.80*alphaPulse})`;
+    }else{
+      ctx.fillStyle=i%2
+        ? `rgba(225,232,233,${0.74*alphaPulse})`
+        : `rgba(197,207,209,${0.78*alphaPulse})`;
+    }
     ctx.fill();
   }
 
@@ -12352,10 +12371,14 @@ function drawFogVolumeCell(cell){
   const capBob=Math.sin(time*0.0022 + seedBase*0.000002)*3;
   ctx.beginPath();
   ctx.ellipse(c.x+drift*0.14,c.y-height+5+capBob*0.28,HEX_W*0.42,12,0,0,Math.PI*2);
-  ctx.fillStyle="rgba(242,246,247,0.68)";
+  ctx.fillStyle=isStinkingCloud
+    ? "rgba(202,216,94,0.72)"
+    : "rgba(242,246,247,0.68)";
   ctx.fill();
 
-  ctx.strokeStyle="rgba(236,242,243,0.52)";
+  ctx.strokeStyle=isStinkingCloud
+    ? "rgba(156,190,73,0.58)"
+    : "rgba(236,242,243,0.52)";
   ctx.lineWidth=1.2;
   ctx.beginPath();
   ctx.moveTo(c.x-HEX_W*0.42+drift*0.12,c.y-height+8);
@@ -12448,6 +12471,12 @@ function drawFogEffectOutline(effect){
 
   outlineCtx.globalCompositeOperation="destination-out";
   outlineCtx.drawImage(bodyCanvas,0,0);
+
+  outlineCtx.globalCompositeOperation="source-in";
+  outlineCtx.fillStyle=effect.spellKind==="stinking-cloud"
+    ? "rgba(27,72,35,1)"
+    : "rgba(0,0,0,1)";
+  outlineCtx.fillRect(0,0,outlineCanvas.width,outlineCanvas.height);
   outlineCtx.globalCompositeOperation="source-over";
 
   ctx.save();
@@ -18986,10 +19015,11 @@ function moveFlamingSpheresForCaster(caster){
   }
 }
 
-function resolveStinkingCloudExposure(actor,effect){
+function resolveStinkingCloudExposure(actor,effect,{allowRecovery=false}={}){
   if(!actor?.alive || isUndeadUnit(actor)) return false;
 
-  const source=getUnitById(effect?.sourceUnitId) || null;
+  const existing=getUnitEffect(actor,"nauseated");
+  const source=getUnitById(effect?.sourceUnitId || existing?.data?.sourceUnitId) || null;
   const save=rollPoisonSave(actor,source);
 
   setLastRoll(
@@ -18999,18 +19029,23 @@ function resolveStinkingCloudExposure(actor,effect){
   );
 
   if(save.success){
-    log(`${actor.name} resists Stinking Cloud this round.`,"system");
+    if(existing && allowRecovery){
+      removeUnitEffect(actor,"nauseated");
+      log(`${actor.name} recovers from Stinking Cloud nausea.`,"system");
+    }else{
+      log(`${actor.name} resists Stinking Cloud this round.`,"system");
+    }
     return false;
   }
 
-  const rounds=d(4)+1;
   addUnitEffect(actor,{
     id:"nauseated",
     name:"Nauseated",
     kind:"debuff",
-    expiresRound:game.round+rounds,
-    detail:`Stinking Cloud: unable to attack or cast for ${rounds} round${rounds===1 ? "" : "s"}`,
-    data:{sourceUnitId:effect?.sourceUnitId}
+    detail:"Stinking Cloud: failed poison save; save again at the start of next turn",
+    data:{
+      sourceUnitId:effect?.sourceUnitId || existing?.data?.sourceUnitId || null
+    }
   });
   return true;
 }
@@ -19115,11 +19150,25 @@ function handleLevelTwoTurnEffects(actor){
     }
   }
 
-  if(getUnitEffect(actor,"nauseated")){
-    return skipTurnForSpellStatus(
-      actor,
-      "Nauseated",
-      `${actor.name} is overcome by nausea and cannot attack or cast.`
+  const nausea=getUnitEffect(actor,"nauseated");
+  const stinkingCloud=stinkingCloudAtUnit(actor);
+
+  if(nausea){
+    const nauseaSource=
+      stinkingCloud ||
+      {sourceUnitId:nausea.data?.sourceUnitId || null};
+
+    if(resolveStinkingCloudExposure(actor,nauseaSource,{allowRecovery:true})){
+      return skipTurnForSpellStatus(
+        actor,
+        "Nauseated",
+        `${actor.name} fails the poison save and loses the turn to Stinking Cloud nausea.`
+      );
+    }
+
+    setCombatMessage(
+      `${actor.name} recovers from Stinking Cloud nausea.`,
+      COMBAT_MESSAGE_MIN_HOLD_MS
     );
   }
 
@@ -19166,8 +19215,7 @@ function handleLevelTwoTurnEffects(actor){
     return true;
   }
 
-  const cloud=stinkingCloudAtUnit(actor);
-  if(cloud && resolveStinkingCloudExposure(actor,cloud)){
+  if(!nausea && stinkingCloud && resolveStinkingCloudExposure(actor,stinkingCloud)){
     return skipTurnForSpellStatus(
       actor,
       "Nauseated",
@@ -21021,12 +21069,20 @@ async function castWebSpell(action,targetHex){
   exitAimMode(false,false);
 
   const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
+  const durationRounds=Math.min(
+    Math.max(1,Number(spell.maxDurationRounds)||6),
+    Math.max(
+      1,
+      Math.floor(Number(level)||1)*
+      Math.max(1,Number(spell.durationRoundsPerCasterLevel)||1)
+    )
+  );
   addAreaEffect({
     id:`web:${Date.now()}`,
     type:"web",
     name:"Web",
     cells,
-    expiresRound:game.round+20*level,
+    expiresRound:game.round+durationRounds,
     sourceUnitId:caster.id
   });
 
@@ -21046,7 +21102,7 @@ async function castWebSpell(action,targetHex){
   }
 
   setCombatMessage(
-    `Web fills ${cells.length} hexes; ${trapped.length} creature${trapped.length===1 ? "" : "s"} trapped.`,
+    `Web fills ${cells.length} hexes for ${durationRounds} round${durationRounds===1 ? "" : "s"}; ${trapped.length} creature${trapped.length===1 ? "" : "s"} trapped.`,
     COMBAT_MESSAGE_MIN_HOLD_MS
   );
   await waitForCombatActionPause();
@@ -27313,7 +27369,7 @@ function draw(){
       actors.push({
         sortY:c.y+0.5,
         sortX:c.x,
-        fn:()=>drawFogVolumeCell(cell)
+        fn:()=>drawFogVolumeCell(cell,effect)
       });
     }
 
