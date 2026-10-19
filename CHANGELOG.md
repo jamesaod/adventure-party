@@ -16,6 +16,10 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 - When a visible unit occupies the aimed hex, normal unit statistics/status effects remain intact and the hex coordinates, LOS state, and area-effect cards are appended beneath them.
 - Hidden enemies remain hidden from AIM inspection; environmental effect information does not reveal an unseen creature.
 - Added `AdventurePartyAimTileEffects` diagnostics for effect-at-hex inspection and Stinking Cloud opacity queries.
+- Added the reviewed Latin incantation set to all implemented Level-2 Wizard spells with verbal components; Hypnotic Pattern remains intentionally silent because its components are S, M only.
+- Level-2 incantations now include `Caecitas!`, `Imago Tremula!`, `Lux Perpetua!`, `Orbis Tenebrarum!`, `Nubes Foetida!`, `Rete Araneum!`, and the remainder of the approved set through the shared spell-incantation framework.
+- Juvenile Red Dragon breath VFX now places the outer fast-moving flame lobes directly on the mathematical cone boundary, so roughly half of each edge lobe overlaps beyond the cone edge instead of being hard-clipped inside it.
+- Dragon breath flame density is substantially increased: 72 longitudinal slices with 4–12 lobes per slice, a denser muzzle bridge, 32 smoke puffs, up to 520 grain samples, and 680 ember particles.
 
 
 ## R222 — Authoritative perception and radial Darkness
