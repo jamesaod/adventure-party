@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R198",
-  "description": "Adventure Party sprite asset specifications through R198. R198 keeps the R197 wall silhouette/lighting baseline and adds the user-supplied repeating old-wood wall texture plus semantic doorway and window openings for the test building.",
+  "release": "R199",
+  "description": "Adventure Party sprite asset specifications through R199. R199 keeps the old-wood wall/window material, restores doorways to true geometric wall gaps, centers and widens windows by 50%, and gives LOS/illumination one continuous clear aperture equal to the widened glass opening rather than individual lattice panes.",
   "assets": {
     "fighter": {
       "source": {
