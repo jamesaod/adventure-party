@@ -3,6 +3,18 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R197 — Clean architectural wall silhouette
+
+- Reduced architectural wall height from 45 px to 35 px after visual review.
+- Reduced dynamic wall illumination intensity by 50% while preserving source-facing behavior, distance falloff, source color, and wall occlusion.
+- Removed all per-segment black base seams, end seams, and individual segment borders that produced internal lines at connected wall joints.
+- Added a structure-level wall silhouette pass: all visible wall slabs are rasterized into one union mask, dilated by 2 px, and the original mask is subtracted.
+- The resulting 2 px black outline appears only around the exterior of the combined wall shape, so joined segments read as one continuous stylized structure.
+- Wall faces remain a solid unbanded masonry color and wall tops remain one flat solid cap color.
+- The same exterior-only outline logic is used in both the primary battlefield pass and the post-LOS visible-wall repaint.
+- Wall shadows automatically track the revised 35 px height.
+- Movement, collision, LOS, volumetric blocking, and R195 illumination mechanics are unchanged.
+
 ## R196 — Taller illuminated architectural walls
 
 - Increased architectural wall height from 30 px to 45 px, a 50% increase. Wall blocking mechanics are unchanged.
