@@ -11008,13 +11008,21 @@ function projectilePathBlocked(source,target){
 }
 
 /* ============================================================
-   R136 — SOFTER CORNER-ANCHORED PARTY LOS / WALL-FRONT PASS
+   R215 — HEX-CENTER PARTY LOS
    ------------------------------------------------------------
-   Wall Test renders the union of all living friendly units as a continuous world-space line-of-sight mask.
-   Visibility rays stop against the NEAR EDGE of thick wall rectangles,
-   so blackout can split individual hexes directly at architectural walls.
-   A narrow feathered ring softens open-space LOS borders without falling
-   back to whole-hex blackouts.
+   Architectural visibility is still solved in continuous world space with
+   wall-blocked visibility polygons ("LOS cones"), but tactical visibility is
+   now binary by hex:
+
+   1) Test ONLY the center point of a tactical hex against each friendly
+      observer's LOS polygon.
+   2) If the center is visible and no obscuring magical area blocks the
+      centerline, the ENTIRE hex is visible.
+   3) If the center is not visible, the ENTIRE hex remains obscured.
+   4) Party LOS is the union of all living friendly observers.
+
+   This eliminates partial/feathered hex visibility and makes rendering,
+   targeting warnings, hidden-unit logic, and tactical LOS use one rule.
    ============================================================ */
 
 function friendlyVisibilityObservers(){
@@ -11039,22 +11047,65 @@ function isFriendlyCombatUnit(unit){
   return unit.faction===game.player.faction;
 }
 
-function visibilitySampleWorldPointsForHex(x,y){
-  const c=worldPointForHex(x,y);
-  const s=0.56;
-  const hw=(HEX_W/2)*s;
-  const hh=(HEX_H/2)*s;
-  const qh=(HEX_H/4)*s;
+function pointInSimplePolygon(point,vertices,eps=0.0001){
+  if(!point || !Array.isArray(vertices) || vertices.length<3) return false;
 
-  return [
-    {x:c.x,    y:c.y},
-    {x:c.x,    y:c.y-hh},
-    {x:c.x+hw, y:c.y-qh},
-    {x:c.x+hw, y:c.y+qh},
-    {x:c.x,    y:c.y+hh},
-    {x:c.x-hw, y:c.y+qh},
-    {x:c.x-hw, y:c.y-qh}
-  ];
+  /*
+    Visibility polygons are ordered angularly around the observer and can be
+    concave. Use an even/odd point-in-polygon test rather than the convex-only
+    helper used by architectural floor regions.
+  */
+  let inside=false;
+
+  for(let i=0,j=vertices.length-1;i<vertices.length;j=i++){
+    const a=vertices[j];
+    const b=vertices[i];
+
+    if(pointOnSegment(a,b,point,eps)){
+      return true;
+    }
+
+    const crosses=
+      ((a.y>point.y)!==(b.y>point.y)) &&
+      (
+        point.x <
+        ((b.x-a.x)*(point.y-a.y))/((b.y-a.y)||Number.EPSILON)+a.x
+      );
+
+    if(crosses) inside=!inside;
+  }
+
+  return inside;
+}
+
+function observerVisibilityContext(observer){
+  if(!observer || game?.condition!=="wall") return null;
+
+  const polygon=wallTestVisibilityPolygonWorld(observer);
+  if(polygon.length<3) return null;
+
+  return {
+    observer,
+    origin:worldPointForHex(observer.x,observer.y),
+    polygon
+  };
+}
+
+function isHexCenterInsideObserverLosCone(observer,x,y,context=null){
+  if(!observer || !inside(x,y)) return false;
+  if(observer.x===x && observer.y===y) return true;
+
+  const resolved=
+    context?.observer===observer
+      ? context
+      : observerVisibilityContext(observer);
+
+  if(!resolved?.polygon?.length) return false;
+
+  return pointInSimplePolygon(
+    worldPointForHex(x,y),
+    resolved.polygon
+  );
 }
 
 function visibilityWorldBounds(){
@@ -11211,27 +11262,42 @@ function fogBlocksVisibilityToHex(observer,x,y){
   );
 }
 
-function isHexVisibleFromObserver(observer,x,y){
+function isHexVisibleFromObserver(observer,x,y,context=null){
   if(!observer || !inside(x,y)) return false;
   if(observer.x===x && observer.y===y) return true;
+
+  /*
+    R215: the center of the tactical hex is the sole architectural LOS sample.
+    Obscuring magic is then applied along that same center-to-center path.
+  */
+  if(!isHexCenterInsideObserverLosCone(observer,x,y,context)){
+    return false;
+  }
 
   if(fogBlocksVisibilityToHex(observer,x,y)){
     return false;
   }
 
-  const eye=worldPointForHex(observer.x,observer.y);
-  const samples=visibilitySampleWorldPointsForHex(x,y);
-
-  return samples.some(sample=>
-    !architecturalWallBlocksWorldLine(eye,sample,"los")
-  );
+  return true;
 }
 
 function isHexVisibleToFriendlyParty(x,y){
   if(game?.condition!=="wall") return true;
-  const observers=friendlyVisibilityObservers();
-  if(!observers.length) return true;
-  return observers.some(observer=>isHexVisibleFromObserver(observer,x,y));
+
+  const contexts=friendlyVisibilityObservers()
+    .map(observer=>observerVisibilityContext(observer))
+    .filter(Boolean);
+
+  if(!contexts.length) return true;
+
+  return contexts.some(context=>
+    isHexVisibleFromObserver(
+      context.observer,
+      x,
+      y,
+      context
+    )
+  );
 }
 
 function isUnitVisibleToFriendlyParty(unit){
@@ -11250,16 +11316,24 @@ function isUnitVisibleToFriendlyParty(unit){
 
   if(game?.condition!=="wall") return true;
 
-  return observers.some(observer=>
-    occupiedHexes(unit).some(cell=>{
-      if(fogBlocksVisibilityToHex(observer,cell.x,cell.y)) return false;
+  const contexts=observers
+    .map(observer=>observerVisibilityContext(observer))
+    .filter(Boolean);
 
-      return !architecturalWallBlocksWorldLine(
-        worldPointForHex(observer.x,observer.y),
-        worldPointForHex(cell.x,cell.y),
-        "los"
-      );
-    })
+  /*
+    A multi-hex creature is visible if the center of any occupied tactical hex
+    is visible to any friendly observer. Rendering remains entity-wide once
+    detected; individual sprite fragments are never clipped by the LOS cone.
+  */
+  return contexts.some(context=>
+    occupiedHexes(unit).some(cell=>
+      isHexVisibleFromObserver(
+        context.observer,
+        cell.x,
+        cell.y,
+        context
+      )
+    )
   );
 }
 
@@ -11423,83 +11497,14 @@ function isHexVisibleToWallTestObserver(x,y){
   return isHexVisibleToFriendlyParty(x,y);
 }
 
-function centroidOfPoints(points){
-  if(!points.length) return {x:0,y:0};
-  let x=0;
-  let y=0;
-  for(const point of points){
-    x+=point.x;
-    y+=point.y;
-  }
-  return {x:x/points.length,y:y/points.length};
-}
-
-function expandScreenPolygon(points,amount){
-  if(!points.length || !amount) return points.map(point=>({x:point.x,y:point.y}));
-  const center=centroidOfPoints(points);
-  return points.map(point=>{
-    const dx=point.x-center.x;
-    const dy=point.y-center.y;
-    const len=Math.hypot(dx,dy)||1;
-    return {
-      x:point.x+(dx/len)*amount,
-      y:point.y+(dy/len)*amount
-    };
-  });
-}
-
-function contractScreenPolygonTowardObserver(points,observerScreen,amount){
-  if(!points.length || !amount){
-    return points.map(point=>({...point}));
-  }
-
-  return points.map(point=>{
-    /*
-      R133: wall-hit vertices are hard anchors. Feather layers may retreat
-      through open space, but they are never allowed to pull the LOS boundary
-      away from the exact masonry corner/edge that created the occlusion.
-    */
-    if(point.isWall){
-      return {...point};
-    }
-
-    const dx=observerScreen.x-point.x;
-    const dy=observerScreen.y-point.y;
-    const len=Math.hypot(dx,dy)||1;
-    const travel=Math.min(Math.max(0,amount),Math.max(0,len-1));
-    return {
-      ...point,
-      x:point.x+(dx/len)*travel,
-      y:point.y+(dy/len)*travel
-    };
-  });
-}
-
 function drawWallTestLineOfSightMask(){
   if(game?.condition!=="wall") return;
 
-  const observers=friendlyVisibilityObservers();
-  if(!observers.length) return;
+  const contexts=friendlyVisibilityObservers()
+    .map(observer=>observerVisibilityContext(observer))
+    .filter(Boolean);
 
-  const visibilitySets=[];
-
-  for(const observer of observers){
-    const worldPolygon=wallTestVisibilityPolygonWorld(observer);
-    if(worldPolygon.length<3) continue;
-
-    visibilitySets.push({
-      observer,
-      observerScreen:screenPointForWorld(worldPointForHex(observer.x,observer.y)),
-      screenPolygon:worldPolygon.map(point=>({
-        ...screenPointForWorld(point),
-        isWall:!!point.isWall,
-        wallId:point.wallId || null,
-        isBoundary:!!point.isBoundary
-      }))
-    });
-  }
-
-  if(!visibilitySets.length) return;
+  if(!contexts.length) return;
 
   const maskCanvas=drawWallTestLineOfSightMask.maskCanvas ||
     (drawWallTestLineOfSightMask.maskCanvas=document.createElement("canvas"));
@@ -11513,49 +11518,40 @@ function drawWallTestLineOfSightMask(){
   maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height);
   maskCtx.globalCompositeOperation="source-over";
 
-  /* R132: fully unseen terrain remains readable at 70% black. */
+  /* Fully unseen terrain remains readable at 70% black. */
   maskCtx.fillStyle="rgba(0,0,0,0.70)";
   maskCtx.fillRect(0,0,maskCanvas.width,maskCanvas.height);
 
-  const maskPolygonPath=points=>{
-    if(!points?.length) return;
-    maskCtx.beginPath();
-    maskCtx.moveTo(points[0].x,points[0].y);
-    for(let i=1;i<points.length;i++){
-      maskCtx.lineTo(points[i].x,points[i].y);
-    }
-    maskCtx.closePath();
-  };
-
   /*
-    Party LOS is a union. Each friendly polygon removes darkness from the same
-    mask. The feather is intentionally INSIDE the true LOS boundary: unseen
-    space stays at the requested 70% right up to a wall, while the visible
-    side fades gently toward full brightness over roughly 80 screen pixels.
-    This also avoids revealing slivers behind solid walls.
+    R215: visibility is no longer painted as a smooth polygon through tactical
+    cells. The continuous LOS polygon decides only whether a HEX CENTER is in
+    sight. Every qualifying hex is then punched completely out of the blackout.
   */
   maskCtx.globalCompositeOperation="destination-out";
+  maskCtx.fillStyle="rgba(0,0,0,1)";
 
-  const featherBands=[
-    {inset:0,  alpha:0.08},
-    {inset:12, alpha:0.13},
-    {inset:24, alpha:0.20},
-    {inset:38, alpha:0.30},
-    {inset:52, alpha:0.43},
-    {inset:66, alpha:0.62},
-    {inset:82, alpha:1.00}
-  ];
+  for(const tile of visibleHexes()){
+    const visible=contexts.some(context=>
+      isHexVisibleFromObserver(
+        context.observer,
+        tile.x,
+        tile.y,
+        context
+      )
+    );
 
-  for(const {screenPolygon,observerScreen} of visibilitySets){
-    for(const band of featherBands){
-      const polygon=band.inset===0
-        ? screenPolygon
-        : contractScreenPolygonTowardObserver(screenPolygon,observerScreen,band.inset);
+    if(!visible) continue;
 
-      maskPolygonPath(polygon);
-      maskCtx.fillStyle=`rgba(0,0,0,${band.alpha})`;
-      maskCtx.fill();
+    const vertices=hexScreenVertices(tile.x,tile.y);
+    maskCtx.beginPath();
+    maskCtx.moveTo(vertices[0].x,vertices[0].y);
+
+    for(let i=1;i<vertices.length;i++){
+      maskCtx.lineTo(vertices[i].x,vertices[i].y);
     }
+
+    maskCtx.closePath();
+    maskCtx.fill();
   }
 
   maskCtx.globalCompositeOperation="source-over";
@@ -11607,17 +11603,25 @@ function isFogCellArchitecturallyVisibleToFriendlyParty(cell){
   if(!cell || !inside(cell.x,cell.y)) return false;
   if(game?.condition!=="wall") return true;
 
-  const observers=friendlyVisibilityObservers();
-  if(!observers.length) return false;
+  const contexts=friendlyVisibilityObservers()
+    .map(observer=>observerVisibilityContext(observer))
+    .filter(Boolean);
+
+  if(!contexts.length) return false;
 
   /*
-    Fog itself intentionally blocks gameplay LOS. For this foreground repaint
-    we only need to know whether solid architecture hides the fog volume from
-    every friendly observer; otherwise the visible fog surface may participate
-    in the same depth ordering as masonry and units.
+    Fog must remain drawable as a foreground volume even though it blocks
+    gameplay sight into/through its own hex. Therefore this presentation test
+    uses the same R215 center-in-LOS-cone rule but intentionally ignores the
+    fog self-obscuration check.
   */
-  return observers.some(observer=>
-    !architecturalWallBlocksLOS(observer,cell)
+  return contexts.some(context=>
+    isHexCenterInsideObserverLosCone(
+      context.observer,
+      cell.x,
+      cell.y,
+      context
+    )
   );
 }
 
@@ -27839,9 +27843,9 @@ function draw(){
   drawProjectileFx();
 
   /*
-    R129: blackout unseen hexes after all physical battlefield layers so units,
-    walls, shadows, terrain, and transient effects are concealed together.
-    UI/message/text passes remain readable above the visibility mask.
+    R215: blackout is binary by tactical hex. The center point determines LOS;
+    a visible center reveals the complete hex, while an unseen center leaves the
+    complete hex darkened. UI/message/text passes remain above the LOS mask.
   */
   drawWallTestLineOfSightMask();
 
