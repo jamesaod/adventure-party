@@ -3,6 +3,17 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R225 — Universal Pool of Radiance-style casting sound
+
+- Added a temporary universal spell-casting sound based on the reconstructed Pool of Radiance DOS PC-speaker SFX program #07 found in the user's uploaded PC game files.
+- The implementation does not ship an SSI sampled audio file; it reconstructs the selected PC-speaker waveform through the existing Web Audio pipeline from a compact 1-bit 11.025 kHz representation.
+- Every successful spell commit now plays the shared Pool of Radiance-style casting cue, including spells without a verbal component such as Hypnotic Pattern.
+- Failed spell commits, including Deafness-caused verbal miscasts or unavailable memorized spells, do not play the casting cue.
+- Existing spell-specific impact, cloud, damage, status, and environmental sounds are unchanged and continue to layer after the shared casting sound.
+- The casting sound obeys the existing global SND toggle and shared SFX gain.
+- Added `AdventurePartyCastingSound` diagnostics for manual playback and source identification.
+
+
 ## R224 — Hypnotic Pattern persistent VFX
 
 - Added a dedicated persistent battlefield visual for Hypnotic Pattern without changing its established gameplay resolution.
