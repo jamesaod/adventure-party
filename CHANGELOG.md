@@ -4,6 +4,13 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R207 — Softer wall illumination
+
+- Reduced dynamic illumination painted onto visible architectural wall faces by 50% relative to R206.
+- Wall-light occlusion, visible-face filtering, terrain/floor illumination, LOS, shadows, thresholds, and all other rendering remain unchanged.
+
+
+
 ## R206 — Wall-aligned thresholds, black indoor grid, and cap union outline
 
 - Threshold depth now matches architectural wall thickness exactly, centered on the wall axis with no extra overhang.
