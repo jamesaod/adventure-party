@@ -3,6 +3,21 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R223 — LOS-aware Stinking Cloud and AIM tile effects
+
+- Stinking Cloud now uses two presentation opacity levels without changing its gameplay rules.
+- Party-visible Stinking Cloud cells retain the R219/R221 low body opacity of 0.125 so visible units remain readable through the green cloud.
+- Stinking Cloud cells outside current friendly-party LOS render at 0.50 opacity, restoring a much denser cloud only over hidden tactical space.
+- Wall of Fog and Fog Cloud opacity are unchanged.
+- Because friendly-party visibility is a union of living friendly observers, a party member standing inside Stinking Cloud keeps its own visible cell at the low opacity while unseen neighboring cloud cells remain dense.
+- AIM mode now inspects the tactical hex itself instead of preserving stale unit information when the aimed hex is empty or contains a hidden enemy.
+- Persistent area effects occupying the aimed hex are shown in the right-side information panel, including fog/cloud effects, Grease, Web, Darkness, Flaming Sphere, and radial illumination fields.
+- AIM tile-effect cards include the effect name, tactical rule summary, remaining duration when available, and source creature when known.
+- When a visible unit occupies the aimed hex, normal unit statistics/status effects remain intact and the hex coordinates, LOS state, and area-effect cards are appended beneath them.
+- Hidden enemies remain hidden from AIM inspection; environmental effect information does not reveal an unseen creature.
+- Added `AdventurePartyAimTileEffects` diagnostics for effect-at-hex inspection and Stinking Cloud opacity queries.
+
+
 ## R222 — Authoritative perception and radial Darkness
 
 - Added one authoritative automated-combat perception query that combines invisibility/special vision, blindness, architecture, fog/clouds, magical Darkness, and multi-hex occupied footprints.
