@@ -4,6 +4,23 @@ Adventure Party used numbered standalone HTML releases before Git became the pri
 
 
 
+## R208 — Charm Person and battle-side allegiance
+
+- Added the Level 1 Wizard spell Charm Person to the spell catalog and combat casting system.
+- Charm Person uses a 12-hex tactical range, one living humanoid target of Medium size or smaller, and a save vs. spell to negate.
+- Current Kobolds, Kobold Body Guards, Kobold Slingers, and Orcs are explicitly classified as humanoids; the Juvenile Red Dragon is not eligible.
+- On a failed save, the target changes to the caster's faction for the current battle while retaining its existing initiative slot, equipment, statistics, and MOB AI.
+- Charmed creatures remain AI-controlled; they are never converted into player-controlled party members.
+- MOB melee/ranged targeting now respects current faction, allowing a charmed creature to attack its former allies and allowing those former allies to target it in return.
+- Player targeting, movement, Guard reactions, MOB Guard reactions, and Kobold morale counts now respect the temporary allegiance change.
+- A successful charm clears stale Taunt and ordinary group-morale panic instructions so the converted AI does not immediately obey an obsolete enemy-side command.
+- Added a persistent Charmed status with orbiting heart VFX and explicit "Charmed AI" / "Charmed — Friendly AI" unit-panel labels.
+- Charm Person lasts for the battle; the target's original faction is restored automatically when combat finishes.
+- Victory now occurs when no hostile combatants remain, including the case where surviving enemies have changed sides.
+- R207 wall-illumination tuning and prior terrain/architecture behavior are otherwise unchanged.
+
+
+
 ## R207 — Softer wall illumination
 
 - Reduced dynamic illumination painted onto visible architectural wall faces by 50% relative to R206.
