@@ -3,6 +3,17 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R209 — Level 1 incantations and Level 2 Wizard combat expansion
+
+- Added the approved Latin-style spoken incantations for Level 1 Wizard spells that previously lacked them: Armor, Burning Hands, Charm Person, Chill Touch, Enlarge, Grease, Light, Protection From Evil, Shield, Shocking Grasp, Sleep, Spook, and Taunt.
+- Implemented the approved AD&D 2nd Edition Level 2 Wizard combat spell set: Blindness, Blur, Continual Light, Darkness 15' Radius, Deafness, Detect Invisibility, Flaming Sphere, Fog Cloud, Glitterdust, Hypnotic Pattern, Invisibility, Melf's Acid Arrow, Mirror Image, Pyrotechnics, Ray of Enfeeblement, Scare, Spectral Hand, Stinking Cloud, Strength, Tasha's Uncontrollable Hideous Laughter, and Web.
+- Integrated the new spells with the existing targeting, saving throw, status, illumination/LOS, area-effect, projectile, hidden-unit, damage-over-time, panic, and persistent VFX systems rather than introducing parallel combat paths.
+- Invisibility breaks on offensive action and interacts with Detect Invisibility and Glitterdust; Mirror Image intercepts attacks; Blur tracks first/subsequent attacks by attacker; Deafness can interfere with verbal spellcasting.
+- Continual Light and Darkness participate in battlefield illumination; Fog Cloud and Stinking Cloud use persistent fog-area behavior; Flaming Sphere and Web create persistent tactical hazards.
+- Web supports restraint/escape behavior and fire removal; Melf's Acid Arrow applies continuing acid damage; Scare reuses the established panic/flee system; Spectral Hand extends touch-spell delivery.
+- Knock and Wizard Lock remain intentionally deferred until functional doors are implemented.
+
+
 
 ## R208 — Charm Person and battle-side allegiance
 
