@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R197",
-  "description": "Adventure Party sprite asset specifications through R197. R197 reduces architectural wall height to 35 px, halves wall-light response, removes internal segment seams, and applies the 2 px black border only to the exterior silhouette of the combined wall structure.",
+  "release": "R198",
+  "description": "Adventure Party sprite asset specifications through R198. R198 keeps the R197 wall silhouette/lighting baseline and adds the user-supplied repeating old-wood wall texture plus semantic doorway and window openings for the test building.",
   "assets": {
     "fighter": {
       "source": {
