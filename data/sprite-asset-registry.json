@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R202",
-  "description": "Adventure Party asset specifications through R202. R202 preserves R201 hex-aligned openings/projectile rules, adds conservative extruded shadow-volume subtraction for solid-wall light occlusion, limits old-wood texture to vertical faces, restores flat wall caps, and adds explicit vertical seams at connected 90-degree architectural corners.",
+  "release": "R203",
+  "description": "Adventure Party asset specifications through R203. R203 vertically centers wall-window planes and apertures while preserving R202 wall rendering/lighting behavior, and hardens the combat event log with bottom gutter space plus delayed re-pinning so the newest line remains fully visible.",
   "assets": {
     "fighter": {
       "source": {

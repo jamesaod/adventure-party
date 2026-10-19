@@ -1065,9 +1065,18 @@ button, input, select, textarea {
   min-height:0;
   overflow:auto;
   overscroll-behavior:contain;
+  box-sizing:border-box;
   font-size:14px;
   line-height:1.2;
-  padding-right:5px;
+  padding:0 5px 10px 0;
+  scroll-padding-bottom:10px;
+}
+
+#combatLog::after {
+  content:"";
+  display:block;
+  height:6px;
+  pointer-events:none;
 }
 
 .log-line { margin-bottom:3px; color:var(--text); }
