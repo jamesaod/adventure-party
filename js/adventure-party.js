@@ -9044,6 +9044,15 @@ function applyCharmPersonAllegiance(target,caster){
 
   const originalFaction=target.faction;
 
+  removeUnitEffect(target,"taunt");
+
+  if(
+    target.fleeing &&
+    getUnitEffect(target,MORALE_PANIC_EFFECT_ID)
+  ){
+    setMoraleFleeing(target,false);
+  }
+
   addUnitEffect(target,{
     id:"charm-person",
     name:"Charmed",
@@ -9059,13 +9068,6 @@ function applyCharmPersonAllegiance(target,caster){
   target.faction=caster.faction;
   target.guard=false;
   target.guardBaselineAdjacentIds=[];
-
-  if(
-    target.fleeing &&
-    getUnitEffect(target,MORALE_PANIC_EFFECT_ID)
-  ){
-    setMoraleFleeing(target,false);
-  }
 
   return getUnitEffect(target,"charm-person");
 }
@@ -14015,9 +14017,9 @@ function checkCombatVictory(){
     setTimeout(()=>{
       finishCombat(
         "Victory",
-        `All ${game.enemies.length} hostile units are dead or have fled. `+
+        "No hostile combatants remain; enemies are dead, have fled, or have changed sides. "+
         livingPartyMembers()
-          .map(unit=>`${unit.name} ${unit.hp}/${unit.maxHp} HP`)
+          .map(unit=>unit.name+" "+unit.hp+"/"+unit.maxHp+" HP")
           .join("; ")+"."
       );
     },deathFx ? 1000 : 100);
@@ -20914,7 +20916,7 @@ function updateUnitInfoPanel(){
       `<span>Type</span><span>${inspected.name}</span>`+
       `<span>Facing</span><span>${facingText}</span>`+
       `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
-      `<span>Controller</span><span>MOB</span>`+
+      `<span>Controller</span><span>${getUnitEffect(inspected,"charm-person") ? "Charmed AI" : "MOB"}</span>`+
       `<span>Footprint</span><span>${unitFootprintCellCount(inspected)} hex${unitFootprintCellCount(inspected)===1 ? "" : "es"}</span>`+
       `<span>HD</span><span>${inspected.hitDiceLabel || "—"}</span>`+
       `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
