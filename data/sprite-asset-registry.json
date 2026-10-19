@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R203",
-  "description": "Adventure Party asset specifications through R203. R203 vertically centers wall-window planes and apertures while preserving R202 wall rendering/lighting behavior, and hardens the combat event log with bottom gutter space plus delayed re-pinning so the newest line remains fully visible.",
+  "release": "R204",
+  "description": "Adventure Party asset specifications through R204. R204 adds the CC BY 4.0 PamNawi handpainted stone floor as a world-anchored indoor material, greys tactical hex borders only where they cross indoor floor, and prevents dynamic wall glow from appearing on the visible wall face when the light source is actually on the hidden/opposite side.",
   "assets": {
     "fighter": {
       "source": {
