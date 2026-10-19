@@ -3,6 +3,25 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R226 — AD&D 2e third-level tactical wizard spells
+
+- Added sixteen new combat-ready Level-3 Wizard spells to the shared spell catalog; Fireball remains on its established implementation.
+- Added Blink, Dispel Magic, Flame Arrow, Gust of Wind, Haste, Hold Person, Hold Undead, Infravision, Invisibility 10' Radius, Lightning Bolt, Melf's Minute Meteors, Protection From Evil 10' Radius, Protection From Normal Missiles, Slow, Vampiric Touch, and Wind Wall.
+- Added the reviewed pseudo-Latin incantations: `Saltus Aetheris!`, `Magiam Dissolve!`, `Sagitta Flammea!`, `Ventus Impelle!`, `Tempus Accelera!`, `Corpus Immobile!`, `Mortui Sistite!`, `Visus Nocturnus!`, `Velum Invisibile!`, `Fulmen Feri!`, `Meteora Minuta!`, `Circulus Contra Malum!`, `Tela Repelle!`, `Tempus Retarda!`, `Vita Exhauri!`, and `Murus Venti!`.
+- Lightning Bolt uses the narrow 80-foot tactical line, 1d6/level damage to a 10d6 maximum, save for half, friendly fire, and AD&D-style rebound when a solid barrier prevents the bolt from completing its path.
+- Haste doubles tactical movement and attack rate, applies the −2 initiative adjustment, and cancels Slow; Slow uses its −4 save penalty, halves movement/attack rate, applies −4 attacks and +4 AC, and cancels Haste on a failed save.
+- Hold Person preserves the concentrated-target save penalties (−3 for one target, −1 for two); Hold Undead enforces the caster-level Hit Dice budget and automatic holding of mindless undead.
+- Melf's Minute Meteors creates one meteor per caster level and uses the five-meteors-per-round AD&D discharge mode, carrying remaining meteors into later turns.
+- Protection From Normal Missiles now negates ordinary longbow arrows and sling ammunition; Protection From Evil 10' Radius extends the established evil-attack/save modifiers as a mobile one-hex aura.
+- Wind Wall is a persistent tactical barrier that deflects arrows, penalizes sling missiles, disperses overlapping fog/cloud cells, and prevents later gaseous effects from occupying its wall cells.
+- Gust of Wind clears fog/cloud cells in its line and applies a one-round movement impediment based on creature size.
+- Invisibility 10' Radius applies only to creatures inside the initial radius; leaving the radius ends that creature's veil, while a hostile action by the central recipient collapses the shared veil.
+- Dispel Magic removes eligible unit, persistent-area, Hypnotic Pattern, and Wind Wall effects using the AD&D 2e level-adjusted dispel check; a caster's own magic is automatically dispelled.
+- Vampiric Touch resolves as a melee spell-touch attack, ignores undead, drains 1d6 per two caster levels to a 6d6 maximum, and tracks vitality above normal maximum as temporary vampiric hit points.
+- Added persistent and transient VFX for Wind Wall, Lightning Bolt, Gust of Wind, Haste, Slow, Hold, Infravision, Blink, missile protection, protection aura, and orbiting Minute Meteors.
+- The R225 universal Pool of Radiance-style casting cue automatically applies to all newly committed R226 spells.
+- Added `AdventurePartyLevel3Spells` diagnostics for the new spell registry, active Wind Walls, radius-invisibility cleanup, and mobility recomputation.
+
 ## R225 — Universal Pool of Radiance-style casting sound
 
 - Added a temporary universal spell-casting sound based on the reconstructed Pool of Radiance DOS PC-speaker SFX program #07 found in the user's uploaded PC game files.
