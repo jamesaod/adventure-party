@@ -11,3 +11,7 @@ python -m http.server 8000
 Then open `http://localhost:8000/`.
 
 The project intentionally remains dependency-free.
+
+## Third-party assets
+
+See [ATTRIBUTIONS.md](ATTRIBUTIONS.md) for third-party artwork credits and license notices.
