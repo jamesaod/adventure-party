@@ -3,6 +3,18 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R218 — Stinking Cloud opacity and title MIDI disable
+
+- Reduced Stinking Cloud's rendered body opacity by 50% relative to R217, from a 0.50 global cloud alpha to 0.25.
+- Wall of Fog and Fog Cloud retain their existing opacity.
+- Kept the established green Stinking Cloud outline at its current strength so the affected tactical footprint remains readable.
+- Disabled the title MIDI-derived music sequencer for now.
+- Preserved the shared Web Audio context, combat SFX, spell sounds, weather audio, and the global SND toggle.
+- Existing screen-router calls to start/stop title music remain compatibility-safe no-ops so removing the MIDI player does not disturb navigation or audio unlock behavior.
+- Attack presentation pacing now holds combat progression for the full one-second standard attack pose instead of allowing the next turn/camera recenter to begin after the shorter generic turn delay.
+- Authored attack poses longer than one second, such as the Juvenile Red Dragon breath pose, retain their longer duration.
+
+
 ## R217 — Shared obscuring-volume line of sight
 
 - Added one shared obscuring-volume LOS system for Wall of Fog, Fog Cloud, Stinking Cloud, and effective magical Darkness.
