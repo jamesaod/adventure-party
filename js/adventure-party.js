@@ -19157,7 +19157,7 @@ async function triggerMobGuardsAgainst(target){
     return;
   }
 
-  const guards=activeEnemies()
+  const guards=activeCombatants()
     .filter(mob=>
       mob.controller==="mob" &&
       mob.guard &&
