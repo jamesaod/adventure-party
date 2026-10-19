@@ -9,49 +9,38 @@
 // R168 workflow test: incremental repository update confirmed.
 
 
-async function verifyLocalGoldBoxFont(){
+async function verifyWebUIFont(){
   const status=document.getElementById("fontStatus");
 
   try{
-    if(!document.fonts){
-      throw new Error("Font Loading API unavailable.");
-    }
+    if(document.fonts){
+      await document.fonts.load('700 18px "EB Garamond"');
+      await document.fonts.ready;
 
-    /*
-      Force the browser to request the local project asset. With the
-      supplied localhost launcher this path is same-origin.
-    */
-    await document.fonts.load('18px "AdventureGoldBox"');
-    await document.fonts.ready;
-
-    const loaded=document.fonts.check(
-      '18px "AdventureGoldBox"',
-      "ADVENTURE PARTY GOLD BOX 0123456789"
-    );
-
-    if(!loaded){
-      throw new Error("Gold Box font not available.");
+      if(!document.fonts.check('700 18px "EB Garamond"')){
+        throw new Error("EB Garamond Bold web font did not load.");
+      }
     }
 
     if(status){
-      status.textContent="FONT: GOLD BOX — LOCAL ASSET LOADED";
+      status.textContent="FONT: EB GARAMOND BOLD — WEB FONT";
       status.classList.remove("font-missing");
       status.classList.add("font-ok");
     }
 
-    document.documentElement.dataset.uiFont="gold-box-local";
+    document.documentElement.dataset.uiFont="eb-garamond-bold";
 
     if(game && typeof draw==="function"){
       draw();
     }
   }catch(error){
     if(status){
-      status.textContent="FONT: MISSING — RUN Run_Adventure_Party.bat";
+      status.textContent="FONT: EB GARAMOND UNAVAILABLE — SERIF FALLBACK";
       status.classList.remove("font-ok");
       status.classList.add("font-missing");
     }
 
-    document.documentElement.dataset.uiFont="fallback";
+    document.documentElement.dataset.uiFont="serif-fallback";
   }
 }
 
@@ -2233,7 +2222,7 @@ window.addEventListener("resize",()=>{
 
 if(document.fonts?.ready){
   document.fonts.ready.then(()=>{
-    verifyLocalGoldBoxFont();
+    verifyWebUIFont();
 
     if(game && typeof draw==="function"){
       draw();
@@ -3364,7 +3353,7 @@ function drawScaleTestHex(ctx,cx,cy,w=122,h=92){
 
 function drawScaleTestLabel(ctx,textValue,x,y,color="#f0d978"){
   ctx.save();
-  ctx.font='12px "AdventureGoldBox", "Gold Box", "Lucida Console", monospace';
+  ctx.font='700 12px "EB Garamond", Georgia, "Times New Roman", serif';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.lineWidth=3;
@@ -3407,7 +3396,7 @@ function renderKoboldScaleTest(){
   ctx.imageSmoothingEnabled=false;
 
   ctx.save();
-  ctx.font='18px "AdventureGoldBox", "Gold Box", "Lucida Console", monospace';
+  ctx.font='700 18px "EB Garamond", Georgia, "Times New Roman", serif';
   ctx.textAlign="left";
   ctx.textBaseline="middle";
   ctx.fillStyle="#f0d978";
@@ -3504,7 +3493,7 @@ function renderKoboldScaleTest(){
 
   ctx.save();
   ctx.fillStyle="#7ee7ff";
-  ctx.font='13px "AdventureGoldBox", "Gold Box", "Lucida Console", monospace';
+  ctx.font='700 13px "EB Garamond", Georgia, "Times New Roman", serif';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.fillText(
@@ -25096,7 +25085,7 @@ function drawCombatMessageBox(){
     boxH-2
   );
 
-  ctx.font='18px "AdventureGoldBox", "Gold Box", "GoldBox", "Lucida Console", monospace';
+  ctx.font='700 18px "EB Garamond", Georgia, "Times New Roman", serif';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.fillStyle=lettering;
@@ -25285,7 +25274,7 @@ function drawFriendlyMage(mage){
 
   /* Temporary Mage identifier until dedicated wizard art is supplied. */
   ctx.save();
-  ctx.font='bold 11px "AdventureGoldBox", "Lucida Console", monospace';
+  ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.lineWidth=3;
@@ -26791,7 +26780,7 @@ function drawMagicEffectFx(){
     /* Kind-specific application symbol. */
     if(fx.kind==="sleep"){
       ctx.save();
-      ctx.font='bold 12px "AdventureGoldBox", "Lucida Console", monospace';
+      ctx.font='700 12px "EB Garamond", Georgia, "Times New Roman", serif';
       ctx.textAlign="center";
       ctx.textBaseline="middle";
       ctx.lineWidth=2.5;
@@ -26807,7 +26796,7 @@ function drawMagicEffectFx(){
       drawStatusStar(c.x-11-local*2,c.y-39-local*5,2.8,`rgba(255,250,211,${0.88*fade})`,`rgba(20,13,5,${0.80*fade})`);
     }else if(fx.kind==="confusion"){
       ctx.save();
-      ctx.font='bold 13px "AdventureGoldBox", "Lucida Console", monospace';
+      ctx.font='700 13px "EB Garamond", Georgia, "Times New Roman", serif';
       ctx.textAlign="center";
       ctx.textBaseline="middle";
       ctx.lineWidth=2.8;
@@ -26972,7 +26961,7 @@ function drawPersistentSleepStatusFx(){
     const zFade=Math.sin(Math.PI*drift);
 
     ctx.save();
-    ctx.font='bold 11px "AdventureGoldBox", "Lucida Console", monospace';
+    ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.lineWidth=2.6;
@@ -27064,7 +27053,7 @@ function drawPersistentConfusionStatusFx(){
       const alpha=0.72+0.16*Math.sin(phase*2.5+q);
 
       ctx.save();
-      ctx.font='bold 11px "AdventureGoldBox", "Lucida Console", monospace';
+      ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
       ctx.textAlign="center";
       ctx.textBaseline="middle";
       ctx.lineWidth=2.4;
@@ -27348,7 +27337,7 @@ function drawPersistentTauntStatusFx(){
     const exY=c.y-45+bob;
 
     ctx.save();
-    ctx.font='bold 12px "AdventureGoldBox", "Lucida Console", monospace';
+    ctx.font='700 12px "EB Garamond", Georgia, "Times New Roman", serif';
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.lineWidth=2.8;
@@ -27611,7 +27600,7 @@ function drawWhiteBattlefieldText(textValue,x,y,{fontSize=14,maxWidth=null}={}){
   if(!textValue) return;
 
   ctx.save();
-  ctx.font=`${fontSize}px "AdventureGoldBox", "Gold Box", "GoldBox", "Lucida Console", monospace`;
+  ctx.font=`700 ${fontSize}px "EB Garamond", Georgia, "Times New Roman", serif`;
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.lineWidth=4;
@@ -28497,7 +28486,7 @@ if(audioCtx && audioCtx.state==="running"){
 
 updateAudioIndicators();
 window.addEventListener("DOMContentLoaded",()=>{
-  verifyLocalGoldBoxFont();
+  verifyWebUIFont();
 });
 
 /* R107 reusable persistent debuff VFX hook: Sleep, Unconscious, Confusion, Taunt. */
