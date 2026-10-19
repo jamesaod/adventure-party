@@ -3,6 +3,20 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R212 — Persistent area spell interaction and saving-throw presentation
+
+- Added a shared persistent-area interaction pipeline for Grease, Web, and Stinking Cloud.
+- When one of those spells is cast over a creature, or a creature moves into any affected hex, the creature immediately makes the appropriate saving throw.
+- Moving from one affected hex to another affected hex triggers a new saving throw on every movement step.
+- Saving-throw notifications now show the save category, raw d20, modifiers, modified result, target number, and SUCCESS/FAILED result, and hold combat for one second.
+- Failed saves produce a second one-second combat message describing the resulting condition: Prone from Grease, Webbed from Web, or Nauseated from Stinking Cloud.
+- A failed persistent-area save halts the creature's remaining movement for that turn.
+- Web and Grease no longer generate an extra save merely because a creature begins its turn standing still in the same affected hex.
+- Stinking Cloud retains the R211 nausea recovery rule: an already-nauseated creature makes a fresh poison save at the start of each turn, recovering immediately on success and losing the turn on failure.
+- Persistent area spells now use last-cast ownership per hex. Casting a new area spell over an older one removes only the overlapping hexes from the older spell; all non-overlapping hexes remain active.
+- If replacement removes the Web from beneath a Webbed creature, the Webbed condition is cleared immediately.
+
+
 ## R211 — Stinking Cloud palette and recurring nausea saves
 
 - Recolored Stinking Cloud from ordinary grey fog to a dedicated animated mixture of olive, moss, deep green, yellow-green, and pale sickly-green billows while preserving normal Wall of Fog/Fog Cloud colors.
