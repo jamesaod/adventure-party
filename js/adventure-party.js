@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R200';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R201';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,12 +2093,12 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R200';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R200';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R201';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R201';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R200';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R200';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R201';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R201';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -4769,15 +4769,6 @@ function configureArchitecturalWalls(mode){
   if(mode!=="wall") return;
 
   const r=WALL_TEST_ROOM;
-  /*
-    R196: architectural walls are 50% taller than the R195 baseline.
-    Height is presentation geometry only; movement/LOS/volume blocking is
-    unchanged.
-  */
-  /*
-    R197: settle wall presentation at 35 px high after visual review.
-    Movement, LOS, volume blocking, and footprint geometry remain unchanged.
-  */
   const common={
     height:35,
     thickness:9,
@@ -4788,11 +4779,13 @@ function configureArchitecturalWalls(mode){
   };
 
   /*
-    R198 opening placement:
-      - north window centered on the north wall
-      - south doorway left of center plus a south window right of center
-      - east window centered on the east wall
-    Window centers sit at 2/3 wall height. Door white space is fully open.
+    R201: openings are authored against the tactical hex grid.
+
+    - South doorway center: hex (-3,5)
+    - South doorway width: exactly one HEX_W (64 world px), placing each edge
+      on that hex's left/right border and making the opening fully passable.
+    - North/south/east windows are centered on actual hex centers rather than
+      between centers.
   */
   architecturalWalls=[
     {
@@ -4805,7 +4798,7 @@ function configureArchitecturalWalls(mode){
           id:"north-window",
           type:"window",
           facing:"north",
-          centerT:0.50,
+          centerHex:{x:3,y:-5},
           glassWidthWorld:36,
           visualWidthScale:1.50
         }
@@ -4821,20 +4814,19 @@ function configureArchitecturalWalls(mode){
           id:"south-doorway",
           type:"doorway",
           facing:"south",
-          centerT:0.38,
-          widthWorld:30
+          centerHex:{x:-3,y:5},
+          widthWorld:HEX_W
         },
         {
           id:"south-window",
           type:"window",
           facing:"south",
-          centerT:0.50,
+          centerHex:{x:-2,y:5},
           glassWidthWorld:36,
           visualWidthScale:1.50
         }
       ]
     },
-    /* West wall keeps the existing open entrance from the wall-test baseline. */
     {...common,id:"west-north",a:{x:r.left,y:r.top},b:{x:r.left,y:r.entranceTop}},
     {...common,id:"west-south",a:{x:r.left,y:r.entranceBottom},b:{x:r.left,y:r.bottom}},
     {
@@ -4847,7 +4839,7 @@ function configureArchitecturalWalls(mode){
           id:"east-window",
           type:"window",
           facing:"east",
-          centerT:0.50,
+          centerHex:{x:4,y:-1},
           glassWidthWorld:36,
           visualWidthScale:1.50
         }
@@ -4935,6 +4927,42 @@ function architecturalWallPointAt(wall,t){
   };
 }
 
+function wallOpeningCenterT(wall,opening){
+  if(!wall || !opening) return 0.5;
+
+  if(
+    opening.centerHex &&
+    Number.isFinite(opening.centerHex.x) &&
+    Number.isFinite(opening.centerHex.y)
+  ){
+    const point=worldPointForHex(
+      opening.centerHex.x,
+      opening.centerHex.y
+    );
+    const dx=wall.b.x-wall.a.x;
+    const dy=wall.b.y-wall.a.y;
+    const len2=(dx*dx)+(dy*dy);
+
+    if(len2>0.000001){
+      return Math.max(
+        0,
+        Math.min(
+          1,
+          (
+            ((point.x-wall.a.x)*dx)+
+            ((point.y-wall.a.y)*dy)
+          )/len2
+        )
+      );
+    }
+  }
+
+  return Math.max(
+    0,
+    Math.min(1,Number(opening.centerT)||0.5)
+  );
+}
+
 function wallOpeningPassesMode(opening,mode){
   if(!opening) return false;
 
@@ -4943,8 +4971,11 @@ function wallOpeningPassesMode(opening,mode){
   }
 
   if(opening.type==="window"){
-    /* Glass passes sight/light, but still blocks movement and physical volume. */
-    return mode==="los";
+    /*
+      R201: glass transmits sight and light, but does not transmit projectiles.
+      Movement and physical volumetric propagation remain blocked as before.
+    */
+    return mode==="los" || mode==="light";
   }
 
   return false;
@@ -4953,8 +4984,13 @@ function wallOpeningPassesMode(opening,mode){
 function wallBlockingSubsegments(wall,mode="movement"){
   if(!wall) return [];
 
+  const sightLike=
+    mode==="los" ||
+    mode==="light" ||
+    mode==="projectile";
+
   const blocks=
-    mode==="los"
+    sightLike
       ? wall.blocksLOS
       : mode==="volume"
         ? wall.blocksVolume!==false
@@ -4968,10 +5004,6 @@ function wallBlockingSubsegments(wall,mode="movement"){
   const passIntervals=(wall.openings || [])
     .filter(opening=>wallOpeningPassesMode(opening,mode))
     .map(opening=>{
-      /*
-        R199: window lattice/frame is presentation only. LOS/illumination sees
-        one continuous clear aperture equal to the apparent widened glass area.
-      */
       const passWidth=
         opening.type==="window"
           ? Math.max(
@@ -4983,10 +5015,7 @@ function wallBlockingSubsegments(wall,mode="movement"){
           : Math.max(1,Number(opening.widthWorld)||1);
 
       const half=passWidth/(2*length);
-      const center=Math.max(
-        0,
-        Math.min(1,Number(opening.centerT)||0.5)
-      );
+      const center=wallOpeningCenterT(wall,opening);
 
       return {
         start:Math.max(0,center-half),
@@ -5574,15 +5603,6 @@ function processedWallOpeningAsset(type){
 function wallOpeningScreenMetrics(wall,opening){
   if(!wall || !opening || opening.type!=="window") return null;
 
-  /*
-    R200 projection rule:
-      - north/south wall faces project as visible vertical planes
-      - east/west wall faces are edge-on in this camera projection
-
-    Suppress the latter completely instead of pasting a face-on window sprite
-    onto the thin edge of the wall. Mechanics/LOS still use the authored
-    opening regardless of whether its plane is visually resolvable.
-  */
   const wallDx=Math.abs(wall.b.x-wall.a.x);
   const wallDy=Math.abs(wall.b.y-wall.a.y);
   if(wallDx<=wallDy*0.05) return null;
@@ -5591,7 +5611,7 @@ function wallOpeningScreenMetrics(wall,opening){
   const base=screenPointForWorld(
     architecturalWallPointAt(
       wall,
-      Number(opening.centerT)||0.5
+      wallOpeningCenterT(wall,opening)
     )
   );
 
@@ -5607,11 +5627,6 @@ function wallOpeningScreenMetrics(wall,opening){
   );
   const centerY=base.y-(height*(2/3));
 
-  /*
-    The plane is intentionally centered on the wall centerline (base.x/base.y),
-    not shifted to either visible wall face. The rectangular aperture is cut
-    through the wall first; the lattice/glass plane then sits midway through it.
-  */
   return {
     x:Math.round(base.x-renderWidth/2),
     y:Math.round(centerY-renderHeight/2),
@@ -8924,13 +8939,9 @@ function illuminationSourceReachesHex(source,x,y){
 
   if(distance>source.radiusHexes) return false;
 
-  /*
-    Light does not pass through architectural LOS blockers. This lets the new
-    mechanic illuminate rooms/corridors without bleeding through solid walls.
-  */
   if(
     game?.condition==="wall" &&
-    lineOfSightBlockedBetweenHexes(
+    lightBlockedBetweenHexes(
       {x:source.x,y:source.y},
       {x,y}
     )
@@ -9028,12 +9039,6 @@ function drawTerrainIlluminationLayer(tiles){
   const sources=illuminationSources();
   if(!sources.length) return;
 
-  /*
-    Each source uses one aligned screen-space radial gradient, then clips that
-    gradient independently to every terrain hex the source can actually reach.
-    Adjacent lit hexes therefore share the same gradient values and read as one
-    continuous pool of light instead of separate colored hex fills.
-  */
   for(const source of sources){
     const center=hexCenter(source.x,source.y);
     const radiusHexes=Math.max(1,Number(source.radiusHexes)||1);
@@ -9063,6 +9068,34 @@ function drawTerrainIlluminationLayer(tiles){
       `rgba(${color[0]},${color[1]},${color[2]},0)`
     );
 
+    if(game.condition==="wall"){
+      /*
+        R201 exact architectural light clip. The gradient is clipped by a
+        continuous ray polygon built from thick wall faces and LIGHT-specific
+        openings. This stops the hex-level spill visible in R200.
+      */
+      const worldPolygon=wallTestVisibilityPolygonWorld(source,"light");
+      if(worldPolygon.length<3) continue;
+
+      const screenPolygon=worldPolygon.map(point=>
+        screenPointForWorld(point)
+      );
+
+      ctx.save();
+      polygonPath(screenPolygon);
+      ctx.clip();
+      ctx.globalCompositeOperation="lighter";
+      ctx.fillStyle=gradient;
+      ctx.fillRect(
+        center.x-screenRadius,
+        center.y-screenRadius-4,
+        screenRadius*2,
+        screenRadius*2
+      );
+      ctx.restore();
+      continue;
+    }
+
     for(const tile of tiles){
       const contribution=illuminationContributionFromSource(
         source,
@@ -9072,7 +9105,7 @@ function drawTerrainIlluminationLayer(tiles){
       if(contribution<=0) continue;
 
       const top=hexScreenVertices(tile.x,tile.y);
-      const c=hexCenter(tile.x,tile.y);
+      const tileCenter=hexCenter(tile.x,tile.y);
 
       ctx.save();
       polygonPath(top);
@@ -9081,8 +9114,8 @@ function drawTerrainIlluminationLayer(tiles){
       ctx.globalAlpha=Math.min(1,0.58+contribution*0.42);
       ctx.fillStyle=gradient;
       ctx.fillRect(
-        c.x-HEX_W/2-2,
-        c.y-HEX_H/2-2,
+        tileCenter.x-HEX_W/2-2,
+        tileCenter.y-HEX_H/2-2,
         HEX_W+4,
         HEX_H+4
       );
@@ -9173,6 +9206,26 @@ function lineOfSightBlockedBetweenHexes(source,target){
   );
 }
 
+function lightBlockedBetweenHexes(source,target){
+  if(!source || !target) return true;
+
+  if(
+    architecturalWallBlocksWorldLine(
+      worldPointForHex(source.x,source.y),
+      worldPointForHex(target.x,target.y),
+      "light"
+    )
+  ){
+    return true;
+  }
+
+  const cells=hexLineCells(source,target);
+  return cells.some((cell,index)=>
+    index>0 &&
+    hasFogAtHex(cell.x,cell.y)
+  );
+}
+
 function lineOfSightBlocked(source,target){
   if(!source || !target) return false;
 
@@ -9186,6 +9239,43 @@ function lineOfSightBlocked(source,target){
   for(const sourceCell of sourceCells){
     for(const targetCell of targetCells){
       if(!lineOfSightBlockedBetweenHexes(sourceCell,targetCell)){
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function projectilePathBlockedBetweenHexes(source,target){
+  if(!source || !target) return true;
+
+  if(
+    architecturalWallBlocksWorldLine(
+      worldPointForHex(source.x,source.y),
+      worldPointForHex(target.x,target.y),
+      "projectile"
+    )
+  ){
+    return true;
+  }
+
+  const cells=hexLineCells(source,target);
+  return cells.some((cell,index)=>
+    index>0 &&
+    hasFogAtHex(cell.x,cell.y)
+  );
+}
+
+function projectilePathBlocked(source,target){
+  if(!source || !target) return false;
+
+  const sourceCells=occupiedHexesAt(source,source.x,source.y);
+  const targetCells=occupiedHexesAt(target,target.x,target.y);
+
+  for(const sourceCell of sourceCells){
+    for(const targetCell of targetCells){
+      if(!projectilePathBlockedBetweenHexes(sourceCell,targetCell)){
         return false;
       }
     }
@@ -9266,12 +9356,12 @@ function visibilityWorldBounds(){
   };
 }
 
-function visibilitySegments(){
+function visibilitySegments(mode="los"){
   const bounds=visibilityWorldBounds();
   const segments=[];
 
   for(const wall of architecturalWalls){
-    for(const blocker of wallBlockingSubsegments(wall,"los")){
+    for(const blocker of wallBlockingSubsegments(wall,mode)){
       const polygon=architecturalWallWorldVertices(blocker);
       for(const segment of wallPolygonSegments(polygon)){
         segments.push({
@@ -9331,16 +9421,16 @@ function castVisibilityRay(origin,angle,segments){
   return best;
 }
 
-function wallTestVisibilityPolygonWorld(observer){
+function wallTestVisibilityPolygonWorld(observer,mode="los"){
   if(!observer || game?.condition!=="wall") return [];
 
   const origin=worldPointForHex(observer.x,observer.y);
-  const {segments,bounds}=visibilitySegments();
+  const {segments,bounds}=visibilitySegments(mode);
   const epsilon=0.00018;
   const vertices=[];
 
   for(const wall of architecturalWalls){
-    for(const blocker of wallBlockingSubsegments(wall,"los")){
+    for(const blocker of wallBlockingSubsegments(wall,mode)){
       vertices.push(...architecturalWallWorldVertices(blocker));
     }
   }
@@ -9352,7 +9442,6 @@ function wallTestVisibilityPolygonWorld(observer){
     angles.push(base-epsilon,base,base+epsilon);
   }
 
-  /* Safety rays so an empty/degenerate room still yields a stable mask. */
   angles.push(-Math.PI,-Math.PI/2,0,Math.PI/2,Math.PI);
 
   const hits=[];
@@ -13851,9 +13940,9 @@ async function longbowAttack(attacker,defender){
     return {hit:false,killed:false,damage:0};
   }
 
-  if(lineOfSightBlocked(attacker,defender)){
-    setCombatMessage(`${attacker.name} does not have line of sight to ${defender.name}.`);
-    return {hit:false,killed:false,damage:0,blockedByFog:true};
+  if(projectilePathBlocked(attacker,defender)){
+    setCombatMessage(`${attacker.name} does not have a clear firing lane.`);
+    return {hit:false,killed:false,damage:0,blockedByObstacle:true};
   }
 
   const range=longbowRangeBand(attacker,defender);
@@ -14518,7 +14607,7 @@ function rangedAiCanAttackFrom(unit,source,target){
     return false;
   }
 
-  return !lineOfSightBlocked(sourceEntity,target);
+  return !projectilePathBlocked(sourceEntity,target);
 }
 
 function bestRangedAiTargetFrom(unit,source=unit){
@@ -14806,7 +14895,7 @@ function mobCanMissileAttack(mob,target){
     return false;
   }
 
-  if(lineOfSightBlocked(mob,target)){
+  if(projectilePathBlocked(mob,target)){
     return false;
   }
 
@@ -14908,8 +14997,8 @@ async function slingAttack(attacker,defender){
     return false;
   }
 
-  if(lineOfSightBlocked(attacker,defender)){
-    setCombatMessage(`${attacker.name} does not have line of sight to ${defender.name}.`);
+  if(projectilePathBlocked(attacker,defender)){
+    setCombatMessage(`${attacker.name} does not have a clear firing lane.`);
     return;
   }
 
