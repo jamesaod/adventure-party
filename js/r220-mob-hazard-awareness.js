@@ -1108,9 +1108,18 @@ function r220RangedLaneToKnownPoint(unit,source,entry){
   return null;
 }
 
+const r220BasePathToNearestRangedFiringHex=
+  pathToNearestRangedFiringHex;
+
 pathToNearestRangedFiringHex=function(unit,{avoidThreatened=true}={}){
+  if(unit?.controller!=="mob"){
+    return r220BasePathToNearestRangedFiringHex(
+      unit,
+      {avoidThreatened}
+    );
+  }
+
   if(
-    unit?.controller!=="mob" ||
     !unit.alive ||
     unit.fled ||
     !unit.rangedWeapon
