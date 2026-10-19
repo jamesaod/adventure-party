@@ -4750,7 +4750,12 @@ function configureArchitecturalWalls(mode){
   if(mode!=="wall") return;
 
   const r=WALL_TEST_ROOM;
-  const common={height:30,thickness:9,material:"stone",blocksMovement:true,blocksLOS:true,blocksVolume:true};
+  /*
+    R196: architectural walls are 50% taller than the R195 baseline.
+    Height is presentation geometry only; movement/LOS/volume blocking is
+    unchanged.
+  */
+  const common={height:45,thickness:9,material:"stone",blocksMovement:true,blocksLOS:true,blocksVolume:true};
 
   architecturalWalls=[
     {...common,id:"north",a:{x:r.left,y:r.top},b:{x:r.right,y:r.top}},
@@ -5089,70 +5094,242 @@ function drawArchitecturalWallShadows(){
   ctx.restore();
 }
 
+function closestPointOnWorldSegment(point,a,b){
+  const dx=b.x-a.x;
+  const dy=b.y-a.y;
+  const len2=dx*dx+dy*dy;
+
+  if(len2<=0.000001){
+    return {x:a.x,y:a.y,t:0};
+  }
+
+  const t=Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x-a.x)*dx+(point.y-a.y)*dy)/len2
+    )
+  );
+
+  return {
+    x:a.x+dx*t,
+    y:a.y+dy*t,
+    t
+  };
+}
+
+/*
+  R196 wall-face illumination.
+
+  The wall is treated as a two-sided vertical surface. A light source only
+  contributes when it lies close enough to the wall, has a meaningful component
+  toward the wall normal (rather than running nearly parallel to it), and no
+  other architectural wall blocks the source-to-face path.
+
+  Rendering still uses the robust thick-stroke wall slab so north/south wall
+  segments cannot collapse in projection. This helper supplies a per-source
+  intensity used by the wall-face glow pass.
+*/
+function architecturalWallLightContributions(wall){
+  if(!wall || !game) return [];
+
+  const dx=wall.b.x-wall.a.x;
+  const dy=wall.b.y-wall.a.y;
+  const len=Math.hypot(dx,dy)||1;
+  const normalX=-dy/len;
+  const normalY=dx/len;
+  const contributions=[];
+
+  for(const source of illuminationSources()){
+    const sourceWorld=worldPointForHex(source.x,source.y);
+    const nearest=closestPointOnWorldSegment(
+      sourceWorld,
+      wall.a,
+      wall.b
+    );
+
+    const vx=sourceWorld.x-nearest.x;
+    const vy=sourceWorld.y-nearest.y;
+    const distance=Math.hypot(vx,vy);
+    const radiusWorld=
+      (Math.max(1,Number(source.radiusHexes)||1)+0.45)*HEX_W;
+
+    if(distance>radiusWorld) continue;
+
+    const invDistance=distance>0.0001 ? 1/distance : 0;
+    const towardX=distance>0.0001 ? vx*invDistance : normalX;
+    const towardY=distance>0.0001 ? vy*invDistance : normalY;
+
+    /*
+      Absolute normal alignment represents the nearer of the wall's two faces.
+      A source directly along the wall plane contributes very little; a source
+      perpendicular to the face contributes fully.
+    */
+    const faceAlignment=Math.abs(
+      normalX*towardX+
+      normalY*towardY
+    );
+
+    if(faceAlignment<0.15) continue;
+
+    if(
+      worldLineBlockedByOtherArchitecturalWalls(
+        sourceWorld,
+        nearest,
+        wall.id
+      )
+    ){
+      continue;
+    }
+
+    const normalized=Math.max(
+      0,
+      Math.min(1,distance/radiusWorld)
+    );
+    const falloff=1-(normalized*normalized);
+    const intensity=Math.max(
+      0,
+      Number(source.intensity)||0
+    )*falloff*Math.pow(faceAlignment,0.72);
+
+    if(intensity<=0.01) continue;
+
+    contributions.push({
+      source,
+      intensity,
+      faceAlignment,
+      nearest
+    });
+  }
+
+  return contributions;
+}
+
+
 function drawArchitecturalWallSegment(wall){
   const a=screenPointForWorld(wall.a);
   const b=screenPointForWorld(wall.b);
-  const height=Math.max(1,Math.round(wall.height || 30));
+  const height=Math.max(1,Math.round(wall.height || 45));
   const thickness=Math.max(3,wall.thickness || 9);
+  const outlineWidth=2;
+
+  const bodyColor="#555860";
+  const capColor="#888b92";
+  const outlineColor="#050507";
 
   ctx.save();
   ctx.lineCap="square";
   ctx.lineJoin="miter";
 
   /*
-    R123 solid wall projection. Sweeping an opaque thick stroke upward makes
-    the wall read as a continuous slab even when a world wall happens to be
-    screen-vertical (where a conventional projected face would collapse).
+    R196: draw one black slab slightly larger than the masonry, then repaint
+    the solid wall body inside it. Because both sweeps are continuous, this
+    leaves a clean two-pixel silhouette around the wall segment without the
+    horizontal banding produced by the former per-height shade ramp.
   */
-  for(let z=0;z<=height;z++){
-    const t=z/height;
-    const shade=Math.round(64 + t*34);
-    ctx.strokeStyle=`rgb(${shade},${shade+1},${shade+6})`;
-    ctx.lineWidth=thickness;
+  ctx.strokeStyle=outlineColor;
+  ctx.lineWidth=thickness+(outlineWidth*2);
+  for(let z=0;z<height;z++){
     ctx.beginPath();
     ctx.moveTo(a.x,a.y-z);
     ctx.lineTo(b.x,b.y-z);
     ctx.stroke();
   }
 
-  /* Dark ground seam. */
-  ctx.strokeStyle="#24262b";
-  ctx.lineWidth=thickness+2;
+  /* Solid, unbanded vertical masonry face. */
+  ctx.strokeStyle=bodyColor;
+  ctx.lineWidth=thickness;
+  for(let z=0;z<height;z++){
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y-z);
+    ctx.lineTo(b.x,b.y-z);
+    ctx.stroke();
+  }
+
+  /*
+    R196: dynamic illumination is applied only to wall surfaces oriented toward
+    a light source. A radial gradient is reused through the wall's vertical
+    sweep, so the lit portion fades naturally with source distance along long
+    segments rather than brightening the entire segment uniformly.
+  */
+  const lightContributions=architecturalWallLightContributions(wall);
+
+  for(const contribution of lightContributions){
+    const source=contribution.source;
+    const sourceScreen=hexCenter(source.x,source.y);
+    const sourceLift=source.sourceKind==="unit" ? 20 : 5;
+    const radiusPx=
+      (Math.max(1,Number(source.radiusHexes)||1)+0.55)*HEX_W;
+    const color=source.color || [255,244,188];
+    const strength=Math.max(
+      0,
+      Math.min(1.35,contribution.intensity)
+    );
+
+    const gradient=ctx.createRadialGradient(
+      sourceScreen.x,
+      sourceScreen.y-sourceLift,
+      2,
+      sourceScreen.x,
+      sourceScreen.y-sourceLift,
+      radiusPx
+    );
+
+    gradient.addColorStop(
+      0,
+      `rgba(${color[0]},${color[1]},${color[2]},${0.42*strength})`
+    );
+    gradient.addColorStop(
+      0.52,
+      `rgba(${color[0]},${color[1]},${color[2]},${0.24*strength})`
+    );
+    gradient.addColorStop(
+      1,
+      `rgba(${color[0]},${color[1]},${color[2]},0)`
+    );
+
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+    ctx.strokeStyle=gradient;
+    ctx.lineWidth=Math.max(1,thickness-1);
+
+    for(let z=2;z<height-1;z++){
+      ctx.beginPath();
+      ctx.moveTo(a.x,a.y-z);
+      ctx.lineTo(b.x,b.y-z);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /*
+    Solid top cap. The old highlight stripe is intentionally gone: one cap
+    color is surrounded by the same two-pixel black outline as the wall body.
+  */
+  ctx.strokeStyle=outlineColor;
+  ctx.lineWidth=thickness+(outlineWidth*2);
   ctx.beginPath();
-  ctx.moveTo(a.x,a.y);
-  ctx.lineTo(b.x,b.y);
+  ctx.moveTo(a.x,a.y-height);
+  ctx.lineTo(b.x,b.y-height);
   ctx.stroke();
 
-  /* Repaint body above the seam so the seam stays confined to the base. */
-  for(let z=2;z<height;z++){
-    const t=z/height;
-    const shade=Math.round(64 + t*34);
-    ctx.strokeStyle=`rgb(${shade},${shade+1},${shade+6})`;
-    ctx.lineWidth=thickness;
-    ctx.beginPath();
-    ctx.moveTo(a.x,a.y-z);
-    ctx.lineTo(b.x,b.y-z);
-    ctx.stroke();
-  }
-
-  /* Solid cap and highlight. */
-  ctx.strokeStyle="#8f929a";
+  ctx.strokeStyle=capColor;
   ctx.lineWidth=thickness;
   ctx.beginPath();
   ctx.moveTo(a.x,a.y-height);
   ctx.lineTo(b.x,b.y-height);
   ctx.stroke();
 
-  ctx.strokeStyle="#c0c2c8";
+  /* Explicit 2 px perimeter seams make every authored wall segment readable. */
+  ctx.strokeStyle=outlineColor;
   ctx.lineWidth=2;
+
   ctx.beginPath();
-  ctx.moveTo(a.x,a.y-height-1);
-  ctx.lineTo(b.x,b.y-height-1);
+  ctx.moveTo(a.x,a.y);
+  ctx.lineTo(b.x,b.y);
   ctx.stroke();
 
-  /* Opaque end seams help right-angle corners read as joined masonry. */
-  ctx.strokeStyle="#303239";
-  ctx.lineWidth=2;
   ctx.beginPath();
   ctx.moveTo(a.x,a.y);
   ctx.lineTo(a.x,a.y-height);
@@ -5162,7 +5339,6 @@ function drawArchitecturalWallSegment(wall){
 
   ctx.restore();
 }
-
 
 /* Threshold camera.
    -----------------
