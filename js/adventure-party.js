@@ -7781,7 +7781,7 @@ function addUnitEffect(unit,{
   effectListFor(unit,kind).push(effect);
 
   /* R104: persistent status FX start from the status lifecycle itself. */
-  if(["sleep","unconscious","confusion","confused","taunt"].includes(id)){
+  if(["sleep","unconscious","confusion","confused","taunt","shield"].includes(id)){
     queueMicrotask(()=>ensurePersistentStatusFxLoop());
   }
 
@@ -16251,7 +16251,7 @@ async function castShieldSpell(action){
     data:{casterLevel:level}
   });
 
-  setCombatMessage(`${caster.name} raises an invisible Shield.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  setCombatMessage(`${caster.name} raises a shimmering Shield.`,COMBAT_MESSAGE_MIN_HOLD_MS);
   await waitForCombatActionPause();
   finishTestSpellCast(caster,"Shield",action);
   return true;
@@ -22304,12 +22304,22 @@ function persistentTauntUnits(){
   );
 }
 
+function persistentShieldUnits(){
+  if(!game || game.over) return [];
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled &&
+    !!getUnitEffect(unit,"shield")
+  );
+}
+
 function hasPersistentStatusFx(){
   return (
     persistentSleepUnits().length>0 ||
     persistentUnconsciousUnits().length>0 ||
     persistentConfusionUnits().length>0 ||
-    persistentTauntUnits().length>0
+    persistentTauntUnits().length>0 ||
+    persistentShieldUnits().length>0
   );
 }
 
@@ -22470,6 +22480,159 @@ function drawPersistentConfusionStatusFx(){
 }
 
 
+
+
+/*
+  R194 persistent Shield spell VFX.
+
+  Shield remains mechanically frontal exactly as before. The VFX reads the
+  unit's live six-direction facing every frame and positions a translucent
+  magical barrier slightly forward of the unit's sprite. The barrier scales
+  with Enlarge presentation size but never changes the unit's occupied hexes.
+*/
+function drawPersistentShieldSpellFx(){
+  const units=persistentShieldUnits();
+  if(!units.length) return;
+
+  const now=performance.now();
+
+  for(let index=0;index<units.length;index++){
+    const unit=units[index];
+    if(!shouldRenderUnitUnderPartyVisibility(unit)) continue;
+
+    const center=unitFootprintScreenCenter(unit);
+    const facingIndex=facingDirectionIndex(unit);
+    const dir=HEX_DIRS[facingIndex] || HEX_DIRS[0];
+    const originHex=hexCenter(unit.x,unit.y);
+    const forwardHex=hexCenter(unit.x+dir.x,unit.y+dir.y);
+
+    let fx=forwardHex.x-originHex.x;
+    let fy=forwardHex.y-originHex.y;
+    const fLen=Math.hypot(fx,fy)||1;
+    fx/=fLen;
+    fy/=fLen;
+
+    /* Tangent across the barrier's face in screen space. */
+    const tx=-fy;
+    const ty=fx;
+
+    const scale=Math.max(1,enlargeVisualScale(unit));
+    const pulse=(Math.sin((now/1000)*Math.PI*2*0.82+(index*0.41))+1)/2;
+    const shimmer=(Math.sin((now/1000)*Math.PI*2*1.65+(index*0.73))+1)/2;
+
+    /*
+      The shield sits ahead of the unit, centered around chest height.
+      Slight vertical lift keeps it visually attached to the sprite rather than
+      looking like a ground decal.
+    */
+    const forwardOffset=(22+2*pulse)*scale;
+    const lift=22*scale;
+    const cx=center.x+fx*forwardOffset;
+    const cy=center.y+fy*forwardOffset-lift;
+
+    const halfWidth=(10.5+1.2*pulse)*scale;
+    const halfHeight=(18.5+1.0*shimmer)*scale;
+
+    const top={x:cx,y:cy-halfHeight};
+    const upperRight={
+      x:cx+tx*halfWidth,
+      y:cy+ty*halfWidth-halfHeight*0.26
+    };
+    const lowerRight={
+      x:cx+tx*halfWidth*0.78,
+      y:cy+ty*halfWidth*0.78+halfHeight*0.44
+    };
+    const bottom={
+      x:cx,
+      y:cy+halfHeight
+    };
+    const lowerLeft={
+      x:cx-tx*halfWidth*0.78,
+      y:cy-ty*halfWidth*0.78+halfHeight*0.44
+    };
+    const upperLeft={
+      x:cx-tx*halfWidth,
+      y:cy-ty*halfWidth-halfHeight*0.26
+    };
+
+    ctx.save();
+    ctx.lineJoin="round";
+    ctx.lineCap="round";
+
+    /* Soft outer aura behind the crisp shield silhouette. */
+    ctx.globalCompositeOperation="lighter";
+    ctx.shadowColor="rgba(165,225,255,0.72)";
+    ctx.shadowBlur=8+4*pulse;
+    ctx.fillStyle=`rgba(142,215,255,${0.055+0.025*pulse})`;
+    ctx.strokeStyle=`rgba(214,245,255,${0.22+0.10*pulse})`;
+    ctx.lineWidth=3.2*scale;
+
+    ctx.beginPath();
+    ctx.moveTo(top.x,top.y);
+    ctx.lineTo(upperRight.x,upperRight.y);
+    ctx.lineTo(lowerRight.x,lowerRight.y);
+    ctx.lineTo(bottom.x,bottom.y);
+    ctx.lineTo(lowerLeft.x,lowerLeft.y);
+    ctx.lineTo(upperLeft.x,upperLeft.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    /* Main translucent magical pane. */
+    ctx.shadowBlur=0;
+    ctx.globalCompositeOperation="source-over";
+    ctx.fillStyle=`rgba(122,211,244,${0.12+0.035*pulse})`;
+    ctx.strokeStyle=`rgba(225,251,255,${0.42+0.16*pulse})`;
+    ctx.lineWidth=1.45*scale;
+
+    ctx.beginPath();
+    ctx.moveTo(top.x,top.y);
+    ctx.lineTo(upperRight.x,upperRight.y);
+    ctx.lineTo(lowerRight.x,lowerRight.y);
+    ctx.lineTo(bottom.x,bottom.y);
+    ctx.lineTo(lowerLeft.x,lowerLeft.y);
+    ctx.lineTo(upperLeft.x,upperLeft.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    /*
+      Inner highlight arc gives the pane curvature and a subtle shimmer without
+      turning it into an opaque physical shield.
+    */
+    ctx.strokeStyle=`rgba(255,255,255,${0.20+0.22*shimmer})`;
+    ctx.lineWidth=0.9*scale;
+    ctx.beginPath();
+    ctx.moveTo(
+      top.x+tx*halfWidth*0.18,
+      top.y+halfHeight*0.20
+    );
+    ctx.quadraticCurveTo(
+      cx+tx*halfWidth*0.28,
+      cy,
+      bottom.x+tx*halfWidth*0.08,
+      bottom.y-halfHeight*0.24
+    );
+    ctx.stroke();
+
+    /* Small traveling glint across the upper rim. */
+    const glintT=((now/850)+(index*0.29))%1;
+    const gx=
+      upperLeft.x+
+      (upperRight.x-upperLeft.x)*glintT;
+    const gy=
+      upperLeft.y+
+      (upperRight.y-upperLeft.y)*glintT;
+
+    ctx.globalCompositeOperation="lighter";
+    ctx.fillStyle=`rgba(255,255,255,${0.40+0.30*shimmer})`;
+    ctx.beginPath();
+    ctx.arc(gx,gy,1.35*scale,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
 
 
 function drawPersistentTauntStatusFx(){
@@ -22925,6 +23088,7 @@ function draw(){
     actor.fn();
   }
 
+  drawPersistentShieldSpellFx();
   drawPersistentSleepStatusFx();
   drawPersistentUnconsciousStatusFx();
   drawPersistentConfusionStatusFx();
