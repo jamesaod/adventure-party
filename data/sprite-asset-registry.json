@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R196",
-  "description": "Adventure Party sprite asset specifications through R196. R196 keeps the R195 illumination system and updates architectural wall presentation with 50% greater height, solid top caps, 2 px black segment outlines, and light-facing wall illumination.",
+  "release": "R197",
+  "description": "Adventure Party sprite asset specifications through R197. R197 reduces architectural wall height to 35 px, halves wall-light response, removes internal segment seams, and applies the 2 px black border only to the exterior silhouette of the combined wall structure.",
   "assets": {
     "fighter": {
       "source": {
