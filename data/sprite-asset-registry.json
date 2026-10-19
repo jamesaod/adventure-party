@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R206",
-  "description": "Adventure Party asset specifications through R206. R206 makes doorway thresholds exactly wall-thickness and wall-aligned, models the west entrance as an authored vertical doorway, changes indoor hex borders to black, and adds a two-pixel black outline around the union of upward-facing wall-cap surfaces while preserving R205 floor tiling and prior lighting fixes.",
+  "release": "R207",
+  "description": "Adventure Party asset specifications through R207. R207 reduces visible architectural wall-face illumination intensity by 50% relative to R206 while leaving terrain/floor illumination, wall occlusion, LOS, shadows, thresholds, and other rendering unchanged.",
   "assets": {
     "fighter": {
       "source": {
