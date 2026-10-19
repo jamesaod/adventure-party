@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R204';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R205';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,12 +2093,12 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R204';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R204';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R205';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R205';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R204';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R204';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R205';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R205';
 
 /*
   R204 third-party floor texture.
@@ -5273,19 +5273,32 @@ function stoneFloorPatternForCurrentView(){
   if(!pattern) return null;
 
   /*
-    Render the 512 px source at 35% scale (~179 px repeat) so individual stones
-    read at tactical scale instead of spanning multiple hexes. Anchor the
-    pattern to world-space origin so camera movement does not make it swim.
+    R205:
+      - halve the R204 texture size: 35% -> 17.5%
+      - project the square source into the same axial/isometric plane used by
+        worldPointForHex(): q=(HEX_W,0), r=(HEX_W/2,HEX_ROW)
+      - anchor the pattern to world origin so camera motion cannot make it swim.
+
+    For a 512 px source this produces an approximately 89.6 px by 44.1 px
+    isometric repeat instead of the former ~179 px square repeat.
   */
   if(
     typeof pattern.setTransform==="function" &&
     typeof DOMMatrix!=="undefined"
   ){
     const origin=screenPointForWorld({x:0,y:0});
+    const scale=0.175;
+    const isoY=HEX_ROW/HEX_W;
+
     pattern.setTransform(
-      new DOMMatrix()
-        .translate(Math.round(origin.x),Math.round(origin.y))
-        .scale(0.35,0.35)
+      new DOMMatrix([
+        scale,
+        0,
+        scale*0.5,
+        scale*isoY,
+        Math.round(origin.x),
+        Math.round(origin.y)
+      ])
     );
   }
 
@@ -5333,8 +5346,94 @@ function drawArchitecturalFloorRegions(){
   }
 }
 
+function doorwayThresholdWorldPolygon(wall,opening){
+  if(!wall || !opening || opening.type!=="doorway") return [];
+
+  const center=architecturalWallPointAt(
+    wall,
+    wallOpeningCenterT(wall,opening)
+  );
+  const dx=wall.b.x-wall.a.x;
+  const dy=wall.b.y-wall.a.y;
+  const len=Math.hypot(dx,dy)||1;
+  const tx=dx/len;
+  const ty=dy/len;
+  const nx=-ty;
+  const ny=tx;
+
+  const openingWidth=Math.max(
+    1,
+    Number(opening.widthWorld)||HEX_W
+  );
+  const halfWidth=openingWidth/2;
+
+  /*
+    Cover the complete wall slab plus a small margin on both sides. This hides
+    outdoor terrain that would otherwise remain visible under the open wall
+    gap while still reading as a narrow threshold rather than a floor tile.
+  */
+  const halfDepth=
+    (Math.max(3,Number(wall.thickness)||9)/2)+4;
+
+  return [
+    {
+      x:center.x-(tx*halfWidth)-(nx*halfDepth),
+      y:center.y-(ty*halfWidth)-(ny*halfDepth)
+    },
+    {
+      x:center.x+(tx*halfWidth)-(nx*halfDepth),
+      y:center.y+(ty*halfWidth)-(ny*halfDepth)
+    },
+    {
+      x:center.x+(tx*halfWidth)+(nx*halfDepth),
+      y:center.y+(ty*halfWidth)+(ny*halfDepth)
+    },
+    {
+      x:center.x-(tx*halfWidth)+(nx*halfDepth),
+      y:center.y-(ty*halfWidth)+(ny*halfDepth)
+    }
+  ];
+}
+
+function drawDoorwayThresholds(){
+  if(game?.condition!=="wall") return;
+
+  ctx.save();
+  ctx.lineJoin="miter";
+
+  for(const wall of architecturalWalls){
+    for(const opening of wall.openings || []){
+      if(opening.type!=="doorway") continue;
+
+      const worldPolygon=
+        doorwayThresholdWorldPolygon(wall,opening);
+      if(worldPolygon.length<3) continue;
+
+      const screenPolygon=worldPolygon.map(point=>
+        screenPointForWorld(point)
+      );
+
+      if(!tracePolygonOnContext(ctx,screenPolygon)) continue;
+
+      ctx.fillStyle="#414348";
+      ctx.fill();
+
+      ctx.strokeStyle="#202126";
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
 function drawWallTestFloorPlan(){
-  /* R135: no doorway/threshold markers are drawn on the floor. */
+  /*
+    R205: doorway gaps get a dark-grey threshold across the complete wall
+    depth. This is presentation-only: movement/LOS/projectile opening mechanics
+    remain defined by the authored doorway gap itself.
+  */
+  drawDoorwayThresholds();
 }
 
 const ARCHITECTURAL_WALL_SHADOW={
