@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R199';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R200';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAK9UlEQVR4nM2acWgb1x3HP+fYlFmeTUg1u1ZcO/JiUjK0taOIdXTW3HpbkQutMWQrhNXY69rhBuyFOLCVYLqxNqxJoV7ZSI0HgY3SIEaxqEdWVW4WBzPWJobSza5V2c4JJUoW3FouwY3f/ji9l7vzyZJtSe0XhE6nd+9+v+/7vt/vvd+dRmkh8mijFd2KL+BmAqB330727HRxTl9id2U5e3a6ADinL/GgpwaAX124XFIbS0GA6N23E4DLK58DKOfP6Uvqt4QkRSJDSNHsLM/dZPu4vPI5uyvLedBTw8c30sDtUf/4RtpCBqQVUeMLn0KRB6msmJ0D4kd3f1X9OKcvqRF+qfsx9VuSsbuy3ELWb7+zG/KLG1tGsQmwYHdluSMJD3pq1HlJwjl9qejyhxISIGUN8PGNNNX3+wGDhMd+8H2LIl7qfqwk8ocSxQAzdleW03+gg7VUjJOvjwHw3GA3ZW4vpzKkDB1+DkqUoUqmACntPTtdVDW5KXN7efmfl4k82sDzL46ylopR4Wlm6PBzRB5tKJVZpSPgN3/9C6de/Z3KAgCuXZUA9B/oUOdOffi/UpkEFJ8ALTOXuXnxLJ/8a0rFgrVUjMvhPzDR+hTV9/tZjqe4efEsVy6OM9H6FL37dhY1+kuUNAZUNbn509DP1O+1VAyAMrdXBcVVfY4KT3PJbCoFAdr4wqfi58dOMb7wKb37dtJ/oIOqJjdgOH/HN35MZdVX1JS4cnG8BGYZKFUMUFOh/0AHJ18fYzmeAuBmwyMW50uNQqeabPNW3kfMjw6wHE9x8vUx+g90KOmDMSXu+FY7v/7JE7z2nxslSYOFnAIi4A/gchmrvHTaiPbxRJz4YlwAzI8OAFB9v59+MEgANR2AkjoPhVOA8NR50JO65WSLt0Udp1fS6Emd+dEBytxe1lIxpQQzSuk8FIYA5fzi2DAADR19mAmRREgSABbHhhUJ+4dOF9KekkMAYnFsWH3mRwcEBjHimWeeEbJNwB8QAX9ABNuCwnwdYD5XUhREAYAafYm1VIzG7hOWaTATmymVTXmjEGkwp8H17nrAmAqSkIA/QCgUIuAPABBsCxbAlM2jEAQIOfrmFZzM8wDRqagi4YXfv0CwLYjL5eLs2bMAhEKhApixNWyXACGDWYWnmVV9Dri9xJVo8bYQnYoC0NnZqVJke3u7OheOhEm+/xaUOA4UbCV48+JZ1lIxS2T31HnU/wF/gHp3vYUMqYCtyv/W6mvbJms7BCjpl7m9lLm9LMdT9rRmgVwkgbFQkgrYDKTTt1ZfEzsqercdMLdCgCVdyXkvZW8feXPkl9KXkAqQWNXnck6DHRW9mhBC7Kjo1b4IBQhPnUdF84aOPlb1uayyNyORSnBo8JBlGmxFAaFQSGiapn1hCnBVGjKWUT0f5wEe+uFDHD181HJOKqCnr0f1JQOpE0KhkOjs7NTAUMJmbXfCZjZDwu5gsC1IY/eJdQ31pG4hY+89e3n772+r35K89vZ2PnzvQ0aGRyzXJ99/i7p7HxF82arC5tF3uVyEI2EC/gCJVMIy1+0bo3A4rI7ltfXUMzJidXw5nqIKWHW+vbB9F4ScrFMgeeSISB45om4qRzSb807y99R5kDEj4A8QbAuqFAjQ02NIPxwJE2wLWrKHLRiKgD/AyPAIoVBIps2C7B0cFZDo6hJrMbWYEZ46D65K16acBywqkAoJ+AMqG4yMjHBo8BCu4dvpcTmeotrtZVWfY3FsmIaOPuVkOp22TJdCTBVHBczOzFi+9aSeU/ZmyBhg/jQ1NNHibSGRSqhPT08PRw8fZTY+q67dP3TaspKUa414Iq5ISKfTzI8ObBgw84WjAlqnp7UJk7w8dR4lXZvzGllkaC+OOKGzs1Mdm8jUGrtPCFk9Mu8pJAnxxTg8fV/O/vNBLukIczFjb+Neu/Ngig96Utc8dR6hJ3XORyYtHdXuqjXaHHyce96MWP77ZGkJ/eDjtE5PW/r94NhB1cYcHz44dpCqJrfMQNsKhjkJgHWjbr5WxYf0ijGv9aTOhM9H+ct/pHZXLZXPD3LXG284dn5lcJDaF19Uv9PXV6i602W2y0KCGRlCip4mVXUn4A8IQGYGFZ1bvC2ixdsiPHUe4anzCECcj0yKjy7NiavxayLR1SWSR44IO5avpYXMNGYkurrs0V1k+RQEORUgt7uN3SdIdHUBUOb1Unf8uJYhwDL65yOT1O6qpbqmZtP1/rnpGM0+r5MSioZcS2GtoaOPMreXD44dVFlhLRZDrhGcnK98ftDR+SuDg1wZHCR9fWXdjSbfuUCzzwsYD02FEFCC2kA+ewGtoaOP/UOnaZ2etpMAWJ2XWD4+pI7T11eYfOeCmu9JPWm5weQ7F2ge/5vl3JXBQdl/UUnYksQmfD6xt8XIDpnpwITPxz1vRrLKPn19hUvTlxz72/OqsZ/IFiw1TduyrcWCmPD5RCgUsgQ/+XEKeImuLnE1fk2cj0yqdv+efE8Fy6vxa2L5WlpdQxECnhO28mhMeOo8PHH1Oq/Y/pApKzNiCCFIX1/hk6d/yuzMDOWxGb7b9oBaOn/7gfvUeqG6poaV5c8AqLrTpXI9QGP3iYJugMzYbIdq0fPKq6/w7C+eBayrPrmCA2jsPsHytTQry58xa3Newp45vtZ0p32hg3zmGI6Et2LzhthMZyrl2Rc+0ilXpUstlszp86NLc3z9m80bbpomfD5ap6eVimSBRW7CgKKQkO8UEPYHnXbIWoGs8DZ09KmNzEbOg7HXyCyD1ZJ3o/aFRK40KLDtB+C2s/bKD9wufAbbguohaT7OmNvZ2ydSiZzXbxXZCJDLX1q8LUqCgEX+5nMSiVTCQkI+u0IJ2XYz12wXTlNABNuCyol6d73hlIPsJezKAEMJLpcrbynrSR2n3Z+8fnZ+1vG67cKuACHnsHyIEZ2KavXuelyVLouDYKQ9PamrEZNEJFIJc8BScOpDT+rrAlpVk5v50QFL/6b7FDQLmAkQgCaNDkfCRKeiZHaBCjOxGS1jOGCQYDZUkhCOhNeNvormt2OIlllEKci3SMvcXqqa3GZVaBRhHWCeArJzLRwJqzpbdCqqagKz87M4GQzrihQW52Uqi05FtYA/IBKpBK5K17q+zFhLxQwStu3ixsiWBu1Ma9GpqOU9IOlwmdvYwVVn3vuB9c5LSDVJJcjYYg960nmgIFWfjZBPGlQ3t89BaaSENFY6JBdGsqAanYqq7+hUlJnYjGbuc//QaZbjqXX9FhO5FkLrlCAPzK+2gbHwsbeXtUM5jbBNL6wbHQ0QVU1udvw5yq0nA459Fhr5Pht0rL1XvLsAODqvOURszfZtP1a49WRA9V1s5EuA2VBVqFz93t3Z2ttHeaNRdPyv7vjxrP8VElt6QcIc/LLINOcof1mw6fcDzNvdYrzWHj/5D8DybPBLVxDZVpQ2PXAFjNpimdfLWixG/ZkzNPU/bKTTdxdYHBumwtMsn/+pGiQgq9Kbvrf9uk3VA+ZHB6gILxhBKjP6dfc+AqDJOmGZ1+tooLmOmA31Z84w4fPR1P8wABXhBdVfpk+zM44kZJ4rWK4z22MnIV8CLO8C9vzSOB55qU8RIBtKR+vPnHHs215Qlfjv+Dit09NM+Hw5jWmdnibR1WUhWzqeDaZnGRbkQ4CQRjX1P2y8xNDkZjmeYtdnd205WpuJkKV2QBVGckE+pLETnU1p2QYkLwJy/L/tKD/h8+Ud6MzOSacSXV1iIyKyOQ/wfw3x7wUt7yBFAAAAAElFTkSuQmCC';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,12 +2093,12 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R199';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R199';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R200';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R200';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R199';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R199';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R200';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R200';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -5360,14 +5360,15 @@ function architecturalWallLightContributions(wall){
     const towardY=distance>0.0001 ? vy*invDistance : normalY;
 
     /*
-      Absolute normal alignment represents the nearer of the wall's two faces.
-      A source directly along the wall plane contributes very little; a source
-      perpendicular to the face contributes fully.
+      R200: retain the angular falloff, but also keep the SIGN of the wall
+      normal. The sign identifies the physical half of the wall slab facing
+      the light source. Rendering uses that value so one source can never
+      brighten the opposite face of the same wall.
     */
-    const faceAlignment=Math.abs(
+    const signedFaceAlignment=
       normalX*towardX+
-      normalY*towardY
-    );
+      normalY*towardY;
+    const faceAlignment=Math.abs(signedFaceAlignment);
 
     if(faceAlignment<0.15) continue;
 
@@ -5397,6 +5398,8 @@ function architecturalWallLightContributions(wall){
       source,
       intensity,
       faceAlignment,
+      faceSide:signedFaceAlignment>=0 ? 1 : -1,
+      wallNormal:{x:normalX,y:normalY},
       nearest
     });
   }
@@ -5406,13 +5409,11 @@ function architecturalWallLightContributions(wall){
 
 
 /*
-  R198 old-wood wall material and semantic opening masks.
+  R200 old-wood wall material and window-plane preparation.
 
-  The user-supplied window/doorway images keep pure white as semantic source
-  pixels. At runtime those pixels are converted into:
-    - window: translucent glass + a cutout mask so terrain/units remain visible
-    - doorway: fully transparent open space + a cutout mask
-  Non-white pixels are preserved exactly as supplied.
+  The supplied window art treats pure white as glass. The complete rectangular
+  wall aperture is carved separately at render time, then the processed frame
+  and translucent glass are placed on the wall's center plane.
 */
 let oldWoodWallPatternTileCache=null;
 const wallOpeningAssetCache=new Map();
@@ -5458,6 +5459,51 @@ function oldWoodWallPatternTile(height=35){
   return tile;
 }
 
+function oldWoodWallPatternForWall(targetCtx,wall,height=35,thickness=9){
+  /*
+    R200: the visible slab is taller than the nominal wall height because the
+    wall has physical thickness. Scale the full supplied wood sprite to that
+    complete visible height, then align source row zero with the top edge of
+    the wall instead of letting the repeating pattern start at canvas Y=0.
+  */
+  const visualHeight=Math.max(
+    8,
+    Math.round(
+      Math.max(1,Number(height)||35)+
+      Math.max(1,Number(thickness)||9)
+    )
+  );
+  const tile=oldWoodWallPatternTile(visualHeight);
+  if(!tile) return null;
+
+  const pattern=targetCtx.createPattern(tile,"repeat");
+  if(!pattern) return null;
+
+  if(
+    typeof pattern.setTransform==="function" &&
+    typeof DOMMatrix!=="undefined"
+  ){
+    const a=screenPointForWorld(wall.a);
+    const b=screenPointForWorld(wall.b);
+    const topY=
+      Math.min(a.y,b.y)-
+      Math.max(1,Number(height)||35)-
+      (Math.max(1,Number(thickness)||9)/2);
+    const startX=
+      Math.min(a.x,b.x)-
+      (Math.max(1,Number(thickness)||9)/2);
+
+    pattern.setTransform(
+      new DOMMatrix().translate(
+        Math.round(startX),
+        Math.round(topY)
+      )
+    );
+  }
+
+  return pattern;
+}
+
 function processedWallOpeningAsset(type){
   const image=
     type==="window"
@@ -5490,28 +5536,23 @@ function processedWallOpeningAsset(type){
     source.width,
     source.height
   );
-  const maskData=sctx.createImageData(source.width,source.height);
 
   for(let i=0;i<imageData.data.length;i+=4){
     const r=imageData.data[i];
     const g=imageData.data[i+1];
     const b=imageData.data[i+2];
-    const white=r>=250 && g>=250 && b>=250;
+    const a=imageData.data[i+3];
+    const white=a>0 && r>=250 && g>=250 && b>=250;
 
     if(white){
-      maskData.data[i]=255;
-      maskData.data[i+1]=255;
-      maskData.data[i+2]=255;
-      maskData.data[i+3]=255;
-
       /* White source pixels become translucent pale glass. */
       displayData.data[i]=238;
       displayData.data[i+1]=248;
       displayData.data[i+2]=252;
       displayData.data[i+3]=64;
     }else{
-      displayData.data[i+3]=255;
-      maskData.data[i+3]=0;
+      /* Preserve the authored frame AND any source transparency. */
+      displayData.data[i+3]=a;
     }
   }
 
@@ -5520,14 +5561,8 @@ function processedWallOpeningAsset(type){
   display.height=source.height;
   display.getContext("2d").putImageData(displayData,0,0);
 
-  const mask=document.createElement("canvas");
-  mask.width=source.width;
-  mask.height=source.height;
-  mask.getContext("2d").putImageData(maskData,0,0);
-
   const result={
     display,
-    mask,
     width:source.width,
     height:source.height
   };
@@ -5538,6 +5573,19 @@ function processedWallOpeningAsset(type){
 
 function wallOpeningScreenMetrics(wall,opening){
   if(!wall || !opening || opening.type!=="window") return null;
+
+  /*
+    R200 projection rule:
+      - north/south wall faces project as visible vertical planes
+      - east/west wall faces are edge-on in this camera projection
+
+    Suppress the latter completely instead of pasting a face-on window sprite
+    onto the thin edge of the wall. Mechanics/LOS still use the authored
+    opening regardless of whether its plane is visually resolvable.
+  */
+  const wallDx=Math.abs(wall.b.x-wall.a.x);
+  const wallDy=Math.abs(wall.b.y-wall.a.y);
+  if(wallDx<=wallDy*0.05) return null;
 
   const height=Math.max(1,Math.round(wall.height || 35));
   const base=screenPointForWorld(
@@ -5559,6 +5607,11 @@ function wallOpeningScreenMetrics(wall,opening){
   );
   const centerY=base.y-(height*(2/3));
 
+  /*
+    The plane is intentionally centered on the wall centerline (base.x/base.y),
+    not shifted to either visible wall face. The rectangular aperture is cut
+    through the wall first; the lattice/glass plane then sits midway through it.
+  */
   return {
     x:Math.round(base.x-renderWidth/2),
     y:Math.round(centerY-renderHeight/2),
@@ -5571,15 +5624,18 @@ function wallOpeningScreenMetrics(wall,opening){
 
 
 function cutWallOpeningFromLayer(layerCtx,wall,opening){
-  const asset=processedWallOpeningAsset(opening?.type);
   const metrics=wallOpeningScreenMetrics(wall,opening);
-  if(!asset || !metrics) return false;
+  if(!metrics) return false;
 
+  /*
+    R200: cut one genuine rectangular aperture through the rendered wall.
+    The old implementation removed only the white pane pixels, which left wall
+    texture behind the frame and made the window look pasted onto the surface.
+  */
   layerCtx.save();
-  layerCtx.imageSmoothingEnabled=false;
   layerCtx.globalCompositeOperation="destination-out";
-  layerCtx.drawImage(
-    asset.mask,
+  layerCtx.fillStyle="rgba(0,0,0,1)";
+  layerCtx.fillRect(
     metrics.x,
     metrics.y,
     metrics.width,
@@ -5699,15 +5755,20 @@ function drawArchitecturalWallSegment(wall){
   let wallPaint="#555860";
 
   if(wall.material==="old-wood"){
-    const textureTile=oldWoodWallPatternTile(height);
-    if(textureTile){
-      wallPaint=lctx.createPattern(textureTile,"repeat") || wallPaint;
+    const woodPattern=oldWoodWallPatternForWall(
+      lctx,
+      wall,
+      height,
+      thickness
+    );
+    if(woodPattern){
+      wallPaint=woodPattern;
     }
   }
 
   /*
-    R199 doorways use the earlier architectural method: literal gaps between
-    wall subsegments. No doorway image is drawn or used as a rendering mask.
+    Doorways remain genuine gaps between wall subsegments. Windows are carved
+    later as apertures so their glass/lattice plane can live at wall mid-depth.
   */
   lctx.strokeStyle=wallPaint;
   lctx.lineWidth=thickness;
@@ -5724,6 +5785,11 @@ function drawArchitecturalWallSegment(wall){
     }
   }
 
+  /*
+    R200 source-facing wall light:
+    each contribution paints only the half-thickness face on the same side of
+    the wall centerline as its source. The opposite face remains unchanged.
+  */
   const lightContributions=architecturalWallLightContributions(wall);
 
   for(const contribution of lightContributions){
@@ -5758,14 +5824,27 @@ function drawArchitecturalWallSegment(wall){
       `rgba(${color[0]},${color[1]},${color[2]},0)`
     );
 
+    const normal=contribution.wallNormal || {x:0,y:0};
+    const side=contribution.faceSide || 1;
+    const faceWidth=Math.max(1,thickness*0.50);
+    const faceOffset=thickness*0.25;
+    const offsetX=normal.x*side*faceOffset;
+    const offsetY=normal.y*side*faceOffset;
+
     lctx.save();
     lctx.globalCompositeOperation="lighter";
     lctx.strokeStyle=gradient;
-    lctx.lineWidth=Math.max(1,thickness-1);
+    lctx.lineWidth=faceWidth;
 
     for(const solid of solidSegments){
-      const a=screenPointForWorld(solid.a);
-      const b=screenPointForWorld(solid.b);
+      const a=screenPointForWorld({
+        x:solid.a.x+offsetX,
+        y:solid.a.y+offsetY
+      });
+      const b=screenPointForWorld({
+        x:solid.b.x+offsetX,
+        y:solid.b.y+offsetY
+      });
 
       for(let z=2;z<height-1;z++){
         lctx.beginPath();
@@ -5778,8 +5857,15 @@ function drawArchitecturalWallSegment(wall){
     lctx.restore();
   }
 
-  /* Flat cap follows the same doorway gaps. */
-  lctx.strokeStyle=capColor;
+  /*
+    Extend the authored old-wood material through the wall's topmost pixels.
+    Stone walls keep their flat cap color; old wood uses the same vertically
+    aligned texture so the supplied sprite starts at the actual top edge.
+  */
+  lctx.strokeStyle=
+    wall.material==="old-wood"
+      ? wallPaint
+      : capColor;
   lctx.lineWidth=thickness;
 
   for(const solid of solidSegments){
@@ -5792,9 +5878,9 @@ function drawArchitecturalWallSegment(wall){
   }
 
   /*
-    Only windows are texture apertures. Their visible lattice/frame is drawn
-    from the supplied asset, while LOS/illumination uses one clear aperture
-    defined by glassWidthWorld and never inspects individual lattice panes.
+    Only projectable north/south windows receive a visible aperture + window
+    plane. East/west window planes are edge-on in this camera and therefore
+    intentionally produce no face-on texture or cutout artifact.
   */
   for(const opening of wall.openings || []){
     if(opening.type!=="window") continue;
@@ -13064,12 +13150,44 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
   );
 }
 
+let combatLogPinFrame=0;
+
+function pinCombatLogToBottom(){
+  const logBox=ui?.combatLog;
+  if(!logBox) return;
+
+  const pin=()=>{
+    pinCombatLogToBottom();
+  };
+
+  /*
+    Pin immediately, then again after layout and one additional paint frame.
+    Wrapped lines and combat-panel reflow can increase scrollHeight after the
+    append; the delayed pins keep the newest event visibly anchored at bottom.
+  */
+  pin();
+
+  if(typeof requestAnimationFrame!=="function") return;
+
+  if(combatLogPinFrame){
+    cancelAnimationFrame(combatLogPinFrame);
+  }
+
+  combatLogPinFrame=requestAnimationFrame(()=>{
+    pin();
+    combatLogPinFrame=requestAnimationFrame(()=>{
+      pin();
+      combatLogPinFrame=0;
+    });
+  });
+}
+
 function log(text,kind=""){
   const div=document.createElement("div");
   div.className=`log-line ${kind}`.trim();
   div.textContent=text;
   ui.combatLog.appendChild(div);
-  ui.combatLog.scrollTop=ui.combatLog.scrollHeight;
+  pinCombatLogToBottom();
 }
 
 function setLastRoll(text){
@@ -24791,7 +24909,7 @@ window.addEventListener("error",(event)=>{
     line.className="log-line bad";
     line.textContent="Runtime error: "+event.message;
     logBox.appendChild(line);
-    logBox.scrollTop=logBox.scrollHeight;
+    pinCombatLogToBottom();
   }
 });
 
@@ -24811,7 +24929,7 @@ window.addEventListener("unhandledrejection",(event)=>{
     line.className="log-line bad";
     line.textContent="Runtime error: "+(event.reason?.message || String(event.reason));
     logBox.appendChild(line);
-    logBox.scrollTop=logBox.scrollHeight;
+    pinCombatLogToBottom();
   }
 });
 
