@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R201",
-  "description": "Adventure Party asset specifications through R201. R201 keeps the R200 old-wood/window presentation while anchoring architectural openings to tactical hex centers, rebuilding the south doorway as a full one-hex passable gap, clipping dynamic light against exact wall-face geometry, and separating vision/light transmission through glass from physical projectile blocking.",
+  "release": "R202",
+  "description": "Adventure Party asset specifications through R202. R202 preserves R201 hex-aligned openings/projectile rules, adds conservative extruded shadow-volume subtraction for solid-wall light occlusion, limits old-wood texture to vertical faces, restores flat wall caps, and adds explicit vertical seams at connected 90-degree architectural corners.",
   "assets": {
     "fighter": {
       "source": {
