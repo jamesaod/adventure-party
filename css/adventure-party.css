@@ -1,20 +1,8 @@
 /*
-  R71: exact Gold Box font is a LOCAL project asset.
-
-  Run Run_Adventure_Party.bat once. If assets/fonts/Gold Box.ttf is
-  missing, GET_GOLDBOX_FONT.bat opens the verified download page and
-  automatically copies the downloaded TTF into this project.
-
-  Serving over localhost avoids file:// font CORS restrictions.
+  R214 — global UI font
+  EB Garamond Bold (700) is loaded as a hosted web font from Google Fonts
+  in index.html. No local font installation or project TTF is required.
 */
-@font-face {
-  font-family:"AdventureGoldBox";
-  src:url("assets/fonts/Gold%20Box.ttf") format("truetype");
-  font-style:normal;
-  font-weight:400;
-  font-display:block;
-}
-
 :root {
   color-scheme: dark;
   --silver:#b5b2c4;
@@ -30,10 +18,10 @@
   --panel2:#08080d;
   --divider:#514c67;
   --ground:#555352;
-  --goldbox-font:"AdventureGoldBox","Gold Box","GoldBox","Lucida Console","Courier New",monospace;
+  --ui-font:"EB Garamond",Georgia,"Times New Roman",serif;
 
-  font-family:var(--goldbox-font);
-  font-weight:400;
+  font-family:var(--ui-font);
+  font-weight:700;
   color:var(--text);
   background:#050507;
 }
@@ -807,7 +795,7 @@ button, input, select, textarea {
   background:transparent;
   border:0;
   color:#74a7ff;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   font-size:29px;
   line-height:1.22;
   pointer-events:none;
@@ -847,14 +835,14 @@ button, input, select, textarea {
   height:100%;
   min-height:0;
   overflow:auto;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   padding:16px 16px 18px;
 }
 
 .unit-info-name {
   color:var(--cyan);
   text-align:left;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   font-size:30px;
   line-height:1.28;
   margin:2px 0 11px;
@@ -864,7 +852,7 @@ button, input, select, textarea {
 
 .unit-info-mode {
   color:var(--gold);
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   font-size:19px;
   line-height:1.40;
   text-align:left;
@@ -876,7 +864,7 @@ button, input, select, textarea {
 .unit-info-panel .kv {
   grid-template-columns:minmax(138px,0.72fr) minmax(0,1.28fr);
   gap:11px 16px;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   font-size:20px;
   line-height:1.42;
   align-items:start;
@@ -902,7 +890,7 @@ button, input, select, textarea {
   margin-top:11px;
   padding-top:10px;
   border-top:1px solid #302d40;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   font-size:19px;
   line-height:1.42;
 }
@@ -936,7 +924,7 @@ button, input, select, textarea {
   padding:5px 9px;
   cursor:pointer;
   font-size:15px;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
 }
 
 .combat-action:hover,
@@ -1112,7 +1100,7 @@ button, input, select, textarea {
   padding:5px 9px;
   cursor:pointer;
   font-size:14px;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
 }
 
 .sfx-test { color:var(--cyan); }
@@ -1231,7 +1219,7 @@ button, input, select, textarea {
   max-height:90vh;
   overflow:auto;
   padding:16px 18px 18px;
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
 }
 
 .character-sheet h2 {
@@ -1453,7 +1441,7 @@ button, input, select, textarea {
 }
 
 .font-status {
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   font-size:10px;
   letter-spacing:.3px;
   color:var(--muted);
@@ -1575,7 +1563,7 @@ button, input, select, textarea {
   border:1px solid #716b83;
   background:#111019;
   color:var(--cyan);
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   padding:8px 12px;
   cursor:pointer;
   font-size:12px;
@@ -1670,7 +1658,7 @@ button, input, select, textarea {
   border:1px solid #716b83;
   background:#111019;
   color:var(--text);
-  font-family:var(--goldbox-font);
+  font-family:var(--ui-font);
   padding:9px 10px;
   cursor:pointer;
   text-align:left;
