@@ -3,6 +3,23 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R222 — Authoritative perception and radial Darkness
+
+- Added one authoritative automated-combat perception query that combines invisibility/special vision, blindness, architecture, fog/clouds, magical Darkness, and multi-hex occupied footprints.
+- MOB Intelligence and R220 target memory now consume that perception query, so Intelligence changes decisions made from known information but never grants hidden information.
+- Automated melee attacks now require current visual acquisition of the target; a final defensive gate in the central attack resolver rejects any hidden live target accidentally handed to automated combat logic.
+- MOB missile attacks likewise require current visual acquisition in addition to the existing projectile-lane rules.
+- Free attacks now require the attacker to actually see the creature leaving the threatened hex, closing the adjacency-awareness leak inside fog/darkness.
+- Player Guard reactions now require the guarding unit to see the entering enemy instead of triggering from physical adjacency alone.
+- Hostile target enumeration now returns currently visible hostiles; R220 remembered-target pursuit remains separate and continues to use last-known positions.
+- MOB weighted path planning no longer treats unseen hostile units as magically known occupancy obstacles. Allies and currently perceived enemies still block planned routes normally; physical movement execution still stops if a MOB actually attempts to enter an unseen occupied hex.
+- Added a public `AdventurePartyPerception` diagnostic hook exposing current visibility and perception state.
+- Reworked Darkness, 15' Radius presentation from black-filled tactical hexes into a soft radial projected volume with a ground penumbra, dense central sphere, feathered edge, and upper bloom.
+- Darkness gameplay remains hex-authoritative for LOS, projectiles, illumination cancellation, AI hazard reasoning, and targeting; only its presentation is radial.
+- The LOS blackout no longer paints Darkness's own visible cells as generic black hex tiles. The radial Darkness volume owns those cells visually while terrain beyond the Darkness remains obscured normally.
+- Magical Light interaction remains authoritative through the existing effective-Darkness query; the rendered volume fades as more of its logical cells are negated by magical illumination.
+
+
 ## R221 — Kobold prone normalization and amorphous cloud tops
 
 - Fixed Kobold-family prone rendering so Normal Kobolds, Body Guards, and Slingers all use the shared `kobold-prone` render profile instead of accidentally inheriting standing-pose dimensions.
