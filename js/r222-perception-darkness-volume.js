@@ -996,85 +996,114 @@ function r222ArchitecturalCenterVisible(
   );
 }
 
-function r222DarknessCellPresentationVisible(
-  x,
-  y
+function r222ObserverCanSeeDarknessBoundaryCell(
+  observer,
+  cell
 ){
-  if(!game || !inside(x,y)) return false;
+  if(
+    !observer ||
+    !cell ||
+    !inside(cell.x,cell.y)
+  ){
+    return false;
+  }
+
+  if(
+    observer.x===cell.x &&
+    observer.y===cell.y
+  ){
+    return true;
+  }
+
+  if(
+    !r222ArchitecturalCenterVisible(
+      observer,
+      cell.x,
+      cell.y
+    )
+  ){
+    return false;
+  }
+
+  /*
+    An observer standing in any obscuring volume cannot visually inspect a
+    remote Darkness boundary.
+  */
+  if(
+    hasObscuringMagicAtHex(
+      observer.x,
+      observer.y
+    )
+  ){
+    return false;
+  }
+
+  const cells=
+    hexLineCells(
+      observer,
+      cell
+    );
+
+  /*
+    The destination Darkness cell is allowed because this is a presentation
+    query: the party can see the boundary of an opaque Darkness volume. Any
+    OTHER obscuring cell on the route still blocks that view.
+  */
+  return !cells.some(
+    (step,index)=>
+      index>0 &&
+      index<cells.length-1 &&
+      hasObscuringMagicAtHex(
+        step.x,
+        step.y
+      )
+  );
+}
+
+function r222DarknessEffectPresentationVisible(
+  effect
+){
+  const activeCells=
+    r222DarknessActiveCells(effect);
+
+  if(!activeCells.length) return false;
 
   const observers=
     friendlyVisibilityObservers();
 
   if(!observers.length) return true;
 
-  return observers.some(observer=>{
-    if(
-      observer.x===x &&
-      observer.y===y
-    ){
-      return true;
-    }
-
-    if(
-      !r222ArchitecturalCenterVisible(
+  return observers.some(observer=>
+    activeCells.some(cell=>
+      r222ObserverCanSeeDarknessBoundaryCell(
         observer,
-        x,
-        y
+        cell
       )
-    ){
-      return false;
-    }
-
-    /*
-      If a party member is itself standing in magical obscuration, show the
-      local Darkness volume so the player understands the condition, even
-      though the unit cannot see through it.
-    */
-    if(
-      hasEffectiveDarknessAtHex(
-        observer.x,
-        observer.y
-      )
-    ){
-      return true;
-    }
-
-    if(hasFogAtHex(observer.x,observer.y)){
-      return false;
-    }
-
-    const cells=
-      hexLineCells(
-        observer,
-        {x,y}
-      );
-
-    /*
-      Ignore the destination Darkness cell itself for presentation. Any OTHER
-      obscuring volume between observer and destination still hides the effect.
-    */
-    return !cells.some(
-      (cell,index)=>
-        index>0 &&
-        index<cells.length-1 &&
-        hasObscuringMagicAtHex(
-          cell.x,
-          cell.y
-        )
-    );
-  });
+    )
+  );
 }
 
-function r222DarknessEffectPresentationVisible(
-  effect
+function r222DarknessCellPresentationVisible(
+  x,
+  y
 ){
-  return r222DarknessActiveCells(effect)
-    .some(cell=>
-      r222DarknessCellPresentationVisible(
-        cell.x,
-        cell.y
-      )
-    );
+  if(
+    !game ||
+    !inside(x,y) ||
+    !hasEffectiveDarknessAtHex(x,y)
+  ){
+    return false;
+  }
+
+  /*
+    Once any boundary of a Darkness effect is visible, let the complete effect
+    own its presentation footprint. This removes the old black-hex mosaic under
+    the radial volume without granting gameplay visibility through the effect.
+  */
+  return darknessEffects().some(effect=>
+    areaEffectContains(effect,x,y) &&
+    r222DarknessEffectPresentationVisible(effect)
+  );
 }
 
 function r222DarknessOpacityFactor(effect){
