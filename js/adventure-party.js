@@ -2097,9 +2097,8 @@ const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.p
 const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R198';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
-const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R198';
-const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R198';
-const OLD_WOOD_DOORWAY_SRC='assets/terrain/wall-doorway-old-wood.png?v=R198';
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R199';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R199';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -2166,12 +2165,10 @@ juvenileRedDragonAttackSprite.src=JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC;
 
 const oldWoodWallTexture=new Image();
 const oldWoodWindowImage=new Image();
-const oldWoodDoorwayImage=new Image();
 
 for(const image of [
   oldWoodWallTexture,
-  oldWoodWindowImage,
-  oldWoodDoorwayImage
+  oldWoodWindowImage
 ]){
   image.addEventListener("load",()=>{
     if(game && currentScreen==="combat") draw();
@@ -2180,7 +2177,6 @@ for(const image of [
 
 oldWoodWallTexture.src=OLD_WOOD_WALL_TEXTURE_SRC;
 oldWoodWindowImage.src=OLD_WOOD_WINDOW_SRC;
-oldWoodDoorwayImage.src=OLD_WOOD_DOORWAY_SRC;
 
 /* R157: user-provided death marker sprite replaces the old skull-and-crossbones overlay. */
 const deathMarkerSprite=new Image();
@@ -4805,7 +4801,14 @@ function configureArchitecturalWalls(mode){
       a:{x:r.left,y:r.top},
       b:{x:r.right,y:r.top},
       openings:[
-        {id:"north-window",type:"window",facing:"north",centerT:0.50,widthWorld:24}
+        {
+          id:"north-window",
+          type:"window",
+          facing:"north",
+          centerT:0.50,
+          glassWidthWorld:36,
+          visualWidthScale:1.50
+        }
       ]
     },
     {
@@ -4814,8 +4817,21 @@ function configureArchitecturalWalls(mode){
       a:{x:r.left,y:r.bottom},
       b:{x:r.right,y:r.bottom},
       openings:[
-        {id:"south-doorway",type:"doorway",facing:"south",centerT:0.38,widthWorld:30},
-        {id:"south-window",type:"window",facing:"south",centerT:0.69,widthWorld:24}
+        {
+          id:"south-doorway",
+          type:"doorway",
+          facing:"south",
+          centerT:0.38,
+          widthWorld:30
+        },
+        {
+          id:"south-window",
+          type:"window",
+          facing:"south",
+          centerT:0.50,
+          glassWidthWorld:36,
+          visualWidthScale:1.50
+        }
       ]
     },
     /* West wall keeps the existing open entrance from the wall-test baseline. */
@@ -4827,7 +4843,14 @@ function configureArchitecturalWalls(mode){
       a:{x:r.right,y:r.top},
       b:{x:r.right,y:r.bottom},
       openings:[
-        {id:"east-window",type:"window",facing:"east",centerT:0.50,widthWorld:24}
+        {
+          id:"east-window",
+          type:"window",
+          facing:"east",
+          centerT:0.50,
+          glassWidthWorld:36,
+          visualWidthScale:1.50
+        }
       ]
     }
   ];
@@ -4945,9 +4968,21 @@ function wallBlockingSubsegments(wall,mode="movement"){
   const passIntervals=(wall.openings || [])
     .filter(opening=>wallOpeningPassesMode(opening,mode))
     .map(opening=>{
-      const half=
-        Math.max(1,Number(opening.widthWorld)||1)/
-        (2*length);
+      /*
+        R199: window lattice/frame is presentation only. LOS/illumination sees
+        one continuous clear aperture equal to the apparent widened glass area.
+      */
+      const passWidth=
+        opening.type==="window"
+          ? Math.max(
+              1,
+              Number(opening.glassWidthWorld) ||
+              Number(opening.widthWorld) ||
+              1
+            )
+          : Math.max(1,Number(opening.widthWorld)||1);
+
+      const half=passWidth/(2*length);
       const center=Math.max(
         0,
         Math.min(1,Number(opening.centerT)||0.5)
@@ -5427,9 +5462,7 @@ function processedWallOpeningAsset(type){
   const image=
     type==="window"
       ? oldWoodWindowImage
-      : type==="doorway"
-        ? oldWoodDoorwayImage
-        : null;
+      : null;
 
   if(
     !image?.complete ||
@@ -5471,16 +5504,11 @@ function processedWallOpeningAsset(type){
       maskData.data[i+2]=255;
       maskData.data[i+3]=255;
 
-      if(type==="window"){
-        /* White source pixels become translucent pale glass. */
-        displayData.data[i]=238;
-        displayData.data[i+1]=248;
-        displayData.data[i+2]=252;
-        displayData.data[i+3]=64;
-      }else{
-        /* Doorway white source pixels are fully open space. */
-        displayData.data[i+3]=0;
-      }
+      /* White source pixels become translucent pale glass. */
+      displayData.data[i]=238;
+      displayData.data[i+1]=248;
+      displayData.data[i+2]=252;
+      displayData.data[i+3]=64;
     }else{
       displayData.data[i+3]=255;
       maskData.data[i+3]=0;
@@ -5509,7 +5537,7 @@ function processedWallOpeningAsset(type){
 }
 
 function wallOpeningScreenMetrics(wall,opening){
-  if(!wall || !opening) return null;
+  if(!wall || !opening || opening.type!=="window") return null;
 
   const height=Math.max(1,Math.round(wall.height || 35));
   const base=screenPointForWorld(
@@ -5519,45 +5547,28 @@ function wallOpeningScreenMetrics(wall,opening){
     )
   );
 
-  if(opening.type==="window"){
-    const asset=processedWallOpeningAsset("window");
-    const sourceRatio=asset
-      ? asset.width/asset.height
-      : 73/85;
-    const renderHeight=Math.max(12,Math.round(height*0.64));
-    const renderWidth=Math.max(10,Math.round(renderHeight*sourceRatio));
-    const centerY=base.y-(height*(2/3));
+  const asset=processedWallOpeningAsset("window");
+  const sourceRatio=asset
+    ? asset.width/asset.height
+    : 73/85;
+  const renderHeight=Math.max(12,Math.round(height*0.64));
+  const widthScale=Math.max(0.1,Number(opening.visualWidthScale)||1);
+  const renderWidth=Math.max(
+    10,
+    Math.round(renderHeight*sourceRatio*widthScale)
+  );
+  const centerY=base.y-(height*(2/3));
 
-    return {
-      x:Math.round(base.x-renderWidth/2),
-      y:Math.round(centerY-renderHeight/2),
-      width:renderWidth,
-      height:renderHeight,
-      base,
-      center:{x:base.x,y:centerY}
-    };
-  }
-
-  if(opening.type==="doorway"){
-    const asset=processedWallOpeningAsset("doorway");
-    const sourceRatio=asset
-      ? asset.width/asset.height
-      : 113/136;
-    const renderHeight=Math.max(18,Math.round(height*0.90));
-    const renderWidth=Math.max(14,Math.round(renderHeight*sourceRatio));
-
-    return {
-      x:Math.round(base.x-renderWidth/2),
-      y:Math.round(base.y-renderHeight),
-      width:renderWidth,
-      height:renderHeight,
-      base,
-      center:{x:base.x,y:base.y-renderHeight/2}
-    };
-  }
-
-  return null;
+  return {
+    x:Math.round(base.x-renderWidth/2),
+    y:Math.round(centerY-renderHeight/2),
+    width:renderWidth,
+    height:renderHeight,
+    base,
+    center:{x:base.x,y:centerY}
+  };
 }
+
 
 function cutWallOpeningFromLayer(layerCtx,wall,opening){
   const asset=processedWallOpeningAsset(opening?.type);
@@ -5620,29 +5631,21 @@ function drawArchitecturalWallShapeOutline(wallsToOutline=architecturalWalls){
   mctx.strokeStyle="rgba(255,255,255,1)";
 
   for(const wall of walls){
-    const a=screenPointForWorld(wall.a);
-    const b=screenPointForWorld(wall.b);
     const height=Math.max(1,Math.round(wall.height || 35));
     const thickness=Math.max(3,Number(wall.thickness)||9);
 
     mctx.lineWidth=thickness;
 
-    for(let z=0;z<=height;z++){
-      mctx.beginPath();
-      mctx.moveTo(a.x,a.y-z);
-      mctx.lineTo(b.x,b.y-z);
-      mctx.stroke();
-    }
-  }
+    for(const solid of wallBlockingSubsegments(wall,"movement")){
+      const a=screenPointForWorld(solid.a);
+      const b=screenPointForWorld(solid.b);
 
-  /*
-    A doorway is part of the wall's actual silhouette, so carve its white/open
-    mask before dilation. Window glass remains within the outer wall silhouette.
-  */
-  for(const wall of walls){
-    for(const opening of wall.openings || []){
-      if(opening.type!=="doorway") continue;
-      cutWallOpeningFromLayer(mctx,wall,opening);
+      for(let z=0;z<=height;z++){
+        mctx.beginPath();
+        mctx.moveTo(a.x,a.y-z);
+        mctx.lineTo(b.x,b.y-z);
+        mctx.stroke();
+      }
     }
   }
 
@@ -5680,17 +5683,11 @@ function drawArchitecturalWallShapeOutline(wallsToOutline=architecturalWalls){
 
 
 function drawArchitecturalWallSegment(wall){
-  const a=screenPointForWorld(wall.a);
-  const b=screenPointForWorld(wall.b);
   const height=Math.max(1,Math.round(wall.height || 35));
   const thickness=Math.max(3,wall.thickness || 9);
   const capColor=wall.material==="old-wood" ? "#716b61" : "#888b92";
+  const solidSegments=wallBlockingSubsegments(wall,"movement");
 
-  /*
-    R198 renders each wall to a transparent full-screen layer. That lets the
-    semantic white pixels in the doorway/window masks cut holes in the wall
-    without erasing terrain, units, or scenery already drawn behind it.
-  */
   const layer=document.createElement("canvas");
   layer.width=ctx.canvas.width;
   layer.height=ctx.canvas.height;
@@ -5708,20 +5705,25 @@ function drawArchitecturalWallSegment(wall){
     }
   }
 
+  /*
+    R199 doorways use the earlier architectural method: literal gaps between
+    wall subsegments. No doorway image is drawn or used as a rendering mask.
+  */
   lctx.strokeStyle=wallPaint;
   lctx.lineWidth=thickness;
 
-  for(let z=0;z<height;z++){
-    lctx.beginPath();
-    lctx.moveTo(a.x,a.y-z);
-    lctx.lineTo(b.x,b.y-z);
-    lctx.stroke();
+  for(const solid of solidSegments){
+    const a=screenPointForWorld(solid.a);
+    const b=screenPointForWorld(solid.b);
+
+    for(let z=0;z<height;z++){
+      lctx.beginPath();
+      lctx.moveTo(a.x,a.y-z);
+      lctx.lineTo(b.x,b.y-z);
+      lctx.stroke();
+    }
   }
 
-  /*
-    Keep the R197 restrained light response, now applied on top of the wood
-    texture instead of a flat wall color.
-  */
   const lightContributions=architecturalWallLightContributions(wall);
 
   for(const contribution of lightContributions){
@@ -5761,33 +5763,46 @@ function drawArchitecturalWallSegment(wall){
     lctx.strokeStyle=gradient;
     lctx.lineWidth=Math.max(1,thickness-1);
 
-    for(let z=2;z<height-1;z++){
-      lctx.beginPath();
-      lctx.moveTo(a.x,a.y-z);
-      lctx.lineTo(b.x,b.y-z);
-      lctx.stroke();
+    for(const solid of solidSegments){
+      const a=screenPointForWorld(solid.a);
+      const b=screenPointForWorld(solid.b);
+
+      for(let z=2;z<height-1;z++){
+        lctx.beginPath();
+        lctx.moveTo(a.x,a.y-z);
+        lctx.lineTo(b.x,b.y-z);
+        lctx.stroke();
+      }
     }
 
     lctx.restore();
   }
 
-  /* Flat solid top cap retained from R197. */
+  /* Flat cap follows the same doorway gaps. */
   lctx.strokeStyle=capColor;
   lctx.lineWidth=thickness;
-  lctx.beginPath();
-  lctx.moveTo(a.x,a.y-height);
-  lctx.lineTo(b.x,b.y-height);
-  lctx.stroke();
+
+  for(const solid of solidSegments){
+    const a=screenPointForWorld(solid.a);
+    const b=screenPointForWorld(solid.b);
+    lctx.beginPath();
+    lctx.moveTo(a.x,a.y-height);
+    lctx.lineTo(b.x,b.y-height);
+    lctx.stroke();
+  }
 
   /*
-    White source regions are semantic apertures. Remove those exact scaled
-    regions from the wall layer first, then repaint the supplied frame art.
+    Only windows are texture apertures. Their visible lattice/frame is drawn
+    from the supplied asset, while LOS/illumination uses one clear aperture
+    defined by glassWidthWorld and never inspects individual lattice panes.
   */
   for(const opening of wall.openings || []){
+    if(opening.type!=="window") continue;
     cutWallOpeningFromLayer(lctx,wall,opening);
   }
 
   for(const opening of wall.openings || []){
+    if(opening.type!=="window") continue;
     drawWallOpeningOnLayer(lctx,wall,opening);
   }
 
