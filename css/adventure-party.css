@@ -915,6 +915,16 @@ button, input, select, textarea {
   border-color:#743e48;
 }
 
+.unit-effect.area-effect {
+  color:var(--cyan);
+  border-color:#3f6474;
+  background:#0a0d12;
+}
+
+.unit-effect.area-effect > div:first-child {
+  color:var(--gold);
+}
+
 .combat-action {
   border:1px solid #8a879d;
   border-top-color:#d8d5df;
