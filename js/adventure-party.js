@@ -2096,6 +2096,11 @@ const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R197';
 const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R197';
 
+/* R198 user-supplied old-wood architectural material + opening art. */
+const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R198';
+const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R198';
+const OLD_WOOD_DOORWAY_SRC='assets/terrain/wall-doorway-old-wood.png?v=R198';
+
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
 const KOBOLD_NORMAL_ATTACK_SPRITE_SRC='assets/sprites/kobold-attack.png';
@@ -2158,6 +2163,24 @@ juvenileRedDragonStandSprite.src=JUVENILE_RED_DRAGON_STAND_SPRITE_SRC;
 
 const juvenileRedDragonAttackSprite=new Image();
 juvenileRedDragonAttackSprite.src=JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC;
+
+const oldWoodWallTexture=new Image();
+const oldWoodWindowImage=new Image();
+const oldWoodDoorwayImage=new Image();
+
+for(const image of [
+  oldWoodWallTexture,
+  oldWoodWindowImage,
+  oldWoodDoorwayImage
+]){
+  image.addEventListener("load",()=>{
+    if(game && currentScreen==="combat") draw();
+  });
+}
+
+oldWoodWallTexture.src=OLD_WOOD_WALL_TEXTURE_SRC;
+oldWoodWindowImage.src=OLD_WOOD_WINDOW_SRC;
+oldWoodDoorwayImage.src=OLD_WOOD_DOORWAY_SRC;
 
 /* R157: user-provided death marker sprite replaces the old skull-and-crossbones overlay. */
 const deathMarkerSprite=new Image();
@@ -4759,16 +4782,54 @@ function configureArchitecturalWalls(mode){
     R197: settle wall presentation at 35 px high after visual review.
     Movement, LOS, volume blocking, and footprint geometry remain unchanged.
   */
-  const common={height:35,thickness:9,material:"stone",blocksMovement:true,blocksLOS:true,blocksVolume:true};
+  const common={
+    height:35,
+    thickness:9,
+    material:"old-wood",
+    blocksMovement:true,
+    blocksLOS:true,
+    blocksVolume:true
+  };
 
+  /*
+    R198 opening placement:
+      - north window centered on the north wall
+      - south doorway left of center plus a south window right of center
+      - east window centered on the east wall
+    Window centers sit at 2/3 wall height. Door white space is fully open.
+  */
   architecturalWalls=[
-    {...common,id:"north",a:{x:r.left,y:r.top},b:{x:r.right,y:r.top}},
-    {...common,id:"south",a:{x:r.left,y:r.bottom},b:{x:r.right,y:r.bottom}},
-    /* West wall is split only by the open entrance; there is no door object. */
+    {
+      ...common,
+      id:"north",
+      a:{x:r.left,y:r.top},
+      b:{x:r.right,y:r.top},
+      openings:[
+        {id:"north-window",type:"window",facing:"north",centerT:0.50,widthWorld:24}
+      ]
+    },
+    {
+      ...common,
+      id:"south",
+      a:{x:r.left,y:r.bottom},
+      b:{x:r.right,y:r.bottom},
+      openings:[
+        {id:"south-doorway",type:"doorway",facing:"south",centerT:0.38,widthWorld:30},
+        {id:"south-window",type:"window",facing:"south",centerT:0.69,widthWorld:24}
+      ]
+    },
+    /* West wall keeps the existing open entrance from the wall-test baseline. */
     {...common,id:"west-north",a:{x:r.left,y:r.top},b:{x:r.left,y:r.entranceTop}},
     {...common,id:"west-south",a:{x:r.left,y:r.entranceBottom},b:{x:r.left,y:r.bottom}},
-    /* The former east doorway is now a continuous solid wall. */
-    {...common,id:"east",a:{x:r.right,y:r.top},b:{x:r.right,y:r.bottom}}
+    {
+      ...common,
+      id:"east",
+      a:{x:r.right,y:r.top},
+      b:{x:r.right,y:r.bottom},
+      openings:[
+        {id:"east-window",type:"window",facing:"east",centerT:0.50,widthWorld:24}
+      ]
+    }
   ];
 
   rebuildArchitecturalBlockedHexes();
@@ -4835,6 +4896,114 @@ function architecturalHexCoreVertices(x,y){
   ];
 }
 
+function architecturalWallLength(wall){
+  if(!wall?.a || !wall?.b) return 0;
+  return Math.hypot(
+    wall.b.x-wall.a.x,
+    wall.b.y-wall.a.y
+  );
+}
+
+function architecturalWallPointAt(wall,t){
+  const q=Math.max(0,Math.min(1,Number(t)||0));
+  return {
+    x:wall.a.x+(wall.b.x-wall.a.x)*q,
+    y:wall.a.y+(wall.b.y-wall.a.y)*q
+  };
+}
+
+function wallOpeningPassesMode(opening,mode){
+  if(!opening) return false;
+
+  if(opening.type==="doorway"){
+    return true;
+  }
+
+  if(opening.type==="window"){
+    /* Glass passes sight/light, but still blocks movement and physical volume. */
+    return mode==="los";
+  }
+
+  return false;
+}
+
+function wallBlockingSubsegments(wall,mode="movement"){
+  if(!wall) return [];
+
+  const blocks=
+    mode==="los"
+      ? wall.blocksLOS
+      : mode==="volume"
+        ? wall.blocksVolume!==false
+        : wall.blocksMovement;
+
+  if(!blocks) return [];
+
+  const length=architecturalWallLength(wall);
+  if(length<=0.0001) return [];
+
+  const passIntervals=(wall.openings || [])
+    .filter(opening=>wallOpeningPassesMode(opening,mode))
+    .map(opening=>{
+      const half=
+        Math.max(1,Number(opening.widthWorld)||1)/
+        (2*length);
+      const center=Math.max(
+        0,
+        Math.min(1,Number(opening.centerT)||0.5)
+      );
+
+      return {
+        start:Math.max(0,center-half),
+        end:Math.min(1,center+half)
+      };
+    })
+    .sort((a,b)=>a.start-b.start);
+
+  if(!passIntervals.length) return [wall];
+
+  const merged=[];
+  for(const interval of passIntervals){
+    const last=merged[merged.length-1];
+    if(last && interval.start<=last.end){
+      last.end=Math.max(last.end,interval.end);
+    }else{
+      merged.push({...interval});
+    }
+  }
+
+  const segments=[];
+  let cursor=0;
+
+  for(const interval of merged){
+    if(interval.start>cursor+0.0001){
+      segments.push({
+        ...wall,
+        id:`${wall.id}:block:${mode}:${segments.length}`,
+        parentWallId:wall.id,
+        openings:[],
+        a:architecturalWallPointAt(wall,cursor),
+        b:architecturalWallPointAt(wall,interval.start)
+      });
+    }
+    cursor=Math.max(cursor,interval.end);
+  }
+
+  if(cursor<1-0.0001){
+    segments.push({
+      ...wall,
+      id:`${wall.id}:block:${mode}:${segments.length}`,
+      parentWallId:wall.id,
+      openings:[],
+      a:architecturalWallPointAt(wall,cursor),
+      b:architecturalWallPointAt(wall,1)
+    });
+  }
+
+  return segments;
+}
+
+
 function wallSegmentCutsHexInterior(wall,x,y){
   if(!wall?.blocksMovement) return false;
 
@@ -4871,7 +5040,8 @@ function rebuildArchitecturalBlockedHexes(){
     for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++){
       if(
         architecturalWalls.some(wall=>
-          wallSegmentCutsHexInterior(wall,x,y)
+          wallBlockingSubsegments(wall,"movement")
+            .some(segment=>wallSegmentCutsHexInterior(segment,x,y))
         )
       ){
         architecturalBlockedHexes.add(key(x,y));
@@ -4887,16 +5057,10 @@ function isArchitecturalBlockedHex(x,y){
 function architecturalWallBlocksWorldLine(a,b,mode="movement"){
   if(!architecturalWalls.length) return false;
 
-  return architecturalWalls.some(wall=>{
-    const blocks=
-      mode==="los"
-        ? wall.blocksLOS
-        : mode==="volume"
-          ? wall.blocksVolume!==false
-          : wall.blocksMovement;
-
-    return blocks && segmentsIntersect(a,b,wall.a,wall.b);
-  });
+  return architecturalWalls.some(wall=>
+    wallBlockingSubsegments(wall,mode)
+      .some(segment=>segmentsIntersect(a,b,segment.a,segment.b))
+  );
 }
 
 function architecturalWallBlocksStep(from,to){
@@ -5066,33 +5230,29 @@ function drawArchitecturalWallShadows(){
   ctx.lineCap="square";
 
   for(const wall of architecturalWalls){
-    const a=screenPointForWorld(wall.a);
-    const b=screenPointForWorld(wall.b);
-    const height=Math.max(1,Number(wall.height)||30);
-    const sx=height*ARCHITECTURAL_WALL_SHADOW.xPerHeight;
-    const sy=height*ARCHITECTURAL_WALL_SHADOW.yPerHeight;
+    for(const blocker of wallBlockingSubsegments(wall,"movement")){
+      const a=screenPointForWorld(blocker.a);
+      const b=screenPointForWorld(blocker.b);
+      const height=Math.max(1,Number(wall.height)||35);
+      const sx=height*ARCHITECTURAL_WALL_SHADOW.xPerHeight;
+      const sy=height*ARCHITECTURAL_WALL_SHADOW.yPerHeight;
 
-    /*
-      Geometric cast shadow: the wall base edge and the projected top edge form
-      a ground-plane parallelogram. Joined walls naturally overlap their
-      shadows, which is desirable for this first architectural-lighting test.
-    */
-    ctx.fillStyle=ARCHITECTURAL_WALL_SHADOW.fill;
-    ctx.beginPath();
-    ctx.moveTo(a.x,a.y);
-    ctx.lineTo(b.x,b.y);
-    ctx.lineTo(b.x+sx,b.y+sy);
-    ctx.lineTo(a.x+sx,a.y+sy);
-    ctx.closePath();
-    ctx.fill();
+      ctx.fillStyle=ARCHITECTURAL_WALL_SHADOW.fill;
+      ctx.beginPath();
+      ctx.moveTo(a.x,a.y);
+      ctx.lineTo(b.x,b.y);
+      ctx.lineTo(b.x+sx,b.y+sy);
+      ctx.lineTo(a.x+sx,a.y+sy);
+      ctx.closePath();
+      ctx.fill();
 
-    /* Slightly softer/dimmer projected top edge. */
-    ctx.strokeStyle=ARCHITECTURAL_WALL_SHADOW.farEdge;
-    ctx.lineWidth=Math.max(2,(wall.thickness||9)*0.65);
-    ctx.beginPath();
-    ctx.moveTo(a.x+sx,a.y+sy);
-    ctx.lineTo(b.x+sx,b.y+sy);
-    ctx.stroke();
+      ctx.strokeStyle=ARCHITECTURAL_WALL_SHADOW.farEdge;
+      ctx.lineWidth=Math.max(2,(wall.thickness||9)*0.65);
+      ctx.beginPath();
+      ctx.moveTo(a.x+sx,a.y+sy);
+      ctx.lineTo(b.x+sx,b.y+sy);
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
@@ -8754,10 +8914,15 @@ function visibilitySegments(){
   const segments=[];
 
   for(const wall of architecturalWalls){
-    if(!wall.blocksLOS) continue;
-    const polygon=architecturalWallWorldVertices(wall);
-    for(const segment of wallPolygonSegments(polygon)){
-      segments.push({...segment,isWall:true,wallId:wall.id});
+    for(const blocker of wallBlockingSubsegments(wall,"los")){
+      const polygon=architecturalWallWorldVertices(blocker);
+      for(const segment of wallPolygonSegments(polygon)){
+        segments.push({
+          ...segment,
+          isWall:true,
+          wallId:wall.id
+        });
+      }
     }
   }
 
@@ -8818,8 +8983,9 @@ function wallTestVisibilityPolygonWorld(observer){
   const vertices=[];
 
   for(const wall of architecturalWalls){
-    if(!wall.blocksLOS) continue;
-    vertices.push(...architecturalWallWorldVertices(wall));
+    for(const blocker of wallBlockingSubsegments(wall,"los")){
+      vertices.push(...architecturalWallWorldVertices(blocker));
+    }
   }
   vertices.push(...bounds.corners);
 
@@ -9226,11 +9392,14 @@ function drawWallTestLineOfSightMask(){
 
 function worldLineBlockedByOtherArchitecturalWalls(a,b,ignoredWallId){
   for(const wall of architecturalWalls){
-    if(!wall.blocksLOS || wall.id===ignoredWallId) continue;
-    const polygon=architecturalWallWorldVertices(wall);
-    for(const segment of wallPolygonSegments(polygon)){
-      if(segmentsIntersect(a,b,segment.a,segment.b)){
-        return true;
+    if(wall.id===ignoredWallId) continue;
+
+    for(const blocker of wallBlockingSubsegments(wall,"los")){
+      const polygon=architecturalWallWorldVertices(blocker);
+      for(const segment of wallPolygonSegments(polygon)){
+        if(segmentsIntersect(a,b,segment.a,segment.b)){
+          return true;
+        }
       }
     }
   }
