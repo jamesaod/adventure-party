@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R194 — Shield spell visual effect
+
+- Added a persistent translucent magical Shield VFX for the 1st-level Wizard spell Shield.
+- The barrier is drawn slightly forward of the affected unit and follows the unit's live six-direction tactical facing every frame.
+- Shield VFX remains visible for the entire spell duration and disappears automatically when the buff expires.
+- Added a pale blue-white translucent pane, brighter rim glow, subtle pulse, inner curvature highlight, and traveling glint.
+- The barrier scales visually with Enlarge so it stays proportionate to an enlarged unit, while neither spell changes the unit's tactical footprint.
+- Shield joins the shared persistent-status animation loop so its shimmer continues even while the battlefield is otherwise idle.
+- Existing Shield mechanics are unchanged: frontal Magic Missile negation, AC 3 vs arrows/bolts/bullets, AC 4 vs other attacks, +1 applicable saves, and 5 rounds/level duration.
+
 ## R193 — Enlarge visual transformation
 
 - Added full visual presentation for the already-implemented 1st-level Wizard spell Enlarge.

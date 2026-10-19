@@ -2079,7 +2079,7 @@ if(document.fonts?.ready){
 }
 
 /* User-provided pixel art sprites */
-const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R193';
+const FIGHTER_SPRITE_SRC='assets/sprites/fighter.png?v=R194';
 const FIGHTER_FALLBACK_SPRITE_SRC='data:image/png;base64,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';
 const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
 
@@ -2093,8 +2093,8 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R193';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R193';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R194';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R194';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -7781,7 +7781,7 @@ function addUnitEffect(unit,{
   effectListFor(unit,kind).push(effect);
 
   /* R104: persistent status FX start from the status lifecycle itself. */
-  if(["sleep","unconscious","confusion","confused","taunt"].includes(id)){
+  if(["sleep","unconscious","confusion","confused","taunt","shield"].includes(id)){
     queueMicrotask(()=>ensurePersistentStatusFxLoop());
   }
 
@@ -16251,7 +16251,7 @@ async function castShieldSpell(action){
     data:{casterLevel:level}
   });
 
-  setCombatMessage(`${caster.name} raises an invisible Shield.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+  setCombatMessage(`${caster.name} raises a shimmering Shield.`,COMBAT_MESSAGE_MIN_HOLD_MS);
   await waitForCombatActionPause();
   finishTestSpellCast(caster,"Shield",action);
   return true;
@@ -22304,12 +22304,22 @@ function persistentTauntUnits(){
   );
 }
 
+function persistentShieldUnits(){
+  if(!game || game.over) return [];
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled &&
+    !!getUnitEffect(unit,"shield")
+  );
+}
+
 function hasPersistentStatusFx(){
   return (
     persistentSleepUnits().length>0 ||
     persistentUnconsciousUnits().length>0 ||
     persistentConfusionUnits().length>0 ||
-    persistentTauntUnits().length>0
+    persistentTauntUnits().length>0 ||
+    persistentShieldUnits().length>0
   );
 }
 
@@ -22470,6 +22480,159 @@ function drawPersistentConfusionStatusFx(){
 }
 
 
+
+
+/*
+  R194 persistent Shield spell VFX.
+
+  Shield remains mechanically frontal exactly as before. The VFX reads the
+  unit's live six-direction facing every frame and positions a translucent
+  magical barrier slightly forward of the unit's sprite. The barrier scales
+  with Enlarge presentation size but never changes the unit's occupied hexes.
+*/
+function drawPersistentShieldSpellFx(){
+  const units=persistentShieldUnits();
+  if(!units.length) return;
+
+  const now=performance.now();
+
+  for(let index=0;index<units.length;index++){
+    const unit=units[index];
+    if(!shouldRenderUnitUnderPartyVisibility(unit)) continue;
+
+    const center=unitFootprintScreenCenter(unit);
+    const facingIndex=facingDirectionIndex(unit);
+    const dir=HEX_DIRS[facingIndex] || HEX_DIRS[0];
+    const originHex=hexCenter(unit.x,unit.y);
+    const forwardHex=hexCenter(unit.x+dir.x,unit.y+dir.y);
+
+    let fx=forwardHex.x-originHex.x;
+    let fy=forwardHex.y-originHex.y;
+    const fLen=Math.hypot(fx,fy)||1;
+    fx/=fLen;
+    fy/=fLen;
+
+    /* Tangent across the barrier's face in screen space. */
+    const tx=-fy;
+    const ty=fx;
+
+    const scale=Math.max(1,enlargeVisualScale(unit));
+    const pulse=(Math.sin((now/1000)*Math.PI*2*0.82+(index*0.41))+1)/2;
+    const shimmer=(Math.sin((now/1000)*Math.PI*2*1.65+(index*0.73))+1)/2;
+
+    /*
+      The shield sits ahead of the unit, centered around chest height.
+      Slight vertical lift keeps it visually attached to the sprite rather than
+      looking like a ground decal.
+    */
+    const forwardOffset=(22+2*pulse)*scale;
+    const lift=22*scale;
+    const cx=center.x+fx*forwardOffset;
+    const cy=center.y+fy*forwardOffset-lift;
+
+    const halfWidth=(10.5+1.2*pulse)*scale;
+    const halfHeight=(18.5+1.0*shimmer)*scale;
+
+    const top={x:cx,y:cy-halfHeight};
+    const upperRight={
+      x:cx+tx*halfWidth,
+      y:cy+ty*halfWidth-halfHeight*0.26
+    };
+    const lowerRight={
+      x:cx+tx*halfWidth*0.78,
+      y:cy+ty*halfWidth*0.78+halfHeight*0.44
+    };
+    const bottom={
+      x:cx,
+      y:cy+halfHeight
+    };
+    const lowerLeft={
+      x:cx-tx*halfWidth*0.78,
+      y:cy-ty*halfWidth*0.78+halfHeight*0.44
+    };
+    const upperLeft={
+      x:cx-tx*halfWidth,
+      y:cy-ty*halfWidth-halfHeight*0.26
+    };
+
+    ctx.save();
+    ctx.lineJoin="round";
+    ctx.lineCap="round";
+
+    /* Soft outer aura behind the crisp shield silhouette. */
+    ctx.globalCompositeOperation="lighter";
+    ctx.shadowColor="rgba(165,225,255,0.72)";
+    ctx.shadowBlur=8+4*pulse;
+    ctx.fillStyle=`rgba(142,215,255,${0.055+0.025*pulse})`;
+    ctx.strokeStyle=`rgba(214,245,255,${0.22+0.10*pulse})`;
+    ctx.lineWidth=3.2*scale;
+
+    ctx.beginPath();
+    ctx.moveTo(top.x,top.y);
+    ctx.lineTo(upperRight.x,upperRight.y);
+    ctx.lineTo(lowerRight.x,lowerRight.y);
+    ctx.lineTo(bottom.x,bottom.y);
+    ctx.lineTo(lowerLeft.x,lowerLeft.y);
+    ctx.lineTo(upperLeft.x,upperLeft.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    /* Main translucent magical pane. */
+    ctx.shadowBlur=0;
+    ctx.globalCompositeOperation="source-over";
+    ctx.fillStyle=`rgba(122,211,244,${0.12+0.035*pulse})`;
+    ctx.strokeStyle=`rgba(225,251,255,${0.42+0.16*pulse})`;
+    ctx.lineWidth=1.45*scale;
+
+    ctx.beginPath();
+    ctx.moveTo(top.x,top.y);
+    ctx.lineTo(upperRight.x,upperRight.y);
+    ctx.lineTo(lowerRight.x,lowerRight.y);
+    ctx.lineTo(bottom.x,bottom.y);
+    ctx.lineTo(lowerLeft.x,lowerLeft.y);
+    ctx.lineTo(upperLeft.x,upperLeft.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    /*
+      Inner highlight arc gives the pane curvature and a subtle shimmer without
+      turning it into an opaque physical shield.
+    */
+    ctx.strokeStyle=`rgba(255,255,255,${0.20+0.22*shimmer})`;
+    ctx.lineWidth=0.9*scale;
+    ctx.beginPath();
+    ctx.moveTo(
+      top.x+tx*halfWidth*0.18,
+      top.y+halfHeight*0.20
+    );
+    ctx.quadraticCurveTo(
+      cx+tx*halfWidth*0.28,
+      cy,
+      bottom.x+tx*halfWidth*0.08,
+      bottom.y-halfHeight*0.24
+    );
+    ctx.stroke();
+
+    /* Small traveling glint across the upper rim. */
+    const glintT=((now/850)+(index*0.29))%1;
+    const gx=
+      upperLeft.x+
+      (upperRight.x-upperLeft.x)*glintT;
+    const gy=
+      upperLeft.y+
+      (upperRight.y-upperLeft.y)*glintT;
+
+    ctx.globalCompositeOperation="lighter";
+    ctx.fillStyle=`rgba(255,255,255,${0.40+0.30*shimmer})`;
+    ctx.beginPath();
+    ctx.arc(gx,gy,1.35*scale,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
 
 
 function drawPersistentTauntStatusFx(){
@@ -22925,6 +23088,7 @@ function draw(){
     actor.fn();
   }
 
+  drawPersistentShieldSpellFx();
   drawPersistentSleepStatusFx();
   drawPersistentUnconsciousStatusFx();
   drawPersistentConfusionStatusFx();

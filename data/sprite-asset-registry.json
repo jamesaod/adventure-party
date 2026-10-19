@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R193",
-  "description": "Adventure Party sprite asset specifications through R193. R193 adds presentation-only Enlarge scaling: the unit sprite grows and shrinks over one second with a casting-style glow while its tactical hex footprint remains unchanged.",
+  "release": "R194",
+  "description": "Adventure Party sprite asset specifications through R194. R194 retains the R193 Enlarge presentation and adds a persistent translucent forward-facing Shield spell VFX that follows live unit facing without changing Shield mechanics.",
   "assets": {
     "fighter": {
       "source": {
