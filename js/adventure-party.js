@@ -8837,8 +8837,36 @@ function getUnitEffect(unit,id){
   ].find(effect=>effect?.id===id) || null;
 }
 
+function restoreCharmPersonAllegiance(unit,effect=getUnitEffect(unit,"charm-person")){
+  if(!unit || !effect) return false;
+
+  unit.faction=
+    effect.data?.originalFaction ||
+    unit.originalFaction ||
+    "enemy";
+
+  unit.guard=false;
+  unit.guardBaselineAdjacentIds=[];
+  return true;
+}
+
+function restoreAllCharmPersonAllegiances(){
+  if(!game) return;
+
+  for(const unit of allUnits()){
+    if(getUnitEffect(unit,"charm-person")){
+      removeUnitEffect(unit,"charm-person");
+    }
+  }
+}
+
 function removeUnitEffect(unit,id){
   if(!unit || !id) return false;
+
+  const charmEffect=
+    id==="charm-person"
+      ? getUnitEffect(unit,id)
+      : null;
 
   let removed=false;
 
@@ -8848,6 +8876,10 @@ function removeUnitEffect(unit,id){
     const before=unit[key].length;
     unit[key]=unit[key].filter(effect=>effect?.id!==id);
     removed=removed || unit[key].length!==before;
+  }
+
+  if(removed && charmEffect){
+    restoreCharmPersonAllegiance(unit,charmEffect);
   }
 
   return removed;
@@ -8876,8 +8908,16 @@ function addUnitEffect(unit,{
 
   effectListFor(unit,kind).push(effect);
 
-  /* R104: persistent status FX start from the status lifecycle itself. */
-  if(["sleep","unconscious","confusion","confused","taunt","shield","light"].includes(id)){
+  if([
+    "sleep",
+    "unconscious",
+    "confusion",
+    "confused",
+    "taunt",
+    "shield",
+    "light",
+    "charm-person"
+  ].includes(id)){
     queueMicrotask(()=>ensurePersistentStatusFxLoop());
   }
 
@@ -8962,6 +9002,72 @@ function isEvilAlignment(unit){
 
 function isUndeadUnit(unit){
   return unit?.creatureType==="undead" || unit?.undead===true;
+}
+
+function isCharmPersonEligible(unit){
+  if(
+    !unit ||
+    !unit.alive ||
+    unit.fled ||
+    isUndeadUnit(unit)
+  ){
+    return false;
+  }
+
+  const size=String(unit.sizeCategory || "").toLowerCase();
+  if(size && !["tiny","small","medium"].includes(size)){
+    return false;
+  }
+
+  if(unit.creatureType==="humanoid"){
+    return true;
+  }
+
+  const species=String(unit.species || unit.race || "").toLowerCase();
+
+  return [
+    "human",
+    "elf",
+    "half-elf",
+    "dwarf",
+    "gnome",
+    "halfling",
+    "orc",
+    "kobold",
+    "goblin",
+    "hobgoblin"
+  ].includes(species);
+}
+
+function applyCharmPersonAllegiance(target,caster){
+  if(!target || !caster) return null;
+
+  const originalFaction=target.faction;
+
+  addUnitEffect(target,{
+    id:"charm-person",
+    name:"Charmed",
+    kind:"buff",
+    detail:`Fights for ${caster.name}'s side; AI-controlled until battle ends`,
+    data:{
+      sourceUnitId:caster.id,
+      originalFaction,
+      charmedFaction:caster.faction
+    }
+  });
+
+  target.faction=caster.faction;
+  target.guard=false;
+  target.guardBaselineAdjacentIds=[];
+
+  if(
+    target.fleeing &&
+    getUnitEffect(target,MORALE_PANIC_EFFECT_ID)
+  ){
+    setMoraleFleeing(target,false);
+  }
+
+  return getUnitEffect(target,"charm-person");
 }
 
 function spellHitDiceValue(unit){
@@ -9811,7 +9917,7 @@ function wallTestVisibilityObserver(){
 
 function isFriendlyCombatUnit(unit){
   if(!unit || !game) return false;
-  return unit===game.player || (game.allies || []).includes(unit);
+  return unit.faction===game.player.faction;
 }
 
 function visibilitySampleWorldPointsForHex(x,y){
@@ -13808,6 +13914,28 @@ function allUnits(){
     : [];
 }
 
+function activeCombatants(){
+  return allUnits().filter(unit=>
+    unit?.alive &&
+    !unit.fled
+  );
+}
+
+function hostileCombatantsFor(unit){
+  if(!unit) return [];
+
+  return activeCombatants().filter(other=>
+    other.id!==unit.id &&
+    other.faction!==unit.faction
+  );
+}
+
+function combatantsOnFaction(faction){
+  return activeCombatants().filter(unit=>
+    unit.faction===faction
+  );
+}
+
 function livingUnitAt(x,y){
   return allUnits().find(unit=>
     unit?.alive &&
@@ -13827,9 +13955,15 @@ function getUnitById(id){
 }
 
 function activeEnemies(){
-  return game
-    ? game.enemies.filter(k=>k.alive && !k.fled)
-    : [];
+  if(!game) return [];
+
+  const playerFaction=game.player?.faction || "player";
+
+  return game.enemies.filter(unit=>
+    unit.alive &&
+    !unit.fled &&
+    unit.faction!==playerFaction
+  );
 }
 
 function livingEnemies(){
@@ -13839,11 +13973,16 @@ function livingEnemies(){
 }
 
 function enemyAtHex(x,y,excludeId=null){
-  return game?.enemies.find(k=>
-    k.id!==excludeId &&
-    k.alive &&
-    !k.fled &&
-    unitOccupiesHex(k,x,y)
+  if(!game) return null;
+
+  const playerFaction=game.player?.faction || "player";
+
+  return game.enemies.find(unit=>
+    unit.id!==excludeId &&
+    unit.alive &&
+    !unit.fled &&
+    unit.faction!==playerFaction &&
+    unitOccupiesHex(unit,x,y)
   ) || null;
 }
 
@@ -15041,11 +15180,7 @@ async function friendlyMageTurn(mage){
    legal hex that has both weapon range and clear line of sight to any enemy.
    ============================================================ */
 function rangedAiOpponents(unit){
-  if(!unit) return [];
-
-  return unit.faction==="player"
-    ? activeEnemies()
-    : livingPartyMembers();
+  return hostileCombatantsFor(unit);
 }
 
 function rangedAiSourceEntity(unit,source){
@@ -16020,13 +16155,20 @@ function koboldGroupMoraleState(){
 
 function koboldGroupLivingCount(){
   if(!game) return 0;
-  return game.enemies.filter(unit=>isKoboldUnit(unit) && unit.alive && !unit.fled).length;
+
+  const playerFaction=game.player?.faction || "player";
+
+  return game.enemies.filter(unit=>
+    isKoboldUnit(unit) &&
+    unit.alive &&
+    !unit.fled &&
+    unit.faction!==playerFaction
+  ).length;
 }
 
 function koboldOppositionLivingCount(){
   if(!game) return 0;
-  return [game.player,...(game.allies || [])]
-    .filter(unit=>unit && unit.alive && !unit.fled).length;
+  return combatantsOnFaction(game.player.faction).length;
 }
 
 function buildKoboldGroupMoraleCheck({
@@ -16925,7 +17067,11 @@ function unitAtHex(x,y){
     return ally;
   }
 
-  return enemyAtHex(x,y);
+  return game?.enemies.find(unit=>
+    unit.alive &&
+    !unit.fled &&
+    unitOccupiesHex(unit,x,y)
+  ) || null;
 }
 
 function activeUnit(){
@@ -18838,16 +18984,8 @@ function waitCurrentUnit(){
 function adjacentHostileIdsFor(unit){
   if(!game || !unit) return [];
 
-  const hostiles=unit.faction==="player"
-    ? activeEnemies()
-    : livingPartyMembers();
-
-  return hostiles
-    .filter(other=>
-      other.alive &&
-      !other.fled &&
-      canMeleeReach(unit,other)
-    )
+  return hostileCombatantsFor(unit)
+    .filter(other=>canMeleeReach(unit,other))
     .map(other=>other.id);
 }
 
@@ -18890,6 +19028,7 @@ function maybeTriggerPlayerGuard(mob){
       isPlayerControlledUnit(unit) &&
       unit.guard &&
       mob?.alive && !mob.fled &&
+      mob.faction!==unit.faction &&
       canMeleeReach(unit,mob) &&
       !wasAdjacentWhenGuardSet(unit,mob)
     )
@@ -18953,6 +19092,7 @@ async function triggerMobGuardsAgainst(target){
     .filter(mob=>
       mob.controller==="mob" &&
       mob.guard &&
+      mob.faction!==target.faction &&
       canMobGuard(mob) &&
       !wasAdjacentWhenGuardSet(mob,target) &&
       canMeleeAttackTarget(mob,target)
@@ -19105,7 +19245,7 @@ function mobPathToPartyTarget(mob,target){
 }
 
 function selectMobPartyTarget(mob){
-  const candidates=livingPartyMembers()
+  const candidates=hostileCombatantsFor(mob)
     .slice()
     .sort((a,b)=>
       unitDistance(mob,a)-unitDistance(mob,b) ||
@@ -20120,7 +20260,15 @@ async function mobTurn(mob){
   const target=targetChoice.target;
 
   if(!target){
-    checkPartyDefeat();
+    if(mob.faction===game.player.faction){
+      checkCombatVictory();
+    }else{
+      checkPartyDefeat();
+    }
+
+    if(!game.over){
+      endTurn();
+    }
     return;
   }
 
@@ -20476,6 +20624,8 @@ function finishCombat(title,text){
     clearTimeout(aiTimer);
     aiTimer=null;
   }
+
+  restoreAllCharmPersonAllegiances();
 
   let xpAwarded=0;
   let xpText="";
