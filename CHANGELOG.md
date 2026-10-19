@@ -3,6 +3,20 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R196 — Taller illuminated architectural walls
+
+- Increased architectural wall height from 30 px to 45 px, a 50% increase. Wall blocking mechanics are unchanged.
+- Reworked wall rendering to remove the former per-height shade banding and use a solid masonry face color.
+- Replaced the striped/highlighted wall top treatment with a single solid-color cap.
+- Added a crisp 2 px black outline around each authored wall segment, including top, base, and vertical end seams.
+- Wall cast shadows automatically lengthen with the new 45 px wall height.
+- Integrated R195 dynamic illumination into wall rendering.
+- A nearby light source brightens a wall surface only when the source has a meaningful component toward that wall face.
+- Light intensity on walls uses source radius, radial distance falloff, and wall-face alignment.
+- Other architectural walls can occlude a light source before it reaches a wall surface, preventing light from passing through intervening masonry.
+- Long wall segments receive localized radial illumination near the source instead of uniformly brightening end-to-end.
+- Wall top caps remain solid and are not dynamically banded by the wall-lighting pass for easier visual inspection.
+
 ## R195 — Illumination system and Light spell VFX
 
 - Introduced a reusable battlefield illumination mechanic separate from line of sight.
