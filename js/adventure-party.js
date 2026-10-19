@@ -6342,6 +6342,7 @@ let combatMessageTone="normal";
 
 const COMBAT_MESSAGE_MIN_HOLD_MS=1000;
 const COMBAT_MESSAGE_DISPLAY_MS=1500;
+const AREA_SAVE_MESSAGE_HOLD_MS=1000;
 /* R86: 33 1/3% faster sequential AoE target presentation (1500 ms / 4/3 = 1125 ms). */
 const AREA_EFFECT_UNIT_RESOLUTION_MS=Math.round(COMBAT_MESSAGE_DISPLAY_MS*0.75);
 const CRITICAL_MESSAGE_HOLD_MS=1500;
@@ -9166,6 +9167,193 @@ function stinkingCloudAtUnit(unit){
   ) || null;
 }
 
+function persistentAreaEffectRequiresSave(effect){
+  return !!(
+    effect &&
+    (
+      effect.type==="grease" ||
+      effect.type==="web" ||
+      effect.spellKind==="stinking-cloud"
+    )
+  );
+}
+
+function persistentSavingAreaEffectsForUnit(unit){
+  if(!unit?.alive || unit.fled || !game) return [];
+
+  const occupied=occupiedHexes(unit);
+  return (game.areaEffects || []).filter(effect=>
+    persistentAreaEffectRequiresSave(effect) &&
+    occupied.some(cell=>areaEffectContains(effect,cell.x,cell.y))
+  );
+}
+
+function areaSaveRollDetail(unit,effect,save,saveLabel){
+  const modifierText=save.modifier
+    ? ` ${formatSignedAdjustment(save.modifier)}`
+    : "";
+
+  return (
+    `${unit.name} — ${effect?.name || "Area Effect"} ${saveLabel}: `+
+    `d20 ${save.rawRoll}${modifierText} = ${save.modifiedRoll} `+
+    `vs ${save.targetNumber} — ${save.success ? "SUCCESS" : "FAILED"}`
+  );
+}
+
+async function presentPersistentAreaSave(unit,effect,save,saveLabel){
+  const message=areaSaveRollDetail(
+    unit,
+    effect,
+    save,
+    saveLabel
+  );
+
+  setLastRoll(message);
+  log(message,save.success ? "good" : "bad");
+  setCombatMessage(
+    message,
+    AREA_SAVE_MESSAGE_HOLD_MS,
+    COMBAT_MESSAGE_DISPLAY_MS
+  );
+  await waitForCombatActionPause();
+}
+
+async function presentPersistentAreaFailure(unit,message){
+  log(message,"bad");
+  setCombatMessage(
+    message,
+    AREA_SAVE_MESSAGE_HOLD_MS,
+    COMBAT_MESSAGE_DISPLAY_MS
+  );
+  await waitForCombatActionPause();
+}
+
+async function resolvePersistentAreaSave(
+  unit,
+  effect,
+  {trigger="entry",allowRecovery=false}={}
+){
+  if(
+    !unit?.alive ||
+    unit.fled ||
+    !persistentAreaEffectRequiresSave(effect)
+  ){
+    return {failed:false,haltMovement:false};
+  }
+
+  const source=getUnitById(effect?.sourceUnitId) || null;
+
+  if(effect.type==="grease"){
+    const save=rollSpellSave(unit,source);
+    await presentPersistentAreaSave(
+      unit,
+      effect,
+      save,
+      "SAVE VS SPELL"
+    );
+
+    if(save.success){
+      return {failed:false,haltMovement:false};
+    }
+
+    applyProneEffect(unit,1,"Grease");
+    await presentPersistentAreaFailure(
+      unit,
+      `${unit.name} slips in Grease — PRONE for 1 round.`
+    );
+    return {failed:true,haltMovement:true,statusId:"prone"};
+  }
+
+  if(effect.type==="web"){
+    const save=rollSpellSave(unit,source,-2);
+    await presentPersistentAreaSave(
+      unit,
+      effect,
+      save,
+      "SAVE VS SPELL (−2)"
+    );
+
+    if(save.success){
+      return {failed:false,haltMovement:false};
+    }
+
+    addUnitEffect(unit,{
+      id:"webbed",
+      name:"Webbed",
+      kind:"debuff",
+      detail:"Restrained by magical webbing",
+      data:{
+        sourceUnitId:effect?.sourceUnitId || null,
+        escapeProgress:0,
+        requiredFeet:10
+      }
+    });
+
+    await presentPersistentAreaFailure(
+      unit,
+      `${unit.name} is WEBBED — restrained by magical webbing.`
+    );
+    return {failed:true,haltMovement:true,statusId:"webbed"};
+  }
+
+  if(effect.spellKind==="stinking-cloud"){
+    if(isUndeadUnit(unit)){
+      return {failed:false,haltMovement:false,immune:true};
+    }
+
+    const existing=getUnitEffect(unit,"nauseated");
+    const save=rollPoisonSave(unit,source);
+    await presentPersistentAreaSave(
+      unit,
+      effect,
+      save,
+      "SAVE VS POISON"
+    );
+
+    if(save.success){
+      if(existing && allowRecovery){
+        removeUnitEffect(unit,"nauseated");
+        log(`${unit.name} recovers from Stinking Cloud nausea.`,"system");
+      }
+      return {failed:false,haltMovement:false,recovered:!!existing && allowRecovery};
+    }
+
+    addUnitEffect(unit,{
+      id:"nauseated",
+      name:"Nauseated",
+      kind:"debuff",
+      detail:"Stinking Cloud: save again at the start of the next turn; failure loses that turn",
+      data:{
+        sourceUnitId:effect?.sourceUnitId || existing?.data?.sourceUnitId || null
+      }
+    });
+
+    await presentPersistentAreaFailure(
+      unit,
+      `${unit.name} is NAUSEATED — another poison save is required at the start of the next turn.`
+    );
+    return {failed:true,haltMovement:true,statusId:"nauseated"};
+  }
+
+  return {failed:false,haltMovement:false};
+}
+
+async function resolvePersistentAreaMovementStep(unit){
+  for(const effect of persistentSavingAreaEffectsForUnit(unit)){
+    const result=await resolvePersistentAreaSave(
+      unit,
+      effect,
+      {trigger:"movement"}
+    );
+
+    if(result.haltMovement){
+      return result;
+    }
+  }
+
+  return {failed:false,haltMovement:false};
+}
+
 function applySpellDamage(source,target,damage,sourceName,damageType="magic"){
   const amount=Math.max(0,Math.floor(Number(damage)||0));
   if(!target?.alive || amount<=0) return {damage:0,killed:false};
@@ -11676,9 +11864,66 @@ function drawAimAreaPreview(){
   ctx.restore();
 }
 
+function cleanupAreaBoundStatuses(){
+  if(!game) return;
+
+  for(const unit of allUnits()){
+    if(
+      getUnitEffect(unit,"webbed") &&
+      !occupiedHexes(unit).some(cell=>webEffectAtHex(cell.x,cell.y))
+    ){
+      removeUnitEffect(unit,"webbed");
+      log(`${unit.name} is freed as the Web beneath it is displaced.`,"system");
+    }
+  }
+}
+
+function replaceOverlappingAreaEffectHexes(newEffect){
+  if(
+    !game ||
+    !Array.isArray(newEffect?.cells) ||
+    !newEffect.cells.length
+  ){
+    return 0;
+  }
+
+  const incomingKeys=new Set(
+    newEffect.cells.map(cell=>key(cell.x,cell.y))
+  );
+  let replacedHexes=0;
+
+  for(const existing of game.areaEffects || []){
+    if(!Array.isArray(existing?.cells) || !existing.cells.length) continue;
+
+    const before=existing.cells.length;
+    existing.cells=existing.cells.filter(cell=>
+      !incomingKeys.has(key(cell.x,cell.y))
+    );
+    replacedHexes+=before-existing.cells.length;
+  }
+
+  game.areaEffects=(game.areaEffects || []).filter(existing=>
+    !Array.isArray(existing?.cells) ||
+    existing.cells.length>0
+  );
+
+  if(replacedHexes>0){
+    cleanupAreaBoundStatuses();
+  }
+
+  return replacedHexes;
+}
+
 function addAreaEffect(effect){
   if(!game) return null;
   if(!Array.isArray(game.areaEffects)) game.areaEffects=[];
+
+  /*
+    R212: persistent area spells use last-cast ownership per hex. A new spell
+    does not delete an older area wholesale; it removes only the overlapping
+    cells from older effects and then owns those cells itself.
+  */
+  replaceOverlappingAreaEffectHexes(effect);
   game.areaEffects.push(effect);
   draw();
   return effect;
@@ -12508,10 +12753,10 @@ function greaseSaveForUnit(unit,sourceUnit=null){
   return false;
 }
 
-function handleTurnControlEffects(actor){
+async function handleTurnControlEffects(actor){
   if(!actor || !actor.alive) return false;
 
-  if(handleLevelTwoTurnEffects(actor)) return true;
+  if(await handleLevelTwoTurnEffects(actor)) return true;
 
   if(getUnitEffect(actor,"sleep")){
     setCombatMessage(`${actor.name} is asleep and cannot act.`,COMBAT_MESSAGE_MIN_HOLD_MS);
@@ -12543,19 +12788,6 @@ function handleTurnControlEffects(actor){
     return true;
   }
 
-  if(occupiedHexes(actor).some(cell=>hasGreaseAtHex(cell.x,cell.y))){
-    const stood=greaseSaveForUnit(actor,game.player);
-
-    if(!stood){
-      setCombatMessage(`${actor.name} slips and falls in Grease.`,COMBAT_MESSAGE_MIN_HOLD_MS);
-      setUnitActionBanner(actor,"Falling");
-      aiTimer=setTimeout(()=>{
-        aiTimer=null;
-        if(!game.over) endTurn();
-      },Math.max(350,combatActionPauseRemaining()));
-      return true;
-    }
-  }
 
   const spook=getUnitEffect(actor,"spook");
   if(spook){
@@ -15268,7 +15500,7 @@ function refreshTurnBanner(){
   }
 }
 
-function beginTurn(){
+async function beginTurn(){
   if(game.over) return;
 
   const holdRemaining=combatActionPauseRemaining();
@@ -15307,7 +15539,7 @@ function beginTurn(){
   updateUi();
   draw();
 
-  if(handleTurnControlEffects(actor)) return;
+  if(await handleTurnControlEffects(actor)) return;
 
   if(isPlayerControlledUnit(actor)){
     if(actor.guard){
@@ -17482,6 +17714,13 @@ async function tryPlayerMove(dx,dy){
   log(`${p.name} moves to hex ${nx},${ny} (${p.turnMoves}/${maxMove}).`);
   updateUi(); draw();
 
+  const areaResult=await resolvePersistentAreaMovementStep(p);
+  if(areaResult.haltMovement){
+    setUnitActionBanner(p,"Affected by Area Spell");
+    if(!game.over) endTurn();
+    return;
+  }
+
   await triggerMobGuardsAgainst(p);
   if(game.over || !p.alive) return;
 
@@ -19015,77 +19254,27 @@ function moveFlamingSpheresForCaster(caster){
   }
 }
 
-function resolveStinkingCloudExposure(actor,effect,{allowRecovery=false}={}){
-  if(!actor?.alive || isUndeadUnit(actor)) return false;
-
-  const existing=getUnitEffect(actor,"nauseated");
-  const source=getUnitById(effect?.sourceUnitId || existing?.data?.sourceUnitId) || null;
-  const save=rollPoisonSave(actor,source);
-
-  setLastRoll(
-    `Stinking Cloud poison save: d20 ${save.rawRoll}`+
-    `${save.modifier ? ` ${formatSignedAdjustment(save.modifier)}` : ""}`+
-    ` = ${save.modifiedRoll} vs ${save.targetNumber}`
+async function resolveStinkingCloudExposure(actor,effect,{allowRecovery=false}={}){
+  const result=await resolvePersistentAreaSave(
+    actor,
+    effect,
+    {trigger:allowRecovery ? "round-recovery" : "exposure",allowRecovery}
   );
-
-  if(save.success){
-    if(existing && allowRecovery){
-      removeUnitEffect(actor,"nauseated");
-      log(`${actor.name} recovers from Stinking Cloud nausea.`,"system");
-    }else{
-      log(`${actor.name} resists Stinking Cloud this round.`,"system");
-    }
-    return false;
-  }
-
-  addUnitEffect(actor,{
-    id:"nauseated",
-    name:"Nauseated",
-    kind:"debuff",
-    detail:"Stinking Cloud: failed poison save; save again at the start of next turn",
-    data:{
-      sourceUnitId:effect?.sourceUnitId || existing?.data?.sourceUnitId || null
-    }
-  });
-  return true;
+  return result.failed;
 }
 
-function handleWebTurn(actor){
-  const existing=getUnitEffect(actor,"webbed");
-  const standingInWeb=occupiedHexes(actor).some(cell=>webEffectAtHex(cell.x,cell.y));
+async function handleWebTurn(actor){
+  const webbed=getUnitEffect(actor,"webbed");
+  if(!webbed) return false;
 
-  if(existing && !standingInWeb){
+  const standingInWeb=occupiedHexes(actor).some(cell=>
+    webEffectAtHex(cell.x,cell.y)
+  );
+
+  if(!standingInWeb){
     removeUnitEffect(actor,"webbed");
     return false;
   }
-
-  if(!existing && standingInWeb){
-    const web=occupiedHexes(actor)
-      .map(cell=>webEffectAtHex(cell.x,cell.y))
-      .find(Boolean);
-    const source=getUnitById(web?.sourceUnitId) || null;
-    const save=rollSpellSave(actor,source,-2);
-
-    if(save.success){
-      log(`${actor.name} avoids becoming trapped in Web.`,"system");
-      return false;
-    }
-
-    addUnitEffect(actor,{
-      id:"webbed",
-      name:"Webbed",
-      kind:"debuff",
-      detail:"Restrained by magical webbing",
-      data:{
-        sourceUnitId:web?.sourceUnitId,
-        escapeProgress:0,
-        requiredFeet:10
-      }
-    });
-  }
-
-  const webbed=getUnitEffect(actor,"webbed");
-  if(!webbed) return false;
 
   const strength=effectiveStrength(actor);
   const size=String(actor.sizeCategory||"medium").toLowerCase();
@@ -19123,7 +19312,7 @@ function handleWebTurn(actor){
   );
 }
 
-function handleLevelTwoTurnEffects(actor){
+async function handleLevelTwoTurnEffects(actor){
   if(!actor?.alive) return false;
 
   const acid=getUnitEffect(actor,"acid-arrow");
@@ -19151,25 +19340,30 @@ function handleLevelTwoTurnEffects(actor){
   }
 
   const nausea=getUnitEffect(actor,"nauseated");
-  const stinkingCloud=stinkingCloudAtUnit(actor);
 
   if(nausea){
+    const stinkingCloud=stinkingCloudAtUnit(actor);
     const nauseaSource=
       stinkingCloud ||
-      {sourceUnitId:nausea.data?.sourceUnitId || null};
+      {
+        id:"stinking-cloud-recovery",
+        type:"fog",
+        spellKind:"stinking-cloud",
+        name:"Stinking Cloud",
+        sourceUnitId:nausea.data?.sourceUnitId || null
+      };
 
-    if(resolveStinkingCloudExposure(actor,nauseaSource,{allowRecovery:true})){
+    if(await resolveStinkingCloudExposure(
+      actor,
+      nauseaSource,
+      {allowRecovery:true}
+    )){
       return skipTurnForSpellStatus(
         actor,
         "Nauseated",
         `${actor.name} fails the poison save and loses the turn to Stinking Cloud nausea.`
       );
     }
-
-    setCombatMessage(
-      `${actor.name} recovers from Stinking Cloud nausea.`,
-      COMBAT_MESSAGE_MIN_HOLD_MS
-    );
   }
 
   if(getUnitEffect(actor,"hypnotic-pattern")){
@@ -19215,15 +19409,7 @@ function handleLevelTwoTurnEffects(actor){
     return true;
   }
 
-  if(!nausea && stinkingCloud && resolveStinkingCloudExposure(actor,stinkingCloud)){
-    return skipTurnForSpellStatus(
-      actor,
-      "Nauseated",
-      `${actor.name} retches in the Stinking Cloud and cannot act.`
-    );
-  }
-
-  if(handleWebTurn(actor)){
+  if(await handleWebTurn(actor)){
     return true;
   }
 
@@ -19804,7 +19990,7 @@ async function castGreaseSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
-  addAreaEffect({
+  const effect=addAreaEffect({
     id:`grease-${Date.now()}`,
     type:"grease",
     name:"Grease",
@@ -19818,16 +20004,11 @@ async function castGreaseSpell(action,targetHex){
   ]);
 
   for(const unit of occupants){
-    const stood=greaseSaveForUnit(unit,caster);
-
-    setCombatMessage(
-      stood
-        ? `${unit.name} keeps footing in Grease.`
-        : `${unit.name} slips and falls in Grease.`,
-      COMBAT_MESSAGE_MIN_HOLD_MS
+    await resolvePersistentAreaSave(
+      unit,
+      effect,
+      {trigger:"cast"}
     );
-
-    await waitForCombatActionPause();
   }
 
   if(!occupants.length){
@@ -20927,7 +21108,7 @@ async function castStinkingCloudSpell(action,targetHex){
 
   const nauseated=[];
   for(const unit of livingUnitsInAreaCells(cells)){
-    if(resolveStinkingCloudExposure(unit,effect)){
+    if(await resolveStinkingCloudExposure(unit,effect)){
       nauseated.push(unit);
     }
   }
@@ -21077,7 +21258,7 @@ async function castWebSpell(action,targetHex){
       Math.max(1,Number(spell.durationRoundsPerCasterLevel)||1)
     )
   );
-  addAreaEffect({
+  const effect=addAreaEffect({
     id:`web:${Date.now()}`,
     type:"web",
     name:"Web",
@@ -21088,17 +21269,14 @@ async function castWebSpell(action,targetHex){
 
   const trapped=[];
   for(const unit of livingUnitsInAreaCells(cells)){
-    const save=rollSpellSave(unit,caster,-2);
-    if(save.success) continue;
-
-    addUnitEffect(unit,{
-      id:"webbed",
-      name:"Webbed",
-      kind:"debuff",
-      detail:"Restrained by magical webbing",
-      data:{sourceUnitId:caster.id,escapeProgress:0,requiredFeet:10}
-    });
-    trapped.push(unit);
+    const result=await resolvePersistentAreaSave(
+      unit,
+      effect,
+      {trigger:"cast"}
+    );
+    if(result.failed){
+      trapped.push(unit);
+    }
   }
 
   setCombatMessage(
@@ -21975,6 +22153,11 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
     }
     /* mode === "silent": state advances immediately with no camera, sound, draw, or delay. */
 
+    const areaResult=await resolvePersistentAreaMovementStep(entity);
+    if(areaResult.haltMovement){
+      return false;
+    }
+
     if(entity.controller==="mob" && maybeTriggerPlayerGuard(entity)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
@@ -22059,6 +22242,11 @@ async function animateMobAlongPath(mob,path,maxSteps){
       draw();
     }
     /* mode === "silent": consume hidden steps immediately and invisibly. */
+
+    const areaResult=await resolvePersistentAreaMovementStep(mob);
+    if(areaResult.haltMovement){
+      return false;
+    }
 
     if(maybeTriggerPlayerGuard(mob)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
