@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R199",
-  "description": "Adventure Party sprite asset specifications through R199. R199 keeps the old-wood wall/window material, restores doorways to true geometric wall gaps, centers and widens windows by 50%, and gives LOS/illumination one continuous clear aperture equal to the widened glass opening rather than individual lattice panes.",
+  "release": "R200",
+  "description": "Adventure Party sprite asset specifications through R200. R200 keeps R199 geometric doorways and widened LOS apertures, restricts wall illumination to the source-facing half-surface, aligns the old-wood texture to the wall top, renders north/south windows as true wall apertures with a center-plane lattice/glass insert, and suppresses face-on east/west window art in the current edge-on projection.",
   "assets": {
     "fighter": {
       "source": {
