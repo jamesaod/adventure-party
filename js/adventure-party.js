@@ -8248,6 +8248,26 @@ const SPELL_CATALOG={
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:131,pdfPage:132}
   },
 
+  "charm-person":{
+    id:"charm-person",
+    name:"Charm Person",
+    spellGroup:"Wizard",
+    level:1,
+    school:"Enchantment/Charm",
+    incantation:"Amicus Esto!",
+    components:["V","S"],
+    duration:"One battle",
+    castingTime:1,
+    savingThrow:"Neg.",
+    areaOfEffect:"1 living humanoid, Medium-sized or smaller",
+    range:{fixedHexes:12},
+    combatImplemented:true,
+    targetMode:"hostile-creature",
+    damageSummary:"Failed save: target changes sides for the battle and remains AI-controlled.",
+    description:"Adventure Party follows SSI Pool of Radiance's tactical Charm Person behavior: a failed save makes one eligible humanoid fight for the caster's side for the current battle. The charmed creature remains AI-controlled and does not join the party after combat.",
+    source:{book:"AD&D 2nd Edition Player's Handbook / SSI Pool of Radiance combat adaptation",printedPage:132,pdfPage:133}
+  },
+
   "chill-touch":{
     id:"chill-touch",
     name:"Chill Touch",
@@ -10481,6 +10501,10 @@ function spellRangeHexes(spell,casterLevel){
   if(spell?.range?.type==="touch") return 1;
   if(spell?.range?.type==="self") return 0;
 
+  if(Number.isFinite(spell?.range?.fixedHexes)){
+    return Math.max(0,Math.floor(spell.range.fixedHexes));
+  }
+
   if(Number.isFinite(spell?.range?.fixedFeet)){
     return Math.max(
       0,
@@ -11604,6 +11628,7 @@ function formatSpellRange(spell){
 
   if(spell.range.type==="self") return "0 / caster";
   if(spell.range.type==="touch") return "Touch";
+  if(Number.isFinite(spell.range.fixedHexes)) return `${spell.range.fixedHexes} tactical hexes`;
   if(Number.isFinite(spell.range.fixedFeet)) return `${spell.range.fixedFeet} feet`;
   if(Number.isFinite(spell.range.fixedYards)) return `${spell.range.fixedYards} yards`;
 
@@ -12902,6 +12927,7 @@ function makeKobold(index,position){
     id:`kobold-${String(index+1).padStart(2,"0")}`,
     type:"kobold",
     species:"kobold",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"small",
     faction:"enemy",
@@ -12975,6 +13001,7 @@ function makeKoboldBodyguard(index,position){
     id:`kobold-bodyguard-${String(index+1).padStart(2,"0")}`,
     type:"kobold-bodyguard",
     species:"kobold",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"small",
     faction:"enemy",
@@ -13054,6 +13081,7 @@ function makeKoboldSlinger(index,position){
     id:`kobold-slinger-${String(index+1).padStart(2,"0")}`,
     type:"kobold-slinger",
     species:"kobold",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"small",
     faction:"enemy",
@@ -13152,6 +13180,7 @@ function makeOrc(index,position){
   return {
     id:`orc-${String(index+1).padStart(2,"0")}`,
     type:"orc",
+    creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"medium",
     faction:"enemy",
