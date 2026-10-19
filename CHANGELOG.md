@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R213 — Stinking Cloud audio and continuous fog animation
+
+- Added a dedicated procedural magical casting sound for Stinking Cloud.
+- Creatures that fail a Stinking Cloud poison save now play a coughing/coughing/gagging reaction SFX alongside the Nauseated result.
+- Updated the Nauseated result message to explicitly describe coughing and gagging.
+- Added a dedicated requestAnimationFrame loop for active fog spell volumes so Wall of Fog, Fog Cloud, and Stinking Cloud continuously billow and drift even when the mouse is stationary and weather is Clear.
+- When weather animation is active, the fog loop remains alive but lets the weather redraw cadence drive the shared battlefield render, avoiding duplicate full-canvas redraws.
+- Fog animation automatically starts when a fog effect is created, stops when no animated fog remains, and can restart when the combat screen is redrawn.
+
+
 ## R212 — Persistent area spell interaction and saving-throw presentation
 
 - Added a shared persistent-area interaction pipeline for Grease, Web, and Stinking Cloud.
