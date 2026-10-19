@@ -3,6 +3,22 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R195 — Illumination system and Light spell VFX
+
+- Introduced a reusable battlefield illumination mechanic separate from line of sight.
+- Added ambient illumination queries for outdoor and indoor/wall-test battlefields plus reusable dynamic illumination sources.
+- Added moving unit-attached light sources and static area-light sources, with additive stacking and radial distance falloff.
+- Dynamic illumination respects architectural LOS blockers, so magical light does not bleed through solid walls.
+- Added shared queries for dynamic illumination, total illumination, and whether a hex counts as illuminated for future darkness/infravision/AI rules.
+- The 1st-level Wizard spell Light now creates an actual 20-foot-radius illumination source for its full duration.
+- Friendly Light targets carry the light source with them and visibly illuminate surrounding terrain.
+- Hostile targets that fail their save are both blinded and illuminated; the light follows the affected creature.
+- Hostile targets that save cause Light to form as a static source immediately behind them, preserving the existing spell behavior while still illuminating terrain.
+- Added a persistent pale yellow-white unit aura with soft radial glow, restrained rays, and orbiting motes.
+- Terrain uses aligned radial gradients clipped to reachable hexes, producing a continuous-looking pool of light rather than independent bright hex fills.
+- The first illumination pass does not alter party LOS/detection yet; illumination and visibility are deliberately separate systems for later refinement.
+- Existing Light blindness penalties and duration remain unchanged.
+
 ## R194 — Shield spell visual effect
 
 - Added a persistent translucent magical Shield VFX for the 1st-level Wizard spell Shield.
