@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "release": "R194",
-  "description": "Adventure Party sprite asset specifications through R194. R194 retains the R193 Enlarge presentation and adds a persistent translucent forward-facing Shield spell VFX that follows live unit facing without changing Shield mechanics.",
+  "release": "R195",
+  "description": "Adventure Party sprite asset specifications through R195. R195 retains the R194 Shield presentation and introduces a reusable battlefield illumination layer plus persistent Light spell terrain and unit VFX.",
   "assets": {
     "fighter": {
       "source": {
