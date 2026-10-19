@@ -3,6 +3,19 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R199 — Centered wider windows and geometric doorways
+
+- Removed the R198 doorway texture from the runtime presentation. Doorways now use the earlier architectural treatment: a literal gap between wall segments.
+- South doorway remains in the test building at its current location, but no doorway sprite or white-pixel texture mask is involved.
+- Centered every test-building window on its wall placement; the south window moves from its R198 offset to the horizontal center.
+- Increased window visual width by 50% while retaining the existing window height and 2/3-wall-height vertical center.
+- Expanded the window LOS/illumination aperture from 24 world units to 36 world units, matching the requested 50% widening.
+- Window lattice/frame is visual only. LOS and illumination do not trace individual panes or bars; they use one continuous clear aperture spanning the apparent glass opening width.
+- Windows still block movement and physical volumetric propagation.
+- Wall silhouette generation and wall rendering now use movement-solid subsegments so doorways are genuine gaps in both the visible wall body and the exterior outline.
+- Wall caps and wall illumination also respect those geometric doorway gaps.
+- R197 wall height, old-wood texture, exterior-only outline, and reduced wall-light intensity remain unchanged.
+
 ## R198 — Old-wood walls, windows, and doorway
 
 - Added the user-supplied old wooden wall tile as the repeating material for the Wall Test building.
