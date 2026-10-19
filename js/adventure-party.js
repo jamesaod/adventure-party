@@ -2185,6 +2185,8 @@ for(const image of [
   });
 }
 
+stoneFloorTexture.referrerPolicy="no-referrer";
+
 stoneFloorTexture.addEventListener("error",()=>{
   console.warn(
     "PamNawi stone-floor texture failed to load; using the indoor-floor fallback color."
