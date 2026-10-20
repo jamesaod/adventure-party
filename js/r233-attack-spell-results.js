@@ -61,9 +61,12 @@ castMelfsAcidArrowSpell=async function(action,target){
     )
   );
 
-  await animateMagicMissile(
+  await r233FocusTarget(target);
+
+  await animateElementalArrowProjectile(
     caster,
     target,
+    "acid-arrow",
     0,
     1
   );
@@ -569,9 +572,12 @@ r226CastFlameArrow=async function(action,target){
 
     playNaturalAttackRollSound(raw);
 
-    await animateMagicMissile(
+    await r233FocusTarget(target);
+
+    await animateElementalArrowProjectile(
       caster,
       target,
+      "flame-arrow",
       index,
       bolts
     );
