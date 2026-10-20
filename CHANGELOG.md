@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R235 — One-second spell interruption notice
+
+- Fixed a presentation race where casting interruption was detected correctly but the notice was immediately overwritten by the attack/damage message that continued in the same call stack.
+- `<unit name>'s spell has been interrupted.` now has exclusive ownership of the combat message bar for exactly 1 second.
+- Ordinary damage/critical/death messages attempted during that one-second window are deferred instead of replacing the interruption notice.
+- After the interruption notice expires, the most recent deferred combat message is restored.
+- `waitForCombatActionPause()` now respects both the priority interruption window and the deferred follow-up message so combat does not race ahead while either notice is being presented.
+- Casting mechanics are unchanged: the spell is still lost immediately when the caster takes damage or otherwise suffers a valid R230 interruption.
+- Added `AdventurePartySpellInterruptionNotice` diagnostics.
+
 ## R234 — Binary hidden-hex LOS presentation
 
 - Fixed an architectural LOS rendering edge case where unseen indoor floor hexes could look partially revealed because the R215 blackout was translucent.
