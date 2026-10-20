@@ -52,6 +52,18 @@ Once GitHub Pages is configured to publish the generated `gh-pages` branch from 
 
 The publishing workflow copies `main` to the site root and `candidate` to the `candidate/` subdirectory.
 
+## Spell Previewer parity rule
+
+The Spell Effects Previewer is a **production harness**, not a second game engine.
+
+- Implemented spells should use the same production resolver in battlefield combat and in the Previewer.
+- The Previewer may control scene setup, target placement, deterministic rolls, VFX/SFX visibility, and observation timing.
+- The Previewer must not duplicate spell mechanics, projectile/explosion sequencing, damage application, status rules, or spell-specific audio selection.
+- A bespoke Previewer profile is allowed only when it is instrumentation around shared production functions, not an alternate implementation.
+- Fireball is the first CI-enforced example: any future standalone `spellPreviewRunFireball` path fails repository validation.
+
+This rule prevents a spell from looking or behaving correctly in the Previewer while running different code in combat.
+
 ## Validation
 
 The **Adventure Party Validation** workflow runs for:
