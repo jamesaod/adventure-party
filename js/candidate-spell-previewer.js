@@ -1612,7 +1612,8 @@ const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
     hostileHex:{x:-1,y:0}
   },
   "grease":{
-    groundHex:{x:-1,y:0}
+    groundHex:{x:-1,y:0},
+    hostileAtGround:true
   },
   "flaming-sphere":{
     groundHex:{x:-1,y:0}
@@ -2385,6 +2386,14 @@ function spellPreviewPrepareProductionScene(
       primary,
       config.hostileHex.x,
       config.hostileHex.y
+    );
+  }
+
+  if(config.hostileAtGround && primary){
+    spellPreviewPlaceUnit(
+      primary,
+      config.groundHex?.x ?? -1,
+      config.groundHex?.y ?? 0
     );
   }
 
@@ -3514,12 +3523,28 @@ async function showSpellPreviewer(){
 }
 
 
-function hideSpellPreviewer(){
+async function hideSpellPreviewer(){
+  const previousRun=
+    spellPreviewRunPromise;
+
   spellPreviewStop({
     status:"Leaving Spell Previewer."
   });
 
   spellPreviewActive=false;
+  spellPreviewSelectionRequest++;
+
+  /*
+    Keep the disposable game object alive until any production animation that
+    was already inside an async draw/sleep loop has returned. This prevents an
+    Escape/Return click from leaving a late projectile/status callback pointed
+    at a cleared combat state.
+  */
+  if(previousRun){
+    try{
+      await previousRun;
+    }catch{}
+  }
 
   if(spellPreviewRenderFrame!==null){
     cancelAnimationFrame(
@@ -3547,7 +3572,6 @@ function hideSpellPreviewer(){
   spellPreviewUi.screen?.classList.remove("active");
   showLauncher();
 }
-
 
 window.showSpellPreviewer=
   showSpellPreviewer;
