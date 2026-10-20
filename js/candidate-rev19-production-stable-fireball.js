@@ -166,7 +166,7 @@
           Math.max(1,rect.w)
         )*
         PROFILE.w*
-        0.62
+        0.50
       );
 
     const radiusY=
@@ -177,7 +177,7 @@
           Math.max(1,rect.h)
         )*
         PROFILE.h*
-        0.72
+        0.54
       );
 
     return cells.map((cell,index)=>{
@@ -239,12 +239,12 @@
         that slowly diffuses outward.
       */
       const heat=
-        0.98-
-        distanceNorm*0.10;
+        0.90-
+        distanceNorm*0.12;
 
       const density=
-        1.00-
-        distanceNorm*0.08;
+        0.74-
+        distanceNorm*0.12;
 
       const outward=
         1.45+
@@ -668,8 +668,8 @@
 
         state.field.injectSources(
           state.volumeSources,
-          0.18+
-          sustain*0.34
+          0.08+
+          sustain*0.18
         );
       }
 
@@ -705,8 +705,14 @@
 
       ctx.save();
       clipToBlastColumns(fx,rect);
-      ctx.globalCompositeOperation="lighter";
-      ctx.globalAlpha=Math.min(1,0.96*fade);
+      /*
+        Rev 22: the lab was tuned on a dark backdrop, but pure additive
+        compositing over bright grass/stone can clip the entire hot volume to
+        white. Screen blending keeps the luminous fire character while
+        preserving orange/yellow structure over bright battlefield art.
+      */
+      ctx.globalCompositeOperation="screen";
+      ctx.globalAlpha=Math.min(0.88,0.84*fade);
       ctx.imageSmoothingEnabled=true;
 
       ctx.drawImage(
@@ -1036,8 +1042,8 @@
 
 
   window.AdventurePartyProductionFireballVfx={
-    release:"Candidate Rev 21",
-    renderer:"Stable Fluids — blast-volume seeded",
+    release:"Candidate Rev 22",
+    renderer:"Stable Fluids — volume-filled, screen-composited",
     profile:{...PROFILE}
   };
 })();
