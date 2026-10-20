@@ -441,7 +441,7 @@ castFireballFromScroll=async function(action,targetHex){
       const save=
         immune
           ? null
-          : rollSpellSave(
+          : r233BaseRollSpellSave(
               unit,
               caster
             );
