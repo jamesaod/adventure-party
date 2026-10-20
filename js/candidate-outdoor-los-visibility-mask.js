@@ -8,12 +8,12 @@
   This candidate fix combines both behaviors:
     - architecture and obscuring volumes both participate in visibility;
     - visibility remains binary by tactical hex center;
-    - unseen hexes receive a uniform 25% hidden-area overlay;
+    - unseen hexes receive a uniform 33% hidden-area overlay;
     - fog/cloud geometry is still repainted afterward by the existing
       post-LOS foreground pass so the obstruction itself remains visible.
 */
 
-const CANDIDATE_LOS_HIDDEN_OPACITY=0.25;
+const CANDIDATE_LOS_HIDDEN_OPACITY=0.33;
 
 function candidateLosVisibilityContexts(){
   if(!game){
@@ -115,7 +115,7 @@ drawWallTestLineOfSightMask=function(){
     }
 
     /*
-      Keep the binary full-hex boundary from R234, but use a 25% overlay so
+      Keep the binary full-hex boundary from R234, but use a 33% overlay so
       unseen terrain remains legible enough for QA while still reading as hidden.
       Every hidden hex gets the same opacity; there is no partial visibility
       inside a tactical hex.
@@ -128,7 +128,7 @@ drawWallTestLineOfSightMask=function(){
     ctx.fill();
 
     /*
-      Seal polygon antialias seams using the same 25% treatment, then restore
+      Seal polygon antialias seams using the same 33% treatment, then restore
       full alpha for the subdued tactical grid.
     */
     ctx.strokeStyle=palette.fill;
@@ -157,7 +157,7 @@ window.AdventurePartyLosPresentation={
   outdoorObscuringMaskRestored:true,
   hiddenOpacity:CANDIDATE_LOS_HIDDEN_OPACITY,
   rule:
-    "binary hex-center visibility with 25% hidden-area overlay for architecture and obscuring volumes",
+    "binary hex-center visibility with 33% hidden-area overlay for architecture and obscuring volumes",
   inspect:(x,y)=>{
     const architecturalMode=
       game?.condition==="wall";
