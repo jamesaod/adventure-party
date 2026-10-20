@@ -173,7 +173,10 @@ function candidateRev10PlayDqkSfx(
 
         source.buffer=buffer;
 
-        gain.gain.setValueAtTime(
+        const now=
+          audioCtx.currentTime;
+
+        const level=
           Math.max(
             0.0001,
             Number(spec.gain||1)*
@@ -181,13 +184,65 @@ function candidateRev10PlayDqkSfx(
               0,
               Number(gainMultiplier)||0
             )
-          ),
-          audioCtx.currentTime
+          );
+
+        /*
+          Candidate Rev 32:
+          The imported 8-bit DQK samples do not terminate near digital zero.
+          SFX 09 (Fireball) and SFX 02 (spell-affect) therefore produced an
+          audible end click when the AudioBuffer stopped abruptly.
+
+          Preserve the original sample body and only taper the final 30 ms.
+          End the ramp 2 ms before the buffer boundary so Web Audio reaches
+          silence before the source itself stops.
+        */
+        const duration=
+          Math.max(
+            0.001,
+            Number(buffer.duration)||0
+          );
+
+        const fadeEnd=
+          now+
+          Math.max(
+            0.001,
+            duration-0.002
+          );
+
+        const fadeDuration=
+          Math.min(
+            0.030,
+            Math.max(
+              0.006,
+              duration*0.08
+            )
+          );
+
+        const fadeStart=
+          Math.max(
+            now,
+            fadeEnd-
+            fadeDuration
+          );
+
+        gain.gain.setValueAtTime(
+          level,
+          now
+        );
+
+        gain.gain.setValueAtTime(
+          level,
+          fadeStart
+        );
+
+        gain.gain.linearRampToValueAtTime(
+          0,
+          fadeEnd
         );
 
         source.connect(gain);
         gain.connect(sfxGain);
-        source.start();
+        source.start(now);
       });
   });
 
