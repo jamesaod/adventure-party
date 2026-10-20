@@ -22,7 +22,7 @@
   const stateByFx=new WeakMap();
   const baseDrawFireballExplosionFx=drawFireballExplosionFx;
 
-  function createState(){
+  function createState(fx){
     const seed=
       (
         Math.floor(
@@ -33,9 +33,33 @@
     const distortionCanvas=
       document.createElement("canvas");
 
+    const field=
+      new StableFireField(seed);
+
+    const rect=
+      blastRect(fx);
+
+    const volumeSources=
+      buildBlastVolumeSources(
+        fx,
+        rect
+      );
+
+    /*
+      Seed the hot field across the complete resolved Fireball volume on frame
+      zero. The original central plume remains, but every affected tactical hex
+      now contributes overlapping hot gas to the same simulation.
+    */
+    field.injectSources(
+      volumeSources,
+      1.0
+    );
+
     return {
       seed,
-      field:new StableFireField(seed),
+      field,
+      volumeSources,
+      rect,
       particles:makeParticles(
         seed^0x9e3779b9,
         230
@@ -51,7 +75,7 @@
     let state=stateByFx.get(fx);
 
     if(!state){
-      state=createState();
+      state=createState(fx);
       stateByFx.set(fx,state);
     }
 
@@ -86,6 +110,188 @@
       h:height
     };
   }
+
+
+  function buildBlastVolumeSources(fx,rect){
+    const cells=
+      Array.isArray(fx?.cells) &&
+      fx.cells.length
+        ? fx.cells
+        : [
+            {
+              x:fx.x,
+              y:fx.y,
+              volumeDistance:0
+            }
+          ];
+
+    const targetCenter=
+      hexCenter(
+        fx.x,
+        fx.y
+      );
+
+    const maxDistance=
+      Math.max(
+        1,
+        Number(
+          fx.maxVolumeDistance
+        ) ||
+        Math.max(
+          ...cells.map(cell=>
+            Number.isFinite(
+              cell.volumeDistance
+            )
+              ? Number(
+                  cell.volumeDistance
+                )
+              : hexDistance(
+                  {x:fx.x,y:fx.y},
+                  cell
+                )
+          )
+        )
+      );
+
+    /*
+      A source ellipse is about one tactical hex wide in simulation space.
+      Adjacent sources overlap enough to form continuous fire even through
+      long indoor flood-fill shapes and narrow doorway spills.
+    */
+    const radiusX=
+      Math.max(
+        2.5,
+        (
+          HEX_W/
+          Math.max(1,rect.w)
+        )*
+        PROFILE.w*
+        0.62
+      );
+
+    const radiusY=
+      Math.max(
+        2.1,
+        (
+          HEX_H/
+          Math.max(1,rect.h)
+        )*
+        PROFILE.h*
+        0.72
+      );
+
+    return cells.map((cell,index)=>{
+      const center=
+        hexCenter(
+          cell.x,
+          cell.y
+        );
+
+      const gx=
+        (
+          (center.x-rect.x)/
+          Math.max(1,rect.w)
+        )*
+        (PROFILE.w-1);
+
+      const gy=
+        (
+          (center.y-rect.y)/
+          Math.max(1,rect.h)
+        )*
+        (PROFILE.h-1);
+
+      const distance=
+        Number.isFinite(
+          cell.volumeDistance
+        )
+          ? Number(
+              cell.volumeDistance
+            )
+          : hexDistance(
+              {x:fx.x,y:fx.y},
+              cell
+            );
+
+      const distanceNorm=
+        clamp01(
+          distance/
+          maxDistance
+        );
+
+      const dx=
+        center.x-
+        targetCenter.x;
+
+      const dy=
+        center.y-
+        targetCenter.y;
+
+      const length=
+        Math.max(
+          1,
+          Math.hypot(dx,dy)
+        );
+
+      /*
+        Outer volume cells remain nearly as hot/dense as the core. Fireball is
+        an instantaneous volume-filling detonation, not a small flame source
+        that slowly diffuses outward.
+      */
+      const heat=
+        0.98-
+        distanceNorm*0.10;
+
+      const density=
+        1.00-
+        distanceNorm*0.08;
+
+      const outward=
+        1.45+
+        (1-distanceNorm)*1.55;
+
+      const jitter=
+        (
+          Math.sin(
+            index*2.17+
+            fx.x*0.71+
+            fx.y*1.13
+          )
+        )*
+        0.18;
+
+      return {
+        x:gx,
+        y:gy,
+        radiusX:
+          radiusX*
+          (
+            0.96+
+            (index%3)*0.045
+          ),
+        radiusY:
+          radiusY*
+          (
+            0.94+
+            (index%2)*0.08
+          ),
+        heat,
+        density,
+        velocityX:
+          dx/length*
+          outward+
+          jitter,
+        velocityY:
+          dy/length*
+          outward*
+          0.48-
+          0.82*
+          PROFILE.buoyancy,
+        strength:1
+      };
+    });
+  }
+
 
   function clipToBlastColumns(fx,rect){
     if(!Array.isArray(fx.cells) || !fx.cells.length){
@@ -446,7 +652,30 @@
         }
       }
 
-      const rect=blastRect(fx);
+      /*
+        For the first half of the visual beat, keep feeding diminishing heat
+        and density into every resolved blast hex. This makes confined-space
+        and terrain-shaped Fireballs visibly occupy their full affected volume
+        instead of collapsing back toward the detonation center.
+      */
+      if(
+        t<0.52 &&
+        state.volumeSources?.length
+      ){
+        const sustain=
+          1-
+          t/0.52;
+
+        state.field.injectSources(
+          state.volumeSources,
+          0.18+
+          sustain*0.34
+        );
+      }
+
+      const rect=
+        state.rect ||
+        blastRect(fx);
 
       drawHeatDistortion(
         state,
@@ -807,8 +1036,8 @@
 
 
   window.AdventurePartyProductionFireballVfx={
-    release:"Candidate Rev 20",
-    renderer:"Stable Fluids (forced production hook)",
+    release:"Candidate Rev 21",
+    renderer:"Stable Fluids — blast-volume seeded",
     profile:{...PROFILE}
   };
 })();

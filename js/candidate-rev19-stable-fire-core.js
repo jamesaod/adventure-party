@@ -148,6 +148,103 @@
       }
     }
 
+
+    /*
+      Rev 21: inject one bounded heat/density/velocity source into the fluid
+      field. Production Fireball uses this to seed the simulation from every
+      actually affected tactical hex rather than from one central plume.
+    */
+    injectSource({
+      x,
+      y,
+      radiusX=4,
+      radiusY=4,
+      heat=1,
+      density=1,
+      velocityX=0,
+      velocityY=0,
+      strength=1
+    }={}){
+      const cx=clamp(Number(x)||0,1,this.w-2);
+      const cy=clamp(Number(y)||0,1,this.h-2);
+      const rx=Math.max(0.75,Number(radiusX)||4);
+      const ry=Math.max(0.75,Number(radiusY)||4);
+      const scalar=Math.max(0,Number(strength)||0);
+
+      const minX=Math.max(1,Math.floor(cx-rx));
+      const maxX=Math.min(this.w-2,Math.ceil(cx+rx));
+      const minY=Math.max(1,Math.floor(cy-ry));
+      const maxY=Math.min(this.h-2,Math.ceil(cy+ry));
+
+      for(let gy=minY;gy<=maxY;gy++){
+        for(let gx=minX;gx<=maxX;gx++){
+          const dx=(gx-cx)/rx;
+          const dy=(gy-cy)/ry;
+          const r2=dx*dx+dy*dy;
+
+          if(r2>1){
+            continue;
+          }
+
+          /*
+            Smooth, broad splat. The square-root shoulder deliberately keeps
+            neighboring hex sources overlapping so the affected Fireball volume
+            reads as one continuous hot mass rather than isolated puffs.
+          */
+          const weight=
+            Math.pow(
+              Math.max(0,1-r2),
+              0.42
+            )*
+            scalar;
+
+          const k=this.idx(gx,gy);
+
+          this.temp[k]=clamp01(
+            Math.max(
+              this.temp[k],
+              (Number(heat)||0)*weight
+            )+
+            0.08*weight
+          );
+
+          this.dens[k]=clamp01(
+            Math.max(
+              this.dens[k],
+              (Number(density)||0)*weight
+            )+
+            0.10*weight
+          );
+
+          this.u[k]+=
+            (Number(velocityX)||0)*
+            weight;
+
+          this.v[k]+=
+            (Number(velocityY)||0)*
+            weight;
+        }
+      }
+    }
+
+
+    injectSources(sources,strength=1){
+      for(const source of sources || []){
+        this.injectSource({
+          ...source,
+          strength:
+            Math.max(
+              0,
+              Number(strength)||0
+            )*
+            Math.max(
+              0,
+              Number(source?.strength ?? 1)
+            )
+        });
+      }
+    }
+
     boundary(field){
       const w=this.w;
       const h=this.h;
