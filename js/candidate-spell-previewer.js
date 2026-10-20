@@ -1813,7 +1813,8 @@ const spellPreviewBaseRollSpellSave=
 rollSpellSave=function(
   target,
   sourceUnit=null,
-  extraModifier=0
+  extraModifier=0,
+  presentationOptions=null
 ){
   if(
     !spellPreviewActive ||
@@ -1823,7 +1824,8 @@ rollSpellSave=function(
     return spellPreviewBaseRollSpellSave(
       target,
       sourceUnit,
-      extraModifier
+      extraModifier,
+      presentationOptions
     );
   }
 
