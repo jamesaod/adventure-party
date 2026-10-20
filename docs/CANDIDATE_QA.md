@@ -2,7 +2,37 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 10
+## Current candidate: Rev 11
+
+## Candidate Rev 11 — DQK Red Dragon sprite replacement
+
+- Replaces the Juvenile Red Dragon standing and attack sprites with the extracted
+  **Dark Queen of Krynn Red Dragon** ready/action combat pair.
+- Each 48×48 source is enlarged exactly **4× to 192×192** with nearest-neighbor
+  sampling. No generated pixels, smoothing, repainting, or AI reinterpretation.
+- The new art is native-facing **right**.
+- In combat, both poses are rendered at **89×89** so the square source is not
+  stretched. The prior seven-hex footprint center, lateral bias, and bottom
+  anchor are retained.
+- The existing breath-weapon timing, 1.1 s action-pose hold, VFX/SFX, AI,
+  footprint, HP bar, and combat rules are unchanged.
+
+### Rev 11 QA focus
+
+1. Start **Combat System Test** and select **Juvenile Red Dragon**.
+2. Confirm the standing pose uses the DQK Red Dragon ready sprite.
+3. Trigger a melee/breath action and confirm the action pose uses the matching
+   DQK Red Dragon action sprite.
+4. Confirm both sprites remain crisp nearest-neighbor pixel art with no
+   smoothing or distortion.
+5. Confirm left/right facings mirror correctly from the DQK sprite's native
+   right-facing orientation.
+6. Confirm the dragon remains centered/aligned over the same seven occupied
+   hexes as before and does not change tactical footprint.
+7. Confirm the sprite's feet/body remain on the previous ground anchor and the
+   HP bar remains readable.
+8. Confirm breath VFX/SFX, attack timing, targeting, LOS, movement, and AI are
+   otherwise unchanged.
 
 ### Dark Queen of Krynn digitized SFX pass
 
@@ -77,7 +107,7 @@ Previewer's VFX-only suppression continue to apply.
 - Fog / Wall of Fog use a dark union outline; Stinking Cloud uses green.
 - LOS obscuration remains immediate.
 
-### Rev 10 QA focus
+### Retained Rev 10 QA focus
 
 1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 10** appears.
 2. Select Fireball and confirm the explosion uses the new DQK SFX 09.

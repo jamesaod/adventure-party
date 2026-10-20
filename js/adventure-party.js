@@ -2261,8 +2261,8 @@ const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
 const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R209';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R209';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=C11';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=C11';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
 const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R209';
@@ -2494,7 +2494,7 @@ const UNIT_POSE_DEFINITIONS={
       sequence also remains in the action pose.
     */
     actionDurationMs:1100,
-    nativeFacing:"left",
+    nativeFacing:"right",
     sprites:{
       stand:juvenileRedDragonStandSprite,
       attack:juvenileRedDragonAttackSprite
@@ -14789,14 +14789,15 @@ function makeLargeMobTest(position){
     facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
 
     /*
-      R190: measured from the user's new attack-pose placement reference.
-      The reference seven-hex block is 1.8125× the engine footprint scale.
-      Converting the 161 px source width back to engine scale gives 89 px.
-      Standing / attack heights preserve their separate source aspect ratios.
+      Candidate Rev 11: replace the juvenile Red Dragon with the extracted
+      Dark Queen of Krynn ready/action pair. The 48×48 originals are enlarged
+      faithfully 4× to 192×192 with nearest-neighbor sampling. They are then
+      rendered at the prior 89 px tactical width, preserving aspect ratio,
+      footprint center, and ground anchor rather than stretching the square art.
     */
     dragonRenderWidth:89,
-    dragonStandRenderHeight:104,
-    dragonAttackRenderHeight:107,
+    dragonStandRenderHeight:89,
+    dragonAttackRenderHeight:89,
     dragonAnchorOffsetX:3,
     dragonAnchorOffsetY:41,
     hpBarWidth:72,
@@ -25503,7 +25504,7 @@ function dragonPresentationMetrics(mob,poseName=activeUnitPoseName(mob) || "stan
       attack
         ? mob?.dragonAttackRenderHeight
         : mob?.dragonStandRenderHeight
-    ) || (attack ? 107 : 104)
+    ) || 89
   );
   const lateral=Math.max(0,Number(mob?.dragonAnchorOffsetX)||3);
   const vertical=Math.max(0,Number(mob?.dragonAnchorOffsetY)||41);
@@ -25525,7 +25526,7 @@ function dragonPresentationMetrics(mob,poseName=activeUnitPoseName(mob) || "stan
     width,
     height,
     anchor,
-    nativeFacing:"left"
+    nativeFacing:"right"
   };
 }
 

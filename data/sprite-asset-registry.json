@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "release": "R208",
-  "description": "Adventure Party asset specifications through R208. R208 adds Charm Person as a combat-ready Level 1 Wizard spell with SSI Gold Box-style battle-only allegiance conversion, faction-aware MOB targeting and Guard behavior, persistent Charm status VFX, and automatic restoration of original allegiance when combat ends.",
+  "description": "Adventure Party sprite asset specifications. Candidate Rev 11 replaces the Juvenile Red Dragon ready/action art with faithful 4× nearest-neighbor upscales of the extracted Dark Queen of Krynn Red Dragon combat sprites while retaining the established seven-hex tactical footprint and presentation alignment.",
   "assets": {
     "fighter": {
       "source": {
@@ -236,45 +236,45 @@
     },
     "juvenile-red-dragon": {
       "source": {
-        "width": 161,
-        "height": 189
+        "width": 192,
+        "height": 192
       },
       "workspace": {
-        "width": 161,
-        "height": 189
+        "width": 192,
+        "height": 192
       },
       "render": {
         "width": 89,
-        "height": 104
+        "height": 89
       },
       "anchor": {
-        "x": 81,
-        "y": 189
+        "x": 96,
+        "y": 192
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "left"
+      "nativeFacing": "right"
     },
     "juvenile-red-dragon-attack": {
       "source": {
-        "width": 161,
-        "height": 194
+        "width": 192,
+        "height": 192
       },
       "workspace": {
-        "width": 161,
-        "height": 194
+        "width": 192,
+        "height": 192
       },
       "render": {
         "width": 89,
-        "height": 107
+        "height": 89
       },
       "anchor": {
-        "x": 81,
-        "y": 194
+        "x": 96,
+        "y": 192
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "left"
+      "nativeFacing": "right"
     }
   }
 }
