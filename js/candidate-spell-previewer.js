@@ -1570,6 +1570,18 @@ const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
     adjacentHostile:true,
     drainDemo:true
   },
+  "spook":{
+    hostileHex:{x:-1,y:0}
+  },
+  "grease":{
+    groundHex:{x:-1,y:0}
+  },
+  "flaming-sphere":{
+    groundHex:{x:-1,y:0}
+  },
+  "fog-cloud":{
+    groundHex:{x:-1,y:0}
+  },
   "haste":{
     groundHex:{x:-3,y:0},
     friendlyAtGround:true
@@ -2324,6 +2336,14 @@ function spellPreviewPrepareProductionScene(
       spellPreviewFriendlyDummy,
       -3,
       1
+    );
+  }
+
+  if(config.hostileHex && primary){
+    spellPreviewPlaceUnit(
+      primary,
+      config.hostileHex.x,
+      config.hostileHex.y
     );
   }
 
