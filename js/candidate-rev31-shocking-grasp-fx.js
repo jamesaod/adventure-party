@@ -686,6 +686,24 @@
     shockingGraspFx=null;
   }
 
+  /*
+    Ensure the Spell Effects Previewer can immediately clear an in-flight
+    Shocking Grasp when Reset/Stop is used.
+  */
+  if(
+    typeof spellPreviewClearTransientPresentation==="function"
+  ){
+    const baseSpellPreviewClearTransientPresentation=
+      spellPreviewClearTransientPresentation;
+
+    spellPreviewClearTransientPresentation=function(){
+      const result=
+        baseSpellPreviewClearTransientPresentation();
+      clear();
+      return result;
+    };
+  }
+
   window.AdventurePartyShockingGraspFx={
     release:"Candidate Rev 31",
     play,
