@@ -3,6 +3,15 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R229 — Stored Minute Meteor CAST unlock
+
+- Fixed the next-round state where Melf's Minute Meteors could leave CAST greyed out even though the caster still had stored meteors remaining.
+- The root cause was the generic `spellCastInProgress` gate: melee attacks do not check it, while CAST does, which allowed attacks to work while CAST stayed disabled.
+- Stored Minute Meteors are now treated as already-cast magic for later-round release and can clear only a stale generic spell-cast lock when no targeting action is active.
+- CAST is explicitly re-enabled for a valid stored meteor remainder at the start of the caster's next usable round; no attack or other action is required first.
+- Opening the Cast menu performs the same narrow stale-lock recovery as a second safety net.
+- Added `AdventurePartyLevel3Spells.minuteMeteorCastGate()` diagnostics for stored count, current/last-volley round, active-unit identity, pending targeting state, and the generic spell-cast lock.
+
 ## R228 — Minute Meteor remainder recovery
 
 - Fixed the stored Melf's Minute Meteors edge case where a positive remainder, especially exactly one meteor after the first volley, could survive in status state but fail to expose a usable release action on the following round.
