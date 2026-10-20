@@ -192,9 +192,10 @@ function candidateRev10PlayDqkSfx(
           SFX 09 (Fireball) and SFX 02 (spell-affect) therefore produced an
           audible end click when the AudioBuffer stopped abruptly.
 
-          Preserve the original sample body and only taper the final 30 ms.
-          End the ramp 2 ms before the buffer boundary so Web Audio reaches
-          silence before the source itself stops.
+          Candidate Rev 33:
+          Preserve the original sample body and taper the final 45 ms.
+          Reach silence 8 ms before the buffer boundary, leaving a short
+          zero-gain cushion before the source itself stops.
         */
         const duration=
           Math.max(
@@ -206,12 +207,12 @@ function candidateRev10PlayDqkSfx(
           now+
           Math.max(
             0.001,
-            duration-0.002
+            duration-0.008
           );
 
         const fadeDuration=
           Math.min(
-            0.030,
+            0.045,
             Math.max(
               0.006,
               duration*0.08
