@@ -3,6 +3,21 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R230 — AD&D 2e spell casting time and interruption
+
+- Implemented AD&D 2nd Edition casting-time initiative for combat spells.
+- Numeric Casting Time values now delay spell resolution to the caster's rolled initiative plus the spell's Casting Time; values above 10 still resolve in the same round after later initiative slots.
+- Spells with a Casting Time of `1 round` now resolve at the end of the current combat round. Multi-round and turn-based Casting Times are tracked across rounds, with the caster occupied until the final casting round.
+- Beginning a spell no longer plays an incantation or casting sound. Instead, the battlefield displays the one-second notice `<unit name> begins casting a spell...`.
+- Memorized spells are removed from memory when casting begins, so a disrupted spell remains lost and must be rememorized.
+- The existing incantation and R225 Pool of Radiance-style casting cue now occur only when the scheduled casting completes and the spell actually resolves.
+- Damage received before completion disrupts the pending spell, removes its future completion slot, and displays `<unit name>'s spell is disrupted!`.
+- A failed saving throw while casting also disrupts the spell, matching the Player's Handbook casting rules.
+- Casters remain stationary during the casting interval because their normal action is consumed/withheld until completion.
+- Casters receive no beneficial Dexterity Armor Class adjustment while a spell is in progress.
+- Existing spell targeting, LOS checks, spell VFX, persistent effects, Melf's Minute Meteors stored-volley controls, and spell-specific resolution functions remain unchanged and execute only at the scheduled completion slot.
+- Added `AdventurePartyCastingTime` diagnostics for pending castings, initiative data, casting-state checks, and diagnostic interruption.
+
 ## R229 — Stored Minute Meteor CAST unlock
 
 - Fixed the next-round state where Melf's Minute Meteors could leave CAST greyed out even though the caster still had stored meteors remaining.
