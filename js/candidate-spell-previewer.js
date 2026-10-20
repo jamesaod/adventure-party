@@ -1,5 +1,5 @@
 /*
-  Candidate Rev 4 — Spell Effects Previewer
+  Candidate Rev 5 — Spell Effects Previewer
   ==========================================
   Dedicated development harness for production spell presentation.
 
@@ -12,7 +12,7 @@
       Magic Missile, Fireball, Sleep, Wall of Fog, Lightning Bolt.
 */
 
-const SPELL_PREVIEW_REVISION=4;
+const SPELL_PREVIEW_REVISION=5;
 const SPELL_PREVIEW_LOOP_GAP_MS=1000;
 
 const spellPreviewUi={
@@ -61,13 +61,17 @@ let spellPreviewTreeCoverageBackup=null;
 let spellPreviewCaster=null;
 let spellPreviewFriendlyDummy=null;
 let spellPreviewHostiles=[];
+let spellPreviewRunPromise=null;
+let spellPreviewSelectionRequest=0;
+let spellPreviewProductionResolutionActive=false;
+let spellPreviewSuppressProductionCastCue=false;
 
 
 /* ============================================================
    PROFILES
    ============================================================ */
 
-const SPELL_PREVIEW_PROFILES=Object.freeze({
+const SPELL_PREVIEW_SPECIAL_PROFILES=Object.freeze({
   "magic-missile":{
     spellId:"magic-missile",
     nominalMs:3900,
@@ -104,6 +108,59 @@ const SPELL_PREVIEW_PROFILES=Object.freeze({
   }
 });
 
+
+function spellPreviewGenericProfileLabel(spell){
+  const mode=spell?.targetMode || "spell";
+
+  switch(mode){
+    case "self":
+      return "Production self-effect / persistent status";
+    case "touch-creature":
+      return "Production touch spell / friendly target";
+    case "adjacent-hostile":
+      return "Production touch attack / hostile target";
+    case "hostile-creature":
+      return "Production hostile-target spell";
+    case "creature":
+      return "Production creature-target spell";
+    case "direction":
+      return "Production directional spell";
+    case "ground":
+      return "Production area / ground spell";
+    default:
+      return "Production spell resolution";
+  }
+}
+
+
+function spellPreviewGenericNominalMs(spell){
+  if(["fog-cloud","stinking-cloud","flaming-sphere","web","darkness-15-radius","wind-wall"].includes(spell?.id)){
+    return 5600;
+  }
+
+  if(["mirror-image","shield","blur","blink","spectral-hand","detect-invisibility"].includes(spell?.id)){
+    return 4800;
+  }
+
+  return 4500;
+}
+
+
+const SPELL_PREVIEW_PROFILES=Object.freeze(
+  Object.fromEntries(
+    Object.values(SPELL_CATALOG)
+      .filter(spell=>spell?.combatImplemented)
+      .map(spell=>[
+        spell.id,
+        SPELL_PREVIEW_SPECIAL_PROFILES[spell.id] || {
+          spellId:spell.id,
+          nominalMs:spellPreviewGenericNominalMs(spell),
+          label:spellPreviewGenericProfileLabel(spell),
+          run:spellPreviewRunProductionSpell
+        }
+      ])
+  )
+);
 
 /* ============================================================
    SCREEN + CANVAS ROUTING
@@ -325,6 +382,14 @@ function spellPreviewMakeHostile(
 
   unit.hp=120;
   unit.maxHp=120;
+  unit.stats={
+    str:10,
+    dex:10,
+    con:10,
+    int:10,
+    wis:10,
+    cha:10
+  };
   unit.faction="enemy";
   unit.controller="mob";
   unit.morale=20;
@@ -612,19 +677,12 @@ function spellPreviewRenderLibrary(){
 
     button.type="button";
     button.className=
-      "spell-preview-spell-button"+
-      (
-        profile
-          ? ""
-          : " pending"
-      );
+      "spell-preview-spell-button";
 
     button.dataset.spellId=
       spell.id;
 
-    button.disabled=
-      !profile ||
-      spellPreviewRunning;
+    button.disabled=false;
 
     button.innerHTML=
       "<span>"+
@@ -633,13 +691,7 @@ function spellPreviewRenderLibrary(){
         " — "+
         spell.name+
       "</span>"+
-      '<span class="spell-preview-ready-tag">'+
-        (
-          profile
-            ? "READY"
-            : "PENDING"
-        )+
-      "</span>";
+      '<span class="spell-preview-ready-tag">READY</span>';
 
     if(
       spell.id===
@@ -650,23 +702,14 @@ function spellPreviewRenderLibrary(){
       );
     }
 
-    if(profile){
-      button.addEventListener(
-        "click",
-        ()=>{
-          if(spellPreviewRunning){
-            return;
-          }
-
-          spellPreviewSelectedId=
-            spell.id;
-
-          spellPreviewRenderLibrary();
-          spellPreviewResetTimeline();
-          spellPreviewResetArena();
-        }
-      );
-    }
+    button.addEventListener(
+      "click",
+      ()=>{
+        spellPreviewSelectSpell(
+          spell.id
+        );
+      }
+    );
 
     spellPreviewUi.library.appendChild(
       button
@@ -684,10 +727,9 @@ function spellPreviewRenderLibrary(){
       " preview-ready / "+
       spells.length+
       " implemented combat spells. "+
-      "Rev 4 establishes the harness; additional profiles can be added without duplicating spell mechanics.";
+      "Candidate Rev 5 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
   }
 }
-
 
 function spellPreviewUpdateSpellMeta(){
   const spell=
@@ -1005,7 +1047,6 @@ function spellPreviewUpdateControls(){
       ];
 
     button.disabled=
-      spellPreviewRunning ||
       !ready;
   }
 }
@@ -1282,6 +1323,128 @@ async function spellPreviewStartRun(){
 }
 
 
+
+function spellPreviewLaunchRun(){
+  if(spellPreviewRunPromise){
+    return spellPreviewRunPromise;
+  }
+
+  const run=
+    Promise.resolve()
+      .then(
+        ()=>
+          spellPreviewStartRun()
+      );
+
+  spellPreviewRunPromise=run;
+
+  run.finally(()=>{
+    if(spellPreviewRunPromise===run){
+      spellPreviewRunPromise=null;
+    }
+  });
+
+  return run;
+}
+
+
+async function spellPreviewSelectSpell(spellId){
+  if(
+    !spellId ||
+    !SPELL_PREVIEW_PROFILES[spellId]
+  ){
+    return false;
+  }
+
+  const request=
+    ++spellPreviewSelectionRequest;
+
+  const previousRun=
+    spellPreviewRunPromise;
+
+  spellPreviewStop({
+    status:
+      "Resetting for "+
+      (
+        getSpellEntry(spellId)?.name ||
+        spellId
+      )+
+      "…"
+  });
+
+  if(previousRun){
+    try{
+      await previousRun;
+    }catch{}
+  }
+
+  if(
+    request!==
+    spellPreviewSelectionRequest ||
+    !spellPreviewActive ||
+    currentScreen!=="spell-preview"
+  ){
+    return false;
+  }
+
+  spellPreviewSelectedId=
+    spellId;
+
+  spellPreviewRenderLibrary();
+  spellPreviewResetTimeline();
+  spellPreviewResetArena();
+
+  spellPreviewSetStatus(
+    (
+      getSpellEntry(spellId)?.name ||
+      spellId
+    )+
+    " selected — automatically playing."
+  );
+
+  spellPreviewLaunchRun();
+  return true;
+}
+
+
+async function spellPreviewRestartCurrent({
+  autoplay=true
+}={}){
+  const request=
+    ++spellPreviewSelectionRequest;
+
+  const previousRun=
+    spellPreviewRunPromise;
+
+  spellPreviewStop({
+    status:"Resetting preview…"
+  });
+
+  if(previousRun){
+    try{
+      await previousRun;
+    }catch{}
+  }
+
+  if(
+    request!==
+    spellPreviewSelectionRequest ||
+    !spellPreviewActive
+  ){
+    return false;
+  }
+
+  spellPreviewResetTimeline();
+  spellPreviewResetArena();
+
+  if(autoplay){
+    spellPreviewLaunchRun();
+  }
+
+  return true;
+}
+
+
 /* ============================================================
    PROFILE HELPERS
    ============================================================ */
@@ -1370,6 +1533,1069 @@ function spellPreviewApplyDamage(
   }
 
   draw();
+}
+
+
+/* ============================================================
+   REV 5 — PRODUCTION SPELL HARNESS
+   ============================================================ */
+
+const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
+  "burning-hands":{
+    shortRange:1
+  },
+  "color-spray":{
+    shortRange:2
+  },
+  "chill-touch":{
+    adjacentHostile:true,
+    post:"chill-touch"
+  },
+  "shocking-grasp":{
+    adjacentHostile:true
+  },
+  "vampiric-touch":{
+    adjacentHostile:true,
+    drainDemo:true
+  },
+  "haste":{
+    groundHex:{x:-3,y:0}
+  },
+  "hold-undead":{
+    undeadTargets:true
+  },
+  "dispel-magic":{
+    setup:"dispel"
+  },
+  "pyrotechnics":{
+    setup:"pyrotechnics"
+  },
+  "melfs-minute-meteors":{
+    forceTarget:"hostile"
+  },
+  "blink":{
+    post:"blink"
+  }
+});
+
+
+function spellPreviewVisualsSuppressed(){
+  return !!(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    !spellPreviewPresentationFlags().visuals
+  );
+}
+
+
+const spellPreviewBaseEndTurn=
+  endTurn;
+
+endTurn=function(){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview"
+  ){
+    spellCastInProgress=false;
+    updateUi();
+    draw();
+    return;
+  }
+
+  return spellPreviewBaseEndTurn();
+};
+
+
+const spellPreviewBaseQueueSfx=
+  queueSfx;
+
+queueSfx=function(fn){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    !spellPreviewPresentationFlags().sounds
+  ){
+    return;
+  }
+
+  return spellPreviewBaseQueueSfx(
+    fn
+  );
+};
+
+
+const spellPreviewBaseSpeakSpellIncantation=
+  speakSpellIncantation;
+
+speakSpellIncantation=function(
+  caster,
+  spell,
+  durationMs=1800
+){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    (
+      spellPreviewSuppressProductionCastCue ||
+      !spellPreviewPresentationFlags().visuals
+    )
+  ){
+    return true;
+  }
+
+  return spellPreviewBaseSpeakSpellIncantation(
+    caster,
+    spell,
+    durationMs
+  );
+};
+
+
+const spellPreviewBasePorCastingSound=
+  playPor07CastingSound;
+
+playPor07CastingSound=function(){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    spellPreviewSuppressProductionCastCue
+  ){
+    return;
+  }
+
+  return spellPreviewBasePorCastingSound();
+};
+
+
+const spellPreviewBaseD=
+  d;
+
+d=function(sides){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    spellPreviewProductionResolutionActive
+  ){
+    const count=
+      Math.max(
+        1,
+        Math.floor(Number(sides)||1)
+      );
+
+    if(count===20){
+      return 12;
+    }
+
+    return Math.max(
+      1,
+      Math.ceil(count/2)
+    );
+  }
+
+  return spellPreviewBaseD(
+    sides
+  );
+};
+
+
+const spellPreviewBaseRollSpellSave=
+  rollSpellSave;
+
+rollSpellSave=function(
+  target,
+  sourceUnit=null,
+  extraModifier=0
+){
+  if(
+    !spellPreviewActive ||
+    currentScreen!=="spell-preview" ||
+    !spellPreviewProductionResolutionActive
+  ){
+    return spellPreviewBaseRollSpellSave(
+      target,
+      sourceUnit,
+      extraModifier
+    );
+  }
+
+  const outcome=
+    spellPreviewUi.outcome?.value ||
+    "demo";
+
+  const targetNumber=
+    spellSaveTargetForUnit(
+      target
+    );
+
+  const modifier=
+    spellSaveRollModifier(
+      target,
+      sourceUnit,
+      extraModifier
+    );
+
+  const success=
+    outcome==="save-success";
+
+  const rawRoll=
+    success
+      ? 20
+      : 2;
+
+  const modifiedRoll=
+    success
+      ? Math.max(
+          targetNumber,
+          rawRoll+modifier
+        )
+      : Math.min(
+          targetNumber-1,
+          rawRoll+modifier
+        );
+
+  return {
+    rawRoll,
+    modifier,
+    modifiedRoll,
+    targetNumber,
+    success
+  };
+};
+
+
+const spellPreviewBaseResolveMeleeAttackD20=
+  resolveMeleeAttackD20;
+
+resolveMeleeAttackD20=function(
+  rawRoll,
+  targetNumber,
+  attackModifier=0
+){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    spellPreviewProductionResolutionActive
+  ){
+    return spellPreviewBaseResolveMeleeAttackD20(
+      12,
+      targetNumber,
+      99
+    );
+  }
+
+  return spellPreviewBaseResolveMeleeAttackD20(
+    rawRoll,
+    targetNumber,
+    attackModifier
+  );
+};
+
+
+const spellPreviewBaseResolveMissileAttackD20=
+  resolveMissileAttackD20;
+
+resolveMissileAttackD20=function(
+  rawRoll,
+  targetNumber,
+  attackModifier=0
+){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview" &&
+    spellPreviewProductionResolutionActive
+  ){
+    return spellPreviewBaseResolveMissileAttackD20(
+      12,
+      targetNumber,
+      99
+    );
+  }
+
+  return spellPreviewBaseResolveMissileAttackD20(
+    rawRoll,
+    targetNumber,
+    attackModifier
+  );
+};
+
+
+function spellPreviewGateRenderer(base){
+  return function(...args){
+    if(spellPreviewVisualsSuppressed()){
+      return;
+    }
+
+    return base.apply(
+      this,
+      args
+    );
+  };
+}
+
+
+const spellPreviewBaseDrawSpellAreaEffects=
+  drawSpellAreaEffects;
+drawSpellAreaEffects=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawSpellAreaEffects
+  );
+
+const spellPreviewBaseDrawPersistentLightSpellFx=
+  drawPersistentLightSpellFx;
+drawPersistentLightSpellFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentLightSpellFx
+  );
+
+const spellPreviewBaseDrawPersistentShieldSpellFx=
+  drawPersistentShieldSpellFx;
+drawPersistentShieldSpellFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentShieldSpellFx
+  );
+
+const spellPreviewBaseDrawPersistentSleepStatusFx=
+  drawPersistentSleepStatusFx;
+drawPersistentSleepStatusFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentSleepStatusFx
+  );
+
+const spellPreviewBaseDrawPersistentUnconsciousStatusFx=
+  drawPersistentUnconsciousStatusFx;
+drawPersistentUnconsciousStatusFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentUnconsciousStatusFx
+  );
+
+const spellPreviewBaseDrawPersistentConfusionStatusFx=
+  drawPersistentConfusionStatusFx;
+drawPersistentConfusionStatusFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentConfusionStatusFx
+  );
+
+const spellPreviewBaseDrawPersistentTauntStatusFx=
+  drawPersistentTauntStatusFx;
+drawPersistentTauntStatusFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentTauntStatusFx
+  );
+
+const spellPreviewBaseDrawPersistentCharmStatusFx=
+  drawPersistentCharmStatusFx;
+drawPersistentCharmStatusFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawPersistentCharmStatusFx
+  );
+
+const spellPreviewBaseDrawColorSprayFx=
+  drawColorSprayFx;
+drawColorSprayFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawColorSprayFx
+  );
+
+const spellPreviewBaseDrawMagicEffectFx=
+  drawMagicEffectFx;
+drawMagicEffectFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawMagicEffectFx
+  );
+
+const spellPreviewBaseDrawAreaDamageFx=
+  drawAreaDamageFx;
+drawAreaDamageFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawAreaDamageFx
+  );
+
+const spellPreviewBaseDrawDragonBreathFx=
+  drawDragonBreathFx;
+drawDragonBreathFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawDragonBreathFx
+  );
+
+const spellPreviewBaseDrawFireballExplosionFx=
+  drawFireballExplosionFx;
+drawFireballExplosionFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawFireballExplosionFx
+  );
+
+const spellPreviewBaseDrawFireDamageFx=
+  drawFireDamageFx;
+drawFireDamageFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawFireDamageFx
+  );
+
+const spellPreviewBaseDrawProjectileFx=
+  drawProjectileFx;
+drawProjectileFx=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawProjectileFx
+  );
+
+const spellPreviewBaseDrawFogVolumeCell=
+  drawFogVolumeCell;
+drawFogVolumeCell=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawFogVolumeCell
+  );
+
+const spellPreviewBaseDrawFogEffectOutline=
+  drawFogEffectOutline;
+drawFogEffectOutline=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawFogEffectOutline
+  );
+
+const spellPreviewBaseDrawTerrainIlluminationLayer=
+  drawTerrainIlluminationLayer;
+drawTerrainIlluminationLayer=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawTerrainIlluminationLayer
+  );
+
+
+const spellPreviewBaseEnlargeVisualScale=
+  enlargeVisualScale;
+
+enlargeVisualScale=function(unit){
+  if(spellPreviewVisualsSuppressed()){
+    return 1;
+  }
+
+  return spellPreviewBaseEnlargeVisualScale(
+    unit
+  );
+};
+
+
+const spellPreviewBaseVisualMirrorOffsets=
+  visualMirrorOffsets;
+
+visualMirrorOffsets=function(count){
+  if(spellPreviewVisualsSuppressed()){
+    return [];
+  }
+
+  return spellPreviewBaseVisualMirrorOffsets(
+    count
+  );
+};
+
+
+const spellPreviewBaseOnUnitDamaged=
+  onUnitDamaged;
+
+onUnitDamaged=function(
+  unit,
+  damage
+){
+  const result=
+    spellPreviewBaseOnUnitDamaged(
+      unit,
+      damage
+    );
+
+  if(
+    spellPreviewProductionResolutionActive &&
+    spellPreviewRunStartedAt
+  ){
+    spellPreviewMark(
+      "Damage: "+
+      Math.max(
+        0,
+        Math.round(Number(damage)||0)
+      )+
+      " → "+
+      (
+        unit?.name ||
+        "target"
+      )
+    );
+  }
+
+  return result;
+};
+
+
+const spellPreviewBaseAddUnitEffect=
+  addUnitEffect;
+
+addUnitEffect=function(
+  unit,
+  effectSpec
+){
+  const effect=
+    spellPreviewBaseAddUnitEffect(
+      unit,
+      effectSpec
+    );
+
+  if(
+    effect &&
+    spellPreviewProductionResolutionActive &&
+    spellPreviewRunStartedAt
+  ){
+    spellPreviewMark(
+      (
+        effect.kind==="debuff"
+          ? "Debuff: "
+          : "Buff: "
+      )+
+      (
+        effect.name ||
+        effect.id
+      )+
+      " → "+
+      (
+        unit?.name ||
+        "target"
+      )
+    );
+  }
+
+  return effect;
+};
+
+
+const spellPreviewBaseAddAreaEffect=
+  addAreaEffect;
+
+addAreaEffect=function(effectSpec){
+  const effect=
+    spellPreviewBaseAddAreaEffect(
+      effectSpec
+    );
+
+  if(
+    effect &&
+    spellPreviewProductionResolutionActive &&
+    spellPreviewRunStartedAt
+  ){
+    spellPreviewMark(
+      "Area effect: "+
+      (
+        effect.name ||
+        effect.sourceName ||
+        effect.type ||
+        "magic"
+      )
+    );
+  }
+
+  return effect;
+};
+
+
+function spellPreviewPlaceUnit(
+  unit,
+  x,
+  y
+){
+  if(!unit){
+    return;
+  }
+
+  unit.x=x;
+  unit.y=y;
+  unit.facing=
+    x<spellPreviewCaster.x
+      ? "right"
+      : "left";
+
+  unit.facingHex=
+    hexDirectionIndexToward(
+      unit,
+      spellPreviewCaster
+    );
+}
+
+
+function spellPreviewPrepareProductionScene(
+  spell
+){
+  const config=
+    SPELL_PREVIEW_PRODUCTION_SCENE[
+      spell.id
+    ] || {};
+
+  const defaultPositions=[
+    {x:0,y:0},
+    {x:2,y:0},
+    {x:2,y:-1},
+    {x:3,y:0},
+    {x:1,y:-1}
+  ];
+
+  spellPreviewPlaceUnit(
+    spellPreviewCaster,
+    -4,
+    0
+  );
+
+  spellPreviewPlaceUnit(
+    spellPreviewFriendlyDummy,
+    2,
+    1
+  );
+
+  spellPreviewHostiles.forEach(
+    (unit,index)=>{
+      const position=
+        defaultPositions[
+          index%
+          defaultPositions.length
+        ];
+
+      spellPreviewPlaceUnit(
+        unit,
+        position.x,
+        position.y
+      );
+
+      unit.creatureType="humanoid";
+      unit.undead=false;
+      unit.mindless=false;
+      unit.name=
+        "Target "+
+        String.fromCharCode(
+          65+index
+        );
+    }
+  );
+
+  const primary=
+    spellPreviewPrimaryTarget();
+
+  if(config.shortRange===1 && primary){
+    spellPreviewPlaceUnit(
+      primary,
+      -3,
+      0
+    );
+  }
+
+  if(config.shortRange===2){
+    const shortPositions=[
+      {x:-3,y:0},
+      {x:-2,y:0},
+      {x:-2,y:-1},
+      {x:-3,y:1},
+      {x:-1,y:-1}
+    ];
+
+    spellPreviewHostiles.forEach(
+      (unit,index)=>{
+        const position=
+          shortPositions[
+            index%
+            shortPositions.length
+          ];
+
+        spellPreviewPlaceUnit(
+          unit,
+          position.x,
+          position.y
+        );
+      }
+    );
+  }
+
+  if(config.adjacentHostile && primary){
+    spellPreviewPlaceUnit(
+      primary,
+      -3,
+      0
+    );
+
+    spellPreviewPlaceUnit(
+      spellPreviewFriendlyDummy,
+      -3,
+      1
+    );
+  }
+
+  if(config.drainDemo){
+    spellPreviewCaster.hp=60;
+    spellPreviewCaster.maxHp=120;
+  }
+
+  if(config.undeadTargets){
+    for(const unit of spellPreviewHostiles){
+      unit.creatureType="undead";
+      unit.undead=true;
+      unit.mindless=true;
+      unit.name=
+        "Skeleton "+
+        (
+          spellPreviewHostiles.indexOf(unit)+
+          1
+        );
+    }
+  }
+
+  let targetHex=
+    config.groundHex
+      ? {...config.groundHex}
+      : {x:1,y:0};
+
+  let targetUnit=null;
+
+  switch(spell.targetMode){
+    case "self":
+      targetHex={
+        x:spellPreviewCaster.x,
+        y:spellPreviewCaster.y
+      };
+      targetUnit=
+        spellPreviewCaster;
+      break;
+
+    case "touch-creature":
+    case "creature":
+      spellPreviewPlaceUnit(
+        spellPreviewFriendlyDummy,
+        -3,
+        0
+      );
+      targetHex={
+        x:spellPreviewFriendlyDummy.x,
+        y:spellPreviewFriendlyDummy.y
+      };
+      targetUnit=
+        spellPreviewFriendlyDummy;
+      break;
+
+    case "adjacent-hostile":
+      if(primary){
+        spellPreviewPlaceUnit(
+          primary,
+          -3,
+          0
+        );
+
+        targetHex={
+          x:primary.x,
+          y:primary.y
+        };
+
+        targetUnit=primary;
+      }
+      break;
+
+    case "hostile-creature":
+      if(primary){
+        targetHex={
+          x:primary.x,
+          y:primary.y
+        };
+        targetUnit=primary;
+      }
+      break;
+
+    case "direction":
+      targetHex={x:5,y:0};
+      targetUnit=null;
+      break;
+
+    case "ground":
+      targetUnit=null;
+      break;
+  }
+
+  if(config.forceTarget==="hostile" && primary){
+    targetHex={
+      x:primary.x,
+      y:primary.y
+    };
+
+    targetUnit=primary;
+  }
+
+  if(config.setup==="dispel"){
+    addUnitEffect(
+      primary,
+      {
+        id:"armor-spell",
+        name:"Preview Armor",
+        kind:"buff",
+        expiresRound:99,
+        detail:"Prepared solely for Dispel Magic preview",
+        data:{
+          sourceUnitId:
+            spellPreviewCaster.id,
+          casterLevel:
+            spellPreviewCaster.level,
+          acValue:6
+        }
+      }
+    );
+
+    game.areaEffects.push({
+      id:"spell-preview-dispel-fog",
+      type:"fog",
+      name:"Preview Fog",
+      cells:
+        hexesWithinRadius(
+          targetHex,
+          1
+        ),
+      expiresRound:99,
+      sourceUnitId:
+        spellPreviewCaster.id,
+      data:{
+        sourceUnitId:
+          spellPreviewCaster.id,
+        casterLevel:
+          spellPreviewCaster.level
+      }
+    });
+  }
+
+  if(config.setup==="pyrotechnics"){
+    game.areaEffects.push({
+      id:"spell-preview-pyrotechnic-source",
+      type:"flaming-sphere",
+      name:"Flaming Sphere",
+      cells:[
+        {
+          x:targetHex.x,
+          y:targetHex.y
+        }
+      ],
+      expiresRound:99,
+      sourceUnitId:
+        spellPreviewCaster.id
+    });
+  }
+
+  camera.x=0;
+  camera.y=0;
+  draw();
+
+  return {
+    config,
+    primary,
+    targetHex,
+    targetUnit
+  };
+}
+
+
+async function spellPreviewPostProductionDemo(
+  spell,
+  scene,
+  token
+){
+  if(
+    !scene ||
+    !spellPreviewTokenActive(token)
+  ){
+    return;
+  }
+
+  if(scene.config.post==="chill-touch"){
+    const target=scene.primary;
+
+    if(target){
+      spellPreviewMark(
+        "Chill Touch contact rider"
+      );
+
+      spellPreviewProductionResolutionActive=true;
+      try{
+        resolveChillTouchOnHit(
+          spellPreviewCaster,
+          target
+        );
+      }finally{
+        spellPreviewProductionResolutionActive=false;
+      }
+
+      draw();
+
+      await spellPreviewWait(
+        1200,
+        token
+      );
+    }
+  }
+
+  if(
+    scene.config.post==="blink" &&
+    typeof r226ResolveBlinkAtTurnStart==="function"
+  ){
+    spellPreviewMark(
+      "Blink turn-start shift"
+    );
+
+    game.round++;
+
+    spellPreviewProductionResolutionActive=true;
+    try{
+      await r226ResolveBlinkAtTurnStart(
+        spellPreviewCaster
+      );
+    }finally{
+      spellPreviewProductionResolutionActive=false;
+    }
+
+    await spellPreviewWait(
+      900,
+      token
+    );
+  }
+}
+
+
+function spellPreviewObservationMs(spell){
+  if([
+    "fog-cloud",
+    "stinking-cloud",
+    "flaming-sphere",
+    "web",
+    "darkness-15-radius",
+    "wind-wall",
+    "hypnotic-pattern"
+  ].includes(spell?.id)){
+    return 1800;
+  }
+
+  if([
+    "shield",
+    "mirror-image",
+    "blur",
+    "detect-invisibility",
+    "spectral-hand",
+    "invisibility",
+    "invisibility-10-radius",
+    "protection-from-evil",
+    "protection-from-evil-10-radius",
+    "protection-from-normal-missiles",
+    "armor",
+    "strength",
+    "enlarge",
+    "light",
+    "continual-light"
+  ].includes(spell?.id)){
+    return 1200;
+  }
+
+  return 650;
+}
+
+
+async function spellPreviewRunProductionSpell(
+  token
+){
+  const spell=
+    getSpellEntry(
+      spellPreviewSelectedId
+    );
+
+  if(!spell){
+    return;
+  }
+
+  const scene=
+    spellPreviewPrepareProductionScene(
+      spell
+    );
+
+  await spellPreviewCastCue(
+    spell,
+    token
+  );
+
+  if(!spellPreviewTokenActive(token)){
+    return;
+  }
+
+  spellPreviewMark(
+    "Production effect dispatch"
+  );
+
+  const action={
+    type:"test-spell",
+    spellId:spell.id,
+    casterLevel:
+      clamp(
+        Number(
+          spellPreviewUi.casterLevel?.value
+        ) || 6,
+        1,
+        20
+      ),
+    sourceUnitId:
+      spellPreviewCaster.id,
+    testHarness:true,
+
+    /*
+      Bypass initiative scheduling only inside this isolated presentation lab.
+      The underlying spell resolver, VFX, SFX, damage, status, area and message
+      functions are still the production functions used by combat.
+    */
+    r230Completing:true,
+    r231CompletionTargeting:false
+  };
+
+  let resolved=false;
+
+  spellPreviewSuppressProductionCastCue=true;
+  spellPreviewProductionResolutionActive=true;
+
+  try{
+    resolved=
+      await castPreparedCombatSpell(
+        action,
+        scene.targetHex,
+        scene.targetUnit
+      );
+  }finally{
+    spellPreviewProductionResolutionActive=false;
+    spellPreviewSuppressProductionCastCue=false;
+  }
+
+  if(!spellPreviewTokenActive(token)){
+    return;
+  }
+
+  spellPreviewMark(
+    resolved
+      ? "Production resolver complete"
+      : "Production resolver rejected target"
+  );
+
+  await spellPreviewPostProductionDemo(
+    spell,
+    scene,
+    token
+  );
+
+  if(!spellPreviewTokenActive(token)){
+    return;
+  }
+
+  const observation=
+    spellPreviewObservationMs(
+      spell
+    );
+
+  if(observation>0){
+    spellPreviewMark(
+      "Effect observation"
+    );
+
+    await spellPreviewWait(
+      observation,
+      token
+    );
+  }
 }
 
 
