@@ -8939,9 +8939,9 @@ const SPELL_CATALOG={
     range:{fixedYards:180},
     combatImplemented:true,
     targetMode:"hostile-creature",
-    damageSummary:"Ranged attack for 2d4 acid, plus 2d4 per additional round at higher caster levels.",
-    description:"Launches a magical acid arrow using the attack chance of a fighter of the caster's level. A hit continues burning for one additional round per three caster levels.",
-    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:186,pdfPage:187}
+    damageSummary:"Ranged attack for 2d4 acid; every three caster levels adds one later round of 2d4 acid damage.",
+    description:"Launches a magical acid arrow using the attack chance of a fighter of the caster's level. The initial hit deals 2d4 acid with no splash damage; at 3rd-5th level it burns for one later round, at 6th-8th for two later rounds, and so on.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:144,pdfPage:145}
   },
 
   "mirror-image":{
@@ -19675,24 +19675,102 @@ async function handleLevelTwoTurnEffects(actor){
 
   const acid=getUnitEffect(actor,"acid-arrow");
   if(acid){
-    const remaining=Math.max(0,Number(acid.data?.remainingTicks)||0);
-    if(remaining>0){
-      const source=getUnitById(acid.data?.sourceUnitId) || null;
-      const damage=rollDiceExpression("2d4").total;
-      acid.data.remainingTicks=remaining-1;
-      acid.detail=`${acid.data.remainingTicks} acid round${acid.data.remainingTicks===1 ? "" : "s"} remaining`;
-      applySpellDamage(source,actor,damage,"Melf's Acid Arrow","acid");
+    const remaining=
+      Math.max(
+        0,
+        Number(acid.data?.remainingTicks)||0
+      );
 
-      if(acid.data.remainingTicks<=0){
-        removeUnitEffect(actor,"acid-arrow");
+    if(remaining<=0){
+      removeUnitEffect(actor,"acid-arrow");
+    }else{
+      /*
+        Candidate Rev 34 — PHB round boundary:
+        the impact round already dealt its 2d4. Follow-on acid damage begins
+        on a later round, never on a victim's still-pending initiative slot in
+        the same round as the hit.
+      */
+      let nextTickRound=
+        Number(acid.data?.nextTickRound);
+
+      if(!Number.isFinite(nextTickRound)){
+        nextTickRound=game.round+1;
+        acid.data.nextTickRound=nextTickRound;
       }
 
-      if(!actor.alive){
-        return skipTurnForSpellStatus(
+      if(game.round>=nextTickRound){
+        const source=
+          getUnitById(
+            acid.data?.sourceUnitId
+          ) || null;
+
+        const damage=
+          rollDiceExpression("2d4").total;
+
+        acid.data.remainingTicks=
+          remaining-1;
+        acid.data.lastTickRound=
+          game.round;
+        acid.data.nextTickRound=
+          game.round+1;
+
+        acid.detail=
+          acid.data.remainingTicks>0
+            ? (
+                "2d4 acid each later round; "+
+                acid.data.remainingTicks+
+                " follow-on round"+
+                (acid.data.remainingTicks===1 ? "" : "s")+
+                " remaining"
+              )
+            : "Final 2d4 follow-on acid damage resolving";
+
+        setUnitActionBanner(
           actor,
-          "Killed by Acid",
-          `${actor.name} succumbs to the lingering acid.`
+          "Splashed with Acid"
         );
+
+        applySpellDamage(
+          source,
+          actor,
+          damage,
+          "Melf's Acid Arrow",
+          "acid"
+        );
+
+        /*
+          Repeat the established green acid application shimmer on living
+          victims so the ongoing PHB damage remains visually connected to the
+          persistent "Splashed with Acid" status between rounds.
+        */
+        if(actor.alive){
+          await animateMagicEffectOnUnits(
+            [actor],
+            "acid",
+            {playSound:false}
+          );
+        }
+
+        if(acid.data.remainingTicks<=0){
+          removeUnitEffect(
+            actor,
+            "acid-arrow"
+          );
+        }
+
+        if(!actor.alive){
+          return skipTurnForSpellStatus(
+            actor,
+            "Killed by Acid",
+            `${actor.name} succumbs to the lingering acid.`
+          );
+        }
+
+        /*
+          Let the green damage beat finish before the creature resumes its
+          normal action. Acid damage itself does not consume the turn.
+        */
+        await waitForCombatActionPause();
       }
     }
   }
@@ -21213,11 +21291,22 @@ async function castMelfsAcidArrowSpell(action,target){
     if(!result.killed && remainingTicks>0){
       addUnitEffect(target,{
         id:"acid-arrow",
-        name:"Acid Arrow",
+        name:"Splashed with Acid",
         kind:"debuff",
         expiresRound:game.round+remainingTicks+1,
-        detail:`${remainingTicks} additional acid round${remainingTicks===1 ? "" : "s"} remaining`,
-        data:{sourceUnitId:caster.id,remainingTicks}
+        detail:
+          "2d4 acid each later round; "+
+          remainingTicks+
+          " follow-on round"+
+          (remainingTicks===1 ? "" : "s")+
+          " remaining",
+        data:{
+          sourceUnitId:caster.id,
+          casterLevel:level,
+          appliedRound:game.round,
+          nextTickRound:game.round+1,
+          remainingTicks
+        }
       });
     }
 
@@ -23554,11 +23643,12 @@ function normalizeUnitEffect(effect){
   }
 
   if(typeof effect==="string"){
-    return {name:effect,detail:""};
+    return {id:"",name:effect,detail:""};
   }
 
   if(typeof effect==="object"){
     return {
+      id:String(effect.id || ""),
       name:String(effect.name || effect.label || effect.id || "Effect"),
       detail:String(
         effect.detail ||
@@ -23569,7 +23659,7 @@ function normalizeUnitEffect(effect){
     };
   }
 
-  return {name:String(effect),detail:""};
+  return {id:"",name:String(effect),detail:""};
 }
 
 function renderUnitStatusEffects(unit){
@@ -23596,12 +23686,19 @@ function renderUnitStatusEffects(unit){
     No visible "Buff" or "Debuff" category labels.
     The positive/negative styling identifies the effect type.
   */
-  ui.unitInfoEffects.innerHTML=entries.map(effect=>
-    `<div class="unit-effect ${effect.kind}">`+
-      `<div>${effect.name}</div>`+
-      `${effect.detail ? `<div>${effect.detail}</div>` : ""}`+
-    `</div>`
-  ).join("");
+  ui.unitInfoEffects.innerHTML=entries.map(effect=>{
+    const acidClass=
+      effect.id==="acid-arrow"
+        ? " acid-arrow"
+        : "";
+
+    return (
+      `<div class="unit-effect ${effect.kind}${acidClass}">`+
+        `<div>${effect.name}</div>`+
+        `${effect.detail ? `<div>${effect.detail}</div>` : ""}`+
+      `</div>`
+    );
+  }).join("");
 
   ui.unitInfoEffects.hidden=false;
 }
