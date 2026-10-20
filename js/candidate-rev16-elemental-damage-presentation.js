@@ -18,6 +18,10 @@
 
   const R16_DAMAGE_FONT_SIZE=16.25;
 
+  function r16Clamp01(value){
+    return Math.max(0,Math.min(1,Number(value)||0));
+  }
+
   function r16DamageKindForType(damageType){
     switch(
       String(damageType || "")
@@ -55,9 +59,7 @@
   };
 
   if(window.AdventurePartyCastingSound){
-    window.AdventurePartyCastingSound.play=()=>{
-      false;
-    };
+    window.AdventurePartyCastingSound.play=()=>false;
     window.AdventurePartyCastingSound.disabledBy="Candidate Rev 16";
   }
 
@@ -488,7 +490,7 @@
       }
 
       const t=
-        clamp01(
+        r16Clamp01(
           elapsed/
           Math.max(
             1,
