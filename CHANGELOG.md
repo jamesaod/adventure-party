@@ -3,6 +3,19 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R236 — Floating combat information
+
+- Added a shared over-unit floating combat-text system as a final tactical foreground pass.
+- When a unit begins a spell casting interval, `Begins Casting.` appears above that unit for 1 second.
+- Damage now produces red floating text in the form `-14 dmg`; it rises slowly and fades away over 1 second.
+- Damage feedback hooks into the canonical `onUnitDamaged()` path, covering physical attacks, direct spell damage, AoE damage, ongoing magical damage, and other existing damage sources that use the normal engine hook.
+- Multiple rapid damage events on the same unit stack vertically so individual hits remain readable.
+- Added a future-facing healing presentation hook: `onUnitHealed(unit, amount)` displays green `+14 healing` text with the same 1-second rise/fade. R236 does not add healing mechanics.
+- Floating text follows the unit while it remains present and supports large/multi-hex creatures and Enlarge visual scale.
+- Over-unit feedback is drawn after LOS/masonry presentation but respects party visibility, so it cannot reveal hidden or invisible enemies.
+- Added a dedicated animation loop that runs only while floating text is active.
+- Added `AdventurePartyFloatingCombatText` diagnostics and manual test helpers.
+
 ## R235 — One-second spell interruption notice
 
 - Fixed a presentation race where casting interruption was detected correctly but the notice was immediately overwritten by the attack/damage message that continued in the same call stack.
