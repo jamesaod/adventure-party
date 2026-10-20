@@ -19,6 +19,8 @@
 (()=>{
   "use strict";
 
+  const R36_MODULE_ID="candidate-rev36-magic-missile-volley";
+
   let r36VolleyFx=null;
   let r36ImpactFx=[];
   let r36ImpactFrame=null;
