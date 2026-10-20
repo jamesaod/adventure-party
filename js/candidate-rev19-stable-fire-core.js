@@ -251,6 +251,21 @@
       }
     }
 
+    clear(){
+      this.u.fill(0);
+      this.v.fill(0);
+      this.u0.fill(0);
+      this.v0.fill(0);
+      this.temp.fill(0);
+      this.temp0.fill(0);
+      this.dens.fill(0);
+      this.dens0.fill(0);
+      this.div.fill(0);
+      this.pressure.fill(0);
+      this.curl.fill(0);
+      this.age=0;
+    }
+
     boundary(field){
       const w=this.w;
       const h=this.h;
