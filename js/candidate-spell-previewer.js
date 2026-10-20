@@ -2943,7 +2943,18 @@ async function spellPreviewRunFireball(
   );
 
   if(flags.sounds){
-    playFireballExplosionSound();
+    /*
+      Candidate Rev 30:
+      The dedicated Fireball preview bypasses the normal cast-dispatch wrapper,
+      so call the currently selected DQK Fireball sample directly when that
+      candidate audio module is available. Fall back to the engine sound only
+      when the sample helper is absent.
+    */
+    if(typeof playDqkFireballSound==="function"){
+      playDqkFireballSound();
+    }else{
+      playFireballExplosionSound();
+    }
   }
 
   if(flags.visuals){

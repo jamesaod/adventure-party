@@ -538,8 +538,7 @@ castFireballFromScroll=async function(action,targetHex){
             : "FAILED — FULL DAMAGE"
         )
       ],
-      killed:result.killed,
-      damageIcon:"fireball"
+      killed:result.killed
     });
 
     log(
