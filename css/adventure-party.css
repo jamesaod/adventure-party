@@ -1970,7 +1970,7 @@ button, input, select, textarea {
 
 
 /* ============================================================
-   CANDIDATE REV 5 — SPELL EFFECTS PREVIEWER
+   CANDIDATE REV 7 — SPELL EFFECTS PREVIEWER
    ============================================================ */
 
 #spellPreviewScreen {
@@ -2320,7 +2320,6 @@ button, input, select, textarea {
 
 .preview-key.caster { background:#ba8cff; }
 .preview-key.hostile { background:#df6b6b; }
-.preview-key.friendly { background:#78d7c4; }
 
 .spell-preview-status {
   margin-top:12px;
