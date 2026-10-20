@@ -84,7 +84,7 @@
     const t0=performance.now();
     const {w,h}=parseResolution();
     const eta=clamp(readNumber(IDS.eta,1.8),1,4);
-    const sweeps=Math.round(clamp(readNumber(IDS.iterations,14),4,50));
+    const sweeps=Math.round(clamp(readNumber(IDS.iterations,10),4,28));
     const jitter=clamp(readNumber(IDS.jitter,0.38),0,0.48);
     const glow=clamp(readNumber(IDS.glow,1),0.25,2.5);
     const seed=(Math.round(readNumber(IDS.seed,137))|0) || 137;
@@ -208,7 +208,7 @@
 
     let terminal=-1;
     let stopped="max-steps";
-    const maxSteps=Math.round(w*h*0.62);
+    const maxSteps=Math.min(900,Math.round(w*h*0.35));
 
     for(let step=1;step<=maxSteps;step++){
       solvePotential();
@@ -534,7 +534,16 @@
       seedNode.value=String(((Number(seedNode.value)||0)+1)>>>0);
     }
     updateReadouts();
-    generate();
+
+    const openButton=document.querySelector('button[data-screen="spell-preview"]');
+    openButton?.addEventListener("click",()=>{
+      if(lastResult) return;
+      setTimeout(generate,0);
+    });
+
+    if(document.getElementById("spellPreviewScreen")?.classList.contains("active")){
+      setTimeout(generate,0);
+    }
   }
 
   function wire(){
