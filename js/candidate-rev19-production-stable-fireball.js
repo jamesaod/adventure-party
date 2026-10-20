@@ -80,7 +80,10 @@
       bodyCtx:null,
       maskCanvas:
         document.createElement("canvas"),
-      maskCtx:null
+      maskCtx:null,
+      lightCanvas:
+        document.createElement("canvas"),
+      lightCtx:null
     };
   }
 
@@ -479,10 +482,14 @@
     ctx.save();
     ctx.imageSmoothingEnabled=true;
     ctx.globalCompositeOperation="source-over";
+    /*
+      Rev 24: 50% stronger main flame-body opacity.
+      0.80 -> 1.20 before clamping to the Canvas alpha ceiling.
+    */
     ctx.globalAlpha=
       Math.min(
-        0.86,
-        0.80*fade
+        1,
+        1.20*fade
       );
 
     ctx.drawImage(
@@ -508,6 +515,200 @@
       rect.h
     );
 
+    ctx.restore();
+  }
+
+
+  function drawFieryVolumeIllumination(
+    state,
+    fx,
+    rect,
+    t,
+    fade
+  ){
+    const mask=
+      prepareSoftBlastMask(
+        state,
+        fx,
+        rect
+      );
+
+    if(!mask){
+      return;
+    }
+
+    const width=
+      Math.max(
+        2,
+        Math.ceil(rect.w)
+      );
+
+    const height=
+      Math.max(
+        2,
+        Math.ceil(rect.h)
+      );
+
+    if(
+      state.lightCanvas.width!==width ||
+      state.lightCanvas.height!==height
+    ){
+      state.lightCanvas.width=width;
+      state.lightCanvas.height=height;
+      state.lightCtx=
+        state.lightCanvas.getContext("2d");
+    }
+
+    const lightCtx=
+      state.lightCtx;
+
+    if(!lightCtx){
+      return;
+    }
+
+    lightCtx.clearRect(
+      0,0,width,height
+    );
+
+    lightCtx.drawImage(
+      mask,
+      0,0,width,height
+    );
+
+    lightCtx.globalCompositeOperation=
+      "source-in";
+
+    const tint=
+      lightCtx.createRadialGradient(
+        width*0.50,
+        height*0.56,
+        0,
+        width*0.50,
+        height*0.56,
+        Math.max(
+          width,
+          height
+        )*0.72
+      );
+
+    tint.addColorStop(
+      0,
+      "rgba(255,252,210,1)"
+    );
+
+    tint.addColorStop(
+      0.28,
+      "rgba(255,190,58,0.98)"
+    );
+
+    tint.addColorStop(
+      0.62,
+      "rgba(244,91,13,0.90)"
+    );
+
+    tint.addColorStop(
+      1,
+      "rgba(165,28,5,0.58)"
+    );
+
+    lightCtx.fillStyle=tint;
+    lightCtx.fillRect(
+      0,0,width,height
+    );
+
+    lightCtx.globalCompositeOperation=
+      "source-over";
+
+    /*
+      Strong fiery illumination starts near peak intensity and continuously
+      decays through the blast lifetime. Keep it volume-shaped so illumination
+      follows wall/terrain-constrained Fireballs instead of reading as a single
+      circular spotlight.
+    */
+    const decay=
+      Math.pow(
+        Math.max(
+          0,
+          1-t
+        ),
+        1.35
+      );
+
+    const illumination=
+      PROFILE.glow*
+      decay*
+      fade;
+
+    if(illumination<=0.002){
+      return;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+
+    /*
+      Broad warm light cast onto terrain/units around the complete blast.
+    */
+    ctx.filter=
+      "blur("+
+      Math.max(
+        12,
+        Math.round(
+          Math.min(
+            rect.w,
+            rect.h
+          )*0.15
+        )
+      )+
+      "px)";
+
+    ctx.globalAlpha=
+      Math.min(
+        0.62,
+        0.18*
+        illumination
+      );
+
+    ctx.drawImage(
+      state.lightCanvas,
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
+
+    /*
+      Tighter yellow-orange fiery glow hugs the visible flame volume.
+    */
+    ctx.filter=
+      "blur("+
+      Math.max(
+        6,
+        Math.round(
+          Math.min(
+            rect.w,
+            rect.h
+          )*0.065
+        )
+      )+
+      "px)";
+
+    ctx.globalAlpha=
+      Math.min(
+        0.48,
+        0.14*
+        illumination
+      );
+
+    ctx.drawImage(
+      state.lightCanvas,
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
+
+    ctx.filter="none";
     ctx.restore();
   }
 
@@ -922,6 +1123,14 @@
         Math.min(rect.w,rect.h)
       );
 
+      drawFieryVolumeIllumination(
+        state,
+        fx,
+        rect,
+        t,
+        fade
+      );
+
       drawSoftFluidBody(
         state,
         fx,
@@ -929,17 +1138,31 @@
         fade
       );
 
+      const hotGlowDecay=
+        Math.pow(
+          Math.max(
+            0,
+            1-t
+          ),
+          1.05
+        );
+
+      /*
+        White-yellow core glow rides the hottest part of the simulation and
+        decays more slowly than the broad terrain illumination.
+      */
       drawFireLight(
         heatX,
         heatY,
         Math.max(
-          HEX_W*1.05,
-          Math.min(rect.w,rect.h)*0.42
+          HEX_W*1.20,
+          Math.min(rect.w,rect.h)*0.50
         ),
         info.hottest*
         PROFILE.glow*
         fade*
-        0.42
+        hotGlowDecay*
+        0.78
       );
 
       drawParticles(
@@ -1247,8 +1470,8 @@
 
 
   window.AdventurePartyProductionFireballVfx={
-    release:"Candidate Rev 23",
-    renderer:"Stable Fluids — soft tactical volume",
+    release:"Candidate Rev 24",
+    renderer:"Stable Fluids — high-opacity fiery illumination",
     profile:{...PROFILE}
   };
 })();
