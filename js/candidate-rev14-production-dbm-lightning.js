@@ -681,162 +681,267 @@
       );
   }
 
+  function drawLightningHexLight(
+    cell,
+    intensity,
+    {
+      centerBoost=1,
+      edgeAlpha=0.10,
+      coreAlpha=0.42
+    }={}
+  ){
+    if(
+      !cell ||
+      !Number.isFinite(cell.x) ||
+      !Number.isFinite(cell.y) ||
+      intensity<=0.002 ||
+      !inside(cell.x,cell.y)
+    ){
+      return;
+    }
+
+    const vertices=
+      hexScreenVertices(
+        cell.x,
+        cell.y
+      );
+
+    const center=
+      hexCenter(
+        cell.x,
+        cell.y
+      );
+
+    ctx.save();
+
+    polygonPath(vertices);
+    ctx.clip();
+
+    const radius=
+      Math.max(
+        HEX_W*0.62,
+        HEX_H*0.78
+      );
+
+    const gradient=
+      ctx.createRadialGradient(
+        center.x,
+        center.y,
+        0,
+        center.x,
+        center.y,
+        radius
+      );
+
+    gradient.addColorStop(
+      0,
+      "rgba(245,252,255,"+
+      Math.min(
+        0.95,
+        coreAlpha*
+        centerBoost*
+        intensity
+      )+
+      ")"
+    );
+
+    gradient.addColorStop(
+      0.34,
+      "rgba(175,222,255,"+
+      Math.min(
+        0.78,
+        0.24*
+        centerBoost*
+        intensity
+      )+
+      ")"
+    );
+
+    gradient.addColorStop(
+      0.76,
+      "rgba(90,160,255,"+
+      Math.min(
+        0.52,
+        edgeAlpha*
+        centerBoost*
+        intensity
+      )+
+      ")"
+    );
+
+    gradient.addColorStop(
+      1,
+      "rgba(65,120,245,0)"
+    );
+
+    ctx.fillStyle=gradient;
+    ctx.fillRect(
+      center.x-HEX_W,
+      center.y-HEX_H,
+      HEX_W*2,
+      HEX_H*2
+    );
+
+    ctx.restore();
+  }
+
+
   function drawIllumination(
     fx,
     intensity
   ){
-    if(intensity<=0.002){
+    if(
+      intensity<=0.002 ||
+      !Array.isArray(fx?.segments) ||
+      !fx.segments.length
+    ){
       return;
     }
 
     ctx.save();
     ctx.globalCompositeOperation="lighter";
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
 
     /*
-      A restrained full-frame blue-white flash establishes the sense that the
-      entire battlefield responds to the discharge without replacing the local
-      lighting gradients below.
+      Rev 18: lighting now follows the tactical grid instead of painting a
+      broad continuous wash. Every traversed bolt hex receives one tight
+      blue-white illumination footprint.
     */
-    ctx.fillStyle=
-      "rgba(190,225,255,"+
-      (0.068*intensity)+
-      ")";
+    const pathCells=[];
+    const seen=new Set();
 
-    ctx.fillRect(
-      0,
-      0,
-      ctx.canvas.width,
-      ctx.canvas.height
-    );
+    const firstSegment=
+      fx.segments[0];
 
-    for(
-      let segmentIndex=0;
-      segmentIndex<fx.segments.length;
-      segmentIndex++
-    ){
-      const segment=
-        fx.segments[segmentIndex];
-
-      const from=
-        screenPointForWorld(
-          segment.fromWorld
+    if(firstSegment?.fromWorld){
+      const originCell=
+        r232WorldToHex(
+          firstSegment.fromWorld
         );
 
-      const to=
-        screenPointForWorld(
-          segment.toWorld
-        );
-
-      const illuminationLayers=[
-        {
-          width:96,
-          alpha:
-            0.036*
-            PROFILE.glow*
-            intensity
-        },
-        {
-          width:58,
-          alpha:
-            0.052*
-            PROFILE.glow*
-            intensity
-        },
-        {
-          width:30,
-          alpha:
-            0.080*
-            PROFILE.glow*
-            intensity
-        }
-      ];
-
-      for(const layer of illuminationLayers){
-        ctx.strokeStyle=
-          "rgba(115,185,255,"+
-          layer.alpha+
-          ")";
-
-        ctx.lineWidth=layer.width;
-
-        ctx.beginPath();
-        ctx.moveTo(
-          from.x,
-          from.y-10
-        );
-        ctx.lineTo(
-          to.x,
-          to.y-10
-        );
-        ctx.stroke();
-      }
-
-      const endpoints=[
-        {
-          x:from.x,
-          y:from.y-10,
-          radius:76
-        },
-        {
-          x:to.x,
-          y:to.y-10,
-          radius:
-            segment.collision
-              ? 108
-              : 88
-        }
-      ];
-
-      for(const endpoint of endpoints){
-        const gradient=
-          ctx.createRadialGradient(
-            endpoint.x,
-            endpoint.y,
-            0,
-            endpoint.x,
-            endpoint.y,
-            endpoint.radius
+      if(
+        originCell &&
+        inside(
+          originCell.x,
+          originCell.y
+        )
+      ){
+        const originKey=
+          key(
+            originCell.x,
+            originCell.y
           );
 
-        gradient.addColorStop(
-          0,
-          "rgba(245,252,255,"+
-          (0.68*intensity)+
-          ")"
+        seen.add(originKey);
+        pathCells.push(originCell);
+      }
+    }
+
+    for(const segment of fx.segments){
+      for(const cell of segment.cells || []){
+        const cellKey=
+          key(
+            cell.x,
+            cell.y
+          );
+
+        if(seen.has(cellKey)){
+          continue;
+        }
+
+        seen.add(cellKey);
+        pathCells.push({
+          x:cell.x,
+          y:cell.y
+        });
+      }
+    }
+
+    for(const cell of pathCells){
+      drawLightningHexLight(
+        cell,
+        intensity,
+        {
+          centerBoost:1.00,
+          edgeAlpha:0.12,
+          coreAlpha:0.44
+        }
+      );
+    }
+
+    /*
+      Add a radius-1 / seven-hex illumination cluster at the true final
+      terminus. Prefer the final sampled tactical cell so wall/tree endpoints
+      stay on the gameplay side of the collision boundary.
+    */
+    const lastSegment=
+      fx.segments[
+        fx.segments.length-1
+      ];
+
+    let terminalCell=null;
+
+    if(lastSegment?.cells?.length){
+      const lastCell=
+        lastSegment.cells[
+          lastSegment.cells.length-1
+        ];
+
+      terminalCell={
+        x:lastCell.x,
+        y:lastCell.y
+      };
+    }else if(lastSegment?.toWorld){
+      const fallback=
+        r232WorldToHex(
+          lastSegment.toWorld
         );
 
-        gradient.addColorStop(
-          0.18,
-          "rgba(180,220,255,"+
-          (0.40*intensity)+
-          ")"
+      if(
+        fallback &&
+        inside(
+          fallback.x,
+          fallback.y
+        )
+      ){
+        terminalCell=fallback;
+      }
+    }
+
+    if(terminalCell){
+      const cluster=
+        hexesWithinRadius(
+          terminalCell,
+          1
+        ).filter(cell=>
+          inside(
+            cell.x,
+            cell.y
+          )
         );
 
-        gradient.addColorStop(
-          0.56,
-          "rgba(95,165,255,"+
-          (0.17*intensity)+
-          ")"
-        );
+      for(const cell of cluster){
+        const center=
+          cell.x===terminalCell.x &&
+          cell.y===terminalCell.y;
 
-        gradient.addColorStop(
-          1,
-          "rgba(70,120,255,0)"
+        drawLightningHexLight(
+          cell,
+          intensity,
+          {
+            centerBoost:
+              center
+                ? 1.70
+                : 1.18,
+            edgeAlpha:
+              center
+                ? 0.20
+                : 0.15,
+            coreAlpha:
+              center
+                ? 0.62
+                : 0.48
+          }
         );
-
-        ctx.fillStyle=gradient;
-
-        ctx.beginPath();
-        ctx.arc(
-          endpoint.x,
-          endpoint.y,
-          endpoint.radius,
-          0,
-          Math.PI*2
-        );
-        ctx.fill();
       }
     }
 

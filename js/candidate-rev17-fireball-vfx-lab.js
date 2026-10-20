@@ -108,18 +108,18 @@
   }
 
   function params(){
-    const resolution=String(el(IDS.resolution)?.value||"56x36");
+    const resolution=String(el(IDS.resolution)?.value||"64x40");
     const match=resolution.match(/^(\d+)x(\d+)$/);
     return {
       renderer:String(el(IDS.renderer)?.value||"fluid"),
-      w:match ? Number(match[1]) : 56,
-      h:match ? Number(match[2]) : 36,
-      turbulence:clamp(readNumber(IDS.turbulence,0.78),0,1.5),
-      buoyancy:clamp(readNumber(IDS.buoyancy,0.88),0,1.6),
-      cooling:clamp(readNumber(IDS.cooling,0.93),0.80,0.995),
-      glow:clamp(readNumber(IDS.glow,1.20),0.2,2.5),
-      embers:clamp(readNumber(IDS.embers,1.00),0,2.0),
-      smoke:clamp(readNumber(IDS.smoke,0.38),0,1.25),
+      w:match ? Number(match[1]) : 64,
+      h:match ? Number(match[2]) : 40,
+      turbulence:clamp(readNumber(IDS.turbulence,1.50),0,1.5),
+      buoyancy:clamp(readNumber(IDS.buoyancy,1.60),0,1.6),
+      cooling:clamp(readNumber(IDS.cooling,0.99),0.80,0.995),
+      glow:clamp(readNumber(IDS.glow,2.50),0.2,2.5),
+      embers:clamp(readNumber(IDS.embers,2.00),0,2.0),
+      smoke:clamp(readNumber(IDS.smoke,1.25),0,1.25),
       distortion:!!el(IDS.distortion)?.checked,
       seed:(Math.round(readNumber(IDS.seed,217))>>>0)||217
     };
