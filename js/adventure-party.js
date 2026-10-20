@@ -8560,8 +8560,8 @@ const SPELL_CATALOG={
     maxMissiles:5,
     combatImplemented:true,
     targetMode:"hostile-creature",
-    damageSummary:"Each missile 1d4+1; missile count rises with caster level to 5 maximum.",
-    description:"Creates magical energy missiles that automatically strike a seen or otherwise detected creature.",
+    damageSummary:"Each missile 1d4+1; up to 5 missiles may be assigned among one or more visible targets and strike simultaneously.",
+    description:"Creates magical energy missiles that automatically strike. Each missile can be assigned to the same or a different visible target; the full volley launches and resolves simultaneously.",
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:136,pdfPage:137}
   },
 
