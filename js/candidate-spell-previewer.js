@@ -72,13 +72,6 @@ let spellPreviewSuppressProductionCastCue=false;
    ============================================================ */
 
 const SPELL_PREVIEW_SPECIAL_PROFILES=Object.freeze({
-  "magic-missile":{
-    spellId:"magic-missile",
-    nominalMs:3900,
-    label:"Projectile / repeated impact / damage",
-    run:spellPreviewRunMagicMissile
-  },
-
   "sleep":{
     spellId:"sleep",
     nominalMs:4700,
@@ -2709,6 +2702,36 @@ async function spellPreviewRunProductionSpell(
     r231CompletionTargeting:false
   };
 
+  /*
+    Candidate Rev 36:
+    Preview Magic Missile through the real production volley resolver. Spread
+    missiles round-robin across the selected number of dummy targets; with one
+    dummy, every missile stacks on that target and exercises the curved
+    split/reconverge path.
+  */
+  if(spell.id==="magic-missile"){
+    const previewTargets=
+      spellPreviewHostiles.filter(
+        unit=>unit?.alive && !unit.fled
+      );
+
+    const missileCount=
+      magicMissileCountForCasterLevel(
+        action.casterLevel
+      );
+
+    if(previewTargets.length){
+      action.magicMissileTargetIds=
+        Array.from(
+          {length:missileCount},
+          (_,index)=>
+            previewTargets[
+              index%previewTargets.length
+            ].id
+        );
+    }
+  }
+
   let resolved=false;
 
   spellPreviewSuppressProductionCastCue=true;
@@ -2768,120 +2791,12 @@ async function spellPreviewRunProductionSpell(
    MAGIC MISSILE
    ============================================================ */
 
-async function spellPreviewRunMagicMissile(
-  token
-){
-  const spell=
-    getSpellEntry(
-      "magic-missile"
-    );
-
-  const target=
-    spellPreviewPrimaryTarget();
-
-  if(!spell || !target){
-    return;
-  }
-
-  await spellPreviewCastCue(
-    spell,
-    token
-  );
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  const flags=
-    spellPreviewPresentationFlags();
-
-  const level=
-    clamp(
-      Number(
-        spellPreviewUi.casterLevel?.value
-      ) || 6,
-      1,
-      20
-    );
-
-  const count=
-    magicMissileCountForCasterLevel(
-      level
-    );
-
-  for(
-    let index=0;
-    index<count;
-    index++
-  ){
-    spellPreviewMark(
-      "Missile "+
-      (index+1)+
-      " launch"
-    );
-
-    if(flags.visuals){
-      await animateMagicMissile(
-        spellPreviewCaster,
-        target,
-        index,
-        count
-      );
-    }else{
-      await spellPreviewWait(
-        190,
-        token
-      );
-    }
-
-    if(!spellPreviewTokenActive(token)){
-      return;
-    }
-
-    if(flags.sounds){
-      playMagicMissileHitSound(
-        index
-      );
-    }
-
-    spellPreviewMark(
-      "Missile "+
-      (index+1)+
-      " impact"
-    );
-
-    if(
-      !await spellPreviewWait(
-        90,
-        token
-      )
-    ){
-      return;
-    }
-  }
-
-  const damage=
-    count*3;
-
-  spellPreviewMark(
-    "Damage beat: "+
-    damage
-  );
-
-  spellPreviewApplyDamage(
-    [target],
-    damage,
-    {
-      damageType:"magic"
-    }
-  );
-
-  await spellPreviewWait(
-    1100,
-    token
-  );
-}
-
+/*
+  Candidate Rev 36:
+  Magic Missile intentionally has no Previewer-owned runner. It is exercised
+  through spellPreviewRunProductionSpell(), which calls the same production
+  multi-target volley resolver used by battlefield combat.
+*/
 
 /* ============================================================
    FIREBALL
