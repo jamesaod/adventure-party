@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/adventure-party.css?v=R237">
+<link rel="stylesheet" href="css/adventure-party.css?v=candidate-rev-4">
 </head>
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R237","builtAt":"2026-10-20T08:14:31-04:00"}
+{"architecture":"Multi-File Engine","release":"R237","candidateRevision":4,"builtAt":"2026-10-20T08:14:31-04:00"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -23,7 +23,10 @@
         <h1>Adventure Party</h1>
         <div class="working-title">(working title)</div>
       </div>
-      <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
+      <div class="launcher-build-stack">
+        <div class="candidate-label">Candidate Rev 4</div>
+        <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
+      </div>
     </header>
 
     <main class="launcher-stage chrome">
@@ -32,6 +35,7 @@
         <nav class="launcher-menu">
           <button data-screen="combat">Combat System Test</button>
           <button data-screen="spellbook">Spell Book</button>
+          <button data-screen="spell-preview">Spell Previewer [DEV]</button>
           <button data-screen="classbook">Class Book</button>
           <button data-screen="character">Character Generation</button>
           <button data-screen="pixel">Pixel Editor</button>
@@ -105,6 +109,119 @@
 
       <div id="classbookTabs" class="spellbook-tabs" role="tablist" aria-label="Character classes"></div>
       <section id="classbookContent" class="spellbook-content"></section>
+    </main>
+  </div>
+</section>
+
+
+<section id="spellPreviewScreen" class="screen">
+  <div class="spell-preview-app">
+    <header class="spell-preview-header chrome">
+      <div>
+        <div class="small">Adventure Party — Development Tool</div>
+        <h1>Spell Effects Previewer</h1>
+      </div>
+      <div class="spell-preview-header-actions">
+        <span class="spell-preview-candidate">Candidate Rev 4</span>
+        <button id="spellPreviewReturnButton" class="pixel-return-button" type="button">
+          Return to Launcher [Esc]
+        </button>
+      </div>
+    </header>
+
+    <main class="spell-preview-main">
+      <aside class="spell-preview-library chrome">
+        <div class="spell-preview-panel-title">Spell Library</div>
+        <div class="spell-preview-note">
+          Preview-ready profiles use production battlefield VFX/SFX. Other implemented spells are listed for audit coverage.
+        </div>
+        <div id="spellPreviewLibrary" class="spell-preview-library-list"></div>
+        <div id="spellPreviewCoverage" class="spell-preview-coverage">Loading spell catalog…</div>
+      </aside>
+
+      <section class="spell-preview-center">
+        <div id="spellPreviewArena" class="spell-preview-arena chrome">
+          <div id="spellPreviewArenaPlaceholder" class="spell-preview-arena-placeholder">
+            Battlefield renderer attaches when the previewer opens.
+          </div>
+          <div class="spell-preview-arena-badge">PRODUCTION RENDERER</div>
+        </div>
+
+        <section class="spell-preview-timeline chrome">
+          <div class="spell-preview-timeline-top">
+            <div>
+              <div class="spell-preview-panel-title">Measured Timeline</div>
+              <div id="spellPreviewElapsed" class="spell-preview-elapsed">0.000 s / 0.000 s</div>
+            </div>
+            <div id="spellPreviewRunState" class="spell-preview-run-state">READY</div>
+          </div>
+          <div id="spellPreviewTimelineTrack" class="spell-preview-timeline-track">
+            <div id="spellPreviewTimelineMarkers" class="spell-preview-timeline-markers"></div>
+            <div id="spellPreviewTimelinePlayhead" class="spell-preview-timeline-playhead"></div>
+          </div>
+          <div id="spellPreviewEventLog" class="spell-preview-event-log"></div>
+        </section>
+      </section>
+
+      <aside class="spell-preview-controls chrome">
+        <div class="spell-preview-panel-title">Preview Setup</div>
+        <div id="spellPreviewSpellName" class="spell-preview-spell-name">Magic Missile</div>
+        <div id="spellPreviewSpellMeta" class="spell-preview-spell-meta"></div>
+
+        <label class="spell-preview-field">
+          <span>Caster level</span>
+          <input id="spellPreviewCasterLevel" type="number" min="1" max="20" step="1" value="6">
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Dummy targets</span>
+          <select id="spellPreviewTargetCount">
+            <option value="1">1 target</option>
+            <option value="3">3 targets</option>
+            <option value="5" selected>5 targets</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Outcome</span>
+          <select id="spellPreviewOutcome">
+            <option value="demo" selected>Deterministic demo</option>
+            <option value="save-success">Force successful save</option>
+            <option value="save-failure">Force failed save</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Presentation</span>
+          <select id="spellPreviewMode">
+            <option value="full" selected>Full sequence — VFX + SFX</option>
+            <option value="vfx">VFX only</option>
+            <option value="sfx">SFX only</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-check">
+          <input id="spellPreviewLoop" type="checkbox" checked>
+          Loop preview with 1-second reset gap
+        </label>
+
+        <div class="spell-preview-actions">
+          <button id="spellPreviewPlayButton" class="pixel-action-button primary" type="button">Play</button>
+          <button id="spellPreviewStopButton" class="pixel-action-button" type="button" disabled>Stop</button>
+          <button id="spellPreviewRestartButton" class="pixel-action-button" type="button">Reset Arena</button>
+        </div>
+
+        <section class="spell-preview-dummy-key">
+          <div class="spell-preview-panel-title">Dummy Arena</div>
+          <div><span class="preview-key caster"></span> Caster</div>
+          <div><span class="preview-key hostile"></span> Hostile target</div>
+          <div><span class="preview-key friendly"></span> Friendly-fire target</div>
+        </section>
+
+        <div id="spellPreviewStatus" class="spell-preview-status">
+          Select a preview-ready spell and press Play.
+        </div>
+      </aside>
     </main>
   </div>
 </section>
@@ -626,5 +743,6 @@
 <script src="js/candidate-combat-beat-sequence.js?v=R237"></script>
 <script src="js/candidate-casting-interrupted-float.js?v=R237"></script>
 <script src="js/candidate-outdoor-los-visibility-mask.js?v=R237"></script>
+<script src="js/candidate-spell-previewer.js?v=candidate-rev-4"></script>
 </body>
 </html>
