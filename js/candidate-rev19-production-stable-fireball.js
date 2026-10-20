@@ -36,6 +36,13 @@
     const field=
       new StableFireField(seed);
 
+    /*
+      Rev 23: production Fireball is shaped entirely by the resolved blast
+      volume. Remove the core class' generic central plume before injecting the
+      tactical-volume sources.
+    */
+    field.clear();
+
     const rect=
       blastRect(fx);
 
@@ -67,7 +74,13 @@
       lastStepAt:performance.now(),
       distortionCanvas,
       distortionCtx:
-        distortionCanvas.getContext("2d")
+        distortionCanvas.getContext("2d"),
+      bodyCanvas:
+        document.createElement("canvas"),
+      bodyCtx:null,
+      maskCanvas:
+        document.createElement("canvas"),
+      maskCtx:null
     };
   }
 
@@ -166,7 +179,7 @@
           Math.max(1,rect.w)
         )*
         PROFILE.w*
-        0.50
+        0.42
       );
 
     const radiusY=
@@ -177,7 +190,7 @@
           Math.max(1,rect.h)
         )*
         PROFILE.h*
-        0.54
+        0.44
       );
 
     return cells.map((cell,index)=>{
@@ -238,13 +251,22 @@
         an instantaneous volume-filling detonation, not a small flame source
         that slowly diffuses outward.
       */
+      const variation=
+        Math.sin(
+          index*2.61+
+          fx.x*0.73+
+          fx.y*1.37
+        );
+
       const heat=
-        0.90-
-        distanceNorm*0.12;
+        0.76-
+        distanceNorm*0.10+
+        variation*0.055;
 
       const density=
-        0.74-
-        distanceNorm*0.12;
+        0.58-
+        distanceNorm*0.08+
+        variation*0.045;
 
       const outward=
         1.45+
@@ -290,6 +312,203 @@
         strength:1
       };
     });
+  }
+
+
+  function prepareSoftBlastMask(state,fx,rect){
+    const width=Math.max(2,Math.ceil(rect.w));
+    const height=Math.max(2,Math.ceil(rect.h));
+
+    if(
+      state.maskCanvas.width!==width ||
+      state.maskCanvas.height!==height
+    ){
+      state.maskCanvas.width=width;
+      state.maskCanvas.height=height;
+      state.maskCtx=
+        state.maskCanvas.getContext("2d");
+    }
+
+    const maskCtx=state.maskCtx;
+    if(!maskCtx) return null;
+
+    maskCtx.clearRect(0,0,width,height);
+    maskCtx.save();
+    maskCtx.globalCompositeOperation="lighter";
+
+    const cells=
+      Array.isArray(fx?.cells) &&
+      fx.cells.length
+        ? fx.cells
+        : [{x:fx.x,y:fx.y}];
+
+    /*
+      Each tactical cell contributes a soft, vertically stretched flame-volume
+      lobe. Neighboring lobes overlap into one continuous mask, so walls and
+      terrain still shape the blast without exposing hard hex/rectangle edges.
+    */
+    for(let index=0;index<cells.length;index++){
+      const cell=cells[index];
+
+      if(
+        !Number.isFinite(cell.x) ||
+        !Number.isFinite(cell.y)
+      ){
+        continue;
+      }
+
+      const center=
+        hexCenter(cell.x,cell.y);
+
+      const localX=
+        center.x-rect.x;
+
+      const localY=
+        center.y-rect.y-
+        HEX_H*0.30;
+
+      const radius=
+        HEX_W*
+        (
+          0.68+
+          (index%3)*0.035
+        );
+
+      maskCtx.save();
+      maskCtx.translate(localX,localY);
+      maskCtx.scale(
+        1.0,
+        1.42+
+        (index%2)*0.08
+      );
+
+      const gradient=
+        maskCtx.createRadialGradient(
+          0,0,0,
+          0,0,radius
+        );
+
+      gradient.addColorStop(
+        0,
+        "rgba(255,255,255,0.98)"
+      );
+      gradient.addColorStop(
+        0.42,
+        "rgba(255,255,255,0.88)"
+      );
+      gradient.addColorStop(
+        0.76,
+        "rgba(255,255,255,0.48)"
+      );
+      gradient.addColorStop(
+        1,
+        "rgba(255,255,255,0)"
+      );
+
+      maskCtx.fillStyle=gradient;
+      maskCtx.beginPath();
+      maskCtx.arc(
+        0,0,radius,
+        0,Math.PI*2
+      );
+      maskCtx.fill();
+
+      maskCtx.restore();
+    }
+
+    maskCtx.restore();
+    return state.maskCanvas;
+  }
+
+
+  function drawSoftFluidBody(
+    state,
+    fx,
+    rect,
+    fade
+  ){
+    const width=Math.max(2,Math.ceil(rect.w));
+    const height=Math.max(2,Math.ceil(rect.h));
+
+    if(
+      state.bodyCanvas.width!==width ||
+      state.bodyCanvas.height!==height
+    ){
+      state.bodyCanvas.width=width;
+      state.bodyCanvas.height=height;
+      state.bodyCtx=
+        state.bodyCanvas.getContext("2d");
+    }
+
+    const bodyCtx=state.bodyCtx;
+    const mask=
+      prepareSoftBlastMask(
+        state,
+        fx,
+        rect
+      );
+
+    if(!bodyCtx || !mask){
+      return;
+    }
+
+    bodyCtx.clearRect(0,0,width,height);
+    bodyCtx.save();
+    bodyCtx.imageSmoothingEnabled=true;
+
+    bodyCtx.drawImage(
+      state.field.image,
+      0,0,width,height
+    );
+
+    bodyCtx.globalCompositeOperation=
+      "destination-in";
+
+    bodyCtx.drawImage(
+      mask,
+      0,0,width,height
+    );
+
+    bodyCtx.restore();
+
+    /*
+      Source-over carries the actual fire color on bright grass/stone.
+      A very small additive second pass restores emissive punch without
+      bleaching the whole affected volume.
+    */
+    ctx.save();
+    ctx.imageSmoothingEnabled=true;
+    ctx.globalCompositeOperation="source-over";
+    ctx.globalAlpha=
+      Math.min(
+        0.86,
+        0.80*fade
+      );
+
+    ctx.drawImage(
+      state.bodyCanvas,
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
+
+    ctx.globalCompositeOperation="lighter";
+    ctx.globalAlpha=
+      Math.min(
+        0.20,
+        0.15*fade
+      );
+
+    ctx.drawImage(
+      state.bodyCanvas,
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
+
+    ctx.restore();
   }
 
 
@@ -668,8 +887,8 @@
 
         state.field.injectSources(
           state.volumeSources,
-          0.08+
-          sustain*0.18
+          0.035+
+          sustain*0.085
         );
       }
 
@@ -680,7 +899,7 @@
       drawHeatDistortion(
         state,
         rect,
-        fade*PROFILE.glow*0.38,
+        fade*PROFILE.glow*0.16,
         now
       );
 
@@ -703,38 +922,24 @@
         Math.min(rect.w,rect.h)
       );
 
-      ctx.save();
-      clipToBlastColumns(fx,rect);
-      /*
-        Rev 22: the lab was tuned on a dark backdrop, but pure additive
-        compositing over bright grass/stone can clip the entire hot volume to
-        white. Screen blending keeps the luminous fire character while
-        preserving orange/yellow structure over bright battlefield art.
-      */
-      ctx.globalCompositeOperation="screen";
-      ctx.globalAlpha=Math.min(0.88,0.84*fade);
-      ctx.imageSmoothingEnabled=true;
-
-      ctx.drawImage(
-        state.field.image,
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h
+      drawSoftFluidBody(
+        state,
+        fx,
+        rect,
+        fade
       );
-
-      ctx.restore();
 
       drawFireLight(
         heatX,
         heatY,
         Math.max(
-          HEX_W*1.25,
-          Math.min(rect.w,rect.h)*0.58
+          HEX_W*1.05,
+          Math.min(rect.w,rect.h)*0.42
         ),
         info.hottest*
         PROFILE.glow*
-        fade
+        fade*
+        0.42
       );
 
       drawParticles(
@@ -1042,8 +1247,8 @@
 
 
   window.AdventurePartyProductionFireballVfx={
-    release:"Candidate Rev 22",
-    renderer:"Stable Fluids — volume-filled, screen-composited",
+    release:"Candidate Rev 23",
+    renderer:"Stable Fluids — soft tactical volume",
     profile:{...PROFILE}
   };
 })();
