@@ -223,6 +223,9 @@
           magicMissileCountForCasterLevel(
             Math.max(
               1,
+              Number(
+                pendingAimAction?.casterLevel
+              ) ||
               Number(caster?.level) ||
               TEST_SPELL_CASTER_LEVEL
             )
