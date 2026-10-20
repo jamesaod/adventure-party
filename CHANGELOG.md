@@ -3,6 +3,19 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R227 — Player-directed Melf's Minute Meteors volleys
+
+- Removed the R226 turn-start auto-fire behavior for stored Minute Meteors on normally player-controlled characters; the spell no longer takes over the character's turn.
+- Casting Melf's Minute Meteors now creates the full stored meteor pool first, then enters player-controlled target assignment for the five-per-round discharge mode.
+- The player assigns one target per meteor, up to five meteors per volley or the number remaining, whichever is lower.
+- The same hostile creature can be selected repeatedly to assign multiple meteors to it; battlefield markers show the current per-target allocation.
+- No meteors launch until the final required target is selected. The entire assigned volley then launches together with a shared simultaneous flight animation.
+- Attack rolls are resolved per meteor at the spell's +2 attack bonus with no range penalty; damage is accumulated and applied after the shared flight so several meteors can legitimately be assigned to the same creature.
+- Remaining stored meteors appear in the Cast menu as a deliberate **Release Minute Meteors** action on later turns instead of firing automatically.
+- Canceling a stored-volley targeting sequence spends no meteors. Canceling target selection immediately after the initial casting retains the newly created pool while the original spell casting still consumes that turn.
+- Automated Quick/NPC behavior retains the existing automated release path; this change specifically protects normal player control.
+- Updated Melf's Minute Meteors spell text and `AdventurePartyLevel3Spells` diagnostics for the R227 targeting model.
+
 ## R226 — AD&D 2e third-level tactical wizard spells
 
 - Added sixteen new combat-ready Level-3 Wizard spells to the shared spell catalog; Fireball remains on its established implementation.
