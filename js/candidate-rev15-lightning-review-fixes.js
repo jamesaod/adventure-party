@@ -197,6 +197,7 @@
     queued:true,
     clearPersistentAimPrompt:true,
     suppressUniversalCastingCue:true,
-    suppressExistingLightningEffectCue:true,\n    replacementSfx:LIGHTNING_BOLT_SFX.url
+    suppressExistingLightningEffectCue:true,
+    replacementSfx:LIGHTNING_BOLT_SFX.url
   };
 })();
