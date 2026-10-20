@@ -1,38 +1,62 @@
 # Candidate QA Notes
 
-Stable baseline: **R236**
+Stable baseline: **R237**
 
-## Current candidate changes
+## Current candidate: Rev 4
 
-### Outdoor LOS visibility indication
+### Spell Effects Previewer development harness
 
-- Restores the outdoor LOS blackout that was accidentally disabled when R234 replaced the generalized R217 mask.
-- Mechanical LOS behavior is unchanged.
-- Architecture, Wall of Fog, Stinking Cloud, Darkness, and other registered obscuring LOS volumes use the same binary tactical-hex visibility presentation.
-- A visible hex center reveals the complete hex.
-- An unseen hex center renders the complete hex as a hidden tile.
-- Open outdoor terrain with no active obscuring volume is unchanged.
-- Fog/cloud VFX remain visible in the foreground while terrain and units behind them are visibly obscured.
+A new **Spell Previewer [DEV]** launcher entry provides an isolated presentation laboratory for spell VFX, SFX, timing, floating combat results, and persistent effects.
+
+The previewer deliberately reuses the production battlefield canvas, renderer, spell catalog, combat-result text, and production VFX/SFX functions. It does not run initiative, MOB AI, victory/defeat, loot, or normal turn flow.
+
+### Rev 4 preview-ready profiles
+
+Rev 4 establishes the framework using five deliberately different spells:
+
+- **Magic Missile** — repeated projectile launches, individual impact SFX, then damage feedback.
+- **Fireball** — projectile, AoE explosion, affected dummy targets, fire damage presentation.
+- **Sleep** — multi-target application VFX, debuff feedback, and persistent Sleep presentation.
+- **Wall of Fog** — persistent animated/depth-sorted area VFX and obscuring-volume behavior.
+- **Lightning Bolt** — production reflected-ray geometry, electrical SFX, and damage feedback.
+
+Every implemented combat spell remains visible in the library. Spells without a dedicated Rev 4 preview profile are labeled **PENDING**, making missing preview coverage explicit rather than silently substituting a fake effect.
+
+### Previewer controls
+
+- Caster level: 1–20.
+- Dummy targets: 1, 3, or 5.
+- Outcome: deterministic demo, forced successful save, or forced failed save where the profile uses save-dependent damage.
+- Presentation: Full Sequence (VFX + SFX), VFX Only, or SFX Only.
+- Loop: enabled by default with a one-second reset gap.
+- Play, Stop, and Reset Arena controls.
+- Space toggles play/stop; Esc returns to the launcher.
+- A measured timeline logs actual elapsed event timestamps and displays a moving playhead.
+- The preview arena labels the caster, friendly dummy, and hostile targets.
 
 ### QA focus
 
-- Cast Wall of Fog outdoors and confirm terrain behind the wall becomes visibly hidden.
-- Cast Stinking Cloud outdoors and confirm terrain behind the cloud becomes visibly hidden.
-- Move around either cloud and confirm hidden/visible hexes change as party sight lines change.
-- Confirm enemies behind an obscuring volume remain hidden.
-- Confirm the cloud itself remains visible rather than disappearing into the blackout.
-- Confirm ordinary outdoor combat with no obscuring spell has no blackout.
-- Recheck Wall Test rooms/windows/doors to ensure the R234 no-partial-hex fix remains intact.
+1. Open **Spell Previewer [DEV]** from the Candidate Rev 4 launcher.
+2. Confirm Magic Missile starts automatically, loops, and fully resets target HP/effects between runs.
+3. Confirm the measured timeline advances continuously and logs launch/impact/damage beats in order.
+4. Switch to **VFX Only** and confirm spell visuals remain while spell-specific preview audio is suppressed.
+5. Switch to **SFX Only** and confirm the preview sequence/timing still runs without projectile/status visuals.
+6. Change caster level and target-count controls and confirm the sandbox resets cleanly.
+7. Confirm Magic Missile uses the production projectile and hit sounds.
+8. Confirm Fireball uses the production projectile/explosion visuals and the dummy targets display production rising damage text.
+9. Confirm Sleep applies production magical/status VFX and affected targets visibly remain asleep during the observation portion.
+10. Confirm Wall of Fog remains continuously animated without mouse movement and participates in normal battlefield depth/LOS presentation.
+11. Confirm Lightning Bolt uses the production reflected-ray renderer and electrical sound.
+12. Stop a running loop and confirm no stale projectiles, floating text, combat beats, or audio-triggered follow-up events leak into the next run.
+13. Return to the launcher and enter Combat System Test; confirm the battlefield canvas is restored to the combat screen and ordinary combat still initializes normally.
+14. Re-enter the Previewer multiple times to check for duplicated loops, stale timers, or progressively delayed effects.
 
+### Candidate lineage retained from R237
 
-### Party wipe loot suppression
+The candidate starts from the R237 stable milestone, including:
 
-- A total party defeat now produces no recoverable loot.
-- Enemy slain/fled counts still appear in the post-combat summary.
-- The loot panel should read: `No loot recovered — the party was defeated.`
-- Victory loot behavior is unchanged.
-
-QA checks:
-- Kill all player-party members while at least one enemy is carrying equipment and confirm no loot is listed.
-- Confirm XP remains 0 on defeat.
-- Win a battle afterward and confirm normal enemy equipment still appears as loot.
+- 33% hidden LOS overlay and restored obscuring-volume LOS presentation.
+- No loot on total party defeat.
+- Ordered result beats: direct damage → rider damage → buffs → debuffs → conditions.
+- White rising **Casting Interrupted** feedback and dedicated synthesized fumble SFX.
+- Level 1–3 AoE AIM-footprint preview audit.
