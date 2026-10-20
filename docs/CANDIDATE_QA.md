@@ -2,7 +2,65 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 11
+## Current candidate: Rev 12
+
+
+## Candidate Rev 12 — Electrical SFX Laboratory
+
+Candidate Rev 12 adds a development-only procedural electrical-audio test bench
+inside **Spell Previewer [DEV]**. It does not change production spell audio.
+
+### Starting voices
+
+- **Zap** — short, dry electrical contact/discharge.
+- **Lightning Bolt** — sharp snap, randomized micro-arcs, sizzle, pitch sweep,
+  and a restrained low-frequency body.
+- **Heavy Lightning** — larger discharge with more crackle, longer tail, and a
+  stronger low-frequency body/rumble layer.
+- **Custom** — appears automatically after a parameter is adjusted.
+
+### Live controls
+
+- Master output
+- Snap
+- Crackle
+- Sizzle
+- Arc tone
+- Low body
+- Number of randomized micro-arcs
+- Arc start frequency
+- Arc end frequency
+- Tail duration
+- Optional repeat audition at 0.5 / 1.0 / 2.0 second intervals
+
+The lab reuses the application's shared Web Audio context, generated white-noise
+buffer, global SFX enable/disable state, and SFX gain path. A local compressor
+limits the laboratory output so stacked transients do not hard-clip.
+
+Each trigger intentionally randomizes micro-arc timing, resonant band-pass
+frequency, high-pass cutoff, duration, gain, and playback rate. This prevents
+repeated electrical discharges from sounding like an identical sample.
+
+The lab exposes `window.AdventurePartyElectricalSfxLab` for future production
+integration, but Candidate Rev 12 does **not** route Lightning Bolt, Shocking
+Grasp, or any other spell through these voices yet.
+
+### Rev 12 QA focus
+
+1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 12** appears.
+2. Find **Electrical SFX Laboratory [DEV]** in the right-side controls.
+3. Play **Zap**, **Lightning Bolt**, and **Heavy Lightning** and confirm each is
+   audibly distinct.
+4. Move each slider and confirm the value readout updates immediately.
+5. Confirm changing a slider switches the Voice selector to **Custom**.
+6. Confirm repeated plays of the same preset have subtle crackle variation.
+7. Enable Repeat at all three intervals and confirm playback remains stable.
+8. Press Esc / leave the Spell Previewer while Repeat is active and confirm the
+   repeat cycle stops.
+9. Turn global SFX off and confirm the lab respects the global audio setting.
+10. Confirm ordinary spell previews and production combat spell audio are
+    unchanged.
+
 
 ## Candidate Rev 11 — DQK Red Dragon sprite replacement
 
