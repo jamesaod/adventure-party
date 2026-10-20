@@ -60,6 +60,7 @@ const xpLootScreen=document.getElementById("xpLootScreen");
 const pixelScreen=document.getElementById("pixelScreen");
 const spellbookScreen=document.getElementById("spellbookScreen");
 const classbookScreen=document.getElementById("classbookScreen");
+const spellPreviewScreen=document.getElementById("spellPreviewScreen");
 const launcherButtons=[...document.querySelectorAll(".launcher-menu button")];
 
 function renderBuildMetadata(){
@@ -155,6 +156,7 @@ function showLauncher(){
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   launcherScreen.classList.add("active");
 
   updateAudioIndicators();
@@ -199,6 +201,7 @@ function showCombatConditions(){
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
   combatConditionsScreen.classList.add("active");
   updateCombatConditionSelection();
@@ -217,6 +220,7 @@ function showCombat(condition=selectedCombatCondition){
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   combatScreen.classList.add("active");
 
   updateAudioIndicators();
@@ -256,6 +260,7 @@ function showSpellBook(){
   combatScreen.classList.remove("active");
   pixelScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   spellbookScreen.classList.add("active");
 
   renderSpellBook();
@@ -272,6 +277,7 @@ function showClassBook(){
   combatScreen.classList.remove("active");
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   classbookScreen.classList.add("active");
 
   renderClassBook();
@@ -288,6 +294,7 @@ async function showPixelEditor(){
   combatScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   pixelScreen.classList.add("active");
 
   updateAudioIndicators();
@@ -318,6 +325,15 @@ async function activateLauncherSelection(){
 
   if(target==="pixel"){
     await showPixelEditor();
+    return;
+  }
+
+  if(target==="spell-preview"){
+    if(typeof window.showSpellPreviewer==="function"){
+      await window.showSpellPreviewer();
+    }else{
+      alert("Spell Previewer is still loading.");
+    }
     return;
   }
 
