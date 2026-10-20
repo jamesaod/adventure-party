@@ -403,8 +403,7 @@
     ctx.restore();
   }
 
-  drawFireballExplosionFx=function(){
-    const fx=fireballExplosionFx;
+  function renderStableFireballExplosion(fx){
     if(!fx) return;
 
     try{
@@ -520,11 +519,296 @@
       );
       baseDrawFireballExplosionFx();
     }
+  }
+
+
+  function renderStableFireballProjectile(fx){
+    if(
+      !fx ||
+      fx.kind!=="fireball"
+    ){
+      return;
+    }
+
+    const start=fx.start;
+    const end=fx.end;
+    const t=clamp01(fx.t);
+
+    const x=
+      start.x+
+      (end.x-start.x)*t;
+
+    const y=
+      start.y+
+      (end.y-start.y)*t;
+
+    const dx=end.x-start.x;
+    const dy=end.y-start.y;
+    const length=Math.max(1,Math.hypot(dx,dy));
+    const ux=dx/length;
+    const uy=dy/length;
+    const nx=-uy;
+    const ny=ux;
+
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+    ctx.lineCap="round";
+
+    /*
+      Lab-style turbulent flame tail: several overlapping curved hot channels
+      instead of the previous chain of opaque circular puffs.
+    */
+    for(let strand=0;strand<4;strand++){
+      const strandOffset=(strand-1.5)*2.6;
+
+      ctx.beginPath();
+
+      for(let step=0;step<=9;step++){
+        const q=step/9;
+        const back=
+          8+
+          q*34;
+
+        const wave=
+          Math.sin(
+            performance.now()*0.018+
+            strand*1.7+
+            step*0.92
+          )*
+          (
+            1.4+
+            q*3.2
+          );
+
+        const px=
+          x-
+          ux*back+
+          nx*(
+            strandOffset+
+            wave
+          );
+
+        const py=
+          y-
+          uy*back+
+          ny*(
+            strandOffset+
+            wave
+          );
+
+        if(step===0){
+          ctx.moveTo(px,py);
+        }else{
+          ctx.lineTo(px,py);
+        }
+      }
+
+      const alpha=
+        0.18+
+        strand*0.045;
+
+      ctx.strokeStyle=
+        strand<2
+          ? "rgba(255,91,12,"+alpha+")"
+          : "rgba(255,184,44,"+alpha+")";
+
+      ctx.lineWidth=
+        7.5-
+        strand*1.15;
+
+      ctx.stroke();
+    }
+
+    /*
+      White-hot head with a temperature ramp. This deliberately matches the
+      laboratory projectile rather than the legacy lobe glyph.
+    */
+    const core=
+      ctx.createRadialGradient(
+        x,y,0,
+        x,y,19
+      );
+
+    core.addColorStop(
+      0,
+      "rgba(255,255,240,1)"
+    );
+
+    core.addColorStop(
+      0.17,
+      "rgba(255,239,128,0.98)"
+    );
+
+    core.addColorStop(
+      0.46,
+      "rgba(255,135,23,0.90)"
+    );
+
+    core.addColorStop(
+      0.76,
+      "rgba(220,56,7,0.58)"
+    );
+
+    core.addColorStop(
+      1,
+      "rgba(150,20,4,0)"
+    );
+
+    ctx.fillStyle=core;
+    ctx.beginPath();
+    ctx.arc(
+      x,y,19,
+      0,Math.PI*2
+    );
+    ctx.fill();
+
+    drawFireLight(
+      x,
+      y,
+      64,
+      0.62*PROFILE.glow
+    );
+
+    /*
+      Detached sparks peel away from the tail.
+    */
+    for(let i=0;i<18;i++){
+      const q=i/18;
+      const phase=
+        performance.now()*0.008+
+        i*2.13;
+
+      const back=
+        10+
+        q*38;
+
+      const side=
+        Math.sin(phase)*
+        (
+          3+
+          q*8
+        );
+
+      const px=
+        x-
+        ux*back+
+        nx*side;
+
+      const py=
+        y-
+        uy*back+
+        ny*side-
+        q*q*8;
+
+      const heat=
+        1-q*0.72;
+
+      const rgb=
+        heatColor(
+          0.35+
+          heat*0.62
+        );
+
+      const alpha=
+        0.18+
+        heat*0.48;
+
+      ctx.fillStyle=
+        "rgba("+
+        rgb[0]+","+
+        rgb[1]+","+
+        rgb[2]+","+
+        alpha+
+        ")";
+
+      const size=
+        i%5===0
+          ? 2
+          : 1;
+
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        size
+      );
+    }
+
+    ctx.restore();
+  }
+
+
+  /*
+    Rev 20 production hook:
+    suppress the canonical legacy Fireball render layers while base draw() runs,
+    then render the approved projectile/explosion explicitly as a final VFX pass.
+    This guarantees the production path cannot silently fall back to the old
+    lobe renderer because of earlier wrapper/capture order.
+  */
+  const baseDraw=draw;
+
+  draw=function(){
+    const savedExplosion=
+      fireballExplosionFx;
+
+    const savedProjectile=
+      projectileFx &&
+      projectileFx.kind==="fireball"
+        ? projectileFx
+        : null;
+
+    if(savedExplosion){
+      fireballExplosionFx=null;
+    }
+
+    if(savedProjectile){
+      projectileFx=null;
+    }
+
+    try{
+      baseDraw();
+    }finally{
+      if(savedExplosion){
+        fireballExplosionFx=
+          savedExplosion;
+      }
+
+      if(savedProjectile){
+        projectileFx=
+          savedProjectile;
+      }
+    }
+
+    if(savedExplosion){
+      renderStableFireballExplosion(
+        savedExplosion
+      );
+    }
+
+    if(savedProjectile){
+      renderStableFireballProjectile(
+        savedProjectile
+      );
+    }
   };
 
+
+  /*
+    Keep the named renderer hook aligned for tools/preview paths that call it
+    directly instead of running through the full battlefield draw.
+  */
+  drawFireballExplosionFx=function(){
+    if(fireballExplosionFx){
+      renderStableFireballExplosion(
+        fireballExplosionFx
+      );
+    }
+  };
+
+
   window.AdventurePartyProductionFireballVfx={
-    release:"Candidate Rev 19",
-    renderer:"Stable Fluids",
+    release:"Candidate Rev 20",
+    renderer:"Stable Fluids (forced production hook)",
     profile:{...PROFILE}
   };
 })();
