@@ -21192,7 +21192,13 @@ async function castMelfsAcidArrowSpell(action,target){
   const resolution=resolveMissileAttackD20(rawRoll,targetNumber,modifier);
 
   playNaturalAttackRollSound(rawRoll);
-  await animateMagicMissile(caster,target,0,1);
+  await animateElementalArrowProjectile(
+    caster,
+    target,
+    "acid-arrow",
+    0,
+    1
+  );
 
   if(!resolution.hit){
     playMissSound();
