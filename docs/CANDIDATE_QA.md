@@ -34,9 +34,28 @@ Stable baseline: **R237**
 8. Confirm breath VFX/SFX, attack timing, targeting, LOS, movement, and AI are
    otherwise unchanged.
 
-### Dark Queen of Krynn digitized SFX pass
+### Candidate Rev 11 — DQK Red Dragon sprite replacement
 
-Candidate Rev 10 integrates three user-selected effects extracted from the
+- Replaces the Juvenile Red Dragon ready and attack PNGs with strict **4x nearest-neighbor** upscales of the original 48×48 Dark Queen of Krynn combat sprites.
+- Repository assets are now 192×192 for both poses.
+- No AI redraw or synthesized sprite detail is used.
+- The existing 7-hex Red Dragon footprint is unchanged.
+- Bottom/ground alignment remains tied to the established dragon anchor.
+- The square DQK art is rendered square (104×104 ready, 107×107 action) rather than stretched into the previous non-square source proportions.
+- Native facing is **right**, matching the DQK source artwork; ordinary facing mirroring still applies.
+
+#### Rev 11 QA focus
+
+1. Start the Juvenile Red Dragon encounter and verify the new DQK ready sprite appears.
+2. Confirm the dragon remains centered/aligned over the same seven occupied hexes.
+3. Confirm there is no aspect-ratio stretching.
+4. Trigger the dragon attack/breath action and verify the DQK action pose appears.
+5. Confirm left/right facing mirrors correctly.
+6. Confirm HP bar, footprint, breath VFX/SFX, targeting, collision, LOS, and multi-hex rules are unchanged.
+
+### Retained Rev 10 — Dark Queen of Krynn digitized SFX pass
+
+Candidate Rev 10 integrated three user-selected effects extracted from the
 user-provided **The Dark Queen of Krynn** sound bank.
 
 #### DQK SFX 09 — Fireball
