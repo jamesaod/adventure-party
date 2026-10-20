@@ -2,7 +2,124 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 16
+## Current candidate: Rev 17
+
+
+## Candidate Rev 17 — Fireball VFX Laboratory
+
+Candidate Rev 17 adds a development-only **Fireball VFX Laboratory** inside
+**Spell Previewer [DEV]**. Production Fireball mechanics and production
+Fireball VFX are unchanged.
+
+### Lab sequence
+
+Each test runs a complete miniature Fireball presentation:
+
+1. a white-hot Fireball projectile crosses the laboratory canvas;
+2. the selected explosion renderer takes over at impact;
+3. embers / sparks, smoke, heat distortion, and illumination are layered over
+   the selected core technique.
+
+### Renderer A — Stable Fluids (default)
+
+This is the preferred research-driven experiment.
+
+The lab runs a deliberately small bounded CPU 2D fluid field with:
+
+- horizontal / vertical velocity fields
+- temperature and density fields
+- semi-Lagrangian advection
+- iterative pressure projection for approximately incompressible flow
+- thermal buoyancy
+- vorticity confinement / curl reinforcement
+- cooling and density dissipation
+- a hot radial initial expansion
+
+The simulated temperature field is mapped through a fire heat ramp:
+
+- dark red
+- red-orange
+- orange
+- yellow
+- pale yellow / near-white at the hottest regions
+
+Cooling density can transition toward smoke.
+
+Available field sizes are **48×32**, **56×36** (default), and **64×40**.
+They are intentionally small so this laboratory cannot monopolize the browser
+main thread.
+
+### Renderer B — Procedural / Noise
+
+This renderer keeps a particle/metaball-style construction, but the flame body
+uses coherent multi-frequency displacement, evolving heat, upward buoyancy,
+temperature-based color, sparks / embers, smoke, local illumination, and
+optional heat shimmer.
+
+Its purpose is to establish how far the existing Adventure Party Canvas
+architecture can be pushed without a fluid solve.
+
+### Renderer C — Volumetric Explosion
+
+This renderer treats the blast as one expanding irregular hot volume rather
+than many independent puffs.
+
+It includes:
+
+- a very short white ignition flash
+- noise-deformed expanding volume
+- internal hot-to-cool color ramp
+- four staggered sub-explosions
+- a short pressure / shockwave ring
+- sparks and embers
+- smoke
+- strong local illumination
+- optional heat distortion
+
+This is conceptually based on the common real-time technique of deforming one
+explosion volume and layering secondary effects around it.
+
+### Shared controls
+
+- Renderer
+- 2D grid size
+- Turbulence
+- Buoyancy
+- Cooling
+- Glow / illumination
+- Ember density
+- Smoke amount
+- deterministic seed
+- local heat distortion toggle
+- Play Sequence / Reset / New Seed
+
+Controls are shared intentionally so the three renderers can be compared under
+roughly equivalent art-direction settings.
+
+### Rev 17 QA focus
+
+1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 17** appears.
+2. Confirm **Fireball VFX Laboratory [DEV]** appears below the lightning lab.
+3. Leave the renderer on **Stable Fluids** and play several seeds.
+4. Confirm the fluid blast expands rapidly, then curls/rises instead of merely
+   scaling uniformly.
+5. Increase Turbulence and confirm the fluid edge becomes more rolled/chaotic.
+6. Increase Buoyancy and confirm the hot volume rises more aggressively after
+   the initial radial blast.
+7. Lower Cooling and confirm hot colors persist longer.
+8. Compare **Procedural / Noise** and confirm it remains visually coherent but
+   distinctly more art-directed / particle-like than Stable Fluids.
+9. Compare **Volumetric Explosion** and confirm it reads as one deforming blast
+   volume with ignition flash, sub-explosions, and a brief shockwave.
+10. Toggle **Local heat distortion** for each renderer and confirm the effect
+    remains confined to the immediate Fireball region.
+11. Test all three grid sizes in Stable Fluids and confirm the browser remains
+    responsive.
+12. Confirm Production Fireball in ordinary Spell Previewer playback / combat
+    is unchanged.
+13. Confirm Lightning Bolt, Electrical SFX Lab, and DBM Lightning VFX Lab are
+    unchanged.
+
 
 
 ## Candidate Rev 16 — Elemental damage presentation + casting-audio cleanup
