@@ -2344,3 +2344,66 @@ button, input, select, textarea {
     min-height:560px;
   }
 }
+
+
+/* Candidate Rev 12 — Electrical SFX Laboratory */
+.electrical-sfx-lab{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(230,210,150,.35);
+}
+.electrical-sfx-lab-note{
+  margin:4px 0 8px;
+  font-size:.82rem;
+  line-height:1.25;
+}
+.electrical-sfx-lab-actions{
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  align-items:center;
+  gap:6px;
+  margin:7px 0 9px;
+}
+.electrical-repeat-check{
+  margin:0;
+  white-space:nowrap;
+}
+#electricalLabInterval{
+  min-width:64px;
+}
+.electrical-sfx-slider-grid{
+  display:grid;
+  gap:5px;
+}
+.electrical-sfx-slider-grid label{
+  display:grid;
+  grid-template-columns:72px minmax(72px,1fr) 62px;
+  align-items:center;
+  gap:6px;
+  font-size:.79rem;
+}
+.electrical-sfx-slider-grid input[type="range"]{
+  width:100%;
+  min-width:0;
+}
+.electrical-sfx-slider-grid output{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  color:#f1dea0;
+  white-space:nowrap;
+}
+.electrical-sfx-lab-status{
+  margin-top:8px;
+  min-height:2.4em;
+  padding:6px 7px;
+  border:1px solid rgba(230,210,150,.25);
+  background:rgba(0,0,0,.24);
+  font-size:.78rem;
+  line-height:1.25;
+}
+.electrical-sfx-lab-status[data-state="playing"]{
+  color:#fff3b0;
+}
+.electrical-sfx-lab-status[data-state="off"]{
+  color:#e7a4a4;
+}
