@@ -295,14 +295,14 @@ function r230DisruptCasting(unit,reason="interruption"){
   spellCastInProgress=false;
 
   setCombatMessage(
-    `${unit.name}'s spell is disrupted!`,
+    `${unit.name}'s spell has been interrupted.`,
     COMBAT_MESSAGE_MIN_HOLD_MS,
     COMBAT_MESSAGE_DISPLAY_MS,
     unit.id==="player" ? "player-damage" : "normal"
   );
 
   log(
-    `${unit.name}'s ${record.spellName} is disrupted by ${reason}; the spell is lost.`,
+    `${unit.name}'s ${record.spellName} has been interrupted by ${reason}; the spell is lost.`,
     "bad"
   );
 

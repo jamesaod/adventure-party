@@ -3,6 +3,18 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R231 — Target spells at casting completion
+
+- Corrected spell timing so selecting a spell declares the spell but does not choose its tactical target at the beginning of casting.
+- Player-controlled casters now wait through the full R230 casting-time interval; when the spell reaches its completion initiative slot, AIM opens and the player chooses the target/ground hex/direction then.
+- Self-only spells still resolve automatically at completion because they require no tactical target selection.
+- Range, LOS, area geometry, target legality, and current battlefield state are evaluated when the player aims at completion rather than being frozen from the beginning of casting.
+- Automated Mage/Quick casters discard their start-of-cast target snapshot and reacquire Fireball, Sleep, Magic Missile, or fallback hostile targets when the casting time completes.
+- Canceling completion-time AIM forfeits the already-committed spell instead of restoring it.
+- Changed casting interruption presentation to the requested message: `<unit name>'s spell has been interrupted.`
+- Fixed the remaining Melf's Minute Meteors next-round CAST bug: the stored-meteor reminder no longer creates a one-second combat-action hold, so CAST becomes usable immediately at the start of the following round without requiring a physical attack to refresh the UI.
+- Stored Minute Meteor release remains an already-cast spell action and therefore does not incur a new casting-time delay.
+
 ## R230 — AD&D 2e spell casting time and interruption
 
 - Implemented AD&D 2nd Edition casting-time initiative for combat spells.
