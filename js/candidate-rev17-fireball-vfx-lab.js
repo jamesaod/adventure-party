@@ -446,15 +446,20 @@
         0.34
       );
 
+      /*
+        Treat the Cooling control as a slower thermal-decay coefficient rather
+        than a per-frame multiplier. At 60 fps the default now retains enough
+        heat to form a visible rolling plume through the full explosion beat.
+      */
       const cool=
         Math.pow(
           p.cooling,
-          stepDt*60
+          stepDt*10
         );
       const diss=
         Math.pow(
           0.972,
-          stepDt*60
+          stepDt*20
         );
 
       for(let i=0;i<this.n;i++){
@@ -636,9 +641,11 @@
 
     if(playing){
       setStatus("Playing Fireball VFX sequence…","playing");
+      updateStats(0);
       raf=requestAnimationFrame(frame);
     }else{
       drawFrame(0);
+      updateStats(0);
       setStatus("Fireball VFX lab ready.","ready");
     }
   }
@@ -673,7 +680,12 @@
   function canvasSize(canvas){
     const w=Math.max(280,canvas.clientWidth||360);
     const h=Math.max(190,canvas.clientHeight||220);
-    const dpr=Math.min(window.devicePixelRatio||1,2);
+    /*
+      Keep the laboratory buffer at CSS resolution. The fire solver is already
+      the expensive part; Retina oversampling adds little value to this
+      comparison bench and complicates the local heat-distortion sampling.
+    */
+    const dpr=1;
     const pw=Math.round(w*dpr);
     const ph=Math.round(h*dpr);
     if(canvas.width!==pw || canvas.height!==ph){
