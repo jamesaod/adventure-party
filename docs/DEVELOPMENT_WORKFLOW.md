@@ -60,7 +60,7 @@ The Spell Effects Previewer is a **production harness**, not a second game engin
 - The Previewer may control scene setup, target placement, deterministic rolls, VFX/SFX visibility, and observation timing.
 - The Previewer must not duplicate spell mechanics, projectile/explosion sequencing, damage application, status rules, or spell-specific audio selection.
 - A bespoke Previewer profile is allowed only when it is instrumentation around shared production functions, not an alternate implementation.
-- Fireball is the first CI-enforced example: any future standalone `spellPreviewRunFireball` path fails repository validation.
+- Fireball and Magic Missile are CI-enforced examples: standalone Previewer implementations for either spell fail repository validation.
 
 This rule prevents a spell from looking or behaving correctly in the Previewer while running different code in combat.
 
