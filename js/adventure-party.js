@@ -25312,40 +25312,9 @@ function drawFriendlyArcher(npc){
   );
 
   /*
-    Temporary visual identifier until the Ranger receives her own sprite:
-    a small bow glyph and friendly-Ranger marker.
+    Candidate Rev 7: no temporary class/role glyphs are painted over unit art.
+    Dedicated sprites should communicate identity when those assets exist.
   */
-  const side=npc.facing==="right" ? 1 : -1;
-
-  ctx.save();
-
-  ctx.strokeStyle="#d4b46a";
-  ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.arc(
-    c.x+side*(drawW/2+6),
-    c.y-17,
-    7,
-    -Math.PI/2,
-    Math.PI/2,
-    side<0
-  );
-  ctx.stroke();
-
-  ctx.strokeStyle="#e9dfbd";
-  ctx.lineWidth=1;
-  ctx.beginPath();
-  ctx.moveTo(
-    c.x+side*(drawW/2+4),
-    c.y-24
-  );
-  ctx.lineTo(
-    c.x+side*(drawW/2+4),
-    c.y-10
-  );
-  ctx.stroke();
-
-  ctx.restore();
 }
 
 
@@ -25384,17 +25353,9 @@ function drawFriendlyMage(mage){
     mage
   );
 
-  /* Temporary Mage identifier until dedicated wizard art is supplied. */
-  ctx.save();
-  ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  ctx.lineWidth=3;
-  ctx.strokeStyle="#08050d";
-  ctx.fillStyle="#d8b6ff";
-  ctx.strokeText("M",c.x,c.y-35);
-  ctx.fillText("M",c.x,c.y-35);
-  ctx.restore();
+  /*
+    Candidate Rev 7: remove the temporary overhead "M" class marker.
+  */
 }
 
 function drawKobold(k){

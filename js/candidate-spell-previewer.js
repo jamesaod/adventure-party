@@ -1,5 +1,5 @@
 /*
-  Candidate Rev 6 — Spell Effects Previewer
+  Candidate Rev 7 — Spell Effects Previewer
   ==========================================
   Dedicated development harness for production spell presentation.
 
@@ -60,7 +60,6 @@ let spellPreviewTimelineEvents=[];
 let spellPreviewSelectedId="magic-missile";
 let spellPreviewTreeCoverageBackup=null;
 let spellPreviewCaster=null;
-let spellPreviewFriendlyDummy=null;
 let spellPreviewHostiles=[];
 let spellPreviewRunPromise=null;
 let spellPreviewSelectionRequest=0;
@@ -117,7 +116,7 @@ function spellPreviewGenericProfileLabel(spell){
     case "self":
       return "Production self-effect / persistent status";
     case "touch-creature":
-      return "Production touch spell / friendly target";
+      return "Production touch spell / caster target";
     case "adjacent-hostile":
       return "Production touch attack / hostile target";
     case "hostile-creature":
@@ -344,23 +343,6 @@ function spellPreviewMakeCaster(level){
 }
 
 
-function spellPreviewMakeFriendlyDummy(){
-  return {
-    ...spellPreviewUnitBase({
-      id:"spell-preview-friendly",
-      name:"Friendly Dummy",
-      type:"ranger",
-      faction:"player",
-      controller:"npc",
-      x:2,
-      y:1
-    }),
-    hp:120,
-    maxHp:120
-  };
-}
-
-
 function spellPreviewMakeHostile(
   index,
   position
@@ -492,9 +474,6 @@ function spellPreviewResetArena(){
       level
     );
 
-  spellPreviewFriendlyDummy=
-    spellPreviewMakeFriendlyDummy();
-
   const positions=[
     {x:0,y:0},
     {x:2,y:0},
@@ -520,8 +499,7 @@ function spellPreviewResetArena(){
     condition:"grass",
     player:observer,
     allies:[
-      spellPreviewCaster,
-      spellPreviewFriendlyDummy
+      spellPreviewCaster
     ],
     enemies:
       spellPreviewHostiles,
@@ -591,11 +569,6 @@ function spellPreviewDrawDevelopmentLabels(){
       unit:spellPreviewCaster,
       text:"CASTER",
       dy:49
-    },
-    {
-      unit:spellPreviewFriendlyDummy,
-      text:"FRIENDLY",
-      dy:45
     },
     ...spellPreviewHostiles.map(
       unit=>({
@@ -728,7 +701,7 @@ function spellPreviewRenderLibrary(){
       " preview-ready / "+
       spells.length+
       " implemented combat spells. "+
-      "Candidate Rev 6 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
+      "Candidate Rev 7 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
   }
 }
 
@@ -1630,8 +1603,7 @@ const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
     groundHex:{x:0,y:0}
   },
   "haste":{
-    groundHex:{x:-3,y:0},
-    friendlyAtGround:true
+    groundHex:{x:-4,y:0}
   },
   "hold-undead":{
     undeadTargets:true
@@ -2304,12 +2276,6 @@ function spellPreviewPrepareProductionScene(
     0
   );
 
-  spellPreviewPlaceUnit(
-    spellPreviewFriendlyDummy,
-    2,
-    1
-  );
-
   spellPreviewHostiles.forEach(
     (unit,index)=>{
       const position=
@@ -2379,11 +2345,6 @@ function spellPreviewPrepareProductionScene(
       0
     );
 
-    spellPreviewPlaceUnit(
-      spellPreviewFriendlyDummy,
-      -3,
-      1
-    );
   }
 
   if(config.hostileHex && primary){
@@ -2402,27 +2363,11 @@ function spellPreviewPrepareProductionScene(
     );
   }
 
-  if(config.friendlyAtGround){
-    spellPreviewPlaceUnit(
-      spellPreviewFriendlyDummy,
-      config.groundHex?.x ?? -3,
-      config.groundHex?.y ?? 0
-    );
-  }
-
   /*
-    Fog Cloud / Stinking Cloud LOS QA needs every friendly observer on the
-    caster side of the obscurer. Otherwise the party-visibility union correctly
-    lets a friendly standing beyond the cloud reveal the far side, which makes
-    the cloud look as though it is not blocking LOS in the development tool.
+    Fog Cloud / Stinking Cloud LOS QA now has only the caster as an on-field
+    friendly observer. The off-screen Preview Observer stays behind the caster,
+    so no friendly unit can reveal the far side of the obscuring volume.
   */
-  if(config.obscuringDemo){
-    spellPreviewPlaceUnit(
-      spellPreviewFriendlyDummy,
-      -5,
-      1
-    );
-  }
 
   if(config.drainDemo){
     spellPreviewCaster.hp=60;
@@ -2462,17 +2407,16 @@ function spellPreviewPrepareProductionScene(
 
     case "touch-creature":
     case "creature":
-      spellPreviewPlaceUnit(
-        spellPreviewFriendlyDummy,
-        -3,
-        0
-      );
+      /*
+        Rev 7 removes the extra friendly Previewer dummy. Production spells
+        that can legally affect a creature now demonstrate on the caster.
+      */
       targetHex={
-        x:spellPreviewFriendlyDummy.x,
-        y:spellPreviewFriendlyDummy.y
+        x:spellPreviewCaster.x,
+        y:spellPreviewCaster.y
       };
       targetUnit=
-        spellPreviewFriendlyDummy;
+        spellPreviewCaster;
       break;
 
     case "adjacent-hostile":
