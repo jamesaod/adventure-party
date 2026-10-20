@@ -123,6 +123,9 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
 const placeholderSpellSfxPath =
   "js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js";
 
+const replacementSpellSfxPath =
+  "js/candidate-rev39-replace-default-spell-sfx.js";
+
 requireFile(placeholderSpellSfxPath);
 
 if (!index.includes(placeholderSpellSfxPath)) {
@@ -145,6 +148,44 @@ if (fs.existsSync(placeholderSpellSfxPath)) {
   ]) {
     if (!placeholderSpellSfx.includes(requiredToken)) {
       fail(`Candidate Rev 38 placeholder spell module is missing ${requiredToken}.`);
+    }
+  }
+}
+
+requireFile(replacementSpellSfxPath);
+
+if (!index.includes(replacementSpellSfxPath)) {
+  fail("index.html does not load the Candidate Rev 39 spell SFX replacement module.");
+}
+
+if (fs.existsSync(replacementSpellSfxPath)) {
+  const replacementSpellSfx =
+    fs.readFileSync(replacementSpellSfxPath, "utf8");
+
+  for (const requiredToken of [
+    "R39_REPLACEMENT_SPELL_IDS",
+    "r39SpellReplacesDefaultSfx",
+    "r39EffectReplacesDefaultAffectSfx",
+    "r39BasePlayPor07CastingSound",
+    "r39BasePlayDqkSpellAffectSound",
+    "candidate-rev39-replace-default-spell-sfx"
+  ]) {
+    if (!replacementSpellSfx.includes(requiredToken)) {
+      fail(`Candidate Rev 39 replacement module is missing ${requiredToken}.`);
+    }
+  }
+
+  for (const spellId of [
+    "tashas-hideous-laughter",
+    "taunt",
+    "scare",
+    "fog-cloud",
+    "wall-of-fog",
+    "grease",
+    "stinking-cloud"
+  ]) {
+    if (!replacementSpellSfx.includes(`"${spellId}"`)) {
+      fail(`Candidate Rev 39 replacement list is missing ${spellId}.`);
     }
   }
 }
