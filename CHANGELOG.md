@@ -3,6 +3,22 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R232 — Reflected Lightning Bolt geometry
+
+- Replaced Lightning Bolt's old hex-direction reversal with a true reflected ray traced through a top-down tactical metric and projected back onto the isometric battlefield.
+- Lightning Bolt now ricochets from solid architectural wall/projectile subsegments, legacy solid wall hexes, and outdoor tree trunks.
+- Doorway openings remain passable; window/glass spans remain solid for Lightning Bolt, matching the engine's existing projectile-blocking rules.
+- Tree collision uses a small trunk cylinder centered on the tree base rather than the entire canopy or whole tactical hex.
+- Reflection uses the geometric surface normal, so glancing wall/tree hits change direction naturally while square hits can return the bolt toward the caster.
+- The original 8-hex / 80-foot tactical range is conserved across all reflected segments; reflections never reset range.
+- Added an eight-reflection safety cap to prevent pathological wall-to-wall loops.
+- The caster is excluded from the bolt's initial origin segment but can be struck if a reflected segment crosses the caster later.
+- Multi-hex creatures are counted once per ray segment, preventing one straight pass from damaging a large creature once per occupied hex.
+- A creature can be exposed again when a genuinely reflected segment crosses it again.
+- Lightning Bolt AIM preview now uses the exact same reflected trace as final resolution, including friendly-fire detection.
+- Lightning Bolt VFX now renders the entire ricochet as one continuous electrical discharge with impact flashes at wall/tree collision points.
+- Added a future-facing custom reflector hook through `game.r232LightningReflectors` plus `AdventurePartyLightningReflection` diagnostics.
+
 ## R231 — Target spells at casting completion
 
 - Corrected spell timing so selecting a spell declares the spell but does not choose its tactical target at the beginning of casting.
