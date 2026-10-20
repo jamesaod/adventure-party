@@ -2,87 +2,87 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 6
+## Current candidate: Rev 7
 
-### Gaseous spell LOS audit
+### Gaseous spell formation — layered complete puffs
 
-Candidate Rev 6 makes the LOS contract explicit for every production area effect with `type:"fog"`.
+Candidate Rev 7 replaces Rev 6's vertical clipping/wipe formation effect.
 
-- Wall of Fog, Fog Cloud, and Stinking Cloud all use the shared obscuring-volume LOS system.
-- Newly created gaseous effects explicitly receive `obscuresLOS:true` unless a future effect deliberately opts out.
-- Mechanical LOS blocking begins immediately when the cloud is created.
-- The cloud itself remains visible as foreground scenery even while terrain/units beyond it are hidden.
-- Normal open terrain remains unaffected when no obscuring volume is active.
+Wall of Fog, Fog Cloud, Stinking Cloud, and every other production area effect with `type:"fog"` now assemble like this:
 
-### Spell Previewer LOS scene correction
+- the lowest cloud layer appears first;
+- every circle/oval/puff is drawn at its **complete final geometry** immediately when its layer starts;
+- no puff is vertically cropped, scaled into view, or partially revealed;
+- each newly introduced puff fades from **0 opacity** to its normal target opacity;
+- successive layers are introduced from the battlefield floor upward;
+- the bright upper cap is the final layer;
+- each forming puff carries its own fading black outline (Fog / Wall of Fog) or green outline (Stinking Cloud);
+- the finished union outline appears after the one-second formation completes;
+- after one second the established continuous production fog animation is used unchanged.
 
-The Previewer contains multiple friendly observers because its dummy arena includes a caster and a friendly-fire target.
+Mechanical LOS obstruction remains immediate from the moment the gaseous effect is created. The layered formation is visual only.
 
-Previously, Fog Cloud and Stinking Cloud left the friendly dummy on the far side of the cloud. The party-visibility union therefore correctly used that friendly observer's clear LOS and made the terrain beyond the cloud remain visible. Wall of Fog happened to span enough of the arena to hide the same region, which made the three spells appear inconsistent.
+### Spell Previewer cleanup
 
-Rev 6 keeps all friendly observers on the caster side specifically for Fog Cloud and Stinking Cloud QA. This lets the Previewer visibly demonstrate the production obscuring-volume behavior without changing party LOS rules.
+The extra on-field **Friendly Dummy** has been removed.
 
-### Dispel Magic Previewer correction
+The Previewer arena now contains:
 
-The old Dispel Magic setup created **Preview Fog** at the dispel center. Because fog correctly blocks LOS into its own occupied hex, the real Dispel Magic resolver rejected the cast at its normal LOS gate.
+- one caster;
+- the requested number of hostile dummy targets;
+- the existing off-screen Preview Observer used by the renderer/system harness.
 
-Rev 6 replaces that setup with:
+Production creature/touch buffs that previously targeted the Friendly Dummy now demonstrate on the caster when the spell legally permits that target. Haste centers its demonstration on the caster so the effect remains visible without another friendly unit.
 
-- a dispellable Armor effect on a dummy, and
-- a non-obscuring Preview Grease area effect.
+This also makes Fog Cloud and Stinking Cloud LOS QA easier to read because there is no on-field friendly observer on the far side of an obscuring volume.
 
-Both remain inside the Dispel Magic test volume, so the production spell can now pass its LOS gate and visibly remove unit and area magic.
+### Temporary class/role markers removed
 
-### Bottom-up gaseous formation VFX
+The engine no longer overlays temporary class-identification graphics on friendly character art:
 
-All `type:"fog"` spell volumes now visually form **from the tactical floor upward over 1.0 second**.
+- the overhead **"M"** marker above Mage sprites is removed;
+- the temporary bow glyph drawn beside Ranger/archer sprites is removed.
 
-The existing fog/cloud body is not replaced. Instead, the production renderer is vertically revealed:
+Unit identity should come from the eventual dedicated sprite art rather than floating class symbols.
 
-- the lowest portions of the cloud ovals appear first near the floor;
-- progressively more of the billowing puffs and side volume is revealed;
-- the bright upper cap becomes visible near the end of the one-second formation;
-- the black Wall/Fog Cloud outline or green Stinking Cloud outline is clipped to the same growing volume;
-- after one second, the existing continuously animated cloud renderer is unchanged.
+### Retained Rev 6 fixes
 
-This formation is presentation-only. LOS obstruction is immediate rather than gradually increasing with the visible cloud height.
-
-### Spell Effects Previewer — retained Rev 5 behavior
-
-- Selecting any spell stops the current preview, resets the arena, and automatically plays the new spell.
-- Every currently implemented Level 1–3 Wizard combat spell is marked **READY**.
-- Magic Missile, Fireball, Sleep, Wall of Fog, and Lightning Bolt retain bespoke preview profiles.
-- Other implemented spells route through their production cast resolver.
+- Wall of Fog, Fog Cloud, and Stinking Cloud all share the explicit `obscuresLOS:true` production contract unless a future gaseous effect deliberately opts out.
+- Fog Cloud and Stinking Cloud Previewer scenes demonstrate the same obscuring-volume LOS behavior as Wall of Fog.
+- Dispel Magic Previewer setup uses a dispellable Armor effect plus non-obscuring Preview Grease so the real production LOS gate permits the cast.
+- Every currently implemented Level 1–3 Wizard combat spell remains READY in the Previewer.
+- Selecting a spell resets the arena and automatically plays it.
 - Full Sequence, VFX Only, and SFX Only remain available.
-- Caster-level, target-count, save-outcome, and presentation-mode changes automatically reset/replay.
-- Production attack and save outcomes remain deterministic only inside the Previewer.
 
-### Rev 6 QA focus
+### Rev 7 QA focus
 
-1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 6** appears in the launcher and Previewer header.
-2. Select Wall of Fog and confirm the hidden-area LOS indication appears behind the wall.
-3. Select Fog Cloud and confirm the cloud now blocks/reveals LOS in the same manner; targets/terrain behind it should receive the hidden overlay.
-4. Select Stinking Cloud and confirm the same LOS behavior while retaining its green gaseous rendering and cough/gag presentation.
-5. For all three gaseous spells, watch the first second carefully:
-   - cloud volume begins at the floor;
-   - ovals/puffs fill upward;
-   - no fully formed upper cap appears on frame 1;
-   - full normal height is reached at approximately 1 second.
-6. Confirm the fog/cloud outline rises with the body rather than appearing at full height immediately.
-7. Confirm the cloud continues its existing billow/drift animation after formation completes.
-8. Confirm LOS blocking begins immediately even while the visible cloud is still forming.
-9. Select **Dispel Magic** and confirm it now casts rather than reporting blocked LOS.
-10. Confirm Dispel Magic visibly removes both the prepared unit Armor effect and the Preview Grease area effect.
-11. Rapidly switch Wall of Fog → Fog Cloud → Stinking Cloud and confirm old formation timers/effects do not bleed into the new selection.
-12. Test Fog Cloud and Stinking Cloud in **VFX Only** and **SFX Only** modes.
-13. Enter ordinary Combat System Test and cast Wall of Fog/Fog Cloud/Stinking Cloud if available; confirm the same one-second formation occurs outside the Previewer.
-14. Confirm ordinary outdoor combat with no obscuring volume still has no hidden-area overlay.
-15. Confirm the Wall Test architectural LOS system is unchanged.
-16. Confirm all prior Rev 5 Previewer spell-selection/autoplay behavior still works.
+1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 7** appears in the launcher and Previewer header.
+2. Confirm there is no Friendly Dummy in the arena or legend.
+3. Select Armor, Protection From Evil, Invisibility, Strength, Infravision, Protection From Normal Missiles, and similar friendly creature/touch spells; confirm they visibly demonstrate on the caster.
+4. Confirm the caster no longer displays an overhead "M".
+5. Enter any combat/setup path that renders the temporary Ranger/archer art and confirm no bow glyph is painted beside the sprite.
+6. Select Wall of Fog and closely watch the first second:
+   - lowest full ovals appear first;
+   - each oval is complete on its first visible frame;
+   - opacity fades upward from 0 to the normal target;
+   - higher puff layers appear later;
+   - no vertical crop/wipe edge is visible.
+7. Repeat for Fog Cloud.
+8. Repeat for Stinking Cloud and confirm green puff/outline treatment remains intact.
+9. Confirm the upper cap is the last layer to fade in.
+10. Confirm individual forming puffs have outlines that fade with them rather than a finished full-height outline appearing immediately.
+11. After one second, confirm the established continuous billow/drift animation looks unchanged.
+12. Confirm LOS blocking begins immediately while the visible cloud is still assembling.
+13. Confirm Fog Cloud and Stinking Cloud still produce the same hidden-area LOS presentation as Wall of Fog.
+14. Confirm Dispel Magic still casts successfully and removes its prepared Preview Armor / Preview Grease test magic.
+15. Rapidly switch among gaseous spells and confirm no stale puff layers or formation states bleed into the next spell.
+16. Test gaseous spells in Full Sequence, VFX Only, and SFX Only.
+17. Return to Combat System Test and confirm ordinary combat behavior, saves, initiative, targeting, and LOS remain unchanged.
+18. Confirm no class markers reappear after returning from the Previewer.
 
 ### Candidate lineage retained from R237
 
-- 33% hidden LOS overlay and restored obscuring-volume LOS presentation.
+- 33% hidden LOS overlay and obscuring-volume visibility presentation.
 - No loot on total party defeat.
 - Ordered result beats: direct damage → rider damage → buffs → debuffs → conditions.
 - White rising **Casting Interrupted** feedback and dedicated synthesized fumble SFX.
