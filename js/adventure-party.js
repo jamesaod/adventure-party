@@ -14299,6 +14299,13 @@ function checkPartyDefeat(){
     game.over=true;
     game.active=null;
 
+    /*
+      Candidate rule: a total party defeat does not produce recoverable loot.
+      Record the outcome explicitly so future non-wipe defeat/retreat outcomes
+      can make their own reward decisions instead of keying only off the title.
+    */
+    game.partyWipedOut=true;
+
     setTimeout(()=>{
       finishCombat(
         "Defeat",
@@ -23255,7 +23262,19 @@ function collectLootFromSlainEnemies(){
 }
 
 function showXpLootScreen(title,text,xpAwarded=0){
-  const loot=collectLootFromSlainEnemies();
+  const partyWiped=!!game?.partyWipedOut;
+
+  /*
+    Do not even roll up recoverable equipment on a total party defeat.
+    Enemy casualty/flee counts remain useful as a post-combat summary.
+  */
+  const loot=partyWiped
+    ? {
+        slain:(game?.enemies || []).filter(enemy=>!enemy.alive && !enemy.fled),
+        fled:(game?.enemies || []).filter(enemy=>enemy.fled),
+        items:[]
+      }
+    : collectLootFromSlainEnemies();
 
   currentScreen="xp-loot";
   combatScreen.classList.remove("active");
@@ -23272,7 +23291,12 @@ function showXpLootScreen(title,text,xpAwarded=0){
   const list=document.getElementById("xpLootItems");
   list.innerHTML="";
 
-  if(!loot.items.length){
+  if(partyWiped){
+    const empty=document.createElement("div");
+    empty.className="xp-loot-empty";
+    empty.textContent="No loot recovered — the party was defeated.";
+    list.appendChild(empty);
+  }else if(!loot.items.length){
     const empty=document.createElement("div");
     empty.className="xp-loot-empty";
     empty.textContent="No recoverable equipment.";
