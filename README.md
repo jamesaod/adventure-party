@@ -15,3 +15,15 @@ The project code intentionally remains dependency-free. R204 currently loads the
 ## Third-party assets
 
 See [ATTRIBUTIONS.md](ATTRIBUTIONS.md) for third-party artwork credits and license notices.
+
+
+## Development channels
+
+Adventure Party uses two long-lived development channels:
+
+- **main** — stable, QA-approved release.
+- **candidate** — integrated QA build where validated feature/fix branches land first.
+
+Normal feature work branches from `candidate` and returns to `candidate` through a validated pull request. Candidate is promoted to `main` only at an approved milestone.
+
+See [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for the full branching, QA, release, and hotfix process.
