@@ -390,6 +390,9 @@ addUnitEffect=function(
         ? "debuff"
         : "buff";
 
+    const acidArrow=
+      effect.id==="acid-arrow";
+
     candidateQueueCombatBeat(
       unit,
       {
@@ -403,7 +406,16 @@ addUnitEffect=function(
               : "Debuff"
           )
         ),
-        kind:category,
+        /*
+          Candidate Rev 34:
+          "Splashed with Acid" is a persistent debuff for ordering/rules, but
+          its presentation is deliberately acid-green rather than generic
+          debuff pink.
+        */
+        kind:
+          acidArrow
+            ? "damage-acid"
+            : category,
         durationMs:
           CANDIDATE_COMBAT_BEAT_MS,
         risePx:

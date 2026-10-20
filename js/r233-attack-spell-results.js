@@ -138,19 +138,23 @@ castMelfsAcidArrowSpell=async function(action,target){
   ){
     addUnitEffect(target,{
       id:"acid-arrow",
-      name:"Acid Arrow",
+      name:"Splashed with Acid",
       kind:"debuff",
       expiresRound:
         game.round+
         remainingTicks+
         1,
       detail:
+        "2d4 acid each later round; "+
         remainingTicks+
-        " additional acid round"+
+        " follow-on round"+
         (remainingTicks===1 ? "" : "s")+
         " remaining",
       data:{
         sourceUnitId:caster.id,
+        casterLevel:level,
+        appliedRound:game.round,
+        nextTickRound:game.round+1,
         remainingTicks
       }
     });
