@@ -8,10 +8,12 @@
   This candidate fix combines both behaviors:
     - architecture and obscuring volumes both participate in visibility;
     - visibility remains binary by tactical hex center;
-    - unseen hexes are rendered as complete opaque hidden tiles;
+    - unseen hexes receive a uniform 25% hidden-area overlay;
     - fog/cloud geometry is still repainted afterward by the existing
       post-LOS foreground pass so the obstruction itself remains visible.
 */
+
+const CANDIDATE_LOS_HIDDEN_OPACITY=0.25;
 
 function candidateLosVisibilityContexts(){
   if(!game){
@@ -113,18 +115,21 @@ drawWallTestLineOfSightMask=function(){
     }
 
     /*
-      Full opaque replacement preserves the R234 fix: an unseen tactical hex
-      cannot leak floor texture, terrain color, lighting, or partial geometry.
+      Keep the binary full-hex boundary from R234, but use a 25% overlay so
+      unseen terrain remains legible enough for QA while still reading as hidden.
+      Every hidden hex gets the same opacity; there is no partial visibility
+      inside a tactical hex.
     */
     ctx.globalCompositeOperation=
       "source-over";
 
-    ctx.globalAlpha=1;
+    ctx.globalAlpha=CANDIDATE_LOS_HIDDEN_OPACITY;
     ctx.fillStyle=palette.fill;
     ctx.fill();
 
     /*
-      Seal polygon antialias seams before redrawing the subdued tactical grid.
+      Seal polygon antialias seams using the same 25% treatment, then restore
+      full alpha for the subdued tactical grid.
     */
     ctx.strokeStyle=palette.fill;
     ctx.lineWidth=2.2;
@@ -136,6 +141,7 @@ drawWallTestLineOfSightMask=function(){
       tile.y
     );
 
+    ctx.globalAlpha=1;
     ctx.strokeStyle=palette.grid;
     ctx.lineWidth=1;
     ctx.stroke();
@@ -149,8 +155,9 @@ window.AdventurePartyLosPresentation={
   ...(window.AdventurePartyLosPresentation || {}),
   channel:"candidate",
   outdoorObscuringMaskRestored:true,
+  hiddenOpacity:CANDIDATE_LOS_HIDDEN_OPACITY,
   rule:
-    "binary hex-center visibility for architecture and obscuring volumes",
+    "binary hex-center visibility with 25% hidden-area overlay for architecture and obscuring volumes",
   inspect:(x,y)=>{
     const architecturalMode=
       game?.condition==="wall";
@@ -176,7 +183,9 @@ window.AdventurePartyLosPresentation={
         r234HiddenHexPalette(
           x,
           y
-        )
+        ),
+      hiddenOpacity:
+        CANDIDATE_LOS_HIDDEN_OPACITY
     };
   }
 };
