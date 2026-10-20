@@ -15,6 +15,144 @@
 
   let suppressLightningUniversalCastCue=false;
 
+  const LIGHTNING_BOLT_SFX=Object.freeze({
+    url:"assets/audio/sfx/spells/mixkit-futuristic-electricity-sparks-2598.wav",
+    gain:0.90
+  });
+
+  let lightningRawBuffer=null;
+  let lightningDecodedBuffer=null;
+  let lightningDecodedContext=null;
+  let lightningDecodePromise=null;
+
+  function primeLightningBoltSfx(){
+    if(lightningRawBuffer) return;
+
+    fetch(LIGHTNING_BOLT_SFX.url)
+      .then(response=>{
+        if(!response.ok){
+          throw new Error(
+            "Lightning Bolt SFX failed to load: HTTP "+response.status
+          );
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer=>{
+        lightningRawBuffer=buffer;
+      })
+      .catch(error=>{
+        console.error(error);
+      });
+  }
+
+  function decodedLightningBoltSfx(){
+    if(!audioCtx || !audioReady){
+      return Promise.resolve(null);
+    }
+
+    if(
+      lightningDecodedBuffer &&
+      lightningDecodedContext===audioCtx
+    ){
+      return Promise.resolve(
+        lightningDecodedBuffer
+      );
+    }
+
+    if(lightningDecodePromise){
+      return lightningDecodePromise;
+    }
+
+    const acquire=
+      lightningRawBuffer
+        ? Promise.resolve(lightningRawBuffer)
+        : fetch(LIGHTNING_BOLT_SFX.url)
+            .then(response=>{
+              if(!response.ok){
+                throw new Error(
+                  "Lightning Bolt SFX failed to load: HTTP "+response.status
+                );
+              }
+              return response.arrayBuffer();
+            })
+            .then(buffer=>{
+              lightningRawBuffer=buffer;
+              return buffer;
+            });
+
+    lightningDecodePromise=
+      acquire
+        .then(buffer=>
+          audioCtx.decodeAudioData(
+            buffer.slice(0)
+          )
+        )
+        .then(decoded=>{
+          lightningDecodedBuffer=decoded;
+          lightningDecodedContext=audioCtx;
+          lightningDecodePromise=null;
+          return decoded;
+        })
+        .catch(error=>{
+          lightningDecodePromise=null;
+          console.error(error);
+          return null;
+        });
+
+    return lightningDecodePromise;
+  }
+
+  function playLightningBoltSample(){
+    queueSfx(()=>{
+      decodedLightningBoltSfx()
+        .then(buffer=>{
+          if(
+            !buffer ||
+            !audioCtx ||
+            !audioReady ||
+            !sfxGain
+          ){
+            return;
+          }
+
+          const source=
+            audioCtx.createBufferSource();
+
+          const gain=
+            audioCtx.createGain();
+
+          source.buffer=buffer;
+
+          gain.gain.setValueAtTime(
+            LIGHTNING_BOLT_SFX.gain,
+            audioCtx.currentTime
+          );
+
+          source.connect(gain);
+          gain.connect(sfxGain);
+          source.start();
+        });
+    });
+
+    return true;
+  }
+
+  const baseMagicEffectSound=
+    playMagicEffectSound;
+
+  playMagicEffectSound=function(kind="generic",index=0){
+    if(kind==="lightning"){
+      return playLightningBoltSample();
+    }
+
+    return baseMagicEffectSound(
+      kind,
+      index
+    );
+  };
+
+  primeLightningBoltSfx();
+
   const basePor07CastingSound=playPor07CastingSound;
   playPor07CastingSound=function(){
     if(suppressLightningUniversalCastCue){
@@ -59,6 +197,6 @@
     queued:true,
     clearPersistentAimPrompt:true,
     suppressUniversalCastingCue:true,
-    suppressExistingLightningEffectCue:false
+    suppressExistingLightningEffectCue:true,\n    replacementSfx:LIGHTNING_BOLT_SFX.url
   };
 })();
