@@ -59,13 +59,13 @@ because the duration was refreshed.
 
 ### Audio assets
 
-Rev 10 adds these extracted WAV assets under `assets/audio/`:
+Rev 10 stores short effects as real WAV assets under the standardized `assets/audio/sfx/` tree:
 
-- `dqk-sfx-09-fireball.wav`
-- `dqk-sfx-02-spell-affect.wav`
-- `dqk-sfx-07-melee-miss.wav`
+- `assets/audio/sfx/spells/dqk-sfx-09-fireball.wav`
+- `assets/audio/sfx/status/dqk-sfx-02-spell-affect.wav`
+- `assets/audio/sfx/combat/dqk-sfx-07-melee-miss.wav`
 
-They are pre-fetched by the candidate audio module and decoded into the existing
+They are fetched as ordinary repository audio assets by the candidate audio module and decoded into the existing
 Web Audio / SFX gain path. Therefore the normal global SFX level and the Spell
 Previewer's VFX-only suppression continue to apply.
 

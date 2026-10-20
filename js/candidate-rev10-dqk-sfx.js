@@ -14,17 +14,17 @@
 const CANDIDATE_REV10_DQK_SFX=Object.freeze({
   fireball:{
     id:9,
-    url:"assets/audio/dqk-sfx-09-fireball.wav",
+    url:"assets/audio/sfx/spells/dqk-sfx-09-fireball.wav",
     gain:0.82
   },
   spellAffect:{
     id:2,
-    url:"assets/audio/dqk-sfx-02-spell-affect.wav",
+    url:"assets/audio/sfx/status/dqk-sfx-02-spell-affect.wav",
     gain:0.74
   },
   meleeMiss:{
     id:7,
-    url:"assets/audio/dqk-sfx-07-melee-miss.wav",
+    url:"assets/audio/sfx/combat/dqk-sfx-07-melee-miss.wav",
     gain:0.76
   }
 });
