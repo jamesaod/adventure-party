@@ -20426,6 +20426,8 @@ async function castGreaseSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("grease");
+
   const effect=addAreaEffect({
     id:`grease-${Date.now()}`,
     type:"grease",
@@ -20604,6 +20606,8 @@ async function castTauntSpell(action,target){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("taunt");
+
   const targetType=target.type || target.name;
   const candidates=unitsWithinHexRadius(target,3)
     .filter(unit=>
@@ -20738,6 +20742,8 @@ async function castWallOfFogSpell(action,targetHex){
   if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
+
+  playMagicEffectSound("wall-of-fog");
 
   const duration=d(4)+d(4)+level;
   const cells=createWallOfFogCells(
@@ -21080,6 +21086,8 @@ async function castFogCloudSpell(action,targetHex){
   if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
+
+  playMagicEffectSound("fog-cloud");
 
   const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
   addAreaEffect({
