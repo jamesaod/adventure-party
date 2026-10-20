@@ -288,6 +288,24 @@ castShockingGraspSpell=async function(action,target){
     return true;
   }
 
+  /*
+    Candidate Rev 31:
+    a successful Shocking Grasp touch discharges before damage resolution.
+    Mirror Image can still absorb the attack, but the electrical contact is
+    visible/audible at the struck image's battlefield position.
+  */
+  if(
+    window.AdventurePartyShockingGraspFx?.play
+  ){
+    await window.AdventurePartyShockingGraspFx.play(
+      caster,
+      target,
+      {throughHand}
+    );
+  }else{
+    playMagicEffectSound("lightning");
+  }
+
   if(interceptWithMirrorImage(target,caster)){
     playMissSound();
 
