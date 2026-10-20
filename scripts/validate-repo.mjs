@@ -129,6 +129,7 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
 */
 const spellPreviewerPath = "js/candidate-spell-previewer.js";
 const fireballProductionPath = "js/r233-multi-result-damage.js";
+const magicMissileProductionPath = "js/candidate-rev36-magic-missile-volley.js";
 
 if (fs.existsSync(spellPreviewerPath)) {
   const previewer = fs.readFileSync(spellPreviewerPath, "utf8");
@@ -143,6 +144,18 @@ if (fs.existsSync(spellPreviewerPath)) {
 
   if (!/\"fireball\"\s*:\s*\{\s*groundHex\s*:\s*\{\s*x\s*:\s*2\s*,\s*y\s*:\s*0\s*\}/s.test(previewer)) {
     fail("Spell Previewer must define Fireball only as a production-scene target at hex 2,0.");
+  }
+
+  if (/run\s*:\s*spellPreviewRunMagicMissile/.test(previewer)) {
+    fail("Magic Missile must not use a bespoke Spell Previewer runner; use the production volley resolver.");
+  }
+
+  if (/async\s+function\s+spellPreviewRunMagicMissile\s*\(/.test(previewer)) {
+    fail("Duplicate spellPreviewRunMagicMissile implementation detected.");
+  }
+
+  if (!previewer.includes("action.magicMissileTargetIds")) {
+    fail("Spell Previewer must feed target assignments into the production Magic Missile volley.");
   }
 }
 
@@ -167,6 +180,32 @@ if (fs.existsSync(fireballProductionPath)) {
     if (!fireballSource.includes("suppressFocus:true")) {
       fail("Production Fireball saves must suppress per-target camera focus.");
     }
+  }
+}
+
+requireFile(magicMissileProductionPath);
+
+if (fs.existsSync(magicMissileProductionPath)) {
+  const production = fs.readFileSync(magicMissileProductionPath, "utf8");
+
+  if (!production.includes("castMagicMissileFromScroll=")) {
+    fail("Production Magic Missile volley resolver is missing.");
+  }
+
+  if (!production.includes("magicMissileTargetIds")) {
+    fail("Production Magic Missile must support explicit per-missile target assignments.");
+  }
+
+  if (!production.includes("r36AnimateVolley")) {
+    fail("Production Magic Missile must use the shared simultaneous volley animation.");
+  }
+
+  if (!production.includes("candidate-rev36-magic-missile-volley")) {
+    fail("Magic Missile production module identity is missing.");
+  }
+
+  if (!index.includes("js/candidate-rev36-magic-missile-volley.js")) {
+    fail("index.html does not load the Candidate Rev 36 Magic Missile production module.");
   }
 }
 
