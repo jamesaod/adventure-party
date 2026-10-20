@@ -471,16 +471,34 @@ castFireballFromScroll=async function(action,targetHex){
         result.unit.hp-result.damage
       );
 
-    onUnitDamaged(
-      result.unit,
-      result.damage
-    );
-
-    registerElementalDamageFx(
-      result.unit,
-      "fire",
-      result.damage
-    );
+    /*
+      Candidate Rev 34:
+      keep Fireball HP changes / wound-side mechanics simultaneous, but do not
+      start the short fire-reaction VFX before the 820 ms explosion. Preserve
+      fire-colored floating damage through the candidate damage context.
+    */
+    if(
+      typeof candidateWithDamageBeatContext===
+        "function"
+    ){
+      candidateWithDamageBeatContext(
+        {
+          category:"direct-damage",
+          damageType:"fire",
+          source:"Fireball"
+        },
+        ()=>
+          onUnitDamaged(
+            result.unit,
+            result.damage
+          )
+      );
+    }else{
+      onUnitDamaged(
+        result.unit,
+        result.damage
+      );
+    }
 
     result.killed=
       result.unit.hp<=0;
@@ -522,44 +540,19 @@ castFireballFromScroll=async function(action,targetHex){
       continue;
     }
 
-    await showAreaEffectUnitResolution({
-      unit,
-      sourceName:"Fireball",
-      damage:result.damage,
-      secondaryEffects:[
-        "SAVE "+
-        result.save.modifiedRoll+
-        " vs "+
-        result.save.targetNumber+
-        ": "+
-        (
-          result.save.success
-            ? "SUCCESS — HALF DAMAGE"
-            : "FAILED — FULL DAMAGE"
-        )
-      ],
-      killed:result.killed
-    });
-
-    log(
-      unit.name+
-      ": save vs. spell "+
-      result.save.modifiedRoll+
-      " vs "+
-      result.save.targetNumber+
-      " — "+
-      (
-        result.save.success
-          ? "success, half damage"
-          : "failure, full damage"
-      )+
-      "; "+
-      result.damage+
-      " damage.",
-      result.save.success
-        ? "system"
-        : "bad"
-    );
+    /*
+      Candidate Rev 34:
+      match Minute Meteors' fire-impact/death cadence. The short flame reaction
+      starts when this victim's result is presented, and a lethal result starts
+      the death marker in the same beat instead of waiting through a separate
+      "goes down" presentation.
+    */
+    if(result.damage>0){
+      triggerFireDamageFx(
+        unit,
+        result.damage
+      );
+    }
 
     if(
       result.killed &&
@@ -581,8 +574,50 @@ castFireballFromScroll=async function(action,targetHex){
 
       updateUi();
       draw();
-      await waitForDeathActionPause();
     }
+
+    await showAreaEffectUnitResolution({
+      unit,
+      sourceName:"Fireball",
+      damage:result.damage,
+      secondaryEffects:[
+        "SAVE "+
+        result.save.modifiedRoll+
+        " vs "+
+        result.save.targetNumber+
+        ": "+
+        (
+          result.save.success
+            ? "SUCCESS — HALF DAMAGE"
+            : "FAILED — FULL DAMAGE"
+        )
+      ],
+      /*
+        Death is already visible in this same result beat, so do not insert the
+        older extra death-message beat between damage and the skull marker.
+      */
+      killed:false
+    });
+
+    log(
+      unit.name+
+      ": save vs. spell "+
+      result.save.modifiedRoll+
+      " vs "+
+      result.save.targetNumber+
+      " — "+
+      (
+        result.save.success
+          ? "success, half damage"
+          : "failure, full damage"
+      )+
+      "; "+
+      result.damage+
+      " damage.",
+      result.save.success
+        ? "system"
+        : "bad"
+    );
   }
 
   if(
