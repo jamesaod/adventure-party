@@ -55,7 +55,8 @@ handleTurnControlEffects=async function(actor){
       remaining===1
         ? `${actor.name} has 1 Minute Meteor remaining — use CAST → Release Minute Meteor.`
         : `${actor.name} has ${remaining} Minute Meteors remaining — use CAST → Release Minute Meteors.`,
-      COMBAT_MESSAGE_MIN_HOLD_MS
+      0,
+      COMBAT_MESSAGE_DISPLAY_MS
     );
 
     updateUi();
