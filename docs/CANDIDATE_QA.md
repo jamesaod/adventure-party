@@ -23,3 +23,16 @@ Stable baseline: **R236**
 - Confirm the cloud itself remains visible rather than disappearing into the blackout.
 - Confirm ordinary outdoor combat with no obscuring spell has no blackout.
 - Recheck Wall Test rooms/windows/doors to ensure the R234 no-partial-hex fix remains intact.
+
+
+### Party wipe loot suppression
+
+- A total party defeat now produces no recoverable loot.
+- Enemy slain/fled counts still appear in the post-combat summary.
+- The loot panel should read: `No loot recovered — the party was defeated.`
+- Victory loot behavior is unchanged.
+
+QA checks:
+- Kill all player-party members while at least one enemy is carrying equipment and confirm no loot is listed.
+- Confirm XP remains 0 on defeat.
+- Win a battle afterward and confirm normal enemy equipment still appears as loot.
