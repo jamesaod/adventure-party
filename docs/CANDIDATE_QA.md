@@ -2,7 +2,73 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 15
+## Current candidate: Rev 16
+
+
+## Candidate Rev 16 — Elemental damage presentation + casting-audio cleanup
+
+Candidate Rev 16 is a presentation pass only, except that Lightning Bolt's
+visible discharge lifetime is extended by 50%.
+
+### Universal casting sound removed
+
+The reconstructed Pool of Radiance initial casting cue is now disabled for
+**all spells**.
+
+Spell-specific impact/effect sounds remain unchanged, including Fireball,
+Lightning Bolt, status-application cues, and other dedicated spell audio.
+
+The Spell Previewer uses the same rule: ordinary spell previews no longer play
+the universal initial casting sound.
+
+### Lightning Bolt persistence
+
+Lightning Bolt's production VFX duration increases from **650 ms to 975 ms**,
+exactly **50% longer**. Its DBM geometry, approved Rev 14/15 tuning, reflection
+path, saves, damage, and discharge WAV are unchanged.
+
+### Floating damage text
+
+Damage text increases from **13 px to 16.25 px**, a **25% increase**.
+
+Damage-type presentation is now:
+
+- **physical / generic damage:** red
+- **lightning / electricity:** rapidly flickers between white and light blue
+- **acid:** green
+- **fire:** orange
+- **cold:** light blue with a short trailing spray of icy particles
+
+Secondary/rider damage keeps the existing ordered combat-beat behavior. When
+an elemental type is known, its elemental presentation overrides the generic
+secondary-damage color.
+
+The elemental styling is presentation-only; damage types still come from the
+existing combat/spell resolution data.
+
+### Rev 16 QA focus
+
+1. Confirm **Candidate Rev 16** appears in the launcher and Spell Previewer.
+2. Cast several different spells and confirm the universal initial Pool of
+   Radiance casting cue no longer plays.
+3. Confirm spell-specific impact/effect sounds still play normally.
+4. Cast Lightning Bolt and confirm the bolt remains visible approximately 50%
+   longer than Candidate Rev 15.
+5. Confirm Lightning Bolt's DBM shape, illumination, reflection behavior, and
+   selected electric-sparks WAV are otherwise unchanged.
+6. Deal ordinary physical damage and confirm the floating damage text is red and
+   approximately 25% larger.
+7. Deal lightning/electricity damage and confirm the text rapidly alternates
+   between white and light blue.
+8. Deal acid damage and confirm the floating damage text is green.
+9. Deal fire damage and confirm the floating damage text is orange.
+10. Deal cold damage and confirm the text is light blue with an icy particle
+    trail following the rising number.
+11. Confirm elemental text still respects hidden-unit visibility and does not
+    reveal units through LOS masking.
+12. Confirm ordered direct/rider/status combat beats and turn pacing remain
+    unchanged.
+
 
 
 ## Candidate Rev 15 — Lightning Bolt review fixes + final SFX
