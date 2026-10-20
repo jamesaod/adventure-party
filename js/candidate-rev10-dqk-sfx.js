@@ -408,8 +408,21 @@ attack=function(
     Longbow, sling, projectile spell and other ranged resolvers use their own
     attack functions and therefore retain the established ranged miss sound.
   */
-  playMissSound=
-    playDqkMeleeMissSound;
+  const adjacentPhysicalAttack=
+    !!(
+      attacker?.alive &&
+      defender?.alive &&
+      attacker.weaponInHand!=="ranged" &&
+      canMeleeReach(
+        attacker,
+        defender
+      )
+    );
+
+  if(adjacentPhysicalAttack){
+    playMissSound=
+      playDqkMeleeMissSound;
+  }
 
   try{
     return candidateRev10BaseAttack(
