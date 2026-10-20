@@ -8,8 +8,9 @@
   - reuses production spell VFX/SFX functions rather than cloning effects;
   - builds disposable caster/target units outside the live combat flow;
   - measures actual event timing and loops deterministically;
-  - exposes five representative production profiles first:
-      Magic Missile, Fireball, Sleep, Wall of Fog, Lightning Bolt.
+  - previews every currently implemented combat spell;
+  - keeps five proven bespoke presentation profiles for especially complex VFX;
+  - routes all remaining spells through the actual production cast resolver.
 */
 
 const SPELL_PREVIEW_REVISION=5;
@@ -1561,7 +1562,8 @@ const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
     drainDemo:true
   },
   "haste":{
-    groundHex:{x:-3,y:0}
+    groundHex:{x:-3,y:0},
+    friendlyAtGround:true
   },
   "hold-undead":{
     undeadTargets:true
@@ -1605,6 +1607,36 @@ endTurn=function(){
   }
 
   return spellPreviewBaseEndTurn();
+};
+
+
+const spellPreviewBaseCheckCombatVictory=
+  checkCombatVictory;
+
+checkCombatVictory=function(){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview"
+  ){
+    return false;
+  }
+
+  return spellPreviewBaseCheckCombatVictory();
+};
+
+
+const spellPreviewBaseCheckPartyDefeat=
+  checkPartyDefeat;
+
+checkPartyDefeat=function(){
+  if(
+    spellPreviewActive &&
+    currentScreen==="spell-preview"
+  ){
+    return false;
+  }
+
+  return spellPreviewBaseCheckPartyDefeat();
 };
 
 
@@ -2256,6 +2288,14 @@ function spellPreviewPrepareProductionScene(
     );
   }
 
+  if(config.friendlyAtGround){
+    spellPreviewPlaceUnit(
+      spellPreviewFriendlyDummy,
+      config.groundHex?.x ?? -3,
+      config.groundHex?.y ?? 0
+    );
+  }
+
   if(config.drainDemo){
     spellPreviewCaster.hp=60;
     spellPreviewCaster.maxHp=120;
@@ -2409,6 +2449,12 @@ function spellPreviewPrepareProductionScene(
         spellPreviewCaster.id
     });
   }
+
+  window.AdventurePartyCombatBeats
+    ?.clear?.();
+
+  window.AdventurePartyFloatingCombatText
+    ?.clear?.();
 
   camera.x=0;
   camera.y=0;
