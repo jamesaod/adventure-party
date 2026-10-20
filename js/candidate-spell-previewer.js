@@ -1,5 +1,5 @@
 /*
-  Candidate Rev 5 — Spell Effects Previewer
+  Candidate Rev 6 — Spell Effects Previewer
   ==========================================
   Dedicated development harness for production spell presentation.
 
@@ -728,7 +728,7 @@ function spellPreviewRenderLibrary(){
       " preview-ready / "+
       spells.length+
       " implemented combat spells. "+
-      "Candidate Rev 5 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
+      "Candidate Rev 6 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
   }
 }
 
@@ -1619,7 +1619,12 @@ const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
     groundHex:{x:-1,y:0}
   },
   "fog-cloud":{
-    groundHex:{x:-1,y:0}
+    groundHex:{x:-1,y:0},
+    obscuringDemo:true
+  },
+  "stinking-cloud":{
+    groundHex:{x:-1,y:0},
+    obscuringDemo:true
   },
   "web":{
     groundHex:{x:0,y:0}
@@ -2405,6 +2410,20 @@ function spellPreviewPrepareProductionScene(
     );
   }
 
+  /*
+    Fog Cloud / Stinking Cloud LOS QA needs every friendly observer on the
+    caster side of the obscurer. Otherwise the party-visibility union correctly
+    lets a friendly standing beyond the cloud reveal the far side, which makes
+    the cloud look as though it is not blocking LOS in the development tool.
+  */
+  if(config.obscuringDemo){
+    spellPreviewPlaceUnit(
+      spellPreviewFriendlyDummy,
+      -5,
+      1
+    );
+  }
+
   if(config.drainDemo){
     spellPreviewCaster.hp=60;
     spellPreviewCaster.maxHp=120;
@@ -2521,18 +2540,26 @@ function spellPreviewPrepareProductionScene(
       }
     );
 
+    /*
+      Use non-obscuring magic for the area-effect half of this demonstration.
+      The former Preview Fog correctly blocked LOS into its own center, causing
+      the production Dispel Magic range/LOS gate to reject the cast before the
+      dispel resolver could run.
+    */
     game.areaEffects.push({
-      id:"spell-preview-dispel-fog",
-      type:"fog",
-      name:"Preview Fog",
-      cells:
-        hexesWithinRadius(
-          targetHex,
-          1
-        ),
+      id:"spell-preview-dispel-grease",
+      type:"grease",
+      name:"Preview Grease",
+      cells:[
+        {
+          x:targetHex.x,
+          y:targetHex.y
+        }
+      ],
       expiresRound:99,
       sourceUnitId:
         spellPreviewCaster.id,
+      obscuresLOS:false,
       data:{
         sourceUnitId:
           spellPreviewCaster.id,
