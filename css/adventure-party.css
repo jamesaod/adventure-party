@@ -2407,3 +2407,72 @@ button, input, select, textarea {
 .electrical-sfx-lab-status[data-state="off"]{
   color:#e7a4a4;
 }
+
+
+/* Candidate Rev 13 — DBM Lightning VFX Laboratory */
+.adaptive-lightning-lab{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(150,190,255,.35);
+}
+.adaptive-lightning-note{
+  margin:4px 0 8px;
+  font-size:.82rem;
+  line-height:1.25;
+}
+.adaptive-lightning-canvas{
+  display:block;
+  width:100%;
+  aspect-ratio:12/7;
+  background:#02040a;
+  border:1px solid rgba(130,180,255,.35);
+  image-rendering:auto;
+}
+.adaptive-lightning-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:5px;
+  margin:7px 0 8px;
+}
+.adaptive-lightning-actions .pixel-action-button{
+  min-width:0;
+  padding-left:4px;
+  padding-right:4px;
+  font-size:.76rem;
+}
+.adaptive-lightning-controls{
+  display:grid;
+  gap:5px;
+}
+.adaptive-lightning-controls label{
+  display:grid;
+  grid-template-columns:82px minmax(76px,1fr) 56px;
+  align-items:center;
+  gap:6px;
+  font-size:.78rem;
+}
+.adaptive-lightning-controls input[type="range"]{
+  width:100%;
+  min-width:0;
+}
+.adaptive-lightning-controls input[type="number"],
+.adaptive-lightning-controls select{
+  min-width:0;
+  width:100%;
+}
+.adaptive-lightning-controls output{
+  color:#cfe9ff;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.adaptive-lightning-grid-check{
+  margin:7px 0 0;
+}
+.adaptive-lightning-stats{
+  margin-top:6px;
+  color:#b9d8ee;
+  font-size:.74rem;
+  line-height:1.25;
+  font-variant-numeric:tabular-nums;
+}
