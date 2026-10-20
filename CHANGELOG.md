@@ -3,6 +3,17 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R234 — Binary hidden-hex LOS presentation
+
+- Fixed an architectural LOS rendering edge case where unseen indoor floor hexes could look partially revealed because the R215 blackout was translucent.
+- The underlying LOS decision remains unchanged: the center of each tactical hex is still the sole visibility sample.
+- Unseen hexes are now rendered as complete opaque hidden tactical tiles rather than a 70% black veil over the existing floor/lighting.
+- Bright stone-texture details, dynamic illumination, architectural shading, and other underlying floor coloration can no longer leak through and resemble partial visibility.
+- Visible hexes remain completely untouched.
+- Hidden indoor and outdoor hexes use separate subdued hidden-tile palettes so battlefield context remains readable without exposing the real terrain texture.
+- Added a same-color edge seal to remove antialias seams between hidden hexes, then redraws a subdued tactical grid over the hidden tile.
+- Added `AdventurePartyLosPresentation` diagnostics for per-hex visibility/palette inspection.
+
 ## R233 — Spell presentation audit and Minute Meteor illumination
 
 - Audited the implemented combat-spell presentation flow and standardized it around a caster-first camera contract: every direct cast begins centered on the caster before the spell hands focus to its target, impact point, or affected units.
