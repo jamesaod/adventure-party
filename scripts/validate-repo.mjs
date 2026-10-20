@@ -163,6 +163,10 @@ if (fs.existsSync(fireballProductionPath)) {
     if (!fireballSource.includes("rollSpellSave(")) {
       fail("Production Fireball is not using the shared rollSpellSave hook.");
     }
+
+    if (!fireballSource.includes("suppressFocus:true")) {
+      fail("Production Fireball saves must suppress per-target camera focus.");
+    }
   }
 }
 
