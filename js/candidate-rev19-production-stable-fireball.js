@@ -1807,6 +1807,38 @@
       fade,
       state.seed
     );
+
+    /*
+      This renderer is a final VFX pass. Repaint visible architectural wall
+      bodies over the constrained flame so solid masonry remains a visual
+      boundary instead of being washed over by late-drawn fire.
+    */
+    if(
+      game?.condition==="wall" &&
+      architecturalWalls.length
+    ){
+      const visibleWalls=
+        architecturalWalls.filter(
+          wall=>
+            isArchitecturalWallVisibleToFriendlyParty(
+              wall
+            )
+        );
+
+      drawArchitecturalWallShapeOutline(
+        visibleWalls
+      );
+
+      drawArchitecturalWallTopOutline(
+        visibleWalls
+      );
+
+      for(const wall of visibleWalls){
+        drawArchitecturalWallSegment(
+          wall
+        );
+      }
+    }
   }
 
 
