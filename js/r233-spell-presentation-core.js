@@ -338,9 +338,14 @@ const r233BaseRollSpellSave=
 rollSpellSave=function(
   target,
   sourceUnit=null,
-  extraModifier=0
+  extraModifier=0,
+  presentationOptions=null
 ){
+  const suppressFocus=
+    !!presentationOptions?.suppressFocus;
+
   if(
+    !suppressFocus &&
     target &&
     (
       spellCastInProgress ||

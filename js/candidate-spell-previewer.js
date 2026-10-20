@@ -79,13 +79,6 @@ const SPELL_PREVIEW_SPECIAL_PROFILES=Object.freeze({
     run:spellPreviewRunMagicMissile
   },
 
-  "fireball":{
-    spellId:"fireball",
-    nominalMs:4300,
-    label:"Projectile / AoE explosion / simultaneous damage",
-    run:spellPreviewRunFireball
-  },
-
   "sleep":{
     spellId:"sleep",
     nominalMs:4700,
@@ -1564,6 +1557,14 @@ function spellPreviewApplyDamage(
    ============================================================ */
 
 const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
+  /*
+    Candidate Rev 35:
+    Fireball deliberately uses the production resolver. The Previewer only
+    supplies its controlled ground target and deterministic roll hooks.
+  */
+  "fireball":{
+    groundHex:{x:2,y:0}
+  },
   "burning-hands":{
     shortRange:1
   },
@@ -1812,7 +1813,8 @@ const spellPreviewBaseRollSpellSave=
 rollSpellSave=function(
   target,
   sourceUnit=null,
-  extraModifier=0
+  extraModifier=0,
+  presentationOptions=null
 ){
   if(
     !spellPreviewActive ||
@@ -1822,7 +1824,8 @@ rollSpellSave=function(
     return spellPreviewBaseRollSpellSave(
       target,
       sourceUnit,
-      extraModifier
+      extraModifier,
+      presentationOptions
     );
   }
 
@@ -2884,150 +2887,12 @@ async function spellPreviewRunMagicMissile(
    FIREBALL
    ============================================================ */
 
-async function spellPreviewRunFireball(
-  token
-){
-  const spell=
-    getSpellEntry(
-      "fireball"
-    );
-
-  if(!spell){
-    return;
-  }
-
-  await spellPreviewCastCue(
-    spell,
-    token
-  );
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  const flags=
-    spellPreviewPresentationFlags();
-
-  const targetHex={
-    x:2,
-    y:0
-  };
-
-  const blastCells=
-    fireballBlastCells(
-      targetHex
-    );
-
-  spellPreviewMark(
-    "Fireball projectile launch"
-  );
-
-  if(flags.visuals){
-    await animateFireballProjectile(
-      spellPreviewCaster,
-      targetHex
-    );
-  }else{
-    await spellPreviewWait(
-      280,
-      token
-    );
-  }
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  spellPreviewMark(
-    "Fireball impact"
-  );
-
-  if(flags.sounds){
-    /*
-      Candidate Rev 30:
-      The dedicated Fireball preview bypasses the normal cast-dispatch wrapper,
-      so call the currently selected DQK Fireball sample directly when that
-      candidate audio module is available. Fall back to the engine sound only
-      when the sample helper is absent.
-    */
-    if(typeof playDqkFireballSound==="function"){
-      playDqkFireballSound();
-    }else{
-      playFireballExplosionSound();
-    }
-  }
-
-  if(flags.visuals){
-    await animateFireballExplosion(
-      targetHex,
-      fireballRadiusHexes(),
-      blastCells
-    );
-  }else{
-    await spellPreviewWait(
-      820,
-      token
-    );
-  }
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  const affected=
-    livingUnitsInAreaCells(
-      blastCells
-    ).filter(
-      unit=>
-        unit.id!==
-        spellPreviewCaster.id
-    );
-
-  const level=
-    clamp(
-      Number(
-        spellPreviewUi.casterLevel?.value
-      ) || 6,
-      1,
-      20
-    );
-
-  const fullDamage=
-    Math.min(
-      10,
-      level
-    )*3;
-
-  const damage=
-    spellPreviewDamageValue(
-      fullDamage
-    );
-
-  spellPreviewMark(
-    "AoE damage: "+
-    damage+
-    (
-      spellPreviewUi.outcome?.value===
-      "save-success"
-        ? " (forced save)"
-        : ""
-    )
-  );
-
-  spellPreviewApplyDamage(
-    affected,
-    damage,
-    {
-      damageType:"fire"
-    }
-  );
-
-  await spellPreviewWait(
-    1150,
-    token
-  );
-}
-
+/*
+  Candidate Rev 35:
+  Fireball intentionally has no Previewer-owned runner. It is exercised through
+  spellPreviewRunProductionSpell(), which calls the same castPreparedCombatSpell
+  -> castFireballFromScroll production path used by battlefield combat.
+*/
 
 /* ============================================================
    SLEEP

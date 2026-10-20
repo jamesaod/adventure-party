@@ -400,8 +400,17 @@ castFireballFromScroll=async function(action,targetHex){
   );
 
   /*
-    R233's projectile wrapper moves the camera to the blast point before the
-    fireball enters the target view.
+    Candidate Rev 35 — unified Fireball production sequence.
+
+    This is now the one authoritative Fireball path for BOTH battlefield
+    combat and the Spell Effects Previewer:
+
+      1. projectile
+      2. impact sound + explosion
+      3. simultaneous save/damage/fire-reaction presentation
+      4. death/morale follow-through
+
+    The Previewer no longer maintains a second Fireball implementation.
   */
   await animateFireballProjectile(
     caster,
@@ -426,9 +435,9 @@ castFireballFromScroll=async function(action,targetHex){
   }
 
   /*
-    Fireball remains mechanically simultaneous: every saving throw and HP
-    change is determined before any individual presentation card. We then
-    walk the already-resolved results one creature at a time for readability.
+    Resolve every save before applying any HP changes. Use the live shared
+    rollSpellSave() hook rather than an R233-captured copy so the Previewer can
+    inject deterministic QA outcomes without bypassing production logic.
   */
   const results=
     affected.map(unit=>{
@@ -441,9 +450,11 @@ castFireballFromScroll=async function(action,targetHex){
       const save=
         immune
           ? null
-          : r233BaseRollSpellSave(
+          : rollSpellSave(
               unit,
-              caster
+              caster,
+              0,
+              {suppressFocus:true}
             );
 
       const damage=
@@ -462,8 +473,40 @@ castFireballFromScroll=async function(action,targetHex){
       };
     });
 
+  setCombatMessage(
+    affected.length
+      ? (
+          "FIREBALL ERUPTS — "+
+          affected.length+
+          " TARGET"+
+          (affected.length===1 ? "" : "S")+
+          " TAKE DAMAGE"
+        )
+      : "FIREBALL ERUPTS — NO CREATURES CAUGHT IN THE BLAST",
+    900,
+    900,
+    friendlyTargets.length
+      ? "player-damage"
+      : "normal"
+  );
+
+  playFireballExplosionSound();
+
+  await animateFireballExplosion(
+    targetHex,
+    radiusHexes,
+    blastCells
+  );
+
+  /*
+    Match the approved Previewer behavior: damage numbers and victim-side fire
+    reactions begin together only AFTER the explosion presentation completes.
+    No victim-by-victim camera walk or duplicate result-card sequence.
+  */
   for(const result of results){
-    if(result.damage<=0) continue;
+    if(result.damage<=0){
+      continue;
+    }
 
     result.unit.hp=
       Math.max(
@@ -471,12 +514,6 @@ castFireballFromScroll=async function(action,targetHex){
         result.unit.hp-result.damage
       );
 
-    /*
-      Candidate Rev 34:
-      keep Fireball HP changes / wound-side mechanics simultaneous, but do not
-      start the short fire-reaction VFX before the 820 ms explosion. Preserve
-      fire-colored floating damage through the candidate damage context.
-    */
     if(
       typeof candidateWithDamageBeatContext===
         "function"
@@ -500,6 +537,17 @@ castFireballFromScroll=async function(action,targetHex){
       );
     }
 
+    /*
+      Starts the same 720 ms flame reaction used by other fire impacts. Because
+      it begins here, it is visible with the floating damage just as it is in
+      the approved Previewer sequence.
+    */
+    registerElementalDamageFx(
+      result.unit,
+      "fire",
+      result.damage
+    );
+
     result.killed=
       result.unit.hp<=0;
   }
@@ -507,97 +555,19 @@ castFireballFromScroll=async function(action,targetHex){
   updateUi();
   draw();
 
-  playFireballExplosionSound();
-
-  await animateFireballExplosion(
-    targetHex,
-    radiusHexes,
-    blastCells
-  );
-
   let koboldCasualties=0;
 
   for(const result of results){
     const unit=result.unit;
 
-    await r233FocusTarget(unit);
-
     if(result.immune){
-      setCombatMessage(
-        unit.name+
-        " is immune to Fireball and takes no damage.",
-        R233_RESULT_HOLD_MS,
-        R233_RESULT_HOLD_MS
-      );
-
       log(
         unit.name+
         " is immune to fire and takes no Fireball damage.",
         "system"
       );
-
-      await waitForCombatActionPause();
       continue;
     }
-
-    /*
-      Candidate Rev 34:
-      match Minute Meteors' fire-impact/death cadence. The short flame reaction
-      starts when this victim's result is presented, and a lethal result starts
-      the death marker in the same beat instead of waiting through a separate
-      "goes down" presentation.
-    */
-    if(result.damage>0){
-      triggerFireDamageFx(
-        unit,
-        result.damage
-      );
-    }
-
-    if(
-      result.killed &&
-      unit.alive
-    ){
-      unit.alive=false;
-
-      playAgonySound(unit);
-      playDeathSound(unit);
-      triggerDeathFx(unit);
-
-      if(unit.controller==="mob"){
-        markEnemyNeutralized(unit);
-
-        if(isKoboldUnit(unit)){
-          koboldCasualties++;
-        }
-      }
-
-      updateUi();
-      draw();
-    }
-
-    await showAreaEffectUnitResolution({
-      unit,
-      sourceName:"Fireball",
-      damage:result.damage,
-      secondaryEffects:[
-        "SAVE "+
-        result.save.modifiedRoll+
-        " vs "+
-        result.save.targetNumber+
-        ": "+
-        (
-          result.save.success
-            ? "SUCCESS — HALF DAMAGE"
-            : "FAILED — FULL DAMAGE"
-        )
-      ],
-      /*
-        Death is already visible in this same result beat, so do not insert the
-        older extra death-message beat between damage and the skull marker.
-      */
-      killed:false
-    });
 
     log(
       unit.name+
@@ -618,6 +588,40 @@ castFireballFromScroll=async function(action,targetHex){
         ? "system"
         : "bad"
     );
+  }
+
+  /*
+    Lethal results begin while their fire-reaction beat is still active. Death
+    markers remain sequential because the tactical foreground currently has one
+    shared death-marker channel.
+  */
+  for(const result of results){
+    const unit=result.unit;
+
+    if(
+      !result.killed ||
+      !unit.alive
+    ){
+      continue;
+    }
+
+    unit.alive=false;
+
+    playAgonySound(unit);
+    playDeathSound(unit);
+    triggerDeathFx(unit);
+
+    if(unit.controller==="mob"){
+      markEnemyNeutralized(unit);
+
+      if(isKoboldUnit(unit)){
+        koboldCasualties++;
+      }
+    }
+
+    updateUi();
+    draw();
+    await waitForDeathActionPause();
   }
 
   if(

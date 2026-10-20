@@ -120,6 +120,56 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
   if (!index.includes(ref)) fail(`index.html does not reference ${ref}`);
 }
 
+/*
+  Spell Previewer parity guard
+  ----------------------------
+  Fireball is intentionally a single-source production spell. The Previewer
+  must invoke the battlefield resolver instead of maintaining a second Fireball
+  sequence. This check turns future architectural drift into a CI failure.
+*/
+const spellPreviewerPath = "js/candidate-spell-previewer.js";
+const fireballProductionPath = "js/r233-multi-result-damage.js";
+
+if (fs.existsSync(spellPreviewerPath)) {
+  const previewer = fs.readFileSync(spellPreviewerPath, "utf8");
+
+  if (/run\s*:\s*spellPreviewRunFireball/.test(previewer)) {
+    fail("Fireball must not use a bespoke Spell Previewer runner; use the production resolver.");
+  }
+
+  if (/async\s+function\s+spellPreviewRunFireball\s*\(/.test(previewer)) {
+    fail("Duplicate spellPreviewRunFireball implementation detected.");
+  }
+
+  if (!/\"fireball\"\s*:\s*\{\s*groundHex\s*:\s*\{\s*x\s*:\s*2\s*,\s*y\s*:\s*0\s*\}/s.test(previewer)) {
+    fail("Spell Previewer must define Fireball only as a production-scene target at hex 2,0.");
+  }
+}
+
+if (fs.existsSync(fireballProductionPath)) {
+  const production = fs.readFileSync(fireballProductionPath, "utf8");
+  const fireballStart = production.indexOf("castFireballFromScroll=async function");
+  const fireballSource = fireballStart >= 0
+    ? production.slice(fireballStart)
+    : "";
+
+  if (!fireballSource) {
+    fail("Production Fireball resolver is missing.");
+  } else {
+    if (fireballSource.includes("r233BaseRollSpellSave(")) {
+      fail("Production Fireball must use the live rollSpellSave hook for Previewer parity.");
+    }
+
+    if (!fireballSource.includes("rollSpellSave(")) {
+      fail("Production Fireball is not using the shared rollSpellSave hook.");
+    }
+
+    if (!fireballSource.includes("suppressFocus:true")) {
+      fail("Production Fireball saves must suppress per-target camera focus.");
+    }
+  }
+}
+
 const cssVersion=index.match(/css\/adventure-party\.css\?v=(R\d+)/)?.[1] || null;
 const jsVersion=index.match(/js\/adventure-party\.js\?v=(R\d+)/)?.[1] || null;
 if (!cssVersion || !jsVersion) fail("Versioned CSS/JS asset URLs are required.");
