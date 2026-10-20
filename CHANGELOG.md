@@ -3,6 +3,16 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R228 — Minute Meteor remainder recovery
+
+- Fixed the stored Melf's Minute Meteors edge case where a positive remainder, especially exactly one meteor after the first volley, could survive in status state but fail to expose a usable release action on the following round.
+- Any player-controlled caster with a positive stored meteor remainder now gets an explicit next-turn reminder to use Cast → Release Minute Meteor(s).
+- The stored pool now clears any stale generic spell-cast lock at the start of the caster's next usable turn, without affecting unrelated spell resolution.
+- The Cast menu rebuilds the Minute Meteor release action directly from the stored `minute-meteors` effect, so a one-meteor remainder is exposed even if normal memorized-spell menu contents have changed.
+- The stored release action is singularized correctly for one remaining meteor and continues to support repeated target assignment when more than one remains.
+- Added a same-round release guard so a stored volley cannot be released twice in one round.
+- Added `AdventurePartyLevel3Spells.minuteMeteorRemainder()` diagnostics for stored count, last-volley round, release availability, targeting state, and spell-lock state.
+
 ## R227 — Player-directed Melf's Minute Meteors volleys
 
 - Removed the R226 turn-start auto-fire behavior for stored Minute Meteors on normally player-controlled characters; the spell no longer takes over the character's turn.
