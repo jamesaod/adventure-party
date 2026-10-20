@@ -18709,6 +18709,82 @@ async function animateMagicMissile(attacker,defender,index,total){
   draw();
 }
 
+async function animateElementalArrowProjectile(
+  attacker,
+  defender,
+  kind="flame-arrow",
+  index=0,
+  total=1
+){
+  if(!attacker || !defender) return;
+
+  const from=hexCenter(attacker.x,attacker.y);
+  const to=hexCenter(defender.x,defender.y);
+
+  const sideOffset=
+    (
+      index-
+      (Math.max(1,total)-1)/2
+    )*
+    4;
+
+  const start={
+    x:from.x+sideOffset,
+    y:from.y-20
+  };
+
+  const end={
+    x:to.x+sideOffset*0.35,
+    y:to.y-15
+  };
+
+  const distance=
+    Math.hypot(
+      end.x-start.x,
+      end.y-start.y
+    );
+
+  const duration=
+    Math.max(
+      170,
+      Math.min(
+        300,
+        125+
+        distance*0.24
+      )
+    );
+
+  const started=performance.now();
+
+  while(true){
+    const elapsed=
+      performance.now()-started;
+
+    const t=
+      Math.min(
+        1,
+        elapsed/duration
+      );
+
+    projectileFx={
+      kind,
+      start,
+      end,
+      t,
+      arcHeight:0
+    };
+
+    draw();
+
+    if(t>=1) break;
+    await sleep(16);
+  }
+
+  projectileFx=null;
+  draw();
+}
+
+
 async function castMagicMissileFromScroll(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry(action?.spellId);
@@ -25693,8 +25769,145 @@ function drawProjectileFx(){
 
     drawFireballGlyph(x,y,1);
     ctx.restore();
+  }else if(
+    projectileFx.kind==="flame-arrow" ||
+    projectileFx.kind==="acid-arrow"
+  ){
+    const isFlame=
+      projectileFx.kind==="flame-arrow";
+
+    const dx=end.x-start.x;
+    const dy=end.y-start.y;
+    const length=
+      Math.max(
+        1,
+        Math.hypot(dx,dy)
+      );
+    const nx=-dy/length;
+    const ny=dx/length;
+    const now=performance.now();
+
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+
+    /*
+      Bright elemental trail behind the arrow shaft.
+    */
+    const trailGradient=
+      ctx.createLinearGradient(
+        tx,ty,
+        x,y
+      );
+
+    if(isFlame){
+      trailGradient.addColorStop(
+        0,
+        "rgba(176,35,4,0)"
+      );
+      trailGradient.addColorStop(
+        0.45,
+        "rgba(255,83,9,0.36)"
+      );
+      trailGradient.addColorStop(
+        1,
+        "rgba(255,205,61,0.76)"
+      );
+    }else{
+      trailGradient.addColorStop(
+        0,
+        "rgba(26,92,15,0)"
+      );
+      trailGradient.addColorStop(
+        0.45,
+        "rgba(70,214,45,0.36)"
+      );
+      trailGradient.addColorStop(
+        1,
+        "rgba(176,255,92,0.78)"
+      );
+    }
+
+    ctx.strokeStyle=trailGradient;
+    ctx.lineWidth=5;
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(tx,ty);
+    ctx.lineTo(x,y);
+    ctx.stroke();
+
+    /*
+      Detached glowing motes create the fire/acid particle trail.
+    */
+    for(let i=0;i<14;i++){
+      const q=(i+1)/15;
+      const back=8+q*34;
+      const wave=
+        Math.sin(
+          now*0.017+
+          i*1.81
+        )*
+        (
+          1.4+
+          q*4.0
+        );
+
+      const px=
+        x-
+        (dx/length)*back+
+        nx*wave;
+
+      const py=
+        y-
+        (dy/length)*back+
+        ny*wave-
+        q*q*5;
+
+      const alpha=
+        (1-q)*
+        (
+          0.48+
+          0.34*
+          Math.sin(
+            now*0.011+
+            i*2.3
+          )*
+          0.5+
+          0.17
+        );
+
+      ctx.fillStyle=
+        isFlame
+          ? (
+              i%3===0
+                ? `rgba(255,232,109,${alpha})`
+                : i%3===1
+                  ? `rgba(255,132,18,${alpha})`
+                  : `rgba(226,54,7,${alpha})`
+            )
+          : (
+              i%3===0
+                ? `rgba(212,255,126,${alpha})`
+                : i%3===1
+                  ? `rgba(111,242,74,${alpha})`
+                  : `rgba(34,174,43,${alpha})`
+            );
+
+      const size=
+        i%5===0
+          ? 2
+          : 1;
+
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        size
+      );
+    }
+
+    ctx.restore();
   }else{
-    /* Smooth trail retained for non-Fireball projectiles. */
+    /* Smooth trail retained for ordinary non-Fireball projectiles. */
     ctx.strokeStyle="rgba(214,198,156,0.55)";
     ctx.lineWidth=2;
     ctx.beginPath();
@@ -25723,24 +25936,96 @@ function drawProjectileFx(){
     ctx.beginPath();
     ctx.arc(x-1.5,y-1.5,2,0,Math.PI*2);
     ctx.fill();
-  }else if(projectileFx.kind==="arrow"){
+  }else if(
+    projectileFx.kind==="arrow" ||
+    projectileFx.kind==="flame-arrow" ||
+    projectileFx.kind==="acid-arrow"
+  ){
     const angle=Math.atan2(
       end.y-start.y,
       end.x-start.x
     );
 
+    const isFlame=
+      projectileFx.kind==="flame-arrow";
+
+    const isAcid=
+      projectileFx.kind==="acid-arrow";
+
+    if(isFlame || isAcid){
+      ctx.save();
+      ctx.globalCompositeOperation="lighter";
+
+      const aura=
+        ctx.createRadialGradient(
+          x,y,0,
+          x,y,
+          15
+        );
+
+      if(isFlame){
+        aura.addColorStop(
+          0,
+          "rgba(255,246,176,0.78)"
+        );
+        aura.addColorStop(
+          0.34,
+          "rgba(255,151,31,0.46)"
+        );
+        aura.addColorStop(
+          1,
+          "rgba(221,50,7,0)"
+        );
+      }else{
+        aura.addColorStop(
+          0,
+          "rgba(228,255,172,0.80)"
+        );
+        aura.addColorStop(
+          0.34,
+          "rgba(113,240,83,0.46)"
+        );
+        aura.addColorStop(
+          1,
+          "rgba(24,154,42,0)"
+        );
+      }
+
+      ctx.fillStyle=aura;
+      ctx.beginPath();
+      ctx.arc(
+        x,y,15,
+        0,Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.translate(x,y);
     ctx.rotate(angle);
 
-    ctx.strokeStyle="#e7d8ac";
+    ctx.strokeStyle=
+      isFlame
+        ? "#ffd68c"
+        : isAcid
+          ? "#d8f7a5"
+          : "#e7d8ac";
+
     ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(-9,0);
     ctx.lineTo(9,0);
     ctx.stroke();
 
-    ctx.fillStyle="#d7c28a";
+    ctx.fillStyle=
+      isFlame
+        ? "#ffb643"
+        : isAcid
+          ? "#9ddd67"
+          : "#d7c28a";
+
     ctx.beginPath();
     ctx.moveTo(10,0);
     ctx.lineTo(5,-3);
@@ -26052,14 +26337,422 @@ function drawDragonBreathFx(){
 
   bodyCtx.restore();
 
-  /*
-    Candidate Rev 27:
-    The old outside-only black silhouette is removed completely.
+  const silhouetteCanvas=document.createElement("canvas");
+  silhouetteCanvas.width=bodyCanvas.width;
+  silhouetteCanvas.height=bodyCanvas.height;
+  const silhouetteCtx=silhouetteCanvas.getContext("2d");
+  silhouetteCtx.imageSmoothingEnabled=false;
+  silhouetteCtx.drawImage(bodyCanvas,0,0);
+  silhouetteCtx.globalCompositeOperation="source-in";
+  silhouetteCtx.fillStyle="rgba(0,0,0,1)";
+  silhouetteCtx.fillRect(
+    0,
+    0,
+    silhouetteCanvas.width,
+    silhouetteCanvas.height
+  );
+  silhouetteCtx.globalCompositeOperation="source-over";
 
-    First paint a broad red/orange illumination field centered on the actual
-    Fireball target. Its falloff is sized from the resolved Fireball spread so
-    the warm light reaches approximately to the blast edges without becoming
-    a screen-wide flash.
+  const outlineCanvas=document.createElement("canvas");
+  outlineCanvas.width=bodyCanvas.width;
+  outlineCanvas.height=bodyCanvas.height;
+  const outlineCtx=outlineCanvas.getContext("2d");
+  outlineCtx.imageSmoothingEnabled=false;
+
+  for(let dy=-2;dy<=2;dy++){
+    for(let dx=-2;dx<=2;dx++){
+      if(dx===0 && dy===0) continue;
+      if((dx*dx)+(dy*dy)>4) continue;
+      outlineCtx.drawImage(silhouetteCanvas,dx,dy);
+    }
+  }
+
+  outlineCtx.globalCompositeOperation="destination-out";
+  outlineCtx.drawImage(silhouetteCanvas,0,0);
+  outlineCtx.globalCompositeOperation="source-over";
+
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+
+  /*
+    Smoke now follows the cone's centerline rather than tactical cells, so the
+    far exhaust cannot reintroduce a hex-shaped silhouette.
+  */
+  const smokePuffCount=22;
+  for(let puff=0;puff<smokePuffCount;puff++){
+    const h1=hash01(puff,frame+307,5,13);
+    const h2=hash01(puff+97,frame-179,17,29);
+    const h3=hash01(puff-211,frame+263,31,43);
+
+    const q=0.64+h1*0.36;
+    if(q>growth+0.02) continue;
+
+    const halfWidth=4+(fullEndHalfWidth-4)*q;
+    const lateral=(h2-0.5)*halfWidth*1.30;
+    const age=(t+h3*0.24)%1;
+
+    const sx=
+      mouth.x+
+      dirX*fullLength*q+
+      normalX*lateral;
+    const sy=
+      mouth.y+
+      dirY*fullLength*q+
+      normalY*lateral-
+      age*(18+q*24);
+
+    const smokeRadius=(
+      7+
+      q*11+
+      hash01(puff,frame,59,71)*5
+    )*(0.78+0.28*growth);
+    const smokeAlpha=(0.10+q*0.12)*(1-age*0.72)*fade;
+
+    ctx.globalAlpha=smokeAlpha;
+    ctx.fillStyle=
+      puff%3===0
+        ? "#171a1e"
+        : puff%3===1
+          ? "#292c30"
+          : "#3a3c3f";
+    ctx.beginPath();
+    ctx.ellipse(
+      sx,
+      sy,
+      smokeRadius*1.15,
+      smokeRadius*0.72,
+      0,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+  }
+
+  /* R191 white-hot bloom retained around the tighter R192 cone. */
+  ctx.save();
+  ctx.globalCompositeOperation="lighter";
+  ctx.filter="blur(6px)";
+  ctx.globalAlpha=0.31*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+  ctx.filter="blur(2px)";
+  ctx.globalAlpha=0.19*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+  ctx.restore();
+
+  ctx.globalAlpha=0.55*fade;
+  ctx.drawImage(outlineCanvas,0,0);
+
+  ctx.globalAlpha=0.92*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+
+  ctx.globalCompositeOperation="lighter";
+  ctx.globalAlpha=0.25*fade;
+  ctx.drawImage(bodyCanvas,0,0);
+  ctx.globalCompositeOperation="source-over";
+  ctx.globalAlpha=1;
+
+  /*
+    Grain samples uniformly inside the presentation cone instead of selecting
+    tactical cells. This preserves the pixel texture without exposing hex rows.
+  */
+  const grainCount=Math.max(180,Math.round(340*growth));
+  for(let i=0;i<grainCount;i++){
+    const q=hash01(i,fx.source.x+11,fx.source.y-17,3)*growth;
+    const h2=hash01(i,fx.source.x-29,fx.source.y+7,9);
+    const h3=hash01(i,fx.source.x+53,fx.source.y+91,15);
+    const halfWidth=4+(fullEndHalfWidth-4)*q;
+    const lateral=(h2-0.5)*2*halfWidth*0.90;
+
+    const px=
+      mouth.x+
+      dirX*fullLength*q+
+      normalX*lateral;
+    const py=
+      mouth.y+
+      dirY*fullLength*q+
+      normalY*lateral;
+    const size=h3>0.84 ? 3 : 2;
+    const lateralNorm=
+      halfWidth>0
+        ? Math.min(1,Math.abs(lateral)/halfWidth)
+        : 0;
+
+    ctx.fillStyle=
+      lateralNorm<0.34
+        ? `rgba(255,255,232,${0.74*fade})`
+        : lateralNorm<0.72
+          ? `rgba(255,210,82,${0.64*fade})`
+          : `rgba(235,78,8,${0.48*fade})`;
+
+    ctx.fillRect(
+      Math.round(px),
+      Math.round(py),
+      size,
+      size
+    );
+  }
+
+  /*
+    Embers also follow the cone mathematically. They may drift beyond the flame
+    edge as they rise, but their source distribution remains conical.
+  */
+  const particleCount=420;
+  for(let i=0;i<particleCount;i++){
+    const born=hash01(fx.source.x+211,fx.source.y-97,i,7)*0.46;
+    if(t<born) continue;
+
+    const life=Math.max(
+      0,
+      Math.min(1,(t-born)/Math.max(0.01,1-born))
+    );
+    if(life>=1) continue;
+
+    const q=hash01(fx.source.x-43,fx.source.y+67,i,13);
+    if(q>growth+0.07) continue;
+
+    const halfWidth=4+(fullEndHalfWidth-4)*Math.min(1,q);
+    const lateral=(
+      hash01(fx.source.x+19,fx.source.y+149,i,23)-0.5
+    )*2*halfWidth*1.08;
+
+    const rise=life*(
+      9+
+      hash01(fx.source.x+89,fx.source.y-17,i,31)*30
+    );
+
+    const px=
+      mouth.x+
+      dirX*fullLength*q+
+      normalX*lateral;
+    const py=
+      mouth.y+
+      dirY*fullLength*q+
+      normalY*lateral-
+      rise;
+
+    const sizeRoll=hash01(fx.source.x-131,fx.source.y+41,i,47);
+    const size=
+      sizeRoll>0.94
+        ? 3
+        : sizeRoll>0.55
+          ? 2
+          : 1;
+    const alpha=Math.max(0,1-life)*0.62*fade;
+
+    ctx.fillStyle=
+      i%3===0
+        ? `rgba(255,242,150,${alpha})`
+        : i%3===1
+          ? `rgba(255,132,20,${alpha})`
+          : `rgba(196,45,8,${alpha})`;
+
+    if(i%4===0){
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        Math.max(2,size+2)
+      );
+    }else{
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        size
+      );
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawFireballExplosionFx(){
+  if(!fireballExplosionFx) return;
+
+  const fx=fireballExplosionFx;
+  const elapsed=Math.max(0,performance.now()-fx.started);
+
+  /*
+    R138 Fireball opacity experiment: the volumetric cloud still uses
+    overlapping spherical flame lobes, but all drawn Fireball pixels are opaque.
+    Motion remains lightly stepped so the effect still belongs beside retro art,
+    but the actual volume is intentionally organic and continuous.
+  */
+  const frameMs=58;
+  const frame=Math.floor(elapsed/frameMs);
+  const steppedElapsed=Math.min(fx.duration,frame*frameMs);
+  const t=Math.max(0,Math.min(1,steppedElapsed/fx.duration));
+
+  const growthEnd=0.58;
+  const growth=Math.min(1,t/growthEnd);
+  const fade=t<0.67
+    ? 1
+    : Math.max(0,1-(t-0.67)/0.33);
+
+  const radius=Math.max(1,Number(fx.radiusHexes)||1);
+  const cells=(fx.cells?.length
+    ? fx.cells
+    : hexesWithinRadius({x:fx.x,y:fx.y},radius)
+  ).slice();
+
+  const center={x:fx.x,y:fx.y};
+  const verticalRadius=radius*HEX_W;
+  const spreadRadius=Math.max(
+    radius,
+    Number(fx.maxVolumeDistance)||radius
+  );
+
+  cells.sort((a,b)=>{
+    const ac=hexCenter(a.x,a.y);
+    const bc=hexCenter(b.x,b.y);
+    return ac.y-bc.y || ac.x-bc.x;
+  });
+
+  function hash32(a,b,c,d){
+    let n=(
+      Math.imul((a|0)+4099,73856093) ^
+      Math.imul((b|0)-8191,19349663) ^
+      Math.imul((c|0)+131,83492791) ^
+      Math.imul((d|0)+17,2654435761)
+    )>>>0;
+    n^=n>>>13;
+    n=Math.imul(n,1274126177)>>>0;
+    n^=n>>>16;
+    return n>>>0;
+  }
+
+  function hash01(a,b,c,d){
+    return hash32(a,b,c,d)/4294967295;
+  }
+
+  /* Warm limited palette; overlap/alpha supplies intermediate values. */
+  const flamePalette=[
+    [91,17,7],
+    [145,28,7],
+    [211,51,8],
+    [245,85,11],
+    [255,128,18],
+    [255,177,30],
+    [255,218,73],
+    [255,244,170]
+  ];
+
+  ctx.save();
+  /*
+    R143: treat the requested transparency as a readable translucent flame
+    body: 75% opacity / 25% transparency. Terrain and units remain visible
+    through the blast without washing the flame colors away.
+  */
+  const fireballBodyOpacity=0.75*fade;
+
+  /*
+    R141: render the Fireball body to an offscreen canvas, then stamp a 2-pixel
+    black silhouette around the combined body so the entire flame mass reads as
+    one outlined object rather than many separately outlined lobes.
+  */
+  const bodyCanvas=document.createElement("canvas");
+  bodyCanvas.width=ctx.canvas.width;
+  bodyCanvas.height=ctx.canvas.height;
+  const bodyCtx=bodyCanvas.getContext("2d");
+  bodyCtx.imageSmoothingEnabled=false;
+
+  for(const cell of cells){
+    const ring=Number.isFinite(cell.volumeDistance)
+      ? cell.volumeDistance
+      : hexDistance(center,cell);
+    const horizontalNorm=ring/(spreadRadius+0.35);
+    const domeFactor=Math.sqrt(Math.max(0,1-horizontalNorm*horizontalNorm));
+    const maxHeight=Math.max(16,verticalRadius*domeFactor);
+    const c=hexCenter(cell.x,cell.y);
+
+    /*
+      Each horizontal cell gets several large translucent spheres through the
+      vertical column. Neighboring cells use radii wider than half a hex, so
+      the 19-cell footprint fuses into one continuous cloud rather than 19
+      individual puffs.
+    */
+    const layerCount=Math.max(2,Math.ceil(maxHeight/22));
+
+    for(let layer=layerCount;layer>=0;layer--){
+      const z=(layer/layerCount)*maxHeight*growth;
+      const verticalNorm=z/Math.max(1,verticalRadius);
+      const volumeDistance=Math.sqrt(
+        horizontalNorm*horizontalNorm+verticalNorm*verticalNorm
+      );
+
+      if(volumeDistance>growth+0.15) continue;
+
+      const heat=Math.max(0,1-volumeDistance);
+      const lobes=3+Math.round(heat*2);
+
+      for(let i=0;i<lobes;i++){
+        const h1=hash01(cell.x,cell.y,layer,i+frame%3);
+        const h2=hash01(cell.x+71,cell.y-37,layer,i+19);
+        const h3=hash01(cell.x-43,cell.y+113,layer,i+31);
+        const h4=hash01(cell.x+149,cell.y+29,layer,i+47);
+
+        const ox=(h1-0.5)*HEX_W*0.76;
+        const oy=(h2-0.5)*HEX_H*0.34;
+
+        /* Large radii are intentional: overlap is the visual construction. */
+        const radiusPx=(
+          HEX_W*(0.30+0.14*h3) *
+          (0.78+0.28*heat) *
+          Math.max(0.22,growth)
+        );
+        const ry=radiusPx*(0.72+0.12*h4);
+
+        const flicker=(frame+i+layer)%3;
+        let colorIndex=Math.round(
+          heat*(flamePalette.length-1)+
+          (flicker===0 ? 1 : flicker===2 ? -1 : 0)
+        );
+        colorIndex=Math.max(0,Math.min(flamePalette.length-1,colorIndex));
+        const [r,g,b]=flamePalette[colorIndex];
+
+        /* Outer lobes are intentionally fully opaque in the current experiment. */
+        const alpha=1;
+
+        bodyCtx.fillStyle=`rgba(${r},${g},${b},${alpha})`;
+        bodyCtx.beginPath();
+        bodyCtx.ellipse(
+          c.x+ox,
+          c.y-z+oy,
+          radiusPx,
+          ry,
+          0,
+          0,
+          Math.PI*2
+        );
+        bodyCtx.fill();
+
+        /* Small inner glow volume on hotter lobes; still spherical, no squares. */
+        if(heat>0.50 && h1>0.42){
+          const innerAlpha=1;
+          bodyCtx.fillStyle=`rgba(255,232,112,${innerAlpha})`;
+          bodyCtx.beginPath();
+          bodyCtx.ellipse(
+            c.x+ox-radiusPx*0.14,
+            c.y-z+oy-ry*0.16,
+            radiusPx*0.58,
+            ry*0.54,
+            0,
+            0,
+            Math.PI*2
+          );
+          bodyCtx.fill();
+        }
+      }
+    }
+  }
+
+  /*
+    Candidate Rev 28:
+    remove the exterior Fireball outline completely.
+
+    Add a strong localized red/orange illumination field centered on the
+    detonation target. Its falloff scales with the resolved Fireball spread so
+    it reaches the blast edges without becoming a screen-wide flash.
   */
   const targetCenter=
     hexCenter(
@@ -26094,27 +26787,27 @@ function drawDragonBreathFx(){
 
   targetLight.addColorStop(
     0,
-    `rgba(255,120,34,${0.46*fade})`
+    `rgba(255,118,30,${0.48*fade})`
   );
 
   targetLight.addColorStop(
-    0.28,
-    `rgba(242,68,16,${0.34*fade})`
+    0.30,
+    `rgba(238,61,12,${0.34*fade})`
   );
 
   targetLight.addColorStop(
-    0.62,
-    `rgba(190,35,9,${0.20*fade})`
+    0.64,
+    `rgba(183,31,8,${0.19*fade})`
   );
 
   targetLight.addColorStop(
     0.88,
-    `rgba(126,17,5,${0.085*fade})`
+    `rgba(119,15,5,${0.075*fade})`
   );
 
   targetLight.addColorStop(
     1,
-    "rgba(90,10,3,0)"
+    "rgba(82,8,3,0)"
   );
 
   ctx.fillStyle=targetLight;
@@ -26129,14 +26822,11 @@ function drawDragonBreathFx(){
   ctx.fill();
 
   /*
-    Heavy flame-shaped glow:
-    reuse the exact Fireball body silhouette, blurred in two additive passes.
-    This keeps the aura organic and matched to the moving flame mass.
+    Heavy organic glow generated from the exact moving Fireball body.
   */
   ctx.filter="blur(16px)";
   ctx.globalAlpha=
     0.34*fade;
-
   ctx.drawImage(
     bodyCanvas,
     0,
@@ -26146,7 +26836,6 @@ function drawDragonBreathFx(){
   ctx.filter="blur(7px)";
   ctx.globalAlpha=
     0.30*fade;
-
   ctx.drawImage(
     bodyCanvas,
     0,
@@ -26157,8 +26846,8 @@ function drawDragonBreathFx(){
   ctx.restore();
 
   /*
-    Draw the actual flame body last so its temperature palette remains crisp
-    inside the heavy glow.
+    Paint the actual body last so its original temperature palette remains
+    crisp inside the glow.
   */
   ctx.imageSmoothingEnabled=false;
   ctx.globalAlpha=
