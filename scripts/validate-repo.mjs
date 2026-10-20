@@ -120,6 +120,35 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
   if (!index.includes(ref)) fail(`index.html does not reference ${ref}`);
 }
 
+const placeholderSpellSfxPath =
+  "js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js";
+
+requireFile(placeholderSpellSfxPath);
+
+if (!index.includes(placeholderSpellSfxPath)) {
+  fail("index.html does not load the Candidate Rev 38 placeholder spell SFX / Grease VFX module.");
+}
+
+if (fs.existsSync(placeholderSpellSfxPath)) {
+  const placeholderSpellSfx =
+    fs.readFileSync(placeholderSpellSfxPath, "utf8");
+
+  for (const requiredToken of [
+    "r38PlayLaughterSound",
+    "r38PlayTauntSound",
+    "r38PlayScareSound",
+    "r38PlayFogCloudSound",
+    "r38PlayWallOfFogSound",
+    "r38PlayGreaseSound",
+    "r38PlayStinkingCloudFartSound",
+    "r38DrawGreaseVfx"
+  ]) {
+    if (!placeholderSpellSfx.includes(requiredToken)) {
+      fail(`Candidate Rev 38 placeholder spell module is missing ${requiredToken}.`);
+    }
+  }
+}
+
 /*
   Spell Previewer parity guard
   ----------------------------
