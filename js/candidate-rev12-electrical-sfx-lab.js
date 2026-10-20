@@ -412,7 +412,13 @@
     const preset=el(IDS.preset);
     if(!preset) return;
 
-    preset.addEventListener("change",()=>applyPreset(preset.value));
+    preset.addEventListener("change",()=>{
+      if(preset.value==="custom"){
+        setStatus("Custom values retained. Adjust sliders or press Play SFX.","ready");
+        return;
+      }
+      applyPreset(preset.value);
+    });
 
     el(IDS.play)?.addEventListener("click",async()=>{
       await unlockAudio();
