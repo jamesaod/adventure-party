@@ -194,26 +194,32 @@
           const weight=
             Math.pow(
               Math.max(0,1-r2),
-              0.42
+              0.85
             )*
             scalar;
 
           const k=this.idx(gx,gy);
 
+          /*
+            Rev 22: sources no longer add heat/density on top of an already-hot
+            cell. Repeated overlapping blast-cell splats now take the strongest
+            local contribution instead. This preserves full-volume coverage
+            without saturating the field to opaque white.
+          */
           this.temp[k]=clamp01(
             Math.max(
               this.temp[k],
-              (Number(heat)||0)*weight
-            )+
-            0.08*weight
+              (Number(heat)||0)*
+              weight
+            )
           );
 
           this.dens[k]=clamp01(
             Math.max(
               this.dens[k],
-              (Number(density)||0)*weight
-            )+
-            0.10*weight
+              (Number(density)||0)*
+              weight
+            )
           );
 
           this.u[k]+=
