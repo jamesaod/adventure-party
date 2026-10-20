@@ -802,6 +802,27 @@
     ctx.globalCompositeOperation="lighter";
 
     /*
+      Rev 19: retain the tactical hex lighting introduced in Rev 18, but restore
+      the screen-wide electrical return-stroke flash from the earlier Lightning
+      Bolt presentation. The flash follows the existing restrike envelope, so it
+      snaps on each discharge rather than becoming a steady blue wash.
+    */
+    ctx.fillStyle=
+      "rgba(190,225,255,"+
+      Math.min(
+        0.16,
+        0.068*intensity
+      )+
+      ")";
+
+    ctx.fillRect(
+      0,
+      0,
+      ctx.canvas.width,
+      ctx.canvas.height
+    );
+
+    /*
       Rev 18: lighting now follows the tactical grid instead of painting a
       broad continuous wash. Every traversed bolt hex receives one tight
       blue-white illumination footprint.
@@ -908,41 +929,88 @@
     }
 
     if(terminalCell){
-      const cluster=
-        hexesWithinRadius(
-          terminalCell,
-          1
-        ).filter(cell=>
-          inside(
-            cell.x,
-            cell.y
-          )
+      /*
+        Rev 19: one broad terminal flash, centered on the true terminal hex.
+        Its falloff reaches across the six adjacent hexes naturally; this is
+        intentionally NOT seven individually illuminated tiles.
+      */
+      const center=
+        hexCenter(
+          terminalCell.x,
+          terminalCell.y
         );
 
-      for(const cell of cluster){
-        const center=
-          cell.x===terminalCell.x &&
-          cell.y===terminalCell.y;
-
-        drawLightningHexLight(
-          cell,
-          intensity,
-          {
-            centerBoost:
-              center
-                ? 1.70
-                : 1.18,
-            edgeAlpha:
-              center
-                ? 0.20
-                : 0.15,
-            coreAlpha:
-              center
-                ? 0.62
-                : 0.48
-          }
+      const radius=
+        Math.max(
+          HEX_W*1.72,
+          HEX_H*2.20
         );
-      }
+
+      const terminalGlow=
+        ctx.createRadialGradient(
+          center.x,
+          center.y,
+          0,
+          center.x,
+          center.y,
+          radius
+        );
+
+      terminalGlow.addColorStop(
+        0,
+        "rgba(250,254,255,"+
+        Math.min(
+          0.98,
+          0.82*intensity
+        )+
+        ")"
+      );
+
+      terminalGlow.addColorStop(
+        0.20,
+        "rgba(200,234,255,"+
+        Math.min(
+          0.82,
+          0.54*intensity
+        )+
+        ")"
+      );
+
+      terminalGlow.addColorStop(
+        0.55,
+        "rgba(110,178,255,"+
+        Math.min(
+          0.58,
+          0.30*intensity
+        )+
+        ")"
+      );
+
+      terminalGlow.addColorStop(
+        0.82,
+        "rgba(78,132,255,"+
+        Math.min(
+          0.30,
+          0.13*intensity
+        )+
+        ")"
+      );
+
+      terminalGlow.addColorStop(
+        1,
+        "rgba(65,112,245,0)"
+      );
+
+      ctx.fillStyle=terminalGlow;
+      ctx.beginPath();
+      ctx.arc(
+        center.x,
+        center.y,
+        radius,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
     }
 
     ctx.restore();
