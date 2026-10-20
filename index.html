@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/adventure-party.css?v=R237C12">
+<link rel="stylesheet" href="css/adventure-party.css?v=R237C13">
 </head>
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R237","candidateRevision":12,"builtAt":"2026-10-20T08:14:31-04:00"}
+{"architecture":"Multi-File Engine","release":"R237","candidateRevision":13,"builtAt":"2026-10-20T08:14:31-04:00"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -24,7 +24,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 12</div>
+        <div class="candidate-label">Candidate Rev 13</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
       </div>
     </header>
@@ -122,7 +122,7 @@
         <h1>Spell Effects Previewer</h1>
       </div>
       <div class="spell-preview-header-actions">
-        <span class="spell-preview-candidate">Candidate Rev 12</span>
+        <span class="spell-preview-candidate">Candidate Rev 13</span>
         <button id="spellPreviewReturnButton" class="pixel-return-button" type="button">
           Return to Launcher [Esc]
         </button>
@@ -261,6 +261,73 @@
 
           <div id="electricalLabStatus" class="electrical-sfx-lab-status" data-state="ready">
             Lightning Bolt preset loaded.
+          </div>
+        </section>
+
+        <section class="adaptive-lightning-lab" aria-labelledby="adaptiveLightningLabHeading">
+          <div class="spell-preview-panel-title" id="adaptiveLightningLabHeading">Adaptive-Mesh Lightning VFX Laboratory [DEV]</div>
+          <div class="spell-preview-note adaptive-lightning-note">
+            First visual trial of Kim &amp; Lin's dielectric-breakdown method. Production Lightning Bolt is unchanged.
+          </div>
+
+          <canvas id="adaptiveLightningLabCanvas" class="adaptive-lightning-canvas" width="360" height="210" aria-label="Dielectric breakdown lightning preview"></canvas>
+
+          <div class="adaptive-lightning-actions">
+            <button id="adaptiveLightningGenerate" class="pixel-action-button primary" type="button">Generate</button>
+            <button id="adaptiveLightningAnimate" class="pixel-action-button" type="button">Animate Growth</button>
+            <button id="adaptiveLightningReroll" class="pixel-action-button" type="button">New Seed</button>
+          </div>
+
+          <div class="adaptive-lightning-controls">
+            <label>
+              <span>η branchiness</span>
+              <input id="adaptiveLightningEta" data-adaptive-lightning-control type="range" min="1" max="4" step="0.05" value="1.80">
+              <output data-adaptive-lightning-output="adaptiveLightningEta"></output>
+            </label>
+
+            <label>
+              <span>Field</span>
+              <select id="adaptiveLightningResolution">
+                <option value="48x28">48×28</option>
+                <option value="64x36" selected>64×36</option>
+                <option value="80x45">80×45</option>
+              </select>
+              <output>2D</output>
+            </label>
+
+            <label>
+              <span>Solver sweeps</span>
+              <input id="adaptiveLightningIterations" data-adaptive-lightning-control type="range" min="4" max="50" step="1" value="14">
+              <output data-adaptive-lightning-output="adaptiveLightningIterations"></output>
+            </label>
+
+            <label>
+              <span>Cell jitter</span>
+              <input id="adaptiveLightningJitter" data-adaptive-lightning-control type="range" min="0" max="0.48" step="0.01" value="0.38">
+              <output data-adaptive-lightning-output="adaptiveLightningJitter"></output>
+            </label>
+
+            <label>
+              <span>Glow</span>
+              <input id="adaptiveLightningGlow" data-adaptive-lightning-control type="range" min="0.25" max="2.5" step="0.05" value="1.00">
+              <output data-adaptive-lightning-output="adaptiveLightningGlow"></output>
+            </label>
+
+            <label>
+              <span>Seed</span>
+              <input id="adaptiveLightningSeed" type="number" step="1" value="137">
+              <output>#</output>
+            </label>
+          </div>
+
+          <label class="spell-preview-check adaptive-lightning-grid-check">
+            <input id="adaptiveLightningShowGrid" type="checkbox">
+            Show simulation grid
+          </label>
+
+          <div id="adaptiveLightningStats" class="adaptive-lightning-stats">Ready.</div>
+          <div id="adaptiveLightningStatus" class="electrical-sfx-lab-status" data-state="ready">
+            DBM stepped-leader preview ready.
           </div>
         </section>
 
@@ -743,7 +810,7 @@
   </div>
 </section>
 
-<script src="js/adventure-party.js?v=R237C12"></script>
+<script src="js/adventure-party.js?v=R237C13"></script>
 <script src="js/los-wall-boundary-fix.js?v=R237"></script>
 <script src="js/obscuring-volume-los.js?v=R237"></script>
 <script src="js/r218-presentation-audio.js?v=R237"></script>
@@ -794,6 +861,6 @@
 <script src="js/candidate-rev7-gaseous-clouds.js?v=candidate-rev-7"></script>
 <script src="js/candidate-rev8-cloud-tufts.js?v=candidate-rev-8"></script>
 <script src="js/candidate-rev9-cloud-union-outline.js?v=candidate-rev-9"></script>
-<script src="js/candidate-rev10-dqk-sfx.js?v=candidate-rev-10"></script>\n<script src="js/candidate-rev12-electrical-sfx-lab.js?v=candidate-rev-12"></script>
+<script src="js/candidate-rev10-dqk-sfx.js?v=candidate-rev-10"></script>\n<script src="js/candidate-rev12-electrical-sfx-lab.js?v=candidate-rev-12"></script>\n<script src="js/candidate-rev13-dbm-lightning-vfx-lab.js?v=candidate-rev-13"></script>
 </body>
 </html>
