@@ -26052,455 +26052,124 @@ function drawDragonBreathFx(){
 
   bodyCtx.restore();
 
-  const silhouetteCanvas=document.createElement("canvas");
-  silhouetteCanvas.width=bodyCanvas.width;
-  silhouetteCanvas.height=bodyCanvas.height;
-  const silhouetteCtx=silhouetteCanvas.getContext("2d");
-  silhouetteCtx.imageSmoothingEnabled=false;
-  silhouetteCtx.drawImage(bodyCanvas,0,0);
-  silhouetteCtx.globalCompositeOperation="source-in";
-  silhouetteCtx.fillStyle="rgba(0,0,0,1)";
-  silhouetteCtx.fillRect(
-    0,
-    0,
-    silhouetteCanvas.width,
-    silhouetteCanvas.height
-  );
-  silhouetteCtx.globalCompositeOperation="source-over";
-
-  const outlineCanvas=document.createElement("canvas");
-  outlineCanvas.width=bodyCanvas.width;
-  outlineCanvas.height=bodyCanvas.height;
-  const outlineCtx=outlineCanvas.getContext("2d");
-  outlineCtx.imageSmoothingEnabled=false;
-
-  for(let dy=-2;dy<=2;dy++){
-    for(let dx=-2;dx<=2;dx++){
-      if(dx===0 && dy===0) continue;
-      if((dx*dx)+(dy*dy)>4) continue;
-      outlineCtx.drawImage(silhouetteCanvas,dx,dy);
-    }
-  }
-
-  outlineCtx.globalCompositeOperation="destination-out";
-  outlineCtx.drawImage(silhouetteCanvas,0,0);
-  outlineCtx.globalCompositeOperation="source-over";
-
-  ctx.save();
-  ctx.imageSmoothingEnabled=false;
-
   /*
-    Smoke now follows the cone's centerline rather than tactical cells, so the
-    far exhaust cannot reintroduce a hex-shaped silhouette.
+    Candidate Rev 27:
+    The old outside-only black silhouette is removed completely.
+
+    First paint a broad red/orange illumination field centered on the actual
+    Fireball target. Its falloff is sized from the resolved Fireball spread so
+    the warm light reaches approximately to the blast edges without becoming
+    a screen-wide flash.
   */
-  const smokePuffCount=22;
-  for(let puff=0;puff<smokePuffCount;puff++){
-    const h1=hash01(puff,frame+307,5,13);
-    const h2=hash01(puff+97,frame-179,17,29);
-    const h3=hash01(puff-211,frame+263,31,43);
-
-    const q=0.64+h1*0.36;
-    if(q>growth+0.02) continue;
-
-    const halfWidth=4+(fullEndHalfWidth-4)*q;
-    const lateral=(h2-0.5)*halfWidth*1.30;
-    const age=(t+h3*0.24)%1;
-
-    const sx=
-      mouth.x+
-      dirX*fullLength*q+
-      normalX*lateral;
-    const sy=
-      mouth.y+
-      dirY*fullLength*q+
-      normalY*lateral-
-      age*(18+q*24);
-
-    const smokeRadius=(
-      7+
-      q*11+
-      hash01(puff,frame,59,71)*5
-    )*(0.78+0.28*growth);
-    const smokeAlpha=(0.10+q*0.12)*(1-age*0.72)*fade;
-
-    ctx.globalAlpha=smokeAlpha;
-    ctx.fillStyle=
-      puff%3===0
-        ? "#171a1e"
-        : puff%3===1
-          ? "#292c30"
-          : "#3a3c3f";
-    ctx.beginPath();
-    ctx.ellipse(
-      sx,
-      sy,
-      smokeRadius*1.15,
-      smokeRadius*0.72,
-      0,
-      0,
-      Math.PI*2
+  const targetCenter=
+    hexCenter(
+      fx.x,
+      fx.y
     );
-    ctx.fill();
-  }
 
-  /* R191 white-hot bloom retained around the tighter R192 cone. */
+  const illuminationRadius=
+    Math.max(
+      HEX_W*1.35,
+      spreadRadius*
+      HEX_W*
+      1.18*
+      Math.max(
+        0.42,
+        growth
+      )
+    );
+
   ctx.save();
   ctx.globalCompositeOperation="lighter";
-  ctx.filter="blur(6px)";
-  ctx.globalAlpha=0.31*fade;
-  ctx.drawImage(bodyCanvas,0,0);
-  ctx.filter="blur(2px)";
-  ctx.globalAlpha=0.19*fade;
-  ctx.drawImage(bodyCanvas,0,0);
-  ctx.restore();
 
-  ctx.globalAlpha=0.55*fade;
-  ctx.drawImage(outlineCanvas,0,0);
-
-  ctx.globalAlpha=0.92*fade;
-  ctx.drawImage(bodyCanvas,0,0);
-
-  ctx.globalCompositeOperation="lighter";
-  ctx.globalAlpha=0.25*fade;
-  ctx.drawImage(bodyCanvas,0,0);
-  ctx.globalCompositeOperation="source-over";
-  ctx.globalAlpha=1;
-
-  /*
-    Grain samples uniformly inside the presentation cone instead of selecting
-    tactical cells. This preserves the pixel texture without exposing hex rows.
-  */
-  const grainCount=Math.max(180,Math.round(340*growth));
-  for(let i=0;i<grainCount;i++){
-    const q=hash01(i,fx.source.x+11,fx.source.y-17,3)*growth;
-    const h2=hash01(i,fx.source.x-29,fx.source.y+7,9);
-    const h3=hash01(i,fx.source.x+53,fx.source.y+91,15);
-    const halfWidth=4+(fullEndHalfWidth-4)*q;
-    const lateral=(h2-0.5)*2*halfWidth*0.90;
-
-    const px=
-      mouth.x+
-      dirX*fullLength*q+
-      normalX*lateral;
-    const py=
-      mouth.y+
-      dirY*fullLength*q+
-      normalY*lateral;
-    const size=h3>0.84 ? 3 : 2;
-    const lateralNorm=
-      halfWidth>0
-        ? Math.min(1,Math.abs(lateral)/halfWidth)
-        : 0;
-
-    ctx.fillStyle=
-      lateralNorm<0.34
-        ? `rgba(255,255,232,${0.74*fade})`
-        : lateralNorm<0.72
-          ? `rgba(255,210,82,${0.64*fade})`
-          : `rgba(235,78,8,${0.48*fade})`;
-
-    ctx.fillRect(
-      Math.round(px),
-      Math.round(py),
-      size,
-      size
-    );
-  }
-
-  /*
-    Embers also follow the cone mathematically. They may drift beyond the flame
-    edge as they rise, but their source distribution remains conical.
-  */
-  const particleCount=420;
-  for(let i=0;i<particleCount;i++){
-    const born=hash01(fx.source.x+211,fx.source.y-97,i,7)*0.46;
-    if(t<born) continue;
-
-    const life=Math.max(
+  const targetLight=
+    ctx.createRadialGradient(
+      targetCenter.x,
+      targetCenter.y-HEX_H*0.16,
       0,
-      Math.min(1,(t-born)/Math.max(0.01,1-born))
-    );
-    if(life>=1) continue;
-
-    const q=hash01(fx.source.x-43,fx.source.y+67,i,13);
-    if(q>growth+0.07) continue;
-
-    const halfWidth=4+(fullEndHalfWidth-4)*Math.min(1,q);
-    const lateral=(
-      hash01(fx.source.x+19,fx.source.y+149,i,23)-0.5
-    )*2*halfWidth*1.08;
-
-    const rise=life*(
-      9+
-      hash01(fx.source.x+89,fx.source.y-17,i,31)*30
+      targetCenter.x,
+      targetCenter.y-HEX_H*0.16,
+      illuminationRadius
     );
 
-    const px=
-      mouth.x+
-      dirX*fullLength*q+
-      normalX*lateral;
-    const py=
-      mouth.y+
-      dirY*fullLength*q+
-      normalY*lateral-
-      rise;
-
-    const sizeRoll=hash01(fx.source.x-131,fx.source.y+41,i,47);
-    const size=
-      sizeRoll>0.94
-        ? 3
-        : sizeRoll>0.55
-          ? 2
-          : 1;
-    const alpha=Math.max(0,1-life)*0.62*fade;
-
-    ctx.fillStyle=
-      i%3===0
-        ? `rgba(255,242,150,${alpha})`
-        : i%3===1
-          ? `rgba(255,132,20,${alpha})`
-          : `rgba(196,45,8,${alpha})`;
-
-    if(i%4===0){
-      ctx.fillRect(
-        Math.round(px),
-        Math.round(py),
-        size,
-        Math.max(2,size+2)
-      );
-    }else{
-      ctx.fillRect(
-        Math.round(px),
-        Math.round(py),
-        size,
-        size
-      );
-    }
-  }
-
-  ctx.restore();
-}
-
-function drawFireballExplosionFx(){
-  if(!fireballExplosionFx) return;
-
-  const fx=fireballExplosionFx;
-  const elapsed=Math.max(0,performance.now()-fx.started);
-
-  /*
-    R138 Fireball opacity experiment: the volumetric cloud still uses
-    overlapping spherical flame lobes, but all drawn Fireball pixels are opaque.
-    Motion remains lightly stepped so the effect still belongs beside retro art,
-    but the actual volume is intentionally organic and continuous.
-  */
-  const frameMs=58;
-  const frame=Math.floor(elapsed/frameMs);
-  const steppedElapsed=Math.min(fx.duration,frame*frameMs);
-  const t=Math.max(0,Math.min(1,steppedElapsed/fx.duration));
-
-  const growthEnd=0.58;
-  const growth=Math.min(1,t/growthEnd);
-  const fade=t<0.67
-    ? 1
-    : Math.max(0,1-(t-0.67)/0.33);
-
-  const radius=Math.max(1,Number(fx.radiusHexes)||1);
-  const cells=(fx.cells?.length
-    ? fx.cells
-    : hexesWithinRadius({x:fx.x,y:fx.y},radius)
-  ).slice();
-
-  const center={x:fx.x,y:fx.y};
-  const verticalRadius=radius*HEX_W;
-  const spreadRadius=Math.max(
-    radius,
-    Number(fx.maxVolumeDistance)||radius
+  targetLight.addColorStop(
+    0,
+    `rgba(255,120,34,${0.46*fade})`
   );
 
-  cells.sort((a,b)=>{
-    const ac=hexCenter(a.x,a.y);
-    const bc=hexCenter(b.x,b.y);
-    return ac.y-bc.y || ac.x-bc.x;
-  });
+  targetLight.addColorStop(
+    0.28,
+    `rgba(242,68,16,${0.34*fade})`
+  );
 
-  function hash32(a,b,c,d){
-    let n=(
-      Math.imul((a|0)+4099,73856093) ^
-      Math.imul((b|0)-8191,19349663) ^
-      Math.imul((c|0)+131,83492791) ^
-      Math.imul((d|0)+17,2654435761)
-    )>>>0;
-    n^=n>>>13;
-    n=Math.imul(n,1274126177)>>>0;
-    n^=n>>>16;
-    return n>>>0;
-  }
+  targetLight.addColorStop(
+    0.62,
+    `rgba(190,35,9,${0.20*fade})`
+  );
 
-  function hash01(a,b,c,d){
-    return hash32(a,b,c,d)/4294967295;
-  }
+  targetLight.addColorStop(
+    0.88,
+    `rgba(126,17,5,${0.085*fade})`
+  );
 
-  /* Warm limited palette; overlap/alpha supplies intermediate values. */
-  const flamePalette=[
-    [91,17,7],
-    [145,28,7],
-    [211,51,8],
-    [245,85,11],
-    [255,128,18],
-    [255,177,30],
-    [255,218,73],
-    [255,244,170]
-  ];
+  targetLight.addColorStop(
+    1,
+    "rgba(90,10,3,0)"
+  );
 
-  ctx.save();
-  /*
-    R143: treat the requested transparency as a readable translucent flame
-    body: 75% opacity / 25% transparency. Terrain and units remain visible
-    through the blast without washing the flame colors away.
-  */
-  const fireballBodyOpacity=0.75*fade;
+  ctx.fillStyle=targetLight;
+  ctx.beginPath();
+  ctx.arc(
+    targetCenter.x,
+    targetCenter.y-HEX_H*0.16,
+    illuminationRadius,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
 
   /*
-    R141: render the Fireball body to an offscreen canvas, then stamp a 2-pixel
-    black silhouette around the combined body so the entire flame mass reads as
-    one outlined object rather than many separately outlined lobes.
+    Heavy flame-shaped glow:
+    reuse the exact Fireball body silhouette, blurred in two additive passes.
+    This keeps the aura organic and matched to the moving flame mass.
   */
-  const bodyCanvas=document.createElement("canvas");
-  bodyCanvas.width=ctx.canvas.width;
-  bodyCanvas.height=ctx.canvas.height;
-  const bodyCtx=bodyCanvas.getContext("2d");
-  bodyCtx.imageSmoothingEnabled=false;
+  ctx.filter="blur(16px)";
+  ctx.globalAlpha=
+    0.34*fade;
 
-  for(const cell of cells){
-    const ring=Number.isFinite(cell.volumeDistance)
-      ? cell.volumeDistance
-      : hexDistance(center,cell);
-    const horizontalNorm=ring/(spreadRadius+0.35);
-    const domeFactor=Math.sqrt(Math.max(0,1-horizontalNorm*horizontalNorm));
-    const maxHeight=Math.max(16,verticalRadius*domeFactor);
-    const c=hexCenter(cell.x,cell.y);
+  ctx.drawImage(
+    bodyCanvas,
+    0,
+    0
+  );
 
-    /*
-      Each horizontal cell gets several large translucent spheres through the
-      vertical column. Neighboring cells use radii wider than half a hex, so
-      the 19-cell footprint fuses into one continuous cloud rather than 19
-      individual puffs.
-    */
-    const layerCount=Math.max(2,Math.ceil(maxHeight/22));
+  ctx.filter="blur(7px)";
+  ctx.globalAlpha=
+    0.30*fade;
 
-    for(let layer=layerCount;layer>=0;layer--){
-      const z=(layer/layerCount)*maxHeight*growth;
-      const verticalNorm=z/Math.max(1,verticalRadius);
-      const volumeDistance=Math.sqrt(
-        horizontalNorm*horizontalNorm+verticalNorm*verticalNorm
-      );
+  ctx.drawImage(
+    bodyCanvas,
+    0,
+    0
+  );
 
-      if(volumeDistance>growth+0.15) continue;
-
-      const heat=Math.max(0,1-volumeDistance);
-      const lobes=3+Math.round(heat*2);
-
-      for(let i=0;i<lobes;i++){
-        const h1=hash01(cell.x,cell.y,layer,i+frame%3);
-        const h2=hash01(cell.x+71,cell.y-37,layer,i+19);
-        const h3=hash01(cell.x-43,cell.y+113,layer,i+31);
-        const h4=hash01(cell.x+149,cell.y+29,layer,i+47);
-
-        const ox=(h1-0.5)*HEX_W*0.76;
-        const oy=(h2-0.5)*HEX_H*0.34;
-
-        /* Large radii are intentional: overlap is the visual construction. */
-        const radiusPx=(
-          HEX_W*(0.30+0.14*h3) *
-          (0.78+0.28*heat) *
-          Math.max(0.22,growth)
-        );
-        const ry=radiusPx*(0.72+0.12*h4);
-
-        const flicker=(frame+i+layer)%3;
-        let colorIndex=Math.round(
-          heat*(flamePalette.length-1)+
-          (flicker===0 ? 1 : flicker===2 ? -1 : 0)
-        );
-        colorIndex=Math.max(0,Math.min(flamePalette.length-1,colorIndex));
-        const [r,g,b]=flamePalette[colorIndex];
-
-        /* Outer lobes are intentionally fully opaque in the current experiment. */
-        const alpha=1;
-
-        bodyCtx.fillStyle=`rgba(${r},${g},${b},${alpha})`;
-        bodyCtx.beginPath();
-        bodyCtx.ellipse(
-          c.x+ox,
-          c.y-z+oy,
-          radiusPx,
-          ry,
-          0,
-          0,
-          Math.PI*2
-        );
-        bodyCtx.fill();
-
-        /* Small inner glow volume on hotter lobes; still spherical, no squares. */
-        if(heat>0.50 && h1>0.42){
-          const innerAlpha=1;
-          bodyCtx.fillStyle=`rgba(255,232,112,${innerAlpha})`;
-          bodyCtx.beginPath();
-          bodyCtx.ellipse(
-            c.x+ox-radiusPx*0.14,
-            c.y-z+oy-ry*0.16,
-            radiusPx*0.58,
-            ry*0.54,
-            0,
-            0,
-            Math.PI*2
-          );
-          bodyCtx.fill();
-        }
-      }
-    }
-  }
-
-  const silhouetteCanvas=document.createElement("canvas");
-  silhouetteCanvas.width=bodyCanvas.width;
-  silhouetteCanvas.height=bodyCanvas.height;
-  const silhouetteCtx=silhouetteCanvas.getContext("2d");
-  silhouetteCtx.imageSmoothingEnabled=false;
-  silhouetteCtx.drawImage(bodyCanvas,0,0);
-  silhouetteCtx.globalCompositeOperation="source-in";
-  silhouetteCtx.fillStyle="rgba(0,0,0,1)";
-  silhouetteCtx.fillRect(0,0,silhouetteCanvas.width,silhouetteCanvas.height);
-  silhouetteCtx.globalCompositeOperation="source-over";
+  ctx.filter="none";
+  ctx.restore();
 
   /*
-    R143: build a true OUTSIDE-only outline ring. R141/R142 stamped the whole
-    black silhouette behind the translucent body, so the black interior showed
-    through the flame and made transparency look like darkening. We now dilate
-    the silhouette by 2 px, then subtract the original silhouette from it.
+    Draw the actual flame body last so its temperature palette remains crisp
+    inside the heavy glow.
   */
-  const outlineCanvas=document.createElement("canvas");
-  outlineCanvas.width=bodyCanvas.width;
-  outlineCanvas.height=bodyCanvas.height;
-  const outlineCtx=outlineCanvas.getContext("2d");
-  outlineCtx.imageSmoothingEnabled=false;
-
-  for(let dy=-2;dy<=2;dy++){
-    for(let dx=-2;dx<=2;dx++){
-      if(dx===0 && dy===0) continue;
-      if((dx*dx)+(dy*dy)>4) continue;
-      outlineCtx.drawImage(silhouetteCanvas,dx,dy);
-    }
-  }
-
-  outlineCtx.globalCompositeOperation="destination-out";
-  outlineCtx.drawImage(silhouetteCanvas,0,0);
-  outlineCtx.globalCompositeOperation="source-over";
-
   ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=0.92*fade;
-  ctx.drawImage(outlineCanvas,0,0);
-  ctx.globalAlpha=fireballBodyOpacity;
-  ctx.drawImage(bodyCanvas,0,0);
+  ctx.globalAlpha=
+    fireballBodyOpacity;
+
+  ctx.drawImage(
+    bodyCanvas,
+    0,
+    0
+  );
+
   ctx.globalAlpha=1;
 
   /* Light fire-only grain/dither filter pass. */
