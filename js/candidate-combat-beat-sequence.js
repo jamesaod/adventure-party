@@ -42,7 +42,6 @@ function candidateCombatBeatPresentationEnabled(){
   return !!(
     game &&
     currentScreen==="combat" &&
-    !game.over &&
     !combatAwaitingStart
   );
 }
@@ -66,10 +65,20 @@ function candidateCombatBeatRemaining(){
 
 function candidateCombatBeatGroupFor(unit){
   const key=candidateCombatBeatKey(unit);
+  const existing=
+    candidateCombatBeatGroups.get(key);
 
-  if(!candidateCombatBeatGroups.has(key)){
+  /*
+    Unit ids are reused between battles. Never let a previous encounter's
+    presentation timeline delay or leak into a newly created game object.
+  */
+  if(
+    !existing ||
+    existing.gameRef!==game
+  ){
     candidateCombatBeatGroups.set(key,{
       key,
+      gameRef:game,
       nextAvailableAt:0,
       pending:[]
     });
@@ -127,6 +136,7 @@ function candidateQueueCombatBeat(
 
   const beat={
     id:++candidateCombatBeatSequence,
+    gameRef:game,
     unit,
     unitId:unit.id || null,
     category,
@@ -159,6 +169,7 @@ function candidateQueueCombatBeat(
 function candidateRunCombatBeat(beat){
   if(
     !beat ||
+    beat.gameRef!==game ||
     !candidateCombatBeatPresentationEnabled()
   ){
     return;
