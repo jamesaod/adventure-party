@@ -25755,6 +25755,56 @@ function drawProjectileFx(){
 
     const dx=end.x-start.x;
     const dy=end.y-start.y;
+
+    /*
+      Candidate Rev 29:
+      the moving Fireball projectile now carries its own localized light.
+      Keep this centered on the projectile head so the warm illumination
+      travels continuously from the caster to the detonation hex.
+    */
+    const projectileLightRadius=HEX_W*1.55;
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+
+    const projectileLight=
+      ctx.createRadialGradient(
+        x,
+        y-2,
+        0,
+        x,
+        y-2,
+        projectileLightRadius
+      );
+
+    projectileLight.addColorStop(
+      0,
+      "rgba(255,205,91,0.44)"
+    );
+    projectileLight.addColorStop(
+      0.24,
+      "rgba(255,115,26,0.34)"
+    );
+    projectileLight.addColorStop(
+      0.58,
+      "rgba(214,49,10,0.18)"
+    );
+    projectileLight.addColorStop(
+      1,
+      "rgba(116,12,4,0)"
+    );
+
+    ctx.fillStyle=projectileLight;
+    ctx.beginPath();
+    ctx.arc(
+      x,
+      y-2,
+      projectileLightRadius,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+    ctx.restore();
+
     const trailColors=[
       "rgba(122,21,7,1)",
       "rgba(216,58,12,1)",
