@@ -25847,6 +25847,76 @@ function drawProjectileFx(){
     ctx.globalCompositeOperation="lighter";
 
     /*
+      Candidate Rev 33:
+      give the elemental arrows a real moving light field, matching the
+      Fireball projectile treatment rather than relying only on the tiny
+      sprite-local aura. Fire Arrow carries warm red/orange light; Melf's Acid
+      Arrow carries saturated green light. The field remains centered on the
+      moving arrow head for the full flight.
+    */
+    const elementLightRadius=
+      HEX_W*1.28;
+
+    const elementLight=
+      ctx.createRadialGradient(
+        x,
+        y,
+        0,
+        x,
+        y,
+        elementLightRadius
+      );
+
+    if(isFlame){
+      elementLight.addColorStop(
+        0,
+        "rgba(255,186,92,0.38)"
+      );
+      elementLight.addColorStop(
+        0.24,
+        "rgba(255,88,24,0.31)"
+      );
+      elementLight.addColorStop(
+        0.58,
+        "rgba(211,35,10,0.18)"
+      );
+      elementLight.addColorStop(
+        1,
+        "rgba(125,10,3,0)"
+      );
+    }else{
+      elementLight.addColorStop(
+        0,
+        "rgba(206,255,145,0.38)"
+      );
+      elementLight.addColorStop(
+        0.24,
+        "rgba(91,241,78,0.31)"
+      );
+      elementLight.addColorStop(
+        0.58,
+        "rgba(24,177,45,0.18)"
+      );
+      elementLight.addColorStop(
+        1,
+        "rgba(8,99,29,0)"
+      );
+    }
+
+    ctx.fillStyle=
+      elementLight;
+
+    ctx.beginPath();
+    ctx.arc(
+      x,
+      y,
+      elementLightRadius,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    /*
       Bright elemental trail behind the arrow shaft.
     */
     const trailGradient=
