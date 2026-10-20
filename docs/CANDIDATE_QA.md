@@ -2,7 +2,85 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 13
+## Current candidate: Rev 14
+
+
+## Candidate Rev 14 — Production DBM Lightning Bolt + Strong Illumination
+
+Candidate Rev 14 promotes the approved Candidate Rev 13 dielectric-breakdown
+look into the **production Lightning Bolt VFX**. Spell rules are unchanged.
+
+### Production visual profile
+
+The production effect uses the exact approved laboratory tuning as its baseline:
+
+- eta branchiness: **1.75**
+- field: **80×45**
+- potential-solver sweeps: **10**
+- cell jitter: **0.38**
+- glow: **1.65**
+- seed: **randomized once per cast**
+
+The DBM solve runs once per cast. Three independently jittered render variants
+of that same topology are then reused as rapid return strokes, avoiding a new
+field solve for each flash.
+
+### Tactical geometry remains authoritative
+
+The existing R232 reflected tactical ray still determines:
+
+- initial direction and total range
+- wall / solid-barrier reflections
+- tree reflections
+- creature exposure
+- repeated reflected exposure
+- friendly-fire preview
+- all save / damage resolution
+
+The DBM tree is transformed onto each already-resolved tactical ray segment as a
+visual skin only. The root and terminal point are pinned to the segment
+endpoints so the electrical presentation continues to hit the exact collision
+points used by the rules engine.
+
+### Strong illumination pass
+
+The new visual presentation adds:
+
+- a strong blue-white additive path illumination wash
+- broad local light around each segment
+- larger illumination bursts at reflection / impact points
+- a restrained battlefield-wide flash during the strongest discharge
+- brighter radial collision flashes and spark rays
+- stronger tree-strike ember/splinter flecks
+- three rapid return-stroke pulses followed by a fading electrical afterglow
+
+Production spell audio is unchanged by Rev 14.
+
+### Rev 14 QA focus
+
+1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 14** appears.
+2. Preview **Lightning Bolt** and confirm the production spell now uses the
+   branching DBM appearance rather than the former sinusoidal single channel.
+3. Cast Lightning Bolt several times and confirm the branch topology varies from
+   cast to cast.
+4. Confirm the main channel remains brightest, with dimmer secondary and side
+   branches.
+5. Confirm the bolt produces multiple rapid return-stroke flashes rather than a
+   single smooth 650 ms sine fade.
+6. Confirm the battlefield around the bolt brightens strongly during the
+   primary discharge and reflection points produce larger localized flashes.
+7. Test a wall reflection and confirm the bright DBM channel remains pinned to
+   the exact reflected ray endpoint.
+8. Test a tree reflection and confirm the tree impact receives the enhanced
+   flash / spark / warm fleck treatment.
+9. Confirm the 8-hex total range and remaining-range reflection behavior are
+   unchanged.
+10. Confirm Lightning Bolt saves, half damage, immunity handling, result pacing,
+    and repeated reflected exposure remain unchanged.
+11. Confirm the Candidate Rev 13 DBM laboratory is still available for further
+    tuning and remains independent of the production effect.
+12. Confirm other line spells / gust VFX are unchanged.
+
 
 
 ## Candidate Rev 13 — DBM Lightning VFX Laboratory
