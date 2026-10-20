@@ -866,6 +866,24 @@
         tree.variants.length
       ];
 
+    /*
+      Transform every node only once for this segment/frame, then batch all
+      edges of a brightness class into one Canvas path. This keeps the DBM tree
+      visually dense without issuing hundreds of individual stroke() calls.
+    */
+    const screenPoints=
+      points.map(
+        (point,nodeIndex)=>
+          transformedPoint(
+            tree,
+            point,
+            nodeIndex,
+            from,
+            to,
+            segmentIndex
+          )
+      );
+
     const classStyle={
       side:{
         width:0.70,
@@ -883,6 +901,12 @@
         core:1.00
       }
     };
+
+    const classes=[
+      "side",
+      "secondary",
+      "main"
+    ];
 
     const passes=[
       {
@@ -936,60 +960,55 @@
     ];
 
     for(const pass of passes){
-      for(
-        let childIndex=1;
-        childIndex<tree.nodes.length;
-        childIndex++
-      ){
-        const child=
-          tree.nodes[childIndex];
-
-        const parent=
-          tree.nodes[child.parent];
-
-        if(!parent){
-          continue;
-        }
-
-        const cls=
-          edgeClass(
-            tree,
-            childIndex
-          );
-
-        if(
-          !edgeVisible(
-            tree,
-            childIndex,
-            cls,
-            variant
-          )
-        ){
-          continue;
-        }
-
+      for(const cls of classes){
         const style=
           classStyle[cls];
 
-        const a=
-          transformedPoint(
-            tree,
-            points[child.parent],
-            child.parent,
-            from,
-            to,
-            segmentIndex
-          );
+        ctx.beginPath();
 
-        const b=
-          transformedPoint(
-            tree,
-            points[childIndex],
-            childIndex,
-            from,
-            to,
-            segmentIndex
-          );
+        let hasEdge=false;
+
+        for(
+          let childIndex=1;
+          childIndex<tree.nodes.length;
+          childIndex++
+        ){
+          const child=
+            tree.nodes[childIndex];
+
+          const parent=
+            tree.nodes[child.parent];
+
+          if(
+            !parent ||
+            edgeClass(
+              tree,
+              childIndex
+            )!==cls ||
+            !edgeVisible(
+              tree,
+              childIndex,
+              cls,
+              variant
+            )
+          ){
+            continue;
+          }
+
+          const a=
+            screenPoints[child.parent];
+
+          const b=
+            screenPoints[childIndex];
+
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          hasEdge=true;
+        }
+
+        if(!hasEdge){
+          continue;
+        }
 
         ctx.strokeStyle=
           pass.color(style);
@@ -1001,9 +1020,6 @@
             style.width
           );
 
-        ctx.beginPath();
-        ctx.moveTo(a.x,a.y);
-        ctx.lineTo(b.x,b.y);
         ctx.stroke();
       }
     }
