@@ -1,48 +1,19 @@
 /*
-  Candidate Rev 1 — sequenced "Casting Interrupted" feedback
-  ===========================================================
-  Presentation-only update; casting mechanics are unchanged.
+  Candidate Rev 2 — ordered "Casting Interrupted" feedback
+  ========================================================
+  Casting interruption now participates in the shared Candidate combat-beat
+  queue instead of using its own fixed delay.
 
-  - Damage interruption: the normal red damage float is allowed to complete
-    first, then "Casting Interrupted" appears as a second rising message.
-  - Non-damage magical/status interruption: "Casting Interrupted" appears
-    immediately when the canonical disruption path confirms the interruption.
-  - Interruption text is white with a dark outline.
-  - The interruption notice has its own synthesized fumble SFX.
+  That means an interruption caused by a multi-component hit naturally waits
+  behind every direct/secondary damage beat, then behind any buff/debuff beats,
+  before appearing as the follow-on condition beat.
+
+  The message remains white, rises/fades for one second, and keeps its dedicated
+  synthesized fumble SFX.
 */
 
 const CANDIDATE_CAST_INTERRUPTED_FLOAT_MS=1000;
 const CANDIDATE_CAST_INTERRUPTED_RISE_PX=22;
-const CANDIDATE_DAMAGE_INTERRUPT_DELAY_MS=1000;
-
-
-/* ============================================================
-   STYLE
-   ============================================================ */
-
-const candidateBaseFloatingTextStyle=
-  r236FloatingTextStyle;
-
-r236FloatingTextStyle=function(kind,alpha){
-  if(kind==="casting-interrupted"){
-    return {
-      fontSize:13,
-      fill:
-        "rgba(255,255,255,"+
-        alpha+
-        ")",
-      stroke:
-        "rgba(8,8,10,"+
-        Math.min(1,alpha)+
-        ")"
-    };
-  }
-
-  return candidateBaseFloatingTextStyle(
-    kind,
-    alpha
-  );
-};
 
 
 /* ============================================================
@@ -54,9 +25,8 @@ function candidatePlayCastingInterruptedFumbleSound(){
     const base=audioCtx.currentTime;
 
     /*
-      A brief unstable magical chirp that collapses downward, followed by a
-      soft low "plunk". It is intentionally distinct from the natural-1
-      critical-miss cue and uses only Web Audio synthesis.
+      Unstable magical chirp that collapses downward, followed by a soft low
+      plunk. It is intentionally separate from the natural-1 critical miss cue.
     */
     const collapse=audioCtx.createOscillator();
     const collapseGain=audioCtx.createGain();
@@ -121,7 +91,6 @@ function candidatePlayCastingInterruptedFumbleSound(){
     plunk.start(base+0.235);
     plunk.stop(base+0.46);
 
-    /* Small sputter makes the failed spell read as magic collapsing, not UI. */
     noiseVoice(
       0.105,
       0.045,
@@ -135,7 +104,7 @@ function candidatePlayCastingInterruptedFumbleSound(){
 
 
 /* ============================================================
-   INTERRUPTION FLOAT
+   INTERRUPTION BEAT
    ============================================================ */
 
 function candidateShowCastingInterruptedText(unit){
@@ -164,43 +133,32 @@ function candidateShowCastingInterruptedText(unit){
 }
 
 
-function candidateInterruptionDelayForReason(reason){
-  return /\bdamage\b/i.test(
-    String(reason ?? "")
-  )
-    ? CANDIDATE_DAMAGE_INTERRUPT_DELAY_MS
-    : 0;
-}
-
-
 function candidatePresentCastingInterrupted(
   unit,
   reason="interruption"
 ){
-  const delayMs=
-    candidateInterruptionDelayForReason(
-      reason
-    );
-
-  if(delayMs<=0){
-    return candidateShowCastingInterruptedText(
-      unit
-    );
+  if(!unit){
+    return null;
   }
 
-  /*
-    onUnitDamaged() reaches r230DisruptCasting() before R236 queues its damage
-    number. Waiting one full damage-float lifetime guarantees the red "-N dmg"
-    message is the first presentation beat and the white interruption notice is
-    the second.
-  */
-  const unitRef=unit;
-
-  return setTimeout(()=>{
-    candidateShowCastingInterruptedText(
-      unitRef
-    );
-  },delayMs);
+  return candidateQueueCombatBeat(
+    unit,
+    {
+      category:"condition",
+      text:"Casting Interrupted",
+      kind:"casting-interrupted",
+      durationMs:
+        CANDIDATE_CAST_INTERRUPTED_FLOAT_MS,
+      risePx:
+        CANDIDATE_CAST_INTERRUPTED_RISE_PX,
+      show:
+        target=>
+          candidateShowCastingInterruptedText(
+            target
+          ),
+      meta:{reason}
+    }
+  );
 }
 
 
@@ -217,12 +175,6 @@ r230DisruptCasting=function(
       reason
     );
 
-  /*
-    Queue presentation only after the canonical engine confirms that an
-    in-progress spell was actually interrupted. This covers damage, failed
-    saves, and any magic/status effect (for example Silence) that calls the
-    canonical r230DisruptCasting() path.
-  */
   if(disrupted && unit){
     candidatePresentCastingInterrupted(
       unit,
@@ -231,6 +183,35 @@ r230DisruptCasting=function(
   }
 
   return disrupted;
+};
+
+
+/* ============================================================
+   STYLE
+   ============================================================ */
+
+const candidateInterruptedBaseFloatingTextStyle=
+  r236FloatingTextStyle;
+
+r236FloatingTextStyle=function(kind,alpha){
+  if(kind==="casting-interrupted"){
+    return {
+      fontSize:13,
+      fill:
+        "rgba(255,255,255,"+
+        alpha+
+        ")",
+      stroke:
+        "rgba(8,8,10,"+
+        Math.min(1,alpha)+
+        ")"
+    };
+  }
+
+  return candidateInterruptedBaseFloatingTextStyle(
+    kind,
+    alpha
+  );
 };
 
 
@@ -245,14 +226,14 @@ if(window.AdventurePartyFloatingCombatText){
 
 window.AdventurePartyCastingInterruptedFloat={
   channel:"candidate",
-  candidateRevision:1,
+  candidateRevision:2,
   text:"Casting Interrupted",
   durationMs:
     CANDIDATE_CAST_INTERRUPTED_FLOAT_MS,
   risePx:
     CANDIDATE_CAST_INTERRUPTED_RISE_PX,
-  damageDelayMs:
-    CANDIDATE_DAMAGE_INTERRUPT_DELAY_MS,
+  queuedAfter:
+    "direct damage, secondary damage, buffs and debuffs",
   show:(unitOrId)=>{
     const unit=
       typeof unitOrId==="string"

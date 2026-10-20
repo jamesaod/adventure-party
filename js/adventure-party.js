@@ -17198,7 +17198,19 @@ function resolveChillTouchOnHit(attacker,defender){
 
   const extra=rollDiceExpression("1d4").total;
   defender.hp=Math.max(0,defender.hp-extra);
-  onUnitDamaged(defender,extra);
+
+  if(typeof candidateWithDamageBeatContext==="function"){
+    candidateWithDamageBeatContext(
+      {
+        category:"secondary-damage",
+        damageType:"cold",
+        source:"Chill Touch"
+      },
+      ()=>onUnitDamaged(defender,extra)
+    );
+  }else{
+    onUnitDamaged(defender,extra);
+  }
 
   const existing=getUnitEffect(defender,"chill-touch-strength-loss");
   const strengthLoss=(Number(existing?.data?.strengthLoss)||0)+1;
@@ -17365,11 +17377,67 @@ function attack(attacker,defender,options={}){
       ? rollDiceExpression(attacker.bonusDamageExpression)
       : {expression:null,total:0};
 
+  /*
+    Candidate Rev 2 presentation contract:
+    keep the established total damage result, but split a weapon's rider damage
+    into its own damage application/presentation beat. This lets a Flaming
+    Sword +5 read as sword damage first, then fire damage, without changing the
+    final combined damage total used by death/critical resolution.
+  */
   let damage=Math.max(1,scaledBaseDamage+weaponBonus+bonusRoll.total);
-  defender.hp=Math.max(0,defender.hp-damage);
-  onUnitDamaged(defender,damage);
-  if(attacker.bonusDamageType==="fire" && bonusRoll.total>0){
-    registerElementalDamageFx(defender,"fire",bonusRoll.total);
+  const secondaryDamage=
+    Math.min(
+      Math.max(0,Number(bonusRoll.total)||0),
+      Math.max(0,damage-1)
+    );
+  const directDamage=
+    Math.max(
+      1,
+      damage-secondaryDamage
+    );
+
+  defender.hp=Math.max(0,defender.hp-directDamage);
+
+  if(typeof candidateWithDamageBeatContext==="function"){
+    candidateWithDamageBeatContext(
+      {
+        category:"direct-damage",
+        damageType:"physical",
+        source:attacker.weapon || "melee"
+      },
+      ()=>onUnitDamaged(defender,directDamage)
+    );
+  }else{
+    onUnitDamaged(defender,directDamage);
+  }
+
+  if(secondaryDamage>0){
+    defender.hp=Math.max(0,defender.hp-secondaryDamage);
+
+    if(typeof candidateWithDamageBeatContext==="function"){
+      candidateWithDamageBeatContext(
+        {
+          category:"secondary-damage",
+          damageType:
+            attacker.bonusDamageType ||
+            "bonus",
+          source:
+            attacker.weapon ||
+            "melee rider"
+        },
+        ()=>onUnitDamaged(defender,secondaryDamage)
+      );
+    }else{
+      onUnitDamaged(defender,secondaryDamage);
+    }
+
+    if(attacker.bonusDamageType==="fire"){
+      registerElementalDamageFx(
+        defender,
+        "fire",
+        secondaryDamage
+      );
+    }
   }
 
   const chillExtra=resolveChillTouchOnHit(attacker,defender);
