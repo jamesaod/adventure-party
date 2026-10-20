@@ -934,6 +934,12 @@ button, input, select, textarea {
   border-color:#743e48;
 }
 
+/* Candidate Rev 34: Acid Arrow's ongoing status is chemically distinct. */
+.unit-effect.debuff.acid-arrow {
+  color:#6fec69;
+  border-color:#3f7d42;
+}
+
 .unit-effect.area-effect {
   color:var(--cyan);
   border-color:#3f6474;
