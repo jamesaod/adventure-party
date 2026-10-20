@@ -2964,6 +2964,12 @@ async function spellPreviewRunWallOfFog(
   const flags=
     spellPreviewPresentationFlags();
 
+  if(flags.sounds){
+    playMagicEffectSound(
+      "wall-of-fog"
+    );
+  }
+
   const targetHex={
     x:1,
     y:0
