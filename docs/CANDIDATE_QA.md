@@ -2,7 +2,82 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 12
+## Current candidate: Rev 13
+
+
+## Candidate Rev 13 — DBM Lightning VFX Laboratory
+
+Candidate Rev 13 adds a development-only 2D lightning visual laboratory based
+on the **dielectric breakdown model (DBM)** described by Theodore Kim and Ming
+C. Lin in *Fast Animation of Lightning Using an Adaptive Mesh*.
+
+This first browser trial evaluates the visual growth model before porting the
+paper's full quadtree / ICCG adaptive-mesh acceleration. Production Lightning
+Bolt geometry, reflection rules, damage, timing, and SFX are unchanged.
+
+### Implemented from the paper
+
+- A 2D electrical-potential field with the growing discharge fixed at
+  `phi = 0` and the target electrode fixed at `phi = 1`.
+- Repeated Laplace relaxation between growth steps.
+- Candidate growth only along cells adjacent to the existing discharge.
+- Paper Eq. 2 growth weighting:
+  `p_i = phi_i^eta / sum(phi_j^eta)`.
+- Live **eta** control from 1 to 4:
+  - near 1 = dense branching;
+  - larger values = progressively straighter / less branchy.
+- A parent/child tree recorded as the discharge grows.
+- Main channel classification by tracing the terminal strike back to the root.
+- Secondary channels selected from the longest paths branching from the main
+  channel; remaining growth is rendered as side channels.
+- Random interior-of-cell vertex jitter to suppress visible grid regularity,
+  matching the paper's jittering recommendation.
+- Separate luminance/glow strengths for main, secondary, and side channels.
+
+### Browser-lab simplification
+
+The paper's production implementation accelerates the same DBM using a balanced
+adaptive quadtree and an ICCG Poisson solver. Rev 13 intentionally uses a small,
+bounded 2D field with Gauss-Seidel relaxation so the visual character can be
+evaluated safely in-browser before we invest in the larger solver port.
+
+Default work is capped at a 48×28 field, 10 potential sweeps per growth step,
+and a bounded growth-cell budget. Larger 64×36 and 80×45 fields are available
+for comparison but remain capped to avoid long UI stalls.
+
+### Controls
+
+- Generate
+- Animate Growth
+- New Seed
+- eta branchiness
+- field resolution
+- potential-solver sweeps
+- cell jitter
+- glow amount
+- deterministic seed
+- optional simulation-grid overlay
+
+### Rev 13 QA focus
+
+1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 13** appears.
+2. Confirm **Adaptive-Mesh Lightning VFX Laboratory [DEV]** appears below the
+   Electrical SFX Laboratory.
+3. Generate several seeds at eta 1.0–1.5 and confirm dense branching.
+4. Raise eta toward 3–4 and confirm the dominant discharge becomes straighter
+   and side growth decreases.
+5. Toggle **Show simulation grid** and confirm the lightning remains visibly
+   jittered off exact cell centers.
+6. Confirm main channel is the brightest, secondary paths are dimmer, and side
+   channels are faint.
+7. Press **Animate Growth** and confirm the stored discharge grows from the
+   left electrode toward the right target.
+8. Test 48×28, 64×36, and 80×45 fields and confirm the browser remains
+   responsive.
+9. Confirm the ordinary Lightning Bolt spell preview and production combat
+   Lightning Bolt remain unchanged.
+10. Confirm the existing Electrical SFX Laboratory remains unchanged.
+
 
 
 ## Candidate Rev 12 — Electrical SFX Laboratory
