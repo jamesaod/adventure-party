@@ -2,104 +2,83 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 5
+## Current candidate: Rev 6
 
-### Spell Effects Previewer — full implemented-spell coverage
+### Gaseous spell LOS audit
 
-Candidate Rev 5 expands the development Previewer from five proof profiles to **every currently implemented combat spell**.
+Candidate Rev 6 makes the LOS contract explicit for every production area effect with `type:"fog"`.
 
-The harness still reuses the production battlefield canvas, spell catalog, cast resolvers, VFX/SFX functions, floating combat text, persistent status rendering, area-effect rendering, and Candidate combat-result beat system.
+- Wall of Fog, Fog Cloud, and Stinking Cloud all use the shared obscuring-volume LOS system.
+- Newly created gaseous effects explicitly receive `obscuresLOS:true` unless a future effect deliberately opts out.
+- Mechanical LOS blocking begins immediately when the cloud is created.
+- The cloud itself remains visible as foreground scenery even while terrain/units beyond it are hidden.
+- Normal open terrain remains unaffected when no obscuring volume is active.
 
-### Selection behavior
+### Spell Previewer LOS scene correction
 
-- Selecting **any** spell immediately stops the current loop.
-- The Previewer waits for any already-running production animation to finish its cleanup.
-- The sandbox is then fully reset.
-- The newly selected spell automatically begins playing; pressing Play is no longer required after selection.
-- Spell-library buttons remain selectable while another spell is running.
-- Caster-level, target-count, outcome, and presentation-mode changes also reset and automatically replay the current spell.
+The Previewer contains multiple friendly observers because its dummy arena includes a caster and a friendly-fire target.
 
-### Full spell coverage
+Previously, Fog Cloud and Stinking Cloud left the friendly dummy on the far side of the cloud. The party-visibility union therefore correctly used that friendly observer's clear LOS and made the terrain beyond the cloud remain visible. Wall of Fog happened to span enough of the arena to hide the same region, which made the three spells appear inconsistent.
 
-All combat-implemented Level 1–3 Wizard spells are now marked **READY**.
+Rev 6 keeps all friendly observers on the caster side specifically for Fog Cloud and Stinking Cloud QA. This lets the Previewer visibly demonstrate the production obscuring-volume behavior without changing party LOS rules.
 
-Five especially presentation-heavy spells keep their proven bespoke Previewer profiles:
+### Dispel Magic Previewer correction
 
-- Magic Missile
-- Fireball
-- Sleep
-- Wall of Fog
-- Lightning Bolt
+The old Dispel Magic setup created **Preview Fog** at the dispel center. Because fog correctly blocks LOS into its own occupied hex, the real Dispel Magic resolver rejected the cast at its normal LOS gate.
 
-Every other implemented spell is routed through the **actual production casting resolver** with a disposable Previewer scene tailored to its target mode and any special prerequisites.
+Rev 6 replaces that setup with:
 
-Special sandbox preparation includes:
+- a dispellable Armor effect on a dummy, and
+- a non-obscuring Preview Grease area effect.
 
-- adjacent targets for Burning Hands, Color Spray, Chill Touch, Shocking Grasp, and Vampiric Touch;
-- friendly adjacent targets for touch buffs and protective spells;
-- clustered targets for area spells;
-- undead dummy targets for Hold Undead;
-- a pre-existing magical ward/fog volume for Dispel Magic;
-- a Flaming Sphere source for Pyrotechnics;
-- production hostile-target routing for Melf's Minute Meteors;
-- a post-cast Chill Touch contact demonstration;
-- a post-cast Blink turn-start shift demonstration;
-- reduced caster HP for a visible Vampiric Touch drain/heal result.
+Both remain inside the Dispel Magic test volume, so the production spell can now pass its LOS gate and visibly remove unit and area magic.
 
-### Deterministic Previewer resolution
+### Bottom-up gaseous formation VFX
 
-The production spell code is not duplicated. While a production cast is running inside the Previewer only:
+All `type:"fog"` spell volumes now visually form **from the tactical floor upward over 1.0 second**.
 
-- attack-resolution helpers are forced to produce a normal hit so attack-spell VFX can be inspected reliably;
-- non-d20 damage/duration dice use deterministic midpoint values;
-- **Deterministic demo** and **Force failed save** show the spell's successful effect branch;
-- **Force successful save** exercises the save-success branch;
-- normal combat rules remain unchanged outside the Previewer.
+The existing fog/cloud body is not replaced. Instead, the production renderer is vertically revealed:
 
-Candidate Rev 5 also suppresses victory/defeat and normal turn advancement inside the Previewer sandbox so spells such as Charm Person cannot accidentally terminate the development arena.
+- the lowest portions of the cloud ovals appear first near the floor;
+- progressively more of the billowing puffs and side volume is revealed;
+- the bright upper cap becomes visible near the end of the one-second formation;
+- the black Wall/Fog Cloud outline or green Stinking Cloud outline is clipped to the same growing volume;
+- after one second, the existing continuously animated cloud renderer is unchanged.
 
-### Presentation modes
+This formation is presentation-only. LOS obstruction is immediate rather than gradually increasing with the visible cloud height.
 
-- **Full Sequence** — production VFX + production SFX.
-- **VFX Only** — shared SFX bus is suppressed while production visuals continue.
-- **SFX Only** — projectile, area, persistent-status, fog, illumination, and related production render passes are suppressed while the production audio/timing sequence continues.
+### Spell Effects Previewer — retained Rev 5 behavior
 
-### Timeline
+- Selecting any spell stops the current preview, resets the arena, and automatically plays the new spell.
+- Every currently implemented Level 1–3 Wizard combat spell is marked **READY**.
+- Magic Missile, Fireball, Sleep, Wall of Fog, and Lightning Bolt retain bespoke preview profiles.
+- Other implemented spells route through their production cast resolver.
+- Full Sequence, VFX Only, and SFX Only remain available.
+- Caster-level, target-count, save-outcome, and presentation-mode changes automatically reset/replay.
+- Production attack and save outcomes remain deterministic only inside the Previewer.
 
-For production-routed spells, the measured timeline now records important real resolution events, including:
+### Rev 6 QA focus
 
-- casting begins / casting cue complete;
-- production effect dispatch;
-- direct damage events;
-- buff/debuff application;
-- area-effect creation;
-- production resolver completion;
-- spell-specific post demonstrations;
-- persistent-effect observation period;
-- complete/reset/loop gap.
-
-### QA focus
-
-1. Open **Spell Previewer [DEV]** and confirm the launcher/header show **Candidate Rev 5**.
-2. Confirm every implemented combat spell in Levels 1, 2, and 3 is labeled **READY**; there should be no PENDING spell entries.
-3. While Magic Missile is looping, click another spell. Confirm the arena resets and the new spell automatically begins without pressing Play.
-4. Rapidly select several different spells and confirm only the final selection runs; no old projectile, status, combat message, or delayed effect should bleed into the new scene.
-5. Check representative Level 1 spells: Armor, Burning Hands, Charm Person, Chill Touch, Color Spray, Enlarge, Grease, Light, Protection From Evil, Shield, Shocking Grasp, Spook, Taunt.
-6. Check representative Level 2 spells: Blindness, Continual Light, Darkness, Flaming Sphere, Fog Cloud, Glitterdust, Hypnotic Pattern, Melf's Acid Arrow, Mirror Image, Pyrotechnics, Scare, Stinking Cloud, Web.
-7. Check all Level 3 spells, especially Dispel Magic, Flame Arrow, Gust of Wind, Haste, Hold Person, Hold Undead, Melf's Minute Meteors, Slow, Vampiric Touch, and Wind Wall.
-8. Confirm Hold Undead displays undead dummy targets.
-9. Confirm Dispel Magic has magic present to remove.
-10. Confirm Pyrotechnics has a Flaming Sphere source and does not reject the cast for lack of fire.
-11. Confirm Chill Touch shows both the cast and a follow-on contact effect.
-12. Confirm Blink performs a visible turn-start shift after the initial cast.
-13. Confirm Vampiric Touch visibly damages the adjacent target and restores the caster.
-14. Test **Force successful save** and **Force failed save** on Blindness, Slow, Hold Person, Stinking Cloud, Flame Arrow, and other saving-throw spells.
-15. Test Full Sequence / VFX Only / SFX Only on several projectile, status, cloud, illumination, and wall spells.
-16. Change caster level while a spell is looping and confirm it resets and automatically replays.
-17. Change target count while an AoE spell is looping and confirm it resets and automatically replays.
-18. Stop a run with Space or Stop, then select another spell and confirm autoplay resumes for the new selection.
-19. Return to Launcher, enter Combat System Test, and confirm normal initiative, victory/defeat, turn advancement, saves, dice randomness, VFX, and SFX remain unchanged.
-20. Re-enter the Previewer repeatedly and confirm no duplicate animation loops or stale timers accumulate.
+1. Open **Spell Previewer [DEV]** and confirm **Candidate Rev 6** appears in the launcher and Previewer header.
+2. Select Wall of Fog and confirm the hidden-area LOS indication appears behind the wall.
+3. Select Fog Cloud and confirm the cloud now blocks/reveals LOS in the same manner; targets/terrain behind it should receive the hidden overlay.
+4. Select Stinking Cloud and confirm the same LOS behavior while retaining its green gaseous rendering and cough/gag presentation.
+5. For all three gaseous spells, watch the first second carefully:
+   - cloud volume begins at the floor;
+   - ovals/puffs fill upward;
+   - no fully formed upper cap appears on frame 1;
+   - full normal height is reached at approximately 1 second.
+6. Confirm the fog/cloud outline rises with the body rather than appearing at full height immediately.
+7. Confirm the cloud continues its existing billow/drift animation after formation completes.
+8. Confirm LOS blocking begins immediately even while the visible cloud is still forming.
+9. Select **Dispel Magic** and confirm it now casts rather than reporting blocked LOS.
+10. Confirm Dispel Magic visibly removes both the prepared unit Armor effect and the Preview Grease area effect.
+11. Rapidly switch Wall of Fog → Fog Cloud → Stinking Cloud and confirm old formation timers/effects do not bleed into the new selection.
+12. Test Fog Cloud and Stinking Cloud in **VFX Only** and **SFX Only** modes.
+13. Enter ordinary Combat System Test and cast Wall of Fog/Fog Cloud/Stinking Cloud if available; confirm the same one-second formation occurs outside the Previewer.
+14. Confirm ordinary outdoor combat with no obscuring volume still has no hidden-area overlay.
+15. Confirm the Wall Test architectural LOS system is unchanged.
+16. Confirm all prior Rev 5 Previewer spell-selection/autoplay behavior still works.
 
 ### Candidate lineage retained from R237
 
