@@ -1112,6 +1112,8 @@ function spellPreviewStop({
   window.AdventurePartyFloatingCombatText
     ?.clear?.();
 
+  spellPreviewClearTransientPresentation();
+
   spellPreviewSetRunState(
     "STOPPED",
     false
@@ -1603,6 +1605,40 @@ endTurn=function(){
   }
 
   return spellPreviewBaseEndTurn();
+};
+
+
+const spellPreviewBaseWaitForCombatActionPause=
+  waitForCombatActionPause;
+
+waitForCombatActionPause=async function(){
+  if(
+    !spellPreviewActive ||
+    currentScreen!=="spell-preview"
+  ){
+    return await spellPreviewBaseWaitForCombatActionPause();
+  }
+
+  const token=
+    spellPreviewRunToken;
+
+  while(
+    token===spellPreviewRunToken
+  ){
+    const remaining=
+      combatActionPauseRemaining();
+
+    if(remaining<=0){
+      return;
+    }
+
+    await sleep(
+      Math.min(
+        50,
+        remaining
+      )
+    );
+  }
 };
 
 
@@ -3326,7 +3362,7 @@ async function showSpellPreviewer(){
       currentScreen==="spell-preview" &&
       !spellPreviewRunning
     ){
-      spellPreviewStartRun();
+      spellPreviewLaunchRun();
     }
   },180);
 }
@@ -3383,7 +3419,7 @@ window.AdventurePartySpellPreviewer={
   hide:
     hideSpellPreviewer,
   play:
-    spellPreviewStartRun,
+    spellPreviewLaunchRun,
   stop:
     spellPreviewStop,
   reset:
@@ -3398,7 +3434,7 @@ window.AdventurePartySpellPreviewer={
 spellPreviewUi.play
   ?.addEventListener(
     "click",
-    spellPreviewStartRun
+    spellPreviewLaunchRun
   );
 
 spellPreviewUi.stop
@@ -3412,12 +3448,9 @@ spellPreviewUi.restart
   ?.addEventListener(
     "click",
     ()=>{
-      if(spellPreviewRunning){
-        return;
-      }
-
-      spellPreviewResetTimeline();
-      spellPreviewResetArena();
+      spellPreviewRestartCurrent({
+        autoplay:true
+      });
     }
   );
 
@@ -3438,12 +3471,9 @@ for(
   input?.addEventListener(
     "change",
     ()=>{
-      if(spellPreviewRunning){
-        return;
-      }
-
-      spellPreviewResetTimeline();
-      spellPreviewResetArena();
+      spellPreviewRestartCurrent({
+        autoplay:true
+      });
     }
   );
 }
@@ -3472,7 +3502,7 @@ document.addEventListener(
       if(spellPreviewRunning){
         spellPreviewStop();
       }else{
-        spellPreviewStartRun();
+        spellPreviewLaunchRun();
       }
     }
   }
