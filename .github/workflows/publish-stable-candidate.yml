@@ -1,0 +1,75 @@
+name: Publish Stable and Candidate Sites
+
+on:
+  push:
+    branches:
+      - main
+      - candidate
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adventure-party-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish stable + candidate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out stable main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+
+      - name: Check out candidate
+        uses: actions/checkout@v4
+        with:
+          ref: candidate
+          path: candidate-src
+
+      - name: Build combined Pages tree
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p site/candidate
+
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            stable/ site/
+
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            candidate-src/ site/candidate/
+
+          touch site/.nojekyll
+
+          cat > site/candidate/QA_CHANNEL.txt <<'EOF'
+          Adventure Party candidate QA build.
+          This path is generated from the repository's candidate branch.
+          Stable production content remains at the site root and comes from main.
+          EOF
+
+      - name: Publish gh-pages branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          cd site
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Publish stable and candidate sites"
+
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin gh-pages

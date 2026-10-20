@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - candidate
   push:
     branches:
       - main
+      - candidate
 
 permissions:
   contents: read

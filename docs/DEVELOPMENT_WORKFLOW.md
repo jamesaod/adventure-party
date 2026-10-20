@@ -1,0 +1,64 @@
+# Adventure Party Development Workflow
+
+Adventure Party uses a stable/candidate workflow.
+
+## Branch roles
+
+- `main` — stable, QA-approved release code only.
+- `candidate` — integrated development build used for player QA.
+- `feature/*` and `fix/*` — short-lived branches for one change or cohesive change set.
+- `gh-pages` — generated publishing branch. Do not edit manually.
+
+## Normal development flow
+
+1. Start a `feature/*` or `fix/*` branch from `candidate`.
+2. Implement the change.
+3. Open a pull request targeting `candidate`.
+4. Require **Adventure Party Validation** to pass.
+5. Merge the PR into `candidate`.
+6. The Pages publisher refreshes the candidate QA site automatically.
+7. Perform QA on the candidate build.
+8. Additional fixes/features repeat the same cycle.
+
+Small candidate changes do **not** require a new formal R-number release.
+
+## Milestone release flow
+
+When candidate reaches an approved milestone:
+
+1. Open one pull request from `candidate` to `main`.
+2. Review the accumulated candidate diff and release notes.
+3. Require **Adventure Party Validation** to pass.
+4. Update formal release/cache metadata to the next R-number as part of that milestone PR.
+5. Merge into `main`.
+6. Fast-forward/reset `candidate` to the new `main` head so both branches share the same release baseline.
+7. Continue development from the refreshed `candidate`.
+
+## Stable hotfix flow
+
+For a severe production-only issue:
+
+1. Branch `hotfix/*` from `main`.
+2. Validate and merge the hotfix to `main`.
+3. Merge or fast-forward the same fix into `candidate`.
+4. Republish both sites.
+
+## QA URLs
+
+Once GitHub Pages is configured to publish the generated `gh-pages` branch from its root:
+
+- Stable: `https://jamesaod.github.io/adventure-party/`
+- Candidate QA: `https://jamesaod.github.io/adventure-party/candidate/`
+
+The publishing workflow copies `main` to the site root and `candidate` to the `candidate/` subdirectory.
+
+## Validation
+
+The **Adventure Party Validation** workflow runs for:
+
+- pull requests targeting `main`
+- pull requests targeting `candidate`
+- pushes to `main`
+- pushes to `candidate`
+
+The existing R-number validator remains useful for formal release branches named like `r237-...`. Ordinary feature/fix branches are not forced to create a new R-number.
