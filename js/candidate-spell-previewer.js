@@ -732,6 +732,19 @@ function spellPreviewRenderLibrary(){
   }
 }
 
+function spellPreviewMinimumCasterLevel(spell){
+  const level=
+    Math.max(
+      1,
+      Number(spell?.level)||1
+    );
+
+  return level<=1
+    ? 1
+    : level*2-1;
+}
+
+
 function spellPreviewUpdateSpellMeta(){
   const spell=
     getSpellEntry(
@@ -745,6 +758,25 @@ function spellPreviewUpdateSpellMeta(){
 
   if(!spell){
     return;
+  }
+
+  if(spellPreviewUi.casterLevel){
+    const minimum=
+      spellPreviewMinimumCasterLevel(
+        spell
+      );
+
+    spellPreviewUi.casterLevel.min=
+      String(minimum);
+
+    if(
+      Number(
+        spellPreviewUi.casterLevel.value
+      )<minimum
+    ){
+      spellPreviewUi.casterLevel.value=
+        String(minimum);
+    }
   }
 
   if(spellPreviewUi.spellName){
@@ -1581,6 +1613,9 @@ const SPELL_PREVIEW_PRODUCTION_SCENE=Object.freeze({
   },
   "fog-cloud":{
     groundHex:{x:-1,y:0}
+  },
+  "web":{
+    groundHex:{x:0,y:0}
   },
   "haste":{
     groundHex:{x:-3,y:0},
