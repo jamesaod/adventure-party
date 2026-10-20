@@ -16,3 +16,9 @@ Audio files are stored as real repository assets rather than embedded JavaScript
 Use WAV for short sound effects so they remain simple to replace, audition, cache, and decode in-browser. Use compressed formats for longer music or ambient tracks when file size materially benefits.
 
 Code should reference audio by asset path; audio bytes should not be embedded in JavaScript modules.
+
+
+## Current spell-specific assets
+
+- `sfx/spells/dqk-sfx-09-fireball.wav` — Fireball effect
+- `sfx/spells/mixkit-futuristic-electricity-sparks-2598.wav` — Lightning Bolt discharge/effect

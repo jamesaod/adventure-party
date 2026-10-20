@@ -701,7 +701,7 @@
     */
     ctx.fillStyle=
       "rgba(190,225,255,"+
-      (0.034*intensity)+
+      (0.068*intensity)+
       ")";
 
     ctx.fillRect(
@@ -733,21 +733,21 @@
         {
           width:96,
           alpha:
-            0.018*
+            0.036*
             PROFILE.glow*
             intensity
         },
         {
           width:58,
           alpha:
-            0.026*
+            0.052*
             PROFILE.glow*
             intensity
         },
         {
           width:30,
           alpha:
-            0.040*
+            0.080*
             PROFILE.glow*
             intensity
         }
@@ -803,21 +803,21 @@
         gradient.addColorStop(
           0,
           "rgba(245,252,255,"+
-          (0.34*intensity)+
+          (0.68*intensity)+
           ")"
         );
 
         gradient.addColorStop(
           0.18,
           "rgba(180,220,255,"+
-          (0.20*intensity)+
+          (0.40*intensity)+
           ")"
         );
 
         gradient.addColorStop(
           0.56,
           "rgba(95,165,255,"+
-          (0.085*intensity)+
+          (0.17*intensity)+
           ")"
         );
 

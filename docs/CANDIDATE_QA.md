@@ -2,7 +2,63 @@
 
 Stable baseline: **R237**
 
-## Current candidate: Rev 14
+## Current candidate: Rev 15
+
+
+## Candidate Rev 15 — Lightning Bolt review fixes + final SFX
+
+Candidate Rev 15 collects the current Lightning Bolt review changes on top of
+Candidate Rev 14.
+
+### Illumination doubled
+
+The DBM bolt geometry itself is unchanged. Only the surrounding lighting
+response is increased to **2×** its Candidate Rev 14 values:
+
+- battlefield-wide peak flash
+- broad segment illumination
+- local endpoint / reflection illumination
+
+The approved DBM geometry and core/glow tuning remain unchanged.
+
+### Persistent AIM prompt fix
+
+The completion-target prompt:
+
+- **Lightning Bolt is ready: AIM in the desired line direction.**
+
+now clears as soon as the player commits the Lightning Bolt target and spell
+resolution begins. It remains persistent while AIM is genuinely awaiting input.
+
+### Lightning Bolt casting/effect audio
+
+- The shared Pool of Radiance casting cue is suppressed for **Lightning Bolt
+  only**.
+- Other spells continue to use the universal casting cue normally.
+- The former synthesized generic `playMagicEffectSound("lightning")` sound is
+  replaced by the user-selected WAV asset:
+  `assets/audio/sfx/spells/mixkit-futuristic-electricity-sparks-2598.wav`.
+- The replacement routes through the normal shared SFX gain and global audio
+  toggle.
+
+### Rev 15 QA focus
+
+1. Confirm **Candidate Rev 15** appears in the launcher and Spell Previewer.
+2. Cast Lightning Bolt and confirm the yellow persistent AIM instruction clears
+   immediately once the target/direction is committed.
+3. Confirm the DBM bolt itself still looks like Candidate Rev 14.
+4. Confirm the battlefield illumination is visibly about twice as strong as the
+   previous candidate without changing the bolt's branch/glow profile.
+5. Confirm Lightning Bolt no longer plays the universal Pool of Radiance
+   casting cue.
+6. Confirm Lightning Bolt uses the new uploaded electric-sparks WAV for its
+   discharge/effect sound.
+7. Confirm other spells still use the universal casting cue normally.
+8. Confirm mute/SFX controls affect the new Lightning Bolt sound.
+9. Confirm wall/tree reflections, saves, half damage, immunity, repeated
+   reflected exposure, and result pacing are unchanged.
+10. Confirm the Lightning VFX and Electrical SFX laboratories remain available.
+
 
 
 ## Candidate Rev 14 — Production DBM Lightning Bolt + Strong Illumination
