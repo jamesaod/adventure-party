@@ -21465,6 +21465,8 @@ async function castScareSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("fear");
+
   const duration=d(4)+level;
   const affected=[];
 
@@ -21490,7 +21492,11 @@ async function castScareSpell(action,targetHex){
   }
 
   if(affected.length){
-    await animateMagicEffectOnUnits(affected,"fear");
+    await animateMagicEffectOnUnits(
+      affected,
+      "fear",
+      {playSound:false}
+    );
   }
   setCombatMessage(
     affected.length
@@ -21650,6 +21656,8 @@ async function castTashasHideousLaughterSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("laughter");
+
   const maxTargets=Math.max(1,Math.floor(level/3));
   const candidates=livingUnitsInAreaCells(hexesWithinRadius(targetHex,1))
     .filter(unit=>unit.id!==caster.id)
@@ -21680,7 +21688,11 @@ async function castTashasHideousLaughterSpell(action,targetHex){
   }
 
   if(affected.length){
-    await animateMagicEffectOnUnits(affected,"laughter");
+    await animateMagicEffectOnUnits(
+      affected,
+      "laughter",
+      {playSound:false}
+    );
   }
   setCombatMessage(
     affected.length
