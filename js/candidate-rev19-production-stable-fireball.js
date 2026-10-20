@@ -1029,8 +1029,826 @@
     ctx.restore();
   }
 
+  function isConstrainedFireball(fx){
+    const cells=
+      Array.isArray(fx?.cells)
+        ? fx.cells
+        : [];
+
+    if(!cells.length){
+      return false;
+    }
+
+    const environments=
+      new Set(
+        cells.map(cell=>
+          fireballHexEnvironment(cell)
+        )
+      );
+
+    if(
+      environments.size>1 ||
+      fireballHexEnvironment({
+        x:fx.x,
+        y:fx.y
+      })==="indoor"
+    ){
+      return true;
+    }
+
+    const radius=
+      Math.max(
+        1,
+        Number(fx.radiusHexes)||1
+      );
+
+    const nominal=
+      hexesWithinRadius(
+        {
+          x:fx.x,
+          y:fx.y
+        },
+        radius
+      );
+
+    if(cells.length!==nominal.length){
+      return true;
+    }
+
+    const actualKeys=
+      new Set(
+        cells.map(cell=>
+          key(cell.x,cell.y)
+        )
+      );
+
+    return nominal.some(cell=>
+      !actualKeys.has(
+        key(cell.x,cell.y)
+      )
+    );
+  }
+
+
+  function constrainedFireballTopology(fx){
+    const cells=
+      Array.isArray(fx?.cells)
+        ? fx.cells
+            .filter(cell=>
+              Number.isFinite(cell?.x) &&
+              Number.isFinite(cell?.y)
+            )
+            .map(cell=>({
+              ...cell
+            }))
+        : [];
+
+    const byKey=
+      new Map(
+        cells.map(cell=>[
+          key(cell.x,cell.y),
+          cell
+        ])
+      );
+
+    const edges=[];
+    const seenEdges=new Set();
+
+    for(const cell of cells){
+      for(const dir of HEX_DIRS){
+        const neighbor=
+          byKey.get(
+            key(
+              cell.x+dir.x,
+              cell.y+dir.y
+            )
+          );
+
+        if(!neighbor){
+          continue;
+        }
+
+        const aKey=
+          key(cell.x,cell.y);
+
+        const bKey=
+          key(
+            neighbor.x,
+            neighbor.y
+          );
+
+        const edgeKey=
+          aKey<bKey
+            ? aKey+"|"+bKey
+            : bKey+"|"+aKey;
+
+        if(seenEdges.has(edgeKey)){
+          continue;
+        }
+
+        seenEdges.add(edgeKey);
+
+        if(
+          volumetricStepOpen(
+            cell,
+            neighbor
+          )
+        ){
+          edges.push({
+            a:cell,
+            b:neighbor
+          });
+        }
+      }
+    }
+
+    return {
+      cells,
+      edges
+    };
+  }
+
+
+  function constrainedCellGrowth(cell,t){
+    const distance=
+      Math.max(
+        0,
+        Number(cell?.volumeDistance)||0
+      );
+
+    const delay=
+      Math.min(
+        0.14,
+        distance*0.018
+      );
+
+    return clamp01(
+      (t-delay)/
+      Math.max(
+        0.001,
+        0.24-delay*0.25
+      )
+    );
+  }
+
+
+  function drawConstrainedBridge(
+    edge,
+    t,
+    fade,
+    seed,
+    index
+  ){
+    const a=
+      hexCenter(
+        edge.a.x,
+        edge.a.y
+      );
+
+    const b=
+      hexCenter(
+        edge.b.x,
+        edge.b.y
+      );
+
+    const growth=
+      Math.min(
+        constrainedCellGrowth(
+          edge.a,
+          t
+        ),
+        constrainedCellGrowth(
+          edge.b,
+          t
+        )
+      );
+
+    if(growth<=0.02){
+      return;
+    }
+
+    const dx=b.x-a.x;
+    const dy=b.y-a.y;
+    const len=
+      Math.max(
+        1,
+        Math.hypot(dx,dy)
+      );
+
+    const nx=-dy/len;
+    const ny=dx/len;
+
+    const phase=
+      performance.now()*0.011+
+      seed*0.00013+
+      index*1.83;
+
+    const bend=
+      Math.sin(phase)*
+      HEX_W*
+      0.10;
+
+    const mx=
+      (a.x+b.x)/2+
+      nx*bend;
+
+    const my=
+      (a.y+b.y)/2+
+      ny*bend-
+      HEX_H*0.14*
+      Math.sin(
+        phase*0.77
+      );
+
+    ctx.save();
+    ctx.globalCompositeOperation=
+      "source-over";
+    ctx.lineCap="round";
+
+    ctx.strokeStyle=
+      "rgba(210,55,7,"+
+      (0.34*fade*growth)+
+      ")";
+
+    ctx.lineWidth=
+      HEX_W*
+      0.48*
+      growth;
+
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.quadraticCurveTo(
+      mx,my,
+      b.x,b.y
+    );
+    ctx.stroke();
+
+    ctx.globalCompositeOperation=
+      "lighter";
+
+    ctx.strokeStyle=
+      "rgba(255,167,32,"+
+      (0.30*fade*growth)+
+      ")";
+
+    ctx.lineWidth=
+      HEX_W*
+      0.24*
+      growth;
+
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.quadraticCurveTo(
+      mx,my,
+      b.x,b.y
+    );
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+
+  function drawConstrainedCellFlame(
+    cell,
+    t,
+    fade,
+    seed,
+    index
+  ){
+    const growth=
+      constrainedCellGrowth(
+        cell,
+        t
+      );
+
+    if(growth<=0.01){
+      return;
+    }
+
+    const center=
+      hexCenter(
+        cell.x,
+        cell.y
+      );
+
+    const age=
+      clamp01(
+        (
+          t-
+          Math.min(
+            0.14,
+            (
+              Number(
+                cell.volumeDistance
+              )||0
+            )*0.018
+          )
+        )/
+        0.84
+      );
+
+    const environment=
+      cell.volumeEnvironment ||
+      fireballHexEnvironment(cell);
+
+    const lobeCount=
+      environment==="indoor"
+        ? 5
+        : 6;
+
+    for(let lobe=0;lobe<lobeCount;lobe++){
+      const h1=
+        Math.sin(
+          seed*0.00017+
+          index*5.31+
+          lobe*9.73
+        )*0.5+0.5;
+
+      const h2=
+        Math.sin(
+          seed*0.00029+
+          index*7.11+
+          lobe*4.17
+        )*0.5+0.5;
+
+      const phase=
+        performance.now()*
+        (
+          0.007+
+          lobe*0.0007
+        )+
+        index*1.17+
+        lobe*2.03;
+
+      const rise=
+        (
+          3+
+          18*age*
+          PROFILE.buoyancy
+        )*
+        (
+          0.55+
+          h1*0.60
+        );
+
+      const sway=
+        Math.sin(phase)*
+        HEX_W*
+        (
+          0.045+
+          age*0.055
+        );
+
+      const ox=
+        (
+          h1-0.5
+        )*
+        HEX_W*
+        0.42+
+        sway;
+
+      const oy=
+        (
+          h2-0.5
+        )*
+        HEX_H*
+        0.22-
+        rise;
+
+      const radius=
+        HEX_W*
+        (
+          0.30+
+          h2*0.13+
+          age*0.06
+        )*
+        (
+          0.60+
+          growth*0.50
+        );
+
+      const heat=
+        clamp01(
+          0.96-
+          age*0.48-
+          Math.abs(h1-0.5)*0.18+
+          Math.sin(
+            phase*1.8
+          )*0.045
+        );
+
+      const rgb=
+        heatColor(
+          0.28+
+          heat*0.72
+        );
+
+      ctx.save();
+      ctx.translate(
+        center.x+ox,
+        center.y+oy
+      );
+
+      ctx.scale(
+        1,
+        1.12+
+        age*0.50+
+        h1*0.18
+      );
+
+      const gradient=
+        ctx.createRadialGradient(
+          -radius*0.10,
+          -radius*0.12,
+          0,
+          0,0,
+          radius
+        );
+
+      gradient.addColorStop(
+        0,
+        "rgba(255,247,189,"+
+        Math.min(
+          0.94,
+          0.70*fade*growth
+        )+
+        ")"
+      );
+
+      gradient.addColorStop(
+        0.30,
+        "rgba("+
+        rgb[0]+","+
+        rgb[1]+","+
+        rgb[2]+","+
+        (0.58*fade*growth)+
+        ")"
+      );
+
+      gradient.addColorStop(
+        0.68,
+        "rgba(222,66,7,"+
+        (0.34*fade*growth)+
+        ")"
+      );
+
+      gradient.addColorStop(
+        1,
+        "rgba(110,15,3,0)"
+      );
+
+      ctx.fillStyle=gradient;
+      ctx.beginPath();
+      ctx.arc(
+        0,0,radius,
+        0,Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /*
+      A small per-cell emissive core reinforces local volume without turning
+      the whole constrained blast into one central spotlight.
+    */
+    const coreStrength=
+      Math.pow(
+        Math.max(0,1-t),
+        1.20
+      )*
+      growth*
+      fade;
+
+    drawFireLight(
+      center.x,
+      center.y-
+      HEX_H*0.12,
+      HEX_W*0.72,
+      0.34*
+      PROFILE.glow*
+      coreStrength
+    );
+  }
+
+
+  function drawConstrainedEmbers(
+    topology,
+    t,
+    fade,
+    seed
+  ){
+    if(!topology.cells.length){
+      return;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation=
+      "lighter";
+
+    const particlesPerCell=5;
+
+    for(
+      let cellIndex=0;
+      cellIndex<topology.cells.length;
+      cellIndex++
+    ){
+      const cell=
+        topology.cells[cellIndex];
+
+      const growth=
+        constrainedCellGrowth(
+          cell,
+          t
+        );
+
+      if(growth<=0.04){
+        continue;
+      }
+
+      const center=
+        hexCenter(
+          cell.x,
+          cell.y
+        );
+
+      for(
+        let p=0;
+        p<particlesPerCell;
+        p++
+      ){
+        const h1=
+          Math.sin(
+            seed*0.00031+
+            cellIndex*8.71+
+            p*13.37
+          )*0.5+0.5;
+
+        const h2=
+          Math.sin(
+            seed*0.00019+
+            cellIndex*3.97+
+            p*7.23
+          )*0.5+0.5;
+
+        const born=
+          0.10+
+          h1*0.30;
+
+        if(t<born){
+          continue;
+        }
+
+        const local=
+          clamp01(
+            (t-born)/
+            Math.max(
+              0.01,
+              1-born
+            )
+          );
+
+        const angle=
+          h2*Math.PI*2;
+
+        const radial=
+          HEX_W*
+          (
+            0.10+
+            local*
+            (
+              0.35+
+              h1*0.55
+            )
+          );
+
+        const x=
+          center.x+
+          Math.cos(angle)*
+          radial;
+
+        const y=
+          center.y+
+          Math.sin(angle)*
+          radial*0.55-
+          local*
+          HEX_H*
+          (
+            0.35+
+            h2*0.65
+          );
+
+        const alpha=
+          Math.pow(
+            1-local,
+            1.4
+          )*
+          fade*
+          0.72;
+
+        ctx.fillStyle=
+          p%2===0
+            ? "rgba(255,225,106,"+
+              alpha+
+              ")"
+            : "rgba(255,106,13,"+
+              alpha+
+              ")";
+
+        const size=
+          p===0
+            ? 2
+            : 1;
+
+        ctx.fillRect(
+          Math.round(x),
+          Math.round(y),
+          size,
+          size
+        );
+      }
+    }
+
+    ctx.restore();
+  }
+
+
+  function drawConstrainedFireballExplosion(fx){
+    const state=
+      stateFor(fx);
+
+    const now=
+      performance.now();
+
+    const elapsed=
+      Math.max(
+        0,
+        now-fx.started
+      );
+
+    const duration=
+      Math.max(
+        1,
+        Number(fx.duration)||820
+      );
+
+    const t=
+      clamp01(
+        elapsed/duration
+      );
+
+    const fade=
+      t<0.76
+        ? 1
+        : clamp01(
+            1-
+            (t-0.76)/0.24
+          );
+
+    const topology=
+      constrainedFireballTopology(fx);
+
+    if(!topology.cells.length){
+      return;
+    }
+
+    drawIgnitionFlash(
+      hexCenter(
+        fx.x,
+        fx.y
+      ),
+      elapsed,
+      HEX_W*2.1
+    );
+
+    /*
+      Broad fiery illumination follows the actual occupied topology. There is
+      no rectangular field or tactical mask in this renderer.
+    */
+    const lightDecay=
+      Math.pow(
+        Math.max(0,1-t),
+        1.35
+      )*
+      fade;
+
+    if(lightDecay>0.002){
+      for(
+        let index=0;
+        index<topology.cells.length;
+        index++
+      ){
+        const cell=
+          topology.cells[index];
+
+        const growth=
+          constrainedCellGrowth(
+            cell,
+            t
+          );
+
+        if(growth<=0.02){
+          continue;
+        }
+
+        const center=
+          hexCenter(
+            cell.x,
+            cell.y
+          );
+
+        drawFireLight(
+          center.x,
+          center.y,
+          HEX_W*
+          (
+            0.82+
+            growth*0.16
+          ),
+          PROFILE.glow*
+          lightDecay*
+          growth*
+          0.30
+        );
+      }
+    }
+
+    for(
+      let index=0;
+      index<topology.edges.length;
+      index++
+    ){
+      drawConstrainedBridge(
+        topology.edges[index],
+        t,
+        fade,
+        state.seed,
+        index
+      );
+    }
+
+    for(
+      let index=0;
+      index<topology.cells.length;
+      index++
+    ){
+      drawConstrainedCellFlame(
+        topology.cells[index],
+        t,
+        fade,
+        state.seed,
+        index
+      );
+    }
+
+    drawConstrainedEmbers(
+      topology,
+      t,
+      fade,
+      state.seed
+    );
+
+    /*
+      This renderer is a final VFX pass. Repaint visible architectural wall
+      bodies over the constrained flame so solid masonry remains a visual
+      boundary instead of being washed over by late-drawn fire.
+    */
+    if(
+      game?.condition==="wall" &&
+      architecturalWalls.length
+    ){
+      const visibleWalls=
+        architecturalWalls.filter(
+          wall=>
+            isArchitecturalWallVisibleToFriendlyParty(
+              wall
+            )
+        );
+
+      drawArchitecturalWallShapeOutline(
+        visibleWalls
+      );
+
+      drawArchitecturalWallTopOutline(
+        visibleWalls
+      );
+
+      for(const wall of visibleWalls){
+        drawArchitecturalWallSegment(
+          wall
+        );
+      }
+    }
+  }
+
+
   function renderStableFireballExplosion(fx){
     if(!fx) return;
+
+    if(isConstrainedFireball(fx)){
+      drawConstrainedFireballExplosion(fx);
+      return;
+    }
 
     try{
       const state=stateFor(fx);
@@ -1470,8 +2288,8 @@
 
 
   window.AdventurePartyProductionFireballVfx={
-    release:"Candidate Rev 24",
-    renderer:"Stable Fluids — high-opacity fiery illumination",
+    release:"Candidate Rev 25",
+    renderer:"Hybrid: Stable Fluids open / topology-aware constrained",
     profile:{...PROFILE}
   };
 })();
