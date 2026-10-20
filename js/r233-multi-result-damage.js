@@ -582,6 +582,7 @@ castFireballFromScroll=async function(action,targetHex){
 
       updateUi();
       draw();
+      await waitForDeathActionPause();
     }
   }
 
