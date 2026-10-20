@@ -733,21 +733,21 @@
         {
           width:96,
           alpha:
-            0.018*
+            0.036*
             PROFILE.glow*
             intensity
         },
         {
           width:58,
           alpha:
-            0.026*
+            0.052*
             PROFILE.glow*
             intensity
         },
         {
           width:30,
           alpha:
-            0.040*
+            0.080*
             PROFILE.glow*
             intensity
         }
