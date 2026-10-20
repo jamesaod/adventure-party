@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/adventure-party.css?v=R237C13">
+<link rel="stylesheet" href="css/adventure-party.css?v=R237C17">
 </head>
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R237","candidateRevision":16,"builtAt":"2026-10-20T08:14:31-04:00"}
+{"architecture":"Multi-File Engine","release":"R237","candidateRevision":17,"builtAt":"2026-10-20T08:14:31-04:00"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -24,7 +24,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 16</div>
+        <div class="candidate-label">Candidate Rev 17</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
       </div>
     </header>
@@ -122,7 +122,7 @@
         <h1>Spell Effects Previewer</h1>
       </div>
       <div class="spell-preview-header-actions">
-        <span class="spell-preview-candidate">Candidate Rev 16</span>
+        <span class="spell-preview-candidate">Candidate Rev 17</span>
         <button id="spellPreviewReturnButton" class="pixel-return-button" type="button">
           Return to Launcher [Esc]
         </button>
@@ -328,6 +328,94 @@
           <div id="adaptiveLightningStats" class="adaptive-lightning-stats">Ready.</div>
           <div id="adaptiveLightningStatus" class="electrical-sfx-lab-status" data-state="ready">
             DBM stepped-leader preview ready.
+          </div>
+        </section>
+
+        <section class="fireball-vfx-lab" aria-labelledby="fireballVfxLabHeading">
+          <div class="spell-preview-panel-title" id="fireballVfxLabHeading">Fireball VFX Laboratory [DEV]</div>
+          <div class="spell-preview-note fireball-vfx-note">
+            Compare three research-driven Fireball renderers. Production Fireball remains unchanged.
+          </div>
+
+          <canvas id="fireballVfxLabCanvas" class="fireball-vfx-canvas" width="360" height="220" aria-label="Fireball VFX laboratory preview"></canvas>
+
+          <label class="spell-preview-field fireball-vfx-renderer-field">
+            <span>Renderer</span>
+            <select id="fireballVfxLabRenderer">
+              <option value="fluid" selected>Stable Fluids</option>
+              <option value="noise">Procedural / Noise</option>
+              <option value="volume">Volumetric Explosion</option>
+            </select>
+          </label>
+
+          <div class="fireball-vfx-actions">
+            <button id="fireballVfxLabPlay" class="pixel-action-button primary" type="button">Play Sequence</button>
+            <button id="fireballVfxLabRestart" class="pixel-action-button" type="button">Reset</button>
+            <button id="fireballVfxLabReroll" class="pixel-action-button" type="button">New Seed</button>
+          </div>
+
+          <div class="fireball-vfx-controls">
+            <label>
+              <span>Grid</span>
+              <select id="fireballVfxLabResolution">
+                <option value="48x32">48×32</option>
+                <option value="56x36" selected>56×36</option>
+                <option value="64x40">64×40</option>
+              </select>
+              <output>2D</output>
+            </label>
+
+            <label>
+              <span>Turbulence</span>
+              <input id="fireballVfxLabTurbulence" data-fireball-vfx-control type="range" min="0" max="1.5" step="0.05" value="0.78">
+              <output data-fireball-vfx-output="fireballVfxLabTurbulence"></output>
+            </label>
+
+            <label>
+              <span>Buoyancy</span>
+              <input id="fireballVfxLabBuoyancy" data-fireball-vfx-control type="range" min="0" max="1.6" step="0.05" value="0.88">
+              <output data-fireball-vfx-output="fireballVfxLabBuoyancy"></output>
+            </label>
+
+            <label>
+              <span>Cooling</span>
+              <input id="fireballVfxLabCooling" data-fireball-vfx-control type="range" min="0.80" max="0.995" step="0.005" value="0.93">
+              <output data-fireball-vfx-output="fireballVfxLabCooling"></output>
+            </label>
+
+            <label>
+              <span>Glow</span>
+              <input id="fireballVfxLabGlow" data-fireball-vfx-control type="range" min="0.2" max="2.5" step="0.05" value="1.20">
+              <output data-fireball-vfx-output="fireballVfxLabGlow"></output>
+            </label>
+
+            <label>
+              <span>Embers</span>
+              <input id="fireballVfxLabEmbers" data-fireball-vfx-control type="range" min="0" max="2" step="0.05" value="1.00">
+              <output data-fireball-vfx-output="fireballVfxLabEmbers"></output>
+            </label>
+
+            <label>
+              <span>Smoke</span>
+              <input id="fireballVfxLabSmoke" data-fireball-vfx-control type="range" min="0" max="1.25" step="0.05" value="0.38">
+              <output data-fireball-vfx-output="fireballVfxLabSmoke"></output>
+            </label>
+
+            <label>
+              <span>Seed</span>
+              <input id="fireballVfxLabSeed" type="number" step="1" value="217">
+              <output>#</output>
+            </label>
+          </div>
+
+          <label class="spell-preview-check fireball-vfx-distortion-check">
+            <input id="fireballVfxLabDistortion" type="checkbox" checked>
+            Local heat distortion
+          </label>
+
+          <div id="fireballVfxLabStats" class="fireball-vfx-stats">Stable Fluids ready.</div>
+          <div id="fireballVfxLabStatus" class="electrical-sfx-lab-status" data-state="ready">
+            Fireball VFX lab ready.
           </div>
         </section>
 
@@ -810,7 +898,7 @@
   </div>
 </section>
 
-<script src="js/adventure-party.js?v=R237C13"></script>
+<script src="js/adventure-party.js?v=R237C17"></script>
 <script src="js/los-wall-boundary-fix.js?v=R237"></script>
 <script src="js/obscuring-volume-los.js?v=R237"></script>
 <script src="js/r218-presentation-audio.js?v=R237"></script>
@@ -867,5 +955,6 @@
 <script src="js/candidate-rev14-production-dbm-lightning.js?v=candidate-rev-14"></script>
 <script src="js/candidate-rev15-lightning-review-fixes.js?v=candidate-rev-15"></script>
 <script src="js/candidate-rev16-elemental-damage-presentation.js?v=candidate-rev-16"></script>
+<script src="js/candidate-rev17-fireball-vfx-lab.js?v=candidate-rev-17"></script>
 </body>
 </html>
