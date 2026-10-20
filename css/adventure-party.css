@@ -2476,3 +2476,75 @@ button, input, select, textarea {
   line-height:1.25;
   font-variant-numeric:tabular-nums;
 }
+
+
+/* Candidate Rev 17 — Fireball VFX Laboratory */
+.fireball-vfx-lab{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(255,145,55,.35);
+}
+.fireball-vfx-note{
+  margin:4px 0 8px;
+  font-size:.82rem;
+  line-height:1.25;
+}
+.fireball-vfx-canvas{
+  display:block;
+  width:100%;
+  aspect-ratio:18/11;
+  background:#050407;
+  border:1px solid rgba(255,145,55,.36);
+  image-rendering:auto;
+}
+.fireball-vfx-renderer-field{
+  margin:7px 0 6px;
+}
+.fireball-vfx-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:5px;
+  margin:7px 0 8px;
+}
+.fireball-vfx-actions .pixel-action-button{
+  min-width:0;
+  padding-left:4px;
+  padding-right:4px;
+  font-size:.74rem;
+}
+.fireball-vfx-controls{
+  display:grid;
+  gap:5px;
+}
+.fireball-vfx-controls label{
+  display:grid;
+  grid-template-columns:82px minmax(76px,1fr) 56px;
+  align-items:center;
+  gap:6px;
+  font-size:.78rem;
+}
+.fireball-vfx-controls input[type="range"]{
+  width:100%;
+  min-width:0;
+}
+.fireball-vfx-controls input[type="number"],
+.fireball-vfx-controls select{
+  min-width:0;
+  width:100%;
+}
+.fireball-vfx-controls output{
+  color:#ffd79d;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.fireball-vfx-distortion-check{
+  margin:7px 0 0;
+}
+.fireball-vfx-stats{
+  margin-top:6px;
+  color:#e8c7a3;
+  font-size:.74rem;
+  line-height:1.25;
+  font-variant-numeric:tabular-nums;
+}
