@@ -1329,6 +1329,15 @@ async function spellPreviewStartRun(){
 
 function spellPreviewLaunchRun(){
   if(spellPreviewRunPromise){
+    if(!spellPreviewRunning){
+      return spellPreviewRunPromise
+        .catch(()=>{})
+        .then(
+          ()=>
+            spellPreviewLaunchRun()
+        );
+    }
+
     return spellPreviewRunPromise;
   }
 
@@ -1899,6 +1908,36 @@ function spellPreviewGateRenderer(base){
     );
   };
 }
+
+
+const spellPreviewBaseQueueFloatingCombatText=
+  r236QueueFloatingCombatText;
+
+r236QueueFloatingCombatText=function(
+  unit,
+  text,
+  kind,
+  options
+){
+  if(spellPreviewVisualsSuppressed()){
+    return null;
+  }
+
+  return spellPreviewBaseQueueFloatingCombatText(
+    unit,
+    text,
+    kind,
+    options
+  );
+};
+
+
+const spellPreviewBaseDrawCombatMessageBox=
+  drawCombatMessageBox;
+drawCombatMessageBox=
+  spellPreviewGateRenderer(
+    spellPreviewBaseDrawCombatMessageBox
+  );
 
 
 const spellPreviewBaseDrawSpellAreaEffects=
