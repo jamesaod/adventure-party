@@ -3,6 +3,25 @@
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 
+## R233 — Spell presentation audit and Minute Meteor illumination
+
+- Audited the implemented combat-spell presentation flow and standardized it around a caster-first camera contract: every direct cast begins centered on the caster before the spell hands focus to its target, impact point, or affected units.
+- Projectile spells now recenter on their destination before the projectile arrives, rather than snapping to the victim only after damage has already been applied.
+- Save-based targeted spells now keep the target in view while the save/result message is shown.
+- Ground/area spells inherit target-area focus through the shared area-effect path.
+- Burning Hands retains its existing sequential AoE result presentation.
+- Magic Missile now resolves each missile as its own readable impact beat instead of aggregating the whole volley into one damage number. Mirror Image interceptions are shown individually.
+- Fireball remains mechanically simultaneous, but its post-explosion save/damage/death results are presented one creature at a time while centered on each victim.
+- Flame Arrow now presents every bolt independently, including explicit target-centered miss messages and Mirror Image interceptions.
+- Melf's Acid Arrow, Shocking Grasp, and Vampiric Touch now hold on the intended target for misses instead of immediately advancing the turn.
+- R232 Lightning Bolt keeps its reflected-ray geometry but now presents each creature exposure and save/damage result individually after the shared electrical discharge.
+- Player-directed Melf's Minute Meteors still launch the assigned volley simultaneously, then resolve each meteor's miss, Mirror Image hit, or damage as an individual target-centered beat.
+- Simultaneous Minute Meteor volleys defer death transitions until all already-launched meteors have resolved, preserving the R227 rule that later meteors do not vanish just because an earlier meteor reduces the same target to 0 HP.
+- Automated/Quick Minute Meteor volleys inherit the same target/result pacing.
+- Added an experimental moving illumination source to every Minute Meteor projectile: 10-foot radius, dark-red light, following the meteor throughout flight and disappearing on impact/miss.
+- Minute Meteor projectile lighting is injected into the existing R195 illumination system, including architectural light blocking/shadow behavior rather than using a separate decorative glow.
+- Added `AdventurePartySpellPresentation` and `AdventurePartyMinuteMeteorLight` diagnostics.
+
 ## R232 — Reflected Lightning Bolt geometry
 
 - Replaced Lightning Bolt's old hex-direction reversal with a true reflected ray traced through a top-down tactical metric and projected back onto the isometric battlefield.
