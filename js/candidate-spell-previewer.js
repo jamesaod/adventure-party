@@ -1,5 +1,5 @@
 /*
-  Candidate Rev 8 — Spell Effects Previewer
+  Candidate Rev 9 — Spell Effects Previewer
   ==========================================
   Dedicated development harness for production spell presentation.
 
@@ -701,7 +701,7 @@ function spellPreviewRenderLibrary(){
       " preview-ready / "+
       spells.length+
       " implemented combat spells. "+
-      "Candidate Rev 8 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
+      "Candidate Rev 9 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
   }
 }
 
