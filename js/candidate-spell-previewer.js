@@ -1416,6 +1416,16 @@ async function spellPreviewSelectSpell(spellId){
       "…"
   });
 
+  /*
+    Update the library selection immediately so a click is acknowledged even
+    while the previous production animation finishes its final cleanup frame.
+  */
+  spellPreviewSelectedId=
+    spellId;
+
+  spellPreviewRenderLibrary();
+  spellPreviewUpdateSpellMeta();
+
   if(previousRun){
     try{
       await previousRun;
@@ -1431,10 +1441,6 @@ async function spellPreviewSelectSpell(spellId){
     return false;
   }
 
-  spellPreviewSelectedId=
-    spellId;
-
-  spellPreviewRenderLibrary();
   spellPreviewResetTimeline();
   spellPreviewResetArena();
 
