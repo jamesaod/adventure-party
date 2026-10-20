@@ -2,6 +2,17 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## R237 — Candidate milestone promotion
+
+- Promoted the approved Candidate Rev 1–3 work to the stable release line.
+- Restored LOS presentation for architecture and obscuring-volume blocking, with unseen tactical areas rendered using the approved 33% hidden overlay.
+- Total party defeat no longer awards or presents recoverable combat loot.
+- Added ordered rising combat-result beats: primary damage, secondary/rider damage, buffs, debuffs, then follow-on physical/condition messages.
+- Flaming Sword +5 now presents sword damage and its fire rider as separate beats; Chill Touch likewise separates its cold rider and Strength-loss debuff.
+- Casting interruption now presents a white rising `Casting Interrupted` condition beat after preceding damage/effect beats and plays its dedicated synthesized fumble SFX.
+- Completed the implemented Level 1–3 area-of-effect AIM-preview audit so tactical areas, wedges, lines, walls, auras, clouds, and other implemented footprints are visible before committing the cast.
+- Stable launcher no longer shows Candidate branding; Candidate revision numbering remains a development-branch QA marker.
+
 
 ## R236 — Floating combat information
 
