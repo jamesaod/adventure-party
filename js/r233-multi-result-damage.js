@@ -452,7 +452,9 @@ castFireballFromScroll=async function(action,targetHex){
           ? null
           : rollSpellSave(
               unit,
-              caster
+              caster,
+              0,
+              {suppressFocus:true}
             );
 
       const damage=
