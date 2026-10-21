@@ -1,12 +1,13 @@
-import { quantizeRgba } from './studio-core.mjs?v=R237C47';
+import { quantizeRgba } from './studio-core.mjs?v=R237C48';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R237C47';
+} from './sprite-set-core.mjs?v=R237C48';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   validateStudioWorkspace
-} from './sprite-set-store.mjs?v=R237C47';
+} from './sprite-set-store.mjs?v=R237C48';
+import { spriteLayoutDimensions, validateSpriteModelScale } from './sprite-layouts.mjs?v=R237C48';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
@@ -152,6 +153,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function count() { return Object.keys(captures).length * 6; }
+  function modelScaleAdjustable() { return Object.values(captures).every(capture => !!capture.layout); }
 
   function refreshControls() {
     const captured = count();
@@ -168,8 +170,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     }
     ui.CaptureLockNote.classList.toggle('locked', locked);
     ui.CaptureLockNote.textContent = locked
-      ? 'Framing, footprint and resolution are shared by this set. Clear all captured poses to change them. Colors, outline and target mob remain adjustable.'
-      : 'Set the footprint, resolution and model front before your first capture. Fit all animations restores room for the full movement.';
+      ? `Framing, footprint, resolution and lighting are shared by this set. Clear all captured poses to change them. Colors, outline and target mob remain adjustable.${modelScaleAdjustable() ? ' Model size can also be changed without recapturing.' : ''}`
+      : 'Set the footprint, resolution, model size, lighting and model front before your first capture. Fit all animations restores room for the full movement.';
   }
 
   function refresh() {
@@ -226,6 +228,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       if (first && (first.width !== captured.width || first.height !== captured.height)) {
         throw new Error('Clear the sheet before changing its sprite resolution.');
       }
+      if (first && (first.modelScalePercent ?? 100) !== (captured.modelScalePercent ?? 100)) {
+        throw new Error('Clear the sheet before changing its model size.');
+      }
       style = getStyle();
       captured.edgeDirections = frameEdgeDirections(captured);
       quantizeCapture(captured);
@@ -245,12 +250,14 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function snapshot() {
     const first = Object.values(captures)[0];
     return {
-      captureCount: count(), captureLocked: count() > 0,
+      captureCount: count(), captureLocked: count() > 0, modelScaleAdjustable: modelScaleAdjustable(),
       modelReady, workspaceRestored: restored,
       workspaceSaved: !saveTimer && savedRevision === saveRevision && !lastSaveError,
       groundAnchor: first ? [first.anchorX, first.anchorY] : null,
       captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => [pose, {
         clip: value.clip, time: value.time, width: value.width, height: value.height,
+        modelScalePercent: value.modelScalePercent ?? 100,
+        renderWidth: value.renderWidth, renderHeight: value.renderHeight,
         edgeDirections: [...value.edgeDirections]
       }]))
     };
@@ -258,13 +265,15 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   function buildExport() {
     if (count() !== 18) throw new Error('Capture all three poses before exporting or testing the set.');
-    const { width, height, anchorX, anchorY, render, layout, renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
+    const { width, height, anchorX, anchorY, render, layout, modelScalePercent,
+      renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
     const mobType = (!modelReady && savedSettings ? savedSettings : getWorkspaceSettings()).mobType || captures.ready.mobType;
     const label = ui.SpriteSetName.value.trim() || 'Studio character';
     const manifest = createSpriteSetManifest({
       id: spriteSetSlug(label), label,
       frame: { width, height, renderWidth, renderHeight, anchorX, anchorY },
       ...(layout ? { layout } : {}), ...(mobType ? { mobType } : {}),
+      ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
       captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render, brightness: style.brightness, contrast: style.contrast,
@@ -344,6 +353,40 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (persist) queueSave();
   }
 
+  function scaledFrameMetadata(metadata, oldScale, nextScale) {
+    const ratio = nextScale / oldScale;
+    const next = { ...metadata, modelScalePercent: nextScale };
+    const vector = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
+    if (Number.isFinite(metadata?.frameHeight)) next.frameHeight = metadata.frameHeight * ratio;
+    if (vector(metadata?.center)) next.center = metadata.center.map(value => value * ratio);
+    return next;
+  }
+
+  function updateModelScale(percent) {
+    const nextScale = validateSpriteModelScale(percent);
+    if (!modelScaleAdjustable()) throw new Error('This older set has no footprint metadata. Clear the sheet before changing its model size.');
+    // Stage every row before committing: a size change must never leave poses
+    // with different presentation sizes or alter their original captured pixels.
+    const changes = Object.values(captures).map(capture => {
+      const dimensions = spriteLayoutDimensions(capture.layout.id, capture.layout.resolutionPercent, nextScale);
+      if (dimensions.width !== capture.width || dimensions.height !== capture.height) {
+        throw new Error('The captured frame does not match its footprint. Clear the sheet before changing its model size.');
+      }
+      return [capture, {
+        modelScalePercent: nextScale, renderWidth: dimensions.renderWidth, renderHeight: dimensions.renderHeight,
+        render: scaledFrameMetadata(capture.render, capture.modelScalePercent ?? 100, nextScale)
+      }];
+    });
+    for (const [capture, metadata] of changes) Object.assign(capture, metadata);
+    if (!modelReady && savedSettings) {
+      // Workspace geometry stays at its base 100% size; the renderer applies
+      // this percentage when restoring its display and capture cameras.
+      savedSettings = { ...savedSettings, modelScalePercent: nextScale };
+    }
+    refreshControls();
+    saveWorkspace();
+  }
+
   async function legacyCombatWorkspace() {
     const draft = await loadStudioDraft();
     if (!draft) return null;
@@ -378,19 +421,22 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         raw, width, height, anchorX, anchorY, renderWidth, renderHeight, bakedPixels: true,
         clip: manifest.poses[pose].clip, time: manifest.poses[pose].time,
         render: { ...manifest.render }, ...(manifest.layout ? { layout: manifest.layout } : {}),
-        ...(manifest.mobType ? { mobType: manifest.mobType } : {})
+        ...(manifest.mobType ? { mobType: manifest.mobType } : {}),
+        ...(manifest.modelScalePercent === undefined ? {} : { modelScalePercent: manifest.modelScalePercent })
       };
     }
     // Older drafts contain finished PNGs, so neutral adjustments preserve their
     // exact palette pixels. The captured outline is already part of those pixels.
     const neutralStyle = { ...getStyle(), brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 0 };
+    const baseRender = scaledFrameMetadata(manifest.render, manifest.modelScalePercent ?? 100, 100);
     return {
       version: 1, name: manifest.label, style: neutralStyle, captures: captureRows,
       settings: {
-        ...manifest.render, modelName: manifest.render?.model || manifest.label,
+        ...baseRender, modelName: manifest.render?.model || manifest.label,
         sourceFiles: [], isDemo: false, width, height,
         layoutId: manifest.layout?.id || 'single', resolutionPercent: manifest.layout?.resolutionPercent || (width / 160 * 100),
-        ...(manifest.layout ? { layout: manifest.layout } : {}), mobType: manifest.mobType || 'kobold'
+        ...(manifest.layout ? { layout: manifest.layout } : {}), mobType: manifest.mobType || 'kobold',
+        modelScalePercent: manifest.modelScalePercent ?? 100
       },
       savedAt: draft.savedAt, recoveredFromCombat: true
     };
@@ -454,7 +500,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     captures = {};
     refresh();
     queueSave();
-    ui.SheetStatus.textContent = 'Sheet cleared. Framing, front direction and resolution can be changed again.';
+    ui.SheetStatus.textContent = 'Sheet cleared. Framing, front direction, footprint, resolution and lighting can be changed again.';
   });
 
   ui.SpriteSetName.addEventListener('input', saveWorkspace);
@@ -462,14 +508,22 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) queueSave(); });
 
   return Object.freeze({
-    reset, snapshot, saveWorkspace, flushSave,
+    reset, snapshot, saveWorkspace, flushSave, updateModelScale,
     setModelReady(ready) {
       modelReady = !!ready;
       if (modelReady) savedSettings = null;
       refresh();
     },
     updateMetadata() {
-      if (!modelReady && savedSettings) savedSettings = { ...savedSettings, mobType: getWorkspaceSettings().mobType || savedSettings.mobType };
+      if (!modelReady && savedSettings) {
+        const current = getWorkspaceSettings();
+        savedSettings = { ...savedSettings, mobType: current.mobType || savedSettings.mobType };
+        // A recovered sheet can be cleared without restoring its source model.
+        // Once empty, its chosen format must update placeholders and autosave.
+        if (!count()) for (const key of ['layout', 'layoutId', 'resolutionPercent', 'width', 'height', 'lighting']) {
+          if (current[key] !== undefined) savedSettings[key] = current[key];
+        }
+      }
       refresh();
       saveWorkspace();
     },

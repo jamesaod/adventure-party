@@ -82,7 +82,8 @@ const names = [
   "shouldUseKoboldPronePose", "activeUnitPoseName", "unitPoseSprite",
   "setTemporaryUnitPose", "triggerUnitAttackPose", "pixelAssetIdForUnitPose", "drawSpriteFacing",
   "runtimeAnchorForAsset", "trimmedRuntimeCanvasForAsset", "unitPoseNativeFacing",
-  "getSpriteAssetSpec", "spriteRenderDimensions", "registerStudioSpriteSet", "inspectStudioSpritePose"
+  "getSpriteAssetSpec", "spriteRenderDimensions", "registerStudioSpriteSet", "inspectStudioSpritePose",
+  "clampNumber", "updatePixelPropertiesUi", "readPixelPropertiesFromUi"
 ];
 vm.createContext(sandbox);
 vm.runInContext(names.map(productionFunction).join("\n"), sandbox);
@@ -249,4 +250,44 @@ assert.equal(sandbox.inspectStudioSpritePose("live"), true);
 assert.equal(sandbox.activeUnitPoseName(imported), "stand");
 assert.equal(sandbox.runtimeAnchorForAsset("sprite-set-test-package-prone-e").y, 145 / 200);
 
-console.log("Directional sprites: six facings, action fallback/timers, no-mirror expiry race, frame anchors, R221 prone presentation, legacy poses, atomic eighteen-frame registration, directional prone conditions, and initial-only pose inspection passed.");
+// A 5% model-size step can produce fractional game dimensions. Registration
+// and Pixel Editor Apply's property read must preserve those exact dimensions;
+// the already-scaled manifest must not be scaled again at runtime.
+const scaledManifest = createSpriteSetManifest({
+  id: "scaled-package", label: "Scaled package", modelScalePercent: 105,
+  layout: { id: "single", resolutionPercent: 100 },
+  frame: { width: 160, height: 200, renderWidth: 50.4, renderHeight: 63, anchorX: 80, anchorY: 145 },
+  captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: pose, time: 0.5 }]))
+});
+const scaledId = sandbox.registerStudioSpriteSet({ manifest: scaledManifest, images, sourceUrls });
+assert.equal(sandbox.registeredStudioSpriteSets.get(scaledId).modelScalePercent, 105);
+const scaledAsset = registeredAssets.find(asset => asset.id === "sprite-set-scaled-package-prone-e");
+assert.equal(sandbox.spriteRenderDimensions(scaledAsset.id, scaledAsset.gameImage).width, 50.4);
+Object.assign(sandbox, {
+  pixelEditorAsset: scaledAsset, PIXEL_EDITOR_GRID_SIZE: 64, updatePixelSourceScaleUi() {},
+  pixelSourceWidth: {}, pixelSourceHeight: {}, pixelWorkspaceWidth: {}, pixelWorkspaceHeight: {},
+  pixelRenderWidth: {}, pixelRenderHeight: {}, pixelAnchorX: {}, pixelAnchorY: {},
+  pixelScaleMode: {}, pixelLockAspect: {}
+});
+sandbox.updatePixelPropertiesUi();
+assert.equal(sandbox.pixelRenderWidth.step, "any");
+assert.equal(sandbox.pixelRenderHeight.step, "any");
+sandbox.readPixelPropertiesFromUi();
+assert.equal(scaledAsset.spec.renderWidth, 50.4);
+assert.equal(scaledAsset.spec.renderHeight, 63);
+assert.equal(scaledAsset.spec.anchorY, 145);
+sandbox.pixelRenderWidth.value = "52.8";
+sandbox.readPixelPropertiesFromUi({ renderChanged: "width" });
+assert.equal(scaledAsset.spec.renderWidth, 52.8);
+assert.ok(Math.abs(scaledAsset.spec.renderHeight - 66) < 1e-10, "Aspect-locked resizing preserves fractional precision");
+sandbox.pixelRenderWidth.value = "not-a-number";
+sandbox.readPixelPropertiesFromUi();
+assert.equal(scaledAsset.spec.renderWidth, 52.8, "Invalid dimensions retain the last finite value");
+sandbox.pixelEditorAsset = { spec: { ...scaledAsset.spec, preserveFrame: false, renderWidth: 50.4, renderHeight: 63.6 } };
+sandbox.updatePixelPropertiesUi();
+assert.equal(sandbox.pixelRenderWidth.step, "1");
+sandbox.readPixelPropertiesFromUi();
+assert.equal(sandbox.pixelEditorAsset.spec.renderWidth, 50);
+assert.equal(sandbox.pixelEditorAsset.spec.renderHeight, 64, "Legacy sprite dimensions retain integer rounding");
+
+console.log("Directional sprites: six facings, action fallback/timers, no-mirror expiry race, frame anchors, R221 prone presentation, legacy poses, atomic eighteen-frame registration, directional prone conditions, initial-only pose inspection, and fractional model-size preservation passed.");

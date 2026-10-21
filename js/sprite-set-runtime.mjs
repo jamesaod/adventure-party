@@ -1,6 +1,6 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R237C47';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R237C47';
-import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R237C47';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R237C48';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R237C48';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R237C48';
 
 const api = window.adventurePartySpriteSets;
 const assets = new Map();
@@ -58,7 +58,7 @@ function makeControls() {
   }
   const help = document.createElement('p');
   help.className = 'small';
-  help.textContent = 'Preview all six facings before combat. Space begins combat and restores live poses.';
+  help.textContent = 'Preview all six facings before combat. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
   help.style.cssText = 'margin:8px 0 0;';
   inspector.append(heading, buttons, help);
   document.querySelector('#combatScreen .side').append(inspector);

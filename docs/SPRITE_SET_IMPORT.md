@@ -4,9 +4,9 @@ The 3d studio exports one character as **18 separate transparent PNGs**, a refer
 
 ## Capture the poses
 
-1. Choose the target **MOB**, **Footprint and sheet format**, and **Resolution**. The slider scales source frames from 50–200% in 5% steps while preserving the chosen format's game render size. See the [seven-format table](3D_STUDIO.md#choose-the-mob-footprint-and-resolution) for frame and sheet dimensions.
-2. Load a model with its animations, such as an animated FBX from Tripo. Select any separate texture files in the same file selection.
-3. The studio fits the model across its animation clips. Choose an animation, pause it, and drag the timeline to the desired moment. **Fit all animations** restores the shared frame if you change it before capturing.
+1. Choose the target **MOB** and one of four footprints: single hex, three-hex triangle, inverted triangle, or seven-hex center/ring. **Resolution** scales source frames from 50–200% in 5% steps; **Model size** independently scales the battlefield render dimensions from 25–200% in 5% steps. Both default to 100%. See the [format table](3D_STUDIO.md#choose-the-mob-footprint-and-resolution) for frame and sheet dimensions.
+2. Load a model with its animations, such as an animated FBX from Tripo. Select any separate texture files in the same file selection. New models default to Z-up; choose Y if the source needs it. A restored workspace keeps its saved orientation.
+3. The studio fits the model across its animation clips. Adjust the environmental light's color/intensity and the directional light's color/intensity/elevation/hex direction before capturing; both lights start white. Use the matching footprint on the model floor to judge size. Choose an animation, pause it, and drag the timeline to the desired moment. **Fit all animations** restores the shared frame if you change it before capturing.
 4. Choose **Capture ready pose**, **Capture attack pose**, or **Capture prone pose**. Each button captures all six physical facings at that exact animation time.
 5. Repeat for the other poses, using a different clip or time as needed. The growing preview shows the saved captures, not the current playback frame.
 6. Give the set a recognizable character name, then choose **Export game assets (ZIP)**.
@@ -21,15 +21,15 @@ The captured sheet always has the same mapping:
 
 At the default single-hex 100% resolution, each frame is 160 × 200 and the complete sheet is 960 × 600 pixels. Every footprint uses six frame widths by three frame heights, including the larger formats. Its layout is separate from the older single-pose six-facing export, which remains E/NE/NW over W/SW/SE.
 
-Captures share one camera frame, footprint, resolution, model orientation, render scale, and ground anchor. The studio locks those settings after the first capture; clear the captured sheet to change them. The MOB target remains editable, and color and outline adjustments can still update the saved captures together. Preserve the full transparent frame when preparing assets; trimming each pose separately would change its size and ground alignment in combat.
+Captures share one source camera frame, footprint, resolution, model orientation, lighting, and ground anchor. The studio locks those settings after the first capture; clear the captured sheet to change them. The MOB target and model size remain editable. Model size updates the shared render dimensions without recapturing or resampling the PNGs; color and outline adjustments can still update the saved captures together. Older recovered captures without layout metadata need a cleared sheet and a new capture before model size can change. The model-floor footprint is only a viewing guide and is never baked into exports. Preserve the full transparent frame when preparing assets; trimming each pose separately would change its size and ground alignment in combat.
 
-Partial and complete sheets autosave in this browser with their source pixels, model files and studio settings. Wait for **Saved** before closing the tab. Reopening the studio restores the workspace; captured rows remain exportable if the original model cannot be restored. This local workspace is separate from repository assets and the portable ZIP.
+Partial and complete sheets autosave in this browser with their source pixels, model files, lighting, size and other studio settings. Wait for **Saved** before closing the tab. Reopening the studio restores the workspace; captured rows remain exportable if the original model cannot be restored. This local workspace is separate from repository assets and the portable ZIP.
 
 ## Test immediately
 
 Choose **Test in combat** after capturing all 18 sprites. The studio saves the PNGs and an exact copy of the captured workspace, then opens Combat System Test with that character selected. The test creates six units using the selected MOB's implemented statistics and behavior, with the set's chosen footprint. This lets you inspect the ready, attack, and prone artwork before importing it into the repository.
 
-Choose **Return to 3d studio** from setup or combat to restore the exact tested captures and export or adjust them, even if the original studio tab was closed. Stable and candidate drafts are separate. Export the ZIP to keep a transferable copy and use the import command below to make the character part of the game repository.
+Choose **Return to 3d studio** from setup or combat to restore the exact tested captures and export or adjust them, even if the original studio tab was closed. Victory, defeat, and manual exit from a studio battle also return directly to the studio without a loot screen. Stable and candidate drafts are separate. Export the ZIP to keep a transferable copy and use the import command below to make the character part of the game repository.
 
 ## Add the set to the repository
 
@@ -51,7 +51,7 @@ For a set named “Kobold veteran,” the resulting files are:
 
 | Location | Purpose |
 | --- | --- |
-| `assets/sprites/kobold-veteran/manifest.json` | Character ID and label, MOB type, footprint/resolution, frame dimensions, fixed render size and ground anchor, pose/facing filenames, clip names and capture times |
+| `assets/sprites/kobold-veteran/manifest.json` | Character ID and label, MOB type, footprint/resolution/model size, source and render dimensions, ground anchor, pose/facing filenames, clip names/times, and lighting/render settings |
 | `assets/sprites/kobold-veteran/ready-e.png` through the six ready facings | Ready artwork |
 | `assets/sprites/kobold-veteran/attack-e.png` through the six attack facings | Attack artwork |
 | `assets/sprites/kobold-veteran/prone-e.png` through the six prone facings | Prone artwork |
@@ -70,20 +70,25 @@ node scripts/import-sprite-set.mjs /path/to/kobold-veteran-sprite-set.zip --root
 
 The default destination is the repository containing the importer script, regardless of the current working directory.
 
-## Footprint and MOB metadata
+## Footprint, model size and MOB metadata
 
-The version-1 manifest adds optional `layout` and `mobType` fields. For example, a dragon set captured at the seven-hex format's native resolution includes:
+The version-1 manifest supports optional `layout`, `mobType`, and top-level `modelScalePercent` fields. For example, a dragon set captured at the seven-hex format's native resolution and 150% model size includes:
 
 ```json
 {
   "layout": { "id": "hex7", "resolutionPercent": 100 },
-  "mobType": "juvenile-red-dragon"
+  "mobType": "juvenile-red-dragon",
+  "modelScalePercent": 150
 }
 ```
 
-For that example, `frame.width` and `frame.height` are 480 and 400, while `frame.renderWidth` and `frame.renderHeight` remain 144 and 120. At 200%, source dimensions become 960 × 800 and the game render size stays 144 × 120. The manifest's source/render dimensions must match the declared format and resolution. All eighteen images use the same frame and anchor.
+For that example, `frame.width` and `frame.height` are 480 and 400, while `frame.renderWidth` and `frame.renderHeight` are 216 and 180. Raising resolution to 200% changes only the source dimensions to 960 × 800; the game render size stays 216 × 180. Setting model size to 100% instead gives a 144 × 120 game render size at either resolution. All eighteen images use the same frame and anchor.
 
-`mobType` identifies an existing combat factory; `layout.id` identifies the occupied-hex arrangement. The shared definitions live in `js/sprite-layouts.mjs`. Older version-1 sets without these fields still load with their original image dimensions and use the single-hex Kobold test defaults. Importing a set makes it selectable for testing; it does not replace every existing instance of that MOB's artwork.
+When present, `modelScalePercent` must be an integer from 25–200 in 5% steps and requires `layout` metadata. The source dimensions must match the declared format and resolution; render dimensions must match the format's base render dimensions multiplied by `modelScalePercent / 100`. Fractional render sizes are valid. Omitting the model-size field preserves the existing 100% interpretation. Lighting is preserved in the shared render metadata; source model files remain in the browser workspace rather than the game asset ZIP.
+
+`mobType` identifies an existing combat factory; `layout.id` identifies the occupied-hex arrangement. The shared definitions live in `js/sprite-layouts.mjs`. Its active catalog contains `single`, `triangle3`, `triangle3-inverted`, and `hex7`. Explicit legacy definitions retain `wide2`, `trapezoid5`, and `diamond4` so existing exported packages and drafts recover with their original dimensions and footprints; these three formats are not offered for new sets.
+
+Older version-1 sets without layout/MOB metadata still load with their original image dimensions and use the single-hex Kobold test defaults. Their recovered captures remain exportable; clear and recapture them before adding model-size metadata. Importing a set makes it selectable for testing; it does not replace every existing instance of that MOB's artwork.
 
 ## Validation and publishing
 
@@ -92,10 +97,12 @@ node scripts/import-sprite-set.mjs --validate
 node scripts/test-sprite-set-package.mjs
 node scripts/test-directional-sprites.mjs
 node scripts/test-studio-footprints.mjs
+node scripts/test-studio-geometry.mjs
+node scripts/test-studio-combat-exit.mjs
 node scripts/validate-repo.mjs
 ```
 
-The package validator checks the manifest, known MOB and footprint IDs, resolution/format dimensions, all 18 directions and poses, PNG CRCs and complete decoded image data, source dimensions, hard transparency, exact agreement between the sheet and its individual images, and safe folder paths. Repository validation also checks unique character IDs, matching manifest paths/IDs, and current content revisions. Invalid packages leave the installed character and registry unchanged.
+The package validator checks the manifest, known MOB and active/legacy footprint IDs, independent resolution/model-size dimensions, all 18 directions and poses, PNG CRCs and complete decoded image data, source dimensions, hard transparency, exact agreement between the sheet and its individual images, and safe folder paths. Repository validation also checks unique character IDs, matching manifest paths/IDs, and current content revisions. Invalid packages leave the installed character and registry unchanged.
 
 The importer accepts the studio's native RGBA8 PNGs and noninterlaced indexed PNGs with transparency. A ZIP contains one character folder with exactly its manifest, 18 facing PNGs, and sheet; keep source FBX files and additional reference artwork outside that folder.
 

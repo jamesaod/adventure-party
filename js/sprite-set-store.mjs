@@ -1,4 +1,5 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R237C47';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R237C48';
+import { validateSpriteModelScale } from './sprite-layouts.mjs?v=R237C48';
 
 // Candidate and stable share an origin, so isolate their drafts by page folder.
 const scope = new URL('.', location.href).pathname;
@@ -27,7 +28,8 @@ export function validateStudioWorkspace(workspace) {
   for (const key of ['brightness', 'contrast', 'hue', 'saturation', 'outline']) {
     if (!Number.isFinite(workspace.style[key])) invalid(`invalid ${key}.`);
   }
-  let dimensions;
+  if (workspace.settings.modelScalePercent !== undefined) validateSpriteModelScale(workspace.settings.modelScalePercent);
+  let dimensions, modelScale;
   for (const [pose, capture] of Object.entries(workspace.captures)) {
     if (!SPRITE_POSES.includes(pose) || !plain(capture)) invalid('invalid pose.');
     const { width, height, raw, anchorX, anchorY, clip, time } = capture;
@@ -37,6 +39,10 @@ export function validateStudioWorkspace(workspace) {
     if (typeof clip !== 'string' || clip.length > 512 || !Number.isFinite(time) || time < 0) invalid('invalid animation time.');
     if (dimensions && (dimensions[0] !== width || dimensions[1] !== height)) invalid('poses have different frame sizes.');
     dimensions = [width, height];
+    const scale = validateSpriteModelScale(capture.modelScalePercent);
+    if (capture.modelScalePercent !== undefined && !plain(capture.layout)) invalid('model size needs its captured footprint metadata.');
+    if (modelScale !== undefined && modelScale !== scale) invalid('poses have different model sizes.');
+    modelScale = scale;
   }
   const sources = workspace.settings.sourceFiles;
   if (sources !== undefined && (!Array.isArray(sources) || sources.some(source =>

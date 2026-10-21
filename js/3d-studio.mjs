@@ -2,12 +2,18 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C47';
-import { createPoseCapture } from './studio-capture.mjs?v=R237C47';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C48';
+import { createPoseCapture } from './studio-capture.mjs?v=R237C48';
 import {
-  SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, spriteLayout,
-  spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata
-} from './sprite-layouts.mjs?v=R237C47';
+  SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, spriteLayout,
+  spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale
+} from './sprite-layouts.mjs?v=R237C48';
+import { studioFootprintGuide, studioLightPosition } from './studio-geometry.mjs?v=R237C48';
+
+const DEFAULT_LIGHTING = Object.freeze({
+  ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
+  keyColor: '#ffffff', keyElevation: 45, keyDirection: 'NW'
+});
 
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
@@ -15,8 +21,11 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
-  'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint',
+  'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
   'FootprintPreview', 'FootprintDescription', 'FormatSummary', 'EmptyMessage',
+  'ModelScale', 'ModelScaleValue', 'BattlefieldSize', 'LightingLockNote', 'LightingFields',
+  'AmbientIntensity', 'AmbientIntensityValue', 'AmbientColor',
+  'KeyIntensity', 'KeyIntensityValue', 'KeyColor', 'KeyElevation', 'KeyElevationValue', 'KeyDirection',
   'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
   'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'OutlineValue', 'Clip',
   'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time',
@@ -25,9 +34,10 @@ const ui = Object.fromEntries([
 
 const state = {
   model: null, modelName: 'Studio mannequin', clips: [], mixer: null,
-  action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Y',
+  action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Z',
   width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
-  sourceFiles: [], isDemo: true, modelReady: false,
+  modelScalePercent: 100, lighting: { ...DEFAULT_LIGHTING },
+  sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
@@ -36,7 +46,8 @@ const state = {
 };
 
 let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
-let placement, upAxisGroup, helpers, atlasTarget, atlasSource, atlasImage;
+let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbientLight, keyLight, modelFrame;
+let atlasTarget, atlasSource, atlasImage;
 let resizeObserver, visibilityObserver, poseCapture;
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d', { alpha: false });
@@ -49,13 +60,16 @@ const previews = HEX_FACINGS.map(facing => ({
 function getWorkspaceSettings() {
   return {
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
+    demoSourceUpAxis: state.demoSourceUpAxis,
     layoutId: state.layoutId, resolutionPercent: state.resolutionPercent,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
     mobType: state.mobType, width: state.width, height: state.height,
+    modelScalePercent: state.modelScalePercent, lighting: { ...state.lighting },
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
     center: state.center.toArray(), framingMode: state.framingMode,
     framingSamplesPerClip: state.framingSamplesPerClip,
-    placement: placement ? { position: placement.position.toArray(), scale: placement.scale.x } : null,
+    // Store the base transform. Model size is applied once when reopening it.
+    placement: modelFrame ? { position: modelFrame.position.toArray(), scale: modelFrame.scale } : null,
     clipIndex: Number(ui.Clip.value), clipName: state.action?.getClip().name || '',
     time: state.action?.time || 0, playing: state.playing,
     speed: Number(ui.Speed.value) || 1, facing: state.facing
@@ -81,12 +95,21 @@ function renderFootprintPreview() {
 }
 
 function updateSetupLabels() {
+  const legacy = !SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId);
+  ui.Footprint.hidden = legacy;
+  ui.LegacyFootprint.hidden = !legacy;
+  ui.LegacyFootprint.textContent = legacy ? `${spriteLayout(state.layoutId).label} · Saved format; clear the sheet to choose a new one.` : '';
   ui.Footprint.value = state.layoutId;
   ui.MobTarget.value = state.mobType;
   ui.Resolution.value = String(state.resolutionPercent);
   ui.ResolutionValue.textContent = `${state.resolutionPercent}%`;
   ui.Resolution.setAttribute('aria-valuetext', `${state.width} by ${state.height} pixels per sprite, ${state.resolutionPercent} percent`);
   ui.FormatSummary.textContent = `Frame ${state.width} × ${state.height} · Sheet ${state.width * 6} × ${state.height * 3}`;
+  ui.ModelScale.value = String(state.modelScalePercent);
+  ui.ModelScaleValue.textContent = `${state.modelScalePercent}%`;
+  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent);
+  ui.BattlefieldSize.textContent = `Battlefield frame ${size.renderWidth} × ${size.renderHeight} px`;
+  ui.ModelScale.setAttribute('aria-valuetext', `${state.modelScalePercent} percent, ${size.renderWidth} by ${size.renderHeight} battlefield pixels`);
   renderFootprintPreview();
 }
 
@@ -94,6 +117,8 @@ function populateSetupControls() {
   ui.MobTarget.replaceChildren(...SPRITE_MOBS.map(mob => new Option(mob.label, mob.id)));
   ui.Footprint.replaceChildren(...SPRITE_LAYOUT_PRESETS.map(layout => new Option(layout.label, layout.id)));
   for (const key of ['min', 'max', 'step']) ui.Resolution[key] = String(SPRITE_RESOLUTION[key]);
+  for (const key of ['min', 'max', 'step']) ui.ModelScale[key] = String(SPRITE_MODEL_SCALE[key]);
+  ui.KeyDirection.replaceChildren(...HEX_FACINGS.map(facing => new Option(`${facing.label} (${facing.id})`, facing.id)));
   updateSetupLabels();
 }
 
@@ -102,6 +127,16 @@ function syncCaptureLock(locked) {
   for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis]) {
     control.disabled = locked || !state.modelReady;
   }
+  const saved = poseCapture?.snapshot();
+  ui.ModelScale.disabled = saved?.modelScaleAdjustable === false || (!state.modelReady && !locked);
+  for (const control of [ui.AmbientIntensity, ui.AmbientColor, ui.KeyIntensity, ui.KeyColor, ui.KeyElevation, ui.KeyDirection]) {
+    control.disabled = locked || !state.modelReady;
+  }
+  ui.LightingLockNote.textContent = locked
+    ? state.lighting.legacyRig === 'rev47'
+      ? 'Original lighting restored for this saved sheet. Clear the sheet to use the new lighting controls.'
+      : 'Lighting is shared by all captured poses. Clear the sheet to change it.'
+    : 'Both lights affect the model, six pixel previews and captured sprites.';
 }
 
 function setModelReady(ready) {
@@ -121,7 +156,85 @@ function changeSpriteFormat({ refit = false } = {}) {
   if (renderer && !state.disposed) configureAtlas();
   updateSetupLabels();
   if (refit && state.modelReady) fitAllAnimations();
+  else rebuildFootprintGuide();
   poseCapture?.updateMetadata();
+}
+
+function normalizedLighting(value = {}) {
+  const result = { ...DEFAULT_LIGHTING };
+  for (const [key, max] of [['ambientIntensity', 3], ['keyIntensity', 5], ['keyElevation', 90]]) {
+    if (Number.isFinite(value[key])) result[key] = THREE.MathUtils.clamp(value[key], 0, max);
+  }
+  for (const key of ['ambientColor', 'keyColor']) {
+    if (/^#[0-9a-f]{6}$/i.test(value[key] || '')) result[key] = value[key].toLowerCase();
+  }
+  if (HEX_FACINGS.some(facing => facing.id === value.keyDirection)) result.keyDirection = value.keyDirection;
+  if (value.legacyRig === 'rev47') result.legacyRig = 'rev47';
+  return result;
+}
+
+function updateLighting() {
+  const light = state.lighting;
+  ui.AmbientIntensity.value = String(Math.round(light.ambientIntensity * 100));
+  ui.AmbientIntensityValue.textContent = `${Math.round(light.ambientIntensity * 100)}%`;
+  ui.AmbientColor.value = light.ambientColor;
+  ui.KeyIntensity.value = String(Math.round(light.keyIntensity * 100));
+  ui.KeyIntensityValue.textContent = `${Math.round(light.keyIntensity * 100)}%`;
+  ui.KeyColor.value = light.keyColor;
+  ui.KeyElevation.value = String(light.keyElevation);
+  ui.KeyElevationValue.textContent = `${light.keyElevation}°`;
+  ui.KeyDirection.value = light.keyDirection;
+  const legacy = light.legacyRig === 'rev47';
+  ui.LightingFields.hidden = legacy;
+  if (ambientLight) {
+    ambientLight.visible = !legacy;
+    legacyAmbientLight.visible = legacy;
+    ambientLight.color.set(light.ambientColor);
+    ambientLight.intensity = light.ambientIntensity;
+    keyLight.color.set(light.keyColor);
+    keyLight.intensity = light.keyIntensity;
+    const position = legacy ? { x: -3, y: 5, z: 6 } : studioLightPosition(light.keyDirection, light.keyElevation);
+    keyLight.position.set(position.x, position.y, position.z);
+    keyLight.target.position.set(0, 0, 0);
+    keyLight.updateMatrixWorld();
+    keyLight.target.updateMatrixWorld();
+  }
+  invalidate();
+}
+
+function rebuildFootprintGuide() {
+  if (!helpers) return;
+  if (footprintGuide) { helpers.remove(footprintGuide); disposeModel(footprintGuide); }
+  footprintGuide = new THREE.Group();
+  footprintGuide.name = 'SelectedHexFootprint';
+  const facing = HEX_FACINGS.findIndex(item => item.id === state.facing);
+  const cells = studioFootprintGuide(state.layoutId, facing, state.frameHeight);
+  for (const cell of cells) {
+    const points = cell.vertices.map(vertex => new THREE.Vector3(vertex.x, 0.006, vertex.z));
+    const positions = [];
+    for (let index = 0; index < 6; index++) {
+      positions.push(cell.x, 0.003, cell.z, points[index].x, 0.003, points[index].z,
+        points[(index + 1) % 6].x, 0.003, points[(index + 1) % 6].z);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    footprintGuide.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+      color: 0xd0b66a, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false
+    })));
+    footprintGuide.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({ color: 0xe3ca79, transparent: true, opacity: 0.95 })));
+  }
+  helpers.add(footprintGuide);
+  invalidate(false);
+}
+
+function applyModelSize() {
+  if (!modelFrame || !placement) return;
+  const factor = state.modelScalePercent / 100;
+  placement.position.copy(modelFrame.position).multiplyScalar(factor);
+  placement.scale.setScalar(modelFrame.scale * factor);
+  updateCaptureCamera();
+  invalidate();
 }
 
 function status(message) { ui.Status.textContent = message; }
@@ -146,7 +259,7 @@ function makeMaterial(color, roughness = 0.85, metalness = 0) {
   return new THREE.MeshStandardMaterial({ color, roughness, metalness });
 }
 
-function makeDemo() {
+function makeDemo({ upAxis = 'Z' } = {}) {
   const model = new THREE.Group();
   model.name = 'StudioMannequin';
   const skin = makeMaterial(0xca7540);
@@ -237,7 +350,13 @@ function makeDemo() {
     new THREE.NumberKeyframeTrack('StudioMannequin.rotation[x]', [0, 0.5, 1.2, 1.6], [0, 0.2, Math.PI / 2, Math.PI / 2]),
     new THREE.NumberKeyframeTrack('StudioMannequin.position[y]', [0, 0.5, 1.2, 1.6], [0, 0.05, 0.3, 0.3])
   ]);
-  return { model, clips: [idle, attack, fall], name: 'Studio mannequin' };
+  const root = upAxis === 'Z' ? new THREE.Group() : model;
+  if (root !== model) {
+    root.name = 'StudioMannequinZUp';
+    root.rotation.x = Math.PI / 2;
+    root.add(model);
+  }
+  return { model: root, clips: [idle, attack, fall], name: 'Studio mannequin', demoSourceUpAxis: upAxis };
 }
 
 function disposeModel(model) {
@@ -281,7 +400,7 @@ function geometryBounds(root) {
 
 // Measure off-scene, then apply the complete result. Failed fitting never leaves
 // the previous camera, model parent, or animation partially changed.
-function measureModelFrame(model, clips, { upAxis = 'Y', mixer = null, action = null } = {}) {
+function measureModelFrame(model, clips, { upAxis = 'Z', mixer = null, action = null, aspect = state.width / state.height } = {}) {
   const parent = model.parent;
   const siblingIndex = parent?.children.indexOf(model) ?? -1;
   const normalized = new THREE.Group();
@@ -335,7 +454,7 @@ function measureModelFrame(model, clips, { upAxis = 'Y', mixer = null, action = 
     const projectedHeight = (high - low) * Math.cos(CAMERA_ELEVATION) + 2 * radius * Math.sin(CAMERA_ELEVATION);
     return {
       scale, position: normalized.position.clone(), center: new THREE.Vector3(0, (high + low) / 2, 0),
-      frameHeight: Math.max(projectedHeight, 2 * radius / (state.width / state.height), 1) * 1.24,
+      frameHeight: Math.max(projectedHeight, 2 * radius / aspect, 1) * 1.24,
       mode: clips.length ? 'animations' : 'pose', samplesPerClip: clips.length ? 49 : 0
     };
   } finally {
@@ -367,8 +486,7 @@ function measureModelFrame(model, clips, { upAxis = 'Y', mixer = null, action = 
 }
 
 function applyModelFrame(frame) {
-  placement.position.copy(frame.position);
-  placement.scale.setScalar(frame.scale);
+  modelFrame = { ...frame, position: frame.position.clone(), center: frame.center.clone() };
   upAxisGroup.rotation.x = state.upAxis === 'Z' ? -Math.PI / 2 : 0;
   state.center.copy(frame.center);
   state.frameHeight = frame.frameHeight;
@@ -377,6 +495,8 @@ function applyModelFrame(frame) {
   calibration.rotation.y = THREE.MathUtils.degToRad(state.heading);
   turntable.rotation.y = HEX_FACINGS.find(item => item.id === state.facing).yawRadians;
   state.lastTick = 0;
+  applyModelSize();
+  rebuildFootprintGuide();
   resetCamera();
   invalidate();
 }
@@ -400,8 +520,8 @@ function fitAllAnimations() {
   } catch (error) { showError(error); }
 }
 
-function setCameraFrustum(camera, aspect) {
-  const halfHeight = state.frameHeight / 2;
+function setCameraFrustum(camera, aspect, frameHeight = state.frameHeight) {
+  const halfHeight = frameHeight / 2;
   camera.left = -halfHeight * aspect;
   camera.right = halfHeight * aspect;
   camera.top = halfHeight;
@@ -409,25 +529,53 @@ function setCameraFrustum(camera, aspect) {
   camera.updateProjectionMatrix();
 }
 
-function fixedCamera(camera) {
-  const distance = Math.max(8, state.frameHeight * 2);
-  camera.position.copy(state.center).add(new THREE.Vector3(0, Math.sin(CAMERA_ELEVATION), Math.cos(CAMERA_ELEVATION)).multiplyScalar(distance));
+function fixedCamera(camera, center = state.center, frameHeight = state.frameHeight) {
+  const distance = Math.max(8, frameHeight * 2);
+  camera.position.copy(center).add(new THREE.Vector3(0, Math.sin(CAMERA_ELEVATION), Math.cos(CAMERA_ELEVATION)).multiplyScalar(distance));
   camera.far = Math.max(100, distance * 3);
   camera.updateProjectionMatrix();
   camera.up.set(0, 1, 0);
-  camera.lookAt(state.center);
+  camera.lookAt(center);
+}
+
+function updateCaptureCamera() {
+  if (!pixelCamera) return;
+  const factor = state.modelScalePercent / 100;
+  const height = state.frameHeight * factor;
+  // The source image keeps the same framing at every model size. Combat applies
+  // the exported render dimensions once, so size never gets multiplied twice.
+  setCameraFrustum(pixelCamera, state.width / state.height, height);
+  fixedCamera(pixelCamera, state.center.clone().multiplyScalar(factor), height);
+}
+
+function mainViewFrame(aspect) {
+  const facing = HEX_FACINGS.findIndex(item => item.id === state.facing);
+  const cells = studioFootprintGuide(state.layoutId, facing, state.frameHeight);
+  const centerV = state.center.y * Math.cos(CAMERA_ELEVATION) - state.center.z * Math.sin(CAMERA_ELEVATION);
+  let low = centerV - state.frameHeight / 2, high = centerV + state.frameHeight / 2;
+  let left = -state.frameHeight * state.width / state.height / 2, right = -left;
+  for (const vertex of cells.flatMap(cell => cell.vertices)) {
+    const vertical = -vertex.z * Math.sin(CAMERA_ELEVATION);
+    low = Math.min(low, vertical); high = Math.max(high, vertical);
+    left = Math.min(left, vertex.x); right = Math.max(right, vertex.x);
+  }
+  const center = state.center.clone().add(new THREE.Vector3(0, Math.cos(CAMERA_ELEVATION), -Math.sin(CAMERA_ELEVATION))
+    .multiplyScalar((low + high) / 2 - centerV));
+  center.x = (left + right) / 2;
+  return { center, height: Math.max(high - low, (right - left) / aspect) * 1.08 };
 }
 
 function resetCamera() {
   if (!mainCamera || !pixelCamera || !orbit) return;
   const rect = ui.Viewport.getBoundingClientRect();
-  setCameraFrustum(mainCamera, Math.max(rect.width, 1) / Math.max(rect.height, 1));
-  setCameraFrustum(pixelCamera, state.width / state.height);
-  fixedCamera(mainCamera);
-  fixedCamera(pixelCamera);
+  const aspect = Math.max(rect.width, 1) / Math.max(rect.height, 1);
+  const frame = mainViewFrame(aspect);
+  setCameraFrustum(mainCamera, aspect, frame.height);
+  fixedCamera(mainCamera, frame.center, frame.height);
+  updateCaptureCamera();
   mainCamera.zoom = 1;
   mainCamera.updateProjectionMatrix();
-  orbit.target.copy(state.center);
+  orbit.target.copy(frame.center);
   orbit.update();
   invalidate(false);
 }
@@ -443,6 +591,7 @@ function selectFacing(id) {
   document.querySelectorAll('[data-studio-card]').forEach(card => {
     card.classList.toggle('active', card.dataset.studioCard === id);
   });
+  rebuildFootprintGuide();
   resetCamera();
 }
 
@@ -475,7 +624,7 @@ function updateAnimationControls() {
   ui.Time.textContent = `${time.toFixed(2)} / ${duration.toFixed(2)} s`;
 }
 
-function installModel({ model, clips, name }, { restoreSettings = null, sourceFiles = [], isDemo = false, persist = true } = {}) {
+function installModel({ model, clips, name, demoSourceUpAxis = null }, { restoreSettings = null, sourceFiles = [], isDemo = false, persist = true } = {}) {
   // Validate before releasing the previously usable model.
   let visibleMeshes = 0;
   model.traverse(object => { if (object.isMesh && object.geometry?.attributes?.position?.count) visibleMeshes++; });
@@ -484,8 +633,16 @@ function installModel({ model, clips, name }, { restoreSettings = null, sourceFi
     throw new Error('This file has no mesh. Choose a model with its animations included.');
   }
   const availableClips = clips.filter(clip => Number.isFinite(clip.duration) && clip.duration > 0);
+  const nextLayoutId = !restoreSettings && !SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId)
+    ? spriteMob(state.mobType).defaultLayout : state.layoutId;
+  const nextSize = restoreSettings ? { width: state.width, height: state.height }
+    : spriteLayoutDimensions(nextLayoutId, state.resolutionPercent);
   let framing;
-  try { framing = measureModelFrame(model, availableClips, { upAxis: restoreSettings?.upAxis === 'Z' ? 'Z' : 'Y' }); }
+  try {
+    framing = measureModelFrame(model, availableClips, {
+      upAxis: restoreSettings?.upAxis === 'Y' ? 'Y' : 'Z', aspect: nextSize.width / nextSize.height
+    });
+  }
   catch (error) { disposeModel(model); throw error; }
   if (state.mixer) {
     state.mixer.stopAllAction();
@@ -497,10 +654,19 @@ function installModel({ model, clips, name }, { restoreSettings = null, sourceFi
   state.modelName = name;
   state.sourceFiles = sourceFiles;
   state.isDemo = isDemo;
+  state.demoSourceUpAxis = isDemo ? demoSourceUpAxis : null;
+  if (!restoreSettings) {
+    state.layoutId = nextLayoutId;
+    state.width = nextSize.width;
+    state.height = nextSize.height;
+    if (state.lighting.legacyRig) { state.lighting = { ...DEFAULT_LIGHTING }; updateLighting(); }
+    configureAtlas();
+    updateSetupLabels();
+  }
   state.clips = availableClips;
   state.mixer = new THREE.AnimationMixer(model);
   state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
-  state.upAxis = restoreSettings?.upAxis === 'Z' ? 'Z' : 'Y';
+  state.upAxis = restoreSettings?.upAxis === 'Y' ? 'Y' : 'Z';
   state.playing = restoreSettings ? !!restoreSettings.playing : true;
   ui.Heading.value = String(state.heading);
   ui.HeadingValue.textContent = `${state.heading}°`;
@@ -569,7 +735,7 @@ function configureAtlas() {
     preview.canvas.height = state.height;
     preview.context.imageSmoothingEnabled = false;
   });
-  if (pixelCamera) setCameraFrustum(pixelCamera, state.width / state.height);
+  updateCaptureCamera();
   state.lastPreview = -Infinity;
   invalidate();
 }
@@ -592,18 +758,22 @@ function readCapturePose() {
   renderPreviews(performance.now());
   pixelCamera.updateMatrixWorld(true);
   const ground = new THREE.Vector3(0, 0, 0).project(pixelCamera);
+  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent);
   const result = {
     raw: atlasSource.slice(), width: state.width, height: state.height,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
-    renderWidth: spriteLayout(state.layoutId).renderWidth,
-    renderHeight: spriteLayout(state.layoutId).renderHeight,
+    modelScalePercent: state.modelScalePercent,
+    renderWidth: size.renderWidth, renderHeight: size.renderHeight,
     clip: state.action?.getClip().name || 'Rest pose', time: state.action?.time || 0,
     anchorX: (ground.x + 1) * state.width / 2,
     anchorY: (1 - ground.y) * state.height / 2,
     render: {
       model: state.modelName, heading: state.heading, upAxis: state.upAxis,
       cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION),
-      frameHeight: state.frameHeight, center: state.center.toArray(), framingMode: state.framingMode
+      frameHeight: state.frameHeight * state.modelScalePercent / 100,
+      center: state.center.clone().multiplyScalar(state.modelScalePercent / 100).toArray(),
+      framingMode: state.framingMode, modelScalePercent: state.modelScalePercent,
+      lighting: { ...state.lighting }
     }
   };
   invalidate(false);
@@ -656,7 +826,7 @@ function resizeRenderer() {
   if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
     // Explicit backing resolution keeps render-target viewports independent of DPR.
     renderer.setSize(width, height, false);
-    setCameraFrustum(mainCamera, width / height);
+    setCameraFrustum(mainCamera, width / height, mainViewFrame(width / height).height);
     state.mainDirty = true;
   }
 }
@@ -884,6 +1054,29 @@ function bindControls() {
       changeSpriteFormat({ refit: true });
     } else poseCapture.updateMetadata();
   });
+  ui.ModelScale.addEventListener('input', () => {
+    if (poseCapture?.snapshot().modelScaleAdjustable === false) { updateSetupLabels(); return; }
+    state.modelScalePercent = validateSpriteModelScale(Number(ui.ModelScale.value));
+    applyModelSize();
+    updateSetupLabels();
+    poseCapture?.updateModelScale(state.modelScalePercent);
+  });
+  for (const [name, key, divisor] of [
+    ['AmbientIntensity', 'ambientIntensity', 100], ['KeyIntensity', 'keyIntensity', 100],
+    ['KeyElevation', 'keyElevation', 1], ['AmbientColor', 'ambientColor'],
+    ['KeyColor', 'keyColor'], ['KeyDirection', 'keyDirection']
+  ]) {
+    ui[name].addEventListener(name === 'KeyDirection' ? 'change' : 'input', () => {
+      if (poseCapture?.snapshot().captureCount) { updateLighting(); return; }
+      state.lighting[key] = divisor ? Number(ui[name].value) / divisor : ui[name].value;
+      updateLighting();
+      poseCapture?.saveWorkspace();
+    });
+  }
+  updateLighting();
+  // Retired formats remain recoverable, but an empty sheet starts a current format.
+  $('studioPoseSheetRows').addEventListener('click', useCurrentFormatAfterClear);
+  $('studioClearPosesButton').addEventListener('click', useCurrentFormatAfterClear);
   const colorControls = [
     ['Brightness', 'brightness', 100, '%'],
     ['Contrast', 'contrast', 100, '%'],
@@ -975,6 +1168,21 @@ function bindControls() {
   });
 }
 
+function useCurrentFormatAfterClear() {
+  if (!poseCapture?.snapshot().captureCount) {
+    if (state.lighting.legacyRig) {
+      state.lighting = { ...DEFAULT_LIGHTING };
+      updateLighting();
+      poseCapture?.updateMetadata();
+    }
+    if (!SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId)) {
+      state.layoutId = spriteMob(state.mobType).defaultLayout;
+      changeSpriteFormat({ refit: true });
+    }
+  }
+  syncCaptureLock(!!poseCapture?.snapshot().captureCount);
+}
+
 function startViewer() {
   renderer = new THREE.WebGLRenderer({ canvas: ui.Canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1);
@@ -984,10 +1192,13 @@ function startViewer() {
   renderer.autoClear = false;
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x808080);
-  scene.add(new THREE.HemisphereLight(0xe5efff, 0x5b4634, 1.8));
-  const light = new THREE.DirectionalLight(0xffffff, 2.3);
-  light.position.set(-3, 5, 6);
-  scene.add(light);
+  ambientLight = new THREE.AmbientLight(0xffffff, state.lighting.ambientIntensity);
+  // Continue older partial sheets with exactly the light rig used for their
+  // existing captures. New sheets always use the adjustable white defaults.
+  legacyAmbientLight = new THREE.HemisphereLight(0xe5efff, 0x5b4634, 1.8);
+  keyLight = new THREE.DirectionalLight(0xffffff, state.lighting.keyIntensity);
+  scene.add(ambientLight, legacyAmbientLight, keyLight, keyLight.target);
+  updateLighting();
   turntable = new THREE.Group();
   calibration = new THREE.Group();
   placement = new THREE.Group();
@@ -997,15 +1208,8 @@ function startViewer() {
   placement.add(upAxisGroup);
   scene.add(turntable);
   helpers = new THREE.Group();
-  const grid = new THREE.GridHelper(5, 10, 0x555a61, 0x72767d);
-  grid.position.y = -0.002;
-  helpers.add(grid);
-  const points = Array.from({ length: 7 }, (_, index) => {
-    const angle = (index % 6) * Math.PI / 3;
-    return new THREE.Vector3(Math.sin(angle) * 1.1, 0, Math.cos(angle) * 1.1);
-  });
-  helpers.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: 0xb6d5e0 })));
   scene.add(helpers);
+  rebuildFootprintGuide();
   mainCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.01, 100);
   pixelCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.01, 100);
   orbit = new OrbitControls(mainCamera, ui.Canvas);
@@ -1037,7 +1241,7 @@ function startViewer() {
   });
 }
 
-function restoreWorkspaceValues({ settings = {}, style = {} }) {
+function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 }) {
   try {
     state.layoutId = spriteLayout(settings.layout?.id || settings.layoutId || 'single').id;
     state.resolutionPercent = createSpriteLayoutMetadata(state.layoutId,
@@ -1045,14 +1249,21 @@ function restoreWorkspaceValues({ settings = {}, style = {} }) {
   } catch { state.layoutId = 'single'; state.resolutionPercent = 100; }
   try { state.mobType = spriteMob(settings.mobType || 'kobold').id; }
   catch { state.mobType = 'kobold'; }
+  try { state.modelScalePercent = validateSpriteModelScale(settings.modelScalePercent ?? 100); }
+  catch { state.modelScalePercent = 100; }
+  state.lighting = normalizedLighting(settings.lighting);
+  if (!settings.lighting && captureCount) state.lighting.legacyRig = 'rev47';
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);
   state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 1024 ? settings.width : size.width;
   state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 1024 ? settings.height : size.height;
   state.modelName = settings.modelName || 'Saved character';
   state.sourceFiles = Array.isArray(settings.sourceFiles) ? settings.sourceFiles : [];
   state.isDemo = settings.isDemo === true;
+  // Source orientation is independent of the user's orientation correction.
+  // Demo workspaces made before this field existed used the original Y-up mesh.
+  state.demoSourceUpAxis = settings.demoSourceUpAxis === 'Z' ? 'Z' : 'Y';
   state.heading = Number.isFinite(settings.heading) ? settings.heading : 0;
-  state.upAxis = settings.upAxis === 'Z' ? 'Z' : 'Y';
+  state.upAxis = settings.upAxis === 'Y' ? 'Y' : 'Z';
   state.facing = HEX_FACINGS.some(item => item.id === settings.facing) ? settings.facing : 'SE';
   for (const key of ['brightness', 'contrast', 'hue', 'saturation', 'outline']) {
     if (Number.isFinite(style[key])) state[key] = style[key];
@@ -1088,7 +1299,14 @@ async function start() {
       framingMode: state.framingMode, framingSamplesPerClip: state.framingSamplesPerClip,
       frameHeight: state.frameHeight, frameCenter: state.center.toArray(),
       layoutId: state.layoutId, resolutionPercent: state.resolutionPercent, mobType: state.mobType,
-      renderSize: [spriteLayout(state.layoutId).renderWidth, spriteLayout(state.layoutId).renderHeight],
+      modelScalePercent: state.modelScalePercent, upAxis: state.upAxis, demoSourceUpAxis: state.demoSourceUpAxis,
+      lighting: { ...state.lighting },
+      renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent)).slice(2),
+      modelDisplayScale: placement?.scale.x || null,
+      captureFrameHeight: pixelCamera ? pixelCamera.top - pixelCamera.bottom : null,
+      footprintCellCount: footprintGuide ? footprintGuide.children.length / 2 : 0,
+      footprintWorldCells: studioFootprintGuide(state.layoutId, HEX_FACINGS.findIndex(item => item.id === state.facing), state.frameHeight),
+      lightPosition: keyLight?.position.toArray() || null,
       sourceFileCount: state.sourceFiles.length,
       ...poseCapture.snapshot()
     })
@@ -1109,7 +1327,7 @@ async function start() {
   try {
     startViewer();
     if (restored?.settings?.isDemo) {
-      installModel(makeDemo(), { isDemo: true, restoreSettings: restored.settings });
+      installModel(makeDemo({ upAxis: state.demoSourceUpAxis }), { isDemo: true, restoreSettings: restored.settings });
     } else if (restored && state.sourceFiles.length) {
       const files = state.sourceFiles.map(source => {
         const file = new File([source.blob], source.name, { type: source.type, lastModified: source.lastModified });
@@ -1124,6 +1342,7 @@ async function start() {
       ui.ModelInfo.textContent = 'Saved sprite set · Source model is not stored';
       status('Saved captures restored · Export or test the same sprite set');
     } else installModel(makeDemo(), { isDemo: true, restoreSettings: restored?.settings || null, persist: !restoreError });
+    useCurrentFormatAfterClear();
     selectFacing(state.facing);
     if (restoreError) {
       showError(restoreError);
