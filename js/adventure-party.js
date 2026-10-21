@@ -171,18 +171,29 @@ let selectedMobEncounter="kobolds";
 
 function updateCombatMobSelection(){
   const label=document.getElementById("combatMobSetLabel");
-  const button=document.getElementById("largeMobTestButton");
-  const large=selectedMobEncounter==="large-test";
+
+  const labels={
+    kobolds:"Kobold Encounter",
+    orcs:"Orc Warband — 20",
+    "large-test":"Juvenile Red Dragon"
+  };
 
   if(label){
-    label.textContent=large ? "Juvenile Red Dragon" : "Kobold Encounter";
+    label.textContent=
+      labels[selectedMobEncounter] ||
+      labels.kobolds;
   }
 
-  if(button){
-    button.textContent=large ? "Use Kobold Encounter" : "Use Juvenile Red Dragon";
-    button.classList.toggle("selected",large);
-    button.setAttribute("aria-pressed",large ? "true" : "false");
-  }
+  document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
+    const selected=
+      button.dataset.mobEncounter===selectedMobEncounter;
+
+    button.classList.toggle("selected",selected);
+    button.setAttribute(
+      "aria-pressed",
+      selected ? "true" : "false"
+    );
+  });
 }
 
 function updateCombatConditionSelection(){
@@ -364,12 +375,14 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
   });
 });
 
-document.getElementById("largeMobTestButton")?.addEventListener("click",()=>{
-  selectedMobEncounter=
-    selectedMobEncounter==="large-test"
-      ? "kobolds"
-      : "large-test";
-  updateCombatMobSelection();
+document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    selectedMobEncounter=
+      button.dataset.mobEncounter ||
+      "kobolds";
+
+    updateCombatMobSelection();
+  });
 });
 
 document.getElementById("beginBattleButton")?.addEventListener("click",()=>{
@@ -15611,13 +15624,21 @@ function newGame(condition=selectedCombatCondition){
       ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
       : [];
 
+  const orcs=
+    selectedMobEncounter==="orcs"
+      ? makeOrcArmy(16,3,1,condition)
+      : [];
+
   const enemies=
     selectedMobEncounter==="large-test"
       ? makeLargeMobTestEncounter(condition)
-      : [...kobolds];
+      : selectedMobEncounter==="orcs"
+        ? [...orcs]
+        : [...kobolds];
 
-  /* R114: Orcs remain defined in the engine but are removed from this combat simulation. */
-  lastOrcDeployment=null;
+  if(selectedMobEncounter!=="orcs"){
+    lastOrcDeployment=null;
+  }
 
   camera.x=player.x;
   camera.y=player.y;
@@ -15749,6 +15770,23 @@ function newGame(condition=selectedCombatCondition){
       "Multi-hex test rules: one initiative slot, one HP pool, one target identity, one save/damage resolution per area effect.",
       "system"
     );
+  }else if(selectedMobEncounter==="orcs"){
+    log(
+      "20-Orc test warband deployed: 16 Orcs, 3 Orc Leaders, 1 3rd-level Orc Shaman.",
+      "system"
+    );
+    log(
+      "Orcs — AC 6, THAC0 19, Move 9, 1 HD, weapon damage 1d8, Steady morale, XP 15.",
+      "system"
+    );
+    log(
+      "Orc Leaders — fixed 8 HP, AC 6, THAC0 19, battle axe 1d8, XP 35.",
+      "system"
+    );
+    log(
+      "Orc Shaman — 3rd-level priest, 1d8+2d4 HP, attacks as 2 HD, AC 6, THAC0 19, XP 175.",
+      "system"
+    );
   }else{
     log(
       `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
@@ -15770,11 +15808,17 @@ function newGame(condition=selectedCombatCondition){
     log(
       selectedMobEncounter==="large-test"
         ? `Red Dragon pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
-        : (
-            `Kobold deployment: ${lastMobDeployment.direction}, `+
-            `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
-            `cluster radius ${lastMobDeployment.clusterRadius}.`
-          ),
+        : selectedMobEncounter==="orcs"
+          ? (
+              `Orc deployment: ${lastMobDeployment.direction}, `+
+              `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+              `cluster radius ${lastMobDeployment.clusterRadius}.`
+            )
+          : (
+              `Kobold deployment: ${lastMobDeployment.direction}, `+
+              `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+              `cluster radius ${lastMobDeployment.clusterRadius}.`
+            ),
       "system"
     );
   }
