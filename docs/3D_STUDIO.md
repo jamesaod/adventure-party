@@ -18,7 +18,8 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 - All six views use the existing Pixel Editor's fixed 256-entry VGA palette: 16 RGBI entries, a 216-color cube, and 24 gray entries.
 - Select **80 × 100**, **160 × 200**, or **320 × 400 · Mode X**. The default is 160 × 200. Preview backgrounds are palette gray; images display with nearest-neighbor scaling.
 - **Brightness**, **Contrast**, **Hue**, and **Saturation** update all six pixel previews and saved PNGs together. Brightness, contrast, and saturation range from 0–200% (100% is neutral); hue shifts from −180° to +180° (0° is neutral). **Reset colors** restores all four defaults.
-- Color adjustments happen before VGA palette matching. The gray preview background, transparent export background, and optional one-pixel black outline keep their original colors. The central 3D model view shows the source material colors for reference.
+- **Outline width** adds a black outline from **0–10 pixels** at the selected sprite resolution, with a default of 1 pixel. Set it to 0 to turn the outline off. All six previews and PNG exports use the same width; each sheet cell keeps its outline within its own frame.
+- Color adjustments happen before VGA palette matching. The gray preview background, transparent export background, and black outline keep their original colors. The central 3D model view shows the source material colors for reference. **Reset colors** resets the four color controls independently of outline width.
 - Each **Save PNG** button exports that facing at the selected native resolution, with a transparent background.
 - **Save all six as a sheet** exports one transparent sheet in this order: top row **E, NE, NW**; bottom row **W, SW, SE**. All cells have identical dimensions and capture the same pose.
 
@@ -56,4 +57,4 @@ This provides the foundation for animation export. A future frame-sequence expor
 - Pinned renderer/loaders and licenses are served locally from `assets/vendor/three/`.
 - Run `node scripts/test-3d-studio.mjs`, `node --check js/3d-studio.mjs`, and the existing `node scripts/validate-repo.mjs` checks.
 
-Browser QA should include model loading with embedded and external textures, a skinned animation, same-frame six-view output, a 60-degree heading adjustment, pause/scrub, color controls and reset, palette membership, and native-resolution transparent export matching the adjusted previews.
+Browser QA should include model loading with embedded and external textures, a skinned animation, same-frame six-view output, a 60-degree heading adjustment, pause/scrub, color controls and reset, outline widths 0/1/10, palette membership, and native-resolution transparent export matching the adjusted previews.

@@ -37,6 +37,57 @@ assert.equal(outlined[3], 0);
 const opaque = quantizeRgba(sample, 3, 3);
 assert.deepEqual(Array.from(opaque.slice(0, 4)), [128, 128, 128, 255]);
 
+// Independent geometry oracle: compare every output pixel with a direct search
+// of the source silhouette. This catches distance-transform errors, inward
+// painting, row flips, and outlines leaking into a neighboring atlas cell.
+function checkOutline(source, width, height, outline, flipY, tileWidth = width, tileHeight = height) {
+  const solid = [];
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    if (source[(y * width + x) * 4 + 3] >= 128) solid.push([x, y]);
+  }
+  for (const transparent of [false, true]) {
+    const image = quantizeRgba(source, width, height, undefined, {
+      outline, flipY, tileWidth, tileHeight, transparent,
+      hue: 120, brightness: 1.4, contrast: 1.6, saturation: 1.5
+    });
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const sourceY = flipY ? height - y - 1 : y;
+      const isSolid = source[(sourceY * width + x) * 4 + 3] >= 128;
+      const inOutline = solid.some(([sx, sy]) =>
+        Math.floor(sx / tileWidth) === Math.floor(x / tileWidth) &&
+        Math.floor(sy / tileHeight) === Math.floor(sourceY / tileHeight) &&
+        (sx - x) ** 2 + (sy - sourceY) ** 2 <= outline ** 2);
+      const expected = isSolid ? [0, 255, 0, 255] : inOutline ? [0, 0, 0, 255]
+        : transparent ? [0, 0, 0, 0] : [128, 128, 128, 255];
+      assert.deepEqual(Array.from(image.slice((y * width + x) * 4, (y * width + x + 1) * 4)), expected,
+        `outline ${outline}, flip ${flipY}, pixel ${x},${y}`);
+    }
+  }
+}
+const dot = new Uint8Array(25 * 27 * 4);
+dot.set([255, 0, 0, 255], (11 * 25 + 12) * 4);
+dot.set([255, 0, 0, 127], 0); // Below the silhouette threshold; cannot seed an outline.
+const tiled = new Uint8Array(16 * 18 * 4);
+for (const [x, y] of [[7, 8], [1, 2], [4, 5], [8, 9], [15, 17], [11, 11]]) {
+  tiled.set([255, 0, 0, 128], (y * 16 + x) * 4);
+}
+for (const outline of [0, 1, 3, 10]) for (const flipY of [false, true]) {
+  checkOutline(dot, 25, 27, outline, flipY);
+  // Two occupied diagonal cells and two empty cells test both boundary axes.
+  checkOutline(tiled, 16, 18, outline, flipY, 8, 9);
+}
+for (const [input, expected] of [[true, 1], [false, 0], [-3, 0], [20, 10], [2.4, 2], [2.6, 3], [NaN, 0], [Infinity, 0]]) {
+  assert.deepEqual(
+    quantizeRgba(dot, 25, 27, undefined, { outline: input, transparent: true }),
+    quantizeRgba(dot, 25, 27, undefined, { outline: expected, transparent: true })
+  );
+}
+assert.ok(quantizeRgba(new Uint8Array(tiled.length), 16, 18, undefined,
+  { outline: 10, tileWidth: 8, tileHeight: 9, transparent: true }).every(value => value === 0));
+for (const options of [{ tileWidth: 0 }, { tileWidth: 3 }, { tileWidth: 1.5 }, { tileHeight: -1 }, { tileHeight: 4 }, { tileHeight: Infinity }]) {
+  assert.throws(() => quantizeRgba(tiled, 16, 18, undefined, options), RangeError);
+}
+
 // Color controls operate on the subject before palette conversion. Hue follows
 // the color wheel, leaves grays alone, and wraps in either direction.
 const pixel = (rgb, options = {}) => Array.from(quantizeRgba(
@@ -103,4 +154,4 @@ for (const options of [
     assert.equal(transparentImage[p + 3], unadjustedAlpha[p + 3]);
   }
 }
-console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, outlines and color controls passed.");
+console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, 0–10px tiled outlines and color controls passed.");

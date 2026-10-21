@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C44';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C45';
 
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
@@ -11,7 +11,7 @@ const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelInfo', 'FrameButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
-  'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'Clip',
+  'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'OutlineValue', 'Clip',
   'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time',
   'ExportSheetButton', 'Status', 'Error'
 ].map(name => [name, $(`studio${name}`)]));
@@ -19,7 +19,7 @@ const ui = Object.fromEntries([
 const state = {
   model: null, modelName: 'Studio mannequin', clips: [], mixer: null,
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Y',
-  width: 160, height: 200, brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: true,
+  width: 160, height: 200, brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
   viewVisible: true, frameHeight: 3.15, center: new THREE.Vector3(0, 1, 0)
@@ -346,7 +346,7 @@ function pixelRenderOptions(transparent = false) {
   return {
     brightness: state.brightness, contrast: state.contrast,
     hue: state.hue, saturation: state.saturation,
-    outline: state.outline, transparent
+    outline: state.outline, transparent, tileWidth: state.width, tileHeight: state.height
   };
 }
 
@@ -616,7 +616,13 @@ function bindControls() {
     colorControls.forEach(({ input, update }) => { input.value = input.defaultValue; update(); });
     invalidate();
   });
-  ui.Outline.addEventListener('change', () => { state.outline = ui.Outline.checked; invalidate(); });
+  const updateOutline = () => {
+    state.outline = Number(ui.Outline.value);
+    ui.OutlineValue.textContent = state.outline ? `${state.outline} px` : '0 px (off)';
+    ui.Outline.setAttribute('aria-valuetext', state.outline ? `${state.outline} ${state.outline === 1 ? 'pixel' : 'pixels'}` : 'Off');
+  };
+  ui.Outline.addEventListener('input', () => { updateOutline(); invalidate(); });
+  updateOutline();
   ui.Clip.addEventListener('change', () => setClip(Number(ui.Clip.value)));
   ui.PlayButton.addEventListener('click', () => {
     state.playing = !state.playing;

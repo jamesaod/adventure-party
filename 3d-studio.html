@@ -27,7 +27,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 44</span>
+        <span class="studio-build">Candidate Rev 45</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -187,10 +187,11 @@
             <input id="studioSaturation" type="range" min="0" max="200" step="1" value="100">
           </label>
           <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
-          <label class="studio-check" for="studioOutline">
-            <input id="studioOutline" type="checkbox" checked>
-            <span>Dark pixel outline</span>
+          <label class="studio-field" for="studioOutline">
+            <span class="studio-label-row">Outline width <output id="studioOutlineValue" for="studioOutline">1 px</output></span>
+            <input id="studioOutline" type="range" min="0" max="10" step="1" value="1" aria-valuetext="1 pixel">
           </label>
+          <p class="studio-note studio-help">Black outline · 0 px turns it off.</p>
           <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <p class="studio-note studio-help">Color adjustments apply to all six previews and saved PNGs, using one shared 256-color VGA palette.</p>
         </section>
@@ -204,6 +205,6 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R237C44"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R237C45"></script>
 </body>
 </html>

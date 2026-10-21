@@ -54,11 +54,74 @@ function getColorLookup() {
 
 const clampByte = value => Math.max(0, Math.min(255, Math.round(value)));
 const colorFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(2, value)) : 1;
+const MAX_OUTLINE = 10;
+const OUTLINE_DISTANCE_LIMIT = (MAX_OUTLINE + 1) ** 2;
+let outlineWorkspace;
+
+// Squared Euclidean distance to the nearest solid pixel, independently in each
+// atlas cell. Horizontal nearest-neighbor scans and a vertical parabola envelope
+// take linear time regardless of outline width. Reuse scratch space per frame.
+function outlineDistances(source, width, height, tileWidth, tileHeight) {
+  if (!outlineWorkspace || outlineWorkspace.distances.length !== width * height ||
+      outlineWorkspace.line.length < tileHeight) {
+    outlineWorkspace = {
+      distances: new Uint8Array(width * height),
+      line: new Uint8Array(tileHeight),
+      sites: new Int32Array(tileHeight),
+      breaks: new Float64Array(tileHeight + 1)
+    };
+  }
+  const { distances, line, sites, breaks } = outlineWorkspace;
+  for (let top = 0; top < height; top += tileHeight) {
+    for (let left = 0; left < width; left += tileWidth) {
+      for (let y = top; y < top + tileHeight; y++) {
+        const row = y * width + left;
+        let distance = MAX_OUTLINE + 1;
+        for (let x = 0; x < tileWidth; x++) {
+          distance = source[(row + x) * 4 + 3] >= 128 ? 0 : Math.min(MAX_OUTLINE + 1, distance + 1);
+          distances[row + x] = distance * distance;
+        }
+        distance = MAX_OUTLINE + 1;
+        for (let x = tileWidth - 1; x >= 0; x--) {
+          distance = source[(row + x) * 4 + 3] >= 128 ? 0 : Math.min(MAX_OUTLINE + 1, distance + 1);
+          distances[row + x] = Math.min(distances[row + x], distance * distance);
+        }
+      }
+      for (let x = left; x < left + tileWidth; x++) {
+        for (let y = 0; y < tileHeight; y++) line[y] = distances[(top + y) * width + x];
+        let last = 0;
+        sites[0] = 0;
+        breaks[0] = -Infinity;
+        breaks[1] = Infinity;
+        for (let y = 1; y < tileHeight; y++) {
+          let intersection;
+          do {
+            const previous = sites[last];
+            intersection = (line[y] + y * y - line[previous] - previous * previous) / (2 * (y - previous));
+            if (intersection > breaks[last]) break;
+            last--;
+          } while (last >= 0);
+          sites[++last] = y;
+          breaks[last] = intersection;
+          breaks[last + 1] = Infinity;
+        }
+        last = 0;
+        for (let y = 0; y < tileHeight; y++) {
+          while (breaks[last + 1] < y) last++;
+          const distance = y - sites[last];
+          distances[(top + y) * width + x] = Math.min(OUTLINE_DISTANCE_LIMIT, distance * distance + line[sites[last]]);
+        }
+      }
+    }
+  }
+  return distances;
+}
 
 /**
  * Quantize sRGB RGBA framebuffer bytes to the game's fixed VGA palette.
  * WebGL's bottom-up rows are flipped once here; preview and PNG use the same
- * pixels. A hard silhouette and optional 1-pixel outline remain palette-safe.
+ * pixels. An outward 0–10 pixel black outline remains palette-safe. Atlas cells
+ * can be isolated with tileWidth/tileHeight; outlines never cross their edges.
  * Subject colors pass through hue, saturation, brightness, then contrast before
  * palette matching. Background, transparency, and outline are unaffected.
  */
@@ -68,12 +131,18 @@ export function quantizeRgba(source, width, height, target, {
   hue = 0,
   contrast = 1,
   saturation = 1,
-  outline = false,
+  outline = 0,
+  tileWidth = width,
+  tileHeight = height,
   transparent = false,
   background = [128, 128, 128],
 } = {}) {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
     throw new RangeError("Preview dimensions must be positive integers.");
+  }
+  if (!Number.isInteger(tileWidth) || !Number.isInteger(tileHeight) || tileWidth < 1 || tileHeight < 1 ||
+      width % tileWidth !== 0 || height % tileHeight !== 0) {
+    throw new RangeError("Atlas cell dimensions must be positive integers that divide the preview dimensions.");
   }
   const length = width * height * 4;
   if (!source || source.length !== length) throw new RangeError("Unexpected framebuffer size.");
@@ -86,22 +155,27 @@ export function quantizeRgba(source, width, height, target, {
   const contrastValue = colorFactor(contrast);
   const saturationValue = colorFactor(saturation);
   const hueShift = Number.isFinite(hue) ? ((hue % 360 + 360) % 360) / 60 : 0;
+  // Boolean options remain compatible with the original on/off outline.
+  const outlineWidth = outline === true ? 1 : Number.isFinite(outline) ? Math.max(0, Math.min(MAX_OUTLINE, Math.round(outline))) : 0;
+  const distances = outlineWidth > 1 ? outlineDistances(source, width, height, tileWidth, tileHeight) : null;
   const backgroundIndex = (clampByte(background[0]) >> 3) << 10 |
     (clampByte(background[1]) >> 3) << 5 | (clampByte(background[2]) >> 3);
   const bg = VGA_PALETTE[lookup[backgroundIndex]];
 
   for (let y = 0; y < height; y++) {
     const sourceY = flipY ? height - y - 1 : y;
+    const tileY = sourceY % tileHeight;
     for (let x = 0; x < width; x++) {
       const si = (sourceY * width + x) * 4;
       const ti = (y * width + x) * 4;
       if (source[si + 3] < 128) {
-        const edge = outline && (
-          (x > 0 && source[si - 1] >= 128) ||
-          (x + 1 < width && source[si + 7] >= 128) ||
-          (sourceY > 0 && source[si - width * 4 + 3] >= 128) ||
-          (sourceY + 1 < height && source[si + width * 4 + 3] >= 128)
-        );
+        const tileX = x % tileWidth;
+        const edge = outlineWidth === 1 ? (
+          (tileX > 0 && source[si - 1] >= 128) ||
+          (tileX + 1 < tileWidth && source[si + 7] >= 128) ||
+          (tileY > 0 && source[si - width * 4 + 3] >= 128) ||
+          (tileY + 1 < tileHeight && source[si + width * 4 + 3] >= 128)
+        ) : outlineWidth > 1 && distances[si / 4] <= outlineWidth * outlineWidth;
         target[ti] = edge || transparent ? 0 : bg[0];
         target[ti + 1] = edge || transparent ? 0 : bg[1];
         target[ti + 2] = edge || transparent ? 0 : bg[2];
