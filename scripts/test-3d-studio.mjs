@@ -37,7 +37,42 @@ assert.equal(outlined[3], 0);
 const opaque = quantizeRgba(sample, 3, 3);
 assert.deepEqual(Array.from(opaque.slice(0, 4)), [128, 128, 128, 255]);
 
-// Saturation and outline processing may never create colors outside the shared
+// Color controls operate on the subject before palette conversion. Hue follows
+// the color wheel, leaves grays alone, and wraps in either direction.
+const pixel = (rgb, options = {}) => Array.from(quantizeRgba(
+  new Uint8Array([...rgb, 255]), 1, 1, undefined, options
+)).slice(0, 3);
+for (const [rgb, shifted] of [
+  [[255, 0, 0], [0, 255, 0]],
+  [[0, 255, 0], [0, 0, 255]],
+  [[0, 0, 255], [255, 0, 0]],
+]) assert.deepEqual(pixel(rgb, { hue: 120 }), shifted);
+assert.deepEqual(pixel([255, 0, 0], { hue: -120 }), [0, 0, 255]);
+assert.deepEqual(pixel([255, 0, 0], { hue: 480 }), [0, 255, 0]);
+for (const hue of [-180, -37, 42, 180, 360]) {
+  assert.deepEqual(pixel([128, 128, 128], { hue }), [128, 128, 128]);
+}
+assert.deepEqual(pixel([51, 0, 0], { brightness: 2 }), [102, 0, 0]);
+assert.deepEqual(pixel([255, 102, 51], { brightness: 0 }), [0, 0, 0]);
+assert.deepEqual(pixel([255, 102, 51], { contrast: 0 }), [128, 128, 128]);
+assert.deepEqual(pixel([64, 64, 64], { contrast: 2 }), [0, 0, 0]);
+assert.deepEqual(pixel([192, 192, 192], { contrast: 2 }), [255, 255, 255]);
+for (const control of ["brightness", "contrast", "saturation"]) {
+  for (const [input, expected] of [[-1, 0], [3, 2], [NaN, 1], [Infinity, 1]]) {
+    assert.deepEqual(pixel([204, 102, 51], { [control]: input }),
+      pixel([204, 102, 51], { [control]: expected }));
+  }
+}
+assert.deepEqual(pixel([204, 102, 51], { hue: NaN }), pixel([204, 102, 51]));
+assert.deepEqual(pixel([204, 102, 51], { hue: Infinity }), pixel([204, 102, 51]));
+const adjusted = { brightness: 1.4, hue: 120, contrast: 1.6, saturation: 1.5, outline: true };
+const adjustedTransparent = quantizeRgba(sample, 3, 3, undefined, { ...adjusted, transparent: true });
+assert.deepEqual(Array.from(adjustedTransparent.slice(4 * 4, 4 * 5)), [0, 0, 0, 255]);
+assert.deepEqual(Array.from(adjustedTransparent.slice(4 * 7, 4 * 8)), [0, 255, 0, 255]);
+assert.deepEqual(Array.from(adjustedTransparent.slice(0, 4)), [0, 0, 0, 0]);
+assert.deepEqual(Array.from(quantizeRgba(sample, 3, 3, undefined, adjusted).slice(0, 4)), [128, 128, 128, 255]);
+
+// Color and outline processing may never create colors outside the shared
 // palette, even for an arbitrary input image with partial transparency.
 const gradient = new Uint8Array(64 * 64 * 4);
 for (let p = 0; p < gradient.length; p += 4) {
@@ -48,10 +83,24 @@ for (let p = 0; p < gradient.length; p += 4) {
 }
 const allowed = new Set(VGA_PALETTE.map(rgb => rgb.join(",")));
 for (const saturation of [0, 1, 1.8]) {
-  const image = quantizeRgba(gradient, 64, 64, undefined, { saturation, outline: true });
+  assert.deepEqual(
+    quantizeRgba(gradient, 64, 64, undefined, { saturation, outline: true }),
+    quantizeRgba(gradient, 64, 64, undefined, { saturation, outline: true, brightness: 1, hue: 0, contrast: 1 })
+  );
+}
+const unadjustedAlpha = quantizeRgba(gradient, 64, 64, undefined, { outline: true, transparent: true });
+for (const options of [
+  { saturation: 0 }, { saturation: 1 }, { saturation: 1.8 },
+  { brightness: 0, contrast: 0, hue: -180 },
+  { brightness: 2, contrast: 2, saturation: 2, hue: 180 },
+  adjusted,
+]) {
+  const image = quantizeRgba(gradient, 64, 64, undefined, { ...options, outline: true });
+  const transparentImage = quantizeRgba(gradient, 64, 64, undefined, { ...options, outline: true, transparent: true });
   for (let p = 0; p < image.length; p += 4) {
     assert.ok(allowed.has(`${image[p]},${image[p + 1]},${image[p + 2]}`));
     assert.equal(image[p + 3], 255);
+    assert.equal(transparentImage[p + 3], unadjustedAlpha[p + 3]);
   }
 }
-console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, outlines and saturation passed.");
+console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, outlines and color controls passed.");
