@@ -9,7 +9,8 @@ import {
 } from '../js/sprite-set-core.mjs';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_LAYOUTS, SPRITE_LEGACY_LAYOUT_PRESETS, SPRITE_LEGACY_LAYOUTS,
-  SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, validateSpriteModelScale,
+  SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT,
+  validateSpriteModelScale, validateSpriteHexScale,
   spriteLayout, spriteLayoutDimensions, spriteLayoutOffsets, spriteMob, createSpriteLayoutMetadata
 } from '../js/sprite-layouts.mjs';
 import {
@@ -89,6 +90,7 @@ assert.equal(validateSpriteSetManifest(manifest), manifest);
 assert.equal(manifest.layout, undefined, 'Rev 46 manifests keep their original shape and frame sizes');
 assert.equal(manifest.mobType, undefined, 'Legacy MOB selection remains optional');
 assert.equal(manifest.modelScalePercent, undefined, 'Legacy model size remains implicit without rewriting the manifest');
+assert.equal(manifest.hexScalePercent, undefined, 'Old packages retain their original hex calibration');
 assert.equal(spriteSetSlug('Kobold Veteran.fbx'), 'kobold-veteran');
 assert.equal(spriteSetSlug('  Àrcher / Blue!  '), 'archer-blue');
 assert.equal(spriteSetSlug(''), 'studio-character');
@@ -132,6 +134,14 @@ assert.ok(Object.isFrozen(SPRITE_LEGACY_LAYOUT_PRESETS) && Object.isFrozen(SPRIT
 assert.deepEqual(SPRITE_RESOLUTION, { min: 50, max: 200, step: 5 });
 assert.deepEqual(SPRITE_MODEL_SCALE, { min: 25, max: 2000, step: 5 });
 assert.equal(validateSpriteModelScale(), 100);
+assert.equal(SPRITE_HEX_SCALE_PERCENT, 109);
+assert.equal(validateSpriteHexScale(), 100);
+assert.equal(validateSpriteHexScale(100), 100);
+assert.equal(validateSpriteHexScale(109), 109);
+for (const invalid of [0, 99, 108, 110, 200, 109.5, NaN, Infinity, '109', null]) {
+  assert.throws(() => validateSpriteHexScale(invalid), /hex scale/);
+  assert.throws(() => spriteLayoutDimensions('single', 100, 100, invalid), /hex scale/);
+}
 for (const [id, expected] of Object.entries(expectedLayouts)) {
   const layout = spriteLayout(id);
   assert.equal(layout, SPRITE_LAYOUTS[id] || SPRITE_LEGACY_LAYOUTS[id]);
@@ -159,6 +169,12 @@ for (const [id, expected] of Object.entries(expectedLayouts)) {
     assert.deepEqual([sized.width, sized.height], expected.size.slice(0, 2));
     assert.deepEqual([sized.renderWidth, sized.renderHeight], [expected.size[2] * scale / 100, expected.size[3] * scale / 100]);
   }
+  const calibrated = spriteLayoutDimensions(id, 50, 2000, 109);
+  assert.deepEqual(calibrated, {
+    width: expected.size[0] / 2, height: expected.size[1] / 2,
+    renderWidth: expected.size[2] * 2000 * 109 / 10000,
+    renderHeight: expected.size[3] * 2000 * 109 / 10000
+  }, 'Hex calibration changes only battlefield size, including recovered formats');
   for (let facing = 0; facing < 6; facing++) {
     const cells = spriteLayoutOffsets(id, facing);
     assert.equal(new Set(cells.map(cell => `${cell.x},${cell.y}`)).size, expected.cells.length);
@@ -232,6 +248,31 @@ for (const alter of [
 assert.throws(() => createSpriteSetManifest({
   id: 'scale-without-layout', label: 'Scale without layout', frame, captures, modelScalePercent: 100
 }), /model scale requires layout/);
+const calibratedManifest = createSpriteSetManifest({
+  id: 'calibrated-character', label: 'Calibrated character', captures,
+  frame: { ...spriteLayoutDimensions('hex7', 50, 150, 109), anchorX: 120, anchorY: 150 },
+  layout: createSpriteLayoutMetadata('hex7', 50), mobType: 'fighter', modelScalePercent: 150,
+  hexScalePercent: 109
+});
+assert.equal(calibratedManifest.frame.renderWidth, 235.44);
+assert.equal(calibratedManifest.frame.renderHeight, 196.2);
+assert.equal(calibratedManifest.hexScalePercent, 109);
+assert.deepEqual(validateSpriteSetManifest({ ...scaledManifest, hexScalePercent: 100 }).frame, scaledManifest.frame);
+const oldManifestJson = JSON.stringify(scaledManifest);
+validateSpriteSetManifest(scaledManifest);
+assert.equal(JSON.stringify(scaledManifest), oldManifestJson, 'Validation never migrates previously exported packages');
+for (const alter of [
+  value => { delete value.hexScalePercent; },
+  value => { value.hexScalePercent = 100; },
+  value => { value.hexScalePercent = 110; },
+  value => { delete value.layout; }
+]) {
+  const bad = structuredClone(calibratedManifest); alter(bad);
+  assert.throws(() => validateSpriteSetManifest(bad));
+}
+assert.throws(() => createSpriteSetManifest({
+  id: 'hex-scale-without-layout', label: 'Hex scale without layout', frame, captures, hexScalePercent: 100
+}), /hex scale requires layout/);
 for (const alter of [
   value => { value.layout.id = 'unknown'; },
   value => { value.layout.resolutionPercent = 51; },
@@ -243,6 +284,59 @@ for (const alter of [
   const bad = structuredClone(formatManifest); alter(bad);
   assert.throws(() => validateSpriteSetManifest(bad));
 }
+
+// Exercise the production restore migration without opening browser storage.
+// Module initialization only needs a page URL to choose its IndexedDB scope.
+const previousLocation = globalThis.location;
+globalThis.location = { href: 'https://example.invalid/candidate/3d-studio.html' };
+const { validateStudioWorkspace, upgradeStudioWorkspaceHexScale } = await import('../js/sprite-set-store.mjs');
+if (previousLocation === undefined) delete globalThis.location;
+else globalThis.location = previousLocation;
+const workspaceDimensions = spriteLayoutDimensions('single', 50, 150);
+const oldWorkspace = {
+  version: 1, name: 'Saved before calibration',
+  style: { brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 0 },
+  settings: { layout: createSpriteLayoutMetadata('single', 50), modelScalePercent: 150,
+    frameHeight: 4, center: [1, 2, 3] },
+  captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, {
+    ...workspaceDimensions, raw: new Uint8Array(workspaceDimensions.width * workspaceDimensions.height * 24),
+    anchorX: 40, anchorY: 75, clip: 'Saved clip', time: 0.5,
+    layout: createSpriteLayoutMetadata('single', 50), modelScalePercent: 150,
+    render: { frameHeight: 6, center: [1.5, 3, 4.5], modelScalePercent: 150 }
+  }]))
+};
+const upgradedWorkspace = upgradeStudioWorkspaceHexScale(oldWorkspace);
+assert.notEqual(upgradedWorkspace, oldWorkspace);
+assert.equal(oldWorkspace.settings.hexScalePercent, undefined, 'Staging does not mutate the saved input');
+assert.equal(upgradedWorkspace.settings.hexScalePercent, 109);
+assert.equal(upgradedWorkspace.settings.frameHeight, 4, 'Workspace stores unscaled base framing');
+assert.deepEqual(upgradedWorkspace.settings.center, [1, 2, 3]);
+for (const pose of SPRITE_POSES) {
+  const before = oldWorkspace.captures[pose], after = upgradedWorkspace.captures[pose];
+  assert.equal(after.raw, before.raw, 'Calibration never copies or changes captured pixels');
+  assert.equal(after.hexScalePercent, 109);
+  assert.equal(after.renderWidth, 78.48);
+  assert.equal(after.renderHeight, 98.1);
+  assert.deepEqual([after.width, after.height, after.anchorX, after.anchorY], [80, 100, 40, 75]);
+  assert.equal(after.render.frameHeight, before.render.frameHeight * 1.09);
+  assert.deepEqual(after.render.center, before.render.center.map(value => value * 1.09));
+}
+assert.equal(upgradeStudioWorkspaceHexScale(upgradedWorkspace), upgradedWorkspace, 'Repeated restore calibrates exactly once');
+assert.equal(upgradeStudioWorkspaceHexScale({ ...oldWorkspace, captures: {} }).settings.hexScalePercent, 109,
+  'Empty layout-bearing workspaces also adopt the current calibration');
+const legacyWorkspace = structuredClone(oldWorkspace);
+delete legacyWorkspace.settings.layout;
+for (const capture of Object.values(legacyWorkspace.captures)) {
+  delete capture.layout;
+  delete capture.modelScalePercent;
+}
+const recoveredLegacy = upgradeStudioWorkspaceHexScale(legacyWorkspace);
+assert.equal(recoveredLegacy.settings.hexScalePercent, 100);
+for (const pose of SPRITE_POSES) assert.equal(recoveredLegacy.captures[pose], legacyWorkspace.captures[pose],
+  'No-layout legacy captures retain their original dimensions and pixels');
+assert.equal(upgradeStudioWorkspaceHexScale(recoveredLegacy), recoveredLegacy);
+assert.throws(() => validateStudioWorkspace({ ...upgradedWorkspace,
+  settings: { ...upgradedWorkspace.settings, hexScalePercent: 100 } }), /does not match the workspace/);
 
 // The six-facing legacy atlas and the 18-frame sheet use different layouts.
 const atlas = new Uint8ClampedArray(width * 3 * height * 2 * 4);
@@ -405,12 +499,14 @@ try {
   for (let index = 0; index < importLayouts.length; index++) {
     const layout = importLayouts[index];
     const modelScalePercent = index < SPRITE_LAYOUT_PRESETS.length ? [25, 55, 1000, 2000][index] : undefined;
-    const dimensions = spriteLayoutDimensions(layout.id, 50, modelScalePercent);
+    const hexScalePercent = index < SPRITE_LAYOUT_PRESETS.length ? 109 : undefined;
+    const dimensions = spriteLayoutDimensions(layout.id, 50, modelScalePercent, hexScalePercent);
     const metadata = createSpriteSetManifest({
       id: `format-${layout.id}`, label: `Format ${layout.label}`, captures,
       frame: { ...dimensions, anchorX: dimensions.width / 2, anchorY: dimensions.height * 0.75 },
       layout: createSpriteLayoutMetadata(layout.id, 50), mobType: SPRITE_MOBS[index].id,
-      ...(modelScalePercent === undefined ? {} : { modelScalePercent })
+      ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
+      ...(hexScalePercent === undefined ? {} : { hexScalePercent })
     });
     const sizedFrames = fixtureFrames(dimensions.width, dimensions.height);
     const sizedFiles = packageFiles(metadata, sizedFrames);
@@ -421,6 +517,7 @@ try {
     assert.deepEqual(restoredMetadata.layout, metadata.layout);
     assert.equal(restoredMetadata.mobType, metadata.mobType);
     assert.equal(restoredMetadata.modelScalePercent, metadata.modelScalePercent);
+    assert.equal(restoredMetadata.hexScalePercent, metadata.hexScalePercent);
     assert.deepEqual(restoredMetadata.frame, metadata.frame);
     for (const [name, bytes] of sizedFiles) assert.deepEqual(await fs.readFile(path.join(importedFormat.destination, name)), bytes);
   }
@@ -446,4 +543,4 @@ try {
   await fs.rm(temp, { recursive: true, force: true });
 }
 
-console.log('Sprite packages: four selectable layouts, three recoverable legacy layouts, independent model size and resolution, seven monsters and three player targets, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');
+console.log('Sprite packages: four selectable layouts, three recoverable legacy layouts, independent model size and resolution, backward-compatible hex calibration and one-time workspace recovery, seven monsters and three player targets, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');

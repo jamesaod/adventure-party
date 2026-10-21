@@ -1,5 +1,5 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C51';
-import { validateSpriteModelScale } from './sprite-layouts.mjs?v=R238C51';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C52';
+import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C52';
 
 // Candidate and stable share an origin, so isolate their drafts by page folder.
 const scope = new URL('.', location.href).pathname;
@@ -29,7 +29,8 @@ export function validateStudioWorkspace(workspace) {
     if (!Number.isFinite(workspace.style[key])) invalid(`invalid ${key}.`);
   }
   if (workspace.settings.modelScalePercent !== undefined) validateSpriteModelScale(workspace.settings.modelScalePercent);
-  let dimensions, modelScale;
+  const settingsHexScale = validateSpriteHexScale(workspace.settings.hexScalePercent);
+  let dimensions, modelScale, hexScale;
   for (const [pose, capture] of Object.entries(workspace.captures)) {
     if (!SPRITE_POSES.includes(pose) || !plain(capture)) invalid('invalid pose.');
     const { width, height, raw, anchorX, anchorY, clip, time } = capture;
@@ -43,6 +44,11 @@ export function validateStudioWorkspace(workspace) {
     if (capture.modelScalePercent !== undefined && !plain(capture.layout)) invalid('model size needs its captured footprint metadata.');
     if (modelScale !== undefined && modelScale !== scale) invalid('poses have different model sizes.');
     modelScale = scale;
+    const calibration = validateSpriteHexScale(capture.hexScalePercent);
+    if (capture.hexScalePercent !== undefined && !plain(capture.layout)) invalid('hex scale needs its captured footprint metadata.');
+    if (hexScale !== undefined && hexScale !== calibration) invalid('poses have different hex scales.');
+    if (calibration !== settingsHexScale) invalid('captured hex scale does not match the workspace.');
+    hexScale = calibration;
   }
   const sources = workspace.settings.sourceFiles;
   if (sources !== undefined && (!Array.isArray(sources) || sources.some(source =>
@@ -53,6 +59,35 @@ export function validateStudioWorkspace(workspace) {
     invalid('the model and captures exceed 256 MB. Export the asset ZIP to keep the captures.');
   }
   return workspace;
+}
+
+/** Restore-time calibration changes metadata only, never captured pixels or base framing. */
+export function upgradeStudioWorkspaceHexScale(workspace) {
+  validateStudioWorkspace(workspace);
+  const rows = Object.values(workspace.captures);
+  const canUpgrade = rows.length ? rows.every(capture => plain(capture.layout)) : plain(workspace.settings.layout);
+  const target = canUpgrade ? SPRITE_HEX_SCALE_PERCENT : 100;
+  let changed = workspace.settings.hexScalePercent !== target;
+  const captures = Object.fromEntries(Object.entries(workspace.captures).map(([pose, capture]) => {
+    if (!canUpgrade || capture.hexScalePercent === target) return [pose, capture];
+    const dimensions = spriteLayoutDimensions(capture.layout.id, capture.layout.resolutionPercent,
+      capture.modelScalePercent, target);
+    if (dimensions.width !== capture.width || dimensions.height !== capture.height) {
+      throw new Error('Saved studio workspace: captured frame does not match its footprint.');
+    }
+    const ratio = target / validateSpriteHexScale(capture.hexScalePercent);
+    const render = { ...capture.render };
+    if (Number.isFinite(render.frameHeight)) render.frameHeight *= ratio;
+    if (Array.isArray(render.center) && render.center.length === 3 && render.center.every(Number.isFinite)) {
+      render.center = render.center.map(value => value * ratio);
+    }
+    changed = true;
+    return [pose, { ...capture, hexScalePercent: target,
+      renderWidth: dimensions.renderWidth, renderHeight: dimensions.renderHeight, render }];
+  }));
+  if (!changed) return workspace;
+  return validateStudioWorkspace({ ...workspace, captures,
+    settings: { ...workspace.settings, hexScalePercent: target } });
 }
 
 function openDatabase() {

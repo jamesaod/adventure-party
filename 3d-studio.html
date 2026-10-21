@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/adventure-party.css?v=R238">
-  <link rel="stylesheet" href="css/3d-studio.css?v=R238C51">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C52">
   <script type="importmap">
   {
     "imports": {
@@ -27,7 +27,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 51</span>
+        <span class="studio-build">Candidate Rev 52</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -133,9 +133,9 @@
           <label class="studio-field studio-size-control" for="studioModelScale">
             <span class="studio-label-row">Model size <output id="studioModelScaleValue" for="studioModelScale">100%</output></span>
             <input id="studioModelScale" type="range" min="25" max="2000" step="5" value="100" disabled>
-            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 48 × 60 px</span>
+            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
           </label>
-          <p class="studio-note studio-help">The view zooms automatically to keep the model steady as its size changes. The 0–75 ft ruler uses 10-foot battlefield hexes.</p>
+          <p class="studio-note studio-help">Reset view fits the model to 50% of the window. Automatic zoom keeps it steady as Model size changes. Models use 109% of the original hex scale; the 0–75 ft ruler reflects that size.</p>
         </div>
 
         <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
@@ -310,6 +310,6 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C51"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C52"></script>
 </body>
 </html>

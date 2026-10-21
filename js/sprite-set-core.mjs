@@ -1,5 +1,5 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
-import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale } from './sprite-layouts.mjs?v=R238C51';
+import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C52';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 export const SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
@@ -47,16 +47,20 @@ export function validateSpriteSetManifest(value) {
   // Rev 46 packages remain valid without these optional fields. New exports
   // carry enough information to preserve tactical size independently of detail.
   const modelScalePercent = validateSpriteModelScale(value.modelScalePercent);
+  const hexScalePercent = validateSpriteHexScale(value.hexScalePercent);
   if (value.modelScalePercent !== undefined) {
     requireValue(value.layout !== undefined, 'model scale requires layout metadata.');
+  }
+  if (value.hexScalePercent !== undefined) {
+    requireValue(value.layout !== undefined, 'hex scale requires layout metadata.');
   }
   if (value.layout !== undefined) {
     requireValue(object(value.layout) && typeof value.layout.id === 'string' && Number.isInteger(value.layout.resolutionPercent),
       'layout must include its format ID and resolution percentage.');
     const layout = createSpriteLayoutMetadata(value.layout.id, value.layout.resolutionPercent);
-    const expected = spriteLayoutDimensions(layout.id, layout.resolutionPercent, modelScalePercent);
+    const expected = spriteLayoutDimensions(layout.id, layout.resolutionPercent, modelScalePercent, hexScalePercent);
     for (const key of ['width', 'height', 'renderWidth', 'renderHeight']) {
-      requireValue(frame[key] === expected[key], `${key} does not match the selected layout, resolution, and model scale.`);
+      requireValue(frame[key] === expected[key], `${key} does not match the selected layout, resolution, model scale, and hex scale.`);
     }
   }
   if (value.mobType !== undefined) {
@@ -92,7 +96,7 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent }) {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent }) {
   const poses = Object.fromEntries(SPRITE_POSES.map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -108,7 +112,8 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     ...(render === undefined ? {} : { render }),
     ...(layout === undefined ? {} : { layout: { ...layout } }),
     ...(mobType === undefined ? {} : { mobType }),
-    ...(modelScalePercent === undefined ? {} : { modelScalePercent })
+    ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
+    ...(hexScalePercent === undefined ? {} : { hexScalePercent })
   });
 }
 
