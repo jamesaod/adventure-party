@@ -1,13 +1,13 @@
-import { quantizeRgba } from './studio-core.mjs?v=R238C52';
+import { quantizeRgba } from './studio-core.mjs?v=R238C53';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R238C52';
+} from './sprite-set-core.mjs?v=R238C53';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C52';
-import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C52';
+} from './sprite-set-store.mjs?v=R238C53';
+import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C53';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
@@ -329,23 +329,14 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   ui.TestCombatButton.addEventListener('click', () => {
     if (busy || count() !== 18) return;
-    // Open during the user's click, before asynchronous PNG/IndexedDB work.
-    const tab = window.open('', '_blank');
-    if (!tab) {
-      onError(new Error('The combat tab was blocked. Allow a new tab for this site, then choose Test in combat again.'));
-      return;
-    }
-    tab.document.title = 'Preparing sprite test — Adventure Party';
-    tab.document.body.textContent = 'Preparing your captured sprite set…';
     runExport(async exported => {
-      try {
-        const files = await packageFiles(exported);
-        await flushSave();
-        await saveStudioDraft({ manifest: exported.manifest, files, workspace: exported.workspace });
-        tab.opener = null;
-        tab.location.href = new URL('./index.html?studioSprite=draft', window.location.href).href;
-        ui.SheetStatus.textContent = 'Combat test opened with your saved set. Return to 3d studio from combat to restore these exact captures and export them.';
-      } catch (error) { tab.close(); throw error; }
+      ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
+      const files = await packageFiles(exported);
+      await flushSave();
+      // Finish saving the exact test set and return workspace before leaving
+      // this page. A failed save leaves the studio and its captures open.
+      await saveStudioDraft({ manifest: exported.manifest, files, workspace: exported.workspace });
+      window.location.assign(new URL('./index.html?studioSprite=draft', window.location.href).href);
     });
   });
 
