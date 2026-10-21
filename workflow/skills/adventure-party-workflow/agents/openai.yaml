@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adventure Party Workflow"
+  short_description: "Simple sprite imports and candidate development"
+  default_prompt: "Use $adventure-party-workflow to continue Adventure Party with the agreed sprite import and candidate workflow."

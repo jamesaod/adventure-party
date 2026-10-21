@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "release": "R208",
-  "description": "Adventure Party asset specifications through R208. R208 adds Charm Person as a combat-ready Level 1 Wizard spell with SSI Gold Box-style battle-only allegiance conversion, faction-aware MOB targeting and Guard behavior, persistent Charm status VFX, and automatic restoration of original allegiance when combat ends.",
+  "description": "Adventure Party sprite asset specifications. R238 preserves the user-selected Pool of Radiance A1 #4 ORC, A1 #5 ORC LEADER and A1 #33 MACE ready/action pairs. Source artwork remains development-only and is not production-approved.",
   "assets": {
     "fighter": {
       "source": {
@@ -173,45 +173,59 @@
     },
     "orc-stand": {
       "source": {
-        "width": 101,
-        "height": 107
+        "width": 96,
+        "height": 96
       },
       "workspace": {
-        "width": 64,
-        "height": 64
+        "width": 96,
+        "height": 96
       },
       "render": {
-        "width": 34,
+        "width": 36,
         "height": 36
       },
       "anchor": {
-        "x": 32,
-        "y": 64
+        "x": 48,
+        "y": 96
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #4 ORC",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/004_orc/004_orc_ready_full.png",
+        "sourceSha256": "b76d897d62718684242f4e8b6ec09b18c3afd7e5098a1f693208cf93e9471c3b",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "orc-attack": {
       "source": {
-        "width": 125,
-        "height": 116
+        "width": 96,
+        "height": 96
       },
       "workspace": {
-        "width": 64,
-        "height": 64
+        "width": 96,
+        "height": 96
       },
       "render": {
-        "width": 39,
+        "width": 36,
         "height": 36
       },
       "anchor": {
-        "x": 32,
-        "y": 62
+        "x": 48,
+        "y": 96
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #4 ORC",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/004_orc/004_orc_action_full.png",
+        "sourceSha256": "c42b64d1287ff8984ea1f712d37173f5ecc62c72c166d75aa05a9dbfab088e80",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "death-marker": {
       "source": {
@@ -236,45 +250,361 @@
     },
     "juvenile-red-dragon": {
       "source": {
-        "width": 161,
-        "height": 189
+        "width": 192,
+        "height": 192
       },
       "workspace": {
-        "width": 161,
-        "height": 189
+        "width": 192,
+        "height": 192
       },
       "render": {
         "width": 89,
-        "height": 104
+        "height": 89
       },
       "anchor": {
-        "x": 81,
-        "y": 189
+        "x": 96,
+        "y": 192
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "left"
+      "nativeFacing": "right"
     },
     "juvenile-red-dragon-attack": {
       "source": {
-        "width": 161,
-        "height": 194
+        "width": 192,
+        "height": 192
       },
       "workspace": {
-        "width": 161,
-        "height": 194
+        "width": 192,
+        "height": 192
       },
       "render": {
         "width": 89,
-        "height": 107
+        "height": 89
       },
       "anchor": {
-        "x": 81,
-        "y": 194
+        "x": 96,
+        "y": 192
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "left"
+      "nativeFacing": "right"
+    },
+    "orc-leader-stand": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #5 ORC LEADER",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/005_orc_leader/005_orc_leader_ready_full.png",
+        "sourceSha256": "553509ebfd7871ef5149f11660ff3ad08166063348fecb535c77683425ccdca0",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
+    },
+    "orc-leader-attack": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #5 ORC LEADER",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/005_orc_leader/005_orc_leader_action_full.png",
+        "sourceSha256": "fd52259f3bb59dbf7c44d9cd74d5c64a6f9651f6c16312801bbd810e28a4c45f",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
+    },
+    "orc-shaman-stand": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #33 MACE",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/033_mace/033_mace_ready_full.png",
+        "sourceSha256": "82b7445d89f8f9c98415e4594a0c19b40a441d8b93185b48a0b785e7e4f3eac4",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
+    },
+    "orc-shaman-attack": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #33 MACE",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/033_mace/033_mace_action_full.png",
+        "sourceSha256": "33c27f7929994306ec6d25146a941448cb75ada64fcfd1d2a0aab3058afd332b",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
+    },
+    "studio-kobold-ready-e": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "E",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 0,
+          "row": 0
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-ne": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "NE",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 1,
+          "row": 0
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-nw": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "NW",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 2,
+          "row": 0
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-w": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "W",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 0,
+          "row": 1
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-sw": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "SW",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 1,
+          "row": 1
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-se": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "SE",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 2,
+          "row": 1
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
     }
   }
 }

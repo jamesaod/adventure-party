@@ -60,6 +60,7 @@ const xpLootScreen=document.getElementById("xpLootScreen");
 const pixelScreen=document.getElementById("pixelScreen");
 const spellbookScreen=document.getElementById("spellbookScreen");
 const classbookScreen=document.getElementById("classbookScreen");
+const spellPreviewScreen=document.getElementById("spellPreviewScreen");
 const launcherButtons=[...document.querySelectorAll(".launcher-menu button")];
 
 function renderBuildMetadata(){
@@ -155,6 +156,7 @@ function showLauncher(){
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   launcherScreen.classList.add("active");
 
   updateAudioIndicators();
@@ -165,22 +167,60 @@ function showLauncher(){
 }
 
 let selectedCombatCondition="grass";
-let selectedMobEncounter="kobolds";
+let selectedMobEncounter="studio-kobold";
+let selectedStudioSpriteSetId="studio-kobold";
+
+function isStudioTestCombat(combat=game){
+  return combat?.studioSpriteTest===true;
+}
+
+function returnToStudioFromCombat(){
+  if(!isStudioTestCombat()) return false;
+  game.over=true;
+  game.active=null;
+  combatAwaitingStart=false;
+  if(aiTimer){
+    clearTimeout(aiTimer);
+    aiTimer=null;
+  }
+  if(!game.returningToStudio){
+    game.returningToStudio=true;
+    window.location.assign("./3d-studio.html?studioRestore=1");
+  }
+  return true;
+}
+
+function exitCombat(){
+  if(!returnToStudioFromCombat()) showLauncher();
+}
 
 function updateCombatMobSelection(){
   const label=document.getElementById("combatMobSetLabel");
-  const button=document.getElementById("largeMobTestButton");
-  const large=selectedMobEncounter==="large-test";
+
+  const labels={
+    "studio-kobold":"6-facing Kobold",
+    kobolds:"Kobold Encounter",
+    orcs:"Orc Warband — 20",
+    "large-test":"Juvenile Red Dragon"
+  };
 
   if(label){
-    label.textContent=large ? "Juvenile Red Dragon" : "Kobold Encounter";
+    label.textContent=
+      (selectedMobEncounter==="studio-kobold" &&
+        registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label) ||
+      labels[selectedMobEncounter] || labels.kobolds;
   }
 
-  if(button){
-    button.textContent=large ? "Use Kobold Encounter" : "Use Juvenile Red Dragon";
-    button.classList.toggle("selected",large);
-    button.setAttribute("aria-pressed",large ? "true" : "false");
-  }
+  document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
+    const selected=
+      button.dataset.mobEncounter===selectedMobEncounter;
+
+    button.classList.toggle("selected",selected);
+    button.setAttribute(
+      "aria-pressed",
+      selected ? "true" : "false"
+    );
+  });
 }
 
 function updateCombatConditionSelection(){
@@ -199,6 +239,7 @@ function showCombatConditions(){
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
   combatConditionsScreen.classList.add("active");
   updateCombatConditionSelection();
@@ -217,6 +258,7 @@ function showCombat(condition=selectedCombatCondition){
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   combatScreen.classList.add("active");
 
   updateAudioIndicators();
@@ -256,6 +298,7 @@ function showSpellBook(){
   combatScreen.classList.remove("active");
   pixelScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   spellbookScreen.classList.add("active");
 
   renderSpellBook();
@@ -272,6 +315,7 @@ function showClassBook(){
   combatScreen.classList.remove("active");
   pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   classbookScreen.classList.add("active");
 
   renderClassBook();
@@ -288,6 +332,7 @@ async function showPixelEditor(){
   combatScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
+  spellPreviewScreen?.classList.remove("active");
   pixelScreen.classList.add("active");
 
   updateAudioIndicators();
@@ -321,6 +366,20 @@ async function activateLauncherSelection(){
     return;
   }
 
+  if(target==="3d-studio"){
+    window.location.assign("./3d-studio.html");
+    return;
+  }
+
+  if(target==="spell-preview"){
+    if(typeof window.showSpellPreviewer==="function"){
+      await window.showSpellPreviewer();
+    }else{
+      alert("Spell Previewer is still loading.");
+    }
+    return;
+  }
+
   alert(button.textContent+" is not connected yet.");
 }
 
@@ -348,12 +407,14 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
   });
 });
 
-document.getElementById("largeMobTestButton")?.addEventListener("click",()=>{
-  selectedMobEncounter=
-    selectedMobEncounter==="large-test"
-      ? "kobolds"
-      : "large-test";
-  updateCombatMobSelection();
+document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    selectedMobEncounter=
+      button.dataset.mobEncounter ||
+      "kobolds";
+
+    updateCombatMobSelection();
+  });
 });
 
 document.getElementById("beginBattleButton")?.addEventListener("click",()=>{
@@ -2241,12 +2302,16 @@ const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
    future Fighter and creature art plug into the same combat path without bespoke code.
    Battlefield/contact shadows remain separately rendered by the unit draw functions. */
 const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
-const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
-const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
+const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png?v=R238';
+const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png?v=R238';
+const ORC_LEADER_STAND_SPRITE_SRC='assets/sprites/orc-leader-stand.png?v=C40';
+const ORC_LEADER_ATTACK_SPRITE_SRC='assets/sprites/orc-leader-attack.png?v=C40';
+const ORC_SHAMAN_STAND_SPRITE_SRC='assets/sprites/orc-shaman-stand.png?v=R238';
+const ORC_SHAMAN_ATTACK_SPRITE_SRC='assets/sprites/orc-shaman-attack.png?v=R238';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
-const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=R209';
-const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=R209';
+const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=C11';
+const JUVENILE_RED_DRAGON_ATTACK_SPRITE_SRC='assets/sprites/juvenile-red-dragon-attack.png?v=C11';
 
 /* R198 user-supplied old-wood architectural material + opening art. */
 const OLD_WOOD_WALL_TEXTURE_SRC='assets/terrain/wall-old-wood.png?v=R209';
@@ -2316,6 +2381,18 @@ orcStandSprite.src=ORC_STAND_SPRITE_SRC;
 
 const orcAttackSprite=new Image();
 orcAttackSprite.src=ORC_ATTACK_SPRITE_SRC;
+
+const orcLeaderStandSprite=new Image();
+orcLeaderStandSprite.src=ORC_LEADER_STAND_SPRITE_SRC;
+
+const orcLeaderAttackSprite=new Image();
+orcLeaderAttackSprite.src=ORC_LEADER_ATTACK_SPRITE_SRC;
+
+const orcShamanStandSprite=new Image();
+orcShamanStandSprite.src=ORC_SHAMAN_STAND_SPRITE_SRC;
+
+const orcShamanAttackSprite=new Image();
+orcShamanAttackSprite.src=ORC_SHAMAN_ATTACK_SPRITE_SRC;
 
 const juvenileRedDragonStandSprite=new Image();
 juvenileRedDragonStandSprite.src=JUVENILE_RED_DRAGON_STAND_SPRITE_SRC;
@@ -2410,12 +2487,51 @@ function prepareCrispPixelSprite(image){
   koboldBodyguardAttackSprite,
   koboldSlingerStandSprite,
   koboldSlingerAttackSprite,
+  orcStandSprite,
+  orcAttackSprite,
+  orcLeaderStandSprite,
+  orcLeaderAttackSprite,
+  orcShamanStandSprite,
+  orcShamanAttackSprite,
   juvenileRedDragonStandSprite,
   juvenileRedDragonAttackSprite,
   deathMarkerSprite
 ].forEach(prepareCrispPixelSprite);
 
+/* Candidate Rev 43: each direction is an original studio frame, never mirrored. */
+const STUDIO_KOBOLD_SPRITE_SPEC={
+  sourceWidth:160,sourceHeight:200,
+  workspaceWidth:160,workspaceHeight:200,
+  renderWidth:48,renderHeight:60,
+  anchorX:80,anchorY:150,
+  scaleMode:"actual",lockAspect:true,nativeFacing:"right",preserveFrame:true
+};
+
+const studioKoboldReadyFrames=Object.fromEntries(
+  ["E","NE","NW","W","SW","SE"].map(facing=>{
+    const assetId=`studio-kobold-ready-${facing.toLowerCase()}`;
+    const image=new Image();
+    const src=`assets/sprites/${assetId}.png?v=C43`;
+    prepareCrispPixelSprite(image);
+    image.addEventListener("load",()=>{
+      if(game && currentScreen==="combat") draw();
+    });
+    image.src=src;
+    return [facing,{image,assetId,src}];
+  })
+);
+
 const UNIT_POSE_DEFINITIONS={
+  "studio-kobold":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    directionalSprites:{
+      stand:studioKoboldReadyFrames,
+      /* Add E/NE/NW/W/SW/SE {image,assetId} action frames here when supplied. */
+      attack:{}
+    }
+  },
   fighter:{
     defaultPose:"stand",
     actionPose:"attack",
@@ -2469,6 +2585,26 @@ const UNIT_POSE_DEFINITIONS={
       attack:orcAttackSprite
     }
   },
+  "orc-leader":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcLeaderStandSprite,
+      attack:orcLeaderAttackSprite
+    }
+  },
+  "orc-shaman":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcShamanStandSprite,
+      attack:orcShamanAttackSprite
+    }
+  },
   "juvenile-red-dragon":{
     defaultPose:"stand",
     actionPose:"attack",
@@ -2478,7 +2614,7 @@ const UNIT_POSE_DEFINITIONS={
       sequence also remains in the action pose.
     */
     actionDurationMs:1100,
-    nativeFacing:"left",
+    nativeFacing:"right",
     sprites:{
       stand:juvenileRedDragonStandSprite,
       attack:juvenileRedDragonAttackSprite
@@ -2486,8 +2622,45 @@ const UNIT_POSE_DEFINITIONS={
   }
 };
 
+const registeredStudioSpriteSets=new Map();
+
 function unitPoseDefinition(unit){
-  return unit ? (UNIT_POSE_DEFINITIONS[unit.type] || null) : null;
+  if(!unit) return null;
+  return UNIT_POSE_DEFINITIONS[unit.spriteSetId] ||
+    UNIT_POSE_DEFINITIONS[unit.type] || null;
+}
+
+function unitPoseSupportsPose(definition,poseName){
+  if(!definition || !poseName) return false;
+  return !!(
+    definition.sprites?.[poseName] ||
+    definition.directionalSprites?.[poseName] ||
+    (definition.directionalSprites && poseName===definition.actionPose)
+  );
+}
+
+function directionalUnitPoseFrame(unit,poseName=null){
+  const definition=unitPoseDefinition(unit);
+  const poses=definition?.directionalSprites;
+  if(!poses) return null;
+
+  const facing=HEX_DIRS[facingDirectionIndex(unit)].name;
+  const requestedPose=poseName || activeUnitPoseName(unit) || definition.defaultPose || "stand";
+  const defaultPose=definition.defaultPose || "stand";
+  const loaded=frame=>frame?.image?.complete &&
+    frame.image.naturalWidth>0 && frame.image.naturalHeight>0;
+  const requested=poses[requestedPose]?.[facing];
+  const ready=poses[defaultPose]?.[facing];
+  const frame=loaded(requested) ? requested : loaded(ready) ? ready : null;
+
+  /* Missing action art falls back only to ready art for this exact facing. */
+  return {
+    image:frame?.image || null,
+    assetId:frame?.assetId || null,
+    directional:true,
+    facing,
+    poseName:frame===requested && frame ? requestedPose : defaultPose
+  };
 }
 
 
@@ -2516,7 +2689,16 @@ function activeUnitPoseName(unit,now=performance.now()){
   const definition=unitPoseDefinition(unit);
   if(!definition) return null;
 
-  if(shouldUseKoboldPronePose(unit) && definition.sprites?.prone){
+  /* Initial sprite inspection affects presentation only; it expires before combat. */
+  if(unit.studioPoseInspection && combatAwaitingStart && unit.studioSpriteTest &&
+    unitPoseSupportsPose(definition,unit.studioPoseInspection)){
+    return unit.studioPoseInspection;
+  }
+
+  const directionalProne=definition.directionalSprites && unit.alive && !unit.fled && (
+    getUnitEffect(unit,"sleep") || getUnitEffect(unit,"unconscious") || getUnitEffect(unit,"prone")
+  );
+  if((directionalProne || shouldUseKoboldPronePose(unit)) && unitPoseSupportsPose(definition,"prone")){
     return "prone";
   }
 
@@ -2524,7 +2706,7 @@ function activeUnitPoseName(unit,now=performance.now()){
     unit.poseName &&
     Number.isFinite(unit.poseUntil) &&
     now<unit.poseUntil &&
-    definition.sprites?.[unit.poseName]
+    unitPoseSupportsPose(definition,unit.poseName)
   ){
     return unit.poseName;
   }
@@ -2535,6 +2717,9 @@ function activeUnitPoseName(unit,now=performance.now()){
 function unitPoseSprite(unit,fallbackSprite=null){
   const definition=unitPoseDefinition(unit);
   if(!definition) return fallbackSprite;
+
+  const directional=directionalUnitPoseFrame(unit);
+  if(directional) return directional.image;
 
   const poseName=activeUnitPoseName(unit);
   return definition.sprites?.[poseName] ||
@@ -2548,7 +2733,7 @@ function unitPoseNativeFacing(unit,fallback="right"){
 
 function setTemporaryUnitPose(unit,poseName,durationMs=null){
   const definition=unitPoseDefinition(unit);
-  if(!unit || !definition || !definition.sprites?.[poseName]) return false;
+  if(!unit || !unitPoseSupportsPose(definition,poseName)) return false;
 
   const requestedDuration=Number.isFinite(durationMs)
     ? durationMs
@@ -3055,6 +3240,15 @@ const PIXEL_EDITOR_GRID_SIZE=64;
     anchorX/anchorY             - workspace pixel placed on the battlefield origin
 */
 const pixelEditorAssets=[
+  ...Object.entries(studioKoboldReadyFrames).map(([facing,frame])=>({
+    id:frame.assetId,
+    label:`Studio Kobold Ready — ${facing}`,
+    defaultCategory:"units",
+    gameImage:frame.image,
+    originalSrc:frame.src,
+    spec:{...STUDIO_KOBOLD_SPRITE_SPEC},
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:1,runtimeAnchor:null
+  })),
   {
     id:"fighter",
     label:"Dungeon Crawler Carl",
@@ -3182,10 +3376,10 @@ const pixelEditorAssets=[
     gameImage:orcStandSprite,
     originalSrc:ORC_STAND_SPRITE_SRC,
     spec:{
-      sourceWidth:101,sourceHeight:107,
-      workspaceWidth:64,workspaceHeight:64,
-      renderWidth:34,renderHeight:36,
-      anchorX:32,anchorY:64,
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
       scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
@@ -3197,10 +3391,70 @@ const pixelEditorAssets=[
     gameImage:orcAttackSprite,
     originalSrc:ORC_ATTACK_SPRITE_SRC,
     spec:{
-      sourceWidth:125,sourceHeight:116,
-      workspaceWidth:64,workspaceHeight:64,
-      renderWidth:39,renderHeight:36,
-      anchorX:32,anchorY:62,
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-leader-stand",
+    label:"Orc Leader Stand",
+    defaultCategory:"units",
+    gameImage:orcLeaderStandSprite,
+    originalSrc:ORC_LEADER_STAND_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-leader-attack",
+    label:"Orc Leader Attack",
+    defaultCategory:"units",
+    gameImage:orcLeaderAttackSprite,
+    originalSrc:ORC_LEADER_ATTACK_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-shaman-stand",
+    label:"Orc Shaman Stand",
+    defaultCategory:"units",
+    gameImage:orcShamanStandSprite,
+    originalSrc:ORC_SHAMAN_STAND_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-shaman-attack",
+    label:"Orc Shaman Attack",
+    defaultCategory:"units",
+    gameImage:orcShamanAttackSprite,
+    originalSrc:ORC_SHAMAN_ATTACK_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
       scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
@@ -3225,6 +3479,130 @@ const pixelEditorAssets=[
 function getPixelEditorAsset(id){
   return pixelEditorAssets.find(item=>item.id===id) || null;
 }
+
+/* A small registration bridge lets new character folders remain separate from game code. */
+function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
+  if(!manifest || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.id || "") ||
+    !manifest.frame || !manifest.label){
+    throw new Error("Invalid studio sprite set metadata.");
+  }
+  const id=`sprite-set:${manifest.id}`;
+  const mobType=manifest.mobType || "kobold";
+  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType)){
+    throw new Error("This MOB type has not been implemented.");
+  }
+  const footprint=layout || UNIT_FOOTPRINTS[manifest.layout?.id || "single"];
+  if(!footprint || footprint.id!==(manifest.layout?.id || "single") ||
+    !Array.isArray(footprint.offsets) || footprint.offsets.length<1 || footprint.offsets.length>7 ||
+    footprint.offsets.some(cell=>!Number.isInteger(cell.x) || !Number.isInteger(cell.y))){
+    throw new Error("Invalid sprite footprint.");
+  }
+  const frame=manifest.frame;
+  for(const key of ["width","height","renderWidth","renderHeight"]){
+    if(!Number.isFinite(frame[key]) || frame[key]<=0) throw new Error("Invalid sprite frame size.");
+  }
+  if(!Number.isFinite(frame.anchorX) || !Number.isFinite(frame.anchorY) ||
+    frame.anchorX<0 || frame.anchorX>frame.width || frame.anchorY<0 || frame.anchorY>frame.height){
+    throw new Error("Invalid sprite frame anchor.");
+  }
+  const spec={
+    sourceWidth:frame.width,sourceHeight:frame.height,
+    workspaceWidth:frame.width,workspaceHeight:frame.height,
+    renderWidth:frame.renderWidth,renderHeight:frame.renderHeight,
+    anchorX:frame.anchorX,anchorY:frame.anchorY,
+    scaleMode:"actual",lockAspect:true,nativeFacing:"right",preserveFrame:true
+  };
+  const directionalSprites={};
+  const additions=[];
+  for(const [capture,pose] of [["ready","stand"],["attack","attack"],["prone","prone"]]){
+    directionalSprites[pose]={};
+    for(const facing of ["E","NE","NW","W","SW","SE"]){
+      const file=manifest.poses?.[capture]?.frames?.[facing];
+      const image=images?.[file];
+      const src=sourceUrls?.[file];
+      if(!image?.complete || image.naturalWidth!==frame.width ||
+        image.naturalHeight!==frame.height || typeof src!=="string"){
+        throw new Error(`Sprite ${capture}/${facing} is missing or has the wrong dimensions.`);
+      }
+      const assetId=`sprite-set-${manifest.id}-${capture}-${facing.toLowerCase()}`;
+      prepareCrispPixelSprite(image);
+      directionalSprites[pose][facing]={image,assetId,src};
+      additions.push({
+        id:assetId,label:`${manifest.label} ${capture} — ${facing}`,
+        defaultCategory:"units",gameImage:image,originalSrc:src,spec:{...spec},
+        editCanvas:null,editCtx:null,dirty:false,sourceScale:1,runtimeAnchor:null
+      });
+    }
+  }
+  // Stage the whole set before replacing any runtime references.
+  UNIT_POSE_DEFINITIONS[id]={
+    defaultPose:"stand",actionPose:"attack",
+    actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
+    directionalSprites,spriteLayout:footprint,mobType
+  };
+  STUDIO_FOOTPRINTS.set(footprint.id,footprint);
+  for(const addition of additions){
+    const index=pixelEditorAssets.findIndex(asset=>asset.id===addition.id);
+    if(index>=0) pixelEditorAssets[index]=addition;
+    else pixelEditorAssets.push(addition);
+  }
+  registeredStudioSpriteSets.set(id,{
+    id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length,
+    modelScalePercent:manifest.modelScalePercent ?? 100,
+    renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
+  });
+  if(currentScreen==="pixel") renderPixelAssetList();
+  if(game && currentScreen==="combat") draw();
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
+  return id;
+}
+
+function selectStudioSpriteSet(id,{openSetup=false}={}){
+  if(id!=="studio-kobold" && !registeredStudioSpriteSets.has(id)) return false;
+  selectedStudioSpriteSetId=id;
+  selectedMobEncounter="studio-kobold";
+  updateCombatMobSelection();
+  if(openSetup) showCombatConditions();
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
+  return true;
+}
+
+function inspectStudioSpritePose(pose){
+  if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
+    !["ready","attack","prone","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",attack:"attack",prone:"prone",live:null}[pose];
+  for(const unit of game.enemies || []){
+    if(unit.studioSpriteTest) unit.studioPoseInspection=internalPose;
+  }
+  draw();
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
+  return true;
+}
+
+window.adventurePartySpriteSets=Object.freeze({
+  register:registerStudioSpriteSet,
+  select:selectStudioSpriteSet,
+  inspect:inspectStudioSpritePose,
+  snapshot:()=>({
+    selectedId:selectedStudioSpriteSetId,
+    encounter:selectedMobEncounter,
+    studioTest:isStudioTestCombat(),
+    sets:[{id:"studio-kobold",label:"Studio Kobold — ready only",modelScalePercent:100,renderWidth:48,renderHeight:60},
+      ...Array.from(registeredStudioSpriteSets.values(),set=>({...set}))],
+    inspecting:currentScreen==="combat" && combatAwaitingStart && selectedMobEncounter==="studio-kobold",
+    inspectionPose:game?.enemies?.find(unit=>unit.studioSpriteTest)?.studioPoseInspection || null,
+    units:(game?.enemies || []).filter(unit=>unit.studioSpriteTest).map(unit=>{
+      const frame=directionalUnitPoseFrame(unit);
+      return {id:unit.id,spriteSetId:unit.spriteSetId,type:unit.type,species:unit.species,
+        facing:frame?.facing,pose:frame?.poseName,footprintId:unitFootprintDefinition(unit).id,
+        occupied:occupiedHexes(unit),groundCenter:unitFootprintScreenCenter(unit),
+        modelScalePercent:registeredStudioSpriteSets.get(unit.spriteSetId)?.modelScalePercent ?? 100,
+        renderDimensions:frame ? spriteRenderDimensions(frame.assetId,frame.image) : null,
+        stats:{ac:unit.ac,thaco:unit.thaco,move:unit.move,weapon:unit.weapon,hitDiceValue:unit.hitDiceValue},
+        assetId:frame?.assetId,source:frame?.image?.src || null};
+    })
+  })
+});
 
 function getSpriteAssetSpec(id){
   return getPixelEditorAsset(id)?.spec || null;
@@ -3587,7 +3965,7 @@ function renderSourceImageToAssetCanvas(asset,image,scale=null,{resetAnchor=true
   asset.editCtx.clearRect(0,0,asset.editCanvas.width,asset.editCanvas.height);
   asset.editCtx.drawImage(image,dx,dy,drawW,drawH);
 
-  if(resetAnchor && asset.spec){
+  if(resetAnchor && asset.spec && !asset.spec.preserveFrame){
     asset.spec.anchorX=Math.round((dx+drawW/2)*2)/2;
     asset.spec.anchorY=Math.round((dy+drawH)*2)/2;
   }
@@ -3679,12 +4057,21 @@ function updatePixelPropertiesUi(){
   const spec=asset?.spec;
   if(!spec) return;
 
+  const workspaceLimit=spec.preserveFrame ? 1024 : 512;
+  if(pixelWorkspaceWidth) pixelWorkspaceWidth.max=String(workspaceLimit);
+  if(pixelWorkspaceHeight) pixelWorkspaceHeight.max=String(workspaceLimit);
   if(pixelSourceWidth) pixelSourceWidth.value=spec.sourceWidth ?? "";
   if(pixelSourceHeight) pixelSourceHeight.value=spec.sourceHeight ?? "";
   if(pixelWorkspaceWidth) pixelWorkspaceWidth.value=spec.workspaceWidth ?? PIXEL_EDITOR_GRID_SIZE;
   if(pixelWorkspaceHeight) pixelWorkspaceHeight.value=spec.workspaceHeight ?? PIXEL_EDITOR_GRID_SIZE;
-  if(pixelRenderWidth) pixelRenderWidth.value=spec.renderWidth ?? "";
-  if(pixelRenderHeight) pixelRenderHeight.value=spec.renderHeight ?? "";
+  if(pixelRenderWidth){
+    pixelRenderWidth.value=spec.renderWidth ?? "";
+    pixelRenderWidth.step=spec.preserveFrame ? "any" : "1";
+  }
+  if(pixelRenderHeight){
+    pixelRenderHeight.value=spec.renderHeight ?? "";
+    pixelRenderHeight.step=spec.preserveFrame ? "any" : "1";
+  }
   if(pixelAnchorX) pixelAnchorX.value=spec.anchorX ?? 0;
   if(pixelAnchorY) pixelAnchorY.value=spec.anchorY ?? 0;
   if(pixelScaleMode) pixelScaleMode.value=spec.scaleMode || "fit";
@@ -3702,22 +4089,24 @@ function readPixelPropertiesFromUi({renderChanged=null}={}){
   const spec=asset?.spec;
   if(!spec) return;
 
-  spec.workspaceWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,512,spec.workspaceWidth || 64));
-  spec.workspaceHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,512,spec.workspaceHeight || 64));
+  const workspaceLimit=spec.preserveFrame ? 1024 : 512;
+  spec.workspaceWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,workspaceLimit,spec.workspaceWidth || 64));
+  spec.workspaceHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,workspaceLimit,spec.workspaceHeight || 64));
   spec.anchorX=clampNumber(pixelAnchorX?.value,0,spec.workspaceWidth,spec.anchorX || 0);
   spec.anchorY=clampNumber(pixelAnchorY?.value,0,spec.workspaceHeight,spec.anchorY || 0);
   spec.scaleMode=pixelScaleMode?.value || spec.scaleMode || "fit";
   spec.lockAspect=pixelLockAspect?.checked!==false;
 
-  let renderWidth=Math.round(clampNumber(pixelRenderWidth?.value,1,512,spec.renderWidth || 1));
-  let renderHeight=Math.round(clampNumber(pixelRenderHeight?.value,1,512,spec.renderHeight || 1));
+  const renderPrecision=value=>spec.preserveFrame ? value : Math.round(value);
+  let renderWidth=renderPrecision(clampNumber(pixelRenderWidth?.value,1,512,spec.renderWidth || 1));
+  let renderHeight=renderPrecision(clampNumber(pixelRenderHeight?.value,1,512,spec.renderHeight || 1));
 
   if(spec.lockAspect && renderChanged){
     const sourceAspect=(spec.sourceWidth || 1)/(spec.sourceHeight || 1);
     if(renderChanged==="width"){
-      renderHeight=Math.max(1,Math.round(renderWidth/sourceAspect));
+      renderHeight=Math.max(1,renderPrecision(renderWidth/sourceAspect));
     }else if(renderChanged==="height"){
-      renderWidth=Math.max(1,Math.round(renderHeight*sourceAspect));
+      renderWidth=Math.max(1,renderPrecision(renderHeight*sourceAspect));
     }
   }
 
@@ -3813,8 +4202,9 @@ function resizePixelEditorWorkspace(){
   const asset=pixelEditorAsset;
   if(!asset?.editCanvas || !asset.spec) return;
 
-  const newWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,512,asset.spec.workspaceWidth));
-  const newHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,512,asset.spec.workspaceHeight));
+  const workspaceLimit=asset.spec.preserveFrame ? 1024 : 512;
+  const newWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,workspaceLimit,asset.spec.workspaceWidth));
+  const newHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,workspaceLimit,asset.spec.workspaceHeight));
 
   if(newWidth===asset.editCanvas.width && newHeight===asset.editCanvas.height){
     readPixelPropertiesFromUi();
@@ -4125,6 +4515,16 @@ function opaqueBoundsForCanvas(canvas){
 }
 
 function trimmedRuntimeCanvasForAsset(asset){
+  if(asset.spec?.preserveFrame){
+    return {
+      canvas:asset.editCanvas,
+      anchor:{
+        x:asset.spec.anchorX/asset.editCanvas.width,
+        y:asset.spec.anchorY/asset.editCanvas.height
+      }
+    };
+  }
+
   const bounds=opaqueBoundsForCanvas(asset.editCanvas);
   const trimmed=document.createElement("canvas");
   trimmed.width=bounds.width;
@@ -4540,26 +4940,20 @@ const UNIT_FOOTPRINTS=Object.freeze({
   })
 });
 
+const STUDIO_FOOTPRINTS=new Map();
+
 function unitFootprintDefinition(unit){
-  return UNIT_FOOTPRINTS[unit?.footprintId] || UNIT_FOOTPRINTS.single;
+  return unitPoseDefinition(unit)?.spriteLayout || STUDIO_FOOTPRINTS.get(unit?.footprintId) ||
+    UNIT_FOOTPRINTS[unit?.footprintId] || UNIT_FOOTPRINTS.single;
 }
 
 function rotateAxialOffset(offset,steps=0){
   let x=Number(offset?.x)||0;
-  let z=Number(offset?.y)||0;
-  let y=-x-z;
+  let y=Number(offset?.y)||0;
   const count=((Math.round(steps)%6)+6)%6;
-
-  for(let i=0;i<count;i++){
-    const nextX=-z;
-    const nextY=-x;
-    const nextZ=-y;
-    x=nextX;
-    y=nextY;
-    z=nextZ;
-  }
-
-  return {x,y:z};
+  // Facing indices turn E -> NE -> NW, so axial rotation is counterclockwise.
+  for(let i=0;i<count;i++) [x,y]=[x+y,-x];
+  return {x:x||0,y:y||0};
 }
 
 function footprintOffsetsForFacing(unit,facingHex=facingDirectionIndex(unit)){
@@ -4667,25 +5061,40 @@ function canUnitStandAt(unit,x,y,facingHex=facingDirectionIndex(unit)){
   return true;
 }
 
-function unitTransitionBlocked(
-  unit,
-  from,
-  to,
-  facingHex=facingDirectionIndex(unit)
-){
-  if(!unit || !from || !to) return true;
-  if(!canUnitStandAt(unit,to.x,to.y,facingHex)) return true;
-
-  const sourceCells=occupiedHexesAt(unit,from.x,from.y,facingHex);
-  const targetCells=occupiedHexesAt(unit,to.x,to.y,facingHex);
-
-  for(let i=0;i<Math.min(sourceCells.length,targetCells.length);i++){
-    if(architecturalWallBlocksStep(sourceCells[i],targetCells[i])){
-      return true;
+function canUnitRotateAt(unit,x,y,toFacing,fromFacing=facingDirectionIndex(unit)){
+  const footprint=unitFootprintDefinition(unit);
+  if(!footprint.rotates || fromFacing===toFacing) return true;
+  const forward=((toFacing-fromFacing)%6+6)%6;
+  const backward=6-forward;
+  const directions=forward===backward ? [1,-1] : [forward<backward ? 1 : -1];
+  return directions.some(direction=>{
+    let previous=((fromFacing%6)+6)%6;
+    const count=direction===1 ? forward : backward;
+    for(let step=1;step<=count;step++){
+      const facing=((previous+direction)%6+6)%6;
+      if(!canUnitStandAt(unit,x,y,facing)) return false;
+      const from=occupiedHexesAt(unit,x,y,previous);
+      const to=occupiedHexesAt(unit,x,y,facing);
+      if(from.some((cell,index)=>architecturalWallBlocksStep(cell,to[index]))) return false;
+      previous=facing;
     }
-  }
+    return true;
+  });
+}
 
-  return false;
+function unitTransitionBlocked(unit,from,to,facingHex=null){
+  if(!unit || !from || !to) return true;
+  const rotates=unitFootprintDefinition(unit).rotates;
+  const fromFacing=Number.isInteger(from.facingHex) ? from.facingHex : facingDirectionIndex(unit);
+  const destinationFacing=Number.isInteger(facingHex) ? facingHex
+    : rotates && (from.x!==to.x || from.y!==to.y) ? hexDirectionIndexToward(from,to)
+    : fromFacing;
+  if(!canUnitStandAt(unit,to.x,to.y,destinationFacing)) return true;
+  if(rotates && !canUnitRotateAt(unit,from.x,from.y,destinationFacing,fromFacing)) return true;
+
+  const sourceCells=occupiedHexesAt(unit,from.x,from.y,destinationFacing);
+  const targetCells=occupiedHexesAt(unit,to.x,to.y,destinationFacing);
+  return sourceCells.some((cell,index)=>architecturalWallBlocksStep(cell,targetCells[index]));
 }
 
 const ATTACK_SECTOR_LABELS=[
@@ -6683,13 +7092,14 @@ function updateFacingForStep(entity,dx,dy){
     y:(entity.y||0)+dy
   };
 
-  entity.facingHex=
-    hexDirectionIndexToward(entity,target);
+  const facing=hexDirectionIndexToward(entity,target);
+  if(unitFootprintDefinition(entity).rotates &&
+    !canUnitRotateAt(entity,entity.x,entity.y,facing)) return false;
+  entity.facingHex=facing;
 
   /*
-    The tactical engine tracks all six hex facings. Current placeholder
-    sprites still have only left/right artwork, so retain this projection
-    solely for sprite flipping.
+    Six-direction sprite sets use facingHex directly. Retain this projection
+    for older sprite sets that still use left/right artwork.
   */
   const horizontal=dx+(dy*0.5);
 
@@ -6698,6 +7108,7 @@ function updateFacingForStep(entity,dx,dy){
   }else if(horizontal<0){
     entity.facing="left";
   }
+  return true;
 }
 
 function centerCameraOn(entity){
@@ -8544,8 +8955,8 @@ const SPELL_CATALOG={
     maxMissiles:5,
     combatImplemented:true,
     targetMode:"hostile-creature",
-    damageSummary:"Each missile 1d4+1; missile count rises with caster level to 5 maximum.",
-    description:"Creates magical energy missiles that automatically strike a seen or otherwise detected creature.",
+    damageSummary:"Each missile 1d4+1; up to 5 missiles may be assigned among one or more visible targets and strike simultaneously.",
+    description:"Creates magical energy missiles that automatically strike. Each missile can be assigned to the same or a different visible target; the full volley launches and resolves simultaneously.",
     source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:136,pdfPage:137}
   },
 
@@ -8923,9 +9334,9 @@ const SPELL_CATALOG={
     range:{fixedYards:180},
     combatImplemented:true,
     targetMode:"hostile-creature",
-    damageSummary:"Ranged attack for 2d4 acid, plus 2d4 per additional round at higher caster levels.",
-    description:"Launches a magical acid arrow using the attack chance of a fighter of the caster's level. A hit continues burning for one additional round per three caster levels.",
-    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:186,pdfPage:187}
+    damageSummary:"Ranged attack for 2d4 acid; every three caster levels adds one later round of 2d4 acid damage.",
+    description:"Launches a magical acid arrow using the attack chance of a fighter of the caster's level. The initial hit deals 2d4 acid with no splash damage; at 3rd-5th level it burns for one later round, at 6th-8th for two later rounds, and so on.",
+    source:{book:"AD&D 2nd Edition Player's Handbook",printedPage:144,pdfPage:145}
   },
 
   "mirror-image":{
@@ -11717,7 +12128,9 @@ function drawVisibleArchitecturalWallsOverLOS(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.type==="orc"
+        unitPoseDefinition(enemy)?.spriteLayout
+          ? drawStudioSpriteMob(enemy)
+          : enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
@@ -14306,12 +14719,10 @@ function checkPartyDefeat(){
     */
     game.partyWipedOut=true;
 
-    setTimeout(()=>{
-      finishCombat(
-        "Defeat",
-        "All player-party members have gone down."
-      );
-    },deathFx ? 1000 : 100);
+    scheduleCombatFinish(
+      "Defeat",
+      "All player-party members have gone down."
+    );
 
     return true;
   }
@@ -14579,6 +14990,7 @@ function makeOrc(index,position){
   return {
     id:`orc-${String(index+1).padStart(2,"0")}`,
     type:"orc",
+    species:"orc",
     creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"medium",
@@ -14640,6 +15052,177 @@ function makeOrc(index,position){
     buffs:[],
     debuffs:[],
 
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0})
+  };
+}
+
+
+
+function makeOrcLeader(index,position){
+  /*
+    Candidate Rev 40 — Monstrous Manual Orc leader.
+    The Orc entry lists leaders/assistants at 8 hp each and XP 35 while
+    retaining the ordinary Orc's AC 6, MV 9, THAC0 19 and weapon damage.
+    POR A1 #5 ORC LEADER supplies the development-only leader sprite
+    from Combat_CPIC/area_1/005_orc_leader/.
+  */
+  return {
+    id:`orc-leader-${String(index+1).padStart(2,"0")}`,
+    type:"orc-leader",
+    species:"orc",
+    creatureType:"humanoid",
+    controller:"mob",
+    sizeCategory:"medium",
+    faction:"enemy",
+    alignment:"lawful evil",
+    name:"Orc Leader",
+
+    hp:8,
+    maxHp:8,
+    hitDiceValue:1,
+    hitDiceLabel:"1 (8 hp leader)",
+
+    ac:6,
+    unarmoredAc:10,
+    thaco:19,
+    move:9,
+    unarmoredMove:12,
+    halfMove:4,
+
+    weapon:"Axe, battle",
+    weaponCatalogId:"axe-battle",
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d8",
+    weaponDamageL:"1d8",
+
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:12,
+    moraleLabel:"Steady (11-12)",
+    xpValue:35,
+
+    poseName:"stand",
+    poseUntil:0,
+    brightLightAttackPenalty:-1,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0})
+  };
+}
+
+
+function makeOrcShaman(index,position){
+  /*
+    Candidate Rev 40 — 3rd-level Orc shaman.
+    Monstrous Manual: shamans may reach 5th-level priest; each level above 1st
+    adds 1d4 hp, and they attack as 1 HD per two spellcasting levels, fractions
+    rounded up. A 3rd-level shaman therefore has 1d8+2d4 hp, attacks as 2 HD,
+    and is worth 175 XP. POR A1 #33 MACE supplies the development-only
+    shaman sprite from Combat_CPIC/area_1/033_mace/.
+  */
+  const hp=d(8)+d(4)+d(4);
+
+  return {
+    id:`orc-shaman-${String(index+1).padStart(2,"0")}`,
+    type:"orc-shaman",
+    species:"orc",
+    creatureType:"humanoid",
+    controller:"mob",
+    sizeCategory:"medium",
+    faction:"enemy",
+    alignment:"lawful evil",
+    name:"Orc Shaman",
+
+    hp,
+    maxHp:hp,
+    hitDiceValue:2,
+    hitDiceLabel:"1d8+2d4 (3rd-level shaman)",
+    priestLevel:3,
+    spellcastingClass:"priest",
+    spellcastingLevel:3,
+
+    ac:6,
+    unarmoredAc:10,
+    thaco:19,
+    move:9,
+    unarmoredMove:12,
+    halfMove:4,
+
+    weapon:"Spear",
+    weaponCatalogId:"spear",
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d6",
+    weaponDamageL:"1d8",
+
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:13,
+    moraleLabel:"Elite (13-14)",
+    xpValue:175,
+
+    specialAbilities:[
+      "3rd-level Orc shaman / priest"
+    ],
+
+    poseName:"stand",
+    poseUntil:0,
+    brightLightAttackPenalty:-1,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
     fleeing:false,
     fleeSteps:0,
     fleeEscapeDistance:10,
@@ -14773,14 +15356,15 @@ function makeLargeMobTest(position){
     facingHex:hexDirectionIndexToward(position,{x:0,y:0}),
 
     /*
-      R190: measured from the user's new attack-pose placement reference.
-      The reference seven-hex block is 1.8125× the engine footprint scale.
-      Converting the 161 px source width back to engine scale gives 89 px.
-      Standing / attack heights preserve their separate source aspect ratios.
+      Candidate Rev 11: replace the juvenile Red Dragon with the extracted
+      Dark Queen of Krynn ready/action pair. The 48×48 originals are enlarged
+      faithfully 4× to 192×192 with nearest-neighbor sampling. They are then
+      rendered at the prior 89 px tactical width, preserving aspect ratio,
+      footprint center, and ground anchor rather than stretching the square art.
     */
     dragonRenderWidth:89,
-    dragonStandRenderHeight:104,
-    dragonAttackRenderHeight:107,
+    dragonStandRenderHeight:89,
+    dragonAttackRenderHeight:89,
     dragonAnchorOffsetX:3,
     dragonAnchorOffsetY:41,
     hpBarWidth:72,
@@ -15036,41 +15620,110 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
   ];
 }
 
-function makeOrcArmy(count=10,occupiedUnits=[]){
+function makeStudioTestMob(mobType,index,position){
+  switch(mobType){
+    case "kobold": return makeKobold(index,position);
+    case "kobold-bodyguard": return makeKoboldBodyguard(index,position);
+    case "kobold-slinger": return makeKoboldSlinger(index,position);
+    case "orc": return makeOrc(index,position);
+    case "orc-leader": return makeOrcLeader(index,position);
+    case "orc-shaman": return makeOrcShaman(index,position);
+    case "juvenile-red-dragon": return makeLargeMobTest(position);
+    default: throw new Error("This sprite set references an unimplemented MOB type.");
+  }
+}
+
+function makeStudioKoboldEncounter(condition=selectedCombatCondition){
+  const set=registeredStudioSpriteSets.get(selectedStudioSpriteSetId);
+  const mobType=set?.mobType || "kobold";
+  const radius=(set?.footprintCells || 1)>1 ? 5 : 3;
+  const occupied=new Set([key(0,0)]);
+  const positions=HEX_DIRS.map(dir=>({x:dir.x*radius,y:dir.y*radius}));
+  /* Keep the original single-hex NW view clear of the northern tree cluster. */
+  if(radius===3) positions[2]={x:-2,y:0};
+  const candidates=axialDisk({x:0,y:0},radius+3)
+    .filter(pos=>inside(pos.x,pos.y) && !isWall(pos.x,pos.y));
+
+  const units=positions.map((preferred,index)=>{
+    const unit=makeStudioTestMob(mobType,index,preferred);
+    unit.id=`studio-${mobType}-${index+1}`;
+    unit.name=`${set?.label || "Studio Kobold"} ${index+1}`;
+    unit.spriteSetId=selectedStudioSpriteSetId;
+    unit.studioSpriteTest=true;
+    unit.footprintId=set?.layoutId || "single";
+    unit.facingHex=index;
+    unit.facing=[0,1,5].includes(index) ? "right" : "left";
+    const position=[preferred,...candidates.slice().sort((a,b)=>
+      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
+    )].find(pos=>occupiedHexesAt(unit,pos.x,pos.y,index).every(cell=>
+      inside(cell.x,cell.y) && !isWall(cell.x,cell.y) && !occupied.has(key(cell.x,cell.y))
+    ));
+    if(!position) throw new Error("Unable to place all six sprite-test footprints on this battlefield.");
+    unit.x=position.x;
+    unit.y=position.y;
+    occupiedHexes(unit).forEach(cell=>occupied.add(key(cell.x,cell.y)));
+    return unit;
+  });
+
+  lastMobDeployment={
+    direction:"Six-facing sprite test around Carl",
+    anchorDistance:radius,
+    anchor:{x:0,y:0},
+    clusterRadius:radius,
+    count:units.length,
+    condition
+  };
+  return units;
+}
+
+
+function makeOrcArmy(
+  normalCount=18,
+  leaderCount=1,
+  shamanCount=1,
+  condition=selectedCombatCondition
+){
   /*
-    A separate compact Orc warband. Orcs deploy in a radius-2 cluster,
-    normally 7–13 hexes from Carl, and cannot overlap the existing
-    Kobold group or party members.
+    Candidate Rev 40 test encounter:
+      18 ordinary Orcs
+       1 Orc Leader
+       1 3rd-level Orc Shaman
+      -------------------------
+      20 Orcs total
+
+    The shaman is deliberately included for MOB/sprite testing even though a
+    random MM encounter of only 20 Orcs would not normally guarantee one.
   */
-  const occupiedKeys=new Set(
-    (occupiedUnits || []).map(unit=>key(unit.x,unit.y))
-  );
+  const totalCount=
+    Math.max(0,normalCount)+
+    Math.max(0,leaderCount)+
+    Math.max(0,shamanCount);
 
   let selected=null;
 
-  for(let attempt=0;attempt<160;attempt++){
+  for(let attempt=0;attempt<180;attempt++){
     const direction=
       MOB_DEPLOYMENT_DIRECTIONS[
         Math.floor(Math.random()*MOB_DEPLOYMENT_DIRECTIONS.length)
       ];
 
-    const anchorDistance=randomIntInclusive(7,13);
+    const anchorDistance=randomIntInclusive(7,12);
     const anchor={
       x:direction.x*anchorDistance,
       y:direction.y*anchorDistance
     };
 
-    const candidates=axialDisk(anchor,2)
+    const candidates=axialDisk(anchor,3)
       .filter(pos=>
         inside(pos.x,pos.y) &&
-        hexDistance(pos,{x:0,y:0})>=3 &&
-        !occupiedKeys.has(key(pos.x,pos.y))
+        !isWall(pos.x,pos.y) &&
+        hexDistance(pos,{x:0,y:0})>=3
       )
       .map(pos=>({
         ...pos,
         deploymentScore:
           hexDistance(pos,anchor)*10+
-          Math.random()*10
+          Math.random()*12
       }))
       .sort((a,b)=>
         a.deploymentScore-b.deploymentScore ||
@@ -15078,7 +15731,7 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
         a.y-b.y
       );
 
-    if(candidates.length>=count){
+    if(candidates.length>=totalCount){
       selected={
         direction,
         anchorDistance,
@@ -15091,31 +15744,31 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
 
   if(!selected){
     const fallbackAnchors=[
-      {name:"W",x:-12,y:2},
-      {name:"NE",x:8,y:-8},
-      {name:"SW",x:-8,y:8},
-      {name:"SE",x:2,y:8}
+      {name:"E",x:9,y:0},
+      {name:"W",x:-10,y:1},
+      {name:"NE",x:8,y:-7},
+      {name:"SW",x:-8,y:7}
     ];
 
     for(const fallback of fallbackAnchors){
-      const candidates=axialDisk(
-        {x:fallback.x,y:fallback.y},
-        2
-      )
+      const anchor={x:fallback.x,y:fallback.y};
+      const candidates=axialDisk(anchor,3)
         .filter(pos=>
           inside(pos.x,pos.y) &&
-          hexDistance(pos,{x:0,y:0})>=3 &&
-          !occupiedKeys.has(key(pos.x,pos.y))
+          !isWall(pos.x,pos.y) &&
+          hexDistance(pos,{x:0,y:0})>=3
+        )
+        .sort((a,b)=>
+          hexDistance(a,anchor)-hexDistance(b,anchor) ||
+          a.x-b.x ||
+          a.y-b.y
         );
 
-      if(candidates.length>=count){
+      if(candidates.length>=totalCount){
         selected={
           direction:{name:fallback.name},
-          anchorDistance:hexDistance(
-            {x:0,y:0},
-            {x:fallback.x,y:fallback.y}
-          ),
-          anchor:{x:fallback.x,y:fallback.y},
+          anchorDistance:hexDistance({x:0,y:0},anchor),
+          anchor,
           candidates
         };
         break;
@@ -15123,28 +15776,51 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
     }
   }
 
-  if(!selected || selected.candidates.length<count){
+  if(!selected || selected.candidates.length<totalCount){
     throw new Error(
-      `Unable to find ${count} legal Orc deployment hexes on the finite battlefield.`
+      `Unable to place the ${totalCount}-Orc test encounter on this battlefield.`
     );
   }
 
   const positions=selected.candidates
-    .slice(0,count)
+    .slice(0,totalCount)
     .map(({x,y})=>({x,y}));
+
+  const normals=positions
+    .slice(0,normalCount)
+    .map((pos,index)=>makeOrc(index,pos));
+
+  const leaders=positions
+    .slice(normalCount,normalCount+leaderCount)
+    .map((pos,index)=>makeOrcLeader(index,pos));
+
+  const shamans=positions
+    .slice(normalCount+leaderCount,totalCount)
+    .map((pos,index)=>makeOrcShaman(index,pos));
 
   lastOrcDeployment={
     direction:selected.direction.name,
     anchorDistance:selected.anchorDistance,
     anchor:{...selected.anchor},
-    clusterRadius:2,
-    count:positions.length
+    clusterRadius:3,
+    count:positions.length,
+    composition:{
+      orcs:normalCount,
+      leaders:leaderCount,
+      shamans:shamanCount
+    },
+    condition
   };
 
-  return positions.map(
-    (pos,index)=>makeOrc(index,pos)
-  );
+  lastMobDeployment={...lastOrcDeployment};
+
+  return [
+    ...normals,
+    ...leaders,
+    ...shamans
+  ];
 }
+
 
 let combatLogPinFrame=0;
 
@@ -15306,15 +15982,13 @@ function checkCombatVictory(){
   if(activeEnemies().length===0){
     game.over=true;
 
-    setTimeout(()=>{
-      finishCombat(
-        "Victory",
-        "No hostile combatants remain; enemies are dead, have fled, or have changed sides. "+
-        livingPartyMembers()
-          .map(unit=>unit.name+" "+unit.hp+"/"+unit.maxHp+" HP")
-          .join("; ")+"."
-      );
-    },deathFx ? 1000 : 100);
+    scheduleCombatFinish(
+      "Victory",
+      "No hostile combatants remain; enemies are dead, have fled, or have changed sides. "+
+      livingPartyMembers()
+        .map(unit=>unit.name+" "+unit.hp+"/"+unit.maxHp+" HP")
+        .join("; ")+"."
+    );
 
     return true;
   }
@@ -15342,17 +16016,28 @@ function newGame(condition=selectedCombatCondition){
     engine for future roster selection but are not spawned automatically.
   */
   const kobolds=
-    selectedMobEncounter==="kobolds"
-      ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
+    selectedMobEncounter==="studio-kobold"
+      ? makeStudioKoboldEncounter(condition)
+      : selectedMobEncounter==="kobolds"
+        ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
+        : [];
+
+  const orcs=
+    selectedMobEncounter==="orcs"
+      ? makeOrcArmy(18,1,1,condition)
       : [];
 
   const enemies=
     selectedMobEncounter==="large-test"
       ? makeLargeMobTestEncounter(condition)
-      : [...kobolds];
+      : selectedMobEncounter==="orcs"
+        ? [...orcs]
+        : [...kobolds];
 
-  /* R114: Orcs remain defined in the engine but are removed from this combat simulation. */
-  lastOrcDeployment=null;
+  if(selectedMobEncounter!=="orcs"){
+    lastOrcDeployment=null;
+  }
+  const groupKobolds=kobolds.filter(isKoboldUnit);
 
   camera.x=player.x;
   camera.y=player.y;
@@ -15360,6 +16045,8 @@ function newGame(condition=selectedCombatCondition){
   game={
     round:0,
     over:false,
+    // Capture the encounter's route now; later setup selections cannot change it.
+    studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
     allies:[],
@@ -15376,13 +16063,13 @@ function newGame(condition=selectedCombatCondition){
       Large-MOB test encounters use per-unit morale and do not share this group
       state.
     */
-    enemyGroupMorale:kobolds.length
+    enemyGroupMorale:groupKobolds.length
       ? {
           id:"kobold-group",
           label:"Kobold group",
-          baseMorale:kobolds[0]?.morale ?? 9,
+          baseMorale:groupKobolds[0]?.morale ?? 9,
           moraleLabel:"Average (8-10)",
-          initialCount:kobolds.length,
+          initialCount:groupKobolds.length,
           manualRatioThreshold:1.5,
           manualRatioChecked:false,
           broken:false,
@@ -15484,6 +16171,34 @@ function newGame(condition=selectedCombatCondition){
       "Multi-hex test rules: one initiative slot, one HP pool, one target identity, one save/damage resolution per area effect.",
       "system"
     );
+  }else if(selectedMobEncounter==="orcs"){
+    log(
+      "20-Orc test warband deployed: 18 Orcs, 1 Orc Leader, 1 3rd-level Orc Shaman.",
+      "system"
+    );
+    log(
+      "Orcs — AC 6, THAC0 19, Move 9, 1 HD, weapon damage 1d8, Steady morale, XP 15.",
+      "system"
+    );
+    log(
+      "Orc Leaders — fixed 8 HP, AC 6, THAC0 19, battle axe 1d8, XP 35.",
+      "system"
+    );
+    log(
+      "Orc Shaman — 3rd-level priest, 1d8+2d4 HP, attacks as 2 HD, AC 6, THAC0 19, XP 175.",
+      "system"
+    );
+  }else if(selectedMobEncounter==="studio-kobold"){
+    log(
+      "Six sprite-test units deployed facing E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
+      "system"
+    );
+    log(
+      selectedStudioSpriteSetId==="studio-kobold"
+        ? "Sprite test uses ordinary Kobold combat stats and dagger attacks. This ready-only set retains the matching ready view during attacks."
+        : `Sprite test uses the implemented ${registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.mobType || "kobold"} rules and ${unitFootprintCellCount(enemies[0])}-hex footprint. Imported ready, attack, and prone artwork follows the actual combat pose.`,
+      "system"
+    );
   }else{
     log(
       `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
@@ -15505,11 +16220,17 @@ function newGame(condition=selectedCombatCondition){
     log(
       selectedMobEncounter==="large-test"
         ? `Red Dragon pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
-        : (
-            `Kobold deployment: ${lastMobDeployment.direction}, `+
-            `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
-            `cluster radius ${lastMobDeployment.clusterRadius}.`
-          ),
+        : selectedMobEncounter==="orcs"
+          ? (
+              `Orc deployment: ${lastMobDeployment.direction}, `+
+              `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+              `cluster radius ${lastMobDeployment.clusterRadius}.`
+            )
+          : (
+              `${selectedMobEncounter==="studio-kobold" ? "Sprite-test" : "Kobold"} deployment: ${lastMobDeployment.direction}, `+
+              `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+              `cluster radius ${lastMobDeployment.clusterRadius}.`
+            ),
       "system"
     );
   }
@@ -15521,6 +16242,7 @@ function newGame(condition=selectedCombatCondition){
   */
   combatOpeningSpeechDone=true;
   combatAwaitingStart=true;
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   ui.roundLabel.textContent="ROUND —";
   ui.initiativeLabel.textContent="INIT: —";
@@ -16581,6 +17303,15 @@ function bestRangedAiTargetFrom(unit,source=unit){
 
 function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
   if(!unit?.alive || unit.fled || !unit.rangedWeapon) return null;
+  if(unitFootprintDefinition(unit).rotates){
+    const result=searchRotatingFootprintPath(unit,unit,{
+      goal:proxy=>!(avoidThreatened && rangedAiPositionThreatened(proxy,proxy)) && bestRangedAiTargetFrom(proxy,proxy)
+    });
+    if(!result.value) return null;
+    const end=result.path[result.path.length-1];
+    return {path:result.path,target:result.value,firingHex:{x:end.x,y:end.y},
+      distance:unitDistance({...unit,...end},result.value)};
+  }
 
   const targets=rangedAiOpponents(unit);
   if(!targets.length) return null;
@@ -17956,6 +18687,10 @@ async function tryPlayerMove(dx,dy){
   }
 
   if(occupiedByAnyUnit(nx,ny,p.id)){ log("That hex is occupied.","system"); return; }
+  if(unitTransitionBlocked(p,p,{x:nx,y:ny})){
+    log("Movement blocked: the complete footprint cannot turn or fit there.","system");
+    return;
+  }
 
   if(!p.fullMove && p.turnMoves>=p.halfMove){
     p.fullMove=true;
@@ -17971,6 +18706,11 @@ async function tryPlayerMove(dx,dy){
     return;
   }
 
+  // A multi-hex free-strike attacker may have turned into the destination.
+  if(unitTransitionBlocked(p,p,{x:nx,y:ny})){
+    log("Movement blocked: the footprint no longer fits after the reaction.","system");
+    return;
+  }
   updateFacingForStep(p,dx,dy);
   setUnitActionBanner(p,"Moving");
   p.x=nx; p.y=ny; p.turnMoves++;
@@ -18691,6 +19431,82 @@ async function animateMagicMissile(attacker,defender,index,total){
   projectileFx=null;
   draw();
 }
+
+async function animateElementalArrowProjectile(
+  attacker,
+  defender,
+  kind="flame-arrow",
+  index=0,
+  total=1
+){
+  if(!attacker || !defender) return;
+
+  const from=hexCenter(attacker.x,attacker.y);
+  const to=hexCenter(defender.x,defender.y);
+
+  const sideOffset=
+    (
+      index-
+      (Math.max(1,total)-1)/2
+    )*
+    4;
+
+  const start={
+    x:from.x+sideOffset,
+    y:from.y-20
+  };
+
+  const end={
+    x:to.x+sideOffset*0.35,
+    y:to.y-15
+  };
+
+  const distance=
+    Math.hypot(
+      end.x-start.x,
+      end.y-start.y
+    );
+
+  const duration=
+    Math.max(
+      170,
+      Math.min(
+        300,
+        125+
+        distance*0.24
+      )
+    );
+
+  const started=performance.now();
+
+  while(true){
+    const elapsed=
+      performance.now()-started;
+
+    const t=
+      Math.min(
+        1,
+        elapsed/duration
+      );
+
+    projectileFx={
+      kind,
+      start,
+      end,
+      t,
+      arcHeight:0
+    };
+
+    draw();
+
+    if(t>=1) break;
+    await sleep(16);
+  }
+
+  projectileFx=null;
+  draw();
+}
+
 
 async function castMagicMissileFromScroll(action,target){
   const caster=spellCasterForAction(action);
@@ -19582,24 +20398,102 @@ async function handleLevelTwoTurnEffects(actor){
 
   const acid=getUnitEffect(actor,"acid-arrow");
   if(acid){
-    const remaining=Math.max(0,Number(acid.data?.remainingTicks)||0);
-    if(remaining>0){
-      const source=getUnitById(acid.data?.sourceUnitId) || null;
-      const damage=rollDiceExpression("2d4").total;
-      acid.data.remainingTicks=remaining-1;
-      acid.detail=`${acid.data.remainingTicks} acid round${acid.data.remainingTicks===1 ? "" : "s"} remaining`;
-      applySpellDamage(source,actor,damage,"Melf's Acid Arrow","acid");
+    const remaining=
+      Math.max(
+        0,
+        Number(acid.data?.remainingTicks)||0
+      );
 
-      if(acid.data.remainingTicks<=0){
-        removeUnitEffect(actor,"acid-arrow");
+    if(remaining<=0){
+      removeUnitEffect(actor,"acid-arrow");
+    }else{
+      /*
+        Candidate Rev 34 — PHB round boundary:
+        the impact round already dealt its 2d4. Follow-on acid damage begins
+        on a later round, never on a victim's still-pending initiative slot in
+        the same round as the hit.
+      */
+      let nextTickRound=
+        Number(acid.data?.nextTickRound);
+
+      if(!Number.isFinite(nextTickRound)){
+        nextTickRound=game.round+1;
+        acid.data.nextTickRound=nextTickRound;
       }
 
-      if(!actor.alive){
-        return skipTurnForSpellStatus(
+      if(game.round>=nextTickRound){
+        const source=
+          getUnitById(
+            acid.data?.sourceUnitId
+          ) || null;
+
+        const damage=
+          rollDiceExpression("2d4").total;
+
+        acid.data.remainingTicks=
+          remaining-1;
+        acid.data.lastTickRound=
+          game.round;
+        acid.data.nextTickRound=
+          game.round+1;
+
+        acid.detail=
+          acid.data.remainingTicks>0
+            ? (
+                "2d4 acid each later round; "+
+                acid.data.remainingTicks+
+                " follow-on round"+
+                (acid.data.remainingTicks===1 ? "" : "s")+
+                " remaining"
+              )
+            : "Final 2d4 follow-on acid damage resolving";
+
+        setUnitActionBanner(
           actor,
-          "Killed by Acid",
-          `${actor.name} succumbs to the lingering acid.`
+          "Splashed with Acid"
         );
+
+        applySpellDamage(
+          source,
+          actor,
+          damage,
+          "Melf's Acid Arrow",
+          "acid"
+        );
+
+        /*
+          Repeat the established green acid application shimmer on living
+          victims so the ongoing PHB damage remains visually connected to the
+          persistent "Splashed with Acid" status between rounds.
+        */
+        if(actor.alive){
+          await animateMagicEffectOnUnits(
+            [actor],
+            "acid",
+            {playSound:false}
+          );
+        }
+
+        if(acid.data.remainingTicks<=0){
+          removeUnitEffect(
+            actor,
+            "acid-arrow"
+          );
+        }
+
+        if(!actor.alive){
+          return skipTurnForSpellStatus(
+            actor,
+            "Killed by Acid",
+            `${actor.name} succumbs to the lingering acid.`
+          );
+        }
+
+        /*
+          Let the green damage beat finish before the creature resumes its
+          normal action. Acid damage itself does not consume the turn.
+        */
+        await waitForCombatActionPause();
       }
     }
   }
@@ -20255,6 +21149,8 @@ async function castGreaseSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("grease");
+
   const effect=addAreaEffect({
     id:`grease-${Date.now()}`,
     type:"grease",
@@ -20433,6 +21329,8 @@ async function castTauntSpell(action,target){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("taunt");
+
   const targetType=target.type || target.name;
   const candidates=unitsWithinHexRadius(target,3)
     .filter(unit=>
@@ -20567,6 +21465,8 @@ async function castWallOfFogSpell(action,targetHex){
   if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
+
+  playMagicEffectSound("wall-of-fog");
 
   const duration=d(4)+d(4)+level;
   const cells=createWallOfFogCells(
@@ -20910,6 +21810,8 @@ async function castFogCloudSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("fog-cloud");
+
   const cells=hexesWithinRadius(targetHex,1).filter(cell=>inside(cell.x,cell.y));
   addAreaEffect({
     id:`fog-cloud:${Date.now()}`,
@@ -21099,7 +22001,13 @@ async function castMelfsAcidArrowSpell(action,target){
   const resolution=resolveMissileAttackD20(rawRoll,targetNumber,modifier);
 
   playNaturalAttackRollSound(rawRoll);
-  await animateMagicMissile(caster,target,0,1);
+  await animateElementalArrowProjectile(
+    caster,
+    target,
+    "acid-arrow",
+    0,
+    1
+  );
 
   if(!resolution.hit){
     playMissSound();
@@ -21114,11 +22022,22 @@ async function castMelfsAcidArrowSpell(action,target){
     if(!result.killed && remainingTicks>0){
       addUnitEffect(target,{
         id:"acid-arrow",
-        name:"Acid Arrow",
+        name:"Splashed with Acid",
         kind:"debuff",
         expiresRound:game.round+remainingTicks+1,
-        detail:`${remainingTicks} additional acid round${remainingTicks===1 ? "" : "s"} remaining`,
-        data:{sourceUnitId:caster.id,remainingTicks}
+        detail:
+          "2d4 acid each later round; "+
+          remainingTicks+
+          " follow-on round"+
+          (remainingTicks===1 ? "" : "s")+
+          " remaining",
+        data:{
+          sourceUnitId:caster.id,
+          casterLevel:level,
+          appliedRound:game.round,
+          nextTickRound:game.round+1,
+          remainingTicks
+        }
       });
     }
 
@@ -21269,6 +22188,8 @@ async function castScareSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("fear");
+
   const duration=d(4)+level;
   const affected=[];
 
@@ -21294,7 +22215,11 @@ async function castScareSpell(action,targetHex){
   }
 
   if(affected.length){
-    await animateMagicEffectOnUnits(affected,"fear");
+    await animateMagicEffectOnUnits(
+      affected,
+      "fear",
+      {playSound:false}
+    );
   }
   setCombatMessage(
     affected.length
@@ -21454,6 +22379,8 @@ async function castTashasHideousLaughterSpell(action,targetHex){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  playMagicEffectSound("laughter");
+
   const maxTargets=Math.max(1,Math.floor(level/3));
   const candidates=livingUnitsInAreaCells(hexesWithinRadius(targetHex,1))
     .filter(unit=>unit.id!==caster.id)
@@ -21484,7 +22411,11 @@ async function castTashasHideousLaughterSpell(action,targetHex){
   }
 
   if(affected.length){
-    await animateMagicEffectOnUnits(affected,"laughter");
+    await animateMagicEffectOnUnits(
+      affected,
+      "laughter",
+      {playSound:false}
+    );
   }
   setCombatMessage(
     affected.length
@@ -21879,7 +22810,46 @@ function passableForPath(x,y,mover,target){
 
 /* Open-map shortest path. With no obstacles, repeatedly choosing the
    neighbor that decreases hex distance produces a shortest route. */
+function searchRotatingFootprintPath(mover,start,{goal=null,score=null,maxSteps=Infinity}={}){
+  const first={x:start.x,y:start.y,facingHex:facingDirectionIndex(mover),steps:0};
+  const nodeKey=node=>`${node.x},${node.y},${node.facingHex}`;
+  const queue=[first];
+  const seen=new Set([nodeKey(first)]);
+  const parents=new Map();
+  let best=first;
+  let bestScore=score ? score({...mover,...first}) : Infinity;
+  let value=null;
+  for(let cursor=0;cursor<queue.length && cursor<24000;cursor++){
+    const current=queue[cursor];
+    const proxy={...mover,...current};
+    const match=goal?.(proxy);
+    if(match){ best=current; value=match; break; }
+    if(score){
+      const distance=score(proxy);
+      if(distance<bestScore){ bestScore=distance; best=current; }
+    }
+    if(current.steps>=maxSteps) continue;
+    for(let facing=0;facing<HEX_DIRS.length;facing++){
+      const dir=HEX_DIRS[facing];
+      const next={x:current.x+dir.x,y:current.y+dir.y,facingHex:facing,steps:current.steps+1};
+      const id=nodeKey(next);
+      if(seen.has(id) || unitTransitionBlocked(mover,current,next,facing)) continue;
+      seen.add(id);
+      parents.set(id,current);
+      queue.push(next);
+    }
+  }
+  const path=[];
+  for(let current=best;current;current=parents.get(nodeKey(current))){
+    path.push({x:current.x,y:current.y,facingHex:current.facingHex});
+  }
+  return {path:path.reverse(),value};
+}
+
 function pathToAdjacent(start,target,mover){
+  if(mover && unitFootprintDefinition(mover).rotates){
+    return searchRotatingFootprintPath(mover,start,{goal:proxy=>canMeleeReach(proxy,target)}).path;
+  }
   if(canMeleeReach(start,target)){
     return [{x:start.x,y:start.y}];
   }
@@ -22003,6 +22973,9 @@ function selectMobPartyTarget(mob){
 }
 
 function pathToHex(start,target,mover){
+  if(mover && unitFootprintDefinition(mover).rotates){
+    return searchRotatingFootprintPath(mover,start,{goal:proxy=>proxy.x===target.x && proxy.y===target.y}).path;
+  }
   if(start.x===target.x && start.y===target.y){
     return [{x:start.x,y:start.y}];
   }
@@ -22084,6 +23057,11 @@ function pathToHex(start,target,mover){
 }
 
 function pathToClosestReachable(start,target,mover,maxSteps){
+  if(mover && unitFootprintDefinition(mover).rotates){
+    return searchRotatingFootprintPath(mover,start,{
+      score:proxy=>approachDistanceAt(proxy,proxy.x,proxy.y,target),maxSteps
+    }).path;
+  }
   const startNode={
     x:start.x,
     y:start.y,
@@ -22376,6 +23354,8 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       return false;
     }
 
+    // Reactions can rotate another multi-hex creature into the planned path.
+    if(unitTransitionBlocked(entity,entity,next)) return false;
     const mode=mobMovementPresentationMode(entity,next,senseContext);
 
     updateFacingForStep(
@@ -22471,6 +23451,8 @@ async function animateMobAlongPath(mob,path,maxSteps){
       return false;
     }
 
+    // Reactions can rotate another multi-hex creature into the planned path.
+    if(unitTransitionBlocked(mob,mob,path[i])) return false;
     const mode=mobMovementPresentationMode(mob,path[i],senseContext);
 
     updateFacingForStep(
@@ -23383,6 +24365,18 @@ function showXpLootScreen(title,text,xpAwarded=0){
   updateAudioIndicators();
 }
 
+function scheduleCombatFinish(title,text){
+  const combat=game;
+  if(isStudioTestCombat(combat)){
+    finishCombat(title,text);
+    return;
+  }
+  setTimeout(()=>{
+    // A previous battle must not open rewards over a new battle or the launcher.
+    if(game===combat && currentScreen==="combat") finishCombat(title,text);
+  },deathFx ? 1000 : 100);
+}
+
 function finishCombat(title,text){
   game.over=true;
   game.active=null;
@@ -23398,6 +24392,8 @@ function finishCombat(title,text){
   }
 
   restoreAllCharmPersonAllegiances();
+
+  if(returnToStudioFromCombat()) return;
 
   let xpAwarded=0;
   let xpText="";
@@ -23455,11 +24451,12 @@ function normalizeUnitEffect(effect){
   }
 
   if(typeof effect==="string"){
-    return {name:effect,detail:""};
+    return {id:"",name:effect,detail:""};
   }
 
   if(typeof effect==="object"){
     return {
+      id:String(effect.id || ""),
       name:String(effect.name || effect.label || effect.id || "Effect"),
       detail:String(
         effect.detail ||
@@ -23470,7 +24467,7 @@ function normalizeUnitEffect(effect){
     };
   }
 
-  return {name:String(effect),detail:""};
+  return {id:"",name:String(effect),detail:""};
 }
 
 function renderUnitStatusEffects(unit){
@@ -23497,12 +24494,19 @@ function renderUnitStatusEffects(unit){
     No visible "Buff" or "Debuff" category labels.
     The positive/negative styling identifies the effect type.
   */
-  ui.unitInfoEffects.innerHTML=entries.map(effect=>
-    `<div class="unit-effect ${effect.kind}">`+
-      `<div>${effect.name}</div>`+
-      `${effect.detail ? `<div>${effect.detail}</div>` : ""}`+
-    `</div>`
-  ).join("");
+  ui.unitInfoEffects.innerHTML=entries.map(effect=>{
+    const acidClass=
+      effect.id==="acid-arrow"
+        ? " acid-arrow"
+        : "";
+
+    return (
+      `<div class="unit-effect ${effect.kind}${acidClass}">`+
+        `<div>${effect.name}</div>`+
+        `${effect.detail ? `<div>${effect.detail}</div>` : ""}`+
+      `</div>`
+    );
+  }).join("");
 
   ui.unitInfoEffects.hidden=false;
 }
@@ -24246,18 +25250,19 @@ function updateUi(){
 
   if(returnButton){
     const anyQuick=quickCommandUnitIds.size>0;
+    const studioTest=isStudioTestCombat();
     returnButton.innerHTML=anyQuick
       ? 'Hit &lt;ESC&gt; to cancel Quick'
       : spellTargeting
         ? 'ESC — ABORT SPELL CASTING'
-        : (aimOnly ? 'ESC — ABORT AIM' : 'ESC — RETURN TO LAUNCHER');
+        : (aimOnly ? 'ESC — ABORT AIM' : studioTest ? 'ESC — RETURN TO 3D STUDIO' : 'ESC — RETURN TO LAUNCHER');
     returnButton.setAttribute(
       "aria-label",
       anyQuick
         ? "Hit Escape to cancel Quick for all player-controlled characters"
         : spellTargeting
           ? "Escape to abort spell casting"
-          : (aimOnly ? "Escape to abort Aim" : "Escape to return to launcher")
+          : (aimOnly ? "Escape to abort Aim" : studioTest ? "Escape to return to 3d studio" : "Escape to return to launcher")
     );
   }
 
@@ -24883,6 +25888,8 @@ function drawCastingGlowSilhouette(
 function pixelAssetIdForUnitPose(unit,poseName=null){
   if(!unit) return null;
   const pose=poseName || activeUnitPoseName(unit) || "stand";
+  const directional=directionalUnitPoseFrame(unit,pose);
+  if(directional) return directional.assetId;
 
   if(unit.type==="kobold"){
     if(pose==="prone") return "kobold-prone";
@@ -24897,6 +25904,12 @@ function pixelAssetIdForUnitPose(unit,poseName=null){
   if(unit.type==="orc"){
     return pose==="attack" ? "orc-attack" : "orc-stand";
   }
+  if(unit.type==="orc-leader"){
+    return pose==="attack" ? "orc-leader-attack" : "orc-leader-stand";
+  }
+  if(unit.type==="orc-shaman"){
+    return pose==="attack" ? "orc-shaman-attack" : "orc-shaman-stand";
+  }
   if(unit.type==="juvenile-red-dragon"){
     return pose==="attack"
       ? "juvenile-red-dragon-attack"
@@ -24907,7 +25920,14 @@ function pixelAssetIdForUnitPose(unit,poseName=null){
 
 function runtimeAnchorForAsset(id){
   const asset=getPixelEditorAsset(id);
-  return asset?.runtimeAnchor || {x:0.5,y:1};
+  if(asset?.runtimeAnchor) return asset.runtimeAnchor;
+  if(asset?.spec?.preserveFrame){
+    return {
+      x:asset.spec.anchorX/asset.spec.workspaceWidth,
+      y:asset.spec.anchorY/asset.spec.workspaceHeight
+    };
+  }
+  return {x:0.5,y:1};
 }
 
 function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity=null,anchor=null){
@@ -24923,7 +25943,11 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   ctx.save();
   ctx.imageSmoothingEnabled=false;
 
-  const shouldFlip=facing!==nativeFacing;
+  const directionalPoses=unitPoseDefinition(entity)?.directionalSprites;
+  const isDirectionalImage=directionalPoses && Object.values(directionalPoses).some(
+    frames=>Object.values(frames).some(frame=>frame?.image===image)
+  );
+  const shouldFlip=!isDirectionalImage && facing!==nativeFacing;
   const renderSource=image._crispRenderSource || image;
   const spriteAnchor=anchor || {x:0.5,y:1};
 
@@ -25207,6 +26231,8 @@ function beginCombatFromPrompt(){
   }
 
   combatAwaitingStart=false;
+  for(const unit of game.enemies || []) delete unit.studioPoseInspection;
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   setCombatMessage("Combat begins.");
   ui.turnBanner.textContent="ROLLING INITIATIVE...";
@@ -25226,7 +26252,10 @@ function drawFighter(p){
 
   drawHpBar(p,"#94e084");
 
-  const fighterDims=spriteRenderDimensions("fighter",fighterSprite,26,35);
+  const directional=directionalUnitPoseFrame(p);
+  const sprite=directional ? directional.image : fighterSprite;
+  const assetId=directional?.assetId || "fighter";
+  const fighterDims=spriteRenderDimensions(assetId,sprite,26,35);
   const drawW=fighterDims.width;
   const drawH=fighterDims.height;
 
@@ -25241,14 +26270,14 @@ function drawFighter(p){
   ctx.restore();
 
   drawSpriteFacing(
-    fighterSprite,
+    sprite,
     c,
     drawW,
     drawH,
     p.facing,
-    getSpriteAssetSpec("fighter")?.nativeFacing || "left",
+    getSpriteAssetSpec(assetId)?.nativeFacing || "left",
     p,
-    runtimeAnchorForAsset("fighter")
+    runtimeAnchorForAsset(assetId)
   );
 
 }
@@ -25265,16 +26294,15 @@ function drawFriendlyArcher(npc){
     drawHpBar(npc,"#78d7c4");
   }
 
+  const directional=directionalUnitPoseFrame(npc);
+  const sprite=directional ? directional.image : fighterSprite;
   const targetH=33;
   const scale=targetH/fighterSprite.height;
-  const drawW=Math.max(
-    1,
-    Math.round(fighterSprite.width*scale)
-  );
-  const drawH=Math.max(
-    1,
-    Math.round(fighterSprite.height*scale)
-  );
+  const dims=directional
+    ? spriteRenderDimensions(directional.assetId,sprite,33,33)
+    : {width:Math.max(1,Math.round(fighterSprite.width*scale)),height:Math.max(1,Math.round(fighterSprite.height*scale))};
+  const drawW=dims.width;
+  const drawH=dims.height;
 
   ctx.save();
   ctx.translate(c.x,c.y+2);
@@ -25286,50 +26314,20 @@ function drawFriendlyArcher(npc){
   ctx.restore();
 
   drawSpriteFacing(
-    fighterSprite,
+    sprite,
     c,
     drawW,
     drawH,
     npc.facing,
     "left",
-    npc
+    npc,
+    directional ? runtimeAnchorForAsset(directional.assetId) : null
   );
 
   /*
-    Temporary visual identifier until the Ranger receives her own sprite:
-    a small bow glyph and friendly-Ranger marker.
+    Candidate Rev 7: no temporary class/role glyphs are painted over unit art.
+    Dedicated sprites should communicate identity when those assets exist.
   */
-  const side=npc.facing==="right" ? 1 : -1;
-
-  ctx.save();
-
-  ctx.strokeStyle="#d4b46a";
-  ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.arc(
-    c.x+side*(drawW/2+6),
-    c.y-17,
-    7,
-    -Math.PI/2,
-    Math.PI/2,
-    side<0
-  );
-  ctx.stroke();
-
-  ctx.strokeStyle="#e9dfbd";
-  ctx.lineWidth=1;
-  ctx.beginPath();
-  ctx.moveTo(
-    c.x+side*(drawW/2+4),
-    c.y-24
-  );
-  ctx.lineTo(
-    c.x+side*(drawW/2+4),
-    c.y-10
-  );
-  ctx.stroke();
-
-  ctx.restore();
 }
 
 
@@ -25344,10 +26342,15 @@ function drawFriendlyMage(mage){
     drawHpBar(mage,"#ba8cff");
   }
 
+  const directional=directionalUnitPoseFrame(mage);
+  const sprite=directional ? directional.image : fighterSprite;
   const targetH=33;
   const scale=targetH/fighterSprite.height;
-  const drawW=Math.max(1,Math.round(fighterSprite.width*scale));
-  const drawH=Math.max(1,Math.round(fighterSprite.height*scale));
+  const dims=directional
+    ? spriteRenderDimensions(directional.assetId,sprite,33,33)
+    : {width:Math.max(1,Math.round(fighterSprite.width*scale)),height:Math.max(1,Math.round(fighterSprite.height*scale))};
+  const drawW=dims.width;
+  const drawH=dims.height;
 
   ctx.save();
   ctx.translate(c.x,c.y+2);
@@ -25359,26 +26362,43 @@ function drawFriendlyMage(mage){
   ctx.restore();
 
   drawSpriteFacing(
-    fighterSprite,
+    sprite,
     c,
     drawW,
     drawH,
     mage.facing,
     "left",
-    mage
+    mage,
+    directional ? runtimeAnchorForAsset(directional.assetId) : null
   );
 
-  /* Temporary Mage identifier until dedicated wizard art is supplied. */
-  ctx.save();
-  ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  ctx.lineWidth=3;
-  ctx.strokeStyle="#08050d";
-  ctx.fillStyle="#d8b6ff";
-  ctx.strokeText("M",c.x,c.y-35);
-  ctx.fillText("M",c.x,c.y-35);
-  ctx.restore();
+  /*
+    Candidate Rev 7: remove the temporary overhead "M" class marker.
+  */
+}
+
+function drawStudioSpriteMob(unit){
+  const frame=directionalUnitPoseFrame(unit);
+  if(!frame?.image?.complete || !frame.image.naturalWidth) return;
+  const center=unitFootprintScreenCenter(unit);
+  const dimensions=spriteRenderDimensions(frame.assetId,frame.image);
+  if(game.active===unit.id) drawActiveHex(unit,"#df6b6b");
+  if(unit.alive) drawHpBar(unit,"#df6b6b");
+  if(unitFootprintCellCount(unit)>1){
+    ctx.save();
+    for(const cell of occupiedHexes(unit)){
+      if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(cell.x,cell.y)) continue;
+      polygonPath(hexScreenVertices(cell.x,cell.y));
+      ctx.fillStyle="rgba(170,70,46,0.035)";
+      ctx.strokeStyle="rgba(224,128,88,0.18)";
+      ctx.lineWidth=1;
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  drawSpriteFacing(frame.image,center,dimensions.width,dimensions.height,
+    unit.facing,"right",unit,runtimeAnchorForAsset(frame.assetId));
 }
 
 function drawKobold(k){
@@ -25526,7 +26546,7 @@ function dragonPresentationMetrics(mob,poseName=activeUnitPoseName(mob) || "stan
       attack
         ? mob?.dragonAttackRenderHeight
         : mob?.dragonStandRenderHeight
-    ) || (attack ? 107 : 104)
+    ) || 89
   );
   const lateral=Math.max(0,Number(mob?.dragonAnchorOffsetX)||3);
   const vertical=Math.max(0,Number(mob?.dragonAnchorOffsetY)||41);
@@ -25548,7 +26568,7 @@ function dragonPresentationMetrics(mob,poseName=activeUnitPoseName(mob) || "stan
     width,
     height,
     anchor,
-    nativeFacing:"left"
+    nativeFacing:"right"
   };
 }
 
@@ -25695,6 +26715,56 @@ function drawProjectileFx(){
 
     const dx=end.x-start.x;
     const dy=end.y-start.y;
+
+    /*
+      Candidate Rev 29:
+      the moving Fireball projectile now carries its own localized light.
+      Keep this centered on the projectile head so the warm illumination
+      travels continuously from the caster to the detonation hex.
+    */
+    const projectileLightRadius=HEX_W*1.55;
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+
+    const projectileLight=
+      ctx.createRadialGradient(
+        x,
+        y-2,
+        0,
+        x,
+        y-2,
+        projectileLightRadius
+      );
+
+    projectileLight.addColorStop(
+      0,
+      "rgba(255,205,91,0.44)"
+    );
+    projectileLight.addColorStop(
+      0.24,
+      "rgba(255,115,26,0.34)"
+    );
+    projectileLight.addColorStop(
+      0.58,
+      "rgba(214,49,10,0.18)"
+    );
+    projectileLight.addColorStop(
+      1,
+      "rgba(116,12,4,0)"
+    );
+
+    ctx.fillStyle=projectileLight;
+    ctx.beginPath();
+    ctx.arc(
+      x,
+      y-2,
+      projectileLightRadius,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+    ctx.restore();
+
     const trailColors=[
       "rgba(122,21,7,1)",
       "rgba(216,58,12,1)",
@@ -25715,8 +26785,215 @@ function drawProjectileFx(){
 
     drawFireballGlyph(x,y,1);
     ctx.restore();
+  }else if(
+    projectileFx.kind==="flame-arrow" ||
+    projectileFx.kind==="acid-arrow"
+  ){
+    const isFlame=
+      projectileFx.kind==="flame-arrow";
+
+    const dx=end.x-start.x;
+    const dy=end.y-start.y;
+    const length=
+      Math.max(
+        1,
+        Math.hypot(dx,dy)
+      );
+    const nx=-dy/length;
+    const ny=dx/length;
+    const now=performance.now();
+
+    ctx.save();
+    ctx.globalCompositeOperation="lighter";
+
+    /*
+      Candidate Rev 33:
+      give the elemental arrows a real moving light field, matching the
+      Fireball projectile treatment rather than relying only on the tiny
+      sprite-local aura. Fire Arrow carries warm red/orange light; Melf's Acid
+      Arrow carries saturated green light. The field remains centered on the
+      moving arrow head for the full flight.
+    */
+    const elementLightRadius=
+      HEX_W*1.28;
+
+    const elementLight=
+      ctx.createRadialGradient(
+        x,
+        y,
+        0,
+        x,
+        y,
+        elementLightRadius
+      );
+
+    if(isFlame){
+      elementLight.addColorStop(
+        0,
+        "rgba(255,186,92,0.38)"
+      );
+      elementLight.addColorStop(
+        0.24,
+        "rgba(255,88,24,0.31)"
+      );
+      elementLight.addColorStop(
+        0.58,
+        "rgba(211,35,10,0.18)"
+      );
+      elementLight.addColorStop(
+        1,
+        "rgba(125,10,3,0)"
+      );
+    }else{
+      elementLight.addColorStop(
+        0,
+        "rgba(206,255,145,0.38)"
+      );
+      elementLight.addColorStop(
+        0.24,
+        "rgba(91,241,78,0.31)"
+      );
+      elementLight.addColorStop(
+        0.58,
+        "rgba(24,177,45,0.18)"
+      );
+      elementLight.addColorStop(
+        1,
+        "rgba(8,99,29,0)"
+      );
+    }
+
+    ctx.fillStyle=
+      elementLight;
+
+    ctx.beginPath();
+    ctx.arc(
+      x,
+      y,
+      elementLightRadius,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    /*
+      Bright elemental trail behind the arrow shaft.
+    */
+    const trailGradient=
+      ctx.createLinearGradient(
+        tx,ty,
+        x,y
+      );
+
+    if(isFlame){
+      trailGradient.addColorStop(
+        0,
+        "rgba(176,35,4,0)"
+      );
+      trailGradient.addColorStop(
+        0.45,
+        "rgba(255,83,9,0.36)"
+      );
+      trailGradient.addColorStop(
+        1,
+        "rgba(255,205,61,0.76)"
+      );
+    }else{
+      trailGradient.addColorStop(
+        0,
+        "rgba(26,92,15,0)"
+      );
+      trailGradient.addColorStop(
+        0.45,
+        "rgba(70,214,45,0.36)"
+      );
+      trailGradient.addColorStop(
+        1,
+        "rgba(176,255,92,0.78)"
+      );
+    }
+
+    ctx.strokeStyle=trailGradient;
+    ctx.lineWidth=5;
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(tx,ty);
+    ctx.lineTo(x,y);
+    ctx.stroke();
+
+    /*
+      Detached glowing motes create the fire/acid particle trail.
+    */
+    for(let i=0;i<14;i++){
+      const q=(i+1)/15;
+      const back=8+q*34;
+      const wave=
+        Math.sin(
+          now*0.017+
+          i*1.81
+        )*
+        (
+          1.4+
+          q*4.0
+        );
+
+      const px=
+        x-
+        (dx/length)*back+
+        nx*wave;
+
+      const py=
+        y-
+        (dy/length)*back+
+        ny*wave-
+        q*q*5;
+
+      const alpha=
+        (1-q)*
+        (
+          0.48+
+          0.34*
+          Math.sin(
+            now*0.011+
+            i*2.3
+          )*
+          0.5+
+          0.17
+        );
+
+      ctx.fillStyle=
+        isFlame
+          ? (
+              i%3===0
+                ? `rgba(255,232,109,${alpha})`
+                : i%3===1
+                  ? `rgba(255,132,18,${alpha})`
+                  : `rgba(226,54,7,${alpha})`
+            )
+          : (
+              i%3===0
+                ? `rgba(212,255,126,${alpha})`
+                : i%3===1
+                  ? `rgba(111,242,74,${alpha})`
+                  : `rgba(34,174,43,${alpha})`
+            );
+
+      const size=
+        i%5===0
+          ? 2
+          : 1;
+
+      ctx.fillRect(
+        Math.round(px),
+        Math.round(py),
+        size,
+        size
+      );
+    }
+
+    ctx.restore();
   }else{
-    /* Smooth trail retained for non-Fireball projectiles. */
+    /* Smooth trail retained for ordinary non-Fireball projectiles. */
     ctx.strokeStyle="rgba(214,198,156,0.55)";
     ctx.lineWidth=2;
     ctx.beginPath();
@@ -25745,24 +27022,96 @@ function drawProjectileFx(){
     ctx.beginPath();
     ctx.arc(x-1.5,y-1.5,2,0,Math.PI*2);
     ctx.fill();
-  }else if(projectileFx.kind==="arrow"){
+  }else if(
+    projectileFx.kind==="arrow" ||
+    projectileFx.kind==="flame-arrow" ||
+    projectileFx.kind==="acid-arrow"
+  ){
     const angle=Math.atan2(
       end.y-start.y,
       end.x-start.x
     );
 
+    const isFlame=
+      projectileFx.kind==="flame-arrow";
+
+    const isAcid=
+      projectileFx.kind==="acid-arrow";
+
+    if(isFlame || isAcid){
+      ctx.save();
+      ctx.globalCompositeOperation="lighter";
+
+      const aura=
+        ctx.createRadialGradient(
+          x,y,0,
+          x,y,
+          15
+        );
+
+      if(isFlame){
+        aura.addColorStop(
+          0,
+          "rgba(255,246,176,0.78)"
+        );
+        aura.addColorStop(
+          0.34,
+          "rgba(255,151,31,0.46)"
+        );
+        aura.addColorStop(
+          1,
+          "rgba(221,50,7,0)"
+        );
+      }else{
+        aura.addColorStop(
+          0,
+          "rgba(228,255,172,0.80)"
+        );
+        aura.addColorStop(
+          0.34,
+          "rgba(113,240,83,0.46)"
+        );
+        aura.addColorStop(
+          1,
+          "rgba(24,154,42,0)"
+        );
+      }
+
+      ctx.fillStyle=aura;
+      ctx.beginPath();
+      ctx.arc(
+        x,y,15,
+        0,Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.translate(x,y);
     ctx.rotate(angle);
 
-    ctx.strokeStyle="#e7d8ac";
+    ctx.strokeStyle=
+      isFlame
+        ? "#ffd68c"
+        : isAcid
+          ? "#d8f7a5"
+          : "#e7d8ac";
+
     ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(-9,0);
     ctx.lineTo(9,0);
     ctx.stroke();
 
-    ctx.fillStyle="#d7c28a";
+    ctx.fillStyle=
+      isFlame
+        ? "#ffb643"
+        : isAcid
+          ? "#9ddd67"
+          : "#d7c28a";
+
     ctx.beginPath();
     ctx.moveTo(10,0);
     ctx.lineTo(5,-3);
@@ -26483,46 +27832,119 @@ function drawFireballExplosionFx(){
     }
   }
 
-  const silhouetteCanvas=document.createElement("canvas");
-  silhouetteCanvas.width=bodyCanvas.width;
-  silhouetteCanvas.height=bodyCanvas.height;
-  const silhouetteCtx=silhouetteCanvas.getContext("2d");
-  silhouetteCtx.imageSmoothingEnabled=false;
-  silhouetteCtx.drawImage(bodyCanvas,0,0);
-  silhouetteCtx.globalCompositeOperation="source-in";
-  silhouetteCtx.fillStyle="rgba(0,0,0,1)";
-  silhouetteCtx.fillRect(0,0,silhouetteCanvas.width,silhouetteCanvas.height);
-  silhouetteCtx.globalCompositeOperation="source-over";
+  /*
+    Candidate Rev 28:
+    remove the exterior Fireball outline completely.
+
+    Add a strong localized red/orange illumination field centered on the
+    detonation target. Its falloff scales with the resolved Fireball spread so
+    it reaches the blast edges without becoming a screen-wide flash.
+  */
+  const targetCenter=
+    hexCenter(
+      fx.x,
+      fx.y
+    );
+
+  const illuminationRadius=
+    Math.max(
+      HEX_W*1.35,
+      spreadRadius*
+      HEX_W*
+      1.18*
+      Math.max(
+        0.42,
+        growth
+      )
+    );
+
+  ctx.save();
+  ctx.globalCompositeOperation="lighter";
+
+  const targetLight=
+    ctx.createRadialGradient(
+      targetCenter.x,
+      targetCenter.y-HEX_H*0.16,
+      0,
+      targetCenter.x,
+      targetCenter.y-HEX_H*0.16,
+      illuminationRadius
+    );
+
+  targetLight.addColorStop(
+    0,
+    `rgba(255,118,30,${0.48*fade})`
+  );
+
+  targetLight.addColorStop(
+    0.30,
+    `rgba(238,61,12,${0.34*fade})`
+  );
+
+  targetLight.addColorStop(
+    0.64,
+    `rgba(183,31,8,${0.19*fade})`
+  );
+
+  targetLight.addColorStop(
+    0.88,
+    `rgba(119,15,5,${0.075*fade})`
+  );
+
+  targetLight.addColorStop(
+    1,
+    "rgba(82,8,3,0)"
+  );
+
+  ctx.fillStyle=targetLight;
+  ctx.beginPath();
+  ctx.arc(
+    targetCenter.x,
+    targetCenter.y-HEX_H*0.16,
+    illuminationRadius,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
 
   /*
-    R143: build a true OUTSIDE-only outline ring. R141/R142 stamped the whole
-    black silhouette behind the translucent body, so the black interior showed
-    through the flame and made transparency look like darkening. We now dilate
-    the silhouette by 2 px, then subtract the original silhouette from it.
+    Heavy organic glow generated from the exact moving Fireball body.
   */
-  const outlineCanvas=document.createElement("canvas");
-  outlineCanvas.width=bodyCanvas.width;
-  outlineCanvas.height=bodyCanvas.height;
-  const outlineCtx=outlineCanvas.getContext("2d");
-  outlineCtx.imageSmoothingEnabled=false;
+  ctx.filter="blur(16px)";
+  ctx.globalAlpha=
+    0.34*fade;
+  ctx.drawImage(
+    bodyCanvas,
+    0,
+    0
+  );
 
-  for(let dy=-2;dy<=2;dy++){
-    for(let dx=-2;dx<=2;dx++){
-      if(dx===0 && dy===0) continue;
-      if((dx*dx)+(dy*dy)>4) continue;
-      outlineCtx.drawImage(silhouetteCanvas,dx,dy);
-    }
-  }
+  ctx.filter="blur(7px)";
+  ctx.globalAlpha=
+    0.30*fade;
+  ctx.drawImage(
+    bodyCanvas,
+    0,
+    0
+  );
 
-  outlineCtx.globalCompositeOperation="destination-out";
-  outlineCtx.drawImage(silhouetteCanvas,0,0);
-  outlineCtx.globalCompositeOperation="source-over";
+  ctx.filter="none";
+  ctx.restore();
 
+  /*
+    Paint the actual body last so its original temperature palette remains
+    crisp inside the glow.
+  */
   ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=0.92*fade;
-  ctx.drawImage(outlineCanvas,0,0);
-  ctx.globalAlpha=fireballBodyOpacity;
-  ctx.drawImage(bodyCanvas,0,0);
+  ctx.globalAlpha=
+    fireballBodyOpacity;
+
+  ctx.drawImage(
+    bodyCanvas,
+    0,
+    0
+  );
+
   ctx.globalAlpha=1;
 
   /* Light fire-only grain/dither filter pass. */
@@ -27902,7 +29324,9 @@ function draw(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.type==="orc"
+        unitPoseDefinition(enemy)?.spriteLayout
+          ? drawStudioSpriteMob(enemy)
+          : enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
@@ -28080,7 +29504,7 @@ function handleCombatKey(event){
       return;
     }
 
-    showLauncher();
+    exitCombat();
     return;
   }
 
@@ -28516,7 +29940,7 @@ document.getElementById("returnButton").addEventListener("click",()=>{
   }
 
   if(!exitAimMode()){
-    showLauncher();
+    exitCombat();
   }
 });
 

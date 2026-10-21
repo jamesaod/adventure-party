@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/adventure-party.css?v=R237">
+<link rel="stylesheet" href="css/adventure-party.css?v=R238">
 </head>
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R237","builtAt":"2026-10-20T08:14:31-04:00"}
+{"architecture":"Multi-File Engine","release":"R238","builtAt":"2026-10-21T16:52:58Z"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -23,7 +23,9 @@
         <h1>Adventure Party</h1>
         <div class="working-title">(working title)</div>
       </div>
-      <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
+      <div class="launcher-build-stack">
+        <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
+      </div>
     </header>
 
     <main class="launcher-stage chrome">
@@ -32,9 +34,11 @@
         <nav class="launcher-menu">
           <button data-screen="combat">Combat System Test</button>
           <button data-screen="spellbook">Spell Book</button>
+          <button data-screen="spell-preview">Spell Previewer [DEV]</button>
           <button data-screen="classbook">Class Book</button>
           <button data-screen="character">Character Generation</button>
           <button data-screen="pixel">Pixel Editor</button>
+          <button data-screen="3d-studio">3d studio</button>
           <button data-screen="world">Map Maker World</button>
           <button data-screen="explorer">Map Maker Explorer</button>
           <button data-screen="combat-map">Map Maker Combat</button>
@@ -105,6 +109,165 @@
 
       <div id="classbookTabs" class="spellbook-tabs" role="tablist" aria-label="Character classes"></div>
       <section id="classbookContent" class="spellbook-content"></section>
+    </main>
+  </div>
+</section>
+
+
+<section id="spellPreviewScreen" class="screen">
+  <div class="spell-preview-app">
+    <header class="spell-preview-header chrome">
+      <div>
+        <div class="small">Adventure Party — Development Tool</div>
+        <h1>Spell Effects Previewer</h1>
+      </div>
+      <div class="spell-preview-header-actions">
+        <span class="spell-preview-candidate">R238</span>
+        <button id="spellPreviewReturnButton" class="pixel-return-button" type="button">
+          Return to Launcher [Esc]
+        </button>
+      </div>
+    </header>
+
+    <main class="spell-preview-main">
+      <aside class="spell-preview-library chrome">
+        <div class="spell-preview-panel-title">Spell Library</div>
+        <div class="spell-preview-note">
+          Every implemented combat spell is preview-ready. Selecting a spell resets the sandbox and automatically plays it using production battlefield VFX/SFX.
+        </div>
+        <div id="spellPreviewLibrary" class="spell-preview-library-list"></div>
+        <div id="spellPreviewCoverage" class="spell-preview-coverage">Loading spell catalog…</div>
+      </aside>
+
+      <section class="spell-preview-center">
+        <div id="spellPreviewArena" class="spell-preview-arena chrome">
+          <div id="spellPreviewArenaPlaceholder" class="spell-preview-arena-placeholder">
+            Battlefield renderer attaches when the previewer opens.
+          </div>
+          <div class="spell-preview-arena-badge">PRODUCTION RENDERER</div>
+        </div>
+
+        <section class="spell-preview-timeline chrome">
+          <div class="spell-preview-timeline-top">
+            <div>
+              <div class="spell-preview-panel-title">Measured Timeline</div>
+              <div id="spellPreviewElapsed" class="spell-preview-elapsed">0.000 s / 0.000 s</div>
+            </div>
+            <div id="spellPreviewRunState" class="spell-preview-run-state">READY</div>
+          </div>
+          <div id="spellPreviewTimelineTrack" class="spell-preview-timeline-track">
+            <div id="spellPreviewTimelineMarkers" class="spell-preview-timeline-markers"></div>
+            <div id="spellPreviewTimelinePlayhead" class="spell-preview-timeline-playhead"></div>
+          </div>
+          <div id="spellPreviewEventLog" class="spell-preview-event-log"></div>
+        </section>
+      </section>
+
+      <aside class="spell-preview-controls chrome">
+        <div class="spell-preview-panel-title">Preview Setup</div>
+        <div id="spellPreviewSpellName" class="spell-preview-spell-name">Magic Missile</div>
+        <div id="spellPreviewSpellMeta" class="spell-preview-spell-meta"></div>
+
+        <label class="spell-preview-field">
+          <span>Caster level</span>
+          <input id="spellPreviewCasterLevel" type="number" min="1" max="20" step="1" value="6">
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Dummy targets</span>
+          <select id="spellPreviewTargetCount">
+            <option value="1">1 target</option>
+            <option value="3">3 targets</option>
+            <option value="5" selected>5 targets</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Outcome</span>
+          <select id="spellPreviewOutcome">
+            <option value="demo" selected>Deterministic demo</option>
+            <option value="save-success">Force successful save</option>
+            <option value="save-failure">Force failed save</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Presentation</span>
+          <select id="spellPreviewMode">
+            <option value="full" selected>Full sequence — VFX + SFX</option>
+            <option value="vfx">VFX only</option>
+            <option value="sfx">SFX only</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-check">
+          <input id="spellPreviewLoop" type="checkbox" checked>
+          Loop preview with 1-second reset gap
+        </label>
+
+        <div class="spell-preview-actions">
+          <button id="spellPreviewPlayButton" class="pixel-action-button primary" type="button">Play</button>
+          <button id="spellPreviewStopButton" class="pixel-action-button" type="button" disabled>Stop</button>
+          <button id="spellPreviewRestartButton" class="pixel-action-button" type="button">Reset Arena</button>
+        </div>
+
+        <section class="spell-preview-dummy-key">
+          <div class="spell-preview-panel-title">Dummy Arena</div>
+          <div><span class="preview-key caster"></span> Caster</div>
+          <div><span class="preview-key hostile"></span> Hostile target</div>
+        </section>
+
+        <section class="electrical-sfx-lab" aria-labelledby="electricalSfxLabHeading">
+          <div class="spell-preview-panel-title" id="electricalSfxLabHeading">Electrical SFX Laboratory [DEV]</div>
+          <div class="spell-preview-note electrical-sfx-lab-note">
+            Procedural Web Audio test bench. Changes here do not alter production spell audio.
+          </div>
+
+          <label class="spell-preview-field">
+            <span>Voice</span>
+            <select id="electricalLabPreset">
+              <option value="zap">Zap</option>
+              <option value="bolt" selected>Lightning Bolt</option>
+              <option value="heavy">Heavy Lightning</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+
+          <div class="electrical-sfx-lab-actions">
+            <button id="electricalLabPlay" class="pixel-action-button primary" type="button">Play SFX</button>
+            <label class="spell-preview-check electrical-repeat-check">
+              <input id="electricalLabRepeat" type="checkbox">
+              Repeat
+            </label>
+            <select id="electricalLabInterval" aria-label="Electrical SFX repeat interval">
+              <option value="500">0.5 s</option>
+              <option value="1000" selected>1.0 s</option>
+              <option value="2000">2.0 s</option>
+            </select>
+          </div>
+
+          <div class="electrical-sfx-slider-grid">
+            <label><span>Master</span><input id="electricalLabMaster" data-electrical-control type="range" min="0.05" max="1.25" step="0.01"><output data-electrical-output="electricalLabMaster"></output></label>
+            <label><span>Snap</span><input id="electricalLabSnap" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabSnap"></output></label>
+            <label><span>Crackle</span><input id="electricalLabCrackle" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabCrackle"></output></label>
+            <label><span>Sizzle</span><input id="electricalLabSizzle" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabSizzle"></output></label>
+            <label><span>Arc tone</span><input id="electricalLabTone" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabTone"></output></label>
+            <label><span>Low body</span><input id="electricalLabBody" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabBody"></output></label>
+            <label><span>Micro-arcs</span><input id="electricalLabCrackles" data-electrical-control type="range" min="1" max="14" step="1"><output data-electrical-output="electricalLabCrackles"></output></label>
+            <label><span>Arc start</span><input id="electricalLabArcStart" data-electrical-control type="range" min="300" max="6000" step="50"><output data-electrical-output="electricalLabArcStart" data-unit=" Hz"></output></label>
+            <label><span>Arc end</span><input id="electricalLabArcEnd" data-electrical-control type="range" min="45" max="1800" step="15"><output data-electrical-output="electricalLabArcEnd" data-unit=" Hz"></output></label>
+            <label><span>Tail</span><input id="electricalLabTailMs" data-electrical-control type="range" min="60" max="1400" step="10"><output data-electrical-output="electricalLabTailMs" data-unit=" ms"></output></label>
+          </div>
+
+          <div id="electricalLabStatus" class="electrical-sfx-lab-status" data-state="ready">
+            Lightning Bolt preset loaded.
+          </div>
+        </section>
+
+        <div id="spellPreviewStatus" class="spell-preview-status">
+          Select a preview-ready spell and press Play.
+        </div>
+      </aside>
     </main>
   </div>
 </section>
@@ -355,10 +518,15 @@
           <span class="combat-roster-current">Dungeon Crawler Carl</span>
           <button class="combat-roster-add" type="button" disabled>+ ADD — COMING SOON</button>
         </div>
-        <div class="combat-roster-row">
+        <div class="combat-roster-row combat-mob-roster-row">
           <span class="combat-setup-label">MOBs</span>
-          <span id="combatMobSetLabel" class="combat-roster-current">Kobold Encounter</span>
-          <button id="largeMobTestButton" class="combat-roster-add combat-roster-test" type="button">Use Juvenile Red Dragon</button>
+          <span id="combatMobSetLabel" class="combat-roster-current">6-facing Kobold</span>
+          <div class="combat-mob-options" role="radiogroup" aria-label="MOB encounter">
+            <button class="combat-roster-add combat-roster-test selected" type="button" data-mob-encounter="studio-kobold" aria-pressed="true">6-facing Kobold</button>
+            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="kobolds" aria-pressed="false">Kobolds</button>
+            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="orcs" aria-pressed="false">20 Orcs</button>
+            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="large-test" aria-pressed="false">Red Dragon</button>
+          </div>
         </div>
       </section>
 
@@ -580,51 +748,63 @@
   </div>
 </section>
 
-<script src="js/adventure-party.js?v=R237"></script>
-<script src="js/los-wall-boundary-fix.js?v=R237"></script>
-<script src="js/obscuring-volume-los.js?v=R237"></script>
-<script src="js/r218-presentation-audio.js?v=R237"></script>
-<script src="js/r219-combat-presentation.js?v=R237"></script>
-<script src="js/r220-mob-hazard-awareness.js?v=R237"></script>
-<script src="js/r221-prone-cloud-shapes.js?v=R237"></script>
-<script src="js/r222-perception-darkness-volume.js?v=R237"></script>
-<script src="js/r223-los-cloud-aim-effects.js?v=R237"></script>
-<script src="js/r224-hypnotic-pattern-vfx.js?v=R237"></script>
-<script src="js/r225-universal-por-cast-sfx.js?v=R237"></script>
+<script src="js/adventure-party.js?v=R238"></script>
+<script src="js/los-wall-boundary-fix.js?v=R238"></script>
+<script src="js/obscuring-volume-los.js?v=R238"></script>
+<script src="js/r218-presentation-audio.js?v=R238"></script>
+<script src="js/r219-combat-presentation.js?v=R238"></script>
+<script src="js/r220-mob-hazard-awareness.js?v=R238"></script>
+<script src="js/r221-prone-cloud-shapes.js?v=R238"></script>
+<script src="js/r222-perception-darkness-volume.js?v=R238"></script>
+<script src="js/r223-los-cloud-aim-effects.js?v=R238"></script>
+<script src="js/r224-hypnotic-pattern-vfx.js?v=R238"></script>
+<script src="js/r225-universal-por-cast-sfx.js?v=R238"></script>
 
-<script src="js/r226-level3-catalog.js?v=R237"></script>
-<script src="js/r226-level3-helpers.js?v=R237"></script>
-<script src="js/r226-level3-systems.js?v=R237"></script>
-<script src="js/r226-level3-casts-a.js?v=R237"></script>
-<script src="js/r226-level3-casts-b.js?v=R237"></script>
-<script src="js/r226-level3-casts-c.js?v=R237"></script>
-<script src="js/r226-level3-casts-d.js?v=R237"></script>
-<script src="js/r226-level3-dispatch.js?v=R237"></script>
-<script src="js/r226-level3-vfx.js?v=R237"></script>
-<script src="js/r227-minute-meteors-core.js?v=R237"></script>
-<script src="js/r227-minute-meteors-flight.js?v=R237"></script>
-<script src="js/r227-minute-meteors-resolve.js?v=R237"></script>
-<script src="js/r227-minute-meteors-hooks.js?v=R237"></script>
-<script src="js/r227-minute-meteors-ui.js?v=R237"></script>
-<script src="js/r228-minute-meteor-remainder.js?v=R237"></script>
-<script src="js/r229-minute-meteor-cast-unlock.js?v=R237"></script>
-<script src="js/r230-casting-time-core.js?v=R237"></script>
-<script src="js/r230-casting-time-hooks.js?v=R237"></script>
-<script src="js/r231-target-at-completion-core.js?v=R237"></script>
-<script src="js/r231-target-at-completion-hooks.js?v=R237"></script>
-<script src="js/r232-lightning-reflection-core.js?v=R237"></script>
-<script src="js/r232-lightning-reflection-cast.js?v=R237"></script>
-<script src="js/r233-spell-presentation-core.js?v=R237"></script>
-<script src="js/r233-attack-spell-results.js?v=R237"></script>
-<script src="js/r233-multi-result-damage.js?v=R237"></script>
-<script src="js/r233-minute-meteor-illumination.js?v=R237"></script>
-<script src="js/r233-lightning-result-pacing.js?v=R237"></script>
-<script src="js/r234-binary-hidden-los.js?v=R237"></script>
-<script src="js/r235-spell-interruption-notice.js?v=R237"></script>
-<script src="js/r236-floating-combat-text.js?v=R237"></script>
-<script src="js/candidate-aoe-aim-preview-audit.js?v=R237"></script>
-<script src="js/candidate-combat-beat-sequence.js?v=R237"></script>
-<script src="js/candidate-casting-interrupted-float.js?v=R237"></script>
-<script src="js/candidate-outdoor-los-visibility-mask.js?v=R237"></script>
+<script src="js/r226-level3-catalog.js?v=R238"></script>
+<script src="js/r226-level3-helpers.js?v=R238"></script>
+<script src="js/r226-level3-systems.js?v=R238"></script>
+<script src="js/r226-level3-casts-a.js?v=R238"></script>
+<script src="js/r226-level3-casts-b.js?v=R238"></script>
+<script src="js/r226-level3-casts-c.js?v=R238"></script>
+<script src="js/r226-level3-casts-d.js?v=R238"></script>
+<script src="js/r226-level3-dispatch.js?v=R238"></script>
+<script src="js/r226-level3-vfx.js?v=R238"></script>
+<script src="js/r227-minute-meteors-core.js?v=R238"></script>
+<script src="js/r227-minute-meteors-flight.js?v=R238"></script>
+<script src="js/r227-minute-meteors-resolve.js?v=R238"></script>
+<script src="js/r227-minute-meteors-hooks.js?v=R238"></script>
+<script src="js/r227-minute-meteors-ui.js?v=R238"></script>
+<script src="js/r228-minute-meteor-remainder.js?v=R238"></script>
+<script src="js/r229-minute-meteor-cast-unlock.js?v=R238"></script>
+<script src="js/r230-casting-time-core.js?v=R238"></script>
+<script src="js/r230-casting-time-hooks.js?v=R238"></script>
+<script src="js/r231-target-at-completion-core.js?v=R238"></script>
+<script src="js/r231-target-at-completion-hooks.js?v=R238"></script>
+<script src="js/r232-lightning-reflection-core.js?v=R238"></script>
+<script src="js/r232-lightning-reflection-cast.js?v=R238"></script>
+<script src="js/r233-spell-presentation-core.js?v=R238"></script>
+<script src="js/r233-attack-spell-results.js?v=R238"></script>
+<script src="js/r233-multi-result-damage.js?v=R238"></script>
+<script src="js/r233-minute-meteor-illumination.js?v=R238"></script>
+<script src="js/r233-lightning-result-pacing.js?v=R238"></script>
+<script src="js/r234-binary-hidden-los.js?v=R238"></script>
+<script src="js/r235-spell-interruption-notice.js?v=R238"></script>
+<script src="js/r236-floating-combat-text.js?v=R238"></script>
+<script src="js/candidate-aoe-aim-preview-audit.js?v=R238"></script>
+<script src="js/candidate-combat-beat-sequence.js?v=R238"></script>
+<script src="js/candidate-casting-interrupted-float.js?v=R238"></script>
+<script src="js/candidate-outdoor-los-visibility-mask.js?v=R238"></script>
+<script src="js/candidate-spell-previewer.js?v=R238"></script>
+<script src="js/candidate-rev6-gaseous-clouds.js?v=R238"></script>
+<script src="js/candidate-rev7-gaseous-clouds.js?v=R238"></script>
+<script src="js/candidate-rev8-cloud-tufts.js?v=R238"></script>
+<script src="js/candidate-rev9-cloud-union-outline.js?v=R238"></script>
+<script src="js/candidate-rev10-dqk-sfx.js?v=R238"></script>
+<script src="js/candidate-rev12-electrical-sfx-lab.js?v=R238"></script>
+<script src="js/candidate-rev14-production-dbm-lightning.js?v=R238"></script>
+<script src="js/candidate-rev15-lightning-review-fixes.js?v=R238"></script>
+<script src="js/candidate-rev16-elemental-damage-presentation.js?v=R238"></script>
+\n<script src="js/candidate-rev31-shocking-grasp-fx.js?v=R238"></script>
+<script src="js/candidate-rev36-magic-missile-volley.js?v=R238"></script>\n<script src="js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js?v=R238"></script>\n<script src="js/candidate-rev39-replace-default-spell-sfx.js?v=R238"></script>\n<script type="module" src="js/sprite-set-runtime.mjs?v=R238"></script>
 </body>
 </html>

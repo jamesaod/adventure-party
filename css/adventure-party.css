@@ -934,6 +934,12 @@ button, input, select, textarea {
   border-color:#743e48;
 }
 
+/* Candidate Rev 34: Acid Arrow's ongoing status is chemically distinct. */
+.unit-effect.debuff.acid-arrow {
+  color:#6fec69;
+  border-color:#3f7d42;
+}
+
 .unit-effect.area-effect {
   color:var(--cyan);
   border-color:#3f6474;
@@ -1830,6 +1836,22 @@ button, input, select, textarea {
   min-width:190px;
 }
 
+.combat-mob-roster-row {
+  align-items:flex-start;
+}
+
+.combat-mob-options {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  min-width:0;
+}
+
+.combat-mob-options .combat-roster-test {
+  min-width:105px;
+  text-align:center;
+}
+
 .combat-roster-add {
   border:1px solid #4b4856;
   background:#15131c;
@@ -1966,4 +1988,444 @@ button, input, select, textarea {
     width:100%;
     min-width:0;
   }
+}
+
+
+/* ============================================================
+   CANDIDATE REV 10 — SPELL EFFECTS PREVIEWER
+   ============================================================ */
+
+#spellPreviewScreen {
+  padding:8px 10px 10px;
+}
+
+.spell-preview-app {
+  width:100%;
+  height:100%;
+  min-height:0;
+  display:grid;
+  grid-template-rows:66px minmax(0,1fr);
+  gap:6px;
+}
+
+.spell-preview-header {
+  padding:7px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.spell-preview-header .small {
+  color:var(--cyan);
+  font-size:12px;
+  letter-spacing:1.4px;
+  text-transform:uppercase;
+}
+
+.spell-preview-header h1 {
+  margin:2px 0 0;
+  color:var(--gold);
+  font-size:28px;
+  line-height:1;
+}
+
+.spell-preview-header-actions {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.spell-preview-candidate {
+  color:#fff19a;
+  border:1px solid #8d7d45;
+  background:#2d2817;
+  padding:6px 9px;
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+.spell-preview-main {
+  min-height:0;
+  display:grid;
+  grid-template-columns:250px minmax(0,1fr) 300px;
+  gap:6px;
+}
+
+.spell-preview-library,
+.spell-preview-controls {
+  min-height:0;
+  padding:10px;
+  overflow:auto;
+}
+
+.spell-preview-panel-title {
+  color:var(--gold);
+  font-size:16px;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--divider);
+  padding-bottom:6px;
+  margin-bottom:8px;
+}
+
+.spell-preview-note,
+.spell-preview-coverage,
+.spell-preview-status {
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+
+.spell-preview-library-list {
+  display:grid;
+  gap:5px;
+  margin:10px 0;
+}
+
+.spell-preview-spell-button {
+  border:1px solid #656174;
+  border-top-color:#a9a5b5;
+  border-left-color:#a9a5b5;
+  background:#1d1b27;
+  color:var(--cyan);
+  padding:7px 8px;
+  text-align:left;
+  cursor:pointer;
+}
+
+.spell-preview-spell-button:hover,
+.spell-preview-spell-button:focus-visible {
+  outline:none;
+  border-color:var(--gold);
+  color:#fff;
+}
+
+.spell-preview-spell-button.active {
+  border-color:var(--gold);
+  color:#fff19a;
+  background:#30291a;
+}
+
+.spell-preview-spell-button.pending {
+  cursor:default;
+  color:#716c7e;
+  background:#111018;
+  border-color:#393644;
+}
+
+.spell-preview-spell-button .spell-preview-ready-tag {
+  float:right;
+  color:var(--green);
+  font-size:10px;
+}
+
+.spell-preview-spell-button.pending .spell-preview-ready-tag {
+  color:#77717f;
+}
+
+.spell-preview-center {
+  min-width:0;
+  min-height:0;
+  display:grid;
+  grid-template-rows:minmax(0,1fr) 190px;
+  gap:6px;
+}
+
+.spell-preview-arena {
+  position:relative;
+  min-height:0;
+  display:grid;
+  place-items:center;
+  padding:6px;
+  overflow:hidden;
+}
+
+.spell-preview-arena #battlefield {
+  max-width:100%;
+  max-height:100%;
+}
+
+.spell-preview-arena-placeholder {
+  color:#77717f;
+  font-size:13px;
+  text-align:center;
+}
+
+.spell-preview-arena-badge {
+  position:absolute;
+  left:12px;
+  top:10px;
+  color:#a8f0d2;
+  background:rgba(4,14,11,.78);
+  border:1px solid #355c4e;
+  padding:4px 7px;
+  font-size:10px;
+  letter-spacing:1px;
+  pointer-events:none;
+}
+
+.spell-preview-timeline {
+  min-height:0;
+  padding:10px 12px;
+  overflow:hidden;
+}
+
+.spell-preview-timeline-top {
+  display:flex;
+  align-items:start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.spell-preview-elapsed {
+  color:var(--cyan);
+  font-size:13px;
+}
+
+.spell-preview-run-state {
+  color:var(--green);
+  font-size:12px;
+  border:1px solid #405143;
+  padding:4px 7px;
+}
+
+.spell-preview-run-state.running {
+  color:#fff19a;
+  border-color:#8d7d45;
+}
+
+.spell-preview-timeline-track {
+  position:relative;
+  height:22px;
+  margin:10px 0 8px;
+  background:#111019;
+  border:1px solid #575269;
+  overflow:hidden;
+}
+
+.spell-preview-timeline-track::before {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:50%;
+  border-top:1px solid #3e394c;
+}
+
+.spell-preview-timeline-playhead {
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  width:2px;
+  background:#fff19a;
+  box-shadow:0 0 5px #fff19a99;
+  z-index:3;
+}
+
+.spell-preview-timeline-marker {
+  position:absolute;
+  top:3px;
+  width:2px;
+  height:15px;
+  background:#79e7e7;
+  z-index:2;
+}
+
+.spell-preview-event-log {
+  height:92px;
+  overflow:auto;
+  border-top:1px solid #302d40;
+  padding-top:6px;
+  font-size:11px;
+  line-height:1.35;
+}
+
+.spell-preview-event-row {
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr);
+  gap:8px;
+}
+
+.spell-preview-event-row .time {
+  color:var(--cyan);
+}
+
+.spell-preview-event-row .label {
+  color:var(--text);
+}
+
+.spell-preview-spell-name {
+  color:var(--cyan);
+  font-size:24px;
+  line-height:1.15;
+  margin:5px 0 8px;
+}
+
+.spell-preview-spell-meta {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr);
+  gap:4px 8px;
+  font-size:12px;
+  margin-bottom:12px;
+}
+
+.spell-preview-spell-meta span:nth-child(odd) {
+  color:var(--muted);
+}
+
+.spell-preview-spell-meta span:nth-child(even) {
+  color:var(--green);
+}
+
+.spell-preview-field {
+  display:grid;
+  gap:4px;
+  margin:10px 0;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.spell-preview-field input,
+.spell-preview-field select {
+  min-height:32px;
+  border:1px solid #625d70;
+  background:#15141d;
+  color:var(--text);
+  padding:5px 7px;
+}
+
+.spell-preview-check {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:12px 0;
+  color:var(--text);
+  font-size:12px;
+}
+
+.spell-preview-actions {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin:12px 0;
+}
+
+.spell-preview-actions .primary {
+  grid-column:1 / -1;
+  text-align:center;
+}
+
+.spell-preview-actions button {
+  text-align:center;
+}
+
+.spell-preview-dummy-key {
+  display:grid;
+  gap:5px;
+  border-top:1px solid var(--divider);
+  padding-top:10px;
+  margin-top:12px;
+  font-size:12px;
+}
+
+.preview-key {
+  display:inline-block;
+  width:12px;
+  height:12px;
+  margin-right:6px;
+  vertical-align:-2px;
+  border:2px solid #111;
+}
+
+.preview-key.caster { background:#ba8cff; }
+.preview-key.hostile { background:#df6b6b; }
+
+.spell-preview-status {
+  margin-top:12px;
+  border-top:1px solid var(--divider);
+  padding-top:10px;
+}
+
+@media(max-width:1100px) {
+  .spell-preview-main {
+    grid-template-columns:210px minmax(0,1fr) 250px;
+  }
+}
+
+@media(max-width:850px) {
+  .spell-preview-main {
+    grid-template-columns:1fr;
+    grid-template-rows:auto minmax(420px,1fr) auto;
+    overflow:auto;
+  }
+
+  .spell-preview-center {
+    min-height:560px;
+  }
+}
+
+
+/* Candidate Rev 12 — Electrical SFX Laboratory */
+.electrical-sfx-lab{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(230,210,150,.35);
+}
+.electrical-sfx-lab-note{
+  margin:4px 0 8px;
+  font-size:.82rem;
+  line-height:1.25;
+}
+.electrical-sfx-lab-actions{
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  align-items:center;
+  gap:6px;
+  margin:7px 0 9px;
+}
+.electrical-repeat-check{
+  margin:0;
+  white-space:nowrap;
+}
+#electricalLabInterval{
+  min-width:64px;
+}
+.electrical-sfx-slider-grid{
+  display:grid;
+  gap:5px;
+}
+.electrical-sfx-slider-grid label{
+  display:grid;
+  grid-template-columns:72px minmax(72px,1fr) 62px;
+  align-items:center;
+  gap:6px;
+  font-size:.79rem;
+}
+.electrical-sfx-slider-grid input[type="range"]{
+  width:100%;
+  min-width:0;
+}
+.electrical-sfx-slider-grid output{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  color:#f1dea0;
+  white-space:nowrap;
+}
+.electrical-sfx-lab-status{
+  margin-top:8px;
+  min-height:2.4em;
+  padding:6px 7px;
+  border:1px solid rgba(230,210,150,.25);
+  background:rgba(0,0,0,.24);
+  font-size:.78rem;
+  line-height:1.25;
+}
+.electrical-sfx-lab-status[data-state="playing"]{
+  color:#fff3b0;
+}
+.electrical-sfx-lab-status[data-state="off"]{
+  color:#e7a4a4;
 }

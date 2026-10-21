@@ -29,6 +29,34 @@ jobs:
       - name: Check game JavaScript syntax
         run: node --check js/adventure-party.js
 
+      - name: Validate 3D studio projection and VGA rendering
+        run: |
+          node --check js/3d-studio.mjs
+          node --check js/studio-core.mjs
+          node --check js/studio-geometry.mjs
+          node --check js/studio-capture.mjs
+          node scripts/test-3d-studio.mjs
+          node scripts/test-studio-geometry.mjs
+
+      - name: Validate sprite capture packages and asset imports
+        run: |
+          node --check js/sprite-layouts.mjs
+          node --check js/sprite-set-core.mjs
+          node --check js/sprite-set-runtime.mjs
+          node --check js/sprite-set-store.mjs
+          node --check scripts/import-sprite-set.mjs
+          node scripts/test-sprite-set-package.mjs
+          node scripts/import-sprite-set.mjs --validate
+
+      - name: Validate six-direction combat poses
+        run: node scripts/test-directional-sprites.mjs
+
+      - name: Validate multi-hex studio footprints and MOB assignments
+        run: node scripts/test-studio-footprints.mjs
+
+      - name: Validate direct studio return after combat tests
+        run: node scripts/test-studio-combat-exit.mjs
+
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
 

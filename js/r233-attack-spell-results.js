@@ -61,9 +61,12 @@ castMelfsAcidArrowSpell=async function(action,target){
     )
   );
 
-  await animateMagicMissile(
+  await r233FocusTarget(target);
+
+  await animateElementalArrowProjectile(
     caster,
     target,
+    "acid-arrow",
     0,
     1
   );
@@ -135,19 +138,23 @@ castMelfsAcidArrowSpell=async function(action,target){
   ){
     addUnitEffect(target,{
       id:"acid-arrow",
-      name:"Acid Arrow",
+      name:"Splashed with Acid",
       kind:"debuff",
       expiresRound:
         game.round+
         remainingTicks+
         1,
       detail:
+        "2d4 acid each later round; "+
         remainingTicks+
-        " additional acid round"+
+        " follow-on round"+
         (remainingTicks===1 ? "" : "s")+
         " remaining",
       data:{
         sourceUnitId:caster.id,
+        casterLevel:level,
+        appliedRound:game.round,
+        nextTickRound:game.round+1,
         remainingTicks
       }
     });
@@ -283,6 +290,24 @@ castShockingGraspSpell=async function(action,target){
       action
     );
     return true;
+  }
+
+  /*
+    Candidate Rev 31:
+    a successful Shocking Grasp touch discharges before damage resolution.
+    Mirror Image can still absorb the attack, but the electrical contact is
+    visible/audible at the struck image's battlefield position.
+  */
+  if(
+    window.AdventurePartyShockingGraspFx?.play
+  ){
+    await window.AdventurePartyShockingGraspFx.play(
+      caster,
+      target,
+      {throughHand}
+    );
+  }else{
+    playMagicEffectSound("lightning");
   }
 
   if(interceptWithMirrorImage(target,caster)){
@@ -569,9 +594,12 @@ r226CastFlameArrow=async function(action,target){
 
     playNaturalAttackRollSound(raw);
 
-    await animateMagicMissile(
+    await r233FocusTarget(target);
+
+    await animateElementalArrowProjectile(
       caster,
       target,
+      "flame-arrow",
       index,
       bolts
     );

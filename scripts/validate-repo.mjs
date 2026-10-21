@@ -120,6 +120,165 @@ for (const ref of ["css/adventure-party.css", "js/adventure-party.js"]) {
   if (!index.includes(ref)) fail(`index.html does not reference ${ref}`);
 }
 
+const placeholderSpellSfxPath =
+  "js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js";
+
+const replacementSpellSfxPath =
+  "js/candidate-rev39-replace-default-spell-sfx.js";
+
+requireFile(placeholderSpellSfxPath);
+
+if (!index.includes(placeholderSpellSfxPath)) {
+  fail("index.html does not load the Candidate Rev 38 placeholder spell SFX / Grease VFX module.");
+}
+
+if (fs.existsSync(placeholderSpellSfxPath)) {
+  const placeholderSpellSfx =
+    fs.readFileSync(placeholderSpellSfxPath, "utf8");
+
+  for (const requiredToken of [
+    "r38PlayLaughterSound",
+    "r38PlayTauntSound",
+    "r38PlayScareSound",
+    "r38PlayFogCloudSound",
+    "r38PlayWallOfFogSound",
+    "r38PlayGreaseSound",
+    "r38PlayStinkingCloudFartSound",
+    "r38DrawGreaseVfx"
+  ]) {
+    if (!placeholderSpellSfx.includes(requiredToken)) {
+      fail(`Candidate Rev 38 placeholder spell module is missing ${requiredToken}.`);
+    }
+  }
+}
+
+requireFile(replacementSpellSfxPath);
+
+if (!index.includes(replacementSpellSfxPath)) {
+  fail("index.html does not load the Candidate Rev 39 spell SFX replacement module.");
+}
+
+if (fs.existsSync(replacementSpellSfxPath)) {
+  const replacementSpellSfx =
+    fs.readFileSync(replacementSpellSfxPath, "utf8");
+
+  for (const requiredToken of [
+    "R39_REPLACEMENT_SPELL_IDS",
+    "r39SpellReplacesDefaultSfx",
+    "r39EffectReplacesDefaultAffectSfx",
+    "r39BasePlayPor07CastingSound",
+    "r39BasePlayDqkSpellAffectSound",
+    "candidate-rev39-replace-default-spell-sfx"
+  ]) {
+    if (!replacementSpellSfx.includes(requiredToken)) {
+      fail(`Candidate Rev 39 replacement module is missing ${requiredToken}.`);
+    }
+  }
+
+  for (const spellId of [
+    "tashas-hideous-laughter",
+    "taunt",
+    "scare",
+    "fog-cloud",
+    "wall-of-fog",
+    "grease",
+    "stinking-cloud"
+  ]) {
+    if (!replacementSpellSfx.includes(`"${spellId}"`)) {
+      fail(`Candidate Rev 39 replacement list is missing ${spellId}.`);
+    }
+  }
+}
+
+/*
+  Spell Previewer parity guard
+  ----------------------------
+  Fireball is intentionally a single-source production spell. The Previewer
+  must invoke the battlefield resolver instead of maintaining a second Fireball
+  sequence. This check turns future architectural drift into a CI failure.
+*/
+const spellPreviewerPath = "js/candidate-spell-previewer.js";
+const fireballProductionPath = "js/r233-multi-result-damage.js";
+const magicMissileProductionPath = "js/candidate-rev36-magic-missile-volley.js";
+
+if (fs.existsSync(spellPreviewerPath)) {
+  const previewer = fs.readFileSync(spellPreviewerPath, "utf8");
+
+  if (/run\s*:\s*spellPreviewRunFireball/.test(previewer)) {
+    fail("Fireball must not use a bespoke Spell Previewer runner; use the production resolver.");
+  }
+
+  if (/async\s+function\s+spellPreviewRunFireball\s*\(/.test(previewer)) {
+    fail("Duplicate spellPreviewRunFireball implementation detected.");
+  }
+
+  if (!/\"fireball\"\s*:\s*\{\s*groundHex\s*:\s*\{\s*x\s*:\s*2\s*,\s*y\s*:\s*0\s*\}/s.test(previewer)) {
+    fail("Spell Previewer must define Fireball only as a production-scene target at hex 2,0.");
+  }
+
+  if (/run\s*:\s*spellPreviewRunMagicMissile/.test(previewer)) {
+    fail("Magic Missile must not use a bespoke Spell Previewer runner; use the production volley resolver.");
+  }
+
+  if (/async\s+function\s+spellPreviewRunMagicMissile\s*\(/.test(previewer)) {
+    fail("Duplicate spellPreviewRunMagicMissile implementation detected.");
+  }
+
+  if (!previewer.includes("action.magicMissileTargetIds")) {
+    fail("Spell Previewer must feed target assignments into the production Magic Missile volley.");
+  }
+}
+
+if (fs.existsSync(fireballProductionPath)) {
+  const production = fs.readFileSync(fireballProductionPath, "utf8");
+  const fireballStart = production.indexOf("castFireballFromScroll=async function");
+  const fireballSource = fireballStart >= 0
+    ? production.slice(fireballStart)
+    : "";
+
+  if (!fireballSource) {
+    fail("Production Fireball resolver is missing.");
+  } else {
+    if (fireballSource.includes("r233BaseRollSpellSave(")) {
+      fail("Production Fireball must use the live rollSpellSave hook for Previewer parity.");
+    }
+
+    if (!fireballSource.includes("rollSpellSave(")) {
+      fail("Production Fireball is not using the shared rollSpellSave hook.");
+    }
+
+    if (!fireballSource.includes("suppressFocus:true")) {
+      fail("Production Fireball saves must suppress per-target camera focus.");
+    }
+  }
+}
+
+requireFile(magicMissileProductionPath);
+
+if (fs.existsSync(magicMissileProductionPath)) {
+  const production = fs.readFileSync(magicMissileProductionPath, "utf8");
+
+  if (!production.includes("castMagicMissileFromScroll=")) {
+    fail("Production Magic Missile volley resolver is missing.");
+  }
+
+  if (!production.includes("magicMissileTargetIds")) {
+    fail("Production Magic Missile must support explicit per-missile target assignments.");
+  }
+
+  if (!production.includes("r36AnimateVolley")) {
+    fail("Production Magic Missile must use the shared simultaneous volley animation.");
+  }
+
+  if (!production.includes("candidate-rev36-magic-missile-volley")) {
+    fail("Magic Missile production module identity is missing.");
+  }
+
+  if (!index.includes("js/candidate-rev36-magic-missile-volley.js")) {
+    fail("index.html does not load the Candidate Rev 36 Magic Missile production module.");
+  }
+}
+
 const cssVersion=index.match(/css\/adventure-party\.css\?v=(R\d+)/)?.[1] || null;
 const jsVersion=index.match(/js\/adventure-party\.js\?v=(R\d+)/)?.[1] || null;
 if (!cssVersion || !jsVersion) fail("Versioned CSS/JS asset URLs are required.");
@@ -206,6 +365,46 @@ if (!registry || typeof registry !== "object" || !registry.assets || typeof regi
         }
       }
     }
+  }
+}
+
+/* Candidate Rev 40 — POR Orc family / combat encounter integration. */
+for (const path of [
+  "assets/sprites/orc-stand.png",
+  "assets/sprites/orc-attack.png",
+  "assets/sprites/orc-leader-stand.png",
+  "assets/sprites/orc-leader-attack.png",
+  "assets/sprites/orc-shaman-stand.png",
+  "assets/sprites/orc-shaman-attack.png"
+]) {
+  requireFile(path);
+}
+
+const gameSource = fs.readFileSync("js/adventure-party.js", "utf8");
+
+for (const requiredToken of [
+  "function makeOrcLeader(",
+  "function makeOrcShaman(",
+  "makeOrcArmy(18,1,1,condition)",
+  'enemy.species==="orc"',
+  '"orc-leader":{',
+  '"orc-shaman":{',
+  '"orc-leader-stand"',
+  '"orc-shaman-stand"'
+]) {
+  if (!gameSource.includes(requiredToken)) {
+    fail(`Candidate Rev 40 Orc integration is missing ${requiredToken}.`);
+  }
+}
+
+for (const requiredToken of [
+  'data-mob-encounter="kobolds"',
+  'data-mob-encounter="orcs"',
+  'data-mob-encounter="large-test"',
+  ">20 Orcs<"
+]) {
+  if (!index.includes(requiredToken)) {
+    fail(`Candidate Rev 40 combat setup is missing ${requiredToken}.`);
   }
 }
 

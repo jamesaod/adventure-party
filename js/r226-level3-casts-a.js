@@ -221,7 +221,13 @@ async function r226CastFlameArrow(action,target){
     const modifier=attackEffectModifier(caster,target);
     const resolution=resolveMissileAttackD20(raw,targetNumber,modifier);
     playNaturalAttackRollSound(raw);
-    await animateMagicMissile(caster,target,i,bolts);
+    await animateElementalArrowProjectile(
+      caster,
+      target,
+      "flame-arrow",
+      i,
+      bolts
+    );
 
     if(!resolution.hit){
       playMissSound();

@@ -32,6 +32,7 @@ let candidateCombatBeatHoldUntil=0;
 let candidateDamageBeatContext=null;
 const candidateCombatBeatGroups=new Map();
 let candidateCombatBeatFlushQueued=false;
+const candidateCombatBeatTimers=new Set();
 
 
 /* ============================================================
@@ -41,7 +42,7 @@ let candidateCombatBeatFlushQueued=false;
 function candidateCombatBeatPresentationEnabled(){
   return !!(
     game &&
-    currentScreen==="combat" &&
+    (currentScreen==="combat" || currentScreen==="spell-preview") &&
     !combatAwaitingStart
   );
 }
@@ -242,10 +243,16 @@ function candidateFlushCombatBeats(){
           startsAt-now
         );
 
-      setTimeout(
-        ()=>candidateRunCombatBeat(beat),
-        delay
-      );
+      const timer=
+        setTimeout(
+          ()=>{
+            candidateCombatBeatTimers.delete(timer);
+            candidateRunCombatBeat(beat);
+          },
+          delay
+        );
+
+      candidateCombatBeatTimers.add(timer);
 
       startsAt+=beat.durationMs;
     }
@@ -383,6 +390,9 @@ addUnitEffect=function(
         ? "debuff"
         : "buff";
 
+    const acidArrow=
+      effect.id==="acid-arrow";
+
     candidateQueueCombatBeat(
       unit,
       {
@@ -396,7 +406,16 @@ addUnitEffect=function(
               : "Debuff"
           )
         ),
-        kind:category,
+        /*
+          Candidate Rev 34:
+          "Splashed with Acid" is a persistent debuff for ordering/rules, but
+          its presentation is deliberately acid-green rather than generic
+          debuff pink.
+        */
+        kind:
+          acidArrow
+            ? "damage-acid"
+            : category,
         durationMs:
           CANDIDATE_COMBAT_BEAT_MS,
         risePx:
@@ -536,6 +555,16 @@ window.AdventurePartyCombatBeats={
     candidateQueuePhysicalConditionBeat,
   remainingMs:
     candidateCombatBeatRemaining,
+  clear:()=>{
+    for(const timer of candidateCombatBeatTimers){
+      clearTimeout(timer);
+    }
+    candidateCombatBeatTimers.clear();
+    candidateCombatBeatGroups.clear();
+    candidateCombatBeatHoldUntil=0;
+    candidateCombatBeatFlushQueued=false;
+    return true;
+  },
   state:()=>({
     remainingMs:
       candidateCombatBeatRemaining(),

@@ -32,6 +32,9 @@ pixelAssetIdForUnitPose=function(unit,poseName=null){
     activeUnitPoseName(unit) ||
     "stand";
 
+  const directional=directionalUnitPoseFrame(unit,pose);
+  if(directional) return directional.assetId;
+
   /*
     All Kobold-family types use the exact same prone image. They must therefore
     also use the exact same 35 x 18 prone render profile instead of inheriting
@@ -98,9 +101,11 @@ drawKobold=function(k){
     standing anchor, or standing shadow treatment.
   */
   const usingPronePresentation=
-    activePoseName==="prone" ||
-    sprite===koboldProneSprite ||
-    shouldUseKoboldPronePose(k);
+    !unitPoseDefinition(k)?.directionalSprites && (
+      activePoseName==="prone" ||
+      sprite===koboldProneSprite ||
+      shouldUseKoboldPronePose(k)
+    );
 
   const koboldAssetId=
     usingPronePresentation

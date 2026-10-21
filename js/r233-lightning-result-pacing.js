@@ -82,7 +82,7 @@ r226CastLightningBolt=async function(action,targetHex){
     segments:trace.segments,
     collisions:trace.collisions,
     started:performance.now(),
-    duration:650
+    duration:975
   };
 
   playMagicEffectSound(
@@ -90,7 +90,7 @@ r226CastLightningBolt=async function(action,targetHex){
   );
 
   const until=
-    performance.now()+650;
+    performance.now()+975;
 
   while(performance.now()<until){
     draw();

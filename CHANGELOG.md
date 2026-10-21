@@ -2,6 +2,18 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## R238 — Sprite studio and combat presentation milestone
+
+- Promoted the approved Candidate Rev 4–48 work to the stable release line and refreshed application and studio module cache versions to R238.
+- Added the Spell Effects Previewer for implemented combat spells, with configurable caster/targets, deterministic outcomes, VFX/SFX controls, measured timelines, and the Electrical SFX Laboratory. Fireball and Magic Missile previews share their production execution paths.
+- Added simultaneous Magic Missile volleys with individual missile target assignments, corrected Acid Arrow follow-on damage timing, and improved ordered spell-result and death presentation.
+- Updated gaseous spell formation and evolving cloud outlines, branching Lightning Bolt and its illumination, localized Fireball/projectile lighting, elemental arrows, Shocking Grasp, and damage text styled by element. The retired Lightning/Fireball VFX labs remain removed; production Fireball retains the restored production renderer.
+- Added and refined spell/combat audio, cleaned sample tails, removed the universal initial casting cue, and introduced spell-specific synthesized cues and animated Grease effects.
+- Updated juvenile Red Dragon artwork and added the Orc Leader, third-level Orc Shaman, and 20-Orc encounter. Recovered the previously unmerged user-selected Orc and light-blue-tabard Shaman ready/action artwork, verified against the original source archive; the correct Orc Leader artwork and existing rendering dimensions are preserved.
+- Added the 3d studio with local GLB/glTF/FBX loading, animation selection/playback/scrubbing, six synchronized VGA views, color/outline/lighting controls, and Z-up defaults. Capture ready, attack and prone moments into an eighteen-sprite sheet and separate asset ZIP.
+- Added persistent studio workspaces, exact tested-capture restoration, direct return from combat tests, target MOB selection, four active hex footprints with a model-floor guide, and independent resolution/model-size controls. Exported size metadata drives battlefield rendering; saved sets remain resizable without recapturing their pixels.
+- Added validated folder-based sprite imports, a small runtime set index, locally pinned renderer dependencies, and CI coverage for packages, projection, geometry, directional poses, footprints and studio combat exit. Preserved project workflows live separately in `workflow/`, outside published game output.
+
 ## R237 — Candidate milestone promotion
 
 - Promoted the approved Candidate Rev 1–3 work to the stable release line.
