@@ -38,6 +38,7 @@ jobs:
 
       - name: Validate sprite capture packages and asset imports
         run: |
+          node --check js/sprite-layouts.mjs
           node --check js/sprite-set-core.mjs
           node --check js/sprite-set-runtime.mjs
           node --check js/sprite-set-store.mjs
@@ -47,6 +48,9 @@ jobs:
 
       - name: Validate six-direction combat poses
         run: node scripts/test-directional-sprites.mjs
+
+      - name: Validate multi-hex studio footprints and MOB assignments
+        run: node scripts/test-studio-footprints.mjs
 
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs

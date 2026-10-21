@@ -1,9 +1,12 @@
-import { quantizeRgba } from './studio-core.mjs?v=R237C46';
+import { quantizeRgba } from './studio-core.mjs?v=R237C47';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
-  splitSixFacingAtlas, assembleSpriteSheet
-} from './sprite-set-core.mjs?v=R237C46';
-import { saveStudioDraft } from './sprite-set-store.mjs?v=R237C46';
+  splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
+} from './sprite-set-core.mjs?v=R237C47';
+import {
+  saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
+  validateStudioWorkspace
+} from './sprite-set-store.mjs?v=R237C47';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
@@ -41,14 +44,68 @@ function download(blob, name) {
 
 // Captures retain unquantized pixels, allowing one color/outline adjustment to
 // update every saved pose without re-evaluating animation or moving its camera.
-export function createPoseCapture({ readPose, getStyle, onLockChange, onError, onStatus }) {
+export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus }) {
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
-    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton'
+    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus'
   ].map(name => [name, byId(name)]));
   const rows = new Map();
-  let captures = {}, style = getStyle(), busy = false;
+  let captures = {}, style = getStyle(), busy = false, modelReady = false;
+  let savedSettings = null, restored = false, saveRevision = 0, savedRevision = 0;
+  let saveQueue = Promise.resolve(), lastSaveError = null, saveTimer = 0;
+
+  function workspaceStatus(message, failed = false) {
+    if (!ui.WorkspaceStatus) return;
+    ui.WorkspaceStatus.textContent = message;
+    ui.WorkspaceStatus.classList.toggle('error', failed);
+  }
+
+  function workspaceSnapshot() {
+    const currentSettings = getWorkspaceSettings();
+    const settings = !modelReady && savedSettings ? savedSettings : currentSettings;
+    return {
+      version: 1, name: ui.SpriteSetName.value.slice(0, 120), style: { ...style }, settings,
+      captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => {
+        const { frames, ...saved } = value;
+        return [pose, saved];
+      }))
+    };
+  }
+
+  function queueSave() {
+    clearTimeout(saveTimer);
+    saveTimer = 0;
+    const revision = ++saveRevision;
+    const workspace = workspaceSnapshot();
+    workspaceStatus('Saving captures and studio settings…');
+    const pending = saveQueue.catch(() => {}).then(async () => {
+      await saveStudioWorkspace(workspace);
+      savedRevision = revision;
+      lastSaveError = null;
+      if (revision === saveRevision) workspaceStatus('Saved in this browser. Your captures will return with you from combat.');
+    });
+    saveQueue = pending;
+    pending.catch(error => {
+      lastSaveError = error;
+      if (revision === saveRevision) {
+        workspaceStatus(error.message, true);
+        onError(error);
+      }
+    });
+    return pending;
+  }
+
+  function saveWorkspace() {
+    clearTimeout(saveTimer);
+    workspaceStatus('Saving captures and studio settings…');
+    saveTimer = setTimeout(() => { queueSave(); }, 150);
+  }
+
+  async function flushSave() {
+    if (saveTimer || savedRevision !== saveRevision || lastSaveError) await queueSave();
+    else await saveQueue;
+  }
 
   for (const pose of SPRITE_POSES) {
     const tr = document.createElement('tr');
@@ -70,6 +127,7 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
       if (busy) return;
       delete captures[pose];
       refresh();
+      queueSave();
       ui.SheetStatus.textContent = `${poseLabel(pose)} cleared. Capture a new moment to fill that row.`;
     });
     heading.append(title, detail, clear);
@@ -105,16 +163,20 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
       button.disabled = busy || captured !== 18;
     }
     for (const row of rows.values()) {
-      row.button.disabled = busy;
+      row.button.disabled = busy || !modelReady;
       row.clear.disabled = busy;
     }
     ui.CaptureLockNote.classList.toggle('locked', locked);
     ui.CaptureLockNote.textContent = locked
-      ? 'Framing, front direction and resolution are shared by this set. Clear all captured poses to change them. Colors and outline remain adjustable.'
-      : 'Animation clips are fitted together. Set the front and resolution before your first capture. Fit all animations restores room for the full movement.';
+      ? 'Framing, footprint and resolution are shared by this set. Clear all captured poses to change them. Colors, outline and target mob remain adjustable.'
+      : 'Set the footprint, resolution and model front before your first capture. Fit all animations restores room for the full movement.';
   }
 
   function refresh() {
+    const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
+    const first = Object.values(captures)[0];
+    const emptyWidth = first?.width || settings.width || 160;
+    const emptyHeight = first?.height || settings.height || 200;
     for (const pose of SPRITE_POSES) {
       const capture = captures[pose], row = rows.get(pose);
       row.tr.classList.toggle('captured', !!capture);
@@ -124,8 +186,8 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
       if (capture?.edgeDirections.length) row.detail.textContent += ` · Touches frame edge: ${capture.edgeDirections.join(', ')}`;
       for (const direction of SPRITE_DIRECTIONS) {
         const canvas = row.canvases[direction];
-        canvas.width = capture?.width || 160;
-        canvas.height = capture?.height || 200;
+        canvas.width = capture?.width || emptyWidth;
+        canvas.height = capture?.height || emptyHeight;
         const context = canvas.getContext('2d');
         context.imageSmoothingEnabled = false;
         if (capture) context.putImageData(new ImageData(capture.frames[direction], capture.width, capture.height), 0, 0);
@@ -135,17 +197,29 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
     refreshControls();
   }
 
-  function quantizeCapture(capture) {
+  function quantizeCapture(capture, renderStyle = style) {
     const { width, height, raw } = capture;
     const rgba = new Uint8ClampedArray(raw.length);
+    if (capture.bakedPixels && renderStyle.brightness === 1 && renderStyle.contrast === 1 &&
+        renderStyle.hue === 0 && renderStyle.saturation === 1 && renderStyle.outline === 0) {
+      // A Rev 46 PNG already has the chosen palette and outline. Re-quantizing
+      // a palette color can select a neighboring lookup bucket; copy it exactly.
+      const stride = width * 3 * 4;
+      for (let y = 0; y < height * 2; y++) {
+        const start = (height * 2 - 1 - y) * stride;
+        rgba.set(raw.subarray(start, start + stride), y * stride);
+      }
+      capture.frames = splitSixFacingAtlas(rgba, width, height);
+      return;
+    }
     quantizeRgba(raw, width * 3, height * 2, rgba, {
-      ...style, transparent: true, tileWidth: width, tileHeight: height
+      ...renderStyle, transparent: true, tileWidth: width, tileHeight: height
     });
     capture.frames = splitSixFacingAtlas(rgba, width, height);
   }
 
   function capture(pose) {
-    if (busy) return;
+    if (busy || !modelReady) return;
     try {
       const captured = readPose();
       const first = Object.values(captures)[0];
@@ -157,6 +231,7 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
       quantizeCapture(captured);
       captures[pose] = captured;
       refresh();
+      queueSave();
       const complete = count() === 18;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
@@ -171,6 +246,8 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
     const first = Object.values(captures)[0];
     return {
       captureCount: count(), captureLocked: count() > 0,
+      modelReady, workspaceRestored: restored,
+      workspaceSaved: !saveTimer && savedRevision === saveRevision && !lastSaveError,
       groundAnchor: first ? [first.anchorX, first.anchorY] : null,
       captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => [pose, {
         clip: value.clip, time: value.time, width: value.width, height: value.height,
@@ -181,11 +258,13 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
 
   function buildExport() {
     if (count() !== 18) throw new Error('Capture all three poses before exporting or testing the set.');
-    const { width, height, anchorX, anchorY, render } = captures.ready;
+    const { width, height, anchorX, anchorY, render, layout, renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
+    const mobType = (!modelReady && savedSettings ? savedSettings : getWorkspaceSettings()).mobType || captures.ready.mobType;
     const label = ui.SpriteSetName.value.trim() || 'Studio character';
     const manifest = createSpriteSetManifest({
       id: spriteSetSlug(label), label,
-      frame: { width, height, renderWidth: 48, renderHeight: 48 * height / width, anchorX, anchorY },
+      frame: { width, height, renderWidth, renderHeight, anchorX, anchorY },
+      ...(layout ? { layout } : {}), ...(mobType ? { mobType } : {}),
       captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render, brightness: style.brightness, contrast: style.contrast,
@@ -194,7 +273,7 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
       }
     });
     const poseFrames = Object.fromEntries(SPRITE_POSES.map(pose => [pose, captures[pose].frames]));
-    return { manifest, poseFrames, sheet: assembleSpriteSheet(poseFrames, width, height) };
+    return { manifest, poseFrames, sheet: assembleSpriteSheet(poseFrames, width, height), workspace: workspaceSnapshot() };
   }
 
   async function packageFiles(exported) {
@@ -245,35 +324,161 @@ export function createPoseCapture({ readPose, getStyle, onLockChange, onError, o
     runExport(async exported => {
       try {
         const files = await packageFiles(exported);
-        await saveStudioDraft({ manifest: exported.manifest, files });
+        await flushSave();
+        await saveStudioDraft({ manifest: exported.manifest, files, workspace: exported.workspace });
         tab.opener = null;
         tab.location.href = new URL('./index.html?studioSprite=draft', window.location.href).href;
-        ui.SheetStatus.textContent = 'Combat test opened with your captured set. Use Ready, Attack and Prone to inspect it before starting the battle.';
+        ui.SheetStatus.textContent = 'Combat test opened with your saved set. Return to 3d studio from combat to restore these exact captures and export them.';
       } catch (error) { tab.close(); throw error; }
     });
   });
 
-  function reset(name) {
+  function reset(name, { persist = true } = {}) {
     captures = {};
     style = getStyle();
+    savedSettings = null;
+    restored = false;
     ui.SpriteSetName.value = String(name).replace(/\.[^.]+$/, '');
     refresh();
     ui.SheetStatus.textContent = 'Capture ready, attack and prone to export or test the complete set.';
+    if (persist) queueSave();
+  }
+
+  async function legacyCombatWorkspace() {
+    const draft = await loadStudioDraft();
+    if (!draft) return null;
+    const manifest = validateSpriteSetManifest(draft.manifest);
+    const { width, height, anchorX, anchorY, renderWidth, renderHeight } = manifest.frame;
+    const captureRows = {};
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    context.imageSmoothingEnabled = false;
+    for (const pose of SPRITE_POSES) {
+      const raw = new Uint8Array(width * height * 6 * 4);
+      for (let index = 0; index < SPRITE_DIRECTIONS.length; index++) {
+        const facing = SPRITE_DIRECTIONS[index];
+        const file = draft.files?.[manifest.poses[pose].frames[facing]];
+        if (!(file instanceof Blob)) throw new Error('An older combat draft is missing a PNG. The saved draft has been left intact.');
+        const bitmap = await createImageBitmap(file);
+        try {
+          if (bitmap.width !== width || bitmap.height !== height) throw new Error('An older combat draft has inconsistent PNG sizes.');
+          context.clearRect(0, 0, width, height);
+          context.drawImage(bitmap, 0, 0);
+          const pixels = context.getImageData(0, 0, width, height).data;
+          for (let y = 0; y < height; y++) {
+            const atlasY = height * 2 - 1 - (Math.floor(index / 3) * height + y);
+            const offset = (atlasY * width * 3 + (index % 3) * width) * 4;
+            raw.set(pixels.subarray(y * width * 4, (y + 1) * width * 4), offset);
+          }
+        } finally { bitmap.close(); }
+      }
+      captureRows[pose] = {
+        raw, width, height, anchorX, anchorY, renderWidth, renderHeight, bakedPixels: true,
+        clip: manifest.poses[pose].clip, time: manifest.poses[pose].time,
+        render: { ...manifest.render }, ...(manifest.layout ? { layout: manifest.layout } : {}),
+        ...(manifest.mobType ? { mobType: manifest.mobType } : {})
+      };
+    }
+    // Older drafts contain finished PNGs, so neutral adjustments preserve their
+    // exact palette pixels. The captured outline is already part of those pixels.
+    const neutralStyle = { ...getStyle(), brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 0 };
+    return {
+      version: 1, name: manifest.label, style: neutralStyle, captures: captureRows,
+      settings: {
+        ...manifest.render, modelName: manifest.render?.model || manifest.label,
+        sourceFiles: [], isDemo: false, width, height,
+        layoutId: manifest.layout?.id || 'single', resolutionPercent: manifest.layout?.resolutionPercent || (width / 160 * 100),
+        ...(manifest.layout ? { layout: manifest.layout } : {}), mobType: manifest.mobType || 'kobold'
+      },
+      savedAt: draft.savedAt, recoveredFromCombat: true
+    };
+  }
+
+  async function restore({ fromCombat = false } = {}) {
+    busy = true;
+    refreshControls();
+    workspaceStatus('Checking for saved captures…');
+    try {
+      const workspace = await loadStudioWorkspace({ fromCombat }) || await legacyCombatWorkspace() ||
+        (fromCombat ? await loadStudioWorkspace() : null);
+      if (!workspace) {
+        workspaceStatus('Captures and studio settings save automatically in this browser.');
+        return null;
+      }
+      validateStudioWorkspace(workspace);
+      const staged = {};
+      for (const [pose, saved] of Object.entries(workspace.captures)) {
+        const captured = { ...saved };
+        captured.edgeDirections = frameEdgeDirections(captured);
+        quantizeCapture(captured, workspace.style);
+        staged[pose] = captured;
+      }
+      // Only commit once every row has been decoded and re-rendered successfully.
+      captures = staged;
+      style = { ...workspace.style };
+      savedSettings = workspace.settings;
+      ui.SpriteSetName.value = workspace.name;
+      modelReady = false;
+      restored = true;
+      refresh();
+      const note = workspace.recoveredFromCombat
+        ? 'Recovered the sprites from your earlier combat test. They are ready to export; color adjustments now start from those saved PNGs.'
+        : `Restored ${count()} captured sprites${fromCombat ? ' from your combat test' : ''}. You can continue editing or export this set.`;
+      ui.SheetStatus.textContent = note;
+      workspaceStatus('Saved captures restored in this browser.');
+      let persisted = true;
+      if (fromCombat || workspace.recoveredFromCombat) {
+        // The tested copy becomes the editable workspace before its return flag
+        // can be removed, so a subsequent reload keeps any new edits.
+        try { await queueSave(); }
+        catch { persisted = false; }
+      }
+      return {
+        settings: workspace.settings, style: { ...style }, name: workspace.name,
+        captureCount: count(), savedAt: workspace.savedAt, recoveredFromCombat: !!workspace.recoveredFromCombat,
+        persisted
+      };
+    } catch (error) {
+      workspaceStatus(error.message, true);
+      throw error;
+    } finally {
+      busy = false;
+      refreshControls();
+    }
   }
 
   ui.ClearPosesButton.addEventListener('click', () => {
     if (busy) return;
     captures = {};
     refresh();
+    queueSave();
     ui.SheetStatus.textContent = 'Sheet cleared. Framing, front direction and resolution can be changed again.';
   });
 
+  ui.SpriteSetName.addEventListener('input', saveWorkspace);
+  window.addEventListener('pagehide', () => { if (saveTimer) queueSave(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) queueSave(); });
+
   return Object.freeze({
-    reset, snapshot,
+    reset, snapshot, saveWorkspace, flushSave,
+    setModelReady(ready) {
+      modelReady = !!ready;
+      if (modelReady) savedSettings = null;
+      refresh();
+    },
+    updateMetadata() {
+      if (!modelReady && savedSettings) savedSettings = { ...savedSettings, mobType: getWorkspaceSettings().mobType || savedSettings.mobType };
+      refresh();
+      saveWorkspace();
+    },
+    restore,
     updateStyle(nextStyle) {
       style = nextStyle;
-      Object.values(captures).forEach(quantizeCapture);
+      Object.values(captures).forEach(captured => quantizeCapture(captured));
       refresh();
+      saveWorkspace();
     }
   });
 }

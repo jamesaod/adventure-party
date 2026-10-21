@@ -1,9 +1,10 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R237C46';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R237C46';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R237C47';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R237C47';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R237C47';
 
 const api = window.adventurePartySpriteSets;
 const assets = new Map();
-let setSelect, setStatus, inspector;
+let setSelect, setStatus, inspector, combatStudioReturn;
 
 function message(text) { setStatus.textContent = text; }
 
@@ -23,9 +24,10 @@ function makeControls() {
   setSelect.style.cssText = 'max-width:100%;min-width:0;flex:1 1 220px;';
   setSelect.setAttribute('aria-describedby', 'combatSpriteSetStatus');
   const studioLink = document.createElement('a');
+  studioLink.id = 'combatSetupStudioReturnLink';
   studioLink.className = 'combat-roster-add combat-roster-test';
-  studioLink.href = './3d-studio.html';
-  studioLink.textContent = 'Open 3d studio';
+  studioLink.href = './3d-studio.html?studioRestore=1';
+  studioLink.textContent = 'Return to 3d studio';
   row.append(label, setSelect, studioLink);
   setStatus = document.createElement('p');
   setStatus.id = 'combatSpriteSetStatus';
@@ -60,16 +62,25 @@ function makeControls() {
   help.style.cssText = 'margin:8px 0 0;';
   inspector.append(heading, buttons, help);
   document.querySelector('#combatScreen .side').append(inspector);
+  combatStudioReturn = document.createElement('a');
+  combatStudioReturn.id = 'combatStudioReturnLink';
+  combatStudioReturn.className = 'combat-action';
+  combatStudioReturn.href = './3d-studio.html?studioRestore=1';
+  combatStudioReturn.textContent = 'Return to 3d studio';
+  document.getElementById('returnButton').before(combatStudioReturn);
   document.addEventListener('adventure-party:sprite-state', refreshControls);
   refreshControls();
 }
 
 function refreshControls() {
   const snapshot = api.snapshot();
-  const options = snapshot.sets.map(set => new Option(set.label, set.id));
+  const options = snapshot.sets.map(set => new Option(set.mobType
+    ? `${set.label} — ${spriteMob(set.mobType).label} · ${set.footprintCells} hex${set.footprintCells === 1 ? '' : 'es'}`
+    : set.label, set.id));
   setSelect.replaceChildren(...options);
   setSelect.value = snapshot.selectedId;
   inspector.hidden = !snapshot.inspecting;
+  combatStudioReturn.hidden = snapshot.encounter !== 'studio-kobold';
   const selected = { stand: 'ready', attack: 'attack', prone: 'prone' }[snapshot.inspectionPose] || 'live';
   inspector.querySelectorAll('[data-sprite-inspect]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.spriteInspect === selected));
@@ -96,7 +107,7 @@ async function decodeImages(manifest, sourceUrls) {
 async function registerSet(manifest, sourceUrls, objectUrls = []) {
   try {
     const images = await decodeImages(manifest, sourceUrls);
-    const id = api.register({ manifest, images, sourceUrls });
+    const id = api.register({ manifest, images, sourceUrls, layout: spriteLayout(manifest.layout?.id || 'single') });
     for (const url of assets.get(id) || []) URL.revokeObjectURL(url);
     assets.set(id, objectUrls);
     return id;
@@ -150,7 +161,9 @@ async function loadDraft() {
   }
   const id = await registerSet(manifest, sourceUrls, urls);
   api.select(id, { openSetup: true });
-  message(`${manifest.label}: 18 captured sprites ready. Choose Begin Battle to inspect all six directions.`);
+  const mob = spriteMob(manifest.mobType || 'kobold');
+  const layout = spriteLayout(manifest.layout?.id || 'single');
+  message(`${manifest.label}: ${mob.label} rules, ${layout.offsets.length}-hex footprint, 18 captured sprites. Choose Begin Battle to inspect all six directions.`);
 }
 
 async function start() {

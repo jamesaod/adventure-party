@@ -3457,12 +3457,22 @@ function getPixelEditorAsset(id){
 }
 
 /* A small registration bridge lets new character folders remain separate from game code. */
-function registerStudioSpriteSet({manifest,images,sourceUrls}){
+function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
   if(!manifest || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.id || "") ||
     !manifest.frame || !manifest.label){
     throw new Error("Invalid studio sprite set metadata.");
   }
   const id=`sprite-set:${manifest.id}`;
+  const mobType=manifest.mobType || "kobold";
+  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType)){
+    throw new Error("This MOB type has not been implemented.");
+  }
+  const footprint=layout || UNIT_FOOTPRINTS[manifest.layout?.id || "single"];
+  if(!footprint || footprint.id!==(manifest.layout?.id || "single") ||
+    !Array.isArray(footprint.offsets) || footprint.offsets.length<1 || footprint.offsets.length>7 ||
+    footprint.offsets.some(cell=>!Number.isInteger(cell.x) || !Number.isInteger(cell.y))){
+    throw new Error("Invalid sprite footprint.");
+  }
   const frame=manifest.frame;
   for(const key of ["width","height","renderWidth","renderHeight"]){
     if(!Number.isFinite(frame[key]) || frame[key]<=0) throw new Error("Invalid sprite frame size.");
@@ -3502,15 +3512,19 @@ function registerStudioSpriteSet({manifest,images,sourceUrls}){
   }
   // Stage the whole set before replacing any runtime references.
   UNIT_POSE_DEFINITIONS[id]={
-    defaultPose:"stand",actionPose:"attack",actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
-    directionalSprites
+    defaultPose:"stand",actionPose:"attack",
+    actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
+    directionalSprites,spriteLayout:footprint,mobType
   };
+  STUDIO_FOOTPRINTS.set(footprint.id,footprint);
   for(const addition of additions){
     const index=pixelEditorAssets.findIndex(asset=>asset.id===addition.id);
     if(index>=0) pixelEditorAssets[index]=addition;
     else pixelEditorAssets.push(addition);
   }
-  registeredStudioSpriteSets.set(id,{id,label:manifest.label,manifestId:manifest.id});
+  registeredStudioSpriteSets.set(id,{
+    id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length
+  });
   if(currentScreen==="pixel") renderPixelAssetList();
   if(game && currentScreen==="combat") draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
@@ -3551,7 +3565,10 @@ window.adventurePartySpriteSets=Object.freeze({
     inspectionPose:game?.enemies?.find(unit=>unit.studioSpriteTest)?.studioPoseInspection || null,
     units:(game?.enemies || []).filter(unit=>unit.studioSpriteTest).map(unit=>{
       const frame=directionalUnitPoseFrame(unit);
-      return {id:unit.id,spriteSetId:unit.spriteSetId,facing:frame?.facing,pose:frame?.poseName,
+      return {id:unit.id,spriteSetId:unit.spriteSetId,type:unit.type,species:unit.species,
+        facing:frame?.facing,pose:frame?.poseName,footprintId:unitFootprintDefinition(unit).id,
+        occupied:occupiedHexes(unit),groundCenter:unitFootprintScreenCenter(unit),
+        stats:{ac:unit.ac,thaco:unit.thaco,move:unit.move,weapon:unit.weapon,hitDiceValue:unit.hitDiceValue},
         assetId:frame?.assetId,source:frame?.image?.src || null};
     })
   })
@@ -4010,6 +4027,9 @@ function updatePixelPropertiesUi(){
   const spec=asset?.spec;
   if(!spec) return;
 
+  const workspaceLimit=spec.preserveFrame ? 1024 : 512;
+  if(pixelWorkspaceWidth) pixelWorkspaceWidth.max=String(workspaceLimit);
+  if(pixelWorkspaceHeight) pixelWorkspaceHeight.max=String(workspaceLimit);
   if(pixelSourceWidth) pixelSourceWidth.value=spec.sourceWidth ?? "";
   if(pixelSourceHeight) pixelSourceHeight.value=spec.sourceHeight ?? "";
   if(pixelWorkspaceWidth) pixelWorkspaceWidth.value=spec.workspaceWidth ?? PIXEL_EDITOR_GRID_SIZE;
@@ -4033,8 +4053,9 @@ function readPixelPropertiesFromUi({renderChanged=null}={}){
   const spec=asset?.spec;
   if(!spec) return;
 
-  spec.workspaceWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,512,spec.workspaceWidth || 64));
-  spec.workspaceHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,512,spec.workspaceHeight || 64));
+  const workspaceLimit=spec.preserveFrame ? 1024 : 512;
+  spec.workspaceWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,workspaceLimit,spec.workspaceWidth || 64));
+  spec.workspaceHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,workspaceLimit,spec.workspaceHeight || 64));
   spec.anchorX=clampNumber(pixelAnchorX?.value,0,spec.workspaceWidth,spec.anchorX || 0);
   spec.anchorY=clampNumber(pixelAnchorY?.value,0,spec.workspaceHeight,spec.anchorY || 0);
   spec.scaleMode=pixelScaleMode?.value || spec.scaleMode || "fit";
@@ -4144,8 +4165,9 @@ function resizePixelEditorWorkspace(){
   const asset=pixelEditorAsset;
   if(!asset?.editCanvas || !asset.spec) return;
 
-  const newWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,512,asset.spec.workspaceWidth));
-  const newHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,512,asset.spec.workspaceHeight));
+  const workspaceLimit=asset.spec.preserveFrame ? 1024 : 512;
+  const newWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,workspaceLimit,asset.spec.workspaceWidth));
+  const newHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,workspaceLimit,asset.spec.workspaceHeight));
 
   if(newWidth===asset.editCanvas.width && newHeight===asset.editCanvas.height){
     readPixelPropertiesFromUi();
@@ -4881,26 +4903,20 @@ const UNIT_FOOTPRINTS=Object.freeze({
   })
 });
 
+const STUDIO_FOOTPRINTS=new Map();
+
 function unitFootprintDefinition(unit){
-  return UNIT_FOOTPRINTS[unit?.footprintId] || UNIT_FOOTPRINTS.single;
+  return unitPoseDefinition(unit)?.spriteLayout || STUDIO_FOOTPRINTS.get(unit?.footprintId) ||
+    UNIT_FOOTPRINTS[unit?.footprintId] || UNIT_FOOTPRINTS.single;
 }
 
 function rotateAxialOffset(offset,steps=0){
   let x=Number(offset?.x)||0;
-  let z=Number(offset?.y)||0;
-  let y=-x-z;
+  let y=Number(offset?.y)||0;
   const count=((Math.round(steps)%6)+6)%6;
-
-  for(let i=0;i<count;i++){
-    const nextX=-z;
-    const nextY=-x;
-    const nextZ=-y;
-    x=nextX;
-    y=nextY;
-    z=nextZ;
-  }
-
-  return {x,y:z};
+  // Facing indices turn E -> NE -> NW, so axial rotation is counterclockwise.
+  for(let i=0;i<count;i++) [x,y]=[x+y,-x];
+  return {x:x||0,y:y||0};
 }
 
 function footprintOffsetsForFacing(unit,facingHex=facingDirectionIndex(unit)){
@@ -5008,25 +5024,40 @@ function canUnitStandAt(unit,x,y,facingHex=facingDirectionIndex(unit)){
   return true;
 }
 
-function unitTransitionBlocked(
-  unit,
-  from,
-  to,
-  facingHex=facingDirectionIndex(unit)
-){
-  if(!unit || !from || !to) return true;
-  if(!canUnitStandAt(unit,to.x,to.y,facingHex)) return true;
-
-  const sourceCells=occupiedHexesAt(unit,from.x,from.y,facingHex);
-  const targetCells=occupiedHexesAt(unit,to.x,to.y,facingHex);
-
-  for(let i=0;i<Math.min(sourceCells.length,targetCells.length);i++){
-    if(architecturalWallBlocksStep(sourceCells[i],targetCells[i])){
-      return true;
+function canUnitRotateAt(unit,x,y,toFacing,fromFacing=facingDirectionIndex(unit)){
+  const footprint=unitFootprintDefinition(unit);
+  if(!footprint.rotates || fromFacing===toFacing) return true;
+  const forward=((toFacing-fromFacing)%6+6)%6;
+  const backward=6-forward;
+  const directions=forward===backward ? [1,-1] : [forward<backward ? 1 : -1];
+  return directions.some(direction=>{
+    let previous=((fromFacing%6)+6)%6;
+    const count=direction===1 ? forward : backward;
+    for(let step=1;step<=count;step++){
+      const facing=((previous+direction)%6+6)%6;
+      if(!canUnitStandAt(unit,x,y,facing)) return false;
+      const from=occupiedHexesAt(unit,x,y,previous);
+      const to=occupiedHexesAt(unit,x,y,facing);
+      if(from.some((cell,index)=>architecturalWallBlocksStep(cell,to[index]))) return false;
+      previous=facing;
     }
-  }
+    return true;
+  });
+}
 
-  return false;
+function unitTransitionBlocked(unit,from,to,facingHex=null){
+  if(!unit || !from || !to) return true;
+  const rotates=unitFootprintDefinition(unit).rotates;
+  const fromFacing=Number.isInteger(from.facingHex) ? from.facingHex : facingDirectionIndex(unit);
+  const destinationFacing=Number.isInteger(facingHex) ? facingHex
+    : rotates && (from.x!==to.x || from.y!==to.y) ? hexDirectionIndexToward(from,to)
+    : fromFacing;
+  if(!canUnitStandAt(unit,to.x,to.y,destinationFacing)) return true;
+  if(rotates && !canUnitRotateAt(unit,from.x,from.y,destinationFacing,fromFacing)) return true;
+
+  const sourceCells=occupiedHexesAt(unit,from.x,from.y,destinationFacing);
+  const targetCells=occupiedHexesAt(unit,to.x,to.y,destinationFacing);
+  return sourceCells.some((cell,index)=>architecturalWallBlocksStep(cell,targetCells[index]));
 }
 
 const ATTACK_SECTOR_LABELS=[
@@ -7024,8 +7055,10 @@ function updateFacingForStep(entity,dx,dy){
     y:(entity.y||0)+dy
   };
 
-  entity.facingHex=
-    hexDirectionIndexToward(entity,target);
+  const facing=hexDirectionIndexToward(entity,target);
+  if(unitFootprintDefinition(entity).rotates &&
+    !canUnitRotateAt(entity,entity.x,entity.y,facing)) return false;
+  entity.facingHex=facing;
 
   /*
     Six-direction sprite sets use facingHex directly. Retain this projection
@@ -7038,6 +7071,7 @@ function updateFacingForStep(entity,dx,dy){
   }else if(horizontal<0){
     entity.facing="left";
   }
+  return true;
 }
 
 function centerCameraOn(entity){
@@ -12057,7 +12091,9 @@ function drawVisibleArchitecturalWallsOverLOS(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.species==="orc"
+        unitPoseDefinition(enemy)?.spriteLayout
+          ? drawStudioSpriteMob(enemy)
+          : enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
@@ -15548,43 +15584,62 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
   ];
 }
 
+function makeStudioTestMob(mobType,index,position){
+  switch(mobType){
+    case "kobold": return makeKobold(index,position);
+    case "kobold-bodyguard": return makeKoboldBodyguard(index,position);
+    case "kobold-slinger": return makeKoboldSlinger(index,position);
+    case "orc": return makeOrc(index,position);
+    case "orc-leader": return makeOrcLeader(index,position);
+    case "orc-shaman": return makeOrcShaman(index,position);
+    case "juvenile-red-dragon": return makeLargeMobTest(position);
+    default: throw new Error("This sprite set references an unimplemented MOB type.");
+  }
+}
+
 function makeStudioKoboldEncounter(condition=selectedCombatCondition){
+  const set=registeredStudioSpriteSets.get(selectedStudioSpriteSetId);
+  const mobType=set?.mobType || "kobold";
+  const radius=(set?.footprintCells || 1)>1 ? 5 : 3;
   const occupied=new Set([key(0,0)]);
-  const positions=HEX_DIRS.map(dir=>({x:dir.x*3,y:dir.y*3}));
-  /* Keep the NW view clear of the grass battlefield's northern tree cluster. */
-  positions[2]={x:-2,y:0};
-  const candidates=axialDisk({x:0,y:0},4)
+  const positions=HEX_DIRS.map(dir=>({x:dir.x*radius,y:dir.y*radius}));
+  /* Keep the original single-hex NW view clear of the northern tree cluster. */
+  if(radius===3) positions[2]={x:-2,y:0};
+  const candidates=axialDisk({x:0,y:0},radius+3)
     .filter(pos=>inside(pos.x,pos.y) && !isWall(pos.x,pos.y));
 
   const units=positions.map((preferred,index)=>{
-    const position=[preferred,...candidates.slice().sort((a,b)=>
-      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
-    )].find(pos=>
-      inside(pos.x,pos.y) && !isWall(pos.x,pos.y) && !occupied.has(key(pos.x,pos.y))
-    );
-    if(!position) throw new Error("Unable to place the six-facing Kobold sprite test.");
-    occupied.add(key(position.x,position.y));
-    const unit=makeKobold(index,position);
-    unit.id=`studio-kobold-${index+1}`;
-    const setLabel=registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label || "Studio Kobold";
-    unit.name=`${setLabel} ${index+1}`;
+    const unit=makeStudioTestMob(mobType,index,preferred);
+    unit.id=`studio-${mobType}-${index+1}`;
+    unit.name=`${set?.label || "Studio Kobold"} ${index+1}`;
     unit.spriteSetId=selectedStudioSpriteSetId;
     unit.studioSpriteTest=true;
+    unit.footprintId=set?.layoutId || "single";
     unit.facingHex=index;
     unit.facing=[0,1,5].includes(index) ? "right" : "left";
+    const position=[preferred,...candidates.slice().sort((a,b)=>
+      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
+    )].find(pos=>occupiedHexesAt(unit,pos.x,pos.y,index).every(cell=>
+      inside(cell.x,cell.y) && !isWall(cell.x,cell.y) && !occupied.has(key(cell.x,cell.y))
+    ));
+    if(!position) throw new Error("Unable to place all six sprite-test footprints on this battlefield.");
+    unit.x=position.x;
+    unit.y=position.y;
+    occupiedHexes(unit).forEach(cell=>occupied.add(key(cell.x,cell.y)));
     return unit;
   });
 
   lastMobDeployment={
     direction:"Six-facing sprite test around Carl",
-    anchorDistance:3,
+    anchorDistance:radius,
     anchor:{x:0,y:0},
-    clusterRadius:3,
+    clusterRadius:radius,
     count:units.length,
     condition
   };
   return units;
 }
+
 
 function makeOrcArmy(
   normalCount=18,
@@ -15948,6 +16003,7 @@ function newGame(condition=selectedCombatCondition){
   if(selectedMobEncounter!=="orcs"){
     lastOrcDeployment=null;
   }
+  const groupKobolds=kobolds.filter(isKoboldUnit);
 
   camera.x=player.x;
   camera.y=player.y;
@@ -15971,13 +16027,13 @@ function newGame(condition=selectedCombatCondition){
       Large-MOB test encounters use per-unit morale and do not share this group
       state.
     */
-    enemyGroupMorale:kobolds.length
+    enemyGroupMorale:groupKobolds.length
       ? {
           id:"kobold-group",
           label:"Kobold group",
-          baseMorale:kobolds[0]?.morale ?? 9,
+          baseMorale:groupKobolds[0]?.morale ?? 9,
           moraleLabel:"Average (8-10)",
-          initialCount:kobolds.length,
+          initialCount:groupKobolds.length,
           manualRatioThreshold:1.5,
           manualRatioChecked:false,
           broken:false,
@@ -16104,7 +16160,7 @@ function newGame(condition=selectedCombatCondition){
     log(
       selectedStudioSpriteSetId==="studio-kobold"
         ? "Sprite test uses ordinary Kobold combat stats and dagger attacks. This ready-only set retains the matching ready view during attacks."
-        : "Sprite test uses ordinary Kobold combat stats and dagger attacks. Imported ready, attack, and prone artwork follows the actual combat pose.",
+        : `Sprite test uses the implemented ${registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.mobType || "kobold"} rules and ${unitFootprintCellCount(enemies[0])}-hex footprint. Imported ready, attack, and prone artwork follows the actual combat pose.`,
       "system"
     );
   }else{
@@ -16135,7 +16191,7 @@ function newGame(condition=selectedCombatCondition){
               `cluster radius ${lastMobDeployment.clusterRadius}.`
             )
           : (
-              `Kobold deployment: ${lastMobDeployment.direction}, `+
+              `${selectedMobEncounter==="studio-kobold" ? "Sprite-test" : "Kobold"} deployment: ${lastMobDeployment.direction}, `+
               `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
               `cluster radius ${lastMobDeployment.clusterRadius}.`
             ),
@@ -17211,6 +17267,15 @@ function bestRangedAiTargetFrom(unit,source=unit){
 
 function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
   if(!unit?.alive || unit.fled || !unit.rangedWeapon) return null;
+  if(unitFootprintDefinition(unit).rotates){
+    const result=searchRotatingFootprintPath(unit,unit,{
+      goal:proxy=>!(avoidThreatened && rangedAiPositionThreatened(proxy,proxy)) && bestRangedAiTargetFrom(proxy,proxy)
+    });
+    if(!result.value) return null;
+    const end=result.path[result.path.length-1];
+    return {path:result.path,target:result.value,firingHex:{x:end.x,y:end.y},
+      distance:unitDistance({...unit,...end},result.value)};
+  }
 
   const targets=rangedAiOpponents(unit);
   if(!targets.length) return null;
@@ -18586,6 +18651,10 @@ async function tryPlayerMove(dx,dy){
   }
 
   if(occupiedByAnyUnit(nx,ny,p.id)){ log("That hex is occupied.","system"); return; }
+  if(unitTransitionBlocked(p,p,{x:nx,y:ny})){
+    log("Movement blocked: the complete footprint cannot turn or fit there.","system");
+    return;
+  }
 
   if(!p.fullMove && p.turnMoves>=p.halfMove){
     p.fullMove=true;
@@ -18601,6 +18670,11 @@ async function tryPlayerMove(dx,dy){
     return;
   }
 
+  // A multi-hex free-strike attacker may have turned into the destination.
+  if(unitTransitionBlocked(p,p,{x:nx,y:ny})){
+    log("Movement blocked: the footprint no longer fits after the reaction.","system");
+    return;
+  }
   updateFacingForStep(p,dx,dy);
   setUnitActionBanner(p,"Moving");
   p.x=nx; p.y=ny; p.turnMoves++;
@@ -22700,7 +22774,46 @@ function passableForPath(x,y,mover,target){
 
 /* Open-map shortest path. With no obstacles, repeatedly choosing the
    neighbor that decreases hex distance produces a shortest route. */
+function searchRotatingFootprintPath(mover,start,{goal=null,score=null,maxSteps=Infinity}={}){
+  const first={x:start.x,y:start.y,facingHex:facingDirectionIndex(mover),steps:0};
+  const nodeKey=node=>`${node.x},${node.y},${node.facingHex}`;
+  const queue=[first];
+  const seen=new Set([nodeKey(first)]);
+  const parents=new Map();
+  let best=first;
+  let bestScore=score ? score({...mover,...first}) : Infinity;
+  let value=null;
+  for(let cursor=0;cursor<queue.length && cursor<24000;cursor++){
+    const current=queue[cursor];
+    const proxy={...mover,...current};
+    const match=goal?.(proxy);
+    if(match){ best=current; value=match; break; }
+    if(score){
+      const distance=score(proxy);
+      if(distance<bestScore){ bestScore=distance; best=current; }
+    }
+    if(current.steps>=maxSteps) continue;
+    for(let facing=0;facing<HEX_DIRS.length;facing++){
+      const dir=HEX_DIRS[facing];
+      const next={x:current.x+dir.x,y:current.y+dir.y,facingHex:facing,steps:current.steps+1};
+      const id=nodeKey(next);
+      if(seen.has(id) || unitTransitionBlocked(mover,current,next,facing)) continue;
+      seen.add(id);
+      parents.set(id,current);
+      queue.push(next);
+    }
+  }
+  const path=[];
+  for(let current=best;current;current=parents.get(nodeKey(current))){
+    path.push({x:current.x,y:current.y,facingHex:current.facingHex});
+  }
+  return {path:path.reverse(),value};
+}
+
 function pathToAdjacent(start,target,mover){
+  if(mover && unitFootprintDefinition(mover).rotates){
+    return searchRotatingFootprintPath(mover,start,{goal:proxy=>canMeleeReach(proxy,target)}).path;
+  }
   if(canMeleeReach(start,target)){
     return [{x:start.x,y:start.y}];
   }
@@ -22824,6 +22937,9 @@ function selectMobPartyTarget(mob){
 }
 
 function pathToHex(start,target,mover){
+  if(mover && unitFootprintDefinition(mover).rotates){
+    return searchRotatingFootprintPath(mover,start,{goal:proxy=>proxy.x===target.x && proxy.y===target.y}).path;
+  }
   if(start.x===target.x && start.y===target.y){
     return [{x:start.x,y:start.y}];
   }
@@ -22905,6 +23021,11 @@ function pathToHex(start,target,mover){
 }
 
 function pathToClosestReachable(start,target,mover,maxSteps){
+  if(mover && unitFootprintDefinition(mover).rotates){
+    return searchRotatingFootprintPath(mover,start,{
+      score:proxy=>approachDistanceAt(proxy,proxy.x,proxy.y,target),maxSteps
+    }).path;
+  }
   const startNode={
     x:start.x,
     y:start.y,
@@ -23197,6 +23318,8 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       return false;
     }
 
+    // Reactions can rotate another multi-hex creature into the planned path.
+    if(unitTransitionBlocked(entity,entity,next)) return false;
     const mode=mobMovementPresentationMode(entity,next,senseContext);
 
     updateFacingForStep(
@@ -23292,6 +23415,8 @@ async function animateMobAlongPath(mob,path,maxSteps){
       return false;
     }
 
+    // Reactions can rotate another multi-hex creature into the planned path.
+    if(unitTransitionBlocked(mob,mob,path[i])) return false;
     const mode=mobMovementPresentationMode(mob,path[i],senseContext);
 
     updateFacingForStep(
@@ -26199,6 +26324,30 @@ function drawFriendlyMage(mage){
   /*
     Candidate Rev 7: remove the temporary overhead "M" class marker.
   */
+}
+
+function drawStudioSpriteMob(unit){
+  const frame=directionalUnitPoseFrame(unit);
+  if(!frame?.image?.complete || !frame.image.naturalWidth) return;
+  const center=unitFootprintScreenCenter(unit);
+  const dimensions=spriteRenderDimensions(frame.assetId,frame.image);
+  if(game.active===unit.id) drawActiveHex(unit,"#df6b6b");
+  if(unit.alive) drawHpBar(unit,"#df6b6b");
+  if(unitFootprintCellCount(unit)>1){
+    ctx.save();
+    for(const cell of occupiedHexes(unit)){
+      if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(cell.x,cell.y)) continue;
+      polygonPath(hexScreenVertices(cell.x,cell.y));
+      ctx.fillStyle="rgba(170,70,46,0.035)";
+      ctx.strokeStyle="rgba(224,128,88,0.18)";
+      ctx.lineWidth=1;
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  drawSpriteFacing(frame.image,center,dimensions.width,dimensions.height,
+    unit.facing,"right",unit,runtimeAnchorForAsset(frame.assetId));
 }
 
 function drawKobold(k){
@@ -29124,7 +29273,9 @@ function draw(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.species==="orc"
+        unitPoseDefinition(enemy)?.spriteLayout
+          ? drawStudioSpriteMob(enemy)
+          : enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
