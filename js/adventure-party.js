@@ -15340,15 +15340,15 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
 }
 
 function makeOrcArmy(
-  normalCount=16,
-  leaderCount=3,
+  normalCount=18,
+  leaderCount=1,
   shamanCount=1,
   condition=selectedCombatCondition
 ){
   /*
     Candidate Rev 40 test encounter:
-      16 ordinary Orcs
-       3 Orc Leaders
+      18 ordinary Orcs
+       1 Orc Leader
        1 3rd-level Orc Shaman
       -------------------------
       20 Orcs total
@@ -15686,7 +15686,7 @@ function newGame(condition=selectedCombatCondition){
 
   const orcs=
     selectedMobEncounter==="orcs"
-      ? makeOrcArmy(16,3,1,condition)
+      ? makeOrcArmy(18,1,1,condition)
       : [];
 
   const enemies=
@@ -15832,7 +15832,7 @@ function newGame(condition=selectedCombatCondition){
     );
   }else if(selectedMobEncounter==="orcs"){
     log(
-      "20-Orc test warband deployed: 16 Orcs, 3 Orc Leaders, 1 3rd-level Orc Shaman.",
+      "20-Orc test warband deployed: 18 Orcs, 1 Orc Leader, 1 3rd-level Orc Shaman.",
       "system"
     );
     log(
