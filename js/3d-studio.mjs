@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C44';
 
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
@@ -10,7 +10,8 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelInfo', 'FrameButton', 'ResetViewButton', 'Heading', 'HeadingValue',
-  'UpAxis', 'Resolution', 'Saturation', 'SaturationValue', 'Outline', 'Clip',
+  'UpAxis', 'Resolution', 'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
+  'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'Clip',
   'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time',
   'ExportSheetButton', 'Status', 'Error'
 ].map(name => [name, $(`studio${name}`)]));
@@ -18,7 +19,7 @@ const ui = Object.fromEntries([
 const state = {
   model: null, modelName: 'Studio mannequin', clips: [], mixer: null,
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Y',
-  width: 160, height: 200, saturation: 1, outline: true,
+  width: 160, height: 200, brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: true,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
   viewVisible: true, frameHeight: 3.15, center: new THREE.Vector3(0, 1, 0)
@@ -341,6 +342,14 @@ function configureAtlas() {
   invalidate();
 }
 
+function pixelRenderOptions(transparent = false) {
+  return {
+    brightness: state.brightness, contrast: state.contrast,
+    hue: state.hue, saturation: state.saturation,
+    outline: state.outline, transparent
+  };
+}
+
 function renderPreviews(timestamp) {
   const background = scene.background;
   scene.background = null;
@@ -365,9 +374,7 @@ function renderPreviews(timestamp) {
   helpers.visible = true;
   renderer.setClearColor(0x808080, 1);
   turntable.rotation.y = HEX_FACINGS.find(item => item.id === state.facing).yawRadians;
-  quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, atlasImage.data, {
-    saturation: state.saturation, outline: state.outline
-  });
+  quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, atlasImage.data, pixelRenderOptions());
   atlasContext.putImageData(atlasImage, 0, 0);
   previews.forEach((preview, index) => {
     preview.context.drawImage(atlasCanvas,
@@ -527,9 +534,7 @@ function exportImage(facing = null) {
   // Capture the current evaluated pose without advancing the animation clock.
   renderPreviews(performance.now());
   const image = new ImageData(atlasTarget.width, atlasTarget.height);
-  quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, image.data, {
-    saturation: state.saturation, outline: state.outline, transparent: true
-  });
+  quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, image.data, pixelRenderOptions(true));
   const source = document.createElement('canvas');
   source.width = image.width;
   source.height = image.height;
@@ -590,9 +595,25 @@ function bindControls() {
     state.height = height;
     configureAtlas();
   });
-  ui.Saturation.addEventListener('input', () => {
-    state.saturation = Number(ui.Saturation.value) / 100;
-    ui.SaturationValue.textContent = `${Math.round(state.saturation * 100)}%`;
+  const colorControls = [
+    ['Brightness', 'brightness', 100, '%'],
+    ['Contrast', 'contrast', 100, '%'],
+    ['Hue', 'hue', 1, '°'],
+    ['Saturation', 'saturation', 100, '%']
+  ].map(([name, key, divisor, suffix]) => {
+    const input = ui[name];
+    const update = () => {
+      const value = Number(input.value);
+      state[key] = value / divisor;
+      ui[`${name}Value`].textContent = `${value}${suffix}`;
+      input.setAttribute('aria-valuetext', `${value} ${suffix === '°' ? 'degrees' : 'percent'}`);
+    };
+    input.addEventListener('input', () => { update(); invalidate(); });
+    update();
+    return { input, update };
+  });
+  ui.ResetColorsButton.addEventListener('click', () => {
+    colorControls.forEach(({ input, update }) => { input.value = input.defaultValue; update(); });
     invalidate();
   });
   ui.Outline.addEventListener('change', () => { state.outline = ui.Outline.checked; invalidate(); });

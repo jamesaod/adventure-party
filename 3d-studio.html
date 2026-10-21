@@ -27,7 +27,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 43</span>
+        <span class="studio-build">Candidate Rev 44</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -170,16 +170,29 @@
               <option value="320x400">320 × 400 · Mode X</option>
             </select>
           </label>
+          <label class="studio-field" for="studioBrightness">
+            <span class="studio-label-row">Brightness <output id="studioBrightnessValue" for="studioBrightness">100%</output></span>
+            <input id="studioBrightness" type="range" min="0" max="200" step="1" value="100">
+          </label>
+          <label class="studio-field" for="studioContrast">
+            <span class="studio-label-row">Contrast <output id="studioContrastValue" for="studioContrast">100%</output></span>
+            <input id="studioContrast" type="range" min="0" max="200" step="1" value="100">
+          </label>
+          <label class="studio-field" for="studioHue">
+            <span class="studio-label-row">Hue <output id="studioHueValue" for="studioHue">0°</output></span>
+            <input id="studioHue" type="range" min="-180" max="180" step="1" value="0">
+          </label>
           <label class="studio-field" for="studioSaturation">
             <span class="studio-label-row">Saturation <output id="studioSaturationValue" for="studioSaturation">100%</output></span>
             <input id="studioSaturation" type="range" min="0" max="200" step="1" value="100">
           </label>
+          <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
           <label class="studio-check" for="studioOutline">
             <input id="studioOutline" type="checkbox" checked>
             <span>Dark pixel outline</span>
           </label>
           <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="studio-note studio-help">One shared 256-color VGA palette across every view.</p>
+          <p class="studio-note studio-help">Color adjustments apply to all six previews and saved PNGs, using one shared 256-color VGA palette.</p>
         </section>
       </aside>
     </main>
@@ -191,6 +204,6 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R237C41"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R237C44"></script>
 </body>
 </html>

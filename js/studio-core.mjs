@@ -53,14 +53,20 @@ function getColorLookup() {
 }
 
 const clampByte = value => Math.max(0, Math.min(255, Math.round(value)));
+const colorFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(2, value)) : 1;
 
 /**
  * Quantize sRGB RGBA framebuffer bytes to the game's fixed VGA palette.
  * WebGL's bottom-up rows are flipped once here; preview and PNG use the same
  * pixels. A hard silhouette and optional 1-pixel outline remain palette-safe.
+ * Subject colors pass through hue, saturation, brightness, then contrast before
+ * palette matching. Background, transparency, and outline are unaffected.
  */
 export function quantizeRgba(source, width, height, target, {
   flipY = true,
+  brightness = 1,
+  hue = 0,
+  contrast = 1,
   saturation = 1,
   outline = false,
   transparent = false,
@@ -76,7 +82,10 @@ export function quantizeRgba(source, width, height, target, {
     throw new RangeError("Preview output must be a separate buffer of the same size.");
   }
   const lookup = getColorLookup();
-  const saturationValue = Number.isFinite(saturation) ? Math.max(0, Math.min(2, saturation)) : 1;
+  const brightnessValue = colorFactor(brightness);
+  const contrastValue = colorFactor(contrast);
+  const saturationValue = colorFactor(saturation);
+  const hueShift = Number.isFinite(hue) ? ((hue % 360 + 360) % 360) / 60 : 0;
   const backgroundIndex = (clampByte(background[0]) >> 3) << 10 |
     (clampByte(background[1]) >> 3) << 5 | (clampByte(background[2]) >> 3);
   const bg = VGA_PALETTE[lookup[backgroundIndex]];
@@ -100,11 +109,34 @@ export function quantizeRgba(source, width, height, target, {
         continue;
       }
       let r = source[si], g = source[si + 1], b = source[si + 2];
+      if (hueShift !== 0) {
+        const maximum = Math.max(r, g, b), minimum = Math.min(r, g, b);
+        const chroma = maximum - minimum;
+        // Rotate the hue wheel while retaining the original chroma and range.
+        // Gray has no hue and must remain unchanged.
+        if (chroma > 0) {
+          const originalHue = maximum === r ? (g - b) / chroma + (g < b ? 6 : 0)
+            : maximum === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4;
+          const shiftedHue = (originalHue + hueShift) % 6;
+          const secondary = chroma * (1 - Math.abs(shiftedHue % 2 - 1)) + minimum;
+          if (shiftedHue < 1) { r = maximum; g = secondary; b = minimum; }
+          else if (shiftedHue < 2) { r = secondary; g = maximum; b = minimum; }
+          else if (shiftedHue < 3) { r = minimum; g = maximum; b = secondary; }
+          else if (shiftedHue < 4) { r = minimum; g = secondary; b = maximum; }
+          else if (shiftedHue < 5) { r = secondary; g = minimum; b = maximum; }
+          else { r = maximum; g = minimum; b = secondary; }
+        }
+      }
       if (saturationValue !== 1) {
         const gray = r * 0.2126 + g * 0.7152 + b * 0.0722;
         r = clampByte(gray + (r - gray) * saturationValue);
         g = clampByte(gray + (g - gray) * saturationValue);
         b = clampByte(gray + (b - gray) * saturationValue);
+      }
+      if (hueShift !== 0 || brightnessValue !== 1 || contrastValue !== 1) {
+        r = clampByte((r * brightnessValue - 127.5) * contrastValue + 127.5);
+        g = clampByte((g * brightnessValue - 127.5) * contrastValue + 127.5);
+        b = clampByte((b * brightnessValue - 127.5) * contrastValue + 127.5);
       }
       const rgb = VGA_PALETTE[lookup[(r >> 3) << 10 | (g >> 3) << 5 | (b >> 3)]];
       target[ti] = rgb[0];
