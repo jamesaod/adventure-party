@@ -14,6 +14,7 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 
 ## Pixel previews and export
 
+- Preview windows use two columns in three rows: **NW, NE**; **W, E**; **SW, SE**, at every screen width.
 - All six views use the existing Pixel Editor's fixed 256-entry VGA palette: 16 RGBI entries, a 216-color cube, and 24 gray entries.
 - Select **80 × 100**, **160 × 200**, or **320 × 400 · Mode X**. The default is 160 × 200. Preview backgrounds are palette gray; images display with nearest-neighbor scaling.
 - Saturation is applied before palette matching. The optional one-pixel black outline also stays within the palette.
