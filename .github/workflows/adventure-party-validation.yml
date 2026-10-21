@@ -29,6 +29,12 @@ jobs:
       - name: Check game JavaScript syntax
         run: node --check js/adventure-party.js
 
+      - name: Validate 3D studio projection and VGA rendering
+        run: |
+          node --check js/3d-studio.mjs
+          node --check js/studio-core.mjs
+          node scripts/test-3d-studio.mjs
+
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
 

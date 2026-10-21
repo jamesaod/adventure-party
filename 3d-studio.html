@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>3d studio — Adventure Party</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/adventure-party.css?v=R237C40">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R237C41">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./assets/vendor/three/three.module.min.js",
+      "three/addons/": "./assets/vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body class="studio-page">
+  <div class="studio-app">
+    <header class="studio-header chrome">
+      <div class="studio-brand">
+        <div class="studio-eyebrow">Adventure Party</div>
+        <h1>3d studio</h1>
+      </div>
+      <div class="studio-header-actions">
+        <span class="studio-build">Candidate Rev 41</span>
+        <a class="studio-button studio-return" href="./index.html">Return to title page</a>
+      </div>
+    </header>
+
+    <main class="studio-layout">
+      <aside class="studio-previews studio-panel chrome" aria-labelledby="studioPreviewsHeading">
+        <div class="studio-panel-heading">
+          <h2 id="studioPreviewsHeading">Pixel previews</h2>
+          <span class="studio-chip">VGA · 256 colors</span>
+        </div>
+        <p class="studio-note">Six fixed views of the same pose.</p>
+        <div class="studio-preview-grid">
+          <figure class="studio-preview-card" data-studio-card="E">
+            <figcaption><span class="studio-direction">E</span><span>East</span></figcaption>
+            <canvas id="studioPreviewE" data-studio-preview="E" width="160" height="200" aria-label="East-facing pixel preview">East-facing pixel preview</canvas>
+            <button class="studio-button studio-export" type="button" data-studio-export="E" aria-label="Save east-facing preview as PNG">Save PNG</button>
+          </figure>
+          <figure class="studio-preview-card" data-studio-card="NE">
+            <figcaption><span class="studio-direction">NE</span><span>Northeast</span></figcaption>
+            <canvas id="studioPreviewNE" data-studio-preview="NE" width="160" height="200" aria-label="Northeast-facing pixel preview">Northeast-facing pixel preview</canvas>
+            <button class="studio-button studio-export" type="button" data-studio-export="NE" aria-label="Save northeast-facing preview as PNG">Save PNG</button>
+          </figure>
+          <figure class="studio-preview-card" data-studio-card="NW">
+            <figcaption><span class="studio-direction">NW</span><span>Northwest</span></figcaption>
+            <canvas id="studioPreviewNW" data-studio-preview="NW" width="160" height="200" aria-label="Northwest-facing pixel preview">Northwest-facing pixel preview</canvas>
+            <button class="studio-button studio-export" type="button" data-studio-export="NW" aria-label="Save northwest-facing preview as PNG">Save PNG</button>
+          </figure>
+          <figure class="studio-preview-card" data-studio-card="W">
+            <figcaption><span class="studio-direction">W</span><span>West</span></figcaption>
+            <canvas id="studioPreviewW" data-studio-preview="W" width="160" height="200" aria-label="West-facing pixel preview">West-facing pixel preview</canvas>
+            <button class="studio-button studio-export" type="button" data-studio-export="W" aria-label="Save west-facing preview as PNG">Save PNG</button>
+          </figure>
+          <figure class="studio-preview-card" data-studio-card="SW">
+            <figcaption><span class="studio-direction">SW</span><span>Southwest</span></figcaption>
+            <canvas id="studioPreviewSW" data-studio-preview="SW" width="160" height="200" aria-label="Southwest-facing pixel preview">Southwest-facing pixel preview</canvas>
+            <button class="studio-button studio-export" type="button" data-studio-export="SW" aria-label="Save southwest-facing preview as PNG">Save PNG</button>
+          </figure>
+          <figure class="studio-preview-card" data-studio-card="SE">
+            <figcaption><span class="studio-direction">SE</span><span>Southeast</span></figcaption>
+            <canvas id="studioPreviewSE" data-studio-preview="SE" width="160" height="200" aria-label="Southeast-facing pixel preview">Southeast-facing pixel preview</canvas>
+            <button class="studio-button studio-export" type="button" data-studio-export="SE" aria-label="Save southeast-facing preview as PNG">Save PNG</button>
+          </figure>
+        </div>
+        <button id="studioExportSheetButton" class="studio-button studio-wide-button" type="button">Save all six as a sheet</button>
+      </aside>
+
+      <section class="studio-center" aria-labelledby="studioViewerHeading">
+        <div class="studio-viewer-panel studio-panel chrome">
+          <div class="studio-panel-heading">
+            <h2 id="studioViewerHeading">Model view</h2>
+            <span class="studio-chip studio-chip-subtle">3D</span>
+          </div>
+          <div id="studioViewport" class="studio-viewport">
+            <canvas id="studioCanvas" width="580" height="480" aria-label="Interactive 3D model. Drag to rotate the view and scroll to zoom.">Interactive 3D model view</canvas>
+            <div id="studioEmptyMessage" class="studio-empty-message" hidden>Load a model to begin.</div>
+          </div>
+          <div class="studio-view-hint">Drag to turn · Scroll to zoom</div>
+          <div class="studio-directions" role="group" aria-label="View a hex facing">
+            <button class="studio-button" type="button" data-studio-facing="E" aria-pressed="false">E</button>
+            <button class="studio-button" type="button" data-studio-facing="NE" aria-pressed="false">NE</button>
+            <button class="studio-button" type="button" data-studio-facing="NW" aria-pressed="false">NW</button>
+            <button class="studio-button" type="button" data-studio-facing="W" aria-pressed="false">W</button>
+            <button class="studio-button" type="button" data-studio-facing="SW" aria-pressed="false">SW</button>
+            <button class="studio-button" type="button" data-studio-facing="SE" aria-pressed="false">SE</button>
+          </div>
+          <div class="studio-button-row studio-view-actions">
+            <button id="studioFrameButton" class="studio-button" type="button">Fit model</button>
+            <button id="studioResetViewButton" class="studio-button" type="button">Reset view</button>
+          </div>
+        </div>
+
+        <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
+          <div class="studio-panel-heading">
+            <h2 id="studioAnimationHeading">Animation</h2>
+            <output id="studioTime" class="studio-time" for="studioTimeline">0.00 / 0.00 s</output>
+          </div>
+          <div class="studio-animation-fields">
+            <label class="studio-field studio-clip-field" for="studioClip">
+              <span>Clip</span>
+              <select id="studioClip" disabled><option value="">Loading clips…</option></select>
+            </label>
+            <label class="studio-field studio-speed-field" for="studioSpeed">
+              <span>Speed</span>
+              <select id="studioSpeed">
+                <option value="0.25">0.25×</option>
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="1.5">1.5×</option>
+                <option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+          <label class="studio-sr-only" for="studioTimeline">Animation position</label>
+          <input id="studioTimeline" class="studio-timeline" type="range" min="0" max="1" step="0.001" value="0" disabled>
+          <div class="studio-animation-bottom">
+            <div class="studio-button-row">
+              <button id="studioPlayButton" class="studio-button studio-primary" type="button" disabled>Play</button>
+              <button id="studioRestartButton" class="studio-button" type="button" disabled>Restart</button>
+            </div>
+            <span class="studio-note">All six previews stay in step.</span>
+          </div>
+        </section>
+      </section>
+
+      <aside class="studio-controls" aria-label="Studio controls">
+        <section class="studio-panel chrome" aria-labelledby="studioModelHeading">
+          <h2 id="studioModelHeading">Model</h2>
+          <div id="studioModelName" class="studio-model-name">Studio mannequin</div>
+          <p id="studioModelInfo" class="studio-note studio-model-info">Preparing the model…</p>
+          <input id="studioFiles" class="studio-file-input" type="file" multiple accept=".glb,.gltf,.bin,.fbx,.png,.jpg,.jpeg,.webp,.bmp" aria-label="Choose a 3D model and its related files">
+          <button id="studioLoadButton" class="studio-button studio-primary studio-wide-button" type="button">Load model</button>
+          <button id="studioDemoButton" class="studio-button studio-wide-button" type="button">Use demo model</button>
+          <p class="studio-note studio-help">GLB, glTF or FBX. Include any separate textures and model files in the same selection.</p>
+          <p class="studio-local-note">Your files stay on your device.</p>
+        </section>
+
+        <section class="studio-panel chrome" aria-labelledby="studioOrientationHeading">
+          <h2 id="studioOrientationHeading">Model orientation</h2>
+          <label class="studio-field" for="studioHeading">
+            <span class="studio-label-row">Front adjustment <output id="studioHeadingValue" for="studioHeading">0°</output></span>
+            <input id="studioHeading" type="range" min="0" max="360" step="1" value="0">
+          </label>
+          <label class="studio-field" for="studioUpAxis">
+            <span>Model's up direction</span>
+            <select id="studioUpAxis">
+              <option value="Y" selected>Y up</option>
+              <option value="Z">Z up</option>
+            </select>
+          </label>
+          <p class="studio-note studio-help">Adjust the front if a loaded model faces the wrong way.</p>
+        </section>
+
+        <section class="studio-panel chrome" aria-labelledby="studioPixelHeading">
+          <h2 id="studioPixelHeading">Pixel rendering</h2>
+          <label class="studio-field" for="studioResolution">
+            <span>Preview resolution</span>
+            <select id="studioResolution">
+              <option value="80x100">80 × 100</option>
+              <option value="160x200" selected>160 × 200</option>
+              <option value="320x400">320 × 400 · Mode X</option>
+            </select>
+          </label>
+          <label class="studio-field" for="studioSaturation">
+            <span class="studio-label-row">Saturation <output id="studioSaturationValue" for="studioSaturation">100%</output></span>
+            <input id="studioSaturation" type="range" min="0" max="200" step="1" value="100">
+          </label>
+          <label class="studio-check" for="studioOutline">
+            <input id="studioOutline" type="checkbox" checked>
+            <span>Dark pixel outline</span>
+          </label>
+          <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="studio-note studio-help">One shared 256-color VGA palette across every view.</p>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="studio-footer chrome">
+      <div id="studioStatus" class="studio-status" role="status" aria-live="polite">Loading studio…</div>
+      <span class="studio-footer-label">Six directions · One model</span>
+    </footer>
+    <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
+    <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
+  </div>
+  <script type="module" src="js/3d-studio.mjs?v=R237C41"></script>
+</body>
+</html>
