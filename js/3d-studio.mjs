@@ -2,14 +2,15 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C45';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C46';
+import { createPoseCapture } from './studio-capture.mjs?v=R237C46';
 
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
-  'ModelInfo', 'FrameButton', 'ResetViewButton', 'Heading', 'HeadingValue',
+  'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
   'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'OutlineValue', 'Clip',
   'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time',
@@ -22,12 +23,13 @@ const state = {
   width: 160, height: 200, brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
-  viewVisible: true, frameHeight: 3.15, center: new THREE.Vector3(0, 1, 0)
+  viewVisible: true, frameHeight: 3.15, framingMode: 'pose', framingSamplesPerClip: 0,
+  center: new THREE.Vector3(0, 1, 0)
 };
 
 let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
 let placement, upAxisGroup, helpers, atlasTarget, atlasSource, atlasImage;
-let resizeObserver, visibilityObserver;
+let resizeObserver, visibilityObserver, poseCapture;
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d', { alpha: false });
 const previews = HEX_FACINGS.map(facing => ({
@@ -141,7 +143,15 @@ function makeDemo() {
     new THREE.NumberKeyframeTrack('DemoRightArm.rotation[x]', times, [0, -0.07, 0.025, 0]),
     new THREE.NumberKeyframeTrack('DemoLeftArm.rotation[x]', times, [0, 0.035, -0.025, 0])
   ]);
-  return { model, clips: [idle], name: 'Studio mannequin' };
+  const attack = new THREE.AnimationClip('Attack', 1.2, [
+    new THREE.NumberKeyframeTrack('DemoRightArm.rotation[x]', [0, 0.35, 0.6, 1.2], [0, -1.6, 0.65, 0]),
+    new THREE.NumberKeyframeTrack('DemoTorso.rotation[y]', [0, 0.35, 0.6, 1.2], [0, -0.22, 0.25, 0])
+  ]);
+  const fall = new THREE.AnimationClip('Fall', 1.6, [
+    new THREE.NumberKeyframeTrack('StudioMannequin.rotation[x]', [0, 0.5, 1.2, 1.6], [0, 0.2, Math.PI / 2, Math.PI / 2]),
+    new THREE.NumberKeyframeTrack('StudioMannequin.position[y]', [0, 0.5, 1.2, 1.6], [0, 0.05, 0.3, 0.3])
+  ]);
+  return { model, clips: [idle, attack, fall], name: 'Studio mannequin' };
 }
 
 function disposeModel(model) {
@@ -171,37 +181,135 @@ function updateModelInfo() {
   ui.ModelInfo.textContent = `${meshes} mesh${meshes === 1 ? '' : 'es'} · ${bones} bones · ${state.clips.length} animation${state.clips.length === 1 ? '' : 's'}`;
 }
 
-function fitModel() {
-  if (!state.model) return;
-  placement.position.set(0, 0, 0);
-  placement.scale.setScalar(1);
-  turntable.rotation.y = 0;
-  calibration.rotation.y = 0;
-  upAxisGroup.rotation.x = state.upAxis === 'Z' ? -Math.PI / 2 : 0;
-  scene.updateMatrixWorld(true);
-  state.model.traverse(object => {
+function geometryBounds(root) {
+  root.updateMatrixWorld(true);
+  root.traverse(object => {
     if (object.isSkinnedMesh) object.computeBoundingBox();
   });
-  const bounds = new THREE.Box3().setFromObject(upAxisGroup, true);
-  const size = bounds.getSize(new THREE.Vector3());
-  const center = bounds.getCenter(new THREE.Vector3());
-  if (bounds.isEmpty() || ![size.x, size.y, size.z].every(Number.isFinite)) {
-    throw new Error('This file contains no visible 3D geometry. Load a model, not an animation-only file.');
+  const bounds = new THREE.Box3().setFromObject(root, true);
+  if (bounds.isEmpty() || ![...bounds.min, ...bounds.max].every(Number.isFinite)) {
+    throw new Error('The model has invalid or empty geometry in an animation pose. Export the model again and retry.');
   }
-  const height = Math.max(size.y, 0.001);
-  const scale = 2 / Math.max(height, Math.max(size.x, size.z) * 0.25);
-  placement.scale.setScalar(scale);
-  placement.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
-  const scaledHeight = size.y * scale;
-  const radius = Math.hypot(size.x, size.z) * scale / 2;
-  state.center.set(0, scaledHeight / 2, 0);
-  // A yaw-independent envelope prevents the model growing/shrinking between views.
-  const projectedHeight = scaledHeight * Math.cos(CAMERA_ELEVATION) + 2 * radius * Math.sin(CAMERA_ELEVATION);
-  state.frameHeight = Math.max(projectedHeight, 2 * radius / (state.width / state.height), 1) * 1.24;
+  return bounds;
+}
+
+// Measure off-scene, then apply the complete result. Failed fitting never leaves
+// the previous camera, model parent, or animation partially changed.
+function measureModelFrame(model, clips, { upAxis = 'Y', mixer = null, action = null } = {}) {
+  const parent = model.parent;
+  const siblingIndex = parent?.children.indexOf(model) ?? -1;
+  const normalized = new THREE.Group();
+  const axis = new THREE.Group();
+  axis.rotation.x = upAxis === 'Z' ? -Math.PI / 2 : 0;
+  normalized.add(axis);
+  const previousAction = action ? {
+    action, time: action.time, paused: action.paused, timeScale: action.timeScale,
+    enabled: action.enabled, weight: action.weight, loop: action.loop,
+    repetitions: action.repetitions, clampWhenFinished: action.clampWhenFinished
+  } : null;
+  let sampler = null;
+  try {
+    axis.add(model);
+    const initial = geometryBounds(normalized);
+    const size = initial.getSize(new THREE.Vector3());
+    const center = initial.getCenter(new THREE.Vector3());
+    const scale = 2 / Math.max(size.y, Math.max(size.x, size.z) * 0.25, 0.001);
+    normalized.scale.setScalar(scale);
+    normalized.position.set(-center.x * scale, -initial.min.y * scale, -center.z * scale);
+    const envelope = geometryBounds(normalized);
+
+    if (clips.length) {
+      // Stop the active action before the temporary mixer binds. Each clip then
+      // starts from the original rest values rather than blending with another.
+      mixer?.stopAllAction();
+      sampler = new THREE.AnimationMixer(model);
+      envelope.union(geometryBounds(normalized));
+      for (const clip of clips) {
+        const sampled = sampler.clipAction(clip).reset().setLoop(THREE.LoopOnce, 1).play();
+        sampled.paused = true;
+        sampled.clampWhenFinished = true;
+        // Endpoints and midpoint included; extra space covers between-sample motion.
+        const intervals = 48;
+        for (let step = 0; step <= intervals; step++) {
+          sampled.time = clip.duration * step / intervals;
+          sampler.update(0);
+          envelope.union(geometryBounds(normalized));
+        }
+        sampler.stopAllAction();
+      }
+    }
+
+    // Keep the normalized ground origin fixed, even when root motion or a prone
+    // pose moves the bounds away from it. Do not recenter each individual pose.
+    const low = Math.min(0, envelope.min.y), high = Math.max(0, envelope.max.y);
+    const radius = Math.max(
+      Math.hypot(envelope.min.x, envelope.min.z), Math.hypot(envelope.min.x, envelope.max.z),
+      Math.hypot(envelope.max.x, envelope.min.z), Math.hypot(envelope.max.x, envelope.max.z)
+    );
+    const projectedHeight = (high - low) * Math.cos(CAMERA_ELEVATION) + 2 * radius * Math.sin(CAMERA_ELEVATION);
+    return {
+      scale, position: normalized.position.clone(), center: new THREE.Vector3(0, (high + low) / 2, 0),
+      frameHeight: Math.max(projectedHeight, 2 * radius / (state.width / state.height), 1) * 1.24,
+      mode: clips.length ? 'animations' : 'pose', samplesPerClip: clips.length ? 49 : 0
+    };
+  } finally {
+    if (sampler) {
+      sampler.stopAllAction();
+      sampler.uncacheRoot(model);
+    }
+    axis.remove(model);
+    if (parent) {
+      parent.add(model);
+      if (siblingIndex >= 0 && siblingIndex < parent.children.length - 1) {
+        parent.children.splice(parent.children.indexOf(model), 1);
+        parent.children.splice(siblingIndex, 0, model);
+      }
+    }
+    if (sampler && previousAction) {
+      const saved = previousAction;
+      saved.action.reset().setLoop(saved.loop, saved.repetitions).play();
+      saved.action.time = saved.time;
+      saved.action.timeScale = saved.timeScale;
+      saved.action.paused = saved.paused;
+      saved.action.enabled = saved.enabled;
+      saved.action.weight = saved.weight;
+      saved.action.clampWhenFinished = saved.clampWhenFinished;
+      mixer.update(0);
+    }
+    model.updateWorldMatrix(true, true);
+  }
+}
+
+function applyModelFrame(frame) {
+  placement.position.copy(frame.position);
+  placement.scale.setScalar(frame.scale);
+  upAxisGroup.rotation.x = state.upAxis === 'Z' ? -Math.PI / 2 : 0;
+  state.center.copy(frame.center);
+  state.frameHeight = frame.frameHeight;
+  state.framingMode = frame.mode;
+  state.framingSamplesPerClip = frame.samplesPerClip;
   calibration.rotation.y = THREE.MathUtils.degToRad(state.heading);
   turntable.rotation.y = HEX_FACINGS.find(item => item.id === state.facing).yawRadians;
+  state.lastTick = 0;
   resetCamera();
   invalidate();
+}
+
+function fitModel() {
+  if (!state.model || poseCapture?.snapshot().captureCount) return;
+  applyModelFrame(measureModelFrame(state.model, [], { upAxis: state.upAxis }));
+}
+
+function fitAllAnimations() {
+  if (!state.model || poseCapture?.snapshot().captureCount) return;
+  try {
+    applyModelFrame(measureModelFrame(state.model, state.clips, {
+      upAxis: state.upAxis, mixer: state.mixer, action: state.action
+    }));
+    updateAnimationControls();
+    clearError();
+    status(state.clips.length ? 'All animations framed · One scale and ground anchor for every pose' : 'Static model framed');
+  } catch (error) { showError(error); }
 }
 
 function setCameraFrustum(camera, aspect) {
@@ -214,7 +322,10 @@ function setCameraFrustum(camera, aspect) {
 }
 
 function fixedCamera(camera) {
-  camera.position.copy(state.center).add(new THREE.Vector3(0, Math.sin(CAMERA_ELEVATION), Math.cos(CAMERA_ELEVATION)).multiplyScalar(8));
+  const distance = Math.max(8, state.frameHeight * 2);
+  camera.position.copy(state.center).add(new THREE.Vector3(0, Math.sin(CAMERA_ELEVATION), Math.cos(CAMERA_ELEVATION)).multiplyScalar(distance));
+  camera.far = Math.max(100, distance * 3);
+  camera.updateProjectionMatrix();
   camera.up.set(0, 1, 0);
   camera.lookAt(state.center);
 }
@@ -282,12 +393,10 @@ function installModel({ model, clips, name }) {
     disposeModel(model);
     throw new Error('This file has no mesh. Choose a model with its animations included.');
   }
-  model.updateMatrixWorld(true);
-  const initialBounds = new THREE.Box3().setFromObject(model, true);
-  if (initialBounds.isEmpty() || ![...initialBounds.min, ...initialBounds.max].every(Number.isFinite)) {
-    disposeModel(model);
-    throw new Error('The model has invalid geometry bounds. Export the model again and retry.');
-  }
+  const availableClips = clips.filter(clip => Number.isFinite(clip.duration) && clip.duration > 0);
+  let framing;
+  try { framing = measureModelFrame(model, availableClips); }
+  catch (error) { disposeModel(model); throw error; }
   if (state.mixer) {
     state.mixer.stopAllAction();
     state.mixer.uncacheRoot(state.model);
@@ -296,7 +405,8 @@ function installModel({ model, clips, name }) {
   disposeModel(state.model);
   state.model = model;
   state.modelName = name;
-  state.clips = clips.filter(clip => clip.duration > 0);
+  poseCapture?.reset(name);
+  state.clips = availableClips;
   state.mixer = new THREE.AnimationMixer(model);
   state.heading = 0;
   state.upAxis = 'Y';
@@ -313,9 +423,9 @@ function installModel({ model, clips, name }) {
   ui.Clip.disabled = !state.clips.length;
   setClip(state.clips.length ? 0 : -1);
   updateModelInfo();
-  fitModel();
+  applyModelFrame(framing);
   clearError();
-  status(state.clips.length ? 'Ready · Six synchronized views' : 'Ready · Static model loaded');
+  status(state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
 }
 
 function configureAtlas() {
@@ -348,6 +458,31 @@ function pixelRenderOptions(transparent = false) {
     hue: state.hue, saturation: state.saturation,
     outline: state.outline, transparent, tileWidth: state.width, tileHeight: state.height
   };
+}
+
+function readCapturePose() {
+  if (!state.model || state.disposed) throw new Error('Load a model before capturing a pose.');
+  state.playing = false;
+  state.lastTick = 0;
+  if (state.action) state.action.paused = true;
+  updateAnimationControls();
+  // Do not advance the mixer between directions or wait for another browser frame.
+  renderPreviews(performance.now());
+  pixelCamera.updateMatrixWorld(true);
+  const ground = new THREE.Vector3(0, 0, 0).project(pixelCamera);
+  const result = {
+    raw: atlasSource.slice(), width: state.width, height: state.height,
+    clip: state.action?.getClip().name || 'Rest pose', time: state.action?.time || 0,
+    anchorX: (ground.x + 1) * state.width / 2,
+    anchorY: (1 - ground.y) * state.height / 2,
+    render: {
+      model: state.modelName, heading: state.heading, upAxis: state.upAxis,
+      cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION),
+      frameHeight: state.frameHeight, center: state.center.toArray(), framingMode: state.framingMode
+    }
+  };
+  invalidate(false);
+  return result;
 }
 
 function renderPreviews(timestamp) {
@@ -570,6 +705,7 @@ function bindControls() {
     installModel(makeDemo());
   });
   ui.FrameButton.addEventListener('click', fitModel);
+  ui.FrameAnimationsButton.addEventListener('click', fitAllAnimations);
   ui.ResetViewButton.addEventListener('click', resetCamera);
   document.querySelectorAll('[data-studio-facing]').forEach(button => {
     button.addEventListener('click', () => selectFacing(button.dataset.studioFacing));
@@ -586,7 +722,7 @@ function bindControls() {
   });
   ui.UpAxis.addEventListener('change', () => {
     state.upAxis = ui.UpAxis.value;
-    fitModel();
+    fitAllAnimations();
   });
   ui.Resolution.addEventListener('change', () => {
     const [width, height] = ui.Resolution.value.split('x').map(Number);
@@ -608,12 +744,13 @@ function bindControls() {
       ui[`${name}Value`].textContent = `${value}${suffix}`;
       input.setAttribute('aria-valuetext', `${value} ${suffix === '°' ? 'degrees' : 'percent'}`);
     };
-    input.addEventListener('input', () => { update(); invalidate(); });
+    input.addEventListener('input', () => { update(); poseCapture?.updateStyle(pixelRenderOptions(true)); invalidate(); });
     update();
     return { input, update };
   });
   ui.ResetColorsButton.addEventListener('click', () => {
     colorControls.forEach(({ input, update }) => { input.value = input.defaultValue; update(); });
+    poseCapture?.updateStyle(pixelRenderOptions(true));
     invalidate();
   });
   const updateOutline = () => {
@@ -621,7 +758,7 @@ function bindControls() {
     ui.OutlineValue.textContent = state.outline ? `${state.outline} px` : '0 px (off)';
     ui.Outline.setAttribute('aria-valuetext', state.outline ? `${state.outline} ${state.outline === 1 ? 'pixel' : 'pixels'}` : 'Off');
   };
-  ui.Outline.addEventListener('input', () => { updateOutline(); invalidate(); });
+  ui.Outline.addEventListener('input', () => { updateOutline(); poseCapture?.updateStyle(pixelRenderOptions(true)); invalidate(); });
   updateOutline();
   ui.Clip.addEventListener('change', () => setClip(Number(ui.Clip.value)));
   ui.PlayButton.addEventListener('click', () => {
@@ -739,6 +876,15 @@ function start() {
     showError(new Error('The 3D graphics context was interrupted. Reload the studio to restore the viewer.'));
     status('Graphics paused');
   });
+  poseCapture = createPoseCapture({
+    readPose: readCapturePose,
+    getStyle: () => pixelRenderOptions(true),
+    onLockChange: locked => {
+      for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis, ui.Resolution]) control.disabled = locked;
+    },
+    onError: showError,
+    onStatus: status
+  });
   installModel(makeDemo());
   selectFacing(state.facing);
   // Read-only diagnostics support candidate QA without exposing mutable scene internals.
@@ -749,7 +895,10 @@ function start() {
       previewSize: [state.width, state.height], frame: state.frame,
       animationTime: state.animationTime, playing: state.playing,
       clips: state.clips.map(clip => clip.name),
-      cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION)
+      cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION),
+      framingMode: state.framingMode, framingSamplesPerClip: state.framingSamplesPerClip,
+      frameHeight: state.frameHeight, frameCenter: state.center.toArray(),
+      ...poseCapture.snapshot()
     })
   });
 }

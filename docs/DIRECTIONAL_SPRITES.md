@@ -1,5 +1,17 @@
 # Six-direction combat sprites
 
+## Capture and test a complete character
+
+In **3d studio**, load the animated model, choose a clip, pause or scrub to the desired moment, then use **Capture ready pose**, **Capture attack pose**, and **Capture prone pose**. Each button captures all six physical facings from the same evaluated animation instant. The eighteen-frame sheet uses one row per pose and the columns **E, NE, NW, W, SW, SE**.
+
+Use **Test in combat** to send the complete captured set to Combat Setup in another tab. This saves the eighteen PNGs and their small manifest in this browser; it does not publish or modify repository assets. Candidate and stable drafts are isolated by their site folders. The studio tab stays available so poses can be adjusted and tested again.
+
+Combat Setup has a **Sprite test set** selector containing the existing ready-only Studio Kobold and any complete imported sets. The selected character uses the six-facing encounter and ordinary Kobold combat rules. Choose **Begin Battle** to inspect the six starting facings. Before pressing Space, the **Ready**, **Attack**, **Prone**, and **Live** inspection buttons display those poses across all six units. These are presentation controls: they do not apply damage or conditions. Pressing Space starts combat and removes the inspection override. Actual attacks select attack art; prone, sleep, and unconscious conditions select prone art.
+
+For a repository import, export the **asset ZIP** and run the small importer described in [SPRITE_SET_IMPORT.md](SPRITE_SET_IMPORT.md). It creates `assets/sprites/<character-id>/` with eighteen individual PNGs, `sheet.png`, and `manifest.json`, and updates `data/sprite-sets.json`. A new character requires no edit to the large game JavaScript file or the legacy flat sprite registry. Refresh the game and choose that character in **Sprite test set**.
+
+The loader validates the manifest and decodes all eighteen images before making the set selectable. If a file is missing, invalid, or has the wrong dimensions, that set is not partially installed; the existing test characters remain usable. Re-imports receive a content revision in the index so replacement PNGs are not confused with cached older artwork.
+
 ## Try the first imported set
 
 Open **Combat System Test**, select **6-facing Kobold**, and choose **Begin Battle**. This preset is selected initially. Six test kobolds start near Carl with all six facings represented. Inspect the starting formation before pressing **Space** to begin combat. Movement and attacks use each unit's current tactical facing.
@@ -31,18 +43,18 @@ Files live in `assets/sprites/`. Their source/workspace dimensions, facing, pose
 
 All six initially use a 48 × 60 rendered frame and a shared source-space anchor of `(80, 150)`. The anchor is calibrated from the exported image because the PNG contains no 3D ground-plane metadata. Full-frame padding and a shared scale are retained so turns do not stretch individual silhouettes to fit different bounds.
 
-## Ready and action registration
+## Pose registration
 
-The pose framework uses `stand` for ready and `attack` for action. A unit may select a visual set with `spriteSetId`; its combat `type` and statistics are independent of that choice.
+The pose framework uses `stand` for ready, `attack` for action, and `prone` for the prone capture. A unit may select a visual set with `spriteSetId`; its combat `type` and statistics are independent of that choice. Folder-backed sets receive the internal ID `sprite-set:<manifest.id>` to avoid collisions with built-in combat types.
 
-`UNIT_POSE_DEFINITIONS` supports `directionalSprites`, keyed first by pose and then by direction (`E`, `NE`, `NW`, `W`, `SW`, `SE`). Each frame registers its loaded image and asset ID. A future action sheet can fill the six `attack` entries using the same ordering, scale, and ground anchor as the ready set.
+`UNIT_POSE_DEFINITIONS` supports `directionalSprites`, keyed first by pose and then by direction (`E`, `NE`, `NW`, `W`, `SW`, `SE`). Each frame registers its loaded image and asset ID. `js/sprite-set-runtime.mjs` reads the small index and per-character manifests, then uses the one-time `window.adventurePartySpriteSets.register({manifest, images, sourceUrls})` bridge. Images and source URLs are keyed by the filenames in the manifest. The bridge stages all eighteen frames before updating the pose definitions and Pixel Editor assets together.
 
 The renderer chooses a physical facing from `facingHex`. A missing or still-loading action frame falls back to that facing's ready frame. Directional artwork is drawn without mirroring; existing single-frame sprites retain their left/right behavior. Existing attack timers select the action pose and return to ready when the action interval ends.
 
 Preserve source frame dimensions and anchors when adding action art. Pose changes should use a consistent canvas and camera so the character's feet remain attached to its hex.
 
-Register each frame in both the engine's `pixelEditorAssets` list and the JSON asset registry. Use `preserveFrame: true` in its sprite specification to keep the full frame and calibrated anchor when opening or applying changes in Pixel Editor.
+Folder-backed characters are registered automatically in Pixel Editor with `preserveFrame: true`. Their render size and source-space ground anchor come from the manifest, so every facing and all three poses retain the same complete frame, scale, and attachment to the hex. The older ready-only Studio Kobold remains registered in the legacy flat asset list for compatibility.
 
 ## Validation
 
-Run `node scripts/test-directional-sprites.mjs` and `node scripts/validate-repo.mjs`. The pose tests exercise the production selection/timer/draw functions, covering six facings, movement, missing/loading action frames, action expiry, and legacy sprite behavior. Browser QA checks actual decoded assets, initial placement, rendering, movement/attack-facing updates, and Pixel Editor anchor preservation.
+Run `node scripts/test-directional-sprites.mjs`, `node scripts/test-sprite-set-package.mjs`, and `node scripts/validate-repo.mjs`. The pose tests exercise production selection, registration, timer, and draw functions, covering six facings, movement, missing/loading action frames, action expiry, all prone conditions, atomic eighteen-frame registration, initial-only inspection, and legacy sprite behavior. Browser QA checks the draft handoff, actual decoded assets, initial placement, rendering, movement/attack-facing updates, and Pixel Editor anchor preservation.

@@ -168,6 +168,7 @@ function showLauncher(){
 
 let selectedCombatCondition="grass";
 let selectedMobEncounter="studio-kobold";
+let selectedStudioSpriteSetId="studio-kobold";
 
 function updateCombatMobSelection(){
   const label=document.getElementById("combatMobSetLabel");
@@ -181,8 +182,9 @@ function updateCombatMobSelection(){
 
   if(label){
     label.textContent=
-      labels[selectedMobEncounter] ||
-      labels.kobolds;
+      (selectedMobEncounter==="studio-kobold" &&
+        registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label) ||
+      labels[selectedMobEncounter] || labels.kobolds;
   }
 
   document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
@@ -2596,6 +2598,8 @@ const UNIT_POSE_DEFINITIONS={
   }
 };
 
+const registeredStudioSpriteSets=new Map();
+
 function unitPoseDefinition(unit){
   if(!unit) return null;
   return UNIT_POSE_DEFINITIONS[unit.spriteSetId] ||
@@ -2661,7 +2665,16 @@ function activeUnitPoseName(unit,now=performance.now()){
   const definition=unitPoseDefinition(unit);
   if(!definition) return null;
 
-  if(shouldUseKoboldPronePose(unit) && unitPoseSupportsPose(definition,"prone")){
+  /* Initial sprite inspection affects presentation only; it expires before combat. */
+  if(unit.studioPoseInspection && combatAwaitingStart && unit.studioSpriteTest &&
+    unitPoseSupportsPose(definition,unit.studioPoseInspection)){
+    return unit.studioPoseInspection;
+  }
+
+  const directionalProne=definition.directionalSprites && unit.alive && !unit.fled && (
+    getUnitEffect(unit,"sleep") || getUnitEffect(unit,"unconscious") || getUnitEffect(unit,"prone")
+  );
+  if((directionalProne || shouldUseKoboldPronePose(unit)) && unitPoseSupportsPose(definition,"prone")){
     return "prone";
   }
 
@@ -3442,6 +3455,107 @@ const pixelEditorAssets=[
 function getPixelEditorAsset(id){
   return pixelEditorAssets.find(item=>item.id===id) || null;
 }
+
+/* A small registration bridge lets new character folders remain separate from game code. */
+function registerStudioSpriteSet({manifest,images,sourceUrls}){
+  if(!manifest || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.id || "") ||
+    !manifest.frame || !manifest.label){
+    throw new Error("Invalid studio sprite set metadata.");
+  }
+  const id=`sprite-set:${manifest.id}`;
+  const frame=manifest.frame;
+  for(const key of ["width","height","renderWidth","renderHeight"]){
+    if(!Number.isFinite(frame[key]) || frame[key]<=0) throw new Error("Invalid sprite frame size.");
+  }
+  if(!Number.isFinite(frame.anchorX) || !Number.isFinite(frame.anchorY) ||
+    frame.anchorX<0 || frame.anchorX>frame.width || frame.anchorY<0 || frame.anchorY>frame.height){
+    throw new Error("Invalid sprite frame anchor.");
+  }
+  const spec={
+    sourceWidth:frame.width,sourceHeight:frame.height,
+    workspaceWidth:frame.width,workspaceHeight:frame.height,
+    renderWidth:frame.renderWidth,renderHeight:frame.renderHeight,
+    anchorX:frame.anchorX,anchorY:frame.anchorY,
+    scaleMode:"actual",lockAspect:true,nativeFacing:"right",preserveFrame:true
+  };
+  const directionalSprites={};
+  const additions=[];
+  for(const [capture,pose] of [["ready","stand"],["attack","attack"],["prone","prone"]]){
+    directionalSprites[pose]={};
+    for(const facing of ["E","NE","NW","W","SW","SE"]){
+      const file=manifest.poses?.[capture]?.frames?.[facing];
+      const image=images?.[file];
+      const src=sourceUrls?.[file];
+      if(!image?.complete || image.naturalWidth!==frame.width ||
+        image.naturalHeight!==frame.height || typeof src!=="string"){
+        throw new Error(`Sprite ${capture}/${facing} is missing or has the wrong dimensions.`);
+      }
+      const assetId=`sprite-set-${manifest.id}-${capture}-${facing.toLowerCase()}`;
+      prepareCrispPixelSprite(image);
+      directionalSprites[pose][facing]={image,assetId,src};
+      additions.push({
+        id:assetId,label:`${manifest.label} ${capture} — ${facing}`,
+        defaultCategory:"units",gameImage:image,originalSrc:src,spec:{...spec},
+        editCanvas:null,editCtx:null,dirty:false,sourceScale:1,runtimeAnchor:null
+      });
+    }
+  }
+  // Stage the whole set before replacing any runtime references.
+  UNIT_POSE_DEFINITIONS[id]={
+    defaultPose:"stand",actionPose:"attack",actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    directionalSprites
+  };
+  for(const addition of additions){
+    const index=pixelEditorAssets.findIndex(asset=>asset.id===addition.id);
+    if(index>=0) pixelEditorAssets[index]=addition;
+    else pixelEditorAssets.push(addition);
+  }
+  registeredStudioSpriteSets.set(id,{id,label:manifest.label,manifestId:manifest.id});
+  if(currentScreen==="pixel") renderPixelAssetList();
+  if(game && currentScreen==="combat") draw();
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
+  return id;
+}
+
+function selectStudioSpriteSet(id,{openSetup=false}={}){
+  if(id!=="studio-kobold" && !registeredStudioSpriteSets.has(id)) return false;
+  selectedStudioSpriteSetId=id;
+  selectedMobEncounter="studio-kobold";
+  updateCombatMobSelection();
+  if(openSetup) showCombatConditions();
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
+  return true;
+}
+
+function inspectStudioSpritePose(pose){
+  if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
+    !["ready","attack","prone","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",attack:"attack",prone:"prone",live:null}[pose];
+  for(const unit of game.enemies || []){
+    if(unit.studioSpriteTest) unit.studioPoseInspection=internalPose;
+  }
+  draw();
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
+  return true;
+}
+
+window.adventurePartySpriteSets=Object.freeze({
+  register:registerStudioSpriteSet,
+  select:selectStudioSpriteSet,
+  inspect:inspectStudioSpritePose,
+  snapshot:()=>({
+    selectedId:selectedStudioSpriteSetId,
+    encounter:selectedMobEncounter,
+    sets:[{id:"studio-kobold",label:"Studio Kobold — ready only"},...registeredStudioSpriteSets.values()],
+    inspecting:currentScreen==="combat" && combatAwaitingStart && selectedMobEncounter==="studio-kobold",
+    inspectionPose:game?.enemies?.find(unit=>unit.studioSpriteTest)?.studioPoseInspection || null,
+    units:(game?.enemies || []).filter(unit=>unit.studioSpriteTest).map(unit=>{
+      const frame=directionalUnitPoseFrame(unit);
+      return {id:unit.id,spriteSetId:unit.spriteSetId,facing:frame?.facing,pose:frame?.poseName,
+        assetId:frame?.assetId,source:frame?.image?.src || null};
+    })
+  })
+});
 
 function getSpriteAssetSpec(id){
   return getPixelEditorAsset(id)?.spec || null;
@@ -15452,8 +15566,10 @@ function makeStudioKoboldEncounter(condition=selectedCombatCondition){
     occupied.add(key(position.x,position.y));
     const unit=makeKobold(index,position);
     unit.id=`studio-kobold-${index+1}`;
-    unit.name=`Studio Kobold ${index+1}`;
-    unit.spriteSetId="studio-kobold";
+    const setLabel=registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label || "Studio Kobold";
+    unit.name=`${setLabel} ${index+1}`;
+    unit.spriteSetId=selectedStudioSpriteSetId;
+    unit.studioSpriteTest=true;
     unit.facingHex=index;
     unit.facing=[0,1,5].includes(index) ? "right" : "left";
     return unit;
@@ -15982,11 +16098,13 @@ function newGame(condition=selectedCombatCondition){
     );
   }else if(selectedMobEncounter==="studio-kobold"){
     log(
-      "Six Studio Kobolds deployed with ready views E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
+      "Six sprite-test units deployed facing E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
       "system"
     );
     log(
-      "Sprite test uses ordinary Kobold combat stats and dagger attacks. Action artwork is pending; attacks currently retain the matching ready view.",
+      selectedStudioSpriteSetId==="studio-kobold"
+        ? "Sprite test uses ordinary Kobold combat stats and dagger attacks. This ready-only set retains the matching ready view during attacks."
+        : "Sprite test uses ordinary Kobold combat stats and dagger attacks. Imported ready, attack, and prone artwork follows the actual combat pose.",
       "system"
     );
   }else{
@@ -16032,6 +16150,7 @@ function newGame(condition=selectedCombatCondition){
   */
   combatOpeningSpeechDone=true;
   combatAwaitingStart=true;
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   ui.roundLabel.textContent="ROUND —";
   ui.initiativeLabel.textContent="INIT: —";
@@ -25936,6 +26055,8 @@ function beginCombatFromPrompt(){
   }
 
   combatAwaitingStart=false;
+  for(const unit of game.enemies || []) delete unit.studioPoseInspection;
+  document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   setCombatMessage("Combat begins.");
   ui.turnBanner.textContent="ROLLING INITIATIVE...";

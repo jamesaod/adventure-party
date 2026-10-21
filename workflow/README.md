@@ -22,6 +22,14 @@ The repository remains the source of truth for current branches, revisions, code
 
 The agreed sprite procedure is **selected source PNGs → 4× nearest-neighbor enlargement → `assets/sprites/` → the smallest necessary reference or metadata patch**, while preserving the established rendered size, anchor, footprint, alignment, transparency, and facing. Read the complete skill for handling already-enlarged sources and verifying artwork identity.
 
+## 3d studio sprite sets
+
+Studio renders already have their intended native frame resolution. Preserve those PNGs without an additional 4× enlargement. The repeatable workflow is **load animated model → capture ready/attack/prone at chosen times → test in combat → export game assets ZIP → import the ZIP → validate and publish candidate**.
+
+The [3d studio guide](../docs/3D_STUDIO.md) preserves the capture steps and sheet mapping. The [sprite-set import guide](../docs/SPRITE_SET_IMPORT.md) preserves the one-command import and manifest format. Character artwork lives in `assets/sprites/<set-id>/`, with one small character manifest and an entry in `data/sprite-sets.json`. Future imports update those assets and references rather than adding image payloads or per-frame declarations to the main game file.
+
+Keep this workflow directory as reference material outside the published game, and keep executable import tools under `scripts/`.
+
 ## Restore or reconstruct the skill
 
 1. Recover the complete `workflow/skills/adventure-party-workflow/` directory from GitHub or a repository checkout. Use Git history to recover an earlier version if needed.
