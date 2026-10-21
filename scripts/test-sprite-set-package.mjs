@@ -8,6 +8,10 @@ import {
   validateSpriteSetManifest, splitSixFacingAtlas, assembleSpriteSheet
 } from '../js/sprite-set-core.mjs';
 import {
+  SPRITE_LAYOUT_PRESETS, SPRITE_LAYOUTS, SPRITE_MOBS, SPRITE_RESOLUTION,
+  spriteLayout, spriteLayoutDimensions, spriteLayoutOffsets, spriteMob, createSpriteLayoutMetadata
+} from '../js/sprite-layouts.mjs';
+import {
   crc32, decodeSpritePng, readSpriteSetPackage, importSpriteSet,
   validateSpritePackage, validateSpriteSetRepository
 } from './import-sprite-set.mjs';
@@ -53,13 +57,13 @@ function rgbaPng(data, w, h, filter = 0) {
     chunk('IHDR', header), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
-function fixtureFrames() {
+function fixtureFrames(w = width, h = height) {
   return Object.fromEntries(SPRITE_POSES.map((pose, row) => [pose,
     Object.fromEntries(SPRITE_DIRECTIONS.map((facing, column) => {
-      const pixels = new Uint8ClampedArray(width * height * 4);
-      for (let y = 2; y < height - 2; y++) {
-        for (let x = 1; x < width - 1; x++) {
-          pixels.set([column * 40, row * 80, (x + y) * 10, 255], (y * width + x) * 4);
+      const pixels = new Uint8ClampedArray(w * h * 4);
+      for (let y = 2; y < h - 2; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          pixels.set([column * 40, row * 80, ((x + y) % 25) * 10, 255], (y * w + x) * 4);
         }
       }
       return [facing, pixels];
@@ -68,11 +72,12 @@ function fixtureFrames() {
 }
 
 function packageFiles(metadata, frames) {
+  const { width: w, height: h } = metadata.frame;
   const files = new Map([['manifest.json', Buffer.from(`${JSON.stringify(metadata, null, 2)}\n`)]]);
   SPRITE_POSES.forEach((pose, row) => SPRITE_DIRECTIONS.forEach((facing, column) => {
-    files.set(metadata.poses[pose].frames[facing], rgbaPng(frames[pose][facing], width, height, (row + column) % 5));
+    files.set(metadata.poses[pose].frames[facing], rgbaPng(frames[pose][facing], w, h, (row + column) % 5));
   }));
-  const sheet = assembleSpriteSheet(frames, width, height);
+  const sheet = assembleSpriteSheet(frames, w, h);
   files.set(metadata.sheet.file, rgbaPng(sheet.data, sheet.width, sheet.height, 4));
   return files;
 }
@@ -80,6 +85,8 @@ function packageFiles(metadata, frames) {
 const frames = fixtureFrames();
 const files = packageFiles(manifest, frames);
 assert.equal(validateSpriteSetManifest(manifest), manifest);
+assert.equal(manifest.layout, undefined, 'Rev 46 manifests keep their original shape and frame sizes');
+assert.equal(manifest.mobType, undefined, 'Legacy MOB selection remains optional');
 assert.equal(spriteSetSlug('Kobold Veteran.fbx'), 'kobold-veteran');
 assert.equal(spriteSetSlug('  Àrcher / Blue!  '), 'archer-blue');
 assert.equal(spriteSetSlug(''), 'studio-character');
@@ -99,6 +106,82 @@ for (const alter of [
   const malformed = structuredClone(manifest);
   alter(malformed);
   assert.throws(() => validateSpriteSetManifest(malformed));
+}
+
+// A format determines canvas proportions and tactical size. The resolution
+// slider changes pixel detail only, across every supported value and layout.
+const expectedLayouts = {
+  single: { cells: [[0, 0]], size: [160, 200, 48, 60], rows: [1] },
+  wide2: { cells: [[0, 0], [1, 0]], size: [320, 200, 96, 60], rows: [2] },
+  triangle3: { cells: [[0, 0], [1, 0], [1, -1]], size: [320, 280, 96, 84], rows: [1, 2] },
+  'triangle3-inverted': { cells: [[0, 0], [1, 0], [0, 1]], size: [320, 280, 96, 84], rows: [2, 1] },
+  hex7: { cells: [[0, 0], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]], size: [480, 400, 144, 120], rows: [2, 3, 2] },
+  trapezoid5: { cells: [[0, 0], [1, 0], [2, 0], [1, -1], [2, -1]], size: [480, 320, 144, 96], rows: [2, 3] },
+  diamond4: { cells: [[0, 0], [1, 0], [1, -1], [0, 1]], size: [320, 480, 96, 144], rows: [1, 2, 1] }
+};
+assert.deepEqual(SPRITE_LAYOUT_PRESETS.map(layout => layout.id), Object.keys(expectedLayouts));
+assert.deepEqual(SPRITE_RESOLUTION, { min: 50, max: 200, step: 5 });
+for (const [id, expected] of Object.entries(expectedLayouts)) {
+  const layout = spriteLayout(id);
+  assert.equal(layout, SPRITE_LAYOUTS[id]);
+  assert.ok(Object.isFrozen(layout) && Object.isFrozen(layout.offsets) && layout.offsets.every(Object.isFrozen));
+  assert.deepEqual(layout.offsets.map(({ x, y }) => [x, y]), expected.cells, `${id} pivot and cells`);
+  const rowCounts = Object.entries(Object.groupBy ? Object.groupBy(layout.offsets, cell => cell.y) :
+    layout.offsets.reduce((rows, cell) => { (rows[cell.y] ||= []).push(cell); return rows; }, {}))
+    .sort(([a], [b]) => Number(a) - Number(b)).map(([, cells]) => cells.length);
+  assert.deepEqual(rowCounts, expected.rows, `${id} diagram row arrangement`);
+  for (let percent = 50; percent <= 200; percent += 5) {
+    const dims = spriteLayoutDimensions(id, percent);
+    assert.deepEqual(dims, {
+      width: expected.size[0] * percent / 100, height: expected.size[1] * percent / 100,
+      renderWidth: expected.size[2], renderHeight: expected.size[3]
+    });
+    assert.ok(dims.width <= 1024 && dims.height <= 1024);
+    assert.equal(dims.width * expected.size[1], dims.height * expected.size[0]);
+  }
+  for (let facing = 0; facing < 6; facing++) {
+    const cells = spriteLayoutOffsets(id, facing);
+    assert.equal(new Set(cells.map(cell => `${cell.x},${cell.y}`)).size, expected.cells.length);
+    assert.ok(cells.some(cell => cell.x === 0 && cell.y === 0), 'Rotation keeps the pivot');
+    if (!layout.rotates) assert.deepEqual(cells, layout.offsets);
+  }
+  assert.deepEqual(spriteLayoutOffsets(id, 6), layout.offsets, 'Six steps return to the original layout');
+}
+const expectedEToSE = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+expectedEToSE.forEach(([x, y], facing) => {
+  assert.deepEqual(spriteLayoutOffsets('wide2', facing)[1], { x, y }, `${SPRITE_DIRECTIONS[facing]} footprint follows the actual facing`);
+});
+assert.deepEqual(spriteLayoutOffsets('wide2', -1), spriteLayoutOffsets('wide2', 5));
+assert.throws(() => spriteLayoutOffsets('wide2', 0.5), /integer hex direction/);
+for (const invalid of [49, 51, 205, NaN, Infinity, '100']) {
+  assert.throws(() => spriteLayoutDimensions('single', invalid), /resolution/);
+}
+assert.throws(() => spriteLayout('constructor'), /Unknown sprite layout/);
+assert.throws(() => spriteMob('unknown'), /Unknown sprite MOB/);
+assert.deepEqual(SPRITE_MOBS.map(mob => mob.id), [
+  'kobold', 'kobold-bodyguard', 'kobold-slinger', 'orc', 'orc-leader', 'orc-shaman', 'juvenile-red-dragon'
+]);
+assert.equal(spriteMob('juvenile-red-dragon').defaultLayout, 'hex7');
+
+const largeDimensions = spriteLayoutDimensions('diamond4', 125);
+const formatManifest = createSpriteSetManifest({
+  id: 'test-large-character', label: 'Test large character', captures,
+  frame: { ...largeDimensions, anchorX: largeDimensions.width / 2, anchorY: largeDimensions.height * 0.75 },
+  layout: createSpriteLayoutMetadata('diamond4', 125), mobType: 'orc-leader'
+});
+assert.equal(formatManifest.version, 1, 'New optional metadata keeps legacy schema compatibility');
+assert.deepEqual(formatManifest.layout, { id: 'diamond4', resolutionPercent: 125 });
+assert.equal(formatManifest.mobType, 'orc-leader');
+for (const alter of [
+  value => { value.layout.id = 'unknown'; },
+  value => { value.layout.resolutionPercent = 51; },
+  value => { delete value.layout.resolutionPercent; },
+  value => { value.frame.width += 1; },
+  value => { value.frame.renderWidth *= 2; },
+  value => { value.mobType = 'unimplemented-monster'; }
+]) {
+  const bad = structuredClone(formatManifest); alter(bad);
+  assert.throws(() => validateSpriteSetManifest(bad));
 }
 
 // The six-facing legacy atlas and the 18-frame sheet use different layouts.
@@ -253,8 +336,33 @@ try {
   await assert.rejects(validateSpriteSetRepository({ repoRoot: validationRoot }), /manifest ID disagrees/);
   await fs.writeFile(registered.indexPath, JSON.stringify({ version: 1, sets: [] }));
   assert.equal((await validateSpriteSetRepository({ repoRoot: validationRoot })).sets, 0);
+
+  // Real-sized packages for all seven formats keep the exact PNG bytes and
+  // MOB/footprint metadata through the same importer used for actual exports.
+  const formatsRoot = path.join(temp, 'format-repo');
+  await fs.mkdir(formatsRoot);
+  for (let index = 0; index < SPRITE_LAYOUT_PRESETS.length; index++) {
+    const layout = SPRITE_LAYOUT_PRESETS[index];
+    const dimensions = spriteLayoutDimensions(layout.id, 50);
+    const metadata = createSpriteSetManifest({
+      id: `format-${layout.id}`, label: `Format ${layout.label}`, captures,
+      frame: { ...dimensions, anchorX: dimensions.width / 2, anchorY: dimensions.height * 0.75 },
+      layout: createSpriteLayoutMetadata(layout.id, 50), mobType: SPRITE_MOBS[index].id
+    });
+    const sizedFrames = fixtureFrames(dimensions.width, dimensions.height);
+    const sizedFiles = packageFiles(metadata, sizedFrames);
+    const formatZip = path.join(temp, `${metadata.id}.zip`);
+    await fs.writeFile(formatZip, zipSync(Object.fromEntries([...sizedFiles].map(([name, bytes]) => [`${metadata.id}/${name}`, bytes])), { level: 0 }));
+    const importedFormat = await importSpriteSet(formatZip, { repoRoot: formatsRoot });
+    const restoredMetadata = JSON.parse(await fs.readFile(path.join(importedFormat.destination, 'manifest.json'), 'utf8'));
+    assert.deepEqual(restoredMetadata.layout, metadata.layout);
+    assert.equal(restoredMetadata.mobType, metadata.mobType);
+    assert.deepEqual(restoredMetadata.frame, metadata.frame);
+    for (const [name, bytes] of sizedFiles) assert.deepEqual(await fs.readFile(path.join(importedFormat.destination, name)), bytes);
+  }
+  assert.equal((await validateSpriteSetRepository({ repoRoot: formatsRoot })).sets, 7);
 } finally {
   await fs.rm(temp, { recursive: true, force: true });
 }
 
-console.log('Sprite packages: pose/facing mapping, 18-cell assembly, PNG decode/alpha/CRC, ZIP bounds/paths, exact import/replacement, failure preservation, and repository registration checks passed.');
+console.log('Sprite packages: legacy compatibility, seven layouts and MOBs, resolution-independent render sizes, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');

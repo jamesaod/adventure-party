@@ -24,9 +24,15 @@ The agreed sprite procedure is **selected source PNGs → 4× nearest-neighbor e
 
 ## 3d studio sprite sets
 
-Studio renders already have their intended native frame resolution. Preserve those PNGs without an additional 4× enlargement. The repeatable workflow is **load animated model → capture ready/attack/prone at chosen times → test in combat → export game assets ZIP → import the ZIP → validate and publish candidate**.
+Studio renders already have their intended native frame resolution. Preserve those PNGs without an additional 4× enlargement. The repeatable workflow is **select MOB, footprint and resolution → load animated model → capture ready/attack/prone at chosen times → test in combat → Return to 3d studio → export game assets ZIP → import the ZIP → validate and publish candidate**.
 
-The [3d studio guide](../docs/3D_STUDIO.md) preserves the capture steps and sheet mapping. The [sprite-set import guide](../docs/SPRITE_SET_IMPORT.md) preserves the one-command import and manifest format. Character artwork lives in `assets/sprites/<set-id>/`, with one small character manifest and an entry in `data/sprite-sets.json`. Future imports update those assets and references rather than adding image payloads or per-frame declarations to the main game file.
+The studio supports single, two-wide, three-triangle, three-inverted-triangle, seven-center/ring, five-trapezoid and four-tall-diamond formats. A 50–200% slider in 5% steps changes native image detail while each format retains its fixed game render size. All formats use eighteen frames: ready, attack and prone rows with E/NE/NW/W/SW/SE columns. The first capture locks footprint, resolution and framing; the MOB target and shared color/outline settings remain editable.
+
+Partial and complete sheets autosave with their source pixels, model files and studio settings in this browser. Confirm the saved status before closing the tab. **Test in combat** also saves the exact tested workspace; **Return to 3d studio** restores it for export even after the original tab was closed. These browser drafts are isolated between stable and candidate. Export/import is still the step that produces portable, permanent repository assets.
+
+The [3d studio guide](../docs/3D_STUDIO.md) preserves the capture steps, exact format sizes and sheet mapping. The [sprite-set import guide](../docs/SPRITE_SET_IMPORT.md) preserves the one-command import and manifest format. Character artwork lives in `assets/sprites/<set-id>/`, with one small character manifest and an entry in `data/sprite-sets.json`. The manifest carries the selected MOB, footprint, resolution, frame/anchor and pose metadata. Future imports update those assets and references rather than adding image payloads or per-frame declarations to the main game file.
+
+The MOB selector uses the implemented catalog in `js/sprite-layouts.mjs`; tests instantiate the selected creature's existing factory and statistics. Adding a future MOB requires its actual combat implementation and a matching catalog entry. Importing another visual set for an existing MOB only needs the asset folder and index update. Older sets without MOB/footprint metadata retain the single-hex Kobold test defaults.
 
 Keep this workflow directory as reference material outside the published game, and keep executable import tools under `scripts/`.
 

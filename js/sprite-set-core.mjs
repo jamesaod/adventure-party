@@ -1,4 +1,6 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
+import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob } from './sprite-layouts.mjs';
+
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 export const SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
 export const SPRITE_SET_SCHEMA = 'adventure-party.sprite-set';
@@ -42,6 +44,21 @@ export function validateSpriteSetManifest(value) {
     requireValue(Number.isFinite(frame[key]) && frame[key] >= 0 && frame[key] <= limit,
       `${key} must be within the source frame.`);
   }
+  // Rev 46 packages remain valid without these optional fields. New exports
+  // carry enough information to preserve tactical size independently of detail.
+  if (value.layout !== undefined) {
+    requireValue(object(value.layout) && typeof value.layout.id === 'string' && Number.isInteger(value.layout.resolutionPercent),
+      'layout must include its format ID and resolution percentage.');
+    const layout = createSpriteLayoutMetadata(value.layout.id, value.layout.resolutionPercent);
+    const expected = spriteLayoutDimensions(layout.id, layout.resolutionPercent);
+    for (const key of ['width', 'height', 'renderWidth', 'renderHeight']) {
+      requireValue(frame[key] === expected[key], `${key} does not match the selected layout and resolution.`);
+    }
+  }
+  if (value.mobType !== undefined) {
+    requireValue(typeof value.mobType === 'string', 'MOB type must be an implemented creature ID.');
+    spriteMob(value.mobType);
+  }
   requireValue(sameOrder(value.facings, SPRITE_DIRECTIONS), 'the six facing directions are missing or out of order.');
   requireValue(object(value.poses), 'pose captures are missing.');
   const files = new Set();
@@ -71,7 +88,7 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render }) {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType }) {
   const poses = Object.fromEntries(SPRITE_POSES.map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -84,7 +101,9 @@ export function createSpriteSetManifest({ id, label, frame, captures, render }) 
     schema: SPRITE_SET_SCHEMA, version: 1, id, label, frame: { ...frame },
     facings: [...SPRITE_DIRECTIONS], poses,
     sheet: { file: 'sheet.png', columns: 6, rows: 3, poses: [...SPRITE_POSES], facings: [...SPRITE_DIRECTIONS] },
-    ...(render === undefined ? {} : { render })
+    ...(render === undefined ? {} : { render }),
+    ...(layout === undefined ? {} : { layout: { ...layout } }),
+    ...(mobType === undefined ? {} : { mobType })
   });
 }
 

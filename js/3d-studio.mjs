@@ -2,8 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C46';
-import { createPoseCapture } from './studio-capture.mjs?v=R237C46';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C47';
+import { createPoseCapture } from './studio-capture.mjs?v=R237C47';
+import {
+  SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, spriteLayout,
+  spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata
+} from './sprite-layouts.mjs?v=R237C47';
 
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
@@ -11,7 +15,9 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
-  'UpAxis', 'Resolution', 'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
+  'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint',
+  'FootprintPreview', 'FootprintDescription', 'FormatSummary', 'EmptyMessage',
+  'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
   'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'OutlineValue', 'Clip',
   'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time',
   'ExportSheetButton', 'Status', 'Error'
@@ -20,7 +26,9 @@ const ui = Object.fromEntries([
 const state = {
   model: null, modelName: 'Studio mannequin', clips: [], mixer: null,
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Y',
-  width: 160, height: 200, brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
+  width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
+  sourceFiles: [], isDemo: true, modelReady: false,
+  brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
   viewVisible: true, frameHeight: 3.15, framingMode: 'pose', framingSamplesPerClip: 0,
@@ -37,6 +45,84 @@ const previews = HEX_FACINGS.map(facing => ({
   canvas: $(`studioPreview${facing.id}`),
   context: $(`studioPreview${facing.id}`).getContext('2d', { alpha: false })
 }));
+
+function getWorkspaceSettings() {
+  return {
+    modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
+    layoutId: state.layoutId, resolutionPercent: state.resolutionPercent,
+    layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
+    mobType: state.mobType, width: state.width, height: state.height,
+    heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
+    center: state.center.toArray(), framingMode: state.framingMode,
+    framingSamplesPerClip: state.framingSamplesPerClip,
+    placement: placement ? { position: placement.position.toArray(), scale: placement.scale.x } : null,
+    clipIndex: Number(ui.Clip.value), clipName: state.action?.getClip().name || '',
+    time: state.action?.time || 0, playing: state.playing,
+    speed: Number(ui.Speed.value) || 1, facing: state.facing
+  };
+}
+
+function renderFootprintPreview() {
+  const layout = spriteLayout(state.layoutId);
+  const centers = layout.offsets.map(({ x, y }) => ({ x: (x + y / 2) * 40, y: y * 21 }));
+  const minX = Math.min(...centers.map(point => point.x)) - 23;
+  const maxX = Math.max(...centers.map(point => point.x)) + 23;
+  const minY = Math.min(...centers.map(point => point.y)) - 17;
+  const maxY = Math.max(...centers.map(point => point.y)) + 17;
+  ui.FootprintPreview.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+  ui.FootprintPreview.setAttribute('aria-label', `${layout.label}, ${centers.length} occupied hexes, facing east`);
+  ui.FootprintPreview.replaceChildren(...centers.map(center => {
+    const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    hex.setAttribute('points', [[0, -14], [20, -7], [20, 7], [0, 14], [-20, 7], [-20, -7]]
+      .map(([x, y]) => `${center.x + x},${center.y + y}`).join(' '));
+    return hex;
+  }));
+  ui.FootprintDescription.textContent = `${centers.length} occupied ${centers.length === 1 ? 'hex' : 'hexes'} · E-facing footprint`;
+}
+
+function updateSetupLabels() {
+  ui.Footprint.value = state.layoutId;
+  ui.MobTarget.value = state.mobType;
+  ui.Resolution.value = String(state.resolutionPercent);
+  ui.ResolutionValue.textContent = `${state.resolutionPercent}%`;
+  ui.Resolution.setAttribute('aria-valuetext', `${state.width} by ${state.height} pixels per sprite, ${state.resolutionPercent} percent`);
+  ui.FormatSummary.textContent = `Frame ${state.width} × ${state.height} · Sheet ${state.width * 6} × ${state.height * 3}`;
+  renderFootprintPreview();
+}
+
+function populateSetupControls() {
+  ui.MobTarget.replaceChildren(...SPRITE_MOBS.map(mob => new Option(mob.label, mob.id)));
+  ui.Footprint.replaceChildren(...SPRITE_LAYOUT_PRESETS.map(layout => new Option(layout.label, layout.id)));
+  for (const key of ['min', 'max', 'step']) ui.Resolution[key] = String(SPRITE_RESOLUTION[key]);
+  updateSetupLabels();
+}
+
+function syncCaptureLock(locked) {
+  for (const control of [ui.Footprint, ui.Resolution]) control.disabled = locked;
+  for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis]) {
+    control.disabled = locked || !state.modelReady;
+  }
+}
+
+function setModelReady(ready) {
+  state.modelReady = ready;
+  ui.LoadButton.disabled = ui.DemoButton.disabled = !renderer || state.disposed;
+  ui.ResetViewButton.disabled = !ready;
+  ui.ExportSheetButton.disabled = !ready;
+  document.querySelectorAll('[data-studio-export], [data-studio-facing]').forEach(button => { button.disabled = !ready; });
+  poseCapture?.setModelReady(ready);
+  syncCaptureLock(!!poseCapture?.snapshot().captureCount);
+}
+
+function changeSpriteFormat({ refit = false } = {}) {
+  const dimensions = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);
+  state.width = dimensions.width;
+  state.height = dimensions.height;
+  if (renderer && !state.disposed) configureAtlas();
+  updateSetupLabels();
+  if (refit && state.modelReady) fitAllAnimations();
+  poseCapture?.updateMetadata();
+}
 
 function status(message) { ui.Status.textContent = message; }
 function clearError() { ui.Error.hidden = true; ui.Error.textContent = ''; }
@@ -298,6 +384,7 @@ function applyModelFrame(frame) {
 function fitModel() {
   if (!state.model || poseCapture?.snapshot().captureCount) return;
   applyModelFrame(measureModelFrame(state.model, [], { upAxis: state.upAxis }));
+  poseCapture?.saveWorkspace();
 }
 
 function fitAllAnimations() {
@@ -309,6 +396,7 @@ function fitAllAnimations() {
     updateAnimationControls();
     clearError();
     status(state.clips.length ? 'All animations framed · One scale and ground anchor for every pose' : 'Static model framed');
+    poseCapture?.saveWorkspace();
   } catch (error) { showError(error); }
 }
 
@@ -331,6 +419,7 @@ function fixedCamera(camera) {
 }
 
 function resetCamera() {
+  if (!mainCamera || !pixelCamera || !orbit) return;
   const rect = ui.Viewport.getBoundingClientRect();
   setCameraFrustum(mainCamera, Math.max(rect.width, 1) / Math.max(rect.height, 1));
   setCameraFrustum(pixelCamera, state.width / state.height);
@@ -358,6 +447,7 @@ function selectFacing(id) {
 }
 
 function setClip(index) {
+  if (!state.mixer) return;
   state.mixer.stopAllAction();
   state.action = null;
   if (state.clips[index]) {
@@ -385,7 +475,7 @@ function updateAnimationControls() {
   ui.Time.textContent = `${time.toFixed(2)} / ${duration.toFixed(2)} s`;
 }
 
-function installModel({ model, clips, name }) {
+function installModel({ model, clips, name }, { restoreSettings = null, sourceFiles = [], isDemo = false, persist = true } = {}) {
   // Validate before releasing the previously usable model.
   let visibleMeshes = 0;
   model.traverse(object => { if (object.isMesh && object.geometry?.attributes?.position?.count) visibleMeshes++; });
@@ -395,7 +485,7 @@ function installModel({ model, clips, name }) {
   }
   const availableClips = clips.filter(clip => Number.isFinite(clip.duration) && clip.duration > 0);
   let framing;
-  try { framing = measureModelFrame(model, availableClips); }
+  try { framing = measureModelFrame(model, availableClips, { upAxis: restoreSettings?.upAxis === 'Z' ? 'Z' : 'Y' }); }
   catch (error) { disposeModel(model); throw error; }
   if (state.mixer) {
     state.mixer.stopAllAction();
@@ -405,27 +495,59 @@ function installModel({ model, clips, name }) {
   disposeModel(state.model);
   state.model = model;
   state.modelName = name;
-  poseCapture?.reset(name);
+  state.sourceFiles = sourceFiles;
+  state.isDemo = isDemo;
   state.clips = availableClips;
   state.mixer = new THREE.AnimationMixer(model);
-  state.heading = 0;
-  state.upAxis = 'Y';
-  ui.Heading.value = '0';
-  ui.HeadingValue.textContent = '0°';
-  ui.UpAxis.value = 'Y';
+  state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
+  state.upAxis = restoreSettings?.upAxis === 'Z' ? 'Z' : 'Y';
+  state.playing = restoreSettings ? !!restoreSettings.playing : true;
+  ui.Heading.value = String(state.heading);
+  ui.HeadingValue.textContent = `${state.heading}°`;
+  ui.UpAxis.value = state.upAxis;
   model.traverse(object => {
     if (object.isSkinnedMesh) object.frustumCulled = false;
   });
   upAxisGroup.add(model);
   ui.Clip.replaceChildren(new Option('Rest pose', '-1'));
   state.clips.forEach((clip, index) => ui.Clip.add(new Option(clip.name || `Animation ${index + 1}`, String(index))));
-  ui.Clip.value = state.clips.length ? '0' : '-1';
+  let clipIndex = state.clips.length ? 0 : -1;
+  if (restoreSettings) {
+    const named = state.clips.findIndex(clip => clip.name === restoreSettings.clipName);
+    clipIndex = named >= 0 ? named : Number.isInteger(restoreSettings.clipIndex) && restoreSettings.clipIndex >= -1 &&
+      restoreSettings.clipIndex < state.clips.length ? restoreSettings.clipIndex : clipIndex;
+    ui.Speed.value = ['0.25', '0.5', '1', '1.5', '2'].includes(String(restoreSettings.speed)) ? String(restoreSettings.speed) : '1';
+  }
+  ui.Clip.value = String(clipIndex);
   ui.Clip.disabled = !state.clips.length;
-  setClip(state.clips.length ? 0 : -1);
+  setClip(clipIndex);
+  if (restoreSettings && state.action && Number.isFinite(restoreSettings.time)) {
+    state.action.time = THREE.MathUtils.clamp(restoreSettings.time, 0, state.action.getClip().duration);
+    state.mixer.update(0);
+    updateAnimationControls();
+  }
+  const vector = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
+  if (restoreSettings && vector(restoreSettings.center) && vector(restoreSettings.placement?.position) &&
+      Number.isFinite(restoreSettings.placement.scale) && restoreSettings.placement.scale > 0 &&
+      Number.isFinite(restoreSettings.frameHeight) && restoreSettings.frameHeight > 0) {
+    framing = {
+      scale: restoreSettings.placement.scale,
+      position: new THREE.Vector3(...restoreSettings.placement.position),
+      center: new THREE.Vector3(...restoreSettings.center),
+      frameHeight: restoreSettings.frameHeight,
+      mode: restoreSettings.framingMode || 'animations',
+      samplesPerClip: restoreSettings.framingSamplesPerClip || 0
+    };
+  }
   updateModelInfo();
   applyModelFrame(framing);
+  if (!restoreSettings) poseCapture?.reset(name, { persist: false });
+  ui.EmptyMessage.hidden = true;
+  setModelReady(true);
   clearError();
-  status(state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
+  status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
+    state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
+  if (!restoreSettings && persist) poseCapture?.saveWorkspace();
 }
 
 function configureAtlas() {
@@ -461,7 +583,7 @@ function pixelRenderOptions(transparent = false) {
 }
 
 function readCapturePose() {
-  if (!state.model || state.disposed) throw new Error('Load a model before capturing a pose.');
+  if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
   state.playing = false;
   state.lastTick = 0;
   if (state.action) state.action.paused = true;
@@ -472,6 +594,9 @@ function readCapturePose() {
   const ground = new THREE.Vector3(0, 0, 0).project(pixelCamera);
   const result = {
     raw: atlasSource.slice(), width: state.width, height: state.height,
+    layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
+    renderWidth: spriteLayout(state.layoutId).renderWidth,
+    renderHeight: spriteLayout(state.layoutId).renderHeight,
     clip: state.action?.getClip().name || 'Rest pose', time: state.action?.time || 0,
     anchorX: (ground.x + 1) * state.width / 2,
     anchorY: (1 - ground.y) * state.height / 2,
@@ -586,7 +711,7 @@ function createLocalManager(files) {
     if (/^(data:|blob:)/i.test(url)) return url;
     const normalized = normalizePath(url);
     const exact = files.filter(file => {
-      const path = normalizePath(file.webkitRelativePath || file.name);
+      const path = normalizePath(file.studioRelativePath || file.webkitRelativePath || file.name);
       return normalized === path || normalized.endsWith(`/${path}`);
     });
     let matches = exact;
@@ -624,17 +749,23 @@ function friendlyImportError(error) {
   return new Error(message);
 }
 
-async function loadFiles(fileList) {
+async function loadFiles(fileList, { restoreSettings = null } = {}) {
+  if (!renderer || state.disposed) {
+    showError(new Error('The 3D viewer is unavailable. Your saved captures can still be exported.'));
+    return false;
+  }
   const files = [...fileList];
   const candidates = files.filter(file => /\.(glb|gltf|fbx)$/i.test(file.name));
   if (candidates.length !== 1) {
     showError(new Error('Choose one GLB, glTF, or FBX model, together with any texture and buffer files it needs.'));
-    return;
+    return false;
   }
   const version = ++state.loadingVersion;
   const file = candidates[0];
   const local = createLocalManager(files);
   let loaded;
+  const previousModelReady = state.modelReady;
+  setModelReady(false);
   clearError();
   status(`Loading ${file.name}…`);
   try {
@@ -649,15 +780,24 @@ async function loadFiles(fileList) {
     await local.wait();
     if (version !== state.loadingVersion || state.disposed) {
       disposeModel(loaded.model);
-      return;
+      return false;
     }
-    installModel(loaded);
+    installModel(loaded, {
+      restoreSettings,
+      sourceFiles: files.map(source => ({
+        name: source.name, type: source.type, lastModified: source.lastModified,
+        relativePath: source.studioRelativePath || source.webkitRelativePath || '', blob: source
+      }))
+    });
+    return true;
   } catch (error) {
     if (loaded?.model !== state.model) disposeModel(loaded?.model);
     if (version === state.loadingVersion && !state.disposed) {
       showError(friendlyImportError(error));
-      status('Model could not be loaded · Previous model retained');
+      setModelReady(previousModelReady);
+      status(restoreSettings ? 'Saved captures restored · Model could not be reopened' : 'Model could not be loaded · Previous model retained');
     }
+    return false;
   } finally {
     local.revoke();
     ui.Files.value = '';
@@ -702,13 +842,14 @@ function bindControls() {
   ui.Files.addEventListener('change', () => { if (ui.Files.files.length) loadFiles(ui.Files.files); });
   ui.DemoButton.addEventListener('click', () => {
     ++state.loadingVersion;
-    installModel(makeDemo());
+    try { installModel(makeDemo(), { isDemo: true }); }
+    catch (error) { showError(error); }
   });
   ui.FrameButton.addEventListener('click', fitModel);
   ui.FrameAnimationsButton.addEventListener('click', fitAllAnimations);
   ui.ResetViewButton.addEventListener('click', resetCamera);
   document.querySelectorAll('[data-studio-facing]').forEach(button => {
-    button.addEventListener('click', () => selectFacing(button.dataset.studioFacing));
+    button.addEventListener('click', () => { selectFacing(button.dataset.studioFacing); poseCapture?.saveWorkspace(); });
   });
   document.querySelectorAll('[data-studio-export]').forEach(button => {
     button.addEventListener('click', () => exportImage(button.dataset.studioExport));
@@ -717,19 +858,31 @@ function bindControls() {
   ui.Heading.addEventListener('input', () => {
     state.heading = Number(ui.Heading.value);
     ui.HeadingValue.textContent = `${state.heading}°`;
-    calibration.rotation.y = THREE.MathUtils.degToRad(state.heading);
+    if (calibration) calibration.rotation.y = THREE.MathUtils.degToRad(state.heading);
+    poseCapture?.saveWorkspace();
     invalidate();
   });
   ui.UpAxis.addEventListener('change', () => {
     state.upAxis = ui.UpAxis.value;
     fitAllAnimations();
   });
-  ui.Resolution.addEventListener('change', () => {
-    const [width, height] = ui.Resolution.value.split('x').map(Number);
-    if (![[80, 100], [160, 200], [320, 400]].some(pair => pair[0] === width && pair[1] === height)) return;
-    state.width = width;
-    state.height = height;
-    configureAtlas();
+  ui.Resolution.addEventListener('input', () => {
+    if (poseCapture?.snapshot().captureCount) { updateSetupLabels(); return; }
+    state.resolutionPercent = Number(ui.Resolution.value);
+    changeSpriteFormat();
+  });
+  ui.Footprint.addEventListener('change', () => {
+    if (poseCapture?.snapshot().captureCount) { updateSetupLabels(); return; }
+    state.layoutId = spriteLayout(ui.Footprint.value).id;
+    changeSpriteFormat({ refit: true });
+  });
+  ui.MobTarget.addEventListener('change', () => {
+    const mob = spriteMob(ui.MobTarget.value);
+    state.mobType = mob.id;
+    if (!poseCapture?.snapshot().captureCount) {
+      state.layoutId = mob.defaultLayout;
+      changeSpriteFormat({ refit: true });
+    } else poseCapture.updateMetadata();
   });
   const colorControls = [
     ['Brightness', 'brightness', 100, '%'],
@@ -738,6 +891,7 @@ function bindControls() {
     ['Saturation', 'saturation', 100, '%']
   ].map(([name, key, divisor, suffix]) => {
     const input = ui[name];
+    input.value = String(state[key] * divisor);
     const update = () => {
       const value = Number(input.value);
       state[key] = value / divisor;
@@ -748,6 +902,7 @@ function bindControls() {
     update();
     return { input, update };
   });
+  ui.Outline.value = String(state.outline);
   ui.ResetColorsButton.addEventListener('click', () => {
     colorControls.forEach(({ input, update }) => { input.value = input.defaultValue; update(); });
     poseCapture?.updateStyle(pixelRenderOptions(true));
@@ -760,12 +915,13 @@ function bindControls() {
   };
   ui.Outline.addEventListener('input', () => { updateOutline(); poseCapture?.updateStyle(pixelRenderOptions(true)); invalidate(); });
   updateOutline();
-  ui.Clip.addEventListener('change', () => setClip(Number(ui.Clip.value)));
+  ui.Clip.addEventListener('change', () => { setClip(Number(ui.Clip.value)); poseCapture?.saveWorkspace(); });
   ui.PlayButton.addEventListener('click', () => {
     state.playing = !state.playing;
     if (state.action) state.action.paused = !state.playing;
     updateAnimationControls();
     state.lastTick = 0;
+    poseCapture?.saveWorkspace();
     invalidate();
   });
   ui.RestartButton.addEventListener('click', () => {
@@ -773,10 +929,12 @@ function bindControls() {
     state.action.time = 0;
     state.mixer.update(0);
     updateAnimationControls();
+    poseCapture?.saveWorkspace();
     invalidate();
   });
   ui.Speed.addEventListener('change', () => {
     if (state.action) state.action.timeScale = Number(ui.Speed.value);
+    poseCapture?.saveWorkspace();
     invalidate();
   });
   ui.Timeline.addEventListener('input', () => {
@@ -786,6 +944,7 @@ function bindControls() {
     state.action.time = Number(ui.Timeline.value) * state.action.getClip().duration;
     state.mixer.update(0);
     updateAnimationControls();
+    poseCapture?.saveWorkspace();
     invalidate();
   });
   ui.Viewport.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; });
@@ -805,18 +964,18 @@ function bindControls() {
     state.disposed = true;
     state.loadingVersion++;
     cancelAnimationFrame(state.raf);
-    resizeObserver.disconnect();
+    resizeObserver?.disconnect();
     visibilityObserver?.disconnect();
-    orbit.dispose();
+    orbit?.dispose();
     state.mixer?.stopAllAction();
     disposeModel(state.model);
     disposeModel(helpers);
-    atlasTarget.dispose();
-    renderer.dispose();
+    atlasTarget?.dispose();
+    renderer?.dispose();
   });
 }
 
-function start() {
+function startViewer() {
   renderer = new THREE.WebGLRenderer({ canvas: ui.Canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -857,7 +1016,6 @@ function start() {
   orbit.maxPolarAngle = Math.PI * 0.92;
   orbit.addEventListener('change', () => invalidate(false));
   configureAtlas();
-  bindControls();
   resizeObserver = new ResizeObserver(() => invalidate(false));
   resizeObserver.observe(ui.Viewport);
   if ('IntersectionObserver' in window) {
@@ -873,20 +1031,51 @@ function start() {
     state.viewVisible = false;
     cancelAnimationFrame(state.raf);
     state.raf = 0;
+    setModelReady(false);
     showError(new Error('The 3D graphics context was interrupted. Reload the studio to restore the viewer.'));
     status('Graphics paused');
   });
+}
+
+function restoreWorkspaceValues({ settings = {}, style = {} }) {
+  try {
+    state.layoutId = spriteLayout(settings.layout?.id || settings.layoutId || 'single').id;
+    state.resolutionPercent = createSpriteLayoutMetadata(state.layoutId,
+      settings.layout?.resolutionPercent || settings.resolutionPercent || 100).resolutionPercent;
+  } catch { state.layoutId = 'single'; state.resolutionPercent = 100; }
+  try { state.mobType = spriteMob(settings.mobType || 'kobold').id; }
+  catch { state.mobType = 'kobold'; }
+  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);
+  state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 1024 ? settings.width : size.width;
+  state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 1024 ? settings.height : size.height;
+  state.modelName = settings.modelName || 'Saved character';
+  state.sourceFiles = Array.isArray(settings.sourceFiles) ? settings.sourceFiles : [];
+  state.isDemo = settings.isDemo === true;
+  state.heading = Number.isFinite(settings.heading) ? settings.heading : 0;
+  state.upAxis = settings.upAxis === 'Z' ? 'Z' : 'Y';
+  state.facing = HEX_FACINGS.some(item => item.id === settings.facing) ? settings.facing : 'SE';
+  for (const key of ['brightness', 'contrast', 'hue', 'saturation', 'outline']) {
+    if (Number.isFinite(style[key])) state[key] = style[key];
+  }
+  ui.Heading.value = String(state.heading);
+  ui.HeadingValue.textContent = `${state.heading}°`;
+  ui.UpAxis.value = state.upAxis;
+  ui.ModelName.textContent = state.modelName;
+  ui.ModelInfo.textContent = 'Saved captures restored. Reopening the model…';
+  updateSetupLabels();
+}
+
+async function start() {
+  populateSetupControls();
   poseCapture = createPoseCapture({
     readPose: readCapturePose,
     getStyle: () => pixelRenderOptions(true),
-    onLockChange: locked => {
-      for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis, ui.Resolution]) control.disabled = locked;
-    },
+    getWorkspaceSettings,
+    onLockChange: syncCaptureLock,
     onError: showError,
     onStatus: status
   });
-  installModel(makeDemo());
-  selectFacing(state.facing);
+  setModelReady(false);
   // Read-only diagnostics support candidate QA without exposing mutable scene internals.
   window.adventureParty3DStudio = Object.freeze({
     snapshot: () => ({
@@ -898,15 +1087,57 @@ function start() {
       cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION),
       framingMode: state.framingMode, framingSamplesPerClip: state.framingSamplesPerClip,
       frameHeight: state.frameHeight, frameCenter: state.center.toArray(),
+      layoutId: state.layoutId, resolutionPercent: state.resolutionPercent, mobType: state.mobType,
+      renderSize: [spriteLayout(state.layoutId).renderWidth, spriteLayout(state.layoutId).renderHeight],
+      sourceFileCount: state.sourceFiles.length,
       ...poseCapture.snapshot()
     })
   });
+  const query = new URLSearchParams(location.search);
+  const fromCombat = query.get('studioRestore') === '1' || query.get('restore') === '1';
+  let restored = null, restoreError = null;
+  try { restored = await poseCapture.restore({ fromCombat }); }
+  catch (error) { restoreError = error; }
+  if (restored) restoreWorkspaceValues(restored);
+  if (restored && fromCombat && restored.persisted !== false) {
+    const url = new URL(location.href);
+    url.searchParams.delete('studioRestore');
+    url.searchParams.delete('restore');
+    history.replaceState(null, '', url);
+  }
+  bindControls();
+  try {
+    startViewer();
+    if (restored?.settings?.isDemo) {
+      installModel(makeDemo(), { isDemo: true, restoreSettings: restored.settings });
+    } else if (restored && state.sourceFiles.length) {
+      const files = state.sourceFiles.map(source => {
+        const file = new File([source.blob], source.name, { type: source.type, lastModified: source.lastModified });
+        Object.defineProperty(file, 'studioRelativePath', { value: source.relativePath || '' });
+        return file;
+      });
+      await loadFiles(files, { restoreSettings: restored.settings });
+    } else if (restored?.captureCount) {
+      setModelReady(false);
+      ui.EmptyMessage.hidden = false;
+      ui.EmptyMessage.textContent = 'Your captured sprites are restored below and ready to export.';
+      ui.ModelInfo.textContent = 'Saved sprite set · Source model is not stored';
+      status('Saved captures restored · Export or test the same sprite set');
+    } else installModel(makeDemo(), { isDemo: true, restoreSettings: restored?.settings || null, persist: !restoreError });
+    selectFacing(state.facing);
+    if (restoreError) {
+      showError(restoreError);
+      status('Studio ready · Automatic saving is unavailable');
+    }
+  } catch (error) {
+    cancelAnimationFrame(state.raf);
+    state.disposed = true;
+    setModelReady(false);
+    ui.EmptyMessage.hidden = false;
+    ui.EmptyMessage.textContent = restored?.captureCount ? 'Your saved captures are available below for export.' : 'The 3D viewer could not start.';
+    showError(new Error(`The 3D viewer could not start. ${error.message || error}`));
+    status(restored?.captureCount ? 'Saved captures restored · 3D viewer unavailable' : '3D viewer unavailable');
+  }
 }
 
-try { start(); }
-catch (error) {
-  cancelAnimationFrame(state.raf);
-  state.disposed = true;
-  showError(new Error(`The 3D viewer could not start. ${error.message || error}`));
-  status('3D viewer unavailable');
-}
+start().catch(error => { showError(error); status('Studio could not be initialized'); });

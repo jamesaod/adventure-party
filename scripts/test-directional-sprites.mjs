@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import { createSpriteSetManifest, SPRITE_DIRECTIONS, SPRITE_POSES } from "../js/sprite-set-core.mjs";
+import { SPRITE_LAYOUTS } from "../js/sprite-layouts.mjs";
 
 // Exercise the production pose resolver and draw path without booting audio,
 // terrain, or the DOM. Images and the clock are the only inputs replaced here.
@@ -41,6 +42,8 @@ const legacyProneAsset = { spec: { renderWidth: 35, renderHeight: 18, nativeFaci
 const registeredAssets = [];
 const sandbox = {
   HEX_DIRS,
+  UNIT_FOOTPRINTS: SPRITE_LAYOUTS,
+  STUDIO_FOOTPRINTS: new Map(),
   UNIT_DEFAULT_ACTION_POSE_MS: 1000,
   UNIT_POSE_DEFINITIONS: {
     "test-six": definition,
@@ -74,6 +77,7 @@ const sandbox = {
 };
 const names = [
   "facingDirectionIndex", "hexDistance", "hexDirectionIndexToward", "updateFacingForStep",
+  "unitFootprintDefinition",
   "unitPoseDefinition", "unitPoseSupportsPose", "directionalUnitPoseFrame",
   "shouldUseKoboldPronePose", "activeUnitPoseName", "unitPoseSprite",
   "setTemporaryUnitPose", "triggerUnitAttackPose", "pixelAssetIdForUnitPose", "drawSpriteFacing",
