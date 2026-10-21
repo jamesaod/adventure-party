@@ -2607,26 +2607,29 @@ class AnimationParser {
 
 			const relationships = connections.get( animationCurve.id );
 
-			if ( relationships !== undefined ) {
+			// A curve can drive several curve nodes, including nodes in different takes.
+			for ( const parent of relationships?.parents || [] ) {
 
-				const animationCurveID = relationships.parents[ 0 ].ID;
-				const animationCurveRelationship = relationships.parents[ 0 ].relationship;
+				const curveNode = curveNodesMap.get( parent.ID );
+				const animationCurveRelationship = parent.relationship;
+
+				if ( curveNode === undefined || typeof animationCurveRelationship !== 'string' ) continue;
 
 				if ( animationCurveRelationship.match( /X/ ) ) {
 
-					curveNodesMap.get( animationCurveID ).curves[ 'x' ] = animationCurve;
+					curveNode.curves[ 'x' ] = animationCurve;
 
 				} else if ( animationCurveRelationship.match( /Y/ ) ) {
 
-					curveNodesMap.get( animationCurveID ).curves[ 'y' ] = animationCurve;
+					curveNode.curves[ 'y' ] = animationCurve;
 
 				} else if ( animationCurveRelationship.match( /Z/ ) ) {
 
-					curveNodesMap.get( animationCurveID ).curves[ 'z' ] = animationCurve;
+					curveNode.curves[ 'z' ] = animationCurve;
 
-				} else if ( animationCurveRelationship.match( /DeformPercent/ ) && curveNodesMap.has( animationCurveID ) ) {
+				} else if ( animationCurveRelationship.match( /DeformPercent/ ) ) {
 
-					curveNodesMap.get( animationCurveID ).curves[ 'morph' ] = animationCurve;
+					curveNode.curves[ 'morph' ] = animationCurve;
 
 				}
 

@@ -58,6 +58,44 @@ try {
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /Layered.*multiple nonempty layers/);
 
+  // FBX permits a curve to drive multiple curve nodes in separate animation stacks.
+  // Derive a two-stack fixture from the authored file, keeping the real parser path.
+  const objectSection = fixture.slice(fixture.indexOf('Objects:'), fixture.indexOf('\nConnections:'));
+  const objects = new Map([...objectSection.matchAll(/^\t(?:Model|Geometry|AnimationStack|AnimationLayer|AnimationCurveNode|AnimationCurve): (\d+),[^\n]*\{\n[\s\S]*?^\t\}/gm)]
+    .map(match => [Number(match[1]), match[0]]));
+  const twoStacks = (shared, reverse = false, unrelated = false) => {
+    const ids = [1, 2, 3, 100, 200, 101, 201, 110, 210, 111, 211];
+    const links = shared
+      ? ['\tC: "OP",111,110,"d|X"', '\tC: "OP",111,210,"d|X"']
+      : ['\tC: "OP",111,110,"d|X"', '\tC: "OP",211,210,"d|X"'];
+    if (reverse) links.reverse();
+    if (unrelated) links.unshift('\tC: "OO",111,110', '\tC: "OP",111,1,"d|X"', '\tC: "OP",111,999,"d|X"');
+    return fixture.slice(0, fixture.indexOf('Objects:')) + 'Objects:  {\n' + ids.map(id => objects.get(id)).join('\n') +
+      '\n}\nConnections:  {\n' + [
+        '\tC: "OO",1,0', '\tC: "OO",2,1', '\tC: "OO",3,2',
+        '\tC: "OO",101,100', '\tC: "OO",201,200',
+        '\tC: "OO",110,101', '\tC: "OP",110,1,"Lcl Translation"',
+        '\tC: "OO",210,201', '\tC: "OP",210,1,"Lcl Translation"', ...links
+      ].join('\n') + '\n}\n';
+  };
+  const control = parse(twoStacks(false)).root;
+  assert.deepEqual(control.userData.fbxAnimations, { stackCount: 2, clipCount: 2, emptyStackCount: 0, layeredStackCount: 0 });
+  assert.deepEqual(control.animations.map(clip => [...clip.tracks[0].times]), [[0, 2, 4, 6], [0, 1]]);
+  assert.deepEqual([...control.animations[1].tracks[0].values], [0, 0, 0, 10, 0, 0]);
+  for (const [reverse, unrelated] of [[false, false], [true, false], [false, true]]) {
+    const shared = parse(twoStacks(true, reverse, unrelated)).root;
+    assert.deepEqual(shared.userData.fbxAnimations, control.userData.fbxAnimations,
+      'Every connected stack remains usable regardless of shared-curve connection order');
+    assert.deepEqual(shared.animations.map(clip => clip.name), ['Walk', 'Attack']);
+    assert.deepEqual(shared.animations.map(clip => clip.userData.fbxAnimation),
+      control.animations.map(clip => clip.userData.fbxAnimation), 'Distinct stack IDs and authored ranges survive shared curves');
+    for (const clip of shared.animations) {
+      assert.equal(clip.tracks.length, 1);
+      assert.deepEqual([...clip.tracks[0].times], [0, 2, 4, 6]);
+      assert.deepEqual([...clip.tracks[0].values], [0, 0, 0, 2, 0, 0, 4, 0, 0, 6, 0, 0]);
+    }
+  }
+
   const withoutStackRange = fixture.replace(
     /("AnimStack::Walk", "" \{\n)\t\tProperties70:  \{[\s\S]*?\n\t\t\}/,
     '$1');
@@ -108,7 +146,7 @@ Connections:  {
       }
     } finally { THREE.TextureLoader.prototype.load = loadTexture; }
   }
-  console.log('FBX animations: distinct and duplicate-named stacks, authored ranges, named-take fallback, empty layers/stacks, layered warnings, and returned-root metadata passed.');
+  console.log('FBX animations: distinct and duplicate-named stacks, shared curves and connection order, authored ranges, named-take fallback, empty layers/stacks, layered warnings, and returned-root metadata passed.');
 } finally {
   await fs.rm(temporary, { recursive: true, force: true });
 }

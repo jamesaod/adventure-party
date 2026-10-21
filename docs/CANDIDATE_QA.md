@@ -2,7 +2,15 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 54 — Selectable FBX animations and named ranges
+## Current candidate: Rev 55 — Shared FBX animation curves
+
+The FBX importer now follows every valid animation-curve connection. FBX permits one curve to feed curve nodes in several takes; following only the first connection caused later takes to disappear. Regression fixtures reproduce the missing animation and verify that both takes load regardless of connection order, while retaining their distinct IDs and authored time spans.
+
+Pixel Studio now reports selectable animations alongside the total FBX take count. A take with no supported tracks is described as such rather than assumed to be empty. The existing first-usable-layer limitation is still reported; this change does not add layer blending.
+
+Validation includes the parser regressions, a real binary FBX, browser selection of both shared-curve takes with one active action, and the repository checks. Same-filename replacement was also verified in both directions: loading new bytes replaces the stored model, while a page refresh restores the last saved copy. The user's Tripo FBX has not been supplied, so this confirmed importer defect is not yet identified as the cause in that file.
+
+## Candidate Rev 54 — Selectable FBX animations and named ranges
 
 Pixel Studio lists every usable embedded animation with its own number, name and duration. FBX takes retain their identity even when names are duplicated. Valid authored take boundaries are cropped and shifted to a local timeline starting at zero; boundary poses and intentional holds are preserved. Empty takes are skipped, and layered FBX takes produce an explanatory note because the viewer uses the first usable layer.
 
