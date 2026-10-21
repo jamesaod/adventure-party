@@ -2,9 +2,17 @@
 
 Open **3d studio** from the Adventure Party title page. The dedicated page has a central interactive model view, six live pixel views on the left, and model/orientation controls on the right. It restores the last saved workspace when one exists; a small articulated demo character loads on the first visit.
 
+## Saved model library
+
+Under **Model**, choose **Dungeon Crawler Carl Ver 2** from **Model library**, then press **Load selected model**. The GLB is stored in the repository at `assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb`, so it can be opened without uploading a local copy. It includes four independent animations: `box_01`, `fall`, `box_02`, and `box_03`.
+
+Loading this saved model selects **Y up** and **Dungeon Crawler Carl — Fighter**, with a single-hex footprint. Its display name, source model, selected animation and studio settings persist through the existing workspace save/restore flow. Simply choosing a menu entry leaves the current workspace in place; pressing **Load selected model** loads it and starts a fresh capture sheet after a successful import. A failed download/import retains the existing model and captures.
+
+The source GLB is preserved byte-for-byte under a descriptive versioned filename. Saved model entries live in `data/studio-models.json`; source-model files stay in `assets/models/`, separately from exported sprite assets in `assets/sprites/`. Loading a saved model does not replace Carl's combat sprites. Local files can still be opened with **Load from device**.
+
 ## Load and align a model
 
-1. Choose **Load model**, or drop a model onto the central viewport.
+1. Choose **Load from device**, or drop a model onto the central viewport.
 2. Select one `.glb`, `.gltf`, or `.fbx` model. For a model with external buffers or textures, select those files together with it. A self-contained GLB is the simplest handoff.
 3. New models default to **Z** under **Model's up direction**. Choose **Y** for a Y-up source, and use **Front adjustment** if its front faces a different direction. Restoring a workspace preserves its saved up direction, including older Y-up choices. Internally the studio aligns the model to +Z forward with +Y up for rendering.
 4. Select a direction under the main window to inspect that facing. Drag the main window to orbit, scroll to zoom, and use **Reset view** to return to the game's elevated angle with the model centered at **50% of the available width or height**. The camera fits the model; the 75-foot ruler can extend beyond the visible window. These free camera movements leave the six fixed pixel cameras aligned to the board.
@@ -66,7 +74,7 @@ The **Animation** dropdown lists every usable embedded clip with a number, name 
 
 FBX files can contain multiple named takes. The studio reports the selectable-animation count alongside the total take count, follows curves shared by multiple takes, and honors each take's valid start/end markers. Each take gets a timeline starting at zero, retaining the exact boundary poses and intentional holds. Takes with no supported tracks are skipped with a note; this does not establish that the source take is empty. If a take contains multiple animation layers, the studio uses the first usable layer and displays a note; export baked animations when those layers need to be blended together.
 
-To check a newer export, choose its file again with **Load model**. Refreshing restores the previously saved model files; it does not reread a changed file on your computer. Loading a new file with the same name replaces the stored file normally.
+To check a newer export, choose its file again with **Load from device**. Refreshing restores the previously saved model files; it does not reread a changed file on your computer. Loading a new file with the same name replaces the stored file normally.
 
 If the file contains several motions on one continuous timeline, expand **Create animation from range**:
 
