@@ -29,7 +29,7 @@ Partial and complete sheets autosave in this browser with their source pixels, m
 
 Choose **Test in combat** after capturing all 18 sprites. The studio saves the PNGs and an exact copy of the captured workspace, then opens Combat System Test with that character selected. The test creates six units using the selected MOB's implemented statistics and behavior, with the set's chosen footprint. This lets you inspect the ready, attack, and prone artwork before importing it into the repository.
 
-Player targets (`fighter`, `ranger`, and `mage`) create six friendly copies of Carl, Elven Ranger, or Baub, with Kobold opponents. Their existing class, equipment, statistics and player/NPC controller are retained. The pose inspector works on the friendly test formation in all six directions.
+The `fighter` target uses exactly one Dungeon Crawler Carl: the existing player with the selected sprite set, against six Kobolds. It creates no extra Carl allies or initiative entries. The `ranger` and `mage` targets retain six friendly inspection copies of Elven Ranger or Baub with Kobold opponents. Existing class, equipment, statistics and player/NPC control are retained, and the pose inspector works on the selected friendly test character or formation.
 
 Choose **Return to 3d studio** from setup or combat to restore the exact tested captures and export or adjust them, even if the original studio tab was closed. Victory, defeat, and manual exit from a studio battle also return directly to the studio without a loot screen. Stable and candidate drafts are separate. Export the ZIP to keep a transferable copy and use the import command below to make the character part of the game repository.
 

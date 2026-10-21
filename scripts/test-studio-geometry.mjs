@@ -105,8 +105,50 @@ assert.throws(() => studioLightPosition('E', 45, 0), /distance/);
 // SkinnedMesh's bind-inverse refresh and incorrectly squares a parent's scale.
 // A data URL lets CI's Node 20 read the bundled ESM without a package.json type.
 const threeSource = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
-const THREE = await import(`data:text/javascript;base64,${threeSource.toString('base64')}`);
+const threeModuleUrl = `data:text/javascript;base64,${threeSource.toString('base64')}`;
+const THREE = await import(threeModuleUrl);
 const studioSource = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
+
+// Exercise the production camera adjustment against the bundled camera and
+// OrbitControls: model points must retain their screen positions and depth,
+// including an already-panned/zoomed view and pending movement inertia.
+const controlsSource = fs.readFileSync(new URL('../assets/vendor/three/addons/controls/OrbitControls.js', import.meta.url), 'utf8')
+  .replace("from 'three'", `from '${threeModuleUrl}'`);
+const { OrbitControls } = await import(`data:text/javascript;base64,${Buffer.from(controlsSource).toString('base64')}`);
+const rescaleSource = studioSource.match(/function rescaleModelView\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
+assert.ok(rescaleSource, 'Extract the production model-view adjustment');
+const camera = new THREE.OrthographicCamera(-4, 4, 3, -3, 0.01, 100);
+const controls = new OrbitControls(camera, null);
+camera.position.set(8, 13, 10);
+camera.zoom = 1.8;
+controls.target.set(1.4, 2.1, -0.6);
+controls.enableDamping = true;
+controls.update(); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+const rescaleView = new Function('mainCamera', 'orbit', `${rescaleSource}\nreturn rescaleModelView;`)(camera, controls);
+const referencePoints = [[-1, 0, -0.5], [1, 0, 0.5], [-1, 3, 0.5], [1, 3, -0.5]]
+  .map(point => new THREE.Vector3(...point));
+const projected = referencePoints.map(point => point.clone().project(camera));
+const orientation = camera.quaternion.clone();
+let previousScale = 100;
+for (const scale of [2000, 25, 2000, 355, 100]) {
+  // These are the actual controls' pending deltas; resizing should cancel them
+  // at the currently visible view, not finish the motion with a camera jump.
+  controls._panOffset.set(0.6, -0.25, 0.3);
+  controls._sphericalDelta.theta = 0.12;
+  controls._sphericalDelta.phi = 0.08;
+  rescaleView(scale / previousScale);
+  for (let tick = 0; tick < 3; tick++) controls.update();
+  camera.updateMatrixWorld();
+  for (const [index, point] of referencePoints.entries()) {
+    const actual = point.clone().multiplyScalar(scale / 100).project(camera);
+    for (const axis of ['x', 'y', 'z']) close(actual[axis], projected[index][axis], 'Scaled model keeps its screen projection and clipping depth');
+  }
+  close(Math.abs(camera.quaternion.dot(orientation)), 1, 'Model sizing preserves the view angle');
+  close(camera.zoom, 1.8, 'Manual zoom remains independent of automatic scale compensation');
+  assert.equal(controls.enableDamping, true);
+  previousScale = scale;
+}
+
 const boundsSource = studioSource.match(/function geometryBounds\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(boundsSource, 'Extract the production model-bounds helper');
 const geometryBounds = new Function('THREE', `${boundsSource}\nreturn geometryBounds;`)(THREE);
@@ -142,4 +184,4 @@ for (const refreshSkinnedBounds of [true, false]) {
   close(span(readBounds(model)), 6 / Math.sqrt(2), 'Current bone rotation changes the posed vertical span');
   geometry.dispose(); mesh.material.dispose(); mesh.skeleton.dispose();
 }
-console.log('Studio geometry: four active layouts × six facings project to exact combat centers and 64×42 cells; 10-foot hex calibration, 75-foot ruler, model-height scaling through 2000% and real skinned/morph bounds; centered guides and six light directions passed.');
+console.log('Studio geometry: four active layouts × six facings project to exact combat centers and 64×42 cells; 10-foot hex calibration, 75-foot ruler, model-height scaling through 2000%, stable camera projection with real orbit inertia, and real skinned/morph bounds; centered guides and six light directions passed.');

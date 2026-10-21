@@ -1,10 +1,10 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C50';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C50';
-import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C50';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C51';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C51';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C51';
 
 const api = window.adventurePartySpriteSets;
 const assets = new Map();
-let setSelect, setStatus, inspector, combatStudioReturn;
+let setSelect, setStatus, inspector, inspectorHelp, combatStudioReturn;
 
 function message(text) { setStatus.textContent = text; }
 
@@ -57,8 +57,8 @@ function makeControls() {
     buttons.append(button);
   }
   const help = document.createElement('p');
+  inspectorHelp = help;
   help.className = 'small';
-  help.textContent = 'Preview all six facings before combat. Player targets are friendly characters with their own class rules; Kobolds provide opponents. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
   help.style.cssText = 'margin:8px 0 0;';
   inspector.append(heading, buttons, help);
   document.querySelector('#combatScreen .side').append(inspector);
@@ -80,6 +80,10 @@ function refreshControls() {
   setSelect.replaceChildren(...options);
   setSelect.value = snapshot.selectedId;
   inspector.hidden = !snapshot.inspecting;
+  const selectedSet = snapshot.sets.find(set => set.id === snapshot.selectedId);
+  inspectorHelp.textContent = selectedSet?.mobType === 'fighter'
+    ? 'Inspect one Dungeon Crawler Carl using the selected sprite collection. Kobolds provide opponents. Space begins combat and restores live poses; movement and attacks turn Carl to the matching facing. Completed tests return directly to 3d studio without a loot screen.'
+    : 'Preview all six facings before combat. Player targets are friendly characters with their own class rules; Kobolds provide opponents. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
   combatStudioReturn.hidden = snapshot.encounter !== 'studio-kobold';
   const selected = { stand: 'ready', attack: 'attack', prone: 'prone' }[snapshot.inspectionPose] || 'live';
   inspector.querySelectorAll('[data-sprite-inspect]').forEach(button => {
@@ -167,10 +171,13 @@ async function loadDraft() {
   api.select(id, { openSetup: true });
   const mob = spriteMob(manifest.mobType || 'kobold');
   const layout = spriteLayout(manifest.layout?.id || 'single');
-  const targetNote = mob.targetKind === 'player'
+  const targetNote = mob.id === 'fighter'
+    ? 'One Dungeon Crawler Carl uses this collection, keeping his Fighter rules and equipment, against six Kobolds.'
+    : mob.targetKind === 'player'
     ? 'Six friendly copies use this character’s class and equipment. This collection also supplies the matching test player’s sprites.'
     : 'The selected monster keeps its existing combat rules.';
-  message(`${manifest.label}: ${mob.label}, ${layout.offsets.length}-hex footprint, 18 captured sprites. ${targetNote} Choose Begin Battle to inspect all six directions.`);
+  const inspectNote = mob.id === 'fighter' ? 'Carl’s captured poses' : 'all six directions';
+  message(`${manifest.label}: ${mob.label}, ${layout.offsets.length}-hex footprint, 18 captured sprites. ${targetNote} Choose Begin Battle to inspect ${inspectNote}.`);
 }
 
 async function start() {

@@ -338,13 +338,17 @@ for (const type of ["fighter", "ranger", "mage"]) {
   assert.equal(sandbox.playerSpriteSetForType(type).id, later);
   assert.equal(sandbox.selectStudioSpriteSet(setId), true);
   assert.equal(sandbox.playerSpriteSetForType(type).id, later, "Selecting a monster does not discard a player's explicit collection");
-  const character = { id: `${type}-test`, type, faction: "player", controller: type === "ranger" ? "npc" : "player",
+  const character = { id: type === "fighter" ? "player" : `${type}-test`, type, faction: "player", controller: type === "ranger" ? "npc" : "player",
     alive: true, facingHex: 0, studioSpriteTest: true, effects: {}, stats: { str: 12 }, hp: 50 };
   assert.equal(sandbox.applyPlayerSpriteSet(character), character);
   assert.equal(character.spriteSetId, later);
   assert.equal(character.hp, 50);
   assert.deepEqual(character.stats, { str: 12 }, "Binding changes only sprite/footprint metadata");
-  sandbox.game = { player: { id: "player" }, allies: [character], enemies: [] };
+  sandbox.game = type === "fighter"
+    ? { player: character, allies: [], enemies: [] }
+    : { player: { id: "player" }, allies: [character], enemies: [] };
+  assert.equal(sandbox.studioSpriteTestUnits().length, 1);
+  assert.equal(sandbox.studioSpriteTestUnits()[0], character);
   sandbox.combatAwaitingStart = true;
   for (let facingHex = 0; facingHex < 6; facingHex++) {
     character.facingHex = facingHex;

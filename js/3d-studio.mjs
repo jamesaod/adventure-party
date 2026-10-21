@@ -2,16 +2,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C50';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C50';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C51';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C51';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale
-} from './sprite-layouts.mjs?v=R238C50';
+} from './sprite-layouts.mjs?v=R238C51';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C50';
+} from './studio-geometry.mjs?v=R238C51';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -256,11 +256,33 @@ function rebuildFootprintGuide() {
   invalidate(false);
 }
 
-function applyModelSize() {
+function rescaleModelView(ratio) {
+  if (!mainCamera || !orbit || ratio === 1) return;
+  const position = mainCamera.position.clone(), target = orbit.target.clone();
+  const zoom = mainCamera.zoom, damping = orbit.enableDamping;
+  try {
+    // Clear pending orbit/pan inertia without advancing the visible view.
+    // Otherwise an old world-space pan would keep moving after the rescale.
+    orbit.enableDamping = false;
+    orbit.update();
+    mainCamera.position.copy(position).multiplyScalar(ratio);
+    orbit.target.copy(target).multiplyScalar(ratio);
+    mainCamera.zoom = zoom;
+    // Model points and the complete orthographic view scale about the same
+    // origin. Their screen projection stays fixed; the ground/ruler do not.
+    for (const key of ['left', 'right', 'top', 'bottom', 'near', 'far']) mainCamera[key] *= ratio;
+    mainCamera.updateProjectionMatrix();
+    orbit.update();
+    mainCamera.updateMatrixWorld();
+  } finally { orbit.enableDamping = damping; }
+}
+
+function applyModelSize(previousScalePercent = state.modelScalePercent) {
   if (!modelFrame || !placement) return;
   const factor = state.modelScalePercent / 100;
   placement.position.copy(modelFrame.position).multiplyScalar(factor);
   placement.scale.setScalar(modelFrame.scale * factor);
+  rescaleModelView(state.modelScalePercent / previousScalePercent);
   updateCaptureCamera();
   invalidate();
 }
@@ -919,7 +941,9 @@ function resizeRenderer() {
   if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
     // Explicit backing resolution keeps render-target viewports independent of DPR.
     renderer.setSize(width, height, false);
-    setCameraFrustum(mainCamera, width / height, mainViewFrame(width / height).height);
+    // Resizing the panel changes aspect only; preserve the user's current
+    // framing, including the compensation from Model size changes.
+    setCameraFrustum(mainCamera, width / height, mainCamera.top - mainCamera.bottom);
     state.mainDirty = true;
   }
 }
@@ -1151,8 +1175,9 @@ function bindControls() {
   });
   ui.ModelScale.addEventListener('input', () => {
     if (poseCapture?.snapshot().modelScaleAdjustable === false) { updateSetupLabels(); return; }
+    const previousScalePercent = state.modelScalePercent;
     state.modelScalePercent = validateSpriteModelScale(Number(ui.ModelScale.value));
-    applyModelSize();
+    applyModelSize(previousScalePercent);
     updateSetupLabels();
     poseCapture?.updateModelScale(state.modelScalePercent);
   });
@@ -1405,6 +1430,12 @@ async function start() {
         worldUnitsPerFoot: studioWorldUnitsPerFoot(state.layoutId, state.frameHeight)
       },
       captureFrameHeight: pixelCamera ? pixelCamera.top - pixelCamera.bottom : null,
+      modelView: mainCamera ? {
+        position: mainCamera.position.toArray(), target: orbit.target.toArray(),
+        quaternion: mainCamera.quaternion.toArray(), zoom: mainCamera.zoom,
+        frameHeight: mainCamera.top - mainCamera.bottom,
+        near: mainCamera.near, far: mainCamera.far
+      } : null,
       footprintCellCount: footprintGuide ? footprintGuide.children.length / 2 : 0,
       footprintWorldCells: studioFootprintGuide(state.layoutId, HEX_FACINGS.findIndex(item => item.id === state.facing), state.frameHeight),
       lightPosition: keyLight?.position.toArray() || null,

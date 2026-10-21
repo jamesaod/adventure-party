@@ -15756,13 +15756,6 @@ function makeStudioTestMob(mobType,index,position){
     case "orc-leader": return makeOrcLeader(index,position);
     case "orc-shaman": return makeOrcShaman(index,position);
     case "juvenile-red-dragon": return makeLargeMobTest(position);
-    case "fighter": {
-      // Carl is persistent. Inspection copies must never share his inventory,
-      // effects, hit points, or mutable identity with each other or the player.
-      const fighter=structuredClone(makeFighter());
-      fighter.controller="player";
-      return fighter;
-    }
     case "ranger": return makeFriendlyElvenRanger();
     case "mage": return makeTestPartyMage();
     default: throw new Error("This sprite set references an unimplemented character type.");
@@ -15772,6 +15765,19 @@ function makeStudioTestMob(mobType,index,position){
 function makeStudioKoboldEncounter(condition=selectedCombatCondition,player=null){
   const set=registeredStudioSpriteSets.get(selectedStudioSpriteSetId);
   const mobType=set?.mobType || "kobold";
+  if(mobType==="fighter"){
+    // Carl already exists as game.player. Inspect that same character instead
+    // of creating an additional party of copies for his six sprite facings.
+    const fighter=player || makeFighter();
+    fighter.spriteSetId=selectedStudioSpriteSetId;
+    fighter.footprintId=set?.layoutId || "single";
+    fighter.studioSpriteTest=true;
+    lastMobDeployment={
+      direction:"Dungeon Crawler Carl sprite test",
+      anchorDistance:0,anchor:{x:fighter.x,y:fighter.y},clusterRadius:0,count:1,condition
+    };
+    return [fighter];
+  }
   const radius=(set?.footprintCells || 1)>1 ? 5 : 3;
   const occupied=new Set(occupiedHexes(player || {x:0,y:0}).map(cell=>key(cell.x,cell.y)));
   const positions=HEX_DIRS.map(dir=>({x:dir.x*radius,y:dir.y*radius}));
@@ -16153,6 +16159,8 @@ function newGame(condition=selectedCombatCondition){
   }
 
   const player=makeFighter();
+  delete player.studioSpriteTest;
+  delete player.studioPoseInspection;
 
   /*
     R186: configure terrain before encounter placement so a large footprint can
@@ -16163,16 +16171,17 @@ function newGame(condition=selectedCombatCondition){
   /*
     R179 combat setup cleanup: the default battle test now starts with Carl
     as the sole player character. Ranger and Mage definitions remain in the
-    engine. A player-target sprite test explicitly adds its six friendly
-    inspection copies; ordinary encounters retain their existing roster.
+    engine. Carl's sprite test uses this canonical player; Ranger and Mage
+    sprite tests retain their six friendly inspection copies.
   */
   const studioUnits=selectedMobEncounter==="studio-kobold"
     ? makeStudioKoboldEncounter(condition,player)
     : [];
   const studioPlayers=studioUnits.filter(unit=>unit.faction==="player");
+  const studioAllies=studioPlayers.filter(unit=>unit!==player);
   const kobolds=
     selectedMobEncounter==="studio-kobold"
-      ? (studioPlayers.length ? makeStudioPlayerOpponents([player,...studioPlayers]) : studioUnits)
+      ? (studioPlayers.length ? makeStudioPlayerOpponents([player,...studioAllies]) : studioUnits)
       : selectedMobEncounter==="kobolds"
         ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
         : [];
@@ -16204,7 +16213,7 @@ function newGame(condition=selectedCombatCondition){
     studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
-    allies:studioPlayers,
+    allies:studioAllies,
     enemies,
     order:[],
     turnIndex:0,
@@ -16345,12 +16354,16 @@ function newGame(condition=selectedCombatCondition){
     );
   }else if(selectedMobEncounter==="studio-kobold"){
     log(
-      "Six sprite-test units deployed facing E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
+      player.studioSpriteTest
+        ? "One Dungeon Crawler Carl uses the selected sprite collection against six Kobolds. Movement and attacks turn his sprite with the tactical facing."
+        : "Six sprite-test units deployed facing E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
       "system"
     );
     log(
       selectedStudioSpriteSetId==="studio-kobold"
         ? "Sprite test uses ordinary Kobold combat stats and dagger attacks. This ready-only set retains the matching ready view during attacks."
+        : player.studioSpriteTest
+        ? `Carl retains his Fighter rules and ${unitFootprintCellCount(player)}-hex footprint. Imported ready, attack, and prone artwork follows his actual combat pose.`
         : `Sprite test uses the implemented ${registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.mobType || "kobold"} rules and ${unitFootprintCellCount(enemies[0])}-hex footprint. Imported ready, attack, and prone artwork follows the actual combat pose.`,
       "system"
     );
