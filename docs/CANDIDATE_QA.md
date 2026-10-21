@@ -2,7 +2,15 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 50 — Giant and megabeast scaling
+## Current candidate: Rev 51 — Stable model view and one Carl
+
+Model size now compensates the main camera automatically so the model keeps its on-screen size, proportions and panned position across 25–2000%. The viewing angle and manual zoom are retained; panel resizing changes aspect without undoing the compensation. The fixed physical footprint, height ruler, height readout, and exported battlefield dimensions still reflect the selected game size. Reset view remains an explicit refit.
+
+Dungeon Crawler Carl's sprite test now uses the one canonical player against six Kobolds. It no longer adds six cloned Carl allies. The selected collection, actual Fighter rules, equipment, pose inspector, initiative, restart, and direct studio return all use that same player. Monster, Ranger, and Mage inspection formations retain their existing behavior.
+
+Validation checks actual Three.js projection with orbit inertia, the canonical Carl through the production setup/initiative/inspection/restart/return path, and the existing sprite/studio regression suites. Browser QA checks camera size changes after manual orbit/pan/zoom and panel resize, preserved captures, and the single-Carl combat handoff.
+
+## Candidate Rev 50 — Giant and megabeast scaling
 
 Candidate Rev 50 extends the Model size range to **25–2000% in 5% steps** and the Model View height ruler to **0–75 feet**. The default size remains 100%. The ruler uses the same ten-foot battlefield hex calibration and its lower-right readout measures the current posed model.
 
