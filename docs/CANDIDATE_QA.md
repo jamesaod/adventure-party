@@ -2,7 +2,15 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 55 — Shared FBX animation curves
+## Current candidate: Rev 56 — Saved Carl model in Pixel Studio
+
+The user-provided GLB is preserved as `assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb` and registered as **Dungeon Crawler Carl Ver 2** in Pixel Studio's new Model library dropdown. **Load selected model** downloads it from the repository-backed site, uses the existing import and workspace persistence path, and selects Y-up plus the Fighter target. Four independent animation clips remain selectable.
+
+The catalog is stored in `data/studio-models.json`, with source identity and checksum documented beside the model. Existing device uploads and the demo remain available. Choosing a catalog option alone leaves the active workspace intact; successfully loading a different model begins a fresh sheet. The separately uploaded Carl sprite ZIP remains on hold, and combat sprite references are unchanged.
+
+Local validation passes the existing repository/studio/sprite suites. Focused browser QA confirms the exact menu label, catalog-relative asset load, Y-up/Fighter defaults, four clips, paused animation restoration after reload, and retention of the current model after a failed download. Repository transfer and live candidate verification remain release gates.
+
+## Candidate Rev 55 — Shared FBX animation curves
 
 The FBX importer now follows every valid animation-curve connection. FBX permits one curve to feed curve nodes in several takes; following only the first connection caused later takes to disappear. Regression fixtures reproduce the missing animation and verify that both takes load regardless of connection order, while retaining their distinct IDs and authored time spans.
 

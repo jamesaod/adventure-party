@@ -4,17 +4,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import {
   prepareStudioAnimations, sliceAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
-} from './studio-animations.mjs?v=R238C55';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C55';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C55';
+} from './studio-animations.mjs?v=R238C56';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C56';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C56';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C55';
+} from './sprite-layouts.mjs?v=R238C56';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C55';
+} from './studio-geometry.mjs?v=R238C56';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -26,6 +26,7 @@ const DEFAULT_LIGHTING = Object.freeze({
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
+  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
   'FootprintPreview', 'FootprintDescription', 'FormatSummary', 'EmptyMessage',
@@ -47,6 +48,7 @@ const state = {
   width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
   modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
   sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
+  libraryModels: [], libraryModelId: '', libraryLoading: false, modelLoading: false,
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
@@ -72,6 +74,7 @@ const previews = HEX_FACINGS.map(facing => ({
 function getWorkspaceSettings() {
   return {
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
+    libraryModelId: state.libraryModelId,
     demoSourceUpAxis: state.demoSourceUpAxis,
     layoutId: state.layoutId, resolutionPercent: state.resolutionPercent,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
@@ -178,6 +181,7 @@ function setModelReady(ready) {
   ui.HeightRuler.toggleAttribute('hidden', !ready);
   ui.ModelHeight.hidden = !ready;
   ui.LoadButton.disabled = ui.DemoButton.disabled = !renderer || state.disposed;
+  syncModelLibraryControls();
   ui.ResetViewButton.disabled = !ready;
   ui.ExportSheetButton.disabled = !ready;
   document.querySelectorAll('[data-studio-export], [data-studio-facing]').forEach(button => { button.disabled = !ready; });
@@ -796,7 +800,9 @@ function updateAnimationControls() {
   ui.RemoveRangeButton.disabled = !available || !animationRangeContext()?.range;
 }
 
-function installModel({ model, clips, name, demoSourceUpAxis = null }, { restoreSettings = null, sourceFiles = [], isDemo = false, persist = true } = {}) {
+function installModel({ model, clips, name, demoSourceUpAxis = null }, {
+  restoreSettings = null, sourceFiles = [], isDemo = false, persist = true, modelDefaults = null
+} = {}) {
   // Validate before releasing the previously usable model.
   let visibleMeshes = 0;
   model.traverse(object => { if (object.isMesh && object.geometry?.attributes?.position?.count) visibleMeshes++; });
@@ -818,14 +824,16 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
       animationRanges.push(range);
     } catch { skippedRanges++; }
   }
-  const nextLayoutId = !restoreSettings && !SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId)
-    ? spriteMob(state.mobType).defaultLayout : state.layoutId;
+  const nextMobType = !restoreSettings && modelDefaults?.mobType ? spriteMob(modelDefaults.mobType).id : state.mobType;
+  const nextUpAxis = (restoreSettings ? restoreSettings.upAxis : modelDefaults?.upAxis) === 'Y' ? 'Y' : 'Z';
+  const nextLayoutId = !restoreSettings && (modelDefaults?.mobType || !SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId))
+    ? spriteMob(nextMobType).defaultLayout : state.layoutId;
   const nextSize = restoreSettings ? { width: state.width, height: state.height }
     : spriteLayoutDimensions(nextLayoutId, state.resolutionPercent);
   let framing;
   try {
     framing = measureModelFrame(model, availableClips, {
-      upAxis: restoreSettings?.upAxis === 'Y' ? 'Y' : 'Z', aspect: nextSize.width / nextSize.height
+      upAxis: nextUpAxis, aspect: nextSize.width / nextSize.height
     });
   }
   catch (error) { disposeModel(model); throw error; }
@@ -837,10 +845,13 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
   disposeModel(state.model);
   state.model = model;
   state.modelName = name;
+  state.libraryModelId = restoreSettings?.libraryModelId || modelDefaults?.id || '';
+  state.modelLoading = false;
   state.sourceFiles = sourceFiles;
   state.isDemo = isDemo;
   state.demoSourceUpAxis = isDemo ? demoSourceUpAxis : null;
   if (!restoreSettings) {
+    state.mobType = nextMobType;
     state.layoutId = nextLayoutId;
     state.hexScalePercent = SPRITE_HEX_SCALE_PERCENT;
     state.width = nextSize.width;
@@ -854,7 +865,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
   state.animationRanges = animationRanges;
   state.mixer = new THREE.AnimationMixer(model);
   state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
-  state.upAxis = restoreSettings?.upAxis === 'Y' ? 'Y' : 'Z';
+  state.upAxis = nextUpAxis;
   state.playing = restoreSettings ? !!restoreSettings.playing : true;
   ui.Heading.value = String(state.heading);
   ui.HeadingValue.textContent = `${state.heading}°`;
@@ -1111,7 +1122,73 @@ function friendlyImportError(error) {
   return new Error(message);
 }
 
-async function loadFiles(fileList, { restoreSettings = null } = {}) {
+function syncModelLibraryControls() {
+  const busy = state.libraryLoading || state.modelLoading;
+  ui.ModelLibrary.disabled = busy || !state.libraryModels.length;
+  ui.LoadLibraryButton.disabled = !renderer || state.disposed || busy ||
+    !state.libraryModels.some(model => model.id === ui.ModelLibrary.value);
+  ui.LoadLibraryButton.textContent = state.libraryLoading ? 'Loading model…' : 'Load selected model';
+}
+
+async function loadModelLibrary() {
+  try {
+    const appRoot = new URL('../', import.meta.url);
+    const response = await fetch(new URL('data/studio-models.json', appRoot), { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`Model library returned ${response.status}.`);
+    const catalog = await response.json();
+    if (catalog.version !== 1 || !Array.isArray(catalog.models)) throw new Error('Unsupported model library.');
+    const ids = new Set();
+    state.libraryModels = catalog.models.map(entry => {
+      if (!entry || typeof entry.id !== 'string' || !entry.id || ids.has(entry.id) ||
+          typeof entry.label !== 'string' || !entry.label || typeof entry.file !== 'string' ||
+          !['Y', 'Z'].includes(entry.upAxis)) throw new Error('Invalid model library entry.');
+      const url = new URL(entry.file, appRoot);
+      if (url.origin !== appRoot.origin || !url.pathname.startsWith(`${appRoot.pathname}assets/models/`) ||
+          !/\.glb$/i.test(url.pathname)) throw new Error('Saved models must be GLB files in the model assets folder.');
+      if (entry.mobType) spriteMob(entry.mobType);
+      ids.add(entry.id);
+      return { ...entry, url: url.href };
+    });
+    ui.ModelLibrary.replaceChildren(new Option('Choose a saved model…', ''),
+      ...state.libraryModels.map(model => new Option(model.label, model.id)));
+    if (state.libraryModels.some(model => model.id === state.libraryModelId)) ui.ModelLibrary.value = state.libraryModelId;
+    ui.ModelLibraryStatus.textContent = state.libraryModels.length
+      ? 'Choose a model, then load it to start a new sprite sheet.' : 'No saved models are available yet.';
+  } catch (error) {
+    state.libraryModels = [];
+    ui.ModelLibrary.replaceChildren(new Option('Model library unavailable', ''));
+    ui.ModelLibraryStatus.textContent = 'Saved models could not be listed. You can still load a model from your device.';
+  }
+  syncModelLibraryControls();
+}
+
+async function loadLibraryModel() {
+  const entry = state.libraryModels.find(model => model.id === ui.ModelLibrary.value);
+  if (!entry || !renderer || state.disposed || state.libraryLoading || state.modelLoading) return;
+  const version = ++state.loadingVersion;
+  state.libraryLoading = true;
+  syncModelLibraryControls();
+  clearError();
+  status(`Downloading ${entry.label}…`);
+  try {
+    const response = await fetch(entry.url);
+    if (!response.ok) throw new Error(`The saved model could not be downloaded (${response.status}). Please try again.`);
+    const blob = await response.blob();
+    if (version !== state.loadingVersion || state.disposed) return;
+    const filename = new URL(entry.url).pathname.split('/').pop();
+    await loadFiles([new File([blob], filename, { type: 'model/gltf-binary' })], { modelDefaults: entry });
+  } catch (error) {
+    if (version === state.loadingVersion && !state.disposed) {
+      showError(error);
+      status('Saved model could not be loaded · Previous model retained');
+    }
+  } finally {
+    state.libraryLoading = false;
+    syncModelLibraryControls();
+  }
+}
+
+async function loadFiles(fileList, { restoreSettings = null, modelDefaults = null } = {}) {
   if (!renderer || state.disposed) {
     showError(new Error('The 3D viewer is unavailable. Your saved captures can still be exported.'));
     return false;
@@ -1127,6 +1204,7 @@ async function loadFiles(fileList, { restoreSettings = null } = {}) {
   const local = createLocalManager(files);
   let loaded;
   const previousModelReady = state.modelReady;
+  state.modelLoading = true;
   setModelReady(false);
   clearError();
   status(`Loading ${file.name}…`);
@@ -1144,8 +1222,9 @@ async function loadFiles(fileList, { restoreSettings = null } = {}) {
       disposeModel(loaded.model);
       return false;
     }
+    loaded.name = restoreSettings?.modelName || modelDefaults?.label || loaded.name;
     installModel(loaded, {
-      restoreSettings,
+      restoreSettings, modelDefaults,
       sourceFiles: files.map(source => ({
         name: source.name, type: source.type, lastModified: source.lastModified,
         relativePath: source.studioRelativePath || source.webkitRelativePath || '', blob: source
@@ -1163,6 +1242,8 @@ async function loadFiles(fileList, { restoreSettings = null } = {}) {
   } finally {
     local.revoke();
     ui.Files.value = '';
+    if (version === state.loadingVersion) state.modelLoading = false;
+    syncModelLibraryControls();
   }
 }
 
@@ -1200,6 +1281,8 @@ function exportImage(facing = null) {
 }
 
 function bindControls() {
+  ui.ModelLibrary.addEventListener('change', syncModelLibraryControls);
+  ui.LoadLibraryButton.addEventListener('click', loadLibraryModel);
   ui.LoadButton.addEventListener('click', () => ui.Files.click());
   ui.Files.addEventListener('change', () => { if (ui.Files.files.length) loadFiles(ui.Files.files); });
   ui.DemoButton.addEventListener('click', () => {
@@ -1505,6 +1588,7 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 1024 ? settings.width : size.width;
   state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 1024 ? settings.height : size.height;
   state.modelName = settings.modelName || 'Saved character';
+  state.libraryModelId = typeof settings.libraryModelId === 'string' ? settings.libraryModelId : '';
   state.sourceFiles = Array.isArray(settings.sourceFiles) ? settings.sourceFiles : [];
   state.isDemo = settings.isDemo === true;
   // Source orientation is independent of the user's orientation correction.
@@ -1539,6 +1623,7 @@ async function start() {
   window.adventureParty3DStudio = Object.freeze({
     snapshot: () => ({
       model: state.modelName, facing: state.facing,
+      libraryModelId: state.libraryModelId,
       directions: HEX_FACINGS.map(item => item.id),
       previewSize: [state.width, state.height], frame: state.frame,
       animationTime: state.animationTime, playing: state.playing,
@@ -1594,6 +1679,7 @@ async function start() {
     history.replaceState(null, '', url);
   }
   bindControls();
+  void loadModelLibrary();
   try {
     startViewer();
     if (restored?.settings?.isDemo) {
