@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "release": "R208",
-  "description": "Adventure Party sprite asset specifications. Candidate Rev 11 replaces the Juvenile Red Dragon ready/action art with faithful 4× nearest-neighbor upscales of the extracted Dark Queen of Krynn Red Dragon combat sprites while retaining the established seven-hex tactical footprint and presentation alignment.",
+  "description": "Adventure Party sprite asset specifications. Candidate Rev 40 imports three Pool of Radiance combat-art pairs as development-only Orc, Orc Leader, and Orc Shaman placeholders; the source art remains copyrighted and is not production-approved.",
   "assets": {
     "fighter": {
       "source": {
@@ -173,20 +173,20 @@
     },
     "orc-stand": {
       "source": {
-        "width": 101,
-        "height": 107
+        "width": 96,
+        "height": 96
       },
       "workspace": {
-        "width": 64,
-        "height": 64
+        "width": 96,
+        "height": 96
       },
       "render": {
-        "width": 34,
+        "width": 36,
         "height": 36
       },
       "anchor": {
-        "x": 32,
-        "y": 64
+        "x": 48,
+        "y": 96
       },
       "scaleMode": "fit",
       "lockAspect": true,
@@ -194,20 +194,20 @@
     },
     "orc-attack": {
       "source": {
-        "width": 125,
-        "height": 116
+        "width": 96,
+        "height": 96
       },
       "workspace": {
-        "width": 64,
-        "height": 64
+        "width": 96,
+        "height": 96
       },
       "render": {
-        "width": 39,
+        "width": 36,
         "height": 36
       },
       "anchor": {
-        "x": 32,
-        "y": 62
+        "x": 48,
+        "y": 96
       },
       "scaleMode": "fit",
       "lockAspect": true,
@@ -271,6 +271,90 @@
       "anchor": {
         "x": 96,
         "y": 192
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right"
+    },
+    "orc-leader-stand": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right"
+    },
+    "orc-leader-attack": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right"
+    },
+    "orc-shaman-stand": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
+      },
+      "scaleMode": "fit",
+      "lockAspect": true,
+      "nativeFacing": "right"
+    },
+    "orc-shaman-attack": {
+      "source": {
+        "width": 96,
+        "height": 96
+      },
+      "workspace": {
+        "width": 96,
+        "height": 96
+      },
+      "render": {
+        "width": 36,
+        "height": 36
+      },
+      "anchor": {
+        "x": 48,
+        "y": 96
       },
       "scaleMode": "fit",
       "lockAspect": true,
