@@ -1836,6 +1836,22 @@ button, input, select, textarea {
   min-width:190px;
 }
 
+.combat-mob-roster-row {
+  align-items:flex-start;
+}
+
+.combat-mob-options {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  min-width:0;
+}
+
+.combat-mob-options .combat-roster-test {
+  min-width:105px;
+  text-align:center;
+}
+
 .combat-roster-add {
   border:1px solid #4b4856;
   background:#15131c;
