@@ -22,6 +22,8 @@ See [docs/THIRD_PARTY_3D_STUDIO.md](docs/THIRD_PARTY_3D_STUDIO.md) for the studi
 
 Choose **3d studio** on the title page to load a 3D model, inspect six synchronized VGA pixel views, play embedded animations, and export transparent PNGs. See [docs/3D_STUDIO.md](docs/3D_STUDIO.md) for supported files, orientation controls, rendering rules, and animation extension guidance.
 
+Choose **Combat System Test → 6-facing Kobold → Begin Battle** to try the first exported six-direction ready sprite set in the game. See [docs/DIRECTIONAL_SPRITES.md](docs/DIRECTIONAL_SPRITES.md) for facing and ready/action pose registration.
+
 
 ## Development channels
 

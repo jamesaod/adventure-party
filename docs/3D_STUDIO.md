@@ -21,6 +21,8 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 - Each **Save PNG** button exports that facing at the selected native resolution, with a transparent background.
 - **Save all six as a sheet** exports one transparent sheet in this order: top row **E, NE, NW**; bottom row **W, SW, SE**. All cells have identical dimensions and capture the same pose.
 
+The first exported ready sheet is available in **Combat System Test → 6-facing Kobold**. See [Six-direction combat sprites](DIRECTIONAL_SPRITES.md) for the import mapping and separate ready/action pose support.
+
 ## Six-direction geometry
 
 The board's `HEX_W = 64`, `HEX_H = 42`, and `HEX_ROW = 31.5` imply an orthographic elevation of approximately 34.6338 degrees. The studio uses that fixed angle for pixel rendering. Model yaw is measured around +Y, starting from a +Z-forward model:

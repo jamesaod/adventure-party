@@ -35,6 +35,9 @@ jobs:
           node --check js/studio-core.mjs
           node scripts/test-3d-studio.mjs
 
+      - name: Validate six-direction combat poses
+        run: node scripts/test-directional-sprites.mjs
+
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
 
