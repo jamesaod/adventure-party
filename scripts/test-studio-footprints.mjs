@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { SPRITE_LAYOUT_PRESETS, SPRITE_LAYOUTS, SPRITE_MOBS, spriteLayoutOffsets } from '../js/sprite-layouts.mjs';
+import { SPRITE_LAYOUT_PRESETS, SPRITE_LEGACY_LAYOUT_PRESETS, SPRITE_LAYOUTS, SPRITE_MOBS, spriteLayoutOffsets } from '../js/sprite-layouts.mjs';
+
+const allLayoutPresets = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRESETS];
 
 // Run the game's actual footprint, movement, factory, and rendering functions.
 const source = fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
@@ -21,7 +23,7 @@ const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
 const sandbox = {
   HEX_DIRS: directions.map((name, index) => ({ name, x: vectors[index][0], y: vectors[index][1] })),
   UNIT_FOOTPRINTS: { single: SPRITE_LAYOUTS.single, hex7: SPRITE_LAYOUTS.hex7 },
-  STUDIO_FOOTPRINTS: new Map(SPRITE_LAYOUT_PRESETS.map(layout => [layout.id, layout])),
+  STUDIO_FOOTPRINTS: new Map(allLayoutPresets.map(layout => [layout.id, layout])),
   UNIT_POSE_DEFINITIONS: {},
   registeredStudioSpriteSets: new Map(), selectedStudioSpriteSetId: 'studio-kobold', selectedCombatCondition: 'grass',
   lastMobDeployment: null,
@@ -57,7 +59,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 // All six rotations agree with the shared studio layout, retain cell count,
 // and project the sprite onto the actual footprint's centroid.
-for (const layout of SPRITE_LAYOUT_PRESETS) {
+for (const layout of allLayoutPresets) {
   const setId = `test-${layout.id}`;
   sandbox.UNIT_POSE_DEFINITIONS[setId] = { spriteLayout: layout };
   const unit = { id: setId, spriteSetId: setId, x: 2, y: 3, alive: true, facing: 'left' };
@@ -144,7 +146,7 @@ const expectedMobs = {
 // Every layout can use every existing MOB factory without substituting Kobold
 // rules. Placement reserves all occupied cells, including Carl's starting cell.
 for (const mob of SPRITE_MOBS) {
-  for (const layout of SPRITE_LAYOUT_PRESETS) {
+  for (const layout of allLayoutPresets) {
     const id = `test-${mob.id}-${layout.id}`;
     sandbox.UNIT_POSE_DEFINITIONS[id] = { spriteLayout: layout };
     sandbox.registeredStudioSpriteSets.set(id, { id, label: 'Imported test', mobType: mob.id, layoutId: layout.id, footprintCells: layout.offsets.length });

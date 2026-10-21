@@ -170,6 +170,30 @@ let selectedCombatCondition="grass";
 let selectedMobEncounter="studio-kobold";
 let selectedStudioSpriteSetId="studio-kobold";
 
+function isStudioTestCombat(combat=game){
+  return combat?.studioSpriteTest===true;
+}
+
+function returnToStudioFromCombat(){
+  if(!isStudioTestCombat()) return false;
+  game.over=true;
+  game.active=null;
+  combatAwaitingStart=false;
+  if(aiTimer){
+    clearTimeout(aiTimer);
+    aiTimer=null;
+  }
+  if(!game.returningToStudio){
+    game.returningToStudio=true;
+    window.location.assign("./3d-studio.html?studioRestore=1");
+  }
+  return true;
+}
+
+function exitCombat(){
+  if(!returnToStudioFromCombat()) showLauncher();
+}
+
 function updateCombatMobSelection(){
   const label=document.getElementById("combatMobSetLabel");
 
@@ -3523,7 +3547,9 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
     else pixelEditorAssets.push(addition);
   }
   registeredStudioSpriteSets.set(id,{
-    id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length
+    id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length,
+    modelScalePercent:manifest.modelScalePercent ?? 100,
+    renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
   });
   if(currentScreen==="pixel") renderPixelAssetList();
   if(game && currentScreen==="combat") draw();
@@ -3560,7 +3586,9 @@ window.adventurePartySpriteSets=Object.freeze({
   snapshot:()=>({
     selectedId:selectedStudioSpriteSetId,
     encounter:selectedMobEncounter,
-    sets:[{id:"studio-kobold",label:"Studio Kobold — ready only"},...registeredStudioSpriteSets.values()],
+    studioTest:isStudioTestCombat(),
+    sets:[{id:"studio-kobold",label:"Studio Kobold — ready only",modelScalePercent:100,renderWidth:48,renderHeight:60},
+      ...Array.from(registeredStudioSpriteSets.values(),set=>({...set}))],
     inspecting:currentScreen==="combat" && combatAwaitingStart && selectedMobEncounter==="studio-kobold",
     inspectionPose:game?.enemies?.find(unit=>unit.studioSpriteTest)?.studioPoseInspection || null,
     units:(game?.enemies || []).filter(unit=>unit.studioSpriteTest).map(unit=>{
@@ -3568,6 +3596,8 @@ window.adventurePartySpriteSets=Object.freeze({
       return {id:unit.id,spriteSetId:unit.spriteSetId,type:unit.type,species:unit.species,
         facing:frame?.facing,pose:frame?.poseName,footprintId:unitFootprintDefinition(unit).id,
         occupied:occupiedHexes(unit),groundCenter:unitFootprintScreenCenter(unit),
+        modelScalePercent:registeredStudioSpriteSets.get(unit.spriteSetId)?.modelScalePercent ?? 100,
+        renderDimensions:frame ? spriteRenderDimensions(frame.assetId,frame.image) : null,
         stats:{ac:unit.ac,thaco:unit.thaco,move:unit.move,weapon:unit.weapon,hitDiceValue:unit.hitDiceValue},
         assetId:frame?.assetId,source:frame?.image?.src || null};
     })
@@ -4034,8 +4064,14 @@ function updatePixelPropertiesUi(){
   if(pixelSourceHeight) pixelSourceHeight.value=spec.sourceHeight ?? "";
   if(pixelWorkspaceWidth) pixelWorkspaceWidth.value=spec.workspaceWidth ?? PIXEL_EDITOR_GRID_SIZE;
   if(pixelWorkspaceHeight) pixelWorkspaceHeight.value=spec.workspaceHeight ?? PIXEL_EDITOR_GRID_SIZE;
-  if(pixelRenderWidth) pixelRenderWidth.value=spec.renderWidth ?? "";
-  if(pixelRenderHeight) pixelRenderHeight.value=spec.renderHeight ?? "";
+  if(pixelRenderWidth){
+    pixelRenderWidth.value=spec.renderWidth ?? "";
+    pixelRenderWidth.step=spec.preserveFrame ? "any" : "1";
+  }
+  if(pixelRenderHeight){
+    pixelRenderHeight.value=spec.renderHeight ?? "";
+    pixelRenderHeight.step=spec.preserveFrame ? "any" : "1";
+  }
   if(pixelAnchorX) pixelAnchorX.value=spec.anchorX ?? 0;
   if(pixelAnchorY) pixelAnchorY.value=spec.anchorY ?? 0;
   if(pixelScaleMode) pixelScaleMode.value=spec.scaleMode || "fit";
@@ -4061,15 +4097,16 @@ function readPixelPropertiesFromUi({renderChanged=null}={}){
   spec.scaleMode=pixelScaleMode?.value || spec.scaleMode || "fit";
   spec.lockAspect=pixelLockAspect?.checked!==false;
 
-  let renderWidth=Math.round(clampNumber(pixelRenderWidth?.value,1,512,spec.renderWidth || 1));
-  let renderHeight=Math.round(clampNumber(pixelRenderHeight?.value,1,512,spec.renderHeight || 1));
+  const renderPrecision=value=>spec.preserveFrame ? value : Math.round(value);
+  let renderWidth=renderPrecision(clampNumber(pixelRenderWidth?.value,1,512,spec.renderWidth || 1));
+  let renderHeight=renderPrecision(clampNumber(pixelRenderHeight?.value,1,512,spec.renderHeight || 1));
 
   if(spec.lockAspect && renderChanged){
     const sourceAspect=(spec.sourceWidth || 1)/(spec.sourceHeight || 1);
     if(renderChanged==="width"){
-      renderHeight=Math.max(1,Math.round(renderWidth/sourceAspect));
+      renderHeight=Math.max(1,renderPrecision(renderWidth/sourceAspect));
     }else if(renderChanged==="height"){
-      renderWidth=Math.max(1,Math.round(renderHeight*sourceAspect));
+      renderWidth=Math.max(1,renderPrecision(renderHeight*sourceAspect));
     }
   }
 
@@ -14682,12 +14719,10 @@ function checkPartyDefeat(){
     */
     game.partyWipedOut=true;
 
-    setTimeout(()=>{
-      finishCombat(
-        "Defeat",
-        "All player-party members have gone down."
-      );
-    },deathFx ? 1000 : 100);
+    scheduleCombatFinish(
+      "Defeat",
+      "All player-party members have gone down."
+    );
 
     return true;
   }
@@ -15946,15 +15981,13 @@ function checkCombatVictory(){
   if(activeEnemies().length===0){
     game.over=true;
 
-    setTimeout(()=>{
-      finishCombat(
-        "Victory",
-        "No hostile combatants remain; enemies are dead, have fled, or have changed sides. "+
-        livingPartyMembers()
-          .map(unit=>unit.name+" "+unit.hp+"/"+unit.maxHp+" HP")
-          .join("; ")+"."
-      );
-    },deathFx ? 1000 : 100);
+    scheduleCombatFinish(
+      "Victory",
+      "No hostile combatants remain; enemies are dead, have fled, or have changed sides. "+
+      livingPartyMembers()
+        .map(unit=>unit.name+" "+unit.hp+"/"+unit.maxHp+" HP")
+        .join("; ")+"."
+    );
 
     return true;
   }
@@ -16011,6 +16044,8 @@ function newGame(condition=selectedCombatCondition){
   game={
     round:0,
     over:false,
+    // Capture the encounter's route now; later setup selections cannot change it.
+    studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
     allies:[],
@@ -24329,6 +24364,18 @@ function showXpLootScreen(title,text,xpAwarded=0){
   updateAudioIndicators();
 }
 
+function scheduleCombatFinish(title,text){
+  const combat=game;
+  if(isStudioTestCombat(combat)){
+    finishCombat(title,text);
+    return;
+  }
+  setTimeout(()=>{
+    // A previous battle must not open rewards over a new battle or the launcher.
+    if(game===combat && currentScreen==="combat") finishCombat(title,text);
+  },deathFx ? 1000 : 100);
+}
+
 function finishCombat(title,text){
   game.over=true;
   game.active=null;
@@ -24344,6 +24391,8 @@ function finishCombat(title,text){
   }
 
   restoreAllCharmPersonAllegiances();
+
+  if(returnToStudioFromCombat()) return;
 
   let xpAwarded=0;
   let xpText="";
@@ -25200,18 +25249,19 @@ function updateUi(){
 
   if(returnButton){
     const anyQuick=quickCommandUnitIds.size>0;
+    const studioTest=isStudioTestCombat();
     returnButton.innerHTML=anyQuick
       ? 'Hit &lt;ESC&gt; to cancel Quick'
       : spellTargeting
         ? 'ESC — ABORT SPELL CASTING'
-        : (aimOnly ? 'ESC — ABORT AIM' : 'ESC — RETURN TO LAUNCHER');
+        : (aimOnly ? 'ESC — ABORT AIM' : studioTest ? 'ESC — RETURN TO 3D STUDIO' : 'ESC — RETURN TO LAUNCHER');
     returnButton.setAttribute(
       "aria-label",
       anyQuick
         ? "Hit Escape to cancel Quick for all player-controlled characters"
         : spellTargeting
           ? "Escape to abort spell casting"
-          : (aimOnly ? "Escape to abort Aim" : "Escape to return to launcher")
+          : (aimOnly ? "Escape to abort Aim" : studioTest ? "Escape to return to 3d studio" : "Escape to return to launcher")
     );
   }
 
@@ -29453,7 +29503,7 @@ function handleCombatKey(event){
       return;
     }
 
-    showLauncher();
+    exitCombat();
     return;
   }
 
@@ -29889,7 +29939,7 @@ document.getElementById("returnButton").addEventListener("click",()=>{
   }
 
   if(!exitAimMode()){
-    showLauncher();
+    exitCombat();
   }
 });
 

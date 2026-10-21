@@ -8,7 +8,8 @@ import {
   validateSpriteSetManifest, splitSixFacingAtlas, assembleSpriteSheet
 } from '../js/sprite-set-core.mjs';
 import {
-  SPRITE_LAYOUT_PRESETS, SPRITE_LAYOUTS, SPRITE_MOBS, SPRITE_RESOLUTION,
+  SPRITE_LAYOUT_PRESETS, SPRITE_LAYOUTS, SPRITE_LEGACY_LAYOUT_PRESETS, SPRITE_LEGACY_LAYOUTS,
+  SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, validateSpriteModelScale,
   spriteLayout, spriteLayoutDimensions, spriteLayoutOffsets, spriteMob, createSpriteLayoutMetadata
 } from '../js/sprite-layouts.mjs';
 import {
@@ -87,6 +88,7 @@ const files = packageFiles(manifest, frames);
 assert.equal(validateSpriteSetManifest(manifest), manifest);
 assert.equal(manifest.layout, undefined, 'Rev 46 manifests keep their original shape and frame sizes');
 assert.equal(manifest.mobType, undefined, 'Legacy MOB selection remains optional');
+assert.equal(manifest.modelScalePercent, undefined, 'Legacy model size remains implicit without rewriting the manifest');
 assert.equal(spriteSetSlug('Kobold Veteran.fbx'), 'kobold-veteran');
 assert.equal(spriteSetSlug('  Àrcher / Blue!  '), 'archer-blue');
 assert.equal(spriteSetSlug(''), 'studio-character');
@@ -108,8 +110,8 @@ for (const alter of [
   assert.throws(() => validateSpriteSetManifest(malformed));
 }
 
-// A format determines canvas proportions and tactical size. The resolution
-// slider changes pixel detail only, across every supported value and layout.
+// New work offers four formats. Removed formats remain explicit, frozen
+// recovery definitions so existing exports and drafts keep their dimensions.
 const expectedLayouts = {
   single: { cells: [[0, 0]], size: [160, 200, 48, 60], rows: [1] },
   wide2: { cells: [[0, 0], [1, 0]], size: [320, 200, 96, 60], rows: [2] },
@@ -119,11 +121,20 @@ const expectedLayouts = {
   trapezoid5: { cells: [[0, 0], [1, 0], [2, 0], [1, -1], [2, -1]], size: [480, 320, 144, 96], rows: [2, 3] },
   diamond4: { cells: [[0, 0], [1, 0], [1, -1], [0, 1]], size: [320, 480, 96, 144], rows: [1, 2, 1] }
 };
-assert.deepEqual(SPRITE_LAYOUT_PRESETS.map(layout => layout.id), Object.keys(expectedLayouts));
+const activeIds = ['single', 'triangle3', 'triangle3-inverted', 'hex7'];
+const legacyIds = ['wide2', 'trapezoid5', 'diamond4'];
+assert.deepEqual(SPRITE_LAYOUT_PRESETS.map(layout => layout.id), activeIds);
+assert.deepEqual(Object.keys(SPRITE_LAYOUTS), activeIds);
+assert.deepEqual(SPRITE_LEGACY_LAYOUT_PRESETS.map(layout => layout.id), legacyIds);
+assert.deepEqual(Object.keys(SPRITE_LEGACY_LAYOUTS), legacyIds);
+assert.ok(Object.isFrozen(SPRITE_LAYOUT_PRESETS) && Object.isFrozen(SPRITE_LAYOUTS));
+assert.ok(Object.isFrozen(SPRITE_LEGACY_LAYOUT_PRESETS) && Object.isFrozen(SPRITE_LEGACY_LAYOUTS));
 assert.deepEqual(SPRITE_RESOLUTION, { min: 50, max: 200, step: 5 });
+assert.deepEqual(SPRITE_MODEL_SCALE, { min: 25, max: 200, step: 5 });
+assert.equal(validateSpriteModelScale(), 100);
 for (const [id, expected] of Object.entries(expectedLayouts)) {
   const layout = spriteLayout(id);
-  assert.equal(layout, SPRITE_LAYOUTS[id]);
+  assert.equal(layout, SPRITE_LAYOUTS[id] || SPRITE_LEGACY_LAYOUTS[id]);
   assert.ok(Object.isFrozen(layout) && Object.isFrozen(layout.offsets) && layout.offsets.every(Object.isFrozen));
   assert.deepEqual(layout.offsets.map(({ x, y }) => [x, y]), expected.cells, `${id} pivot and cells`);
   const rowCounts = Object.entries(Object.groupBy ? Object.groupBy(layout.offsets, cell => cell.y) :
@@ -138,6 +149,15 @@ for (const [id, expected] of Object.entries(expectedLayouts)) {
     });
     assert.ok(dims.width <= 1024 && dims.height <= 1024);
     assert.equal(dims.width * expected.size[1], dims.height * expected.size[0]);
+    const largerModel = spriteLayoutDimensions(id, percent, 200);
+    assert.deepEqual([largerModel.width, largerModel.height], [dims.width, dims.height], 'Model size never changes source resolution');
+    assert.deepEqual([largerModel.renderWidth, largerModel.renderHeight], [expected.size[2] * 2, expected.size[3] * 2]);
+  }
+  for (let scale = 25; scale <= 200; scale += 5) {
+    assert.equal(validateSpriteModelScale(scale), scale);
+    const sized = spriteLayoutDimensions(id, 100, scale);
+    assert.deepEqual([sized.width, sized.height], expected.size.slice(0, 2));
+    assert.deepEqual([sized.renderWidth, sized.renderHeight], [expected.size[2] * scale / 100, expected.size[3] * scale / 100]);
   }
   for (let facing = 0; facing < 6; facing++) {
     const cells = spriteLayoutOffsets(id, facing);
@@ -156,6 +176,13 @@ assert.throws(() => spriteLayoutOffsets('wide2', 0.5), /integer hex direction/);
 for (const invalid of [49, 51, 205, NaN, Infinity, '100']) {
   assert.throws(() => spriteLayoutDimensions('single', invalid), /resolution/);
 }
+for (const invalid of [0, 24, 26, 201, 205, 50.5, NaN, Infinity, '100', null]) {
+  assert.throws(() => validateSpriteModelScale(invalid), /model scale/);
+  assert.throws(() => spriteLayoutDimensions('single', 100, invalid), /model scale/);
+}
+assert.deepEqual(spriteLayoutDimensions('single', 200, 55), {
+  width: 320, height: 400, renderWidth: 26.4, renderHeight: 33
+}, 'Fractional combat sizes retain detail without rounding to whole pixels');
 assert.throws(() => spriteLayout('constructor'), /Unknown sprite layout/);
 assert.throws(() => spriteMob('unknown'), /Unknown sprite MOB/);
 assert.deepEqual(SPRITE_MOBS.map(mob => mob.id), [
@@ -172,6 +199,32 @@ const formatManifest = createSpriteSetManifest({
 assert.equal(formatManifest.version, 1, 'New optional metadata keeps legacy schema compatibility');
 assert.deepEqual(formatManifest.layout, { id: 'diamond4', resolutionPercent: 125 });
 assert.equal(formatManifest.mobType, 'orc-leader');
+assert.equal(formatManifest.modelScalePercent, undefined, 'Removed Rev 47 formats still validate at their original size');
+const scaledDimensions = spriteLayoutDimensions('single', 200, 55);
+const scaledManifest = createSpriteSetManifest({
+  id: 'scaled-character', label: 'Scaled character', captures,
+  frame: { ...scaledDimensions, anchorX: scaledDimensions.width / 2, anchorY: scaledDimensions.height * 0.75 },
+  layout: createSpriteLayoutMetadata('single', 200), mobType: 'kobold', modelScalePercent: 55
+});
+assert.equal(scaledManifest.version, 1);
+assert.equal(scaledManifest.modelScalePercent, 55);
+assert.deepEqual(scaledManifest.frame, { width: 320, height: 400, renderWidth: 26.4, renderHeight: 33, anchorX: 160, anchorY: 300 });
+for (const alter of [
+  value => { value.modelScalePercent = 54; },
+  value => { value.modelScalePercent = '55'; },
+  value => { value.modelScalePercent = null; },
+  value => { value.modelScalePercent = 25; },
+  value => { delete value.modelScalePercent; },
+  value => { delete value.layout; },
+  value => { value.frame.renderWidth = 26; },
+  value => { value.frame.renderHeight = 60; }
+]) {
+  const bad = structuredClone(scaledManifest); alter(bad);
+  assert.throws(() => validateSpriteSetManifest(bad));
+}
+assert.throws(() => createSpriteSetManifest({
+  id: 'scale-without-layout', label: 'Scale without layout', frame, captures, modelScalePercent: 100
+}), /model scale requires layout/);
 for (const alter of [
   value => { value.layout.id = 'unknown'; },
   value => { value.layout.resolutionPercent = 51; },
@@ -337,17 +390,20 @@ try {
   await fs.writeFile(registered.indexPath, JSON.stringify({ version: 1, sets: [] }));
   assert.equal((await validateSpriteSetRepository({ repoRoot: validationRoot })).sets, 0);
 
-  // Real-sized packages for all seven formats keep the exact PNG bytes and
-  // MOB/footprint metadata through the same importer used for actual exports.
+  // New scaled packages and unchanged Rev 47 packages keep exact PNG bytes and
+  // MOB/footprint/model-size metadata through the real importer.
   const formatsRoot = path.join(temp, 'format-repo');
   await fs.mkdir(formatsRoot);
-  for (let index = 0; index < SPRITE_LAYOUT_PRESETS.length; index++) {
-    const layout = SPRITE_LAYOUT_PRESETS[index];
-    const dimensions = spriteLayoutDimensions(layout.id, 50);
+  const importLayouts = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRESETS];
+  for (let index = 0; index < importLayouts.length; index++) {
+    const layout = importLayouts[index];
+    const modelScalePercent = index < SPRITE_LAYOUT_PRESETS.length ? [25, 55, 100, 200][index] : undefined;
+    const dimensions = spriteLayoutDimensions(layout.id, 50, modelScalePercent);
     const metadata = createSpriteSetManifest({
       id: `format-${layout.id}`, label: `Format ${layout.label}`, captures,
       frame: { ...dimensions, anchorX: dimensions.width / 2, anchorY: dimensions.height * 0.75 },
-      layout: createSpriteLayoutMetadata(layout.id, 50), mobType: SPRITE_MOBS[index].id
+      layout: createSpriteLayoutMetadata(layout.id, 50), mobType: SPRITE_MOBS[index].id,
+      ...(modelScalePercent === undefined ? {} : { modelScalePercent })
     });
     const sizedFrames = fixtureFrames(dimensions.width, dimensions.height);
     const sizedFiles = packageFiles(metadata, sizedFrames);
@@ -357,6 +413,7 @@ try {
     const restoredMetadata = JSON.parse(await fs.readFile(path.join(importedFormat.destination, 'manifest.json'), 'utf8'));
     assert.deepEqual(restoredMetadata.layout, metadata.layout);
     assert.equal(restoredMetadata.mobType, metadata.mobType);
+    assert.equal(restoredMetadata.modelScalePercent, metadata.modelScalePercent);
     assert.deepEqual(restoredMetadata.frame, metadata.frame);
     for (const [name, bytes] of sizedFiles) assert.deepEqual(await fs.readFile(path.join(importedFormat.destination, name)), bytes);
   }
@@ -365,4 +422,4 @@ try {
   await fs.rm(temp, { recursive: true, force: true });
 }
 
-console.log('Sprite packages: legacy compatibility, seven layouts and MOBs, resolution-independent render sizes, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');
+console.log('Sprite packages: four selectable layouts, three recoverable legacy layouts, independent model size and resolution, seven MOBs, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');

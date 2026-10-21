@@ -6,7 +6,7 @@ Open **3d studio** from the Adventure Party title page. The dedicated page has a
 
 1. Choose **Load model**, or drop a model onto the central viewport.
 2. Select one `.glb`, `.gltf`, or `.fbx` model. For a model with external buffers or textures, select those files together with it. A self-contained GLB is the simplest handoff.
-3. Use **Front adjustment** if the exported model faces a different direction. The studio's canonical model faces +Z with +Y up. **Model's up direction** can correct a Z-up export.
+3. New models default to **Z** under **Model's up direction**. Choose **Y** for a Y-up source, and use **Front adjustment** if its front faces a different direction. Restoring a workspace preserves its saved up direction, including older Y-up choices. Internally the studio aligns the model to +Z forward with +Y up for rendering.
 4. Select a direction under the main window to inspect that facing. Drag the main window to orbit, scroll to zoom, and use **Reset view** to return to the game's elevated angle. These free camera movements leave the six fixed pixel cameras aligned to the board.
 5. Animated models are automatically framed across their clips, including the rest pose and animation endpoints, with room around the movement. **Fit all animations** repeats that fit. **Fit model** fits only the current pose when you deliberately want a tighter frame. Check the six previews before capturing a set.
 
@@ -16,19 +16,26 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 
 Before the first capture, choose the **MOB**, **Footprint and sheet format**, and **Resolution**. The MOB list contains Kobold, Kobold Body Guard, Kobold Slinger, Orc, Orc Leader, Orc Shaman, and Juvenile Red Dragon. Combat tests create the selected MOB with its existing statistics and behavior. Selecting a MOB before capturing chooses its default footprint: single hex for the humanoids, or seven hexes for the dragon. You can then choose another footprint for the set.
 
-The resolution slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The game render size remains fixed for the selected footprint, so increasing resolution does not enlarge the creature on the battlefield.
+The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The separate **Model size** slider runs from **25–200% in 5% steps**, also defaulting to 100%. It changes how large the model appears against the floor footprint and how large its sprite renders in combat. Changing resolution does not enlarge the creature, and changing model size does not resize the PNGs or change its occupied hexes.
 
-| Footprint | Format ID | Source frame at 100% | Complete sheet at 100% | Fixed game render size |
+| Footprint | Format ID | Source frame at 100% resolution | Complete sheet at 100% resolution | Game render size at 100% model size |
 | --- | --- | --- | --- | --- |
 | Single hex | `single` | 160 × 200 | 960 × 600 | 48 × 60 |
-| Two hexes side by side | `wide2` | 320 × 200 | 1920 × 600 | 96 × 60 |
 | Three-hex triangle: one above two | `triangle3` | 320 × 280 | 1920 × 840 | 96 × 84 |
 | Three-hex inverted triangle: two above one | `triangle3-inverted` | 320 × 280 | 1920 × 840 | 96 × 84 |
 | Seven hexes: center and surrounding ring | `hex7` | 480 × 400 | 2880 × 1200 | 144 × 120 |
-| Five-hex trapezoid: two above three | `trapezoid5` | 480 × 320 | 2880 × 960 | 144 × 96 |
-| Four-hex tall diamond: one, two, one | `diamond4` | 320 × 480 | 1920 × 1440 | 96 × 144 |
 
-These arrangements describe the **E-facing** footprint shown in the studio diagram. Asymmetric footprints rotate with the unit's facing in combat. They determine occupied hexes for movement, collision and targeting; each creature remains one unit with one set of statistics. All formats retain the same eighteen-frame pose/direction mapping below. The diamond format provides extra vertical image space for tall creatures.
+These four arrangements describe the **E-facing** footprint shown in the studio diagram. The central model view also displays the selected occupied-hex footprint on its floor at the matching battlefield proportions, so you can judge model size against it. This floor guide is not baked into previews or exported artwork. Asymmetric footprints rotate with the unit's facing in combat. They determine occupied hexes for movement, collision and targeting; each creature remains one unit with one set of statistics. All formats retain the same eighteen-frame pose/direction mapping below.
+
+Earlier two-wide (`wide2`), trapezoid (`trapezoid5`), and tall-diamond (`diamond4`) formats remain supported for recovering saved workspaces and importing or exporting existing sets. They are no longer choices for a new set. Recovery retains their original dimensions and footprint instead of converting their artwork to a different format.
+
+Model size multiplies the table's game render dimensions. For example, a single-hex set at 50% model size renders at 24 × 30; at 200% resolution its PNGs are still 320 × 400. Model size remains editable after capture: it updates the shared rendering metadata without recapturing or resampling the saved sprites. A recovered older capture without layout metadata must be cleared and captured again before its model size can be adjusted.
+
+## Set the lighting
+
+**Environmental light** supplies light around the model. Its color starts white; use its color and intensity controls to change the overall illumination. **Directional light** also starts white and has its own color, intensity, elevation, and hex-direction controls. Choose **E, NE, NW, W, SW, or SE** to place that light around the model, then adjust its elevation above the floor.
+
+These controls affect the 3D model and the rendered sprite pixels. Set them before the first pose capture. Lighting locks as soon as any pose is captured so all three poses retain the same illumination; **Clear sheet** unlocks it. Lighting is saved with the workspace and capture metadata. The pixel color and outline controls below remain editable after capture.
 
 ## Pixel previews and export
 
@@ -50,15 +57,17 @@ The original imported ready sheet remains available in **Combat System Test → 
 3. Repeat with any clip/time for the other two poses. A live table beneath the studio fills the 18 slots, with the clip name and precise capture time beside each row. The labels describe how the game will use the image; choose the appropriate moment yourself.
 4. Set a recognizable **Sprite set name**. Once all three rows are filled, export or test the complete set.
 
-The first captured row locks **Fit model**, **Fit all animations**, **Front adjustment**, **Model's up direction**, **Footprint and sheet format**, and **Resolution**. Every pose therefore shares one frame, scale and projected ground anchor. Orbiting the central viewer and choosing animation clips still work. **MOB** remains editable without changing the captured format. **Brightness**, **Contrast**, **Hue**, **Saturation**, and **Outline width** reprocess the saved source pixels for every row, so you can adjust the entire set without recapturing it. The 3D source model retains its original colors.
+The first captured row locks **Fit model**, **Fit all animations**, **Front adjustment**, **Model's up direction**, **Footprint and sheet format**, **Resolution**, and lighting. Every pose therefore shares one source frame, illumination, and projected ground anchor. Orbiting the central viewer and choosing animation clips still work. **MOB** and **Model size** remain editable without changing the captured pixels or format; model size updates the render dimensions for the entire set. **Brightness**, **Contrast**, **Hue**, **Saturation**, and **Outline width** reprocess the saved source pixels for every row, so you can adjust the entire set without recapturing it. These pixel controls leave the source model's material colors intact.
 
 Use a row's **Clear** button to replace that pose, or **Clear sheet** to unlock framing and start a new set. Loading a new valid model clears the previous captures; a failed model load keeps the previous model and sheet.
 
 ### Saved workspace and returning from combat
 
-The studio automatically saves partial or complete capture rows, source pixels, shared color/outline settings, set name, MOB, footprint, resolution, model files, and animation/framing settings in this browser. Check the workspace status for **Saved** before closing the tab. Refreshing or reopening the same studio restores that workspace; clearing a row or the sheet is saved too. The original model can be restored from the stored files. If it cannot load, the saved rows still preview and export without recreating their poses.
+The studio automatically saves partial or complete capture rows, source pixels, shared color/outline settings, lighting, model size, set name, MOB, footprint, resolution, model files, and animation/framing settings in this browser. Check the workspace status for **Saved** before closing the tab. Refreshing or reopening the same studio restores that workspace; clearing a row or the sheet is saved too. The original model can be restored from the stored files. If it cannot load, the saved rows still preview and export without recreating their poses.
 
-**Test in combat** saves a separate copy of the exact set being tested before opening the game. **Return to 3d studio**, available from Combat Setup and combat, restores that tested copy even if the original studio tab was closed or later edited. Returning makes it the current editable workspace, so subsequent edits and reloads continue from those captures. Existing PNG-only combat drafts from the earlier studio can also be recovered for export, without their original model.
+Older sheets retain their original lighting until cleared, and saved demos retain their original source orientation independently of the selected up direction.
+
+**Test in combat** saves a separate copy of the exact set being tested before opening the game. **Return to 3d studio**, available from Combat Setup and combat, restores that tested copy even if the original studio tab was closed or later edited. A studio test also returns directly after victory, defeat, or a manual exit, without a loot screen. Returning makes it the current editable workspace, so subsequent edits and reloads continue from those captures. Existing PNG-only combat drafts from the earlier studio can also be recovered for export, without their original model.
 
 Workspace storage belongs to this browser and site folder; stable and candidate workspaces are separate. It is not a repository commit or a portable backup. Export the ZIP for a transferable copy. If browser storage is unavailable or full, the status reports the failure and the open captures remain available for export.
 
@@ -76,7 +85,7 @@ The automatic fit samples animation poses; unusual motion between samples can st
 
 At the default single-hex 160 × 200 frame size, the sheet is **960 × 600**. Other formats use six times their frame width and three times their frame height. It has no captions, dividers or preview background baked into its pixels. This layout is separate from the existing **Save all six as a sheet** button, which keeps its original 3 × 2 layout.
 
-**Export game assets (ZIP)** saves one character folder containing the same sheet, **18 individual transparent PNGs**, and **manifest.json**. Each frame remains at its native resolution with its padding intact. The manifest records the MOB type, footprint ID and resolution percentage, source and fixed game render dimensions, source-space anchor, physical direction, pose, animation name/time and shared render settings. The source model stays in the browser workspace and is not included in the game asset ZIP. No image data is embedded in game JavaScript.
+**Export game assets (ZIP)** saves one character folder containing the same sheet, **18 individual transparent PNGs**, and **manifest.json**. Each frame remains at its native resolution with its padding intact. The manifest records the MOB type, footprint ID, resolution and model-size percentages, source and game render dimensions, source-space anchor, physical direction, pose, animation name/time, lighting, and shared render settings. The optional top-level `modelScalePercent` requires layout metadata; older manifests without it retain 100% model size. The source model stays in the browser workspace and is not included in the game asset ZIP. No image data is embedded in game JavaScript.
 
 ### Quick combat check and permanent import
 
@@ -107,7 +116,7 @@ These are physical 60-degree rotations of one complete model. Equipment and hand
 
 ## Animation
 
-Embedded model clips are available immediately, with clip selection, rest pose, play/pause, restart, speed, and timeline scrubbing. The demo includes **Idle**, **Attack**, and **Fall** clips for trying the three captures. Models without clips remain usable as static models.
+Embedded model clips are available immediately, with clip selection, rest pose, play/pause, restart, speed, and timeline scrubbing. The demo source is adapted to the Z-up default and includes **Idle**, **Attack**, and **Fall** clips for trying the three captures. Models without clips remain usable as static models.
 
 One `AnimationMixer` evaluates the pose once per frame. A single WebGL renderer then renders all six orientations into a 3 × 2 offscreen atlas before one readback and palette conversion. The central viewer uses the same model and evaluated pose. Pixel previews update at up to 30 frames per second; all six update together. Rendering pauses when the page is hidden or the studio is offscreen.
 
@@ -118,12 +127,12 @@ The three pose captures save still frames from the chosen animation moments. Con
 - Page: `3d-studio.html`; scoped styles: `css/3d-studio.css`.
 - Renderer, import, playback, and export: `js/3d-studio.mjs`.
 - Saved pose rows and PNG/ZIP export: `js/studio-capture.mjs`.
-- Manifest contract: `js/sprite-set-core.mjs`; shared footprint, resolution and MOB catalog: `js/sprite-layouts.mjs`.
+- Manifest contract: `js/sprite-set-core.mjs`; shared footprint, resolution, model-size and MOB catalog: `js/sprite-layouts.mjs`.
 - Saved workspaces and atomic combat handoff: `js/sprite-set-store.mjs`.
 - Game registration: `js/sprite-set-runtime.mjs`; permanent import: `scripts/import-sprite-set.mjs`.
 - Pure projection and color functions: `js/studio-core.mjs`.
 - The title-page router only navigates to the studio. The game does not load Three.js until the studio page opens.
 - Pinned renderer/loaders and licenses are served locally from `assets/vendor/three/`.
-- Run `node scripts/test-3d-studio.mjs`, `node scripts/test-sprite-set-package.mjs`, `node scripts/test-directional-sprites.mjs`, `node scripts/test-studio-footprints.mjs`, `node --check js/3d-studio.mjs`, and the existing `node scripts/validate-repo.mjs` checks.
+- Run `node scripts/test-3d-studio.mjs`, `node scripts/test-sprite-set-package.mjs`, `node scripts/test-directional-sprites.mjs`, `node scripts/test-studio-footprints.mjs`, `node scripts/test-studio-geometry.mjs`, `node scripts/test-studio-combat-exit.mjs`, `node --check js/3d-studio.mjs`, and the existing `node scripts/validate-repo.mjs` checks.
 
-Browser QA should include model loading with embedded and external textures, a skinned animation, same-frame six-view output, a 60-degree heading adjustment, pause/scrub including the final instant, capture/recapture/clear, shared style changes, outline widths 0/1/10, palette membership, and native PNG and ZIP pixels. Check all seven formats, slider limits, selected MOB behavior, rotated footprint occupancy, and a ZIP import into a temporary repository. Verify partial-sheet reload, restored source model/clip/settings, exact combat return after closing the original tab, export without WebGL, and migration of an older PNG-only combat draft.
+Browser QA should include model loading with embedded and external textures, a skinned animation, same-frame six-view output, a 60-degree heading adjustment, pause/scrub including the final instant, capture/recapture/clear, shared style changes, outline widths 0/1/10, palette membership, and native PNG and ZIP pixels. Check the four new-format choices and three legacy recovery formats, independent resolution/model-size controls, post-capture size changes, lighting and its capture lock, the floor footprint, selected MOB behavior, rotated footprint occupancy, and a ZIP import into a temporary repository. Verify Z-up defaults and preserved restored orientation, partial-sheet reload, restored source model/clip/settings, exact combat return after closing the original tab, direct return after victory/defeat/manual exit, export without WebGL, and migration of an older PNG-only combat draft.
