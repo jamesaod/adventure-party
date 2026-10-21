@@ -4,17 +4,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import {
   prepareStudioAnimations, sliceAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
-} from './studio-animations.mjs?v=R238C54';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C54';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C54';
+} from './studio-animations.mjs?v=R238C55';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C55';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C55';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C54';
+} from './sprite-layouts.mjs?v=R238C55';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C54';
+} from './studio-geometry.mjs?v=R238C55';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -748,12 +748,14 @@ function updateAnimationChoices(index) {
   ui.Clip.value = String(index);
   ui.Clip.disabled = !state.clips.length;
   const count = state.sourceClips.length;
-  ui.AnimationSummary.textContent = count ? `${count} embedded animation${count === 1 ? '' : 's'} found` +
-    (state.animationRanges.length ? ` · ${state.animationRanges.length} saved range${state.animationRanges.length === 1 ? '' : 's'}` : '') +
-    '. One animation plays at a time.' : 'No animated clips found. The rest pose is available for capture.';
   const info = state.model?.userData?.fbxAnimations;
+  const sourceSummary = info ? `${count} selectable animation${count === 1 ? '' : 's'} from ${info.stackCount} FBX take${info.stackCount === 1 ? '' : 's'}` :
+    count ? `${count} embedded animation${count === 1 ? '' : 's'} found` : 'No animated clips found';
+  ui.AnimationSummary.textContent = sourceSummary +
+    (state.animationRanges.length ? ` · ${state.animationRanges.length} saved range${state.animationRanges.length === 1 ? '' : 's'}` : '') +
+    (count ? '. One animation plays at a time.' : '. The rest pose is available for capture.');
   const notes = [];
-  if (info?.emptyStackCount) notes.push(`${info.emptyStackCount} empty FBX take${info.emptyStackCount === 1 ? ' was' : 's were'} skipped.`);
+  if (info?.emptyStackCount) notes.push(`${info.emptyStackCount} FBX take${info.emptyStackCount === 1 ? ' had' : 's had'} no supported animation tracks and ${info.emptyStackCount === 1 ? 'was' : 'were'} skipped.`);
   if (info?.layeredStackCount) notes.push('Layered FBX takes use their first usable layer. Export baked animations to include all blended layers.');
   ui.AnimationWarning.textContent = notes.join(' ');
   ui.AnimationWarning.hidden = !notes.length;

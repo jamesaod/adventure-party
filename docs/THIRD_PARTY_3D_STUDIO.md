@@ -32,6 +32,8 @@ The HTML import map resolves `three` to the local `three.module.min.js` and `thr
 
 The import map has a versioned exact entry for the patched FBX loader so browser caches refresh when it changes.
 
+The parser also follows every valid parent connection of each AnimationCurve. [Autodesk's FBX data model](https://help.autodesk.com/cloudhelp/2018/ENU/FBX-Developer-Help/animation/animation_data_structures/animation_classes_interrelation.html) permits shared curves; inspecting only the first parent can incorrectly discard other takes. The parser test covers separate curves, shared curves, reversed connection order and unrelated connections. The studio reports raw take counts separately from selectable clips, so unsupported tracks are not mistaken for absent source animation.
+
 ## fflate
 
 The FBX loader uses **fflate 0.8.2** for decompression. The sprite capture exporter and repository importer reuse that same module for ZIP packages. Its module is the copy included in the Three.js distribution above, with the original header retained. The additional complete MIT license notice is preserved at [`assets/vendor/three/addons/libs/fflate.LICENSE`](../assets/vendor/three/addons/libs/fflate.LICENSE), from <https://github.com/101arrowz/fflate/blob/v0.8.2/LICENSE>.

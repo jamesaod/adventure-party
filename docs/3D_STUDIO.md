@@ -64,7 +64,9 @@ The original imported ready sheet remains available in **Combat System Test → 
 
 The **Animation** dropdown lists every usable embedded clip with a number, name and duration. The number distinguishes duplicate names. Selecting a clip stops the previous animation; the central model and all six previews share that one animation clock. **Rest pose** stops animation completely.
 
-FBX files can contain multiple named takes. The studio honors each take's valid start/end markers and gives it a timeline starting at zero, retaining the exact boundary poses and intentional holds. Empty takes are skipped. If a take contains multiple animation layers, the studio uses the first usable layer and displays a note; export baked animations when those layers need to be blended together.
+FBX files can contain multiple named takes. The studio reports the selectable-animation count alongside the total take count, follows curves shared by multiple takes, and honors each take's valid start/end markers. Each take gets a timeline starting at zero, retaining the exact boundary poses and intentional holds. Takes with no supported tracks are skipped with a note; this does not establish that the source take is empty. If a take contains multiple animation layers, the studio uses the first usable layer and displays a note; export baked animations when those layers need to be blended together.
+
+To check a newer export, choose its file again with **Load model**. Refreshing restores the previously saved model files; it does not reread a changed file on your computer. Loading a new file with the same name replaces the stored file normally.
 
 If the file contains several motions on one continuous timeline, expand **Create animation from range**:
 
