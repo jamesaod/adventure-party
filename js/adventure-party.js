@@ -2257,8 +2257,12 @@ const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
    future Fighter and creature art plug into the same combat path without bespoke code.
    Battlefield/contact shadows remain separately rendered by the unit draw functions. */
 const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
-const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
-const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
+const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png?v=C40';
+const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png?v=C40';
+const ORC_LEADER_STAND_SPRITE_SRC='assets/sprites/orc-leader-stand.png?v=C40';
+const ORC_LEADER_ATTACK_SPRITE_SRC='assets/sprites/orc-leader-attack.png?v=C40';
+const ORC_SHAMAN_STAND_SPRITE_SRC='assets/sprites/orc-shaman-stand.png?v=C40';
+const ORC_SHAMAN_ATTACK_SPRITE_SRC='assets/sprites/orc-shaman-attack.png?v=C40';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
 const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=C11';
@@ -2332,6 +2336,18 @@ orcStandSprite.src=ORC_STAND_SPRITE_SRC;
 
 const orcAttackSprite=new Image();
 orcAttackSprite.src=ORC_ATTACK_SPRITE_SRC;
+
+const orcLeaderStandSprite=new Image();
+orcLeaderStandSprite.src=ORC_LEADER_STAND_SPRITE_SRC;
+
+const orcLeaderAttackSprite=new Image();
+orcLeaderAttackSprite.src=ORC_LEADER_ATTACK_SPRITE_SRC;
+
+const orcShamanStandSprite=new Image();
+orcShamanStandSprite.src=ORC_SHAMAN_STAND_SPRITE_SRC;
+
+const orcShamanAttackSprite=new Image();
+orcShamanAttackSprite.src=ORC_SHAMAN_ATTACK_SPRITE_SRC;
 
 const juvenileRedDragonStandSprite=new Image();
 juvenileRedDragonStandSprite.src=JUVENILE_RED_DRAGON_STAND_SPRITE_SRC;
@@ -2426,6 +2442,12 @@ function prepareCrispPixelSprite(image){
   koboldBodyguardAttackSprite,
   koboldSlingerStandSprite,
   koboldSlingerAttackSprite,
+  orcStandSprite,
+  orcAttackSprite,
+  orcLeaderStandSprite,
+  orcLeaderAttackSprite,
+  orcShamanStandSprite,
+  orcShamanAttackSprite,
   juvenileRedDragonStandSprite,
   juvenileRedDragonAttackSprite,
   deathMarkerSprite
@@ -2483,6 +2505,26 @@ const UNIT_POSE_DEFINITIONS={
     sprites:{
       stand:orcStandSprite,
       attack:orcAttackSprite
+    }
+  },
+  "orc-leader":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcLeaderStandSprite,
+      attack:orcLeaderAttackSprite
+    }
+  },
+  "orc-shaman":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcShamanStandSprite,
+      attack:orcShamanAttackSprite
     }
   },
   "juvenile-red-dragon":{
@@ -25112,6 +25154,12 @@ function pixelAssetIdForUnitPose(unit,poseName=null){
   }
   if(unit.type==="orc"){
     return pose==="attack" ? "orc-attack" : "orc-stand";
+  }
+  if(unit.type==="orc-leader"){
+    return pose==="attack" ? "orc-leader-attack" : "orc-leader-stand";
+  }
+  if(unit.type==="orc-shaman"){
+    return pose==="attack" ? "orc-shaman-attack" : "orc-shaman-stand";
   }
   if(unit.type==="juvenile-red-dragon"){
     return pose==="attack"
