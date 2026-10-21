@@ -1,6 +1,6 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238';
-import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C49';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C49';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C49';
 
 const api = window.adventurePartySpriteSets;
 const assets = new Map();
@@ -58,7 +58,7 @@ function makeControls() {
   }
   const help = document.createElement('p');
   help.className = 'small';
-  help.textContent = 'Preview all six facings before combat. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
+  help.textContent = 'Preview all six facings before combat. Player targets are friendly characters with their own class rules; Kobolds provide opponents. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
   help.style.cssText = 'margin:8px 0 0;';
   inspector.append(heading, buttons, help);
   document.querySelector('#combatScreen .side').append(inspector);
@@ -160,10 +160,17 @@ async function loadDraft() {
     throw error;
   }
   const id = await registerSet(manifest, sourceUrls, urls);
+  if (api.loadingState?.() === 'timed-out' || api.canAutoSelectDraft?.() === false) {
+    message(`${manifest.label} is now available in the sprite test selector. Choose it when you are ready to begin another test.`);
+    return;
+  }
   api.select(id, { openSetup: true });
   const mob = spriteMob(manifest.mobType || 'kobold');
   const layout = spriteLayout(manifest.layout?.id || 'single');
-  message(`${manifest.label}: ${mob.label} rules, ${layout.offsets.length}-hex footprint, 18 captured sprites. Choose Begin Battle to inspect all six directions.`);
+  const targetNote = mob.targetKind === 'player'
+    ? 'Six friendly copies use this character’s class and equipment. This collection also supplies the matching test player’s sprites.'
+    : 'The selected monster keeps its existing combat rules.';
+  message(`${manifest.label}: ${mob.label}, ${layout.offsets.length}-hex footprint, 18 captured sprites. ${targetNote} Choose Begin Battle to inspect all six directions.`);
 }
 
 async function start() {
@@ -184,13 +191,15 @@ async function start() {
     const results = await Promise.allSettled(index.sets.map(loadRepositorySet));
     const failed = results.filter(result => result.status === 'rejected');
     if (failed.length) message(`${failed.length} sprite set(s) could not be loaded. ${failed[0].reason.message}`);
-    else if (index.sets.length) message(`${index.sets.length} asset-folder set(s) available for the six-facing test.`);
+    else if (index.sets.length) message(`${index.sets.length} asset-folder set(s) available. Player targets also supply their matching character’s sprites; selecting a set overrides the default first package ID for that character in this session.`);
   } catch (error) { message(error.message); }
   if (wantsDraft) {
     message('Loading the studio capture…');
     try { await loadDraft(); }
     catch (error) {
-      api.select('studio-kobold', { openSetup: true });
+      if (api.loadingState?.() !== 'timed-out' && api.canAutoSelectDraft?.() !== false) {
+        api.select('studio-kobold', { openSetup: true });
+      }
       message(error.message);
     }
   }
@@ -199,4 +208,4 @@ async function start() {
 start().catch(error => {
   if (setStatus) message(error.message);
   else console.error('Sprite sets could not start:', error);
-});
+}).finally(() => api?.finishLoading?.());

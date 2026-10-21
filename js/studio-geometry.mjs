@@ -1,5 +1,25 @@
-import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238';
-import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238';
+import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238C49';
+import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238C49';
+
+// Match TACTICAL_FEET_PER_HEX and HEX_W in the combat renderer. Native model
+// units are normalized on import; the battlefield hex is the scale reference.
+export const STUDIO_FEET_PER_HEX = 10;
+export const STUDIO_HEIGHT_RULER_FEET = 20;
+
+export function studioWorldUnitsPerFoot(layoutId, baseFrameHeight) {
+  if (!Number.isFinite(baseFrameHeight) || baseFrameHeight <= 0) {
+    throw new RangeError('The studio base frame height must be positive and finite.');
+  }
+  return 64 * baseFrameHeight / (spriteLayout(layoutId).renderHeight * STUDIO_FEET_PER_HEX);
+}
+
+/** World height already includes the model-size transform; apply it only once. */
+export function studioModelHeightFeet(worldHeight, layoutId, baseFrameHeight) {
+  if (!Number.isFinite(worldHeight) || worldHeight < 0) {
+    throw new RangeError('The model height must be nonnegative and finite.');
+  }
+  return worldHeight / studioWorldUnitsPerFoot(layoutId, baseFrameHeight);
+}
 
 // Combat's pointy hex, in screen pixels relative to its center.
 const HEX_VERTICES = Object.freeze([

@@ -4,9 +4,9 @@ The 3d studio exports one character as **18 separate transparent PNGs**, a refer
 
 ## Capture the poses
 
-1. Choose the target **MOB** and one of four footprints: single hex, three-hex triangle, inverted triangle, or seven-hex center/ring. **Resolution** scales source frames from 50–200% in 5% steps; **Model size** independently scales the battlefield render dimensions from 25–200% in 5% steps. Both default to 100%. See the [format table](3D_STUDIO.md#choose-the-mob-footprint-and-resolution) for frame and sheet dimensions.
+1. Choose the target **MOB / player character** and one of four footprints: single hex, three-hex triangle, inverted triangle, or seven-hex center/ring. The test player choices are Dungeon Crawler Carl (Fighter), Elven Ranger (Ranger), and Baub (Mage). **Resolution** scales source frames from 50–200% in 5% steps; **Model size** independently scales the battlefield render dimensions from 25–200% in 5% steps. Both default to 100%. See the [format table](3D_STUDIO.md#choose-the-mob-footprint-and-resolution) for frame and sheet dimensions.
 2. Load a model with its animations, such as an animated FBX from Tripo. Select any separate texture files in the same file selection. New models default to Z-up; choose Y if the source needs it. A restored workspace keeps its saved orientation.
-3. The studio fits the model across its animation clips. Adjust the environmental light's color/intensity and the directional light's color/intensity/elevation/hex direction before capturing; both lights start white. Use the matching footprint on the model floor to judge size. Choose an animation, pause it, and drag the timeline to the desired moment. **Fit all animations** restores the shared frame if you change it before capturing.
+3. The studio fits the model across its animation clips. Adjust the environmental light's color/intensity and the directional light's color/intensity/elevation/hex direction before capturing; both lights start white. Use the matching footprint, 0–20-foot ruler, and lower-corner model-height readout to judge size. The scale is 10 feet per battlefield hex; height measures the current pose including equipment. Choose an animation, pause it, and drag the timeline to the desired moment. **Fit all animations** restores the shared frame if you change it before capturing.
 4. Choose **Capture ready pose**, **Capture attack pose**, or **Capture prone pose**. Each button captures all six physical facings at that exact animation time.
 5. Repeat for the other poses, using a different clip or time as needed. The growing preview shows the saved captures, not the current playback frame.
 6. Give the set a recognizable character name, then choose **Export game assets (ZIP)**.
@@ -28,6 +28,8 @@ Partial and complete sheets autosave in this browser with their source pixels, m
 ## Test immediately
 
 Choose **Test in combat** after capturing all 18 sprites. The studio saves the PNGs and an exact copy of the captured workspace, then opens Combat System Test with that character selected. The test creates six units using the selected MOB's implemented statistics and behavior, with the set's chosen footprint. This lets you inspect the ready, attack, and prone artwork before importing it into the repository.
+
+Player targets (`fighter`, `ranger`, and `mage`) create six friendly copies of Carl, Elven Ranger, or Baub, with Kobold opponents. Their existing class, equipment, statistics and player/NPC controller are retained. The pose inspector works on the friendly test formation in all six directions.
 
 Choose **Return to 3d studio** from setup or combat to restore the exact tested captures and export or adjust them, even if the original studio tab was closed. Victory, defeat, and manual exit from a studio battle also return directly to the studio without a loot screen. Stable and candidate drafts are separate. Export the ZIP to keep a transferable copy and use the import command below to make the character part of the game repository.
 
@@ -88,7 +90,9 @@ When present, `modelScalePercent` must be an integer from 25–200 in 5% steps a
 
 `mobType` identifies an existing combat factory; `layout.id` identifies the occupied-hex arrangement. The shared definitions live in `js/sprite-layouts.mjs`. Its active catalog contains `single`, `triangle3`, `triangle3-inverted`, and `hex7`. Explicit legacy definitions retain `wide2`, `trapezoid5`, and `diamond4` so existing exported packages and drafts recover with their original dimensions and footprints; these three formats are not offered for new sets.
 
-Older version-1 sets without layout/MOB metadata still load with their original image dimensions and use the single-hex Kobold test defaults. Their recovered captures remain exportable; clear and recapture them before adding model-size metadata. Importing a set makes it selectable for testing; it does not replace every existing instance of that MOB's artwork.
+Older version-1 sets without layout/MOB metadata still load with their original image dimensions and use the single-hex Kobold test defaults. Their recovered captures remain exportable; clear and recapture them before adding model-size metadata. Imported monster sets are selectable for testing and do not replace every existing instance of that MOB's artwork.
+
+For a test player collection, set `mobType` to `fighter` (Dungeon Crawler Carl), `ranger` (Elven Ranger), or `mage` (Baub); the studio writes this from the dropdown automatically. These sets also supply that matching character's sprites whenever its factory creates it. If more than one registered set targets that player type, the alphabetically first package ID is the deterministic default, and selecting a set in Combat Setup overrides it for that character during the current session. Re-export and import the same name/ID to replace that collection without changing game code.
 
 ## Validation and publishing
 

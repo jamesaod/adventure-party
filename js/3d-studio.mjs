@@ -2,13 +2,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238';
-import { createPoseCapture } from './studio-capture.mjs?v=R238';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C49';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C49';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale
-} from './sprite-layouts.mjs?v=R238';
-import { studioFootprintGuide, studioLightPosition } from './studio-geometry.mjs?v=R238';
+} from './sprite-layouts.mjs?v=R238C49';
+import {
+  STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
+  studioModelHeightFeet, studioFootprintGuide, studioLightPosition
+} from './studio-geometry.mjs?v=R238C49';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -24,6 +27,7 @@ const ui = Object.fromEntries([
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
   'FootprintPreview', 'FootprintDescription', 'FormatSummary', 'EmptyMessage',
   'ModelScale', 'ModelScaleValue', 'BattlefieldSize', 'LightingLockNote', 'LightingFields',
+  'HeightRuler', 'ModelHeight', 'ModelHeightValue',
   'AmbientIntensity', 'AmbientIntensityValue', 'AmbientColor',
   'KeyIntensity', 'KeyIntensityValue', 'KeyColor', 'KeyElevation', 'KeyElevationValue', 'KeyDirection',
   'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
@@ -41,6 +45,7 @@ const state = {
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
+  heightDirty: true, heightFeet: null, lastHeightMeasure: -Infinity,
   viewVisible: true, frameHeight: 3.15, framingMode: 'pose', framingSamplesPerClip: 0,
   center: new THREE.Vector3(0, 1, 0)
 };
@@ -49,6 +54,8 @@ let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
 let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbientLight, keyLight, modelFrame;
 let atlasTarget, atlasSource, atlasImage;
 let resizeObserver, visibilityObserver, poseCapture;
+let modelBounds = null, heightRulerLine;
+const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d', { alpha: false });
 const previews = HEX_FACINGS.map(facing => ({
@@ -114,12 +121,29 @@ function updateSetupLabels() {
 }
 
 function populateSetupControls() {
-  ui.MobTarget.replaceChildren(...SPRITE_MOBS.map(mob => new Option(mob.label, mob.id)));
+  ui.MobTarget.replaceChildren(...['monster', 'player'].map(kind => {
+    const group = document.createElement('optgroup');
+    group.label = kind === 'player' ? 'Test player characters' : 'MOBs';
+    group.append(...SPRITE_MOBS.filter(mob => (mob.targetKind || 'monster') === kind)
+      .map(mob => new Option(mob.label, mob.id)));
+    return group;
+  }));
   ui.Footprint.replaceChildren(...SPRITE_LAYOUT_PRESETS.map(layout => new Option(layout.label, layout.id)));
   for (const key of ['min', 'max', 'step']) ui.Resolution[key] = String(SPRITE_RESOLUTION[key]);
   for (const key of ['min', 'max', 'step']) ui.ModelScale[key] = String(SPRITE_MODEL_SCALE[key]);
   ui.KeyDirection.replaceChildren(...HEX_FACINGS.map(facing => new Option(`${facing.label} (${facing.id})`, facing.id)));
   updateSetupLabels();
+  const svgElement = name => document.createElementNS('http://www.w3.org/2000/svg', name);
+  heightRulerLine = svgElement('line');
+  ui.HeightRuler.append(heightRulerLine);
+  for (let feet = 0; feet <= STUDIO_HEIGHT_RULER_FEET; feet++) {
+    const tick = svgElement('line');
+    const label = feet % 5 === 0 ? svgElement('text') : null;
+    if (label) label.textContent = `${feet} ft`;
+    ui.HeightRuler.append(tick);
+    if (label) ui.HeightRuler.append(label);
+    heightRulerTicks.push({ feet, tick, label });
+  }
 }
 
 function syncCaptureLock(locked) {
@@ -141,6 +165,10 @@ function syncCaptureLock(locked) {
 
 function setModelReady(ready) {
   state.modelReady = ready;
+  state.heightDirty = true;
+  if (!ready) { modelBounds = null; state.heightFeet = null; }
+  ui.HeightRuler.toggleAttribute('hidden', !ready);
+  ui.ModelHeight.hidden = !ready;
   ui.LoadButton.disabled = ui.DemoButton.disabled = !renderer || state.disposed;
   ui.ResetViewButton.disabled = !ready;
   ui.ExportSheetButton.disabled = !ready;
@@ -246,7 +274,7 @@ function showError(error) {
 }
 function invalidate(previewsToo = true) {
   state.mainDirty = true;
-  if (previewsToo) state.previewsDirty = true;
+  if (previewsToo) { state.previewsDirty = true; state.heightDirty = true; }
   requestFrame();
 }
 function requestFrame() {
@@ -386,9 +414,12 @@ function updateModelInfo() {
   ui.ModelInfo.textContent = `${meshes} mesh${meshes === 1 ? '' : 'es'} · ${bones} bones · ${state.clips.length} animation${state.clips.length === 1 ? '' : 's'}`;
 }
 
-function geometryBounds(root) {
+function geometryBounds(root, { refreshSkinnedBounds = true } = {}) {
+  root.updateWorldMatrix(true, false);
+  // SkinnedMesh overrides updateMatrixWorld to refresh its bind inverse;
+  // preserve that dispatch when measuring normalized models off-scene.
   root.updateMatrixWorld(true);
-  root.traverse(object => {
+  if (refreshSkinnedBounds) root.traverse(object => {
     if (object.isSkinnedMesh) object.computeBoundingBox();
   });
   const bounds = new THREE.Box3().setFromObject(root, true);
@@ -396,6 +427,61 @@ function geometryBounds(root) {
     throw new Error('The model has invalid or empty geometry in an animation pose. Export the model again and retry.');
   }
   return bounds;
+}
+
+// Screen labels follow a world-space vertical ruler. They never enter the
+// render scene or capture atlas. Measure skinned poses at most ten times per
+// second during playback; paused edits update on the next rendered frame.
+function updateHeightGuide(timestamp) {
+  if (!state.modelReady || !state.model) return;
+  if (!modelBounds || (state.heightDirty &&
+      (!state.playing || !state.action || timestamp - state.lastHeightMeasure >= 100))) {
+    modelBounds = geometryBounds(state.model, { refreshSkinnedBounds: false });
+    state.heightFeet = studioModelHeightFeet(modelBounds.max.y - modelBounds.min.y, state.layoutId, state.frameHeight);
+    ui.ModelHeightValue.textContent = `${state.heightFeet.toFixed(1)} ft`;
+    state.heightDirty = false;
+    state.lastHeightMeasure = timestamp;
+  }
+  const width = ui.Viewport.clientWidth, height = ui.Viewport.clientHeight;
+  if (!width || !height) return;
+  const screen = point => {
+    const projected = point.project(mainCamera);
+    return { x: (projected.x + 1) * width / 2, y: (1 - projected.y) * height / 2 };
+  };
+  let modelLeft = width;
+  for (const x of [modelBounds.min.x, modelBounds.max.x]) {
+    for (const y of [modelBounds.min.y, modelBounds.max.y]) {
+      for (const z of [modelBounds.min.z, modelBounds.max.z]) {
+        modelLeft = Math.min(modelLeft, screen(new THREE.Vector3(x, y, z)).x);
+      }
+    }
+  }
+  const unitsPerFoot = studioWorldUnitsPerFoot(state.layoutId, state.frameHeight);
+  const ground = screen(new THREE.Vector3(0, 0, 0));
+  const top = screen(new THREE.Vector3(0, unitsPerFoot * STUDIO_HEIGHT_RULER_FEET, 0));
+  // Keep the labels beside the model and legible during orbit/pan. The vertical
+  // projection uses the real camera, so zoom changes ruler spacing, not feet.
+  const x = THREE.MathUtils.clamp(modelLeft - 24, 62, Math.max(62, width - 18));
+  const pixelsPerFoot = (ground.y - top.y) / STUDIO_HEIGHT_RULER_FEET;
+  ui.HeightRuler.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  ui.HeightRuler.toggleAttribute('hidden', Math.abs(pixelsPerFoot) < 1);
+  heightRulerLine.setAttribute('x1', x);
+  heightRulerLine.setAttribute('x2', x);
+  heightRulerLine.setAttribute('y1', ground.y);
+  heightRulerLine.setAttribute('y2', top.y);
+  for (const { feet, tick, label } of heightRulerTicks) {
+    const y = ground.y - feet * pixelsPerFoot;
+    tick.setAttribute('x1', x - (label ? 7 : 4));
+    tick.setAttribute('x2', x + (label ? 7 : 4));
+    tick.setAttribute('y1', y);
+    tick.setAttribute('y2', y);
+    tick.toggleAttribute('hidden', !label && Math.abs(pixelsPerFoot) < 4);
+    if (label) {
+      label.setAttribute('x', x - 12);
+      label.setAttribute('y', y);
+      label.toggleAttribute('hidden', feet > 0 && feet < STUDIO_HEIGHT_RULER_FEET && Math.abs(pixelsPerFoot) < 3);
+    }
+  }
 }
 
 // Measure off-scene, then apply the complete result. Failed fitting never leaves
@@ -486,6 +572,7 @@ function measureModelFrame(model, clips, { upAxis = 'Z', mixer = null, action = 
 }
 
 function applyModelFrame(frame) {
+  modelBounds = null;
   modelFrame = { ...frame, position: frame.position.clone(), center: frame.center.clone() };
   upAxisGroup.rotation.x = state.upAxis === 'Z' ? -Math.PI / 2 : 0;
   state.center.copy(frame.center);
@@ -552,13 +639,18 @@ function mainViewFrame(aspect) {
   const facing = HEX_FACINGS.findIndex(item => item.id === state.facing);
   const cells = studioFootprintGuide(state.layoutId, facing, state.frameHeight);
   const centerV = state.center.y * Math.cos(CAMERA_ELEVATION) - state.center.z * Math.sin(CAMERA_ELEVATION);
-  let low = centerV - state.frameHeight / 2, high = centerV + state.frameHeight / 2;
-  let left = -state.frameHeight * state.width / state.height / 2, right = -left;
+  const factor = Math.max(1, state.modelScalePercent / 100);
+  let low = (centerV - state.frameHeight / 2) * factor, high = (centerV + state.frameHeight / 2) * factor;
+  let left = -state.frameHeight * state.width / state.height * factor / 2, right = -left;
   for (const vertex of cells.flatMap(cell => cell.vertices)) {
     const vertical = -vertex.z * Math.sin(CAMERA_ELEVATION);
     low = Math.min(low, vertical); high = Math.max(high, vertical);
     left = Math.min(left, vertex.x); right = Math.max(right, vertex.x);
   }
+  const unitsPerFoot = studioWorldUnitsPerFoot(state.layoutId, state.frameHeight);
+  low = Math.min(low, 0);
+  high = Math.max(high, STUDIO_HEIGHT_RULER_FEET * unitsPerFoot * Math.cos(CAMERA_ELEVATION));
+  left -= 3 * unitsPerFoot; // Space for the ruler's labels beside the model.
   const center = state.center.clone().add(new THREE.Vector3(0, Math.cos(CAMERA_ELEVATION), -Math.sin(CAMERA_ELEVATION))
     .multiplyScalar((low + high) / 2 - centerV));
   center.x = (left + right) / 2;
@@ -583,6 +675,7 @@ function resetCamera() {
 function selectFacing(id) {
   if (!HEX_FACINGS.some(item => item.id === id)) return;
   state.facing = id;
+  modelBounds = null;
   document.querySelectorAll('[data-studio-facing]').forEach(button => {
     const active = button.dataset.studioFacing === id;
     button.classList.toggle('active', active);
@@ -840,6 +933,7 @@ function tick(timestamp) {
     state.mixer.update(delta); // Exactly once; all views use this one evaluated pose.
     state.mainDirty = true;
     state.previewsDirty = true;
+    state.heightDirty = true;
     updateAnimationControls();
   }
   const moving = orbit.update();
@@ -854,6 +948,7 @@ function tick(timestamp) {
     renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
     renderer.clear(true, true, true);
     renderer.render(scene, mainCamera);
+    updateHeightGuide(timestamp);
     state.mainDirty = false;
   }
   if ((state.playing && state.action) || moving || state.previewsDirty) requestFrame();
@@ -1303,6 +1398,12 @@ async function start() {
       lighting: { ...state.lighting },
       renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent)).slice(2),
       modelDisplayScale: placement?.scale.x || null,
+      modelHeightFeet: state.heightFeet,
+      modelWorldBounds: modelBounds ? { min: modelBounds.min.toArray(), max: modelBounds.max.toArray() } : null,
+      heightRuler: {
+        maxFeet: STUDIO_HEIGHT_RULER_FEET, feetPerHex: STUDIO_FEET_PER_HEX,
+        worldUnitsPerFoot: studioWorldUnitsPerFoot(state.layoutId, state.frameHeight)
+      },
       captureFrameHeight: pixelCamera ? pixelCamera.top - pixelCamera.bottom : null,
       footprintCellCount: footprintGuide ? footprintGuide.children.length / 2 : 0,
       footprintWorldCells: studioFootprintGuide(state.layoutId, HEX_FACINGS.findIndex(item => item.id === state.facing), state.frameHeight),
