@@ -14637,6 +14637,7 @@ function makeOrc(index,position){
   return {
     id:`orc-${String(index+1).padStart(2,"0")}`,
     type:"orc",
+    species:"orc",
     creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"medium",
@@ -14698,6 +14699,176 @@ function makeOrc(index,position){
     buffs:[],
     debuffs:[],
 
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0})
+  };
+}
+
+
+
+function makeOrcLeader(index,position){
+  /*
+    Candidate Rev 40 — Monstrous Manual Orc leader.
+    The Orc entry lists leaders/assistants at 8 hp each and XP 35 while
+    retaining the ordinary Orc's AC 6, MV 9, THAC0 19 and weapon damage.
+    POR combat art #4 is used as the development-only leader sprite.
+  */
+  return {
+    id:`orc-leader-${String(index+1).padStart(2,"0")}`,
+    type:"orc-leader",
+    species:"orc",
+    creatureType:"humanoid",
+    controller:"mob",
+    sizeCategory:"medium",
+    faction:"enemy",
+    alignment:"lawful evil",
+    name:"Orc Leader",
+
+    hp:8,
+    maxHp:8,
+    hitDiceValue:1,
+    hitDiceLabel:"1 (8 hp leader)",
+
+    ac:6,
+    unarmoredAc:10,
+    thaco:19,
+    move:9,
+    unarmoredMove:12,
+    halfMove:4,
+
+    weapon:"Axe, battle",
+    weaponCatalogId:"axe-battle",
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d8",
+    weaponDamageL:"1d8",
+
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:12,
+    moraleLabel:"Steady (11-12)",
+    xpValue:35,
+
+    poseName:"stand",
+    poseUntil:0,
+    brightLightAttackPenalty:-1,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0})
+  };
+}
+
+
+function makeOrcShaman(index,position){
+  /*
+    Candidate Rev 40 — 3rd-level Orc shaman.
+    Monstrous Manual: shamans may reach 5th-level priest; each level above 1st
+    adds 1d4 hp, and they attack as 1 HD per two spellcasting levels, fractions
+    rounded up. A 3rd-level shaman therefore has 1d8+2d4 hp, attacks as 2 HD,
+    and is worth 175 XP. POR combat art #33 is used as the development-only
+    shaman sprite.
+  */
+  const hp=d(8)+d(4)+d(4);
+
+  return {
+    id:`orc-shaman-${String(index+1).padStart(2,"0")}`,
+    type:"orc-shaman",
+    species:"orc",
+    creatureType:"humanoid",
+    controller:"mob",
+    sizeCategory:"medium",
+    faction:"enemy",
+    alignment:"lawful evil",
+    name:"Orc Shaman",
+
+    hp,
+    maxHp:hp,
+    hitDiceValue:2,
+    hitDiceLabel:"1d8+2d4 (3rd-level shaman)",
+    priestLevel:3,
+    spellcastingClass:"priest",
+    spellcastingLevel:3,
+
+    ac:6,
+    unarmoredAc:10,
+    thaco:19,
+    move:9,
+    unarmoredMove:12,
+    halfMove:4,
+
+    weapon:"Spear",
+    weaponCatalogId:"spear",
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d6",
+    weaponDamageL:"1d8",
+
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:13,
+    moraleLabel:"Elite (13-14)",
+    xpValue:175,
+
+    specialAbilities:[
+      "3rd-level Orc shaman / priest"
+    ],
+
+    poseName:"stand",
+    poseUntil:0,
+    brightLightAttackPenalty:-1,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
     fleeing:false,
     fleeSteps:0,
     fleeEscapeDistance:10,
@@ -15095,41 +15266,53 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
   ];
 }
 
-function makeOrcArmy(count=10,occupiedUnits=[]){
+function makeOrcArmy(
+  normalCount=16,
+  leaderCount=3,
+  shamanCount=1,
+  condition=selectedCombatCondition
+){
   /*
-    A separate compact Orc warband. Orcs deploy in a radius-2 cluster,
-    normally 7–13 hexes from Carl, and cannot overlap the existing
-    Kobold group or party members.
+    Candidate Rev 40 test encounter:
+      16 ordinary Orcs
+       3 Orc Leaders
+       1 3rd-level Orc Shaman
+      -------------------------
+      20 Orcs total
+
+    The shaman is deliberately included for MOB/sprite testing even though a
+    random MM encounter of only 20 Orcs would not normally guarantee one.
   */
-  const occupiedKeys=new Set(
-    (occupiedUnits || []).map(unit=>key(unit.x,unit.y))
-  );
+  const totalCount=
+    Math.max(0,normalCount)+
+    Math.max(0,leaderCount)+
+    Math.max(0,shamanCount);
 
   let selected=null;
 
-  for(let attempt=0;attempt<160;attempt++){
+  for(let attempt=0;attempt<180;attempt++){
     const direction=
       MOB_DEPLOYMENT_DIRECTIONS[
         Math.floor(Math.random()*MOB_DEPLOYMENT_DIRECTIONS.length)
       ];
 
-    const anchorDistance=randomIntInclusive(7,13);
+    const anchorDistance=randomIntInclusive(7,12);
     const anchor={
       x:direction.x*anchorDistance,
       y:direction.y*anchorDistance
     };
 
-    const candidates=axialDisk(anchor,2)
+    const candidates=axialDisk(anchor,3)
       .filter(pos=>
         inside(pos.x,pos.y) &&
-        hexDistance(pos,{x:0,y:0})>=3 &&
-        !occupiedKeys.has(key(pos.x,pos.y))
+        !isWall(pos.x,pos.y) &&
+        hexDistance(pos,{x:0,y:0})>=3
       )
       .map(pos=>({
         ...pos,
         deploymentScore:
           hexDistance(pos,anchor)*10+
-          Math.random()*10
+          Math.random()*12
       }))
       .sort((a,b)=>
         a.deploymentScore-b.deploymentScore ||
@@ -15137,7 +15320,7 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
         a.y-b.y
       );
 
-    if(candidates.length>=count){
+    if(candidates.length>=totalCount){
       selected={
         direction,
         anchorDistance,
@@ -15150,31 +15333,31 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
 
   if(!selected){
     const fallbackAnchors=[
-      {name:"W",x:-12,y:2},
-      {name:"NE",x:8,y:-8},
-      {name:"SW",x:-8,y:8},
-      {name:"SE",x:2,y:8}
+      {name:"E",x:9,y:0},
+      {name:"W",x:-10,y:1},
+      {name:"NE",x:8,y:-7},
+      {name:"SW",x:-8,y:7}
     ];
 
     for(const fallback of fallbackAnchors){
-      const candidates=axialDisk(
-        {x:fallback.x,y:fallback.y},
-        2
-      )
+      const anchor={x:fallback.x,y:fallback.y};
+      const candidates=axialDisk(anchor,3)
         .filter(pos=>
           inside(pos.x,pos.y) &&
-          hexDistance(pos,{x:0,y:0})>=3 &&
-          !occupiedKeys.has(key(pos.x,pos.y))
+          !isWall(pos.x,pos.y) &&
+          hexDistance(pos,{x:0,y:0})>=3
+        )
+        .sort((a,b)=>
+          hexDistance(a,anchor)-hexDistance(b,anchor) ||
+          a.x-b.x ||
+          a.y-b.y
         );
 
-      if(candidates.length>=count){
+      if(candidates.length>=totalCount){
         selected={
           direction:{name:fallback.name},
-          anchorDistance:hexDistance(
-            {x:0,y:0},
-            {x:fallback.x,y:fallback.y}
-          ),
-          anchor:{x:fallback.x,y:fallback.y},
+          anchorDistance:hexDistance({x:0,y:0},anchor),
+          anchor,
           candidates
         };
         break;
@@ -15182,28 +15365,51 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
     }
   }
 
-  if(!selected || selected.candidates.length<count){
+  if(!selected || selected.candidates.length<totalCount){
     throw new Error(
-      `Unable to find ${count} legal Orc deployment hexes on the finite battlefield.`
+      `Unable to place the ${totalCount}-Orc test encounter on this battlefield.`
     );
   }
 
   const positions=selected.candidates
-    .slice(0,count)
+    .slice(0,totalCount)
     .map(({x,y})=>({x,y}));
+
+  const normals=positions
+    .slice(0,normalCount)
+    .map((pos,index)=>makeOrc(index,pos));
+
+  const leaders=positions
+    .slice(normalCount,normalCount+leaderCount)
+    .map((pos,index)=>makeOrcLeader(index,pos));
+
+  const shamans=positions
+    .slice(normalCount+leaderCount,totalCount)
+    .map((pos,index)=>makeOrcShaman(index,pos));
 
   lastOrcDeployment={
     direction:selected.direction.name,
     anchorDistance:selected.anchorDistance,
     anchor:{...selected.anchor},
-    clusterRadius:2,
-    count:positions.length
+    clusterRadius:3,
+    count:positions.length,
+    composition:{
+      orcs:normalCount,
+      leaders:leaderCount,
+      shamans:shamanCount
+    },
+    condition
   };
 
-  return positions.map(
-    (pos,index)=>makeOrc(index,pos)
-  );
+  lastMobDeployment={...lastOrcDeployment};
+
+  return [
+    ...normals,
+    ...leaders,
+    ...shamans
+  ];
 }
+
 
 let combatLogPinFrame=0;
 
