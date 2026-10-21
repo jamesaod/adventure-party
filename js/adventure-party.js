@@ -339,6 +339,11 @@ async function activateLauncherSelection(){
     return;
   }
 
+  if(target==="3d-studio"){
+    window.location.assign("./3d-studio.html");
+    return;
+  }
+
   if(target==="spell-preview"){
     if(typeof window.showSpellPreviewer==="function"){
       await window.showSpellPreviewer();
