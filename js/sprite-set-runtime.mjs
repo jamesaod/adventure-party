@@ -1,6 +1,6 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C56';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C56';
-import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C56';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C57';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C57';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C57';
 
 const api = window.adventurePartySpriteSets;
 const assets = new Map();
@@ -131,6 +131,9 @@ async function loadRepositorySet(entry) {
   if (!response.ok) throw new Error(`Could not load ${entry.id}'s manifest (${response.status}).`);
   const manifest = validateSpriteSetManifest(await response.json());
   if (manifest.id !== entry.id) throw new Error(`Sprite-set ID does not match its folder: ${entry.id}.`);
+  if (entry.defaultFor !== undefined && manifest.mobType !== entry.defaultFor) {
+    throw new Error(`${entry.id}'s default player binding does not match its captured MOB.`);
+  }
   const sourceUrls = {};
   for (const pose of SPRITE_POSES) {
     for (const facing of SPRITE_DIRECTIONS) {
@@ -195,10 +198,11 @@ async function start() {
     if (new Set(index.sets.map(entry => entry?.id)).size !== index.sets.length) {
       throw new Error('Sprite-set index contains duplicate character IDs.');
     }
+    api.setDefaults(index.sets);
     const results = await Promise.allSettled(index.sets.map(loadRepositorySet));
     const failed = results.filter(result => result.status === 'rejected');
     if (failed.length) message(`${failed.length} sprite set(s) could not be loaded. ${failed[0].reason.message}`);
-    else if (index.sets.length) message(`${index.sets.length} asset-folder set(s) available. Player targets also supply their matching character’s sprites; selecting a set overrides the default first package ID for that character in this session.`);
+    else if (index.sets.length) message(`${index.sets.length} asset-folder set(s) available. Assigned player sets supply their matching character’s sprites in ordinary combat; selecting a set overrides that assignment for this session.`);
   } catch (error) { message(error.message); }
   if (wantsDraft) {
     message('Loading the studio capture…');

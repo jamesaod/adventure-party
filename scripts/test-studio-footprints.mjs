@@ -33,7 +33,7 @@ const sandbox = {
   STUDIO_FOOTPRINTS: new Map(allLayoutPresets.map(layout => [layout.id, layout])),
   UNIT_POSE_DEFINITIONS: {},
   registeredStudioSpriteSets: new Map(), selectedStudioSpriteSetId: 'studio-kobold', selectedCombatCondition: 'grass',
-  selectedStudioPlayerSpriteSets: new Map(), persistentFighter: null, structuredClone,
+  selectedStudioPlayerSpriteSets: new Map(), defaultStudioPlayerSpriteSets: new Map(), persistentFighter: null, structuredClone,
   studioSpriteLoading: { state: 'ready' },
   lastMobDeployment: null,
   inside: (x, y) => x >= -12 && x <= 12 && y >= -12 && y <= 12,

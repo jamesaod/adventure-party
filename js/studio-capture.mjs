@@ -1,13 +1,13 @@
-import { quantizeRgba } from './studio-core.mjs?v=R238C56';
+import { quantizeRgba } from './studio-core.mjs?v=R238C57';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R238C56';
+} from './sprite-set-core.mjs?v=R238C57';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C56';
-import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C56';
+} from './sprite-set-store.mjs?v=R238C57';
+import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
@@ -172,8 +172,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     }
     ui.CaptureLockNote.classList.toggle('locked', locked);
     ui.CaptureLockNote.textContent = locked
-      ? `Framing, footprint, resolution and lighting are shared by this set. Clear all captured poses to change them. Colors, outline and target mob remain adjustable.${modelScaleAdjustable() ? ' Model size can also be changed without recapturing.' : ''}`
-      : 'Set the footprint, resolution, model size, lighting and model front before your first capture. Fit all animations restores room for the full movement.';
+      ? `Framing, footprint, resolution, lighting and equipment are shared by this set. Clear all captured poses to change them. Colors, outline and target mob remain adjustable.${modelScaleAdjustable() ? ' Model size can also be changed without recapturing.' : ''}`
+      : 'Set the footprint, resolution, model size, lighting, equipment and model front before your first capture. Fit all animations restores room for the full movement.';
   }
 
   function refresh() {

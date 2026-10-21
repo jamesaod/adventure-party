@@ -2,7 +2,19 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 56 — Saved Carl model in Pixel Studio
+## Current candidate: Rev 57 — Carl's sword and published combat sprites
+
+The 3d studio's **Equipment** panel offers **Right hand → Medieval Sword** for Carl's existing hand rig. **Sword size**, **Adjust grip** (position and rotation), and **Reset grip** tune the attachment. The sword moves with the hand in every existing animation and appears in all six previews and newly captured sprites. Choose equipment before capturing; changing equipment or its grip requires clearing the captured sheet. Workspace reload and the same-tab combat round trip retain the equipped weapon and its settings.
+
+The exact uploaded sword is stored separately in `assets/models/weapons/swords/medieval-sword.glb`. The current grip is a starting preset for Carl; existing motion clips and finger animation remain authored by the character model.
+
+The previously held **Dungeon Crawler Carl Sprite Set.zip** is now imported as `assets/sprites/dungeon-crawler-carl/`. Its eighteen PNGs and reference sheet retain their exact original bytes, source frames, anchor and capture scale. `data/sprite-sets.json` explicitly assigns the package to `fighter`, fixing ordinary Combat System Test encounters that previously fell back to the old single Carl image. The imported art is the supplied sprite package, distinct from the saved V2 model and new sword-equipped studio previews.
+
+See [UNIT_ASSETS.md](UNIT_ASSETS.md) for the formal roster and authoritative catalog locations. It lists all ten studio unit targets, the ready-only Studio Kobold variant, dedicated versus shared artwork, and missing poses.
+
+QA checks cover ordinary combat with all eighteen Carl pose/facing combinations, fresh-page default assignment, safe fallback when a package is incomplete, sword attachment across the real animation clips, grip controls, capture locking, saved-workspace restoration, and the existing repository validation suites.
+
+## Candidate Rev 56 — Saved Carl model in Pixel Studio
 
 The user-provided GLB is preserved as `assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb` and registered as **Dungeon Crawler Carl Ver 2** in Pixel Studio's new Model library dropdown. **Load selected model** downloads it from the repository-backed site, uses the existing import and workspace persistence path, and selects Y-up plus the Fighter target. Four independent animation clips remain selectable.
 

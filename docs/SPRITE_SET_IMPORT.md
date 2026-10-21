@@ -93,7 +93,21 @@ When present, `modelScalePercent` must be an integer from 25–2000 in 5% steps 
 
 Older version-1 sets without layout/MOB metadata still load with their original image dimensions and use the single-hex Kobold test defaults. Their recovered captures remain exportable; clear and recapture them before adding model-size metadata. Imported monster sets are selectable for testing and do not replace every existing instance of that MOB's artwork.
 
-For a test player collection, set `mobType` to `fighter` (Dungeon Crawler Carl), `ranger` (Elven Ranger), or `mage` (Baub); the studio writes this from the dropdown automatically. These sets also supply that matching character's sprites whenever its factory creates it. If more than one registered set targets that player type, the alphabetically first package ID is the deterministic default, and selecting a set in Combat Setup overrides it for that character during the current session. Re-export and import the same name/ID to replace that collection without changing game code.
+For a test player collection, set `mobType` to `fighter` (Dungeon Crawler Carl), `ranger` (Elven Ranger), or `mage` (Baub); the studio writes this from the dropdown automatically. These sets also supply that matching character's sprites whenever its factory creates it.
+
+The optional `defaultFor` field on an entry in `data/sprite-sets.json` explicitly links a player type to its published sprite collection. Carl is assigned as follows (the importer supplies the content revision):
+
+```json
+{
+  "id": "dungeon-crawler-carl",
+  "manifest": "assets/sprites/dungeon-crawler-carl/manifest.json",
+  "defaultFor": "fighter"
+}
+```
+
+Only one default may be assigned per player type, and it must match the manifest's `mobType`. This assignment applies to ordinary Combat System Test encounters; it does not require choosing a studio sprite-test encounter. A failed assigned package retains the character's legacy artwork, without silently choosing a different imported collection. The importer preserves the assignment when replacing the same character ID and rejects a replacement that changes its target type.
+
+An explicit selection in Combat Setup can override the assignment for that player during the current session. Player types with no explicit assignment retain the earlier alphabetical package-ID default. Re-export and import the same name/ID to replace a collection without changing game code. See [Unit and asset roster](UNIT_ASSETS.md) for the current character mapping.
 
 ## Validation and publishing
 
@@ -107,7 +121,7 @@ node scripts/test-studio-combat-exit.mjs
 node scripts/validate-repo.mjs
 ```
 
-The package validator checks the manifest, known MOB and active/legacy footprint IDs, independent resolution/model-size dimensions, all 18 directions and poses, PNG CRCs and complete decoded image data, source dimensions, hard transparency, exact agreement between the sheet and its individual images, and safe folder paths. Repository validation also checks unique character IDs, matching manifest paths/IDs, and current content revisions. Invalid packages leave the installed character and registry unchanged.
+The package validator checks the manifest, known MOB and active/legacy footprint IDs, independent resolution/model-size dimensions, all 18 directions and poses, PNG CRCs and complete decoded image data, source dimensions, hard transparency, exact agreement between the sheet and its individual images, and safe folder paths. Repository validation also checks unique character IDs, matching manifest paths/IDs, current content revisions, and unique default player assignments that agree with their captured MOB. Invalid packages leave the installed character and registry unchanged.
 
 The importer accepts the studio's native RGBA8 PNGs and noninterlaced indexed PNGs with transparency. A ZIP contains one character folder with exactly its manifest, 18 facing PNGs, and sheet; keep source FBX files and additional reference artwork outside that folder.
 
