@@ -171,18 +171,29 @@ let selectedMobEncounter="kobolds";
 
 function updateCombatMobSelection(){
   const label=document.getElementById("combatMobSetLabel");
-  const button=document.getElementById("largeMobTestButton");
-  const large=selectedMobEncounter==="large-test";
+
+  const labels={
+    kobolds:"Kobold Encounter",
+    orcs:"Orc Warband — 20",
+    "large-test":"Juvenile Red Dragon"
+  };
 
   if(label){
-    label.textContent=large ? "Juvenile Red Dragon" : "Kobold Encounter";
+    label.textContent=
+      labels[selectedMobEncounter] ||
+      labels.kobolds;
   }
 
-  if(button){
-    button.textContent=large ? "Use Kobold Encounter" : "Use Juvenile Red Dragon";
-    button.classList.toggle("selected",large);
-    button.setAttribute("aria-pressed",large ? "true" : "false");
-  }
+  document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
+    const selected=
+      button.dataset.mobEncounter===selectedMobEncounter;
+
+    button.classList.toggle("selected",selected);
+    button.setAttribute(
+      "aria-pressed",
+      selected ? "true" : "false"
+    );
+  });
 }
 
 function updateCombatConditionSelection(){
@@ -364,12 +375,14 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
   });
 });
 
-document.getElementById("largeMobTestButton")?.addEventListener("click",()=>{
-  selectedMobEncounter=
-    selectedMobEncounter==="large-test"
-      ? "kobolds"
-      : "large-test";
-  updateCombatMobSelection();
+document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    selectedMobEncounter=
+      button.dataset.mobEncounter ||
+      "kobolds";
+
+    updateCombatMobSelection();
+  });
 });
 
 document.getElementById("beginBattleButton")?.addEventListener("click",()=>{
@@ -2257,8 +2270,12 @@ const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
    future Fighter and creature art plug into the same combat path without bespoke code.
    Battlefield/contact shadows remain separately rendered by the unit draw functions. */
 const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
-const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png';
-const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png';
+const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png?v=C40';
+const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png?v=C40';
+const ORC_LEADER_STAND_SPRITE_SRC='assets/sprites/orc-leader-stand.png?v=C40';
+const ORC_LEADER_ATTACK_SPRITE_SRC='assets/sprites/orc-leader-attack.png?v=C40';
+const ORC_SHAMAN_STAND_SPRITE_SRC='assets/sprites/orc-shaman-stand.png?v=C40';
+const ORC_SHAMAN_ATTACK_SPRITE_SRC='assets/sprites/orc-shaman-attack.png?v=C40';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
 const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=C11';
@@ -2332,6 +2349,18 @@ orcStandSprite.src=ORC_STAND_SPRITE_SRC;
 
 const orcAttackSprite=new Image();
 orcAttackSprite.src=ORC_ATTACK_SPRITE_SRC;
+
+const orcLeaderStandSprite=new Image();
+orcLeaderStandSprite.src=ORC_LEADER_STAND_SPRITE_SRC;
+
+const orcLeaderAttackSprite=new Image();
+orcLeaderAttackSprite.src=ORC_LEADER_ATTACK_SPRITE_SRC;
+
+const orcShamanStandSprite=new Image();
+orcShamanStandSprite.src=ORC_SHAMAN_STAND_SPRITE_SRC;
+
+const orcShamanAttackSprite=new Image();
+orcShamanAttackSprite.src=ORC_SHAMAN_ATTACK_SPRITE_SRC;
 
 const juvenileRedDragonStandSprite=new Image();
 juvenileRedDragonStandSprite.src=JUVENILE_RED_DRAGON_STAND_SPRITE_SRC;
@@ -2426,6 +2455,12 @@ function prepareCrispPixelSprite(image){
   koboldBodyguardAttackSprite,
   koboldSlingerStandSprite,
   koboldSlingerAttackSprite,
+  orcStandSprite,
+  orcAttackSprite,
+  orcLeaderStandSprite,
+  orcLeaderAttackSprite,
+  orcShamanStandSprite,
+  orcShamanAttackSprite,
   juvenileRedDragonStandSprite,
   juvenileRedDragonAttackSprite,
   deathMarkerSprite
@@ -2483,6 +2518,26 @@ const UNIT_POSE_DEFINITIONS={
     sprites:{
       stand:orcStandSprite,
       attack:orcAttackSprite
+    }
+  },
+  "orc-leader":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcLeaderStandSprite,
+      attack:orcLeaderAttackSprite
+    }
+  },
+  "orc-shaman":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    nativeFacing:"right",
+    sprites:{
+      stand:orcShamanStandSprite,
+      attack:orcShamanAttackSprite
     }
   },
   "juvenile-red-dragon":{
@@ -3198,10 +3253,10 @@ const pixelEditorAssets=[
     gameImage:orcStandSprite,
     originalSrc:ORC_STAND_SPRITE_SRC,
     spec:{
-      sourceWidth:101,sourceHeight:107,
-      workspaceWidth:64,workspaceHeight:64,
-      renderWidth:34,renderHeight:36,
-      anchorX:32,anchorY:64,
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
       scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
@@ -3213,10 +3268,70 @@ const pixelEditorAssets=[
     gameImage:orcAttackSprite,
     originalSrc:ORC_ATTACK_SPRITE_SRC,
     spec:{
-      sourceWidth:125,sourceHeight:116,
-      workspaceWidth:64,workspaceHeight:64,
-      renderWidth:39,renderHeight:36,
-      anchorX:32,anchorY:62,
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-leader-stand",
+    label:"Orc Leader Stand",
+    defaultCategory:"units",
+    gameImage:orcLeaderStandSprite,
+    originalSrc:ORC_LEADER_STAND_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-leader-attack",
+    label:"Orc Leader Attack",
+    defaultCategory:"units",
+    gameImage:orcLeaderAttackSprite,
+    originalSrc:ORC_LEADER_ATTACK_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-shaman-stand",
+    label:"Orc Shaman Stand",
+    defaultCategory:"units",
+    gameImage:orcShamanStandSprite,
+    originalSrc:ORC_SHAMAN_STAND_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-shaman-attack",
+    label:"Orc Shaman Attack",
+    defaultCategory:"units",
+    gameImage:orcShamanAttackSprite,
+    originalSrc:ORC_SHAMAN_ATTACK_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
       scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
@@ -11733,7 +11848,7 @@ function drawVisibleArchitecturalWallsOverLOS(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.type==="orc"
+        enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
@@ -14595,6 +14710,7 @@ function makeOrc(index,position){
   return {
     id:`orc-${String(index+1).padStart(2,"0")}`,
     type:"orc",
+    species:"orc",
     creatureType:"humanoid",
     controller:"mob",
     sizeCategory:"medium",
@@ -14656,6 +14772,176 @@ function makeOrc(index,position){
     buffs:[],
     debuffs:[],
 
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0})
+  };
+}
+
+
+
+function makeOrcLeader(index,position){
+  /*
+    Candidate Rev 40 — Monstrous Manual Orc leader.
+    The Orc entry lists leaders/assistants at 8 hp each and XP 35 while
+    retaining the ordinary Orc's AC 6, MV 9, THAC0 19 and weapon damage.
+    POR combat art #4 is used as the development-only leader sprite.
+  */
+  return {
+    id:`orc-leader-${String(index+1).padStart(2,"0")}`,
+    type:"orc-leader",
+    species:"orc",
+    creatureType:"humanoid",
+    controller:"mob",
+    sizeCategory:"medium",
+    faction:"enemy",
+    alignment:"lawful evil",
+    name:"Orc Leader",
+
+    hp:8,
+    maxHp:8,
+    hitDiceValue:1,
+    hitDiceLabel:"1 (8 hp leader)",
+
+    ac:6,
+    unarmoredAc:10,
+    thaco:19,
+    move:9,
+    unarmoredMove:12,
+    halfMove:4,
+
+    weapon:"Axe, battle",
+    weaponCatalogId:"axe-battle",
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d8",
+    weaponDamageL:"1d8",
+
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:12,
+    moraleLabel:"Steady (11-12)",
+    xpValue:35,
+
+    poseName:"stand",
+    poseUntil:0,
+    brightLightAttackPenalty:-1,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
+    fleeing:false,
+    fleeSteps:0,
+    fleeEscapeDistance:10,
+    xpCounted:false,
+
+    guard:false,
+    guardRound:0,
+    guardBaselineAdjacentIds:[],
+
+    facing:(position.x + position.y*0.5)>=0 ? "left" : "right",
+    facingHex:hexDirectionIndexToward(position,{x:0,y:0})
+  };
+}
+
+
+function makeOrcShaman(index,position){
+  /*
+    Candidate Rev 40 — 3rd-level Orc shaman.
+    Monstrous Manual: shamans may reach 5th-level priest; each level above 1st
+    adds 1d4 hp, and they attack as 1 HD per two spellcasting levels, fractions
+    rounded up. A 3rd-level shaman therefore has 1d8+2d4 hp, attacks as 2 HD,
+    and is worth 175 XP. POR combat art #33 is used as the development-only
+    shaman sprite.
+  */
+  const hp=d(8)+d(4)+d(4);
+
+  return {
+    id:`orc-shaman-${String(index+1).padStart(2,"0")}`,
+    type:"orc-shaman",
+    species:"orc",
+    creatureType:"humanoid",
+    controller:"mob",
+    sizeCategory:"medium",
+    faction:"enemy",
+    alignment:"lawful evil",
+    name:"Orc Shaman",
+
+    hp,
+    maxHp:hp,
+    hitDiceValue:2,
+    hitDiceLabel:"1d8+2d4 (3rd-level shaman)",
+    priestLevel:3,
+    spellcastingClass:"priest",
+    spellcastingLevel:3,
+
+    ac:6,
+    unarmoredAc:10,
+    thaco:19,
+    move:9,
+    unarmoredMove:12,
+    halfMove:4,
+
+    weapon:"Spear",
+    weaponCatalogId:"spear",
+    weaponInHand:"melee",
+    meleeRange:1,
+    weaponDamageSM:"1d6",
+    weaponDamageL:"1d8",
+
+    attackBonus:0,
+    damageBonus:0,
+    weaponHitBonus:0,
+    weaponDamageBonus:0,
+
+    rangedWeapon:null,
+    missileCatalogId:null,
+    missileAmmoCatalogId:null,
+    rangedDamageSM:null,
+    rangedDamageL:null,
+    missileRateOfFire:0,
+    missileRangeIncrementFt:0,
+
+    morale:13,
+    moraleLabel:"Elite (13-14)",
+    xpValue:175,
+
+    specialAbilities:[
+      "3rd-level Orc shaman / priest"
+    ],
+
+    poseName:"stand",
+    poseUntil:0,
+    brightLightAttackPenalty:-1,
+
+    x:position.x,
+    y:position.y,
+    alive:true,
+    fled:false,
+    buffs:[],
+    debuffs:[],
     fleeing:false,
     fleeSteps:0,
     fleeEscapeDistance:10,
@@ -15053,41 +15339,53 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
   ];
 }
 
-function makeOrcArmy(count=10,occupiedUnits=[]){
+function makeOrcArmy(
+  normalCount=18,
+  leaderCount=1,
+  shamanCount=1,
+  condition=selectedCombatCondition
+){
   /*
-    A separate compact Orc warband. Orcs deploy in a radius-2 cluster,
-    normally 7–13 hexes from Carl, and cannot overlap the existing
-    Kobold group or party members.
+    Candidate Rev 40 test encounter:
+      18 ordinary Orcs
+       1 Orc Leader
+       1 3rd-level Orc Shaman
+      -------------------------
+      20 Orcs total
+
+    The shaman is deliberately included for MOB/sprite testing even though a
+    random MM encounter of only 20 Orcs would not normally guarantee one.
   */
-  const occupiedKeys=new Set(
-    (occupiedUnits || []).map(unit=>key(unit.x,unit.y))
-  );
+  const totalCount=
+    Math.max(0,normalCount)+
+    Math.max(0,leaderCount)+
+    Math.max(0,shamanCount);
 
   let selected=null;
 
-  for(let attempt=0;attempt<160;attempt++){
+  for(let attempt=0;attempt<180;attempt++){
     const direction=
       MOB_DEPLOYMENT_DIRECTIONS[
         Math.floor(Math.random()*MOB_DEPLOYMENT_DIRECTIONS.length)
       ];
 
-    const anchorDistance=randomIntInclusive(7,13);
+    const anchorDistance=randomIntInclusive(7,12);
     const anchor={
       x:direction.x*anchorDistance,
       y:direction.y*anchorDistance
     };
 
-    const candidates=axialDisk(anchor,2)
+    const candidates=axialDisk(anchor,3)
       .filter(pos=>
         inside(pos.x,pos.y) &&
-        hexDistance(pos,{x:0,y:0})>=3 &&
-        !occupiedKeys.has(key(pos.x,pos.y))
+        !isWall(pos.x,pos.y) &&
+        hexDistance(pos,{x:0,y:0})>=3
       )
       .map(pos=>({
         ...pos,
         deploymentScore:
           hexDistance(pos,anchor)*10+
-          Math.random()*10
+          Math.random()*12
       }))
       .sort((a,b)=>
         a.deploymentScore-b.deploymentScore ||
@@ -15095,7 +15393,7 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
         a.y-b.y
       );
 
-    if(candidates.length>=count){
+    if(candidates.length>=totalCount){
       selected={
         direction,
         anchorDistance,
@@ -15108,31 +15406,31 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
 
   if(!selected){
     const fallbackAnchors=[
-      {name:"W",x:-12,y:2},
-      {name:"NE",x:8,y:-8},
-      {name:"SW",x:-8,y:8},
-      {name:"SE",x:2,y:8}
+      {name:"E",x:9,y:0},
+      {name:"W",x:-10,y:1},
+      {name:"NE",x:8,y:-7},
+      {name:"SW",x:-8,y:7}
     ];
 
     for(const fallback of fallbackAnchors){
-      const candidates=axialDisk(
-        {x:fallback.x,y:fallback.y},
-        2
-      )
+      const anchor={x:fallback.x,y:fallback.y};
+      const candidates=axialDisk(anchor,3)
         .filter(pos=>
           inside(pos.x,pos.y) &&
-          hexDistance(pos,{x:0,y:0})>=3 &&
-          !occupiedKeys.has(key(pos.x,pos.y))
+          !isWall(pos.x,pos.y) &&
+          hexDistance(pos,{x:0,y:0})>=3
+        )
+        .sort((a,b)=>
+          hexDistance(a,anchor)-hexDistance(b,anchor) ||
+          a.x-b.x ||
+          a.y-b.y
         );
 
-      if(candidates.length>=count){
+      if(candidates.length>=totalCount){
         selected={
           direction:{name:fallback.name},
-          anchorDistance:hexDistance(
-            {x:0,y:0},
-            {x:fallback.x,y:fallback.y}
-          ),
-          anchor:{x:fallback.x,y:fallback.y},
+          anchorDistance:hexDistance({x:0,y:0},anchor),
+          anchor,
           candidates
         };
         break;
@@ -15140,28 +15438,51 @@ function makeOrcArmy(count=10,occupiedUnits=[]){
     }
   }
 
-  if(!selected || selected.candidates.length<count){
+  if(!selected || selected.candidates.length<totalCount){
     throw new Error(
-      `Unable to find ${count} legal Orc deployment hexes on the finite battlefield.`
+      `Unable to place the ${totalCount}-Orc test encounter on this battlefield.`
     );
   }
 
   const positions=selected.candidates
-    .slice(0,count)
+    .slice(0,totalCount)
     .map(({x,y})=>({x,y}));
+
+  const normals=positions
+    .slice(0,normalCount)
+    .map((pos,index)=>makeOrc(index,pos));
+
+  const leaders=positions
+    .slice(normalCount,normalCount+leaderCount)
+    .map((pos,index)=>makeOrcLeader(index,pos));
+
+  const shamans=positions
+    .slice(normalCount+leaderCount,totalCount)
+    .map((pos,index)=>makeOrcShaman(index,pos));
 
   lastOrcDeployment={
     direction:selected.direction.name,
     anchorDistance:selected.anchorDistance,
     anchor:{...selected.anchor},
-    clusterRadius:2,
-    count:positions.length
+    clusterRadius:3,
+    count:positions.length,
+    composition:{
+      orcs:normalCount,
+      leaders:leaderCount,
+      shamans:shamanCount
+    },
+    condition
   };
 
-  return positions.map(
-    (pos,index)=>makeOrc(index,pos)
-  );
+  lastMobDeployment={...lastOrcDeployment};
+
+  return [
+    ...normals,
+    ...leaders,
+    ...shamans
+  ];
 }
+
 
 let combatLogPinFrame=0;
 
@@ -15363,13 +15684,21 @@ function newGame(condition=selectedCombatCondition){
       ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
       : [];
 
+  const orcs=
+    selectedMobEncounter==="orcs"
+      ? makeOrcArmy(18,1,1,condition)
+      : [];
+
   const enemies=
     selectedMobEncounter==="large-test"
       ? makeLargeMobTestEncounter(condition)
-      : [...kobolds];
+      : selectedMobEncounter==="orcs"
+        ? [...orcs]
+        : [...kobolds];
 
-  /* R114: Orcs remain defined in the engine but are removed from this combat simulation. */
-  lastOrcDeployment=null;
+  if(selectedMobEncounter!=="orcs"){
+    lastOrcDeployment=null;
+  }
 
   camera.x=player.x;
   camera.y=player.y;
@@ -15501,6 +15830,23 @@ function newGame(condition=selectedCombatCondition){
       "Multi-hex test rules: one initiative slot, one HP pool, one target identity, one save/damage resolution per area effect.",
       "system"
     );
+  }else if(selectedMobEncounter==="orcs"){
+    log(
+      "20-Orc test warband deployed: 18 Orcs, 1 Orc Leader, 1 3rd-level Orc Shaman.",
+      "system"
+    );
+    log(
+      "Orcs — AC 6, THAC0 19, Move 9, 1 HD, weapon damage 1d8, Steady morale, XP 15.",
+      "system"
+    );
+    log(
+      "Orc Leaders — fixed 8 HP, AC 6, THAC0 19, battle axe 1d8, XP 35.",
+      "system"
+    );
+    log(
+      "Orc Shaman — 3rd-level priest, 1d8+2d4 HP, attacks as 2 HD, AC 6, THAC0 19, XP 175.",
+      "system"
+    );
   }else{
     log(
       `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
@@ -15522,11 +15868,17 @@ function newGame(condition=selectedCombatCondition){
     log(
       selectedMobEncounter==="large-test"
         ? `Red Dragon pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
-        : (
-            `Kobold deployment: ${lastMobDeployment.direction}, `+
-            `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
-            `cluster radius ${lastMobDeployment.clusterRadius}.`
-          ),
+        : selectedMobEncounter==="orcs"
+          ? (
+              `Orc deployment: ${lastMobDeployment.direction}, `+
+              `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+              `cluster radius ${lastMobDeployment.clusterRadius}.`
+            )
+          : (
+              `Kobold deployment: ${lastMobDeployment.direction}, `+
+              `anchor ${lastMobDeployment.anchorDistance} hexes from Carl, `+
+              `cluster radius ${lastMobDeployment.clusterRadius}.`
+            ),
       "system"
     );
   }
@@ -25113,6 +25465,12 @@ function pixelAssetIdForUnitPose(unit,poseName=null){
   if(unit.type==="orc"){
     return pose==="attack" ? "orc-attack" : "orc-stand";
   }
+  if(unit.type==="orc-leader"){
+    return pose==="attack" ? "orc-leader-attack" : "orc-leader-stand";
+  }
+  if(unit.type==="orc-shaman"){
+    return pose==="attack" ? "orc-shaman-attack" : "orc-shaman-stand";
+  }
   if(unit.type==="juvenile-red-dragon"){
     return pose==="attack"
       ? "juvenile-red-dragon-attack"
@@ -28481,7 +28839,7 @@ function draw(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.type==="orc"
+        enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)

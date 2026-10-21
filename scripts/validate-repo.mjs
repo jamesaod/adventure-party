@@ -368,6 +368,46 @@ if (!registry || typeof registry !== "object" || !registry.assets || typeof regi
   }
 }
 
+/* Candidate Rev 40 — POR Orc family / combat encounter integration. */
+for (const path of [
+  "assets/sprites/orc-stand.png",
+  "assets/sprites/orc-attack.png",
+  "assets/sprites/orc-leader-stand.png",
+  "assets/sprites/orc-leader-attack.png",
+  "assets/sprites/orc-shaman-stand.png",
+  "assets/sprites/orc-shaman-attack.png"
+]) {
+  requireFile(path);
+}
+
+const gameSource = fs.readFileSync("js/adventure-party.js", "utf8");
+
+for (const requiredToken of [
+  "function makeOrcLeader(",
+  "function makeOrcShaman(",
+  "makeOrcArmy(18,1,1,condition)",
+  'enemy.species==="orc"',
+  '"orc-leader":{',
+  '"orc-shaman":{',
+  '"orc-leader-stand"',
+  '"orc-shaman-stand"'
+]) {
+  if (!gameSource.includes(requiredToken)) {
+    fail(`Candidate Rev 40 Orc integration is missing ${requiredToken}.`);
+  }
+}
+
+for (const requiredToken of [
+  'data-mob-encounter="kobolds"',
+  'data-mob-encounter="orcs"',
+  'data-mob-encounter="large-test"',
+  ">20 Orcs<"
+]) {
+  if (!index.includes(requiredToken)) {
+    fail(`Candidate Rev 40 combat setup is missing ${requiredToken}.`);
+  }
+}
+
 if (process.exitCode) {
   process.exit(process.exitCode);
 }
