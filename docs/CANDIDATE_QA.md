@@ -2,7 +2,15 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 49 — Model height and test player sprite targets
+## Current candidate: Rev 50 — Giant and megabeast scaling
+
+Candidate Rev 50 extends the Model size range to **25–2000% in 5% steps** and the Model View height ruler to **0–75 feet**. The default size remains 100%. The ruler uses the same ten-foot battlefield hex calibration and its lower-right readout measures the current posed model.
+
+The shared scale validation now accepts the larger settings through workspace recovery, capture, ZIP export/import, and combat. Display-dimension limits also accommodate a 2000% seven-hex sprite (2880 × 2400 battlefield pixels), including preserved-frame edits in the Pixel Editor. Source resolution, PNG dimensions, and occupied hexes remain independent of Model size.
+
+Validation covers the expanded scale bounds, 75-foot calibration, maximum-size package round trips, and Pixel Editor preservation. Browser QA checks the 2000% control, camera framing, model height, saved captures, and exported metadata.
+
+## Candidate Rev 49 — Model height and test player sprite targets
 
 Candidate Rev 49 starts from the promoted R238 baseline (Candidate Rev 4–48). It adds:
 

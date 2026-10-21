@@ -130,7 +130,7 @@ assert.deepEqual(Object.keys(SPRITE_LEGACY_LAYOUTS), legacyIds);
 assert.ok(Object.isFrozen(SPRITE_LAYOUT_PRESETS) && Object.isFrozen(SPRITE_LAYOUTS));
 assert.ok(Object.isFrozen(SPRITE_LEGACY_LAYOUT_PRESETS) && Object.isFrozen(SPRITE_LEGACY_LAYOUTS));
 assert.deepEqual(SPRITE_RESOLUTION, { min: 50, max: 200, step: 5 });
-assert.deepEqual(SPRITE_MODEL_SCALE, { min: 25, max: 200, step: 5 });
+assert.deepEqual(SPRITE_MODEL_SCALE, { min: 25, max: 2000, step: 5 });
 assert.equal(validateSpriteModelScale(), 100);
 for (const [id, expected] of Object.entries(expectedLayouts)) {
   const layout = spriteLayout(id);
@@ -153,7 +153,7 @@ for (const [id, expected] of Object.entries(expectedLayouts)) {
     assert.deepEqual([largerModel.width, largerModel.height], [dims.width, dims.height], 'Model size never changes source resolution');
     assert.deepEqual([largerModel.renderWidth, largerModel.renderHeight], [expected.size[2] * 2, expected.size[3] * 2]);
   }
-  for (let scale = 25; scale <= 200; scale += 5) {
+  for (let scale = 25; scale <= 2000; scale += 5) {
     assert.equal(validateSpriteModelScale(scale), scale);
     const sized = spriteLayoutDimensions(id, 100, scale);
     assert.deepEqual([sized.width, sized.height], expected.size.slice(0, 2));
@@ -176,7 +176,7 @@ assert.throws(() => spriteLayoutOffsets('wide2', 0.5), /integer hex direction/);
 for (const invalid of [49, 51, 205, NaN, Infinity, '100']) {
   assert.throws(() => spriteLayoutDimensions('single', invalid), /resolution/);
 }
-for (const invalid of [0, 24, 26, 201, 205, 50.5, NaN, Infinity, '100', null]) {
+for (const invalid of [0, 24, 26, 201, 2001, 2005, 50.5, NaN, Infinity, '100', null]) {
   assert.throws(() => validateSpriteModelScale(invalid), /model scale/);
   assert.throws(() => spriteLayoutDimensions('single', 100, invalid), /model scale/);
 }
@@ -404,7 +404,7 @@ try {
   const importLayouts = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRESETS];
   for (let index = 0; index < importLayouts.length; index++) {
     const layout = importLayouts[index];
-    const modelScalePercent = index < SPRITE_LAYOUT_PRESETS.length ? [25, 55, 100, 200][index] : undefined;
+    const modelScalePercent = index < SPRITE_LAYOUT_PRESETS.length ? [25, 55, 1000, 2000][index] : undefined;
     const dimensions = spriteLayoutDimensions(layout.id, 50, modelScalePercent);
     const metadata = createSpriteSetManifest({
       id: `format-${layout.id}`, label: `Format ${layout.label}`, captures,

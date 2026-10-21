@@ -1,6 +1,6 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C49';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C49';
-import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C49';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C50';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C50';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C50';
 
 const api = window.adventurePartySpriteSets;
 const assets = new Map();

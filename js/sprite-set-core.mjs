@@ -1,5 +1,5 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
-import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale } from './sprite-layouts.mjs?v=R238C49';
+import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale } from './sprite-layouts.mjs?v=R238C50';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 export const SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
@@ -37,8 +37,8 @@ export function validateSpriteSetManifest(value) {
       `${key} must be an integer from 1 to 1024.`);
   }
   for (const key of ['renderWidth', 'renderHeight']) {
-    requireValue(Number.isFinite(frame[key]) && frame[key] > 0 && frame[key] <= 2048,
-      `${key} must be a positive size no larger than 2048.`);
+    requireValue(Number.isFinite(frame[key]) && frame[key] > 0 && frame[key] <= 4096,
+      `${key} must be a positive size no larger than 4096.`);
   }
   for (const [key, limit] of [['anchorX', frame.width], ['anchorY', frame.height]]) {
     requireValue(Number.isFinite(frame[key]) && frame[key] >= 0 && frame[key] <= limit,
