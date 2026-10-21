@@ -2,16 +2,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C51';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C51';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C52';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C52';
 import {
-  SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, spriteLayout,
-  spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale
-} from './sprite-layouts.mjs?v=R238C51';
+  SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
+  spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
+} from './sprite-layouts.mjs?v=R238C52';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C51';
+} from './studio-geometry.mjs?v=R238C52';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -40,7 +40,7 @@ const state = {
   model: null, modelName: 'Studio mannequin', clips: [], mixer: null,
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Z',
   width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
-  modelScalePercent: 100, lighting: { ...DEFAULT_LIGHTING },
+  modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
   sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
@@ -71,7 +71,7 @@ function getWorkspaceSettings() {
     layoutId: state.layoutId, resolutionPercent: state.resolutionPercent,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
     mobType: state.mobType, width: state.width, height: state.height,
-    modelScalePercent: state.modelScalePercent, lighting: { ...state.lighting },
+    modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent, lighting: { ...state.lighting },
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
     center: state.center.toArray(), framingMode: state.framingMode,
     framingSamplesPerClip: state.framingSamplesPerClip,
@@ -114,9 +114,10 @@ function updateSetupLabels() {
   ui.FormatSummary.textContent = `Frame ${state.width} × ${state.height} · Sheet ${state.width * 6} × ${state.height * 3}`;
   ui.ModelScale.value = String(state.modelScalePercent);
   ui.ModelScaleValue.textContent = `${state.modelScalePercent}%`;
-  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent);
-  ui.BattlefieldSize.textContent = `Battlefield frame ${size.renderWidth} × ${size.renderHeight} px`;
-  ui.ModelScale.setAttribute('aria-valuetext', `${state.modelScalePercent} percent, ${size.renderWidth} by ${size.renderHeight} battlefield pixels`);
+  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
+  const renderWidth = Number(size.renderWidth.toFixed(2)), renderHeight = Number(size.renderHeight.toFixed(2));
+  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px`;
+  ui.ModelScale.setAttribute('aria-valuetext', `${state.modelScalePercent} percent, ${renderWidth} by ${renderHeight} battlefield pixels`);
   renderFootprintPreview();
 }
 
@@ -279,7 +280,7 @@ function rescaleModelView(ratio) {
 
 function applyModelSize(previousScalePercent = state.modelScalePercent) {
   if (!modelFrame || !placement) return;
-  const factor = state.modelScalePercent / 100;
+  const factor = state.modelScalePercent / 100 * state.hexScalePercent / 100;
   placement.position.copy(modelFrame.position).multiplyScalar(factor);
   placement.scale.setScalar(modelFrame.scale * factor);
   rescaleModelView(state.modelScalePercent / previousScalePercent);
@@ -649,7 +650,7 @@ function fixedCamera(camera, center = state.center, frameHeight = state.frameHei
 
 function updateCaptureCamera() {
   if (!pixelCamera) return;
-  const factor = state.modelScalePercent / 100;
+  const factor = state.modelScalePercent / 100 * state.hexScalePercent / 100;
   const height = state.frameHeight * factor;
   // The source image keeps the same framing at every model size. Combat applies
   // the exported render dimensions once, so size never gets multiplied twice.
@@ -658,25 +659,17 @@ function updateCaptureCamera() {
 }
 
 function mainViewFrame(aspect) {
-  const facing = HEX_FACINGS.findIndex(item => item.id === state.facing);
-  const cells = studioFootprintGuide(state.layoutId, facing, state.frameHeight);
-  const centerV = state.center.y * Math.cos(CAMERA_ELEVATION) - state.center.z * Math.sin(CAMERA_ELEVATION);
-  const factor = Math.max(1, state.modelScalePercent / 100);
-  let low = (centerV - state.frameHeight / 2) * factor, high = (centerV + state.frameHeight / 2) * factor;
-  let left = -state.frameHeight * state.width / state.height * factor / 2, right = -left;
-  for (const vertex of cells.flatMap(cell => cell.vertices)) {
-    const vertical = -vertex.z * Math.sin(CAMERA_ELEVATION);
-    low = Math.min(low, vertical); high = Math.max(high, vertical);
-    left = Math.min(left, vertex.x); right = Math.max(right, vertex.x);
-  }
-  const unitsPerFoot = studioWorldUnitsPerFoot(state.layoutId, state.frameHeight);
-  low = Math.min(low, 0);
-  high = Math.max(high, STUDIO_HEIGHT_RULER_FEET * unitsPerFoot * Math.cos(CAMERA_ELEVATION));
-  left -= 3 * unitsPerFoot; // Space for the ruler's labels beside the model.
-  const center = state.center.clone().add(new THREE.Vector3(0, Math.cos(CAMERA_ELEVATION), -Math.sin(CAMERA_ELEVATION))
-    .multiplyScalar((low + high) / 2 - centerV));
-  center.x = (left + right) / 2;
-  return { center, height: Math.max(high - low, (right - left) / aspect) * 1.08 };
+  if (!state.model) return { center: state.center.clone(), height: state.frameHeight * 2 };
+  turntable.rotation.y = HEX_FACINGS.find(item => item.id === state.facing).yawRadians;
+  const bounds = geometryBounds(state.model);
+  const size = bounds.getSize(new THREE.Vector3());
+  const projectedHeight = size.y * Math.cos(CAMERA_ELEVATION) + size.z * Math.sin(CAMERA_ELEVATION);
+  // Fit the model to half the available width or height. The ruler remains in
+  // feet and can extend outside the view; it must not shrink a small creature.
+  return {
+    center: bounds.getCenter(new THREE.Vector3()),
+    height: Math.max(projectedHeight, size.x / aspect, 0.001) * 2
+  };
 }
 
 function resetCamera() {
@@ -772,6 +765,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
   state.demoSourceUpAxis = isDemo ? demoSourceUpAxis : null;
   if (!restoreSettings) {
     state.layoutId = nextLayoutId;
+    state.hexScalePercent = SPRITE_HEX_SCALE_PERCENT;
     state.width = nextSize.width;
     state.height = nextSize.height;
     if (state.lighting.legacyRig) { state.lighting = { ...DEFAULT_LIGHTING }; updateLighting(); }
@@ -873,11 +867,11 @@ function readCapturePose() {
   renderPreviews(performance.now());
   pixelCamera.updateMatrixWorld(true);
   const ground = new THREE.Vector3(0, 0, 0).project(pixelCamera);
-  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent);
+  const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
   const result = {
     raw: atlasSource.slice(), width: state.width, height: state.height,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
-    modelScalePercent: state.modelScalePercent,
+    modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
     renderWidth: size.renderWidth, renderHeight: size.renderHeight,
     clip: state.action?.getClip().name || 'Rest pose', time: state.action?.time || 0,
     anchorX: (ground.x + 1) * state.width / 2,
@@ -885,8 +879,8 @@ function readCapturePose() {
     render: {
       model: state.modelName, heading: state.heading, upAxis: state.upAxis,
       cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION),
-      frameHeight: state.frameHeight * state.modelScalePercent / 100,
-      center: state.center.clone().multiplyScalar(state.modelScalePercent / 100).toArray(),
+      frameHeight: state.frameHeight * state.modelScalePercent / 100 * state.hexScalePercent / 100,
+      center: state.center.clone().multiplyScalar(state.modelScalePercent / 100 * state.hexScalePercent / 100).toArray(),
       framingMode: state.framingMode, modelScalePercent: state.modelScalePercent,
       lighting: { ...state.lighting }
     }
@@ -1290,6 +1284,14 @@ function bindControls() {
 
 function useCurrentFormatAfterClear() {
   if (!poseCapture?.snapshot().captureCount) {
+    if (state.hexScalePercent !== SPRITE_HEX_SCALE_PERCENT) {
+      const previousHexScale = state.hexScalePercent;
+      state.hexScalePercent = SPRITE_HEX_SCALE_PERCENT;
+      applyModelSize();
+      rescaleModelView(state.hexScalePercent / previousHexScale);
+      updateSetupLabels();
+      poseCapture?.updateMetadata();
+    }
     if (state.lighting.legacyRig) {
       state.lighting = { ...DEFAULT_LIGHTING };
       updateLighting();
@@ -1371,6 +1373,7 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   catch { state.mobType = 'kobold'; }
   try { state.modelScalePercent = validateSpriteModelScale(settings.modelScalePercent ?? 100); }
   catch { state.modelScalePercent = 100; }
+  state.hexScalePercent = validateSpriteHexScale(settings.hexScalePercent);
   state.lighting = normalizedLighting(settings.lighting);
   if (!settings.lighting && captureCount) state.lighting.legacyRig = 'rev47';
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);
@@ -1419,9 +1422,10 @@ async function start() {
       framingMode: state.framingMode, framingSamplesPerClip: state.framingSamplesPerClip,
       frameHeight: state.frameHeight, frameCenter: state.center.toArray(),
       layoutId: state.layoutId, resolutionPercent: state.resolutionPercent, mobType: state.mobType,
-      modelScalePercent: state.modelScalePercent, upAxis: state.upAxis, demoSourceUpAxis: state.demoSourceUpAxis,
+      modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
+      upAxis: state.upAxis, demoSourceUpAxis: state.demoSourceUpAxis,
       lighting: { ...state.lighting },
-      renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent)).slice(2),
+      renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent)).slice(2),
       modelDisplayScale: placement?.scale.x || null,
       modelHeightFeet: state.heightFeet,
       modelWorldBounds: modelBounds ? { min: modelBounds.min.toArray(), max: modelBounds.max.toArray() } : null,

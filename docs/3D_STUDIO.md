@@ -7,7 +7,7 @@ Open **3d studio** from the Adventure Party title page. The dedicated page has a
 1. Choose **Load model**, or drop a model onto the central viewport.
 2. Select one `.glb`, `.gltf`, or `.fbx` model. For a model with external buffers or textures, select those files together with it. A self-contained GLB is the simplest handoff.
 3. New models default to **Z** under **Model's up direction**. Choose **Y** for a Y-up source, and use **Front adjustment** if its front faces a different direction. Restoring a workspace preserves its saved up direction, including older Y-up choices. Internally the studio aligns the model to +Z forward with +Y up for rendering.
-4. Select a direction under the main window to inspect that facing. Drag the main window to orbit, scroll to zoom, and use **Reset view** to return to the game's elevated angle. These free camera movements leave the six fixed pixel cameras aligned to the board.
+4. Select a direction under the main window to inspect that facing. Drag the main window to orbit, scroll to zoom, and use **Reset view** to return to the game's elevated angle with the model centered at **50% of the available width or height**. The camera fits the model; the 75-foot ruler can extend beyond the visible window. These free camera movements leave the six fixed pixel cameras aligned to the board.
 5. Animated models are automatically framed across their clips, including the rest pose and animation endpoints, with room around the movement. **Fit all animations** repeats that fit. **Fit model** fits only the current pose when you deliberately want a tighter frame. Check the six previews before capturing a set.
 
 Files are read locally by the browser. Selecting a model does not upload it or replace a game asset. Errors retain the last usable model. Unsupported compressed glTF extensions produce an export-without-compression message; see [third-party dependencies](THIRD_PARTY_3D_STUDIO.md) for loader scope.
@@ -20,16 +20,18 @@ The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the 
 
 | Footprint | Format ID | Source frame at 100% resolution | Complete sheet at 100% resolution | Game render size at 100% model size |
 | --- | --- | --- | --- | --- |
-| Single hex | `single` | 160 × 200 | 960 × 600 | 48 × 60 |
-| Three-hex triangle: one above two | `triangle3` | 320 × 280 | 1920 × 840 | 96 × 84 |
-| Three-hex inverted triangle: two above one | `triangle3-inverted` | 320 × 280 | 1920 × 840 | 96 × 84 |
-| Seven hexes: center and surrounding ring | `hex7` | 480 × 400 | 2880 × 1200 | 144 × 120 |
+| Single hex | `single` | 160 × 200 | 960 × 600 | 52.32 × 65.4 |
+| Three-hex triangle: one above two | `triangle3` | 320 × 280 | 1920 × 840 | 104.64 × 91.56 |
+| Three-hex inverted triangle: two above one | `triangle3-inverted` | 320 × 280 | 1920 × 840 | 104.64 × 91.56 |
+| Seven hexes: center and surrounding ring | `hex7` | 480 × 400 | 2880 × 1200 | 156.96 × 130.8 |
+
+The game render dimensions include **109% of the original hex-based scale**, a 1.09× exaggeration applied once. The physical model and height ruler use the same adjustment. Saved captures with layout metadata receive it once when reopened, preserving their captured pixels; previously exported packages retain their declared size.
 
 These four arrangements describe the **E-facing** footprint shown in the studio diagram. The central model view also displays the selected occupied-hex footprint on its floor at the matching battlefield proportions, so you can judge model size against it. This floor guide is not baked into previews or exported artwork. Asymmetric footprints rotate with the unit's facing in combat. They determine occupied hexes for movement, collision and targeting; each creature remains one unit with one set of statistics. All formats retain the same eighteen-frame pose/direction mapping below.
 
-Earlier two-wide (`wide2`), trapezoid (`trapezoid5`), and tall-diamond (`diamond4`) formats remain supported for recovering saved workspaces and importing or exporting existing sets. They are no longer choices for a new set. Recovery retains their original dimensions and footprint instead of converting their artwork to a different format.
+Earlier two-wide (`wide2`), trapezoid (`trapezoid5`), and tall-diamond (`diamond4`) formats remain supported for recovering saved workspaces and importing or exporting existing sets. They are no longer choices for a new set. Recovery retains their original source dimensions and footprint instead of converting their artwork to a different format.
 
-Model size multiplies the table's game render dimensions. For example, a single-hex set at 50% model size renders at 24 × 30; at 200% resolution its PNGs are still 320 × 400. Model size remains editable after capture: it updates the shared rendering metadata without recapturing or resampling the saved sprites. A recovered older capture without layout metadata must be cleared and captured again before its model size can be adjusted.
+Model size multiplies the table's game render dimensions. For example, a single-hex set at 50% model size renders at 26.16 × 32.7; at 200% resolution its PNGs are still 320 × 400. Model size remains editable after capture: it updates the shared rendering metadata without recapturing or resampling the saved sprites. A recovered older capture without layout metadata retains its original scale and must be cleared and captured again before its model size can be adjusted.
 
 ### Measure model height
 

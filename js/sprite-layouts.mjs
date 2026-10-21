@@ -1,6 +1,7 @@
 /** Capture formats and tactical footprints shared by the studio and combat. */
 export const SPRITE_RESOLUTION = Object.freeze({ min: 50, max: 200, step: 5 });
 export const SPRITE_MODEL_SCALE = Object.freeze({ min: 25, max: 2000, step: 5 });
+export const SPRITE_HEX_SCALE_PERCENT = 109;
 
 function preset(id, label, baseWidth, baseHeight, renderWidth, renderHeight, rotates, cells) {
   return Object.freeze({
@@ -76,18 +77,26 @@ export function validateSpriteModelScale(modelScalePercent = 100) {
   return modelScalePercent;
 }
 
-/** Resolution sets source detail; model scale independently sets combat size. */
-export function spriteLayoutDimensions(id = 'single', resolutionPercent = 100, modelScalePercent = 100) {
+export function validateSpriteHexScale(hexScalePercent = 100) {
+  if (hexScalePercent !== 100 && hexScalePercent !== SPRITE_HEX_SCALE_PERCENT) {
+    throw new Error('Sprite hex scale must be 100% or 109%.');
+  }
+  return hexScalePercent;
+}
+
+/** Resolution sets source detail; model size and hex calibration set combat size. */
+export function spriteLayoutDimensions(id = 'single', resolutionPercent = 100, modelScalePercent = 100, hexScalePercent = 100) {
   const metadata = createSpriteLayoutMetadata(id, resolutionPercent);
   const modelScale = validateSpriteModelScale(modelScalePercent);
+  const hexScale = validateSpriteHexScale(hexScalePercent);
   const layout = spriteLayout(metadata.id);
   const width = Math.round(layout.baseWidth * metadata.resolutionPercent / 100);
   const height = Math.round(layout.baseHeight * metadata.resolutionPercent / 100);
   if (width > 1024 || height > 1024) throw new Error('Sprite source frames cannot exceed 1024 pixels per side.');
   return {
     width, height,
-    renderWidth: layout.renderWidth * modelScale / 100,
-    renderHeight: layout.renderHeight * modelScale / 100
+    renderWidth: layout.renderWidth * modelScale * hexScale / 10000,
+    renderHeight: layout.renderHeight * modelScale * hexScale / 10000
   };
 }
 

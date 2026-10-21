@@ -74,21 +74,22 @@ The default destination is the repository containing the importer script, regard
 
 ## Footprint, model size and MOB metadata
 
-The version-1 manifest supports optional `layout`, `mobType`, and top-level `modelScalePercent` fields. For example, a dragon set captured at the seven-hex format's native resolution and 150% model size includes:
+The version-1 manifest supports optional `layout`, `mobType`, and top-level `modelScalePercent` and `hexScalePercent` fields. For example, a dragon set captured at the seven-hex format's native resolution and 150% model size includes:
 
 ```json
 {
   "layout": { "id": "hex7", "resolutionPercent": 100 },
   "mobType": "juvenile-red-dragon",
-  "modelScalePercent": 150
+  "modelScalePercent": 150,
+  "hexScalePercent": 109
 }
 ```
 
-For that example, `frame.width` and `frame.height` are 480 and 400, while `frame.renderWidth` and `frame.renderHeight` are 216 and 180. Raising resolution to 200% changes only the source dimensions to 960 × 800; the game render size stays 216 × 180. Setting model size to 100% instead gives a 144 × 120 game render size at either resolution. All eighteen images use the same frame and anchor.
+For that example, `frame.width` and `frame.height` are 480 and 400, while `frame.renderWidth` and `frame.renderHeight` are 235.44 and 196.2. Raising resolution to 200% changes only the source dimensions to 960 × 800; the game render size stays 235.44 × 196.2. Setting model size to 100% instead gives a 156.96 × 130.8 game render size at either resolution. All eighteen images use the same frame and anchor.
 
-When present, `modelScalePercent` must be an integer from 25–2000 in 5% steps and requires `layout` metadata. The source dimensions must match the declared format and resolution; render dimensions must match the format's base render dimensions multiplied by `modelScalePercent / 100`. Fractional render sizes are valid. Omitting the model-size field preserves the existing 100% interpretation. Lighting is preserved in the shared render metadata; source model files remain in the browser workspace rather than the game asset ZIP.
+When present, `modelScalePercent` must be an integer from 25–2000 in 5% steps and requires `layout` metadata. `hexScalePercent` also requires `layout` and accepts 100 (original calibration) or 109 (current studio calibration). Omitting either field means 100. The source dimensions must match the declared format and resolution; render dimensions must match the format's base render dimensions multiplied by `modelScalePercent / 100` and `hexScalePercent / 100`. Fractional render sizes are valid. Old exported packages remain valid without changes. Reopening layout-bearing captures upgrades their calibration once through metadata; their PNG pixels remain intact. Lighting is preserved in the shared render metadata; source model files remain in the browser workspace rather than the game asset ZIP.
 
-`mobType` identifies an existing combat factory; `layout.id` identifies the occupied-hex arrangement. The shared definitions live in `js/sprite-layouts.mjs`. Its active catalog contains `single`, `triangle3`, `triangle3-inverted`, and `hex7`. Explicit legacy definitions retain `wide2`, `trapezoid5`, and `diamond4` so existing exported packages and drafts recover with their original dimensions and footprints; these three formats are not offered for new sets.
+`mobType` identifies an existing combat factory; `layout.id` identifies the occupied-hex arrangement. The shared definitions live in `js/sprite-layouts.mjs`. Its active catalog contains `single`, `triangle3`, `triangle3-inverted`, and `hex7`. Explicit legacy definitions retain `wide2`, `trapezoid5`, and `diamond4` so existing exported packages and drafts recover with their original source dimensions and footprints; these three formats are not offered for new sets.
 
 Older version-1 sets without layout/MOB metadata still load with their original image dimensions and use the single-hex Kobold test defaults. Their recovered captures remain exportable; clear and recapture them before adding model-size metadata. Imported monster sets are selectable for testing and do not replace every existing instance of that MOB's artwork.
 

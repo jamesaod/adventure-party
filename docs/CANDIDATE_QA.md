@@ -2,7 +2,17 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 51 — Stable model view and one Carl
+## Current candidate: Rev 52 — Exaggerated scale and half-window framing
+
+Models now use **109% of the original hex-based scale (1.09×)**. Their measured height and exported battlefield dimensions include the same adjustment. The Model size slider remains 25–2000%; source resolution and occupied hexes remain independent.
+
+Loading a model or choosing Reset view centers its bounds at **50% of the available width or height**. The camera no longer fits the entire 75-foot ruler into the window. Automatic camera compensation still preserves the view when Model size changes.
+
+Saved captures with layout metadata receive the scale adjustment once when reopened, without recapturing or resampling their pixels. Existing exported packages remain valid at their declared size; older recovered captures without layout metadata retain their existing scale.
+
+Validation covers half-window framing, compatible 100/109 scale metadata, saved-capture recovery, export and combat rendering, alongside the required repository checks.
+
+## Candidate Rev 51 — Stable model view and one Carl
 
 Model size now compensates the main camera automatically so the model keeps its on-screen size, proportions and panned position across 25–2000%. The viewing angle and manual zoom are retained; panel resizing changes aspect without undoing the compensation. The fixed physical footprint, height ruler, height readout, and exported battlefield dimensions still reflect the selected game size. Reset view remains an explicit refit.
 

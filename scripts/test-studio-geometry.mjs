@@ -152,6 +152,31 @@ for (const scale of [2000, 25, 2000, 355, 100]) {
 const boundsSource = studioSource.match(/function geometryBounds\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(boundsSource, 'Extract the production model-bounds helper');
 const geometryBounds = new Function('THREE', `${boundsSource}\nreturn geometryBounds;`)(THREE);
+const mainViewSource = studioSource.match(/function mainViewFrame\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
+assert.ok(mainViewSource, 'Extract the production half-window framing');
+const viewModel = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 1), new THREE.MeshBasicMaterial());
+const turntable = new THREE.Group();
+turntable.add(viewModel);
+const viewState = { model: viewModel, facing: 'SE' };
+const fitView = new Function('THREE', 'state', 'turntable', 'HEX_FACINGS', 'CAMERA_ELEVATION', 'geometryBounds',
+  `${mainViewSource}\nreturn mainViewFrame;`)(THREE, viewState, turntable, HEX_FACINGS, CAMERA_ELEVATION, geometryBounds);
+for (const aspect of [0.7, 1.4, 2.4]) for (const scale of [0.25, 1, 20]) {
+  viewModel.scale.setScalar(scale * 1.09);
+  viewModel.position.set(0, 2 * scale * 1.09, 0);
+  const frame = fitView(aspect), half = frame.height / 2;
+  const view = new THREE.OrthographicCamera(-half * aspect, half * aspect, half, -half, 0.01, frame.height * 10);
+  view.position.copy(frame.center).add(new THREE.Vector3(0, Math.sin(CAMERA_ELEVATION), Math.cos(CAMERA_ELEVATION)).multiplyScalar(frame.height * 2));
+  view.lookAt(frame.center); view.updateMatrixWorld();
+  const bounds = geometryBounds(viewModel), points = [];
+  for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) {
+    points.push(new THREE.Vector3(x, y, z).project(view));
+  }
+  const spans = ['x', 'y'].map(axis => (Math.max(...points.map(point => point[axis])) - Math.min(...points.map(point => point[axis]))) / 2);
+  close(Math.max(...spans), 0.5, 'Model bounds fill half the available width or height');
+  const center = frame.center.clone().project(view);
+  close(center.x, 0, 'Model is horizontally centered'); close(center.y, 0, 'Model is vertically centered');
+}
+viewModel.geometry.dispose(); viewModel.material.dispose();
 for (const refreshSkinnedBounds of [true, false]) {
   const readBounds = root => geometryBounds(root, { refreshSkinnedBounds });
   const ancestor = new THREE.Group(), model = new THREE.Group();
