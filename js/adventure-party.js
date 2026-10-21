@@ -11788,7 +11788,7 @@ function drawVisibleArchitecturalWallsOverLOS(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.type==="orc"
+        enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
@@ -28779,7 +28779,7 @@ function draw(){
       sortY:depth.y,
       sortX:depth.x,
       fn:()=>
-        enemy.type==="orc"
+        enemy.species==="orc"
           ? drawOrc(enemy)
           : enemy.type==="juvenile-red-dragon"
             ? drawLargeTestMob(enemy)
