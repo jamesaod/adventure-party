@@ -1,10 +1,10 @@
-import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238C49';
-import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238C49';
+import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238C50';
+import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238C50';
 
 // Match TACTICAL_FEET_PER_HEX and HEX_W in the combat renderer. Native model
 // units are normalized on import; the battlefield hex is the scale reference.
 export const STUDIO_FEET_PER_HEX = 10;
-export const STUDIO_HEIGHT_RULER_FEET = 20;
+export const STUDIO_HEIGHT_RULER_FEET = 75;
 
 export function studioWorldUnitsPerFoot(layoutId, baseFrameHeight) {
   if (!Number.isFinite(baseFrameHeight) || baseFrameHeight <= 0) {

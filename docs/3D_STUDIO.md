@@ -16,7 +16,7 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 
 Before the first capture, choose the **MOB / player character**, **Footprint and sheet format**, and **Resolution**. The dropdown groups the seven implemented MOBs (Kobold, Kobold Body Guard, Kobold Slinger, Orc, Orc Leader, Orc Shaman, and Juvenile Red Dragon) and the test player characters: **Dungeon Crawler Carl — Fighter**, **Elven Ranger — Ranger**, and **Baub — Mage**. Combat tests use the selected character's existing statistics, controller and behavior. Selecting a target before capturing chooses its default footprint: single hex for the humanoids, or seven hexes for the dragon. You can then choose another footprint for the set.
 
-The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The separate **Model size** slider runs from **25–200% in 5% steps**, also defaulting to 100%. It changes how large the model appears against the floor footprint and how large its sprite renders in combat. Changing resolution does not enlarge the creature, and changing model size does not resize the PNGs or change its occupied hexes.
+The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The separate **Model size** slider runs from **25–2000% in 5% steps**, also defaulting to 100%. It changes how large the model appears against the floor footprint and how large its sprite renders in combat. Changing resolution does not enlarge the creature, and changing model size does not resize the PNGs or change its occupied hexes.
 
 | Footprint | Format ID | Source frame at 100% resolution | Complete sheet at 100% resolution | Game render size at 100% model size |
 | --- | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Model size multiplies the table's game render dimensions. For example, a single-
 
 ### Measure model height
 
-The Model View has a **0–20-foot ruler** beside the model, with one-foot ticks and labels every five feet. Its lower-right corner shows **Model height** in feet. Both use the battlefield's existing **10 feet per hex**, so the size shown agrees with the sprite's combat scale rather than relying on a source file's native units.
+The Model View has a **0–75-foot ruler** beside the model, with one-foot ticks and labels every five feet. Its lower-right corner shows **Model height** in feet. Both use the battlefield's existing **10 feet per hex**, so the size shown agrees with the sprite's combat scale rather than relying on a source file's native units.
 
 The readout measures the current pose's vertical mesh bounds, including equipment. It updates when the model is resized, reoriented, or animated; a prone pose therefore reads shorter than an upright pose. Changing **Model size** changes this height. Camera orbit, pan, zoom and source resolution do not change the measurement. **Reset view** restores a view containing the full ruler; zooming in can move some marks outside the window. Imported files are normalized to the shared sprite frame, so this is the model's in-game height, not its original authoring-unit measurement.
 

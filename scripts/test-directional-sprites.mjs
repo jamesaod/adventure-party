@@ -287,12 +287,39 @@ assert.ok(Math.abs(scaledAsset.spec.renderHeight - 66) < 1e-10, "Aspect-locked r
 sandbox.pixelRenderWidth.value = "not-a-number";
 sandbox.readPixelPropertiesFromUi();
 assert.equal(scaledAsset.spec.renderWidth, 52.8, "Invalid dimensions retain the last finite value");
+// A 2000% seven-hex studio model keeps a 480×400 source frame while rendering
+// at 2880×2400. Applying Pixel Editor properties must not shrink that metadata.
+const giantAsset = { spec: { ...scaledAsset.spec,
+  sourceWidth: 480, sourceHeight: 400, workspaceWidth: 480, workspaceHeight: 400,
+  renderWidth: 2880, renderHeight: 2400, anchorX: 240, anchorY: 300 } };
+sandbox.pixelEditorAsset = giantAsset;
+sandbox.updatePixelPropertiesUi();
+assert.equal(sandbox.pixelRenderWidth.max, "4096");
+assert.equal(sandbox.pixelRenderHeight.max, "4096");
+sandbox.readPixelPropertiesFromUi();
+assert.equal(giantAsset.spec.renderWidth, 2880);
+assert.equal(giantAsset.spec.renderHeight, 2400);
+assert.equal(giantAsset.spec.workspaceWidth, 480);
+assert.equal(giantAsset.spec.workspaceHeight, 400);
+assert.equal(giantAsset.spec.anchorX, 240);
+assert.equal(giantAsset.spec.anchorY, 300);
+sandbox.pixelRenderHeight.value = "5000";
+sandbox.readPixelPropertiesFromUi({ renderChanged: "height" });
+assert.equal(giantAsset.spec.renderWidth, 4096, "Aspect-locked resizing also caps the derived dimension");
+assert.ok(giantAsset.spec.renderHeight <= 4096);
+assert.ok(Math.abs(giantAsset.spec.renderWidth / giantAsset.spec.renderHeight - 1.2) < 1e-12);
 sandbox.pixelEditorAsset = { spec: { ...scaledAsset.spec, preserveFrame: false, renderWidth: 50.4, renderHeight: 63.6 } };
 sandbox.updatePixelPropertiesUi();
 assert.equal(sandbox.pixelRenderWidth.step, "1");
+assert.equal(sandbox.pixelRenderWidth.max, "512");
+assert.equal(sandbox.pixelRenderHeight.max, "512");
 sandbox.readPixelPropertiesFromUi();
 assert.equal(sandbox.pixelEditorAsset.spec.renderWidth, 50);
 assert.equal(sandbox.pixelEditorAsset.spec.renderHeight, 64, "Legacy sprite dimensions retain integer rounding");
+sandbox.pixelRenderWidth.value = sandbox.pixelRenderHeight.value = "600";
+sandbox.readPixelPropertiesFromUi();
+assert.equal(sandbox.pixelEditorAsset.spec.renderWidth, 512);
+assert.equal(sandbox.pixelEditorAsset.spec.renderHeight, 512, "Legacy assets retain their existing render-size limit");
 
 // Player-target packages bind the implemented character type. Loading order
 // cannot choose a different default; explicit selection wins for that type

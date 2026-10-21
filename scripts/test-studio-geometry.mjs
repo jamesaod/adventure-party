@@ -15,7 +15,7 @@ const combatVertices = [[0, -21], [32, -10.5], [32, 10.5], [0, 21], [-32, 10.5],
 const game = fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
 assert.equal(STUDIO_FEET_PER_HEX, Number(game.match(/const TACTICAL_FEET_PER_HEX=(\d+);/)[1]));
 assert.equal(Number(game.match(/const HEX_W=(\d+);/)[1]), 64);
-assert.equal(STUDIO_HEIGHT_RULER_FEET, 20);
+assert.equal(STUDIO_HEIGHT_RULER_FEET, 75);
 
 for (const layout of SPRITE_LAYOUT_PRESETS) {
   for (let facing = 0; facing < 6; facing++) {
@@ -25,10 +25,10 @@ for (const layout of SPRITE_LAYOUT_PRESETS) {
       const cellWidth = Math.max(...guide[0].vertices.map(vertex => vertex.x)) -
         Math.min(...guide[0].vertices.map(vertex => vertex.x));
       close(cellWidth / unitsPerFoot, 10, 'One battlefield hex is ten feet');
-      close(unitsPerFoot * STUDIO_HEIGHT_RULER_FEET, cellWidth * 2, 'Twenty-foot ruler equals two hex widths');
+      close(unitsPerFoot * STUDIO_HEIGHT_RULER_FEET, cellWidth * 7.5, 'Seventy-five-foot ruler equals seven and a half hex widths');
       // A seven-foot reference mesh at each import/framing scale. The current
       // world bounds already carry model size, so it must not be applied again.
-      for (const modelScale of [25, 100, 105, 200]) {
+      for (const modelScale of [25, 100, 105, 200, 1000, 2000]) {
         close(studioModelHeightFeet(cellWidth * 0.7 * modelScale / 100, layout.id, frameHeight),
           7 * modelScale / 100, 'Measured height follows model size exactly once');
       }
@@ -59,7 +59,7 @@ for (const layout of SPRITE_LAYOUT_PRESETS) {
       }
       // A model-size change only affects its render dimensions. The same
       // base-frame guide remains identical for every supported model size.
-      for (const modelScale of [25, 105, 200]) {
+      for (const modelScale of [25, 105, 200, 2000]) {
         const scaled = spriteLayoutDimensions(layout.id, 100, modelScale);
         close(scaled.renderHeight / layout.renderHeight, modelScale / 100, 'Model scale is separate from guide size');
         assert.deepEqual(studioFootprintGuide(layout.id, facing, frameHeight), guide);
@@ -142,4 +142,4 @@ for (const refreshSkinnedBounds of [true, false]) {
   close(span(readBounds(model)), 6 / Math.sqrt(2), 'Current bone rotation changes the posed vertical span');
   geometry.dispose(); mesh.material.dispose(); mesh.skeleton.dispose();
 }
-console.log('Studio geometry: four active layouts × six facings project to exact combat centers and 64×42 cells; 10-foot hex calibration, 20-foot ruler, model-height scaling and real skinned/morph bounds; centered guides and six light directions passed.');
+console.log('Studio geometry: four active layouts × six facings project to exact combat centers and 64×42 cells; 10-foot hex calibration, 75-foot ruler, model-height scaling through 2000% and real skinned/morph bounds; centered guides and six light directions passed.');

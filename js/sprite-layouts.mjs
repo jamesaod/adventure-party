@@ -1,6 +1,6 @@
 /** Capture formats and tactical footprints shared by the studio and combat. */
 export const SPRITE_RESOLUTION = Object.freeze({ min: 50, max: 200, step: 5 });
-export const SPRITE_MODEL_SCALE = Object.freeze({ min: 25, max: 200, step: 5 });
+export const SPRITE_MODEL_SCALE = Object.freeze({ min: 25, max: 2000, step: 5 });
 
 function preset(id, label, baseWidth, baseHeight, renderWidth, renderHeight, rotates, cells) {
   return Object.freeze({

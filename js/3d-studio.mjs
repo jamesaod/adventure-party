@@ -2,16 +2,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C49';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C49';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C50';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C50';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale
-} from './sprite-layouts.mjs?v=R238C49';
+} from './sprite-layouts.mjs?v=R238C50';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C49';
+} from './studio-geometry.mjs?v=R238C50';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -464,7 +464,7 @@ function updateHeightGuide(timestamp) {
   const x = THREE.MathUtils.clamp(modelLeft - 24, 62, Math.max(62, width - 18));
   const pixelsPerFoot = (ground.y - top.y) / STUDIO_HEIGHT_RULER_FEET;
   ui.HeightRuler.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  ui.HeightRuler.toggleAttribute('hidden', Math.abs(pixelsPerFoot) < 1);
+  ui.HeightRuler.toggleAttribute('hidden', Math.abs(ground.y - top.y) < 16);
   heightRulerLine.setAttribute('x1', x);
   heightRulerLine.setAttribute('x2', x);
   heightRulerLine.setAttribute('y1', ground.y);

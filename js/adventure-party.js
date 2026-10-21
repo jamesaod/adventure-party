@@ -4186,10 +4186,12 @@ function updatePixelPropertiesUi(){
   if(pixelRenderWidth){
     pixelRenderWidth.value=spec.renderWidth ?? "";
     pixelRenderWidth.step=spec.preserveFrame ? "any" : "1";
+    pixelRenderWidth.max=spec.preserveFrame ? "4096" : "512";
   }
   if(pixelRenderHeight){
     pixelRenderHeight.value=spec.renderHeight ?? "";
     pixelRenderHeight.step=spec.preserveFrame ? "any" : "1";
+    pixelRenderHeight.max=spec.preserveFrame ? "4096" : "512";
   }
   if(pixelAnchorX) pixelAnchorX.value=spec.anchorX ?? 0;
   if(pixelAnchorY) pixelAnchorY.value=spec.anchorY ?? 0;
@@ -4216,9 +4218,10 @@ function readPixelPropertiesFromUi({renderChanged=null}={}){
   spec.scaleMode=pixelScaleMode?.value || spec.scaleMode || "fit";
   spec.lockAspect=pixelLockAspect?.checked!==false;
 
+  const renderLimit=spec.preserveFrame ? 4096 : 512;
   const renderPrecision=value=>spec.preserveFrame ? value : Math.round(value);
-  let renderWidth=renderPrecision(clampNumber(pixelRenderWidth?.value,1,512,spec.renderWidth || 1));
-  let renderHeight=renderPrecision(clampNumber(pixelRenderHeight?.value,1,512,spec.renderHeight || 1));
+  let renderWidth=renderPrecision(clampNumber(pixelRenderWidth?.value,1,renderLimit,spec.renderWidth || 1));
+  let renderHeight=renderPrecision(clampNumber(pixelRenderHeight?.value,1,renderLimit,spec.renderHeight || 1));
 
   if(spec.lockAspect && renderChanged){
     const sourceAspect=(spec.sourceWidth || 1)/(spec.sourceHeight || 1);
@@ -4226,6 +4229,11 @@ function readPixelPropertiesFromUi({renderChanged=null}={}){
       renderHeight=Math.max(1,renderPrecision(renderWidth/sourceAspect));
     }else if(renderChanged==="height"){
       renderWidth=Math.max(1,renderPrecision(renderHeight*sourceAspect));
+    }
+    if(spec.preserveFrame && Math.max(renderWidth,renderHeight)>renderLimit){
+      const fit=renderLimit/Math.max(renderWidth,renderHeight);
+      renderWidth*=fit;
+      renderHeight*=fit;
     }
   }
 
