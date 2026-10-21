@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
-import { createSpriteSetManifest, SPRITE_DIRECTIONS, SPRITE_POSES } from "../js/sprite-set-core.mjs";
-import { SPRITE_LAYOUTS } from "../js/sprite-layouts.mjs";
+import { createSpriteSetManifest, validateSpriteSetManifest, SPRITE_DIRECTIONS, SPRITE_POSES } from "../js/sprite-set-core.mjs";
+import { SPRITE_LAYOUTS, spriteLayout, spriteMob } from "../js/sprite-layouts.mjs";
 
 // Exercise the production pose resolver and draw path without booting audio,
 // terrain, or the DOM. Images and the clock are the only inputs replaced here.
@@ -12,7 +12,7 @@ function productionFunction(name) {
   assert.ok(start >= 0, `Missing production function: ${name}`);
   const end = source.indexOf("\n}", start);
   assert.ok(end > start, `Unterminated production function: ${name}`);
-  return source.slice(start, end + 2);
+  return source.slice(source.slice(start - 6, start) === "async " ? start - 6 : start, end + 2);
 }
 const facingNames = ["E", "NE", "NW", "W", "SW", "SE"];
 const vectors = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
@@ -57,7 +57,10 @@ const sandbox = {
   game: {}, draw: () => {},
   combatAwaitingStart: false, selectedMobEncounter: "studio-kobold", currentScreen: "launcher",
   registeredStudioSpriteSets: new Map(), pixelEditorAssets: registeredAssets,
+  selectedStudioPlayerSpriteSets: new Map(), selectedStudioSpriteSetId: 'studio-kobold',
+  studioSpriteLoading: { state: "ready" }, cancelPendingCombatStart() {},
   prepareCrispPixelSprite() {}, renderPixelAssetList() {},
+  updateCombatMobSelection() {}, showCombatConditions() {},
   document: { dispatchEvent() {} }, Event,
   getPixelEditorAsset: id => registeredAssets.find(asset => asset.id === id) || (id === "full-frame" || id?.startsWith("test-ready-")
     ? framedAsset : id === "kobold-prone" ? legacyProneAsset : null),
@@ -83,6 +86,7 @@ const names = [
   "setTemporaryUnitPose", "triggerUnitAttackPose", "pixelAssetIdForUnitPose", "drawSpriteFacing",
   "runtimeAnchorForAsset", "trimmedRuntimeCanvasForAsset", "unitPoseNativeFacing",
   "getSpriteAssetSpec", "spriteRenderDimensions", "registerStudioSpriteSet", "inspectStudioSpritePose",
+  "isStudioPlayerSpriteTarget", "playerSpriteSetForType", "applyPlayerSpriteSet", "studioSpriteTestUnits", "selectStudioSpriteSet",
   "clampNumber", "updatePixelPropertiesUi", "readPixelPropertiesFromUi"
 ];
 vm.createContext(sandbox);
@@ -290,4 +294,227 @@ sandbox.readPixelPropertiesFromUi();
 assert.equal(sandbox.pixelEditorAsset.spec.renderWidth, 50);
 assert.equal(sandbox.pixelEditorAsset.spec.renderHeight, 64, "Legacy sprite dimensions retain integer rounding");
 
-console.log("Directional sprites: six facings, action fallback/timers, no-mirror expiry race, frame anchors, R221 prone presentation, legacy poses, atomic eighteen-frame registration, directional prone conditions, initial-only pose inspection, and fractional model-size preservation passed.");
+// Player-target packages bind the implemented character type. Loading order
+// cannot choose a different default; explicit selection wins for that type
+// even when the next selected test happens to be a monster.
+for (const type of ["fighter", "ranger", "mage"]) {
+  const packageFor = prefix => createSpriteSetManifest({
+    id: `${prefix}-${type}`, label: `${prefix} ${type}`, mobType: type,
+    frame: manifest.frame,
+    captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: pose, time: 0.5 }]))
+  });
+  const later = sandbox.registerStudioSpriteSet({ manifest: packageFor("z"), images, sourceUrls });
+  const earlier = sandbox.registerStudioSpriteSet({ manifest: packageFor("a"), images, sourceUrls });
+  assert.equal(sandbox.playerSpriteSetForType(type).id, earlier);
+  assert.equal(sandbox.registeredStudioSpriteSets.get(earlier).targetKind, "player");
+  assert.equal(sandbox.selectStudioSpriteSet(later), true);
+  assert.equal(sandbox.playerSpriteSetForType(type).id, later);
+  assert.equal(sandbox.selectStudioSpriteSet(setId), true);
+  assert.equal(sandbox.playerSpriteSetForType(type).id, later, "Selecting a monster does not discard a player's explicit collection");
+  const character = { id: `${type}-test`, type, faction: "player", controller: type === "ranger" ? "npc" : "player",
+    alive: true, facingHex: 0, studioSpriteTest: true, effects: {}, stats: { str: 12 }, hp: 50 };
+  assert.equal(sandbox.applyPlayerSpriteSet(character), character);
+  assert.equal(character.spriteSetId, later);
+  assert.equal(character.hp, 50);
+  assert.deepEqual(character.stats, { str: 12 }, "Binding changes only sprite/footprint metadata");
+  sandbox.game = { player: { id: "player" }, allies: [character], enemies: [] };
+  sandbox.combatAwaitingStart = true;
+  for (let facingHex = 0; facingHex < 6; facingHex++) {
+    character.facingHex = facingHex;
+    for (const pose of SPRITE_POSES) {
+      assert.equal(sandbox.inspectStudioSpritePose(pose), true);
+      const selected = sandbox.directionalUnitPoseFrame(character);
+      assert.equal(selected.image, images[`${pose}-${SPRITE_DIRECTIONS[facingHex].toLowerCase()}.png`]);
+      assert.equal(selected.assetId, `sprite-set-z-${type}-${pose}-${SPRITE_DIRECTIONS[facingHex].toLowerCase()}`);
+    }
+  }
+  sandbox.combatAwaitingStart = false;
+  assert.equal(sandbox.activeUnitPoseName(character), "stand", "Live combat ignores friendly inspection overrides");
+  character.effects = { unconscious: {} };
+  assert.equal(sandbox.activeUnitPoseName(character), "prone");
+  character.effects = {};
+  assert.equal(sandbox.triggerUnitAttackPose(character), true);
+  assert.equal(sandbox.activeUnitPoseName(character), "attack");
+}
+const monster = { type: "orc", faction: "enemy" };
+sandbox.applyPlayerSpriteSet(monster);
+assert.deepEqual(monster, { type: "orc", faction: "enemy" }, "Player imports do not change existing monster sprite bindings");
+
+// Exercise the actual mouse/Enter routes and runtime startup, with controllable
+// network/decode completion. Factories must run only after all optional art and
+// the requested draft have settled, and a cancelled start must stay cancelled.
+const runtimeSource = fs.readFileSync(new URL("../js/sprite-set-runtime.mjs", import.meta.url), "utf8");
+function runtimeFunction(name) {
+  const start = runtimeSource.indexOf(`function ${name}(`);
+  const end = runtimeSource.indexOf("\n}", start);
+  assert.ok(start >= 0 && end > start);
+  return runtimeSource.slice(runtimeSource.slice(start - 6, start) === "async " ? start - 6 : start, end + 2);
+}
+function deferred() {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+}
+async function flushStartup() {
+  for (let i = 0; i < 16; i++) await Promise.resolve();
+}
+function startupHarness({ repository = [], draft = false, fetchError = false } = {}) {
+  const callbacks = [], messages = [], newGames = [];
+  const button = { textContent: "Begin Battle", disabled: false, handlers: {},
+    addEventListener(type, listener) { this.handlers[type] = listener; }, setAttribute() {}, removeAttribute() {} };
+  const conditionButton = { ...button, handlers: {}, dataset: { combatCondition: "wall" } };
+  const mobButton = { ...button, handlers: {}, dataset: { mobEncounter: "orcs" } };
+  const screen = () => ({ classList: { add() {}, remove() {} } });
+  const repositoryWaits = new Map(repository.map(id => [id, deferred()]));
+  const draftWait = deferred();
+  const context = {
+    currentScreen: "combat-conditions", pendingCombatStart: null, studioDraftAutoSelect: true,
+    selectedCombatCondition: "grass", selectedMobEncounter: "kobolds", selectedStudioSpriteSetId: "studio-kobold",
+    registeredStudioSpriteSets: new Map(), selectedStudioPlayerSpriteSets: new Map(),
+    document: { getElementById: id => id === "beginBattleButton" ? button : null,
+      querySelectorAll: selector => selector === "[data-combat-condition]" ? [conditionButton] : [mobButton],
+      dispatchEvent() {} }, Event,
+    setTimeout(callback, delay) { const timer = { callback, delay, active: true }; callbacks.push(timer); return timer; },
+    clearTimeout(timer) { timer.active = false; }, clearInterval() {},
+    stopTitleMusic() {}, stopWeatherAudio() {}, updateAudioIndicators() {}, updateCombatConditionSelection() {}, updateCombatMobSelection() {},
+    fitBattleCanvas() {}, requestAnimationFrame() {}, draw() {}, syncWeatherAudio() {},
+    classReportOpen: false, characterSheetOpen: false, spellCastOverlayOpen: false,
+    quickCommandUnitIds: new Set(), quickCommandActive: false, quickCommandUnitId: null, quickCommandGeneration: 0, quickCommandRunning: false,
+    aiTimer: null, combatOpeningSpeechDone: false, combatAwaitingStart: false, combatMessageClearTimer: null, combatMessageFlashTimer: null,
+    combatMessageSequence: 0, combatMessageText: "", combatMessageTone: "normal", combatMessageHoldUntil: 0,
+    audioEnabled: false, audioReady: false,
+    console: { error: (...args) => messages.push(args.join(" ")) },
+    location: { search: draft ? "?studioSprite=draft" : "" }, URLSearchParams, Blob,
+    URL: { createObjectURL: () => "blob:test", revokeObjectURL() {} },
+    SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest, spriteLayout, spriteMob,
+    makeControls() {}, setStatus: {}, message: text => messages.push(text),
+    fetch: async () => {
+      if (fetchError) throw new Error("Optional sprite index unavailable");
+      return { ok: true, json: async () => ({ version: 1, sets: repository.map(id => ({ id })) }) };
+    },
+    loadRepositorySet: async entry => {
+      await repositoryWaits.get(entry.id).promise;
+      const id = `sprite-set:${entry.id}`;
+      context.registeredStudioSpriteSets.set(id, { id, manifestId: entry.id, mobType: "fighter", layoutId: "single" });
+      return id;
+    },
+    loadStudioDraft: async () => ({
+      manifest: { ...manifest, id: "draft-fighter", label: "Draft fighter", mobType: "fighter" },
+      files: Object.fromEntries(Object.keys(images).map(name => [name, new Blob(["decoded separately"])]))
+    }),
+    registerSet: async metadata => {
+      await draftWait.promise;
+      const id = `sprite-set:${metadata.id}`;
+      context.registeredStudioSpriteSets.set(id, { id, manifestId: metadata.id, mobType: metadata.mobType, layoutId: "single" });
+      return id;
+    },
+    newGame: () => newGames.push(context.applyPlayerSpriteSet({ id: "player", type: "fighter" }))
+  };
+  for (const name of ["launcherScreen", "combatScreen", "combatConditionsScreen", "xpLootScreen", "pixelScreen", "spellbookScreen", "classbookScreen", "spellPreviewScreen"]) context[name] = screen();
+  vm.createContext(context);
+  vm.runInContext([
+    ...["createStudioSpriteLoadingGate", "canAutoSelectStudioDraft", "cancelPendingCombatStart", "showCombat", "showLauncher", "showCombatConditions", "handleCombatConditionsKey",
+      "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
+    runtimeFunction("start"), runtimeFunction("loadDraft")
+  ].join("\n"), context);
+  context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
+  context.api = {
+    select: context.selectStudioSpriteSet,
+    loadingState: () => context.studioSpriteLoading.state,
+    finishLoading: () => context.studioSpriteLoading.finish(),
+    canAutoSelectDraft: context.canAutoSelectStudioDraft
+  };
+  const bindingStart = source.indexOf('document.querySelectorAll("[data-combat-condition]").forEach(button=>{\n  button.addEventListener');
+  const bindingEnd = source.indexOf('document.getElementById("combatConditionsReturnButton")', bindingStart);
+  assert.ok(bindingStart >= 0 && bindingEnd > bindingStart);
+  vm.runInContext(source.slice(bindingStart, bindingEnd), context);
+  return { context, button, conditionButton, mobButton, newGames, messages, repositoryWaits, draftWait,
+    boot: () => vm.runInContext(runtimeSource.slice(runtimeSource.lastIndexOf("start().catch(")), context),
+    enter: () => context.handleCombatConditionsKey({ key: "Enter", preventDefault() {} }),
+    timeout: () => { assert.equal(callbacks[0].delay, 15000); callbacks[0].callback(); }
+  };
+}
+
+{
+  const test = startupHarness({ repository: ["z-fighter", "a-fighter"] });
+  const boot = test.boot();
+  test.button.handlers.click();
+  test.enter();
+  assert.equal(test.button.disabled, true);
+  test.repositoryWaits.get("z-fighter").resolve();
+  await flushStartup();
+  assert.equal(test.newGames.length, 0, "Mouse and Enter cannot create Carl from the first decoded package");
+  test.repositoryWaits.get("a-fighter").resolve();
+  await boot;
+  await flushStartup();
+  assert.equal(test.newGames.length, 1, "Repeated starts share one pending request");
+  assert.equal(test.newGames[0].spriteSetId, "sprite-set:a-fighter");
+  assert.equal(test.button.disabled, false);
+}
+{
+  const test = startupHarness({ draft: true });
+  const boot = test.boot();
+  test.enter();
+  await flushStartup();
+  assert.equal(test.newGames.length, 0, "Repository completion alone cannot release a pending draft");
+  test.draftWait.resolve();
+  await boot;
+  await flushStartup();
+  assert.equal(test.newGames.length, 1);
+  assert.equal(test.newGames[0].spriteSetId, "sprite-set:draft-fighter", "Draft selection completes before the factory runs");
+}
+for (const cancel of ["title", "condition", "monster", "keyboard-condition", "pixel", "spellbook", "classbook"]) {
+  const test = startupHarness({ draft: true });
+  const boot = test.boot();
+  test.enter();
+  await flushStartup();
+  if (cancel === "title") test.context.handleCombatConditionsKey({ key: "Escape", preventDefault() {} });
+  if (cancel === "condition") test.conditionButton.handlers.click();
+  if (cancel === "monster") test.mobButton.handlers.click();
+  if (cancel === "keyboard-condition") test.context.handleCombatConditionsKey({ key: "ArrowRight", preventDefault() {} });
+  const otherScreen = ["pixel", "spellbook", "classbook"].includes(cancel);
+  if (otherScreen) test.context.currentScreen = cancel;
+  test.draftWait.resolve();
+  await boot;
+  await flushStartup();
+  assert.equal(test.newGames.length, 0, `${cancel} cancels queued combat`);
+  assert.equal(test.context.currentScreen, cancel === "title" ? "launcher" : otherScreen ? cancel : "combat-conditions");
+  assert.equal(test.context.selectedStudioSpriteSetId, "studio-kobold", "Late draft does not replace a changed setup");
+  assert.equal(test.button.disabled, false);
+}
+{
+  const test = startupHarness({ fetchError: true });
+  const boot = test.boot();
+  test.enter();
+  await boot;
+  await flushStartup();
+  assert.equal(test.context.studioSpriteLoading.state, "ready", "Runtime finally releases failed optional loading");
+  assert.equal(test.newGames.length, 1);
+  assert.equal(test.newGames[0].spriteSetId, undefined);
+}
+{
+  const test = startupHarness(); // The optional module never starts.
+  test.enter();
+  test.timeout();
+  await flushStartup();
+  assert.equal(test.newGames.length, 1);
+  assert.equal(test.context.studioSpriteLoading.state, "timed-out");
+  assert.equal(test.button.disabled, false, "Missing optional module cannot permanently lock combat");
+}
+{
+  const test = startupHarness({ repository: ["z-fighter", "a-fighter"] });
+  const boot = test.boot();
+  test.enter();
+  test.repositoryWaits.get("z-fighter").resolve();
+  await flushStartup();
+  test.timeout();
+  await flushStartup();
+  assert.equal(test.newGames.length, 1);
+  assert.equal(test.newGames[0].spriteSetId, undefined, "Timeout does not bind a partial automatic player catalog");
+  test.repositoryWaits.get("a-fighter").resolve();
+  await boot;
+  assert.equal(test.context.playerSpriteSetForType("fighter").id, "sprite-set:a-fighter");
+  assert.equal(test.newGames[0].spriteSetId, undefined, "Late completion never rebinds a live player's footprint");
+}
+
+console.log("Directional sprites: six facings, pose/render integrity, player target binding, friendly inspection, fractional sizes, mouse/Enter readiness gating, cancellation, error recovery, bounded fallback, and no live rebinding passed.");

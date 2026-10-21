@@ -52,6 +52,8 @@ async function verifyWebUIFont(){
 
 let currentScreen="launcher";
 let launcherSelection=0;
+let pendingCombatStart=null;
+let studioDraftAutoSelect=true;
 
 const launcherScreen=document.getElementById("launcherScreen");
 const combatScreen=document.getElementById("combatScreen");
@@ -110,6 +112,7 @@ function updateLauncherSelection(){
 }
 
 function showLauncher(){
+  cancelPendingCombatStart({preserveDraft:currentScreen==="launcher"});
   currentScreen="launcher";
   stopWeatherAudio();
   classReportOpen=false;
@@ -232,6 +235,7 @@ function updateCombatConditionSelection(){
 }
 
 function showCombatConditions(){
+  if(currentScreen!=="combat-conditions") cancelPendingCombatStart({preserveDraft:true});
   currentScreen="combat-conditions";
   stopTitleMusic();
   launcherScreen.classList.remove("active");
@@ -247,7 +251,44 @@ function showCombatConditions(){
   updateAudioIndicators();
 }
 
-function showCombat(condition=selectedCombatCondition){
+function cancelPendingCombatStart({preserveDraft=false}={}){
+  if(!preserveDraft) studioDraftAutoSelect=false;
+  if(!pendingCombatStart) return;
+  const request=pendingCombatStart;
+  request.cancelled=true;
+  pendingCombatStart=null;
+  if(request.button){
+    request.button.disabled=false;
+    request.button.textContent=request.buttonLabel;
+    request.button.removeAttribute("aria-busy");
+  }
+}
+
+async function showCombat(condition=selectedCombatCondition){
+  if(pendingCombatStart) return false;
+  const button=document.getElementById("beginBattleButton");
+  const request={screen:currentScreen,cancelled:false,button,buttonLabel:button?.textContent};
+  pendingCombatStart=request;
+  try{
+    if(studioSpriteLoading.state==="pending"){
+      if(button){
+        button.disabled=true;
+        button.textContent="Loading sprites…";
+        button.setAttribute("aria-busy","true");
+      }
+      await studioSpriteLoading.ready;
+    }
+  }finally{
+    if(pendingCombatStart===request){
+      pendingCombatStart=null;
+      if(button){
+        button.disabled=false;
+        button.textContent=request.buttonLabel;
+        button.removeAttribute("aria-busy");
+      }
+    }
+  }
+  if(request.cancelled || currentScreen!==request.screen) return false;
   selectedCombatCondition=condition || "grass";
   currentScreen="combat";
 
@@ -402,6 +443,7 @@ updateLauncherSelection();
 
 document.querySelectorAll("[data-combat-condition]").forEach(button=>{
   button.addEventListener("click",()=>{
+    cancelPendingCombatStart();
     selectedCombatCondition=button.dataset.combatCondition || "grass";
     updateCombatConditionSelection();
   });
@@ -409,6 +451,7 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
 
 document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
   button.addEventListener("click",()=>{
+    cancelPendingCombatStart();
     selectedMobEncounter=
       button.dataset.mobEncounter ||
       "kobolds";
@@ -2623,6 +2666,71 @@ const UNIT_POSE_DEFINITIONS={
 };
 
 const registeredStudioSpriteSets=new Map();
+const selectedStudioPlayerSpriteSets=new Map();
+const studioSpriteLoading=createStudioSpriteLoadingGate();
+
+function createStudioSpriteLoadingGate(timeoutMs=15000){
+  let state="pending";
+  let resolveReady;
+  const ready=new Promise(resolve=>{resolveReady=resolve;});
+  const timer=setTimeout(()=>{
+    if(state!=="pending") return;
+    state="timed-out";
+    resolveReady();
+  },timeoutMs);
+  return Object.freeze({
+    ready,
+    get state(){return state;},
+    finish(){
+      state="ready";
+      clearTimeout(timer);
+      resolveReady();
+    }
+  });
+}
+
+function canAutoSelectStudioDraft(){
+  return studioDraftAutoSelect && studioSpriteLoading.state!=="timed-out" &&
+    ["launcher","combat-conditions"].includes(currentScreen);
+}
+
+function isStudioPlayerSpriteTarget(type){
+  return ["fighter","ranger","mage"].includes(type);
+}
+
+function playerSpriteSetForType(type){
+  if(!isStudioPlayerSpriteTarget(type)) return null;
+  const selected=registeredStudioSpriteSets.get(selectedStudioPlayerSpriteSets.get(type));
+  if(selected?.mobType===type) return selected;
+  // A timeout must not choose whichever optional package happened to decode
+  // first. Automatic player bindings wait for the complete registration list.
+  if(studioSpriteLoading.state!=="ready") return null;
+  // Folder IDs give a stable default independent of asynchronous PNG loading.
+  return Array.from(registeredStudioSpriteSets.values())
+    .filter(set=>set.mobType===type)
+    .sort((a,b)=>a.manifestId<b.manifestId ? -1 : a.manifestId>b.manifestId ? 1 : 0)[0] || null;
+}
+
+function applyPlayerSpriteSet(unit){
+  if(!unit || !isStudioPlayerSpriteTarget(unit.type)) return unit;
+  const set=playerSpriteSetForType(unit.type);
+  if(set){
+    unit.spriteSetId=set.id;
+    unit.footprintId=set.layoutId;
+    unit.studioPlayerSpriteTarget=unit.type;
+  }else if(unit.studioPlayerSpriteTarget){
+    delete unit.spriteSetId;
+    delete unit.footprintId;
+    delete unit.studioPlayerSpriteTarget;
+  }
+  return unit;
+}
+
+function studioSpriteTestUnits(){
+  return game
+    ? [game.player,...(game.allies || []),...(game.enemies || [])].filter(unit=>unit?.studioSpriteTest)
+    : [];
+}
 
 function unitPoseDefinition(unit){
   if(!unit) return null;
@@ -3488,8 +3596,9 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
   }
   const id=`sprite-set:${manifest.id}`;
   const mobType=manifest.mobType || "kobold";
-  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType)){
-    throw new Error("This MOB type has not been implemented.");
+  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType) &&
+    !isStudioPlayerSpriteTarget(mobType)){
+    throw new Error("This sprite target has not been implemented.");
   }
   const footprint=layout || UNIT_FOOTPRINTS[manifest.layout?.id || "single"];
   if(!footprint || footprint.id!==(manifest.layout?.id || "single") ||
@@ -3548,6 +3657,7 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
   }
   registeredStudioSpriteSets.set(id,{
     id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length,
+    targetKind:isStudioPlayerSpriteTarget(mobType) ? "player" : "monster",
     modelScalePercent:manifest.modelScalePercent ?? 100,
     renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
   });
@@ -3559,7 +3669,10 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
 
 function selectStudioSpriteSet(id,{openSetup=false}={}){
   if(id!=="studio-kobold" && !registeredStudioSpriteSets.has(id)) return false;
+  if(!openSetup) cancelPendingCombatStart();
   selectedStudioSpriteSetId=id;
+  const set=registeredStudioSpriteSets.get(id);
+  if(isStudioPlayerSpriteTarget(set?.mobType)) selectedStudioPlayerSpriteSets.set(set.mobType,id);
   selectedMobEncounter="studio-kobold";
   updateCombatMobSelection();
   if(openSetup) showCombatConditions();
@@ -3571,9 +3684,7 @@ function inspectStudioSpritePose(pose){
   if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
     !["ready","attack","prone","live"].includes(pose)) return false;
   const internalPose={ready:"stand",attack:"attack",prone:"prone",live:null}[pose];
-  for(const unit of game.enemies || []){
-    if(unit.studioSpriteTest) unit.studioPoseInspection=internalPose;
-  }
+  for(const unit of studioSpriteTestUnits()) unit.studioPoseInspection=internalPose;
   draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
   return true;
@@ -3583,22 +3694,30 @@ window.adventurePartySpriteSets=Object.freeze({
   register:registerStudioSpriteSet,
   select:selectStudioSpriteSet,
   inspect:inspectStudioSpritePose,
+  loadingState:()=>studioSpriteLoading.state,
+  finishLoading:()=>studioSpriteLoading.finish(),
+  canAutoSelectDraft:canAutoSelectStudioDraft,
   snapshot:()=>({
+    loadingState:studioSpriteLoading.state,
     selectedId:selectedStudioSpriteSetId,
     encounter:selectedMobEncounter,
     studioTest:isStudioTestCombat(),
     sets:[{id:"studio-kobold",label:"Studio Kobold — ready only",modelScalePercent:100,renderWidth:48,renderHeight:60},
       ...Array.from(registeredStudioSpriteSets.values(),set=>({...set}))],
     inspecting:currentScreen==="combat" && combatAwaitingStart && selectedMobEncounter==="studio-kobold",
-    inspectionPose:game?.enemies?.find(unit=>unit.studioSpriteTest)?.studioPoseInspection || null,
-    units:(game?.enemies || []).filter(unit=>unit.studioSpriteTest).map(unit=>{
+    inspectionPose:studioSpriteTestUnits()[0]?.studioPoseInspection || null,
+    playerTargets:Object.fromEntries(["fighter","ranger","mage"].map(type=>[type,playerSpriteSetForType(type)?.id || null])),
+    units:studioSpriteTestUnits().map(unit=>{
       const frame=directionalUnitPoseFrame(unit);
       return {id:unit.id,spriteSetId:unit.spriteSetId,type:unit.type,species:unit.species,
+        faction:unit.faction,controller:unit.controller || (unit.id==="player" ? "player" : null),
+        className:unit.className,level:unit.level,
         facing:frame?.facing,pose:frame?.poseName,footprintId:unitFootprintDefinition(unit).id,
         occupied:occupiedHexes(unit),groundCenter:unitFootprintScreenCenter(unit),
         modelScalePercent:registeredStudioSpriteSets.get(unit.spriteSetId)?.modelScalePercent ?? 100,
         renderDimensions:frame ? spriteRenderDimensions(frame.assetId,frame.image) : null,
-        stats:{ac:unit.ac,thaco:unit.thaco,move:unit.move,weapon:unit.weapon,hitDiceValue:unit.hitDiceValue},
+        stats:{ac:unit.ac,thaco:unit.thaco,move:unit.move,weapon:unit.weapon,hitDiceValue:unit.hitDiceValue,
+          level:unit.level,attacksPerRound:unit.attacksPerRound,attacksThisRound:unit.attacksThisRound},
         assetId:frame?.assetId,source:frame?.image?.src || null};
     })
   })
@@ -12105,13 +12224,13 @@ function drawVisibleArchitecturalWallsOverLOS(){
   }
 
   if(game.player?.alive && !game.player.fled){
-    const c=hexCenter(game.player.x,game.player.y);
+    const c=unitDepthSortPoint(game.player);
     foreground.push({sortY:c.y,sortX:c.x,fn:()=>drawFighter(game.player)});
   }
 
   for(const ally of game.allies || []){
     if(!ally?.alive || ally.fled) continue;
-    const c=hexCenter(ally.x,ally.y);
+    const c=unitDepthSortPoint(ally);
     foreground.push({
       sortY:c.y,
       sortX:c.x,
@@ -14309,7 +14428,7 @@ function makeFighter(){
 
     syncFighterEquipment(f);
     applyFighterClassRules(f);
-    return f;
+    return applyPlayerSpriteSet(f);
   }
 
   let stats;
@@ -14456,7 +14575,7 @@ function makeFighter(){
   fighter.attacksRemaining=2;
 
   persistentFighter=fighter;
-  return fighter;
+  return applyPlayerSpriteSet(fighter);
 }
 
 
@@ -14580,7 +14699,7 @@ function makeFriendlyElvenRanger(){
 
   ranger.ac=calculateArmorClass(ranger);
 
-  return ranger;
+  return applyPlayerSpriteSet(ranger);
 }
 
 
@@ -14679,7 +14798,7 @@ function makeTestPartyMage(){
   mage.facingHex=0;
   mage.ac=calculateArmorClass(mage);
 
-  return mage;
+  return applyPlayerSpriteSet(mage);
 }
 
 function livingPartyMembers(){
@@ -15629,15 +15748,24 @@ function makeStudioTestMob(mobType,index,position){
     case "orc-leader": return makeOrcLeader(index,position);
     case "orc-shaman": return makeOrcShaman(index,position);
     case "juvenile-red-dragon": return makeLargeMobTest(position);
-    default: throw new Error("This sprite set references an unimplemented MOB type.");
+    case "fighter": {
+      // Carl is persistent. Inspection copies must never share his inventory,
+      // effects, hit points, or mutable identity with each other or the player.
+      const fighter=structuredClone(makeFighter());
+      fighter.controller="player";
+      return fighter;
+    }
+    case "ranger": return makeFriendlyElvenRanger();
+    case "mage": return makeTestPartyMage();
+    default: throw new Error("This sprite set references an unimplemented character type.");
   }
 }
 
-function makeStudioKoboldEncounter(condition=selectedCombatCondition){
+function makeStudioKoboldEncounter(condition=selectedCombatCondition,player=null){
   const set=registeredStudioSpriteSets.get(selectedStudioSpriteSetId);
   const mobType=set?.mobType || "kobold";
   const radius=(set?.footprintCells || 1)>1 ? 5 : 3;
-  const occupied=new Set([key(0,0)]);
+  const occupied=new Set(occupiedHexes(player || {x:0,y:0}).map(cell=>key(cell.x,cell.y)));
   const positions=HEX_DIRS.map(dir=>({x:dir.x*radius,y:dir.y*radius}));
   /* Keep the original single-hex NW view clear of the northern tree cluster. */
   if(radius===3) positions[2]={x:-2,y:0};
@@ -15674,6 +15802,20 @@ function makeStudioKoboldEncounter(condition=selectedCombatCondition){
     condition
   };
   return units;
+}
+
+function makeStudioPlayerOpponents(party){
+  const occupied=new Set(party.flatMap(unit=>occupiedHexes(unit).map(cell=>key(cell.x,cell.y))));
+  const candidates=axialDisk({x:0,y:0},11).filter(pos=>inside(pos.x,pos.y) && !isWall(pos.x,pos.y));
+  return HEX_DIRS.map((dir,index)=>{
+    const preferred={x:dir.x*9,y:dir.y*9};
+    const position=candidates.slice().sort((a,b)=>
+      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
+    ).find(pos=>!occupied.has(key(pos.x,pos.y)));
+    if(!position) throw new Error("Unable to place the player sprite test's Kobold opponents.");
+    occupied.add(key(position.x,position.y));
+    return makeKobold(index,position);
+  });
 }
 
 
@@ -16013,11 +16155,16 @@ function newGame(condition=selectedCombatCondition){
   /*
     R179 combat setup cleanup: the default battle test now starts with Carl
     as the sole player character. Ranger and Mage definitions remain in the
-    engine for future roster selection but are not spawned automatically.
+    engine. A player-target sprite test explicitly adds its six friendly
+    inspection copies; ordinary encounters retain their existing roster.
   */
+  const studioUnits=selectedMobEncounter==="studio-kobold"
+    ? makeStudioKoboldEncounter(condition,player)
+    : [];
+  const studioPlayers=studioUnits.filter(unit=>unit.faction==="player");
   const kobolds=
     selectedMobEncounter==="studio-kobold"
-      ? makeStudioKoboldEncounter(condition)
+      ? (studioPlayers.length ? makeStudioPlayerOpponents([player,...studioPlayers]) : studioUnits)
       : selectedMobEncounter==="kobolds"
         ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
         : [];
@@ -16049,7 +16196,7 @@ function newGame(condition=selectedCombatCondition){
     studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
-    allies:[],
+    allies:studioPlayers,
     enemies,
     order:[],
     turnIndex:0,
@@ -16300,8 +16447,8 @@ function startRound(){
       ally.turnMoves=0;
       ally.fullMove=false;
       ally.waitedThisRound=false;
-      ally.attacksThisRound=1;
-      ally.attacksRemaining=1;
+      ally.attacksThisRound=ally.type==="fighter" ? fighterAttacksThisRound(ally,game.round) : 1;
+      ally.attacksRemaining=ally.attacksThisRound;
     }
 
     ally.shotsThisRound=ally.missileRateOfFire || 1;
@@ -26231,7 +26378,7 @@ function beginCombatFromPrompt(){
   }
 
   combatAwaitingStart=false;
-  for(const unit of game.enemies || []) delete unit.studioPoseInspection;
+  for(const unit of studioSpriteTestUnits()) delete unit.studioPoseInspection;
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   setCombatMessage("Combat begins.");
@@ -26244,6 +26391,7 @@ function beginCombatFromPrompt(){
 }
 
 function drawFighter(p){
+  if(unitPoseDefinition(p)?.spriteLayout) return drawStudioSpriteMob(p);
   const c=hexCenter(p.x,p.y);
 
   if(game.active==="player"){
@@ -26284,6 +26432,7 @@ function drawFighter(p){
 
 
 function drawFriendlyArcher(npc){
+  if(unitPoseDefinition(npc)?.spriteLayout) return drawStudioSpriteMob(npc);
   const c=hexCenter(npc.x,npc.y);
 
   if(game.active===npc.id){
@@ -26332,6 +26481,7 @@ function drawFriendlyArcher(npc){
 
 
 function drawFriendlyMage(mage){
+  if(unitPoseDefinition(mage)?.spriteLayout) return drawStudioSpriteMob(mage);
   const c=hexCenter(mage.x,mage.y);
 
   if(game.active===mage.id){
@@ -26382,15 +26532,16 @@ function drawStudioSpriteMob(unit){
   if(!frame?.image?.complete || !frame.image.naturalWidth) return;
   const center=unitFootprintScreenCenter(unit);
   const dimensions=spriteRenderDimensions(frame.assetId,frame.image);
-  if(game.active===unit.id) drawActiveHex(unit,"#df6b6b");
-  if(unit.alive) drawHpBar(unit,"#df6b6b");
+  const friendly=unit.faction==="player";
+  if(game.active===unit.id) drawActiveHex(unit,friendly ? "player" : "#df6b6b");
+  if(unit.alive) drawHpBar(unit,friendly ? "#94e084" : "#df6b6b");
   if(unitFootprintCellCount(unit)>1){
     ctx.save();
     for(const cell of occupiedHexes(unit)){
       if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(cell.x,cell.y)) continue;
       polygonPath(hexScreenVertices(cell.x,cell.y));
-      ctx.fillStyle="rgba(170,70,46,0.035)";
-      ctx.strokeStyle="rgba(224,128,88,0.18)";
+      ctx.fillStyle=friendly ? "rgba(121,231,231,0.035)" : "rgba(170,70,46,0.035)";
+      ctx.strokeStyle=friendly ? "rgba(121,231,231,0.18)" : "rgba(224,128,88,0.18)";
       ctx.lineWidth=1;
       ctx.fill();
       ctx.stroke();
@@ -29291,7 +29442,7 @@ function draw(){
   }
 
   if(game.player.alive){
-    const c=hexCenter(game.player.x,game.player.y);
+    const c=unitDepthSortPoint(game.player);
     actors.push({
       sortY:c.y,
       sortX:c.x,
@@ -29302,7 +29453,7 @@ function draw(){
   for(const ally of game.allies || []){
     if(!ally.alive || ally.fled) continue;
 
-    const c=hexCenter(ally.x,ally.y);
+    const c=unitDepthSortPoint(ally);
 
     actors.push({
       sortY:c.y,
@@ -29654,6 +29805,7 @@ function handleCombatConditionsKey(event){
 
   if(event.key==="ArrowLeft" || event.key==="ArrowRight" || event.key==="ArrowUp" || event.key==="ArrowDown"){
     event.preventDefault();
+    cancelPendingCombatStart();
     selectedCombatCondition=selectedCombatCondition==="grass" ? "wall" : "grass";
     updateCombatConditionSelection();
     return;

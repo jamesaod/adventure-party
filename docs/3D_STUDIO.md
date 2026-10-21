@@ -14,7 +14,7 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 
 ## Choose the MOB, footprint and resolution
 
-Before the first capture, choose the **MOB**, **Footprint and sheet format**, and **Resolution**. The MOB list contains Kobold, Kobold Body Guard, Kobold Slinger, Orc, Orc Leader, Orc Shaman, and Juvenile Red Dragon. Combat tests create the selected MOB with its existing statistics and behavior. Selecting a MOB before capturing chooses its default footprint: single hex for the humanoids, or seven hexes for the dragon. You can then choose another footprint for the set.
+Before the first capture, choose the **MOB / player character**, **Footprint and sheet format**, and **Resolution**. The dropdown groups the seven implemented MOBs (Kobold, Kobold Body Guard, Kobold Slinger, Orc, Orc Leader, Orc Shaman, and Juvenile Red Dragon) and the test player characters: **Dungeon Crawler Carl — Fighter**, **Elven Ranger — Ranger**, and **Baub — Mage**. Combat tests use the selected character's existing statistics, controller and behavior. Selecting a target before capturing chooses its default footprint: single hex for the humanoids, or seven hexes for the dragon. You can then choose another footprint for the set.
 
 The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The separate **Model size** slider runs from **25–200% in 5% steps**, also defaulting to 100%. It changes how large the model appears against the floor footprint and how large its sprite renders in combat. Changing resolution does not enlarge the creature, and changing model size does not resize the PNGs or change its occupied hexes.
 
@@ -30,6 +30,14 @@ These four arrangements describe the **E-facing** footprint shown in the studio 
 Earlier two-wide (`wide2`), trapezoid (`trapezoid5`), and tall-diamond (`diamond4`) formats remain supported for recovering saved workspaces and importing or exporting existing sets. They are no longer choices for a new set. Recovery retains their original dimensions and footprint instead of converting their artwork to a different format.
 
 Model size multiplies the table's game render dimensions. For example, a single-hex set at 50% model size renders at 24 × 30; at 200% resolution its PNGs are still 320 × 400. Model size remains editable after capture: it updates the shared rendering metadata without recapturing or resampling the saved sprites. A recovered older capture without layout metadata must be cleared and captured again before its model size can be adjusted.
+
+### Measure model height
+
+The Model View has a **0–20-foot ruler** beside the model, with one-foot ticks and labels every five feet. Its lower-right corner shows **Model height** in feet. Both use the battlefield's existing **10 feet per hex**, so the size shown agrees with the sprite's combat scale rather than relying on a source file's native units.
+
+The readout measures the current pose's vertical mesh bounds, including equipment. It updates when the model is resized, reoriented, or animated; a prone pose therefore reads shorter than an upright pose. Changing **Model size** changes this height. Camera orbit, pan, zoom and source resolution do not change the measurement. **Reset view** restores a view containing the full ruler; zooming in can move some marks outside the window. Imported files are normalized to the shared sprite frame, so this is the model's in-game height, not its original authoring-unit measurement.
+
+The ruler and height readout are viewing guides only. They are never included in pixel previews, captured poses, PNGs, or the exported sheet. The existing model-size and render-dimension metadata carries the selected scale into combat.
 
 ## Set the lighting
 
@@ -89,7 +97,7 @@ At the default single-hex 160 × 200 frame size, the sheet is **960 × 600**. Ot
 
 ### Quick combat check and permanent import
 
-**Test in combat** opens Combat Setup in a new tab with the captured set selected. The six test creatures use the selected MOB's existing factory, statistics and behavior, with the captured set's footprint. Their initial placement accommodates all occupied hexes. Use **Ready**, **Attack**, **Prone**, or **Live** during the initial paused inspection to check each pose from all six directions. Starting battle clears that visual inspection override, and combat chooses poses normally. Use **Return to 3d studio** to export or revise the exact tested captures.
+**Test in combat** opens Combat Setup in a new tab with the captured set selected. The six test units use the selected target's existing factory, statistics and behavior, with the captured set's footprint. Player targets create six friendly copies with Kobold opponents; their original player or NPC controller is retained. Their initial placement accommodates all occupied hexes. Use **Ready**, **Attack**, **Prone**, or **Live** during the initial paused inspection to check each pose from all six directions. Starting battle clears that visual inspection override, and combat chooses poses normally. Use **Return to 3d studio** to export or revise the exact tested captures.
 
 For a permanent asset addition, export the ZIP and run the small importer from the repository:
 
@@ -98,6 +106,8 @@ node scripts/import-sprite-set.mjs /path/to/character-sprite-set.zip
 ```
 
 This writes `assets/sprites/<set-id>/` and updates `data/sprite-sets.json`. The game loads that small index and each character's manifest; another character does not require adding 18 image declarations to the main game file. Re-importing the same ID replaces that set while retaining other sets. Follow the existing validation and candidate publishing flow. See [Sprite set import](SPRITE_SET_IMPORT.md) for the complete file contract and [Six-direction combat sprites](DIRECTIONAL_SPRITES.md) for runtime pose behavior.
+
+An imported `fighter`, `ranger`, or `mage` collection also supplies the corresponding test character's sprites when that character is created. If several imported sets target the same character, the first package ID alphabetically is the default; choosing a set in Combat Setup overrides that character's choice for the current session. Keep the same set name/ID when replacing its ready, attack and prone collection. Monster sets remain selectable test sets, preserving existing monster artwork in ordinary encounters.
 
 ## Six-direction geometry
 

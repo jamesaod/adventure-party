@@ -33,13 +33,16 @@ export const SPRITE_LAYOUTS = Object.freeze(Object.fromEntries(SPRITE_LAYOUT_PRE
 export const SPRITE_LEGACY_LAYOUTS = Object.freeze(Object.fromEntries(SPRITE_LEGACY_LAYOUT_PRESETS.map(item => [item.id, item])));
 
 export const SPRITE_MOBS = Object.freeze([
-  { id: 'kobold', label: 'Kobold', defaultLayout: 'single' },
-  { id: 'kobold-bodyguard', label: 'Kobold Body Guard', defaultLayout: 'single' },
-  { id: 'kobold-slinger', label: 'Kobold Slinger', defaultLayout: 'single' },
-  { id: 'orc', label: 'Orc', defaultLayout: 'single' },
-  { id: 'orc-leader', label: 'Orc Leader', defaultLayout: 'single' },
-  { id: 'orc-shaman', label: 'Orc Shaman', defaultLayout: 'single' },
-  { id: 'juvenile-red-dragon', label: 'Juvenile Red Dragon', defaultLayout: 'hex7' }
+  { id: 'kobold', label: 'Kobold', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'kobold-bodyguard', label: 'Kobold Body Guard', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'kobold-slinger', label: 'Kobold Slinger', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'orc', label: 'Orc', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'orc-leader', label: 'Orc Leader', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'orc-shaman', label: 'Orc Shaman', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'juvenile-red-dragon', label: 'Juvenile Red Dragon', defaultLayout: 'hex7', targetKind: 'monster' },
+  { id: 'fighter', label: 'Dungeon Crawler Carl — Fighter (test player)', defaultLayout: 'single', targetKind: 'player' },
+  { id: 'ranger', label: 'Elven Ranger — Ranger (test player)', defaultLayout: 'single', targetKind: 'player' },
+  { id: 'mage', label: 'Baub — Mage (test player)', defaultLayout: 'single', targetKind: 'player' }
 ].map(item => Object.freeze(item)));
 
 export function spriteLayout(id = 'single') {

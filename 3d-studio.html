@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/adventure-party.css?v=R238">
-  <link rel="stylesheet" href="css/3d-studio.css?v=R238">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C49">
   <script type="importmap">
   {
     "imports": {
@@ -27,7 +27,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">R238</span>
+        <span class="studio-build">Candidate Rev 49</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -36,9 +36,9 @@
       <h2 id="studioSetupHeading">Sprite setup</h2>
       <div class="studio-setup-fields">
         <label class="studio-field" for="studioMobTarget">
-          <span>MOB</span>
+          <span>MOB / player character</span>
           <select id="studioMobTarget"><option value="kobold">Kobold</option></select>
-          <span class="studio-note studio-help">The combat test uses this creature's rules.</span>
+          <span class="studio-note studio-help">Choose the creature or test player whose sprites you are creating.</span>
         </label>
         <label class="studio-field" for="studioFootprint">
           <span>Footprint and sheet format</span>
@@ -108,6 +108,12 @@
           </div>
           <div id="studioViewport" class="studio-viewport">
             <canvas id="studioCanvas" width="580" height="480" aria-label="Interactive 3D model. Drag to rotate the view and scroll to zoom.">Interactive 3D model view</canvas>
+            <svg id="studioHeightRuler" class="studio-height-ruler" aria-hidden="true" hidden></svg>
+            <div id="studioModelHeight" class="studio-model-height" title="Height of the current pose, including equipment, at the battlefield's 10 feet per hex." hidden>
+              <span>Model height</span>
+              <output id="studioModelHeightValue" aria-label="Current model height in feet">— ft</output>
+              <small>Current pose · 10 ft / hex</small>
+            </div>
             <div id="studioEmptyMessage" class="studio-empty-message" hidden>Load a model to begin.</div>
           </div>
           <div class="studio-view-hint">Drag to turn · Scroll to zoom</div>
@@ -129,7 +135,7 @@
             <input id="studioModelScale" type="range" min="25" max="200" step="5" value="100" disabled>
             <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 48 × 60 px</span>
           </label>
-          <p class="studio-note studio-help">Size changes carry into combat. The floor footprint stays fixed; scroll zoom only changes your view.</p>
+          <p class="studio-note studio-help">Size changes carry into combat. The 0–20 ft ruler uses 10-foot battlefield hexes. Scroll zoom only changes your view.</p>
         </div>
 
         <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
@@ -304,6 +310,6 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C49"></script>
 </body>
 </html>

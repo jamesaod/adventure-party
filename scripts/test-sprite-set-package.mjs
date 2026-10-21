@@ -186,9 +186,16 @@ assert.deepEqual(spriteLayoutDimensions('single', 200, 55), {
 assert.throws(() => spriteLayout('constructor'), /Unknown sprite layout/);
 assert.throws(() => spriteMob('unknown'), /Unknown sprite MOB/);
 assert.deepEqual(SPRITE_MOBS.map(mob => mob.id), [
-  'kobold', 'kobold-bodyguard', 'kobold-slinger', 'orc', 'orc-leader', 'orc-shaman', 'juvenile-red-dragon'
+  'kobold', 'kobold-bodyguard', 'kobold-slinger', 'orc', 'orc-leader', 'orc-shaman', 'juvenile-red-dragon',
+  'fighter', 'ranger', 'mage'
 ]);
 assert.equal(spriteMob('juvenile-red-dragon').defaultLayout, 'hex7');
+assert.equal(SPRITE_MOBS.filter(mob => mob.targetKind === 'monster').length, 7);
+for (const id of ['fighter', 'ranger', 'mage']) {
+  assert.equal(spriteMob(id).targetKind, 'player');
+  assert.equal(spriteMob(id).defaultLayout, 'single');
+  assert.equal(validateSpriteSetManifest({ ...manifest, mobType: id }).mobType, id);
+}
 
 const largeDimensions = spriteLayoutDimensions('diamond4', 125);
 const formatManifest = createSpriteSetManifest({
@@ -418,8 +425,25 @@ try {
     for (const [name, bytes] of sizedFiles) assert.deepEqual(await fs.readFile(path.join(importedFormat.destination, name)), bytes);
   }
   assert.equal((await validateSpriteSetRepository({ repoRoot: formatsRoot })).sets, 7);
+  // Opt-in player targets follow the identical separate-folder package path;
+  // they require no special PNG format or edits to the game's source files.
+  for (const target of SPRITE_MOBS.filter(mob => mob.targetKind === 'player')) {
+    const dimensions = spriteLayoutDimensions('single', 50);
+    const metadata = createSpriteSetManifest({
+      id: `player-${target.id}`, label: target.label, captures,
+      frame: { ...dimensions, anchorX: dimensions.width / 2, anchorY: dimensions.height * 0.75 },
+      layout: createSpriteLayoutMetadata('single', 50), mobType: target.id
+    });
+    const playerFiles = packageFiles(metadata, fixtureFrames(dimensions.width, dimensions.height));
+    const playerZip = path.join(temp, `${metadata.id}.zip`);
+    await fs.writeFile(playerZip, zipSync(Object.fromEntries([...playerFiles].map(([name, bytes]) => [`${metadata.id}/${name}`, bytes]))));
+    const importedPlayer = await importSpriteSet(playerZip, { repoRoot: formatsRoot });
+    assert.equal(JSON.parse(await fs.readFile(path.join(importedPlayer.destination, 'manifest.json'), 'utf8')).mobType, target.id);
+    for (const [name, bytes] of playerFiles) assert.deepEqual(await fs.readFile(path.join(importedPlayer.destination, name)), bytes);
+  }
+  assert.equal((await validateSpriteSetRepository({ repoRoot: formatsRoot })).sets, 10);
 } finally {
   await fs.rm(temp, { recursive: true, force: true });
 }
 
-console.log('Sprite packages: four selectable layouts, three recoverable legacy layouts, independent model size and resolution, seven MOBs, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');
+console.log('Sprite packages: four selectable layouts, three recoverable legacy layouts, independent model size and resolution, seven monsters and three player targets, counterclockwise footprints, exact 18-frame imports, PNG/ZIP integrity, and repository registration checks passed.');

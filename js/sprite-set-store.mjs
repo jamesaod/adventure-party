@@ -1,5 +1,5 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238';
-import { validateSpriteModelScale } from './sprite-layouts.mjs?v=R238';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C49';
+import { validateSpriteModelScale } from './sprite-layouts.mjs?v=R238C49';
 
 // Candidate and stable share an origin, so isolate their drafts by page folder.
 const scope = new URL('.', location.href).pathname;

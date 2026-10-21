@@ -14,6 +14,13 @@ function productionFunction(name) {
   assert.ok(end > start, `Unterminated production function ${name}`);
   return source.slice(source.slice(start - 6, start) === 'async ' ? start - 6 : start, end + 2);
 }
+function productionDeclaration(name, endMarker = '\n};') {
+  const start = source.indexOf(`const ${name}=`);
+  assert.ok(start >= 0, `Missing production data ${name}`);
+  const end = source.indexOf(endMarker, start);
+  assert.ok(end > start, `Unterminated production data ${name}`);
+  return source.slice(start, end + endMarker.length);
+}
 const directions = ['E', 'NE', 'NW', 'W', 'SW', 'SE'];
 const vectors = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
 const walls = new Set(), occupied = new Set(), blockedEdges = new Set();
@@ -26,6 +33,8 @@ const sandbox = {
   STUDIO_FOOTPRINTS: new Map(allLayoutPresets.map(layout => [layout.id, layout])),
   UNIT_POSE_DEFINITIONS: {},
   registeredStudioSpriteSets: new Map(), selectedStudioSpriteSetId: 'studio-kobold', selectedCombatCondition: 'grass',
+  selectedStudioPlayerSpriteSets: new Map(), persistentFighter: null, structuredClone,
+  studioSpriteLoading: { state: 'ready' },
   lastMobDeployment: null,
   inside: (x, y) => x >= -12 && x <= 12 && y >= -12 && y <= 12,
   isWall: (x, y) => walls.has(`${x},${y}`),
@@ -33,6 +42,7 @@ const sandbox = {
   architecturalWallBlocksStep: (a, b) => blockedEdges.has(`${a.x},${a.y}>${b.x},${b.y}`),
   hexCenter: project,
   d: sides => Math.ceil(sides / 2),
+  roll3d6: () => 12,
   game: { active: null, condition: 'grass' },
   drawHpBar() {}, drawActiveHex() {},
   ctx: { save() {}, restore() {}, fill() {}, stroke() {} },
@@ -50,11 +60,28 @@ const functions = [
   'unitDistance', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
   'searchRotatingFootprintPath', 'pathToHex', 'axialDisk',
   'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'makeOrc', 'makeOrcLeader', 'makeOrcShaman',
-  'makeLargeMobTest', 'makeStudioTestMob', 'makeStudioKoboldEncounter', 'drawStudioSpriteMob',
+  'makeLargeMobTest', 'makeStudioTestMob', 'makeStudioKoboldEncounter', 'makeStudioPlayerOpponents', 'drawStudioSpriteMob',
+  'drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage',
+  'isStudioPlayerSpriteTarget', 'playerSpriteSetForType', 'applyPlayerSpriteSet',
+  'makeFighter', 'makeFriendlyElvenRanger', 'makeTestPartyMage', 'clamp',
+  'conHpAdjustment', 'strengthMods', 'syncFighterEquipment', 'calculateArmorClass', 'dexterityAdjustments',
+  'getWeaponCatalogEntry', 'getArmorCatalogEntry', 'getSpellEntry',
+  'applyFighterClassRules', 'fighterLevelData', 'warriorSavingThrows',
   'animateEntitySteps', 'animateMobAlongPath', 'tryPlayerMove'
 ];
 vm.createContext(sandbox);
-vm.runInContext(functions.map(productionFunction).join('\n'), sandbox);
+// Use the actual class progression, equipment, and spell-book implementations
+// so a player target cannot silently become a Kobold with a different label.
+const mageStart = source.indexOf('const MAGE_CLASS=');
+const mageEnd = source.indexOf('function levelUpMage(', mageStart);
+const spellStart = source.indexOf('const SPELL_CATALOG=');
+const spellEnd = source.indexOf('function getSpellEntry(', spellStart);
+vm.runInContext([
+  ...['RULESET', 'FIGHTER_CLASS', 'WEAPON_CATALOG', 'ARMOR_CATALOG', 'DEXTERITY_TABLE'].map(name => productionDeclaration(name)),
+  productionDeclaration('FIGHTER_LEVELS', '\n];'),
+  source.slice(mageStart, mageEnd), source.slice(spellStart, spellEnd),
+  ...functions.map(productionFunction)
+].join('\n'), sandbox);
 const plain = value => JSON.parse(JSON.stringify(value));
 
 // All six rotations agree with the shared studio layout, retain cell count,
@@ -79,6 +106,12 @@ for (const layout of allLayoutPresets) {
     draws.length = 0;
     sandbox.drawStudioSpriteMob(unit);
     assert.deepEqual(plain(draws[0]), { center: centroid, width: 96, height: 84, anchor: { x: 0.5, y: 0.7 } });
+    for (const drawPlayer of ['drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage']) {
+      draws.length = 0;
+      sandbox[drawPlayer]({ ...unit, faction: 'player' });
+      assert.deepEqual(plain(draws[0]), { center: centroid, width: 96, height: 84, anchor: { x: 0.5, y: 0.7 } },
+        `${drawPlayer} renders imported frames at the complete footprint centroid`);
+    }
   }
 }
 assert.deepEqual(plain(sandbox.rotateAxialOffset({ x: 1, y: 0 }, 1)), { x: 1, y: -1 }, 'E rotates toward NE');
@@ -141,7 +174,10 @@ const expectedMobs = {
   orc: { ac: 6, thaco: 19, move: 9, hitDiceValue: 1, weapon: 'Scimitar' },
   'orc-leader': { ac: 6, thaco: 19, move: 9, hitDiceValue: 1, weapon: 'Axe, battle' },
   'orc-shaman': { ac: 6, thaco: 19, move: 9, hitDiceValue: 2, priestLevel: 3, weapon: 'Spear' },
-  'juvenile-red-dragon': { ac: -3, thaco: 7, move: 9, hitDiceValue: 15, weapon: 'Bite', attacksPerRound: 3 }
+  'juvenile-red-dragon': { ac: -3, thaco: 7, move: 9, hitDiceValue: 15, weapon: 'Bite', attacksPerRound: 3 },
+  fighter: { ac: 5, thaco: 1, move: 9, level: 20, weapon: 'Flaming Sword +5', controller: 'player', faction: 'player', attacksThisRound: 2 },
+  ranger: { ac: 5, thaco: 11, move: 9, level: 10, weapon: 'Short Sword', rangedWeapon: 'Longbow', controller: 'npc', faction: 'player' },
+  mage: { ac: 9, thaco: 14, move: 12, level: 20, weapon: 'Staff', controller: 'player', faction: 'player' }
 };
 // Every layout can use every existing MOB factory without substituting Kobold
 // rules. Placement reserves all occupied cells, including Carl's starting cell.
@@ -149,12 +185,14 @@ for (const mob of SPRITE_MOBS) {
   for (const layout of allLayoutPresets) {
     const id = `test-${mob.id}-${layout.id}`;
     sandbox.UNIT_POSE_DEFINITIONS[id] = { spriteLayout: layout };
-    sandbox.registeredStudioSpriteSets.set(id, { id, label: 'Imported test', mobType: mob.id, layoutId: layout.id, footprintCells: layout.offsets.length });
+    sandbox.registeredStudioSpriteSets.set(id, { id, manifestId: id, label: 'Imported test', mobType: mob.id, layoutId: layout.id, footprintCells: layout.offsets.length });
     sandbox.selectedStudioSpriteSetId = id;
-    const units = sandbox.makeStudioKoboldEncounter('grass');
+    if (mob.targetKind === 'player') sandbox.selectedStudioPlayerSpriteSets.set(mob.id, id);
+    const player = sandbox.makeFighter();
+    const units = sandbox.makeStudioKoboldEncounter('grass', player);
     assert.equal(units.length, 6);
     assert.deepEqual(plain(units.map(unit => unit.facingHex)), [0, 1, 2, 3, 4, 5]);
-    const cells = new Set(['0,0']);
+    const cells = new Set(sandbox.occupiedHexes(player).map(cell => `${cell.x},${cell.y}`));
     for (const unit of units) {
       assert.equal(unit.type, mob.id);
       for (const [key, value] of Object.entries(expectedMobs[mob.id])) assert.equal(unit[key], value, `${mob.id} preserves ${key}`);
@@ -163,6 +201,32 @@ for (const mob of SPRITE_MOBS) {
         assert.equal(cells.has(key), false, `${mob.id}/${layout.id} does not overlap another footprint`);
         assert.equal(sandbox.inside(cell.x, cell.y), true);
         cells.add(key);
+      }
+    }
+    if (mob.targetKind === 'player') {
+      const factory = { fighter: 'makeFighter', ranger: 'makeFriendlyElvenRanger', mage: 'makeTestPartyMage' }[mob.id];
+      assert.equal(sandbox[factory]().spriteSetId, id, 'The real player factory adopts its selected collection');
+      assert.equal(player.id, 'player', 'Inspection copies cannot mutate the persistent player identity');
+      for (let i = 1; i < units.length; i++) {
+        assert.notEqual(units[i].inventory, units[0].inventory);
+        assert.notEqual(units[i].buffs, units[0].buffs);
+      }
+      if (mob.id === 'fighter') {
+        assert.notEqual(units[0].inventory, player.inventory);
+        assert.equal(player.spriteSetId, id, 'The actual Carl receives the selected fighter collection');
+      }
+      if (mob.id === 'mage') {
+        assert.ok(units[0].knownSpellIds.includes('magic-missile'));
+        assert.equal(units[0].memorizedSpellIds.filter(id => id === 'fireball').length, 5);
+      }
+      const opponents = sandbox.makeStudioPlayerOpponents([player, ...units]);
+      assert.equal(opponents.length, 6);
+      for (const enemy of opponents) {
+        assert.equal(enemy.type, 'kobold');
+        assert.equal(enemy.controller, 'mob');
+        assert.equal(enemy.faction, 'enemy');
+        assert.equal(cells.has(`${enemy.x},${enemy.y}`), false, 'Live-combat opponents never overlap the friendly formation');
+        cells.add(`${enemy.x},${enemy.y}`);
       }
     }
   }
@@ -192,4 +256,4 @@ for (const move of [
 }
 occupied.clear();
 
-console.log('Studio footprints: seven layouts × six facings, centroid rendering, blocked rotations/movement and reaction races, orientation-aware detours, legacy occupancy, and all seven real MOB factories × layouts passed.');
+console.log('Studio footprints: seven layouts × six facings, player and monster centroid rendering, blocked rotations/movement and reaction races, orientation-aware detours, legacy occupancy, seven monster factories and three real player classes × layouts, and friendly test opponents passed.');

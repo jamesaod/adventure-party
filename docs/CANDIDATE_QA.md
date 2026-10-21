@@ -2,9 +2,18 @@
 
 Stable baseline: **R238**
 
-## Current candidate baseline: R238
+## Current candidate: Rev 49 — Model height and test player sprite targets
 
-Candidate Rev 4–48 is promoted to R238. Both branches share this milestone baseline before further candidate work. The sections below preserve historical QA notes; retired laboratory features are not part of the current build. See [CHANGELOG.md](../CHANGELOG.md) and [3D_STUDIO.md](3D_STUDIO.md) for the shipped milestone and studio workflow.
+Candidate Rev 49 starts from the promoted R238 baseline (Candidate Rev 4–48). It adds:
+
+- A 0–20-foot ruler beside the 3D model, one-foot ticks, five-foot labels, and a lower-right live model-height readout.
+- Height calibration against the game's ten-foot hexes. Current-pose mesh height includes equipment and follows model size; camera zoom and source resolution do not change it. Viewing guides stay out of captured pixels and exported sheets.
+- Test player sprite targets for Dungeon Crawler Carl (Fighter), Elven Ranger (Ranger), and Baub (Mage), using the existing folder-based capture/export/import workflow.
+- Friendly six-facing player inspection with original class rules and Kobold opponents. Imported player collections supply the matching test player's artwork; existing monster collections keep their prior semantics.
+
+Validation covers exact physical calibration, actual skinned/morphed pose bounds, player registration/factories/inspection, package compatibility and the existing studio suites. Browser QA checks size, axis, animation, zoom, resolution and saved-capture restoration, plus captured-pixel parity with R238.
+
+The sections below preserve historical QA notes; retired laboratory features are not part of the current build. See [CHANGELOG.md](../CHANGELOG.md) and [3D_STUDIO.md](3D_STUDIO.md) for the milestone and current studio workflow.
 
 
 ## Candidate Rev 17 — Fireball VFX Laboratory
