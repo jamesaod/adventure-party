@@ -1,13 +1,13 @@
-import { quantizeRgba } from './studio-core.mjs?v=R237C48';
+import { quantizeRgba } from './studio-core.mjs?v=R238';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R237C48';
+} from './sprite-set-core.mjs?v=R238';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   validateStudioWorkspace
-} from './sprite-set-store.mjs?v=R237C48';
-import { spriteLayoutDimensions, validateSpriteModelScale } from './sprite-layouts.mjs?v=R237C48';
+} from './sprite-set-store.mjs?v=R238';
+import { spriteLayoutDimensions, validateSpriteModelScale } from './sprite-layouts.mjs?v=R238';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);

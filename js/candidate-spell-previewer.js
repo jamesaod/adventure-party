@@ -687,7 +687,7 @@ function spellPreviewRenderLibrary(){
       " preview-ready / "+
       spells.length+
       " implemented combat spells. "+
-      "Candidate Rev 9 routes every implemented spell through either its proven bespoke profile or the production casting resolver.";
+      "Every implemented spell runs through either its preview profile or the production casting resolver.";
   }
 }
 

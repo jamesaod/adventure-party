@@ -2,13 +2,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R237C48';
-import { createPoseCapture } from './studio-capture.mjs?v=R237C48';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238';
+import { createPoseCapture } from './studio-capture.mjs?v=R238';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale
-} from './sprite-layouts.mjs?v=R237C48';
-import { studioFootprintGuide, studioLightPosition } from './studio-geometry.mjs?v=R237C48';
+} from './sprite-layouts.mjs?v=R238';
+import { studioFootprintGuide, studioLightPosition } from './studio-geometry.mjs?v=R238';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,

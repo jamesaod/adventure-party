@@ -2302,12 +2302,12 @@ const KOBOLD_SPRITE_SRC='assets/sprites/kobold-bodyguard-stand.png';
    future Fighter and creature art plug into the same combat path without bespoke code.
    Battlefield/contact shadows remain separately rendered by the unit draw functions. */
 const KOBOLD_ATTACK_SPRITE_SRC='assets/sprites/kobold-bodyguard-attack.png';
-const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png?v=C40';
-const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png?v=C40';
+const ORC_STAND_SPRITE_SRC='assets/sprites/orc-stand.png?v=R238';
+const ORC_ATTACK_SPRITE_SRC='assets/sprites/orc-attack.png?v=R238';
 const ORC_LEADER_STAND_SPRITE_SRC='assets/sprites/orc-leader-stand.png?v=C40';
 const ORC_LEADER_ATTACK_SPRITE_SRC='assets/sprites/orc-leader-attack.png?v=C40';
-const ORC_SHAMAN_STAND_SPRITE_SRC='assets/sprites/orc-shaman-stand.png?v=C40';
-const ORC_SHAMAN_ATTACK_SPRITE_SRC='assets/sprites/orc-shaman-attack.png?v=C40';
+const ORC_SHAMAN_STAND_SPRITE_SRC='assets/sprites/orc-shaman-stand.png?v=R238';
+const ORC_SHAMAN_ATTACK_SPRITE_SRC='assets/sprites/orc-shaman-attack.png?v=R238';
 
 /* R190: dedicated juvenile red dragon standing + attack poses. */
 const JUVENILE_RED_DRAGON_STAND_SPRITE_SRC='assets/sprites/juvenile-red-dragon.png?v=C11';
@@ -15073,7 +15073,8 @@ function makeOrcLeader(index,position){
     Candidate Rev 40 — Monstrous Manual Orc leader.
     The Orc entry lists leaders/assistants at 8 hp each and XP 35 while
     retaining the ordinary Orc's AC 6, MV 9, THAC0 19 and weapon damage.
-    POR combat art #4 is used as the development-only leader sprite.
+    POR A1 #5 ORC LEADER supplies the development-only leader sprite
+    from Combat_CPIC/area_1/005_orc_leader/.
   */
   return {
     id:`orc-leader-${String(index+1).padStart(2,"0")}`,
@@ -15153,8 +15154,8 @@ function makeOrcShaman(index,position){
     Monstrous Manual: shamans may reach 5th-level priest; each level above 1st
     adds 1d4 hp, and they attack as 1 HD per two spellcasting levels, fractions
     rounded up. A 3rd-level shaman therefore has 1d8+2d4 hp, attacks as 2 HD,
-    and is worth 175 XP. POR combat art #33 is used as the development-only
-    shaman sprite.
+    and is worth 175 XP. POR A1 #33 MACE supplies the development-only
+    shaman sprite from Combat_CPIC/area_1/033_mace/.
   */
   const hp=d(8)+d(4)+d(4);
 

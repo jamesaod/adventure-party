@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "release": "R208",
-  "description": "Adventure Party sprite asset specifications. Candidate Rev 40 imports three Pool of Radiance combat-art pairs as development-only Orc, Orc Leader, and Orc Shaman placeholders; the source art remains copyrighted and is not production-approved. Candidate Rev 43 adds six exact ready frames from a user-exported 3d studio sheet for the 6-facing Kobold combat test.",
+  "description": "Adventure Party sprite asset specifications. R238 preserves the user-selected Pool of Radiance A1 #4 ORC, A1 #5 ORC LEADER and A1 #33 MACE ready/action pairs. Source artwork remains development-only and is not production-approved.",
   "assets": {
     "fighter": {
       "source": {
@@ -190,7 +190,14 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #4 ORC",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/004_orc/004_orc_ready_full.png",
+        "sourceSha256": "b76d897d62718684242f4e8b6ec09b18c3afd7e5098a1f693208cf93e9471c3b",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "orc-attack": {
       "source": {
@@ -211,7 +218,14 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #4 ORC",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/004_orc/004_orc_action_full.png",
+        "sourceSha256": "c42b64d1287ff8984ea1f712d37173f5ecc62c72c166d75aa05a9dbfab088e80",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "death-marker": {
       "source": {
@@ -295,7 +309,14 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #5 ORC LEADER",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/005_orc_leader/005_orc_leader_ready_full.png",
+        "sourceSha256": "553509ebfd7871ef5149f11660ff3ad08166063348fecb535c77683425ccdca0",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "orc-leader-attack": {
       "source": {
@@ -316,7 +337,14 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #5 ORC LEADER",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/005_orc_leader/005_orc_leader_action_full.png",
+        "sourceSha256": "fd52259f3bb59dbf7c44d9cd74d5c64a6f9651f6c16312801bbd810e28a4c45f",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "orc-shaman-stand": {
       "source": {
@@ -337,7 +365,14 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #33 MACE",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/033_mace/033_mace_ready_full.png",
+        "sourceSha256": "82b7445d89f8f9c98415e4594a0c19b40a441d8b93185b48a0b785e7e4f3eac4",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "orc-shaman-attack": {
       "source": {
@@ -358,7 +393,14 @@
       },
       "scaleMode": "fit",
       "lockAspect": true,
-      "nativeFacing": "right"
+      "nativeFacing": "right",
+      "provenance": {
+        "archive": "POR_Sprite_Extraction.zip",
+        "catalogEntry": "A1 #33 MACE",
+        "archivePath": "POR_Sprite_Extraction/Combat_CPIC/area_1/033_mace/033_mace_action_full.png",
+        "sourceSha256": "33c27f7929994306ec6d25146a941448cb75ada64fcfd1d2a0aab3058afd332b",
+        "import": "24x24 full frame enlarged 4x with nearest-neighbor sampling"
+      }
     },
     "studio-kobold-ready-e": {
       "source": {

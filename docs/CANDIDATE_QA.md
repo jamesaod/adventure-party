@@ -1,8 +1,10 @@
 # Candidate QA Notes
 
-Stable baseline: **R237**
+Stable baseline: **R238**
 
-## Current candidate: Rev 17
+## Current candidate baseline: R238
+
+Candidate Rev 4–48 is promoted to R238. Both branches share this milestone baseline before further candidate work. The sections below preserve historical QA notes; retired laboratory features are not part of the current build. See [CHANGELOG.md](../CHANGELOG.md) and [3D_STUDIO.md](3D_STUDIO.md) for the shipped milestone and studio workflow.
 
 
 ## Candidate Rev 17 — Fireball VFX Laboratory

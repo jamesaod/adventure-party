@@ -1,5 +1,5 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
-import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale } from './sprite-layouts.mjs?v=R237C48';
+import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale } from './sprite-layouts.mjs?v=R238';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 export const SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);

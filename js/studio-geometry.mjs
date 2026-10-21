@@ -1,5 +1,5 @@
-import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R237C48';
-import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R237C48';
+import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238';
+import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238';
 
 // Combat's pointy hex, in screen pixels relative to its center.
 const HEX_VERTICES = Object.freeze([
