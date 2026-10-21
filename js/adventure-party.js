@@ -3253,10 +3253,10 @@ const pixelEditorAssets=[
     gameImage:orcStandSprite,
     originalSrc:ORC_STAND_SPRITE_SRC,
     spec:{
-      sourceWidth:101,sourceHeight:107,
-      workspaceWidth:64,workspaceHeight:64,
-      renderWidth:34,renderHeight:36,
-      anchorX:32,anchorY:64,
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
       scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
@@ -3268,10 +3268,70 @@ const pixelEditorAssets=[
     gameImage:orcAttackSprite,
     originalSrc:ORC_ATTACK_SPRITE_SRC,
     spec:{
-      sourceWidth:125,sourceHeight:116,
-      workspaceWidth:64,workspaceHeight:64,
-      renderWidth:39,renderHeight:36,
-      anchorX:32,anchorY:62,
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-leader-stand",
+    label:"Orc Leader Stand",
+    defaultCategory:"units",
+    gameImage:orcLeaderStandSprite,
+    originalSrc:ORC_LEADER_STAND_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-leader-attack",
+    label:"Orc Leader Attack",
+    defaultCategory:"units",
+    gameImage:orcLeaderAttackSprite,
+    originalSrc:ORC_LEADER_ATTACK_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-shaman-stand",
+    label:"Orc Shaman Stand",
+    defaultCategory:"units",
+    gameImage:orcShamanStandSprite,
+    originalSrc:ORC_SHAMAN_STAND_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
+      scaleMode:"fit",lockAspect:true,nativeFacing:"right"
+    },
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
+  },
+  {
+    id:"orc-shaman-attack",
+    label:"Orc Shaman Attack",
+    defaultCategory:"units",
+    gameImage:orcShamanAttackSprite,
+    originalSrc:ORC_SHAMAN_ATTACK_SPRITE_SRC,
+    spec:{
+      sourceWidth:96,sourceHeight:96,
+      workspaceWidth:96,workspaceHeight:96,
+      renderWidth:36,renderHeight:36,
+      anchorX:48,anchorY:96,
       scaleMode:"fit",lockAspect:true,nativeFacing:"right"
     },
     editCanvas:null,editCtx:null,dirty:false,sourceScale:null,runtimeAnchor:null
