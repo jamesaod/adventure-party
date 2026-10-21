@@ -41,11 +41,13 @@ jobs:
           rsync -a --delete \
             --exclude='.git' \
             --exclude='.github' \
+            --exclude='/workflow/' \
             stable/ site/
 
           rsync -a --delete \
             --exclude='.git' \
             --exclude='.github' \
+            --exclude='/workflow/' \
             candidate-src/ site/candidate/
 
           touch site/.nojekyll
