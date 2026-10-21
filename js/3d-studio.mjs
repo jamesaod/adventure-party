@@ -2,16 +2,19 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C53';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C53';
+import {
+  prepareStudioAnimations, sliceAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
+} from './studio-animations.mjs?v=R238C54';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C54';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C54';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C53';
+} from './sprite-layouts.mjs?v=R238C54';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C53';
+} from './studio-geometry.mjs?v=R238C54';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -32,12 +35,14 @@ const ui = Object.fromEntries([
   'KeyIntensity', 'KeyIntensityValue', 'KeyColor', 'KeyElevation', 'KeyElevationValue', 'KeyDirection',
   'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
   'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'OutlineValue', 'Clip',
-  'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time',
+  'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time', 'AnimationSummary', 'AnimationWarning',
+  'AnimationRanges', 'RangeSource', 'RangeName', 'RangeStart', 'RangeEnd', 'RangeStartButton', 'RangeEndButton',
+  'AddRangeButton', 'RemoveRangeButton', 'RangeStatus',
   'ExportSheetButton', 'Status', 'Error'
 ].map(name => [name, $(`studio${name}`)]));
 
 const state = {
-  model: null, modelName: 'Studio mannequin', clips: [], mixer: null,
+  model: null, modelName: 'Studio mannequin', clips: [], sourceClips: [], animationRanges: [], mixer: null,
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Z',
   width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
   modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
@@ -78,6 +83,8 @@ function getWorkspaceSettings() {
     // Store the base transform. Model size is applied once when reopening it.
     placement: modelFrame ? { position: modelFrame.position.toArray(), scale: modelFrame.scale } : null,
     clipIndex: Number(ui.Clip.value), clipName: state.action?.getClip().name || '',
+    clipSourceId: animationSourceId(state.action?.getClip()), animationTimingVersion: 1,
+    animationRanges: state.animationRanges.map(range => ({ ...range })),
     time: state.action?.time || 0, playing: state.playing,
     speed: Number(ui.Speed.value) || 1, facing: state.facing
   };
@@ -176,6 +183,7 @@ function setModelReady(ready) {
   document.querySelectorAll('[data-studio-export], [data-studio-facing]').forEach(button => { button.disabled = !ready; });
   poseCapture?.setModelReady(ready);
   syncCaptureLock(!!poseCapture?.snapshot().captureCount);
+  updateAnimationControls();
 }
 
 function changeSpriteFormat({ refit = false } = {}) {
@@ -703,23 +711,73 @@ function selectFacing(id) {
   resetCamera();
 }
 
+function makeRangeClip(range, sourceClips) {
+  const sourceIndex = range.sourceId ? sourceClips.findIndex(clip => animationSourceId(clip) === range.sourceId) : range.sourceIndex;
+  const source = sourceClips[sourceIndex];
+  if (!source || typeof range.id !== 'string' || !range.id.startsWith('range:') ||
+      typeof range.name !== 'string' || !range.name.trim() || range.name.length > 120) {
+    throw new Error('This saved animation range no longer matches its source animation.');
+  }
+  const clip = sliceAnimationClip(source, range.start, range.end, range.name.trim());
+  clip.userData = { ...clip.userData, studioAnimationId: range.id };
+  return { clip, range: { ...range, sourceIndex, sourceId: animationSourceId(source) } };
+}
+
+function animationRangeContext() {
+  const clip = state.action?.getClip();
+  if (!clip) return null;
+  const range = state.animationRanges.find(item => item.id === animationSourceId(clip));
+  const sourceIndex = range ? range.sourceIndex : state.sourceClips.indexOf(clip);
+  const source = state.sourceClips[sourceIndex];
+  return source ? { source, sourceIndex, range } : null;
+}
+
+function updateRangeEditor() {
+  const context = animationRangeContext();
+  ui.RangeSource.textContent = context ? `Source: ${animationOptionLabel(context.source, context.sourceIndex)}` : 'Select an animation first.';
+  ui.RangeName.value = context?.range?.name || '';
+  ui.RangeStart.value = String(context?.range?.start || 0);
+  ui.RangeEnd.value = String(context?.range?.end ?? context?.source.duration ?? 0);
+  ui.RangeStart.max = ui.RangeEnd.max = String(context?.source.duration || 0);
+  ui.RangeStatus.textContent = '';
+}
+
+function updateAnimationChoices(index) {
+  ui.Clip.replaceChildren(new Option('Rest pose', '-1'));
+  state.clips.forEach((clip, clipIndex) => ui.Clip.add(new Option(animationOptionLabel(clip, clipIndex), String(clipIndex))));
+  ui.Clip.value = String(index);
+  ui.Clip.disabled = !state.clips.length;
+  const count = state.sourceClips.length;
+  ui.AnimationSummary.textContent = count ? `${count} embedded animation${count === 1 ? '' : 's'} found` +
+    (state.animationRanges.length ? ` · ${state.animationRanges.length} saved range${state.animationRanges.length === 1 ? '' : 's'}` : '') +
+    '. One animation plays at a time.' : 'No animated clips found. The rest pose is available for capture.';
+  const info = state.model?.userData?.fbxAnimations;
+  const notes = [];
+  if (info?.emptyStackCount) notes.push(`${info.emptyStackCount} empty FBX take${info.emptyStackCount === 1 ? ' was' : 's were'} skipped.`);
+  if (info?.layeredStackCount) notes.push('Layered FBX takes use their first usable layer. Export baked animations to include all blended layers.');
+  ui.AnimationWarning.textContent = notes.join(' ');
+  ui.AnimationWarning.hidden = !notes.length;
+}
+
 function setClip(index) {
   if (!state.mixer) return;
   state.mixer.stopAllAction();
   state.action = null;
   if (state.clips[index]) {
     state.action = state.mixer.clipAction(state.clips[index]);
-    state.action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+    state.action.reset().setEffectiveWeight(1).setLoop(THREE.LoopRepeat, Infinity).play();
     state.action.timeScale = Number(ui.Speed.value) || 1;
     state.action.paused = !state.playing;
   }
+  ui.Clip.value = state.action ? String(index) : '-1';
   state.mixer.update(0);
+  updateRangeEditor();
   updateAnimationControls();
   invalidate();
 }
 
 function updateAnimationControls() {
-  const available = !!state.action;
+  const available = state.modelReady && !!state.action;
   ui.PlayButton.disabled = !available;
   ui.RestartButton.disabled = !available;
   ui.Timeline.disabled = !available;
@@ -730,6 +788,10 @@ function updateAnimationControls() {
   const time = state.action?.time || 0;
   ui.Timeline.value = duration ? String(time / duration) : '0';
   ui.Time.textContent = `${time.toFixed(2)} / ${duration.toFixed(2)} s`;
+  for (const field of ['RangeName', 'RangeStart', 'RangeEnd', 'RangeStartButton', 'RangeEndButton', 'AddRangeButton']) {
+    ui[field].disabled = !available;
+  }
+  ui.RemoveRangeButton.disabled = !available || !animationRangeContext()?.range;
 }
 
 function installModel({ model, clips, name, demoSourceUpAxis = null }, { restoreSettings = null, sourceFiles = [], isDemo = false, persist = true } = {}) {
@@ -740,7 +802,20 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
     disposeModel(model);
     throw new Error('This file has no mesh. Choose a model with its animations included.');
   }
-  const availableClips = clips.filter(clip => Number.isFinite(clip.duration) && clip.duration > 0);
+  const sourceClips = prepareStudioAnimations(clips);
+  sourceClips.forEach((clip, index) => {
+    if (!animationSourceId(clip)) clip.userData = { ...clip.userData, studioAnimationId: `source:${index}` };
+  });
+  const availableClips = [...sourceClips], animationRanges = [];
+  let skippedRanges = 0;
+  for (const savedRange of Array.isArray(restoreSettings?.animationRanges) ? restoreSettings.animationRanges : []) {
+    try {
+      if (animationRanges.some(range => range.id === savedRange.id)) throw new Error('Duplicate saved animation range.');
+      const { clip, range } = makeRangeClip(savedRange, sourceClips);
+      availableClips.push(clip);
+      animationRanges.push(range);
+    } catch { skippedRanges++; }
+  }
   const nextLayoutId = !restoreSettings && !SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId)
     ? spriteMob(state.mobType).defaultLayout : state.layoutId;
   const nextSize = restoreSettings ? { width: state.width, height: state.height }
@@ -773,6 +848,8 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
     updateSetupLabels();
   }
   state.clips = availableClips;
+  state.sourceClips = sourceClips;
+  state.animationRanges = animationRanges;
   state.mixer = new THREE.AnimationMixer(model);
   state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
   state.upAxis = restoreSettings?.upAxis === 'Y' ? 'Y' : 'Z';
@@ -784,20 +861,16 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
     if (object.isSkinnedMesh) object.frustumCulled = false;
   });
   upAxisGroup.add(model);
-  ui.Clip.replaceChildren(new Option('Rest pose', '-1'));
-  state.clips.forEach((clip, index) => ui.Clip.add(new Option(clip.name || `Animation ${index + 1}`, String(index))));
-  let clipIndex = state.clips.length ? 0 : -1;
+  const clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
   if (restoreSettings) {
-    const named = state.clips.findIndex(clip => clip.name === restoreSettings.clipName);
-    clipIndex = named >= 0 ? named : Number.isInteger(restoreSettings.clipIndex) && restoreSettings.clipIndex >= -1 &&
-      restoreSettings.clipIndex < state.clips.length ? restoreSettings.clipIndex : clipIndex;
     ui.Speed.value = ['0.25', '0.5', '1', '1.5', '2'].includes(String(restoreSettings.speed)) ? String(restoreSettings.speed) : '1';
   }
-  ui.Clip.value = String(clipIndex);
-  ui.Clip.disabled = !state.clips.length;
+  updateAnimationChoices(clipIndex);
   setClip(clipIndex);
   if (restoreSettings && state.action && Number.isFinite(restoreSettings.time)) {
-    state.action.time = THREE.MathUtils.clamp(restoreSettings.time, 0, state.action.getClip().duration);
+    const clip = state.action.getClip();
+    const oldTimeOffset = restoreSettings.animationTimingVersion === 1 ? 0 : clip.userData?.fbxAnimation?.start || 0;
+    state.action.time = THREE.MathUtils.clamp(restoreSettings.time - oldTimeOffset, 0, clip.duration);
     state.mixer.update(0);
     updateAnimationControls();
   }
@@ -820,6 +893,10 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, { restore
   ui.EmptyMessage.hidden = true;
   setModelReady(true);
   clearError();
+  if (skippedRanges) {
+    ui.RangeStatus.textContent = `${skippedRanges} saved animation range${skippedRanges === 1 ? '' : 's'} could not be restored. Your captured sprites are still available.`;
+    ui.AnimationRanges.open = true;
+  }
   status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
@@ -1223,6 +1300,52 @@ function bindControls() {
   ui.Outline.addEventListener('input', () => { updateOutline(); poseCapture?.updateStyle(pixelRenderOptions(true)); invalidate(); });
   updateOutline();
   ui.Clip.addEventListener('change', () => { setClip(Number(ui.Clip.value)); poseCapture?.saveWorkspace(); });
+  for (const [button, input] of [['RangeStartButton', 'RangeStart'], ['RangeEndButton', 'RangeEnd']]) {
+    ui[button].addEventListener('click', () => {
+      const context = animationRangeContext();
+      if (!context || !state.modelReady) return;
+      state.playing = false;
+      state.action.paused = true;
+      ui[input].value = String(Math.min(context.source.duration,
+        Math.max(0, Number(((context.range?.start || 0) + state.action.time).toFixed(6)))));
+      updateAnimationControls();
+      poseCapture?.saveWorkspace();
+    });
+  }
+  ui.AddRangeButton.addEventListener('click', () => {
+    const context = animationRangeContext();
+    if (!context || !state.modelReady) return;
+    try {
+      const name = ui.RangeName.value.trim();
+      if (!name) throw new Error('Give this animation a name, such as Ready or Attack.');
+      if (ui.RangeStart.value === '' || ui.RangeEnd.value === '') throw new Error('Enter both a start and an end time.');
+      const { clip, range } = makeRangeClip({
+        id: `range:${crypto.randomUUID()}`, name,
+        sourceIndex: context.sourceIndex, sourceId: animationSourceId(context.source),
+        start: Number(ui.RangeStart.value), end: Number(ui.RangeEnd.value)
+      }, state.sourceClips);
+      state.clips.push(clip);
+      state.animationRanges.push(range);
+      updateAnimationChoices(state.clips.length - 1);
+      setClip(state.clips.length - 1);
+      updateModelInfo();
+      ui.RangeStatus.textContent = `Added ${name}. Select it from the Animation dropdown anytime.`;
+      poseCapture?.saveWorkspace();
+    } catch (error) { ui.RangeStatus.textContent = error.message || String(error); }
+  });
+  ui.RemoveRangeButton.addEventListener('click', () => {
+    const context = animationRangeContext();
+    if (!context?.range || !state.modelReady) return;
+    const clip = state.action.getClip();
+    setClip(context.sourceIndex);
+    state.mixer.uncacheClip(clip);
+    state.clips = state.clips.filter(item => item !== clip);
+    state.animationRanges = state.animationRanges.filter(range => range.id !== context.range.id);
+    updateAnimationChoices(context.sourceIndex);
+    updateModelInfo();
+    ui.RangeStatus.textContent = 'Range removed. Your captured sprites are still available.';
+    poseCapture?.saveWorkspace();
+  });
   ui.PlayButton.addEventListener('click', () => {
     state.playing = !state.playing;
     if (state.action) state.action.paused = !state.playing;
@@ -1418,6 +1541,15 @@ async function start() {
       previewSize: [state.width, state.height], frame: state.frame,
       animationTime: state.animationTime, playing: state.playing,
       clips: state.clips.map(clip => clip.name),
+      animationClips: state.clips.map(clip => ({
+        name: clip.name, duration: clip.duration, sourceId: animationSourceId(clip), fbx: clip.userData?.fbxAnimation || null
+      })),
+      selectedAnimation: state.action ? {
+        index: Number(ui.Clip.value), sourceId: animationSourceId(state.action.getClip()),
+        name: state.action.getClip().name, time: state.action.time, duration: state.action.getClip().duration
+      } : null,
+      activeAnimationCount: state.mixer?.stats.actions.inUse || 0,
+      animationRanges: state.animationRanges.map(range => ({ ...range })),
       cameraElevation: THREE.MathUtils.radToDeg(CAMERA_ELEVATION),
       framingMode: state.framingMode, framingSamplesPerClip: state.framingSamplesPerClip,
       frameHeight: state.frameHeight, frameCenter: state.center.toArray(),

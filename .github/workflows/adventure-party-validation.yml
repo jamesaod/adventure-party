@@ -35,8 +35,11 @@ jobs:
           node --check js/studio-core.mjs
           node --check js/studio-geometry.mjs
           node --check js/studio-capture.mjs
+          node --check js/studio-animations.mjs
           node scripts/test-3d-studio.mjs
           node scripts/test-studio-geometry.mjs
+          node scripts/test-studio-animations.mjs
+          node scripts/test-fbx-animations.mjs
 
       - name: Validate sprite capture packages and asset imports
         run: |

@@ -942,7 +942,8 @@ class FBXTreeParser {
 
 		} );
 
-		const animations = new AnimationParser().parse();
+		const animationParser = new AnimationParser();
+		const animations = animationParser.parse();
 
 		// if all the models where already combined in a single group, just return that
 		if ( sceneGraph.children.length === 1 && sceneGraph.children[ 0 ].isGroup ) {
@@ -953,6 +954,8 @@ class FBXTreeParser {
 		}
 
 		sceneGraph.animations = animations;
+		// Keep discovery information on the actual returned root after unwrapping.
+		sceneGraph.userData.fbxAnimations = animationParser.summary;
 
 	}
 
@@ -2506,6 +2509,7 @@ class AnimationParser {
 	parse() {
 
 		const animationClips = [];
+		this.summary = { stackCount: 0, clipCount: 0, emptyStackCount: 0, layeredStackCount: 0 };
 
 		const rawClips = this.parseClips();
 
@@ -2514,24 +2518,24 @@ class AnimationParser {
 			for ( const key in rawClips ) {
 
 				const rawClip = rawClips[ key ];
+				this.summary.stackCount ++;
+				if ( rawClip.layers.length > 1 ) this.summary.layeredStackCount ++;
 
 				const clip = this.addClip( rawClip );
 
-				animationClips.push( clip );
+				if ( clip ) animationClips.push( clip );
+				else this.summary.emptyStackCount ++;
 
 			}
 
 		}
 
+		this.summary.clipCount = animationClips.length;
 		return animationClips;
 
 	}
 
 	parseClips() {
-
-		// since the actual transformation data is stored in FBXTree.Objects.AnimationCurve,
-		// if this is undefined we can safely assume there are no animations
-		if ( fbxTree.Objects.AnimationCurve === undefined ) return undefined;
 
 		const curveNodesMap = this.parseAnimationCurveNodes();
 
@@ -2634,7 +2638,7 @@ class AnimationParser {
 
 	// parse nodes in FBXTree.Objects.AnimationLayer. Each layers holds references
 	// to various AnimationCurveNodes and is referenced by an AnimationStack node
-	// note: theoretically a stack can have multiple layers, however in practice there always seems to be one per stack
+	// Multiple layers belong to one stack; they are not independent animation takes.
 	parseAnimationLayers( curveNodesMap ) {
 
 		const rawLayers = fbxTree.Objects.AnimationLayer;
@@ -2769,28 +2773,43 @@ class AnimationParser {
 	parseAnimStacks( layersMap ) {
 
 		const rawStacks = fbxTree.Objects.AnimationStack;
+		const takes = fbxTree.Takes && Array.isArray( fbxTree.Takes.Take ) ? fbxTree.Takes.Take : [];
+		const validRange = ( start, end ) => {
+
+			const numeric = value => typeof value === 'number' || ( typeof value === 'string' && value.trim() !== '' );
+			if ( ! numeric( start ) || ! numeric( end ) ) return null;
+			start = convertFBXTimeToSeconds( Number( start ) );
+			end = convertFBXTimeToSeconds( Number( end ) );
+			return Number.isFinite( start ) && Number.isFinite( end ) && end > start ? { start, end } : null;
+
+		};
 
 		// connect the stacks (clips) up to the layers
 		const rawClips = {};
 
 		for ( const nodeID in rawStacks ) {
 
-			const children = connections.get( parseInt( nodeID ) ).children;
+			const stack = rawStacks[ nodeID ];
+			const children = connections.get( parseInt( nodeID ) )?.children || [];
+			const layers = children.filter( child => layersMap.has( child.ID ) ).map( child => layersMap.get( child.ID ) );
+			let range = validRange( stack.LocalStart?.value ?? 0, stack.LocalStop?.value );
+			if ( ! range ) {
 
-			if ( children.length > 1 ) {
+				const matches = takes.filter( take => ( take.attrName || take.propertyList?.[ 0 ] ) === stack.attrName );
+				// An ambiguous duplicate take name must not assign another stack's range.
+				if ( matches.length === 1 && Array.isArray( matches[ 0 ].LocalTime ) ) {
 
-				// it seems like stacks will always be associated with a single layer. But just in case there are files
-				// where there are multiple layers per stack, we'll display a warning
-				console.warn( 'THREE.FBXLoader: Encountered an animation stack with multiple layers, this is currently not supported. Ignoring subsequent layers.' );
+					range = validRange( matches[ 0 ].LocalTime[ 0 ], matches[ 0 ].LocalTime[ 1 ] );
+
+				}
 
 			}
 
-			const layer = layersMap.get( children[ 0 ].ID );
-
 			rawClips[ nodeID ] = {
 
-				name: rawStacks[ nodeID ].attrName,
-				layer: layer,
+				name: stack.attrName,
+				layers: layers,
+				metadata: { stackId: String( nodeID ), start: range?.start ?? null, end: range?.end ?? null, layerCount: layers.length },
 
 			};
 
@@ -2803,15 +2822,32 @@ class AnimationParser {
 	addClip( rawClip ) {
 
 		let tracks = [];
+		let usableLayers = 0;
+		for ( const layer of rawClip.layers ) {
 
-		const scope = this;
-		rawClip.layer.forEach( function ( rawTracks ) {
+			let layerTracks = [];
+			layer.forEach( rawTracks => {
 
-			tracks = tracks.concat( scope.generateTracks( rawTracks ) );
+				layerTracks = layerTracks.concat( this.generateTracks( rawTracks ) );
 
-		} );
+			} );
+			if ( layerTracks.length ) {
 
-		return new AnimationClip( rawClip.name, - 1, tracks );
+				usableLayers ++;
+				if ( ! tracks.length ) tracks = layerTracks;
+
+			}
+
+		}
+		if ( usableLayers > 1 ) {
+
+			console.warn( 'THREE.FBXLoader: Animation stack "' + rawClip.name + '" has multiple nonempty layers. Layer blending is not supported; using its first nonempty layer.' );
+
+		}
+		if ( ! tracks.length ) return null;
+		const clip = new AnimationClip( rawClip.name, - 1, tracks );
+		clip.userData = { fbxAnimation: rawClip.metadata };
+		return clip;
 
 	}
 
@@ -3288,8 +3324,15 @@ class TextParser {
 
 		} else { // a subnode
 
+			// Takes are named records, not numeric Objects. Preserve every record.
+			if ( currentNode.name === 'Takes' && nodeName === 'Take' ) {
+
+				node.attrName = nodeAttrs[ 0 ];
+				if ( ! currentNode.Take ) currentNode.Take = [];
+				currentNode.Take.push( node );
+
 			// if the subnode already exists, append it
-			if ( nodeName in currentNode ) {
+			} else if ( nodeName in currentNode ) {
 
 				// special case Pose needs PoseNodes as an array
 				if ( nodeName === 'PoseNode' ) {
@@ -3409,6 +3452,7 @@ class TextParser {
 
 		// Node
 		if ( propName === 'Node' ) currentNode.id = propValue;
+		if ( parentName === 'Take' && propName === 'LocalTime' ) propValue = parseNumberArray( propValue );
 
 		// connections
 		if ( propName in currentNode && Array.isArray( currentNode[ propName ] ) ) {
@@ -3614,6 +3658,20 @@ class BinaryParser {
 	}
 
 	parseSubNode( name, node, subNode ) {
+
+		if ( name === 'Takes' && subNode.name === 'Take' ) {
+
+			if ( ! node.Take ) node.Take = [];
+			node.Take.push( subNode );
+			return;
+
+		}
+		if ( name === 'Take' && subNode.name === 'LocalTime' ) {
+
+			node.LocalTime = subNode.propertyList;
+			return;
+
+		}
 
 		// special case: child node is single property
 		if ( subNode.singleProperty === true ) {
