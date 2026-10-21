@@ -385,7 +385,7 @@ const gameSource = fs.readFileSync("js/adventure-party.js", "utf8");
 for (const requiredToken of [
   "function makeOrcLeader(",
   "function makeOrcShaman(",
-  "makeOrcArmy(16,3,1,condition)",
+  "makeOrcArmy(18,1,1,condition)",
   'enemy.species==="orc"',
   '"orc-leader":{',
   '"orc-shaman":{',
