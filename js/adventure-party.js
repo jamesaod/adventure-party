@@ -167,12 +167,13 @@ function showLauncher(){
 }
 
 let selectedCombatCondition="grass";
-let selectedMobEncounter="kobolds";
+let selectedMobEncounter="studio-kobold";
 
 function updateCombatMobSelection(){
   const label=document.getElementById("combatMobSetLabel");
 
   const labels={
+    "studio-kobold":"6-facing Kobold",
     kobolds:"Kobold Encounter",
     orcs:"Orc Warband — 20",
     "large-test":"Juvenile Red Dragon"
@@ -2471,7 +2472,40 @@ function prepareCrispPixelSprite(image){
   deathMarkerSprite
 ].forEach(prepareCrispPixelSprite);
 
+/* Candidate Rev 43: each direction is an original studio frame, never mirrored. */
+const STUDIO_KOBOLD_SPRITE_SPEC={
+  sourceWidth:160,sourceHeight:200,
+  workspaceWidth:160,workspaceHeight:200,
+  renderWidth:48,renderHeight:60,
+  anchorX:80,anchorY:150,
+  scaleMode:"actual",lockAspect:true,nativeFacing:"right",preserveFrame:true
+};
+
+const studioKoboldReadyFrames=Object.fromEntries(
+  ["E","NE","NW","W","SW","SE"].map(facing=>{
+    const assetId=`studio-kobold-ready-${facing.toLowerCase()}`;
+    const image=new Image();
+    const src=`assets/sprites/${assetId}.png?v=C43`;
+    prepareCrispPixelSprite(image);
+    image.addEventListener("load",()=>{
+      if(game && currentScreen==="combat") draw();
+    });
+    image.src=src;
+    return [facing,{image,assetId,src}];
+  })
+);
+
 const UNIT_POSE_DEFINITIONS={
+  "studio-kobold":{
+    defaultPose:"stand",
+    actionPose:"attack",
+    actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,
+    directionalSprites:{
+      stand:studioKoboldReadyFrames,
+      /* Add E/NE/NW/W/SW/SE {image,assetId} action frames here when supplied. */
+      attack:{}
+    }
+  },
   fighter:{
     defaultPose:"stand",
     actionPose:"attack",
@@ -2563,7 +2597,42 @@ const UNIT_POSE_DEFINITIONS={
 };
 
 function unitPoseDefinition(unit){
-  return unit ? (UNIT_POSE_DEFINITIONS[unit.type] || null) : null;
+  if(!unit) return null;
+  return UNIT_POSE_DEFINITIONS[unit.spriteSetId] ||
+    UNIT_POSE_DEFINITIONS[unit.type] || null;
+}
+
+function unitPoseSupportsPose(definition,poseName){
+  if(!definition || !poseName) return false;
+  return !!(
+    definition.sprites?.[poseName] ||
+    definition.directionalSprites?.[poseName] ||
+    (definition.directionalSprites && poseName===definition.actionPose)
+  );
+}
+
+function directionalUnitPoseFrame(unit,poseName=null){
+  const definition=unitPoseDefinition(unit);
+  const poses=definition?.directionalSprites;
+  if(!poses) return null;
+
+  const facing=HEX_DIRS[facingDirectionIndex(unit)].name;
+  const requestedPose=poseName || activeUnitPoseName(unit) || definition.defaultPose || "stand";
+  const defaultPose=definition.defaultPose || "stand";
+  const loaded=frame=>frame?.image?.complete &&
+    frame.image.naturalWidth>0 && frame.image.naturalHeight>0;
+  const requested=poses[requestedPose]?.[facing];
+  const ready=poses[defaultPose]?.[facing];
+  const frame=loaded(requested) ? requested : loaded(ready) ? ready : null;
+
+  /* Missing action art falls back only to ready art for this exact facing. */
+  return {
+    image:frame?.image || null,
+    assetId:frame?.assetId || null,
+    directional:true,
+    facing,
+    poseName:frame===requested && frame ? requestedPose : defaultPose
+  };
 }
 
 
@@ -2592,7 +2661,7 @@ function activeUnitPoseName(unit,now=performance.now()){
   const definition=unitPoseDefinition(unit);
   if(!definition) return null;
 
-  if(shouldUseKoboldPronePose(unit) && definition.sprites?.prone){
+  if(shouldUseKoboldPronePose(unit) && unitPoseSupportsPose(definition,"prone")){
     return "prone";
   }
 
@@ -2600,7 +2669,7 @@ function activeUnitPoseName(unit,now=performance.now()){
     unit.poseName &&
     Number.isFinite(unit.poseUntil) &&
     now<unit.poseUntil &&
-    definition.sprites?.[unit.poseName]
+    unitPoseSupportsPose(definition,unit.poseName)
   ){
     return unit.poseName;
   }
@@ -2611,6 +2680,9 @@ function activeUnitPoseName(unit,now=performance.now()){
 function unitPoseSprite(unit,fallbackSprite=null){
   const definition=unitPoseDefinition(unit);
   if(!definition) return fallbackSprite;
+
+  const directional=directionalUnitPoseFrame(unit);
+  if(directional) return directional.image;
 
   const poseName=activeUnitPoseName(unit);
   return definition.sprites?.[poseName] ||
@@ -2624,7 +2696,7 @@ function unitPoseNativeFacing(unit,fallback="right"){
 
 function setTemporaryUnitPose(unit,poseName,durationMs=null){
   const definition=unitPoseDefinition(unit);
-  if(!unit || !definition || !definition.sprites?.[poseName]) return false;
+  if(!unit || !unitPoseSupportsPose(definition,poseName)) return false;
 
   const requestedDuration=Number.isFinite(durationMs)
     ? durationMs
@@ -3131,6 +3203,15 @@ const PIXEL_EDITOR_GRID_SIZE=64;
     anchorX/anchorY             - workspace pixel placed on the battlefield origin
 */
 const pixelEditorAssets=[
+  ...Object.entries(studioKoboldReadyFrames).map(([facing,frame])=>({
+    id:frame.assetId,
+    label:`Studio Kobold Ready — ${facing}`,
+    defaultCategory:"units",
+    gameImage:frame.image,
+    originalSrc:frame.src,
+    spec:{...STUDIO_KOBOLD_SPRITE_SPEC},
+    editCanvas:null,editCtx:null,dirty:false,sourceScale:1,runtimeAnchor:null
+  })),
   {
     id:"fighter",
     label:"Dungeon Crawler Carl",
@@ -3723,7 +3804,7 @@ function renderSourceImageToAssetCanvas(asset,image,scale=null,{resetAnchor=true
   asset.editCtx.clearRect(0,0,asset.editCanvas.width,asset.editCanvas.height);
   asset.editCtx.drawImage(image,dx,dy,drawW,drawH);
 
-  if(resetAnchor && asset.spec){
+  if(resetAnchor && asset.spec && !asset.spec.preserveFrame){
     asset.spec.anchorX=Math.round((dx+drawW/2)*2)/2;
     asset.spec.anchorY=Math.round((dy+drawH)*2)/2;
   }
@@ -4261,6 +4342,16 @@ function opaqueBoundsForCanvas(canvas){
 }
 
 function trimmedRuntimeCanvasForAsset(asset){
+  if(asset.spec?.preserveFrame){
+    return {
+      canvas:asset.editCanvas,
+      anchor:{
+        x:asset.spec.anchorX/asset.editCanvas.width,
+        y:asset.spec.anchorY/asset.editCanvas.height
+      }
+    };
+  }
+
   const bounds=opaqueBoundsForCanvas(asset.editCanvas);
   const trimmed=document.createElement("canvas");
   trimmed.width=bounds.width;
@@ -6823,9 +6914,8 @@ function updateFacingForStep(entity,dx,dy){
     hexDirectionIndexToward(entity,target);
 
   /*
-    The tactical engine tracks all six hex facings. Current placeholder
-    sprites still have only left/right artwork, so retain this projection
-    solely for sprite flipping.
+    Six-direction sprite sets use facingHex directly. Retain this projection
+    for older sprite sets that still use left/right artwork.
   */
   const horizontal=dx+(dy*0.5);
 
@@ -15344,6 +15434,42 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
   ];
 }
 
+function makeStudioKoboldEncounter(condition=selectedCombatCondition){
+  const occupied=new Set([key(0,0)]);
+  const positions=HEX_DIRS.map(dir=>({x:dir.x*3,y:dir.y*3}));
+  /* Keep the NW view clear of the grass battlefield's northern tree cluster. */
+  positions[2]={x:-2,y:0};
+  const candidates=axialDisk({x:0,y:0},4)
+    .filter(pos=>inside(pos.x,pos.y) && !isWall(pos.x,pos.y));
+
+  const units=positions.map((preferred,index)=>{
+    const position=[preferred,...candidates.slice().sort((a,b)=>
+      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
+    )].find(pos=>
+      inside(pos.x,pos.y) && !isWall(pos.x,pos.y) && !occupied.has(key(pos.x,pos.y))
+    );
+    if(!position) throw new Error("Unable to place the six-facing Kobold sprite test.");
+    occupied.add(key(position.x,position.y));
+    const unit=makeKobold(index,position);
+    unit.id=`studio-kobold-${index+1}`;
+    unit.name=`Studio Kobold ${index+1}`;
+    unit.spriteSetId="studio-kobold";
+    unit.facingHex=index;
+    unit.facing=[0,1,5].includes(index) ? "right" : "left";
+    return unit;
+  });
+
+  lastMobDeployment={
+    direction:"Six-facing sprite test around Carl",
+    anchorDistance:3,
+    anchor:{x:0,y:0},
+    clusterRadius:3,
+    count:units.length,
+    condition
+  };
+  return units;
+}
+
 function makeOrcArmy(
   normalCount=18,
   leaderCount=1,
@@ -15685,9 +15811,11 @@ function newGame(condition=selectedCombatCondition){
     engine for future roster selection but are not spawned automatically.
   */
   const kobolds=
-    selectedMobEncounter==="kobolds"
-      ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
-      : [];
+    selectedMobEncounter==="studio-kobold"
+      ? makeStudioKoboldEncounter(condition)
+      : selectedMobEncounter==="kobolds"
+        ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
+        : [];
 
   const orcs=
     selectedMobEncounter==="orcs"
@@ -15850,6 +15978,15 @@ function newGame(condition=selectedCombatCondition){
     );
     log(
       "Orc Shaman — 3rd-level priest, 1d8+2d4 HP, attacks as 2 HD, AC 6, THAC0 19, XP 175.",
+      "system"
+    );
+  }else if(selectedMobEncounter==="studio-kobold"){
+    log(
+      "Six Studio Kobolds deployed with ready views E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
+      "system"
+    );
+    log(
+      "Sprite test uses ordinary Kobold combat stats and dagger attacks. Action artwork is pending; attacks currently retain the matching ready view.",
       "system"
     );
   }else{
@@ -25456,6 +25593,8 @@ function drawCastingGlowSilhouette(
 function pixelAssetIdForUnitPose(unit,poseName=null){
   if(!unit) return null;
   const pose=poseName || activeUnitPoseName(unit) || "stand";
+  const directional=directionalUnitPoseFrame(unit,pose);
+  if(directional) return directional.assetId;
 
   if(unit.type==="kobold"){
     if(pose==="prone") return "kobold-prone";
@@ -25486,7 +25625,14 @@ function pixelAssetIdForUnitPose(unit,poseName=null){
 
 function runtimeAnchorForAsset(id){
   const asset=getPixelEditorAsset(id);
-  return asset?.runtimeAnchor || {x:0.5,y:1};
+  if(asset?.runtimeAnchor) return asset.runtimeAnchor;
+  if(asset?.spec?.preserveFrame){
+    return {
+      x:asset.spec.anchorX/asset.spec.workspaceWidth,
+      y:asset.spec.anchorY/asset.spec.workspaceHeight
+    };
+  }
+  return {x:0.5,y:1};
 }
 
 function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity=null,anchor=null){
@@ -25502,7 +25648,11 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   ctx.save();
   ctx.imageSmoothingEnabled=false;
 
-  const shouldFlip=facing!==nativeFacing;
+  const directionalPoses=unitPoseDefinition(entity)?.directionalSprites;
+  const isDirectionalImage=directionalPoses && Object.values(directionalPoses).some(
+    frames=>Object.values(frames).some(frame=>frame?.image===image)
+  );
+  const shouldFlip=!isDirectionalImage && facing!==nativeFacing;
   const renderSource=image._crispRenderSource || image;
   const spriteAnchor=anchor || {x:0.5,y:1};
 
@@ -25805,7 +25955,10 @@ function drawFighter(p){
 
   drawHpBar(p,"#94e084");
 
-  const fighterDims=spriteRenderDimensions("fighter",fighterSprite,26,35);
+  const directional=directionalUnitPoseFrame(p);
+  const sprite=directional ? directional.image : fighterSprite;
+  const assetId=directional?.assetId || "fighter";
+  const fighterDims=spriteRenderDimensions(assetId,sprite,26,35);
   const drawW=fighterDims.width;
   const drawH=fighterDims.height;
 
@@ -25820,14 +25973,14 @@ function drawFighter(p){
   ctx.restore();
 
   drawSpriteFacing(
-    fighterSprite,
+    sprite,
     c,
     drawW,
     drawH,
     p.facing,
-    getSpriteAssetSpec("fighter")?.nativeFacing || "left",
+    getSpriteAssetSpec(assetId)?.nativeFacing || "left",
     p,
-    runtimeAnchorForAsset("fighter")
+    runtimeAnchorForAsset(assetId)
   );
 
 }
@@ -25844,16 +25997,15 @@ function drawFriendlyArcher(npc){
     drawHpBar(npc,"#78d7c4");
   }
 
+  const directional=directionalUnitPoseFrame(npc);
+  const sprite=directional ? directional.image : fighterSprite;
   const targetH=33;
   const scale=targetH/fighterSprite.height;
-  const drawW=Math.max(
-    1,
-    Math.round(fighterSprite.width*scale)
-  );
-  const drawH=Math.max(
-    1,
-    Math.round(fighterSprite.height*scale)
-  );
+  const dims=directional
+    ? spriteRenderDimensions(directional.assetId,sprite,33,33)
+    : {width:Math.max(1,Math.round(fighterSprite.width*scale)),height:Math.max(1,Math.round(fighterSprite.height*scale))};
+  const drawW=dims.width;
+  const drawH=dims.height;
 
   ctx.save();
   ctx.translate(c.x,c.y+2);
@@ -25865,13 +26017,14 @@ function drawFriendlyArcher(npc){
   ctx.restore();
 
   drawSpriteFacing(
-    fighterSprite,
+    sprite,
     c,
     drawW,
     drawH,
     npc.facing,
     "left",
-    npc
+    npc,
+    directional ? runtimeAnchorForAsset(directional.assetId) : null
   );
 
   /*
@@ -25892,10 +26045,15 @@ function drawFriendlyMage(mage){
     drawHpBar(mage,"#ba8cff");
   }
 
+  const directional=directionalUnitPoseFrame(mage);
+  const sprite=directional ? directional.image : fighterSprite;
   const targetH=33;
   const scale=targetH/fighterSprite.height;
-  const drawW=Math.max(1,Math.round(fighterSprite.width*scale));
-  const drawH=Math.max(1,Math.round(fighterSprite.height*scale));
+  const dims=directional
+    ? spriteRenderDimensions(directional.assetId,sprite,33,33)
+    : {width:Math.max(1,Math.round(fighterSprite.width*scale)),height:Math.max(1,Math.round(fighterSprite.height*scale))};
+  const drawW=dims.width;
+  const drawH=dims.height;
 
   ctx.save();
   ctx.translate(c.x,c.y+2);
@@ -25907,13 +26065,14 @@ function drawFriendlyMage(mage){
   ctx.restore();
 
   drawSpriteFacing(
-    fighterSprite,
+    sprite,
     c,
     drawW,
     drawH,
     mage.facing,
     "left",
-    mage
+    mage,
+    directional ? runtimeAnchorForAsset(directional.assetId) : null
   );
 
   /*

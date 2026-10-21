@@ -12,7 +12,7 @@
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R237","candidateRevision":42,"builtAt":"2026-10-21T12:05:43Z"}
+{"architecture":"Multi-File Engine","release":"R237","candidateRevision":43,"builtAt":"2026-10-21T12:25:23Z"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -24,7 +24,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 42</div>
+        <div class="candidate-label">Candidate Rev 43</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
       </div>
     </header>
@@ -123,7 +123,7 @@
         <h1>Spell Effects Previewer</h1>
       </div>
       <div class="spell-preview-header-actions">
-        <span class="spell-preview-candidate">Candidate Rev 42</span>
+        <span class="spell-preview-candidate">Candidate Rev 43</span>
         <button id="spellPreviewReturnButton" class="pixel-return-button" type="button">
           Return to Launcher [Esc]
         </button>
@@ -521,9 +521,10 @@
         </div>
         <div class="combat-roster-row combat-mob-roster-row">
           <span class="combat-setup-label">MOBs</span>
-          <span id="combatMobSetLabel" class="combat-roster-current">Kobold Encounter</span>
+          <span id="combatMobSetLabel" class="combat-roster-current">6-facing Kobold</span>
           <div class="combat-mob-options" role="radiogroup" aria-label="MOB encounter">
-            <button class="combat-roster-add combat-roster-test selected" type="button" data-mob-encounter="kobolds" aria-pressed="true">Kobolds</button>
+            <button class="combat-roster-add combat-roster-test selected" type="button" data-mob-encounter="studio-kobold" aria-pressed="true">6-facing Kobold</button>
+            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="kobolds" aria-pressed="false">Kobolds</button>
             <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="orcs" aria-pressed="false">20 Orcs</button>
             <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="large-test" aria-pressed="false">Red Dragon</button>
           </div>
@@ -748,13 +749,13 @@
   </div>
 </section>
 
-<script src="js/adventure-party.js?v=R237C41"></script>
+<script src="js/adventure-party.js?v=R237C43"></script>
 <script src="js/los-wall-boundary-fix.js?v=R237"></script>
 <script src="js/obscuring-volume-los.js?v=R237"></script>
 <script src="js/r218-presentation-audio.js?v=R237"></script>
 <script src="js/r219-combat-presentation.js?v=R237"></script>
 <script src="js/r220-mob-hazard-awareness.js?v=R237"></script>
-<script src="js/r221-prone-cloud-shapes.js?v=R237"></script>
+<script src="js/r221-prone-cloud-shapes.js?v=R237C43"></script>
 <script src="js/r222-perception-darkness-volume.js?v=R237"></script>
 <script src="js/r223-los-cloud-aim-effects.js?v=R237"></script>
 <script src="js/r224-hypnotic-pattern-vfx.js?v=R237"></script>

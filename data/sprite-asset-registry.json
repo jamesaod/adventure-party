@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "release": "R208",
-  "description": "Adventure Party sprite asset specifications. Candidate Rev 40 imports three Pool of Radiance combat-art pairs as development-only Orc, Orc Leader, and Orc Shaman placeholders; the source art remains copyrighted and is not production-approved.",
+  "description": "Adventure Party sprite asset specifications. Candidate Rev 40 imports three Pool of Radiance combat-art pairs as development-only Orc, Orc Leader, and Orc Shaman placeholders; the source art remains copyrighted and is not production-approved. Candidate Rev 43 adds six exact ready frames from a user-exported 3d studio sheet for the 6-facing Kobold combat test.",
   "assets": {
     "fighter": {
       "source": {
@@ -359,6 +359,210 @@
       "scaleMode": "fit",
       "lockAspect": true,
       "nativeFacing": "right"
+    },
+    "studio-kobold-ready-e": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "E",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 0,
+          "row": 0
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-ne": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "NE",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 1,
+          "row": 0
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-nw": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "NW",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 2,
+          "row": 0
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-w": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "W",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 0,
+          "row": 1
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-sw": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "SW",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 1,
+          "row": 1
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
+    },
+    "studio-kobold-ready-se": {
+      "source": {
+        "width": 160,
+        "height": 200
+      },
+      "workspace": {
+        "width": 160,
+        "height": 200
+      },
+      "render": {
+        "width": 48,
+        "height": 60
+      },
+      "anchor": {
+        "x": 80,
+        "y": 150
+      },
+      "scaleMode": "actual",
+      "lockAspect": true,
+      "nativeFacing": "right",
+      "direction": "SE",
+      "pose": "stand",
+      "spriteSetId": "studio-kobold",
+      "provenance": {
+        "sourceFile": "tripo_convert_53b185b6-807f-4e15-8f41-8c3c5cdfbe15-six-facings-160x200.png",
+        "sourceSha256": "2a4f87152417203c77915d4f0b419a58d2cb95fd89fe57c58a7da2d7f6f0eeb6",
+        "cell": {
+          "column": 2,
+          "row": 1
+        },
+        "processing": "Exact 160 x 200 cell extraction; full padding, pixels, and alpha preserved."
+      },
+      "preserveFrame": true
     }
   }
 }
