@@ -2,7 +2,15 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 52 — Exaggerated scale and half-window framing
+## Current candidate: Rev 53 — Combat tests stay in the current tab
+
+**Test in combat** saves the exact sprite set and return workspace, then opens Combat Setup in the current tab. It no longer creates another tab or window. A failed save leaves the studio open with its captures available.
+
+Returning from setup or combat restores the same captured sprites and settings in that tab. Victory, defeat, and manual exit retain the direct return to the studio without a loot screen.
+
+Validation includes the existing repository checks and a focused browser round trip confirming one tab, all eighteen captured frames, and restored studio settings.
+
+## Candidate Rev 52 — Exaggerated scale and half-window framing
 
 Models now use **109% of the original hex-based scale (1.09×)**. Their measured height and exported battlefield dimensions include the same adjustment. The Model size slider remains 25–2000%; source resolution and occupied hexes remain independent.
 
