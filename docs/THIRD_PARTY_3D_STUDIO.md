@@ -28,7 +28,7 @@ The HTML import map resolves `three` to the local `three.module.min.js` and `thr
 
 ## fflate
 
-The FBX loader uses **fflate 0.8.2** for decompression. Its module is the copy included in the Three.js distribution above, with the original header retained. The additional complete MIT license notice is preserved at [`assets/vendor/three/addons/libs/fflate.LICENSE`](../assets/vendor/three/addons/libs/fflate.LICENSE), from <https://github.com/101arrowz/fflate/blob/v0.8.2/LICENSE>.
+The FBX loader uses **fflate 0.8.2** for decompression. The sprite capture exporter and repository importer reuse that same module for ZIP packages. Its module is the copy included in the Three.js distribution above, with the original header retained. The additional complete MIT license notice is preserved at [`assets/vendor/three/addons/libs/fflate.LICENSE`](../assets/vendor/three/addons/libs/fflate.LICENSE), from <https://github.com/101arrowz/fflate/blob/v0.8.2/LICENSE>.
 
 ## Loader and renderer scope
 

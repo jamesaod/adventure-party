@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
+import { createSpriteSetManifest, SPRITE_DIRECTIONS, SPRITE_POSES } from "../js/sprite-set-core.mjs";
 
 // Exercise the production pose resolver and draw path without booting audio,
 // terrain, or the DOM. Images and the clock are the only inputs replaced here.
@@ -37,6 +38,7 @@ const framedAsset = {
   editCanvas: { width: 160, height: 200 }, runtimeAnchor: null
 };
 const legacyProneAsset = { spec: { renderWidth: 35, renderHeight: 18, nativeFacing: "right" } };
+const registeredAssets = [];
 const sandbox = {
   HEX_DIRS,
   UNIT_DEFAULT_ACTION_POSE_MS: 1000,
@@ -50,8 +52,12 @@ const sandbox = {
   performance: { now: () => now },
   setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length; },
   game: {}, draw: () => {},
-  getPixelEditorAsset: id => id === "full-frame" || id?.startsWith("test-ready-")
-    ? framedAsset : id === "kobold-prone" ? legacyProneAsset : null,
+  combatAwaitingStart: false, selectedMobEncounter: "studio-kobold", currentScreen: "launcher",
+  registeredStudioSpriteSets: new Map(), pixelEditorAssets: registeredAssets,
+  prepareCrispPixelSprite() {}, renderPixelAssetList() {},
+  document: { dispatchEvent() {} }, Event,
+  getPixelEditorAsset: id => registeredAssets.find(asset => asset.id === id) || (id === "full-frame" || id?.startsWith("test-ready-")
+    ? framedAsset : id === "kobold-prone" ? legacyProneAsset : null),
   getUnitEffect: (unit, name) => unit?.effects?.[name] || null,
   enlargeVisualScale: () => 1,
   activeEnlargeTransitionFx: () => null,
@@ -72,7 +78,7 @@ const names = [
   "shouldUseKoboldPronePose", "activeUnitPoseName", "unitPoseSprite",
   "setTemporaryUnitPose", "triggerUnitAttackPose", "pixelAssetIdForUnitPose", "drawSpriteFacing",
   "runtimeAnchorForAsset", "trimmedRuntimeCanvasForAsset", "unitPoseNativeFacing",
-  "getSpriteAssetSpec", "spriteRenderDimensions"
+  "getSpriteAssetSpec", "spriteRenderDimensions", "registerStudioSpriteSet", "inspectStudioSpritePose"
 ];
 vm.createContext(sandbox);
 vm.runInContext(names.map(productionFunction).join("\n"), sandbox);
@@ -177,4 +183,66 @@ assert.equal(draws[0][0], legacyProne);
 assert.deepEqual(draws[0].slice(-2), [35, 18]);
 assert.ok(translations.some(([x, y]) => x === 100 && y === 210));
 
-console.log("Directional sprites: six facings, action fallback/timers, no-mirror expiry race, frame anchors, R221 prone presentation, and legacy poses passed.");
+// A complete folder-backed character registers all eighteen frames in one call.
+// Bad or still-loading inputs cannot replace half of an existing set.
+const manifest = createSpriteSetManifest({
+  id: "test-package", label: "Package test", frame: {
+    width: 160, height: 200, renderWidth: 48, renderHeight: 60, anchorX: 80, anchorY: 145
+  },
+  captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: pose, time: 0.5 }]))
+});
+const images = {}, sourceUrls = {};
+for (const pose of SPRITE_POSES) {
+  for (const facing of SPRITE_DIRECTIONS) {
+    const file = manifest.poses[pose].frames[facing];
+    images[file] = image(`${pose}-${facing}`);
+    sourceUrls[file] = `assets/sprites/test-package/${file}`;
+  }
+}
+const setId = sandbox.registerStudioSpriteSet({ manifest, images, sourceUrls });
+assert.equal(setId, "sprite-set:test-package");
+assert.equal(registeredAssets.length, 18);
+assert.equal(sandbox.registeredStudioSpriteSets.get(setId).label, "Package test");
+const registeredDefinition = sandbox.UNIT_POSE_DEFINITIONS[setId];
+const brokenImages = { ...images, "attack-nw.png": { ...images["attack-nw.png"], naturalWidth: 0 } };
+assert.throws(() => sandbox.registerStudioSpriteSet({ manifest, images: brokenImages, sourceUrls }), /dimensions/);
+assert.equal(sandbox.UNIT_POSE_DEFINITIONS[setId], registeredDefinition);
+assert.equal(registeredAssets.length, 18);
+
+const imported = { type: "kobold", spriteSetId: setId, alive: true, facing: "left", facingHex: 0, studioSpriteTest: true };
+for (let facingIndex = 0; facingIndex < 6; facingIndex++) {
+  imported.facingHex = facingIndex;
+  const facing = SPRITE_DIRECTIONS[facingIndex];
+  for (const condition of [null, "prone", "sleep", "unconscious"]) {
+    imported.effects = condition ? { [condition]: {} } : {};
+    const expectedPose = condition ? "prone" : "ready";
+    const selected = sandbox.directionalUnitPoseFrame(imported);
+    assert.equal(selected.image, images[`${expectedPose}-${facing.toLowerCase()}.png`]);
+    draws.length = scales.length = 0;
+    sandbox.drawKobold(imported);
+    assert.equal(draws[0][0], selected.image);
+    assert.deepEqual(draws[0].slice(1), [-24, -44, 48, 60], "All poses retain frame size and 145/200 anchor");
+    assert.equal(scales.some(([x]) => x < 0), false);
+  }
+}
+imported.effects = { prone: {} };
+imported.type = "fighter";
+assert.equal(sandbox.activeUnitPoseName(imported), "prone", "Directional prone status applies to non-Kobold characters too");
+imported.type = "kobold";
+imported.effects = {};
+sandbox.game = { enemies: [imported] };
+assert.equal(sandbox.inspectStudioSpritePose("prone"), false, "Inspection cannot override live combat");
+sandbox.combatAwaitingStart = true;
+assert.equal(sandbox.inspectStudioSpritePose("attack"), true);
+assert.equal(sandbox.activeUnitPoseName(imported), "attack");
+assert.deepEqual(imported.effects, {}, "Inspection changes no game effects");
+assert.equal(sandbox.inspectStudioSpritePose("prone"), true);
+assert.equal(sandbox.activeUnitPoseName(imported), "prone");
+sandbox.combatAwaitingStart = false;
+assert.equal(sandbox.activeUnitPoseName(imported), "stand", "Inspection is ignored as soon as combat starts");
+sandbox.combatAwaitingStart = true;
+assert.equal(sandbox.inspectStudioSpritePose("live"), true);
+assert.equal(sandbox.activeUnitPoseName(imported), "stand");
+assert.equal(sandbox.runtimeAnchorForAsset("sprite-set-test-package-prone-e").y, 145 / 200);
+
+console.log("Directional sprites: six facings, action fallback/timers, no-mirror expiry race, frame anchors, R221 prone presentation, legacy poses, atomic eighteen-frame registration, directional prone conditions, and initial-only pose inspection passed.");

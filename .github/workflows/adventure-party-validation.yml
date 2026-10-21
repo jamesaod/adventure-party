@@ -33,7 +33,17 @@ jobs:
         run: |
           node --check js/3d-studio.mjs
           node --check js/studio-core.mjs
+          node --check js/studio-capture.mjs
           node scripts/test-3d-studio.mjs
+
+      - name: Validate sprite capture packages and asset imports
+        run: |
+          node --check js/sprite-set-core.mjs
+          node --check js/sprite-set-runtime.mjs
+          node --check js/sprite-set-store.mjs
+          node --check scripts/import-sprite-set.mjs
+          node scripts/test-sprite-set-package.mjs
+          node scripts/import-sprite-set.mjs --validate
 
       - name: Validate six-direction combat poses
         run: node scripts/test-directional-sprites.mjs
