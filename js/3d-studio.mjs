@@ -4,17 +4,20 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import {
   prepareStudioAnimations, sliceAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
-} from './studio-animations.mjs?v=R238C56';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C56';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C56';
+} from './studio-animations.mjs?v=R238C57';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C57';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C56';
+} from './sprite-layouts.mjs?v=R238C57';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C56';
+} from './studio-geometry.mjs?v=R238C57';
+import {
+  STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
+} from './studio-equipment.mjs?v=R238C57';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -27,6 +30,8 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
+  'RightHandWeapon', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
+  'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
   'FootprintPreview', 'FootprintDescription', 'FormatSummary', 'EmptyMessage',
@@ -62,6 +67,20 @@ let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbient
 let atlasTarget, atlasSource, atlasImage;
 let resizeObserver, visibilityObserver, poseCapture;
 let modelBounds = null, heightRulerLine;
+const equipment = createStudioEquipment({
+  THREE,
+  loadAsset: async weapon => {
+    const url = new URL(weapon.file, new URL('../', import.meta.url));
+    const loaded = await new GLTFLoader().loadAsync(url.href);
+    return loaded.scene;
+  },
+  disposeObject: disposeModel,
+  onChange: () => {
+    updateEquipmentControls();
+    if (state.model) updateModelInfo();
+    if (renderer) invalidate();
+  }
+});
 const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d', { alpha: false });
@@ -80,6 +99,7 @@ function getWorkspaceSettings() {
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
     mobType: state.mobType, width: state.width, height: state.height,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent, lighting: { ...state.lighting },
+    equipment: equipment.snapshot().settings,
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
     center: state.center.toArray(), framingMode: state.framingMode,
     framingSamplesPerClip: state.framingSamplesPerClip,
@@ -132,6 +152,8 @@ function updateSetupLabels() {
 }
 
 function populateSetupControls() {
+  ui.RightHandWeapon.replaceChildren(new Option('None', 'none'),
+    ...STUDIO_WEAPONS.map(weapon => new Option(weapon.label, weapon.id)));
   ui.MobTarget.replaceChildren(...['monster', 'player'].map(kind => {
     const group = document.createElement('optgroup');
     group.label = kind === 'player' ? 'Test player characters' : 'MOBs';
@@ -172,6 +194,47 @@ function syncCaptureLock(locked) {
       ? 'Original lighting restored for this saved sheet. Clear the sheet to use the new lighting controls.'
       : 'Lighting is shared by all captured poses. Clear the sheet to change it.'
     : 'Both lights affect the model, six pixel previews and captured sprites.';
+  updateEquipmentControls(locked);
+}
+
+function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
+  const current = equipment.snapshot(), settings = current.settings;
+  const busy = !state.modelReady || state.modelLoading || current.loading || state.disposed;
+  ui.RightHandWeapon.value = settings.rightHand;
+  ui.RightHandWeapon.disabled = busy || locked;
+  ui.WeaponSize.value = String(settings.sizePercent);
+  ui.WeaponSizeValue.textContent = `${settings.sizePercent}%`;
+  ui.WeaponSize.disabled = busy || locked || settings.rightHand === 'none';
+  for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
+    for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
+      const field = ui[`Weapon${name}${axis}`];
+      field.value = String(settings[key][index]);
+      field.disabled = busy || locked || settings.rightHand === 'none';
+    }
+  }
+  ui.ResetEquipmentButton.disabled = busy || locked || settings.rightHand === 'none';
+  ui.EquipmentStatus.classList.toggle('error', !!current.error);
+  ui.EquipmentStatus.textContent = current.loading ? 'Loading sword…' : current.error
+    ? locked ? `${current.error} Reload the studio to retry without clearing your captures.` : current.error
+    : current.attached ? 'Medieval Sword follows the right hand in every animation.'
+    : current.rightHandBone ? 'Choose Medieval Sword to equip this model.'
+    : 'Load Dungeon Crawler Carl Ver 2 to use his right-hand attachment.';
+  ui.EquipmentLockNote.classList.toggle('locked', locked);
+  ui.EquipmentLockNote.textContent = locked
+    ? 'Equipment and grip are shared by this sheet. Clear all captured poses before changing them.'
+    : 'Equipment is included in all six previews and new captures.';
+}
+
+async function changeEquipment(value, { fit = false } = {}) {
+  if (!state.modelReady || state.modelLoading || poseCapture?.snapshot().captureCount) {
+    updateEquipmentControls();
+    return;
+  }
+  const model = state.model;
+  const changed = await equipment.select(value);
+  if (state.disposed || state.model !== model) return;
+  if (changed && fit) fitAllAnimations();
+  poseCapture?.saveWorkspace();
 }
 
 function setModelReady(ready) {
@@ -841,6 +904,8 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     state.mixer.stopAllAction();
     state.mixer.uncacheRoot(state.model);
   }
+  // Release equipment before disposing the old character's object tree.
+  equipment.setModel(null);
   if (state.model) upAxisGroup.remove(state.model);
   disposeModel(state.model);
   state.model = model;
@@ -913,6 +978,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
+  return equipment.setModel(model, restoreSettings?.equipment);
 }
 
 function configureAtlas() {
@@ -949,6 +1015,11 @@ function pixelRenderOptions(transparent = false) {
 
 function readCapturePose() {
   if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
+  const gear = equipment.snapshot();
+  if (gear.loading) throw new Error('Wait for the sword to finish loading before capturing a pose.');
+  if (gear.settings.rightHand !== 'none' && !gear.attached) {
+    throw new Error(gear.error || 'The equipped sword is unavailable. Reload the studio before capturing another pose.');
+  }
   state.playing = false;
   state.lastTick = 0;
   if (state.action) state.action.paused = true;
@@ -972,7 +1043,7 @@ function readCapturePose() {
       frameHeight: state.frameHeight * state.modelScalePercent / 100 * state.hexScalePercent / 100,
       center: state.center.clone().multiplyScalar(state.modelScalePercent / 100 * state.hexScalePercent / 100).toArray(),
       framingMode: state.framingMode, modelScalePercent: state.modelScalePercent,
-      lighting: { ...state.lighting }
+      lighting: { ...state.lighting }, equipment: gear.settings
     }
   };
   invalidate(false);
@@ -1223,7 +1294,7 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
       return false;
     }
     loaded.name = restoreSettings?.modelName || modelDefaults?.label || loaded.name;
-    installModel(loaded, {
+    await installModel(loaded, {
       restoreSettings, modelDefaults,
       sourceFiles: files.map(source => ({
         name: source.name, type: source.type, lastModified: source.lastModified,
@@ -1244,6 +1315,7 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
     ui.Files.value = '';
     if (version === state.loadingVersion) state.modelLoading = false;
     syncModelLibraryControls();
+    updateEquipmentControls();
   }
 }
 
@@ -1285,10 +1357,28 @@ function bindControls() {
   ui.LoadLibraryButton.addEventListener('click', loadLibraryModel);
   ui.LoadButton.addEventListener('click', () => ui.Files.click());
   ui.Files.addEventListener('change', () => { if (ui.Files.files.length) loadFiles(ui.Files.files); });
-  ui.DemoButton.addEventListener('click', () => {
+  ui.DemoButton.addEventListener('click', async () => {
     ++state.loadingVersion;
-    try { installModel(makeDemo(), { isDemo: true }); }
+    try { await installModel(makeDemo(), { isDemo: true }); }
     catch (error) { showError(error); }
+  });
+  ui.RightHandWeapon.addEventListener('change', () => {
+    void changeEquipment({ ...equipment.snapshot().settings, rightHand: ui.RightHandWeapon.value }, { fit: true });
+  });
+  ui.WeaponSize.addEventListener('input', () => {
+    void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
+  });
+  for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
+    for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
+      ui[`Weapon${name}${axis}`].addEventListener('change', event => {
+        const next = equipment.snapshot().settings;
+        next[key][index] = event.target.valueAsNumber;
+        void changeEquipment(next);
+      });
+    }
+  }
+  ui.ResetEquipmentButton.addEventListener('click', () => {
+    void changeEquipment(normalizeEquipment({ rightHand: equipment.snapshot().settings.rightHand }), { fit: true });
   });
   ui.FrameButton.addEventListener('click', fitModel);
   ui.FrameAnimationsButton.addEventListener('click', fitAllAnimations);
@@ -1483,6 +1573,7 @@ function bindControls() {
     visibilityObserver?.disconnect();
     orbit?.dispose();
     state.mixer?.stopAllAction();
+    equipment.dispose();
     disposeModel(state.model);
     disposeModel(helpers);
     atlasTarget?.dispose();
@@ -1644,6 +1735,7 @@ async function start() {
       modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
       upAxis: state.upAxis, demoSourceUpAxis: state.demoSourceUpAxis,
       lighting: { ...state.lighting },
+      equipment: equipment.snapshot(),
       renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent)).slice(2),
       modelDisplayScale: placement?.scale.x || null,
       modelHeightFeet: state.heightFeet,
@@ -1683,7 +1775,7 @@ async function start() {
   try {
     startViewer();
     if (restored?.settings?.isDemo) {
-      installModel(makeDemo({ upAxis: state.demoSourceUpAxis }), { isDemo: true, restoreSettings: restored.settings });
+      await installModel(makeDemo({ upAxis: state.demoSourceUpAxis }), { isDemo: true, restoreSettings: restored.settings });
     } else if (restored && state.sourceFiles.length) {
       const files = state.sourceFiles.map(source => {
         const file = new File([source.blob], source.name, { type: source.type, lastModified: source.lastModified });
@@ -1697,7 +1789,7 @@ async function start() {
       ui.EmptyMessage.textContent = 'Your captured sprites are restored below and ready to export.';
       ui.ModelInfo.textContent = 'Saved sprite set · Source model is not stored';
       status('Saved captures restored · Export or test the same sprite set');
-    } else installModel(makeDemo(), { isDemo: true, restoreSettings: restored?.settings || null, persist: !restoreError });
+    } else await installModel(makeDemo(), { isDemo: true, restoreSettings: restored?.settings || null, persist: !restoreError });
     useCurrentFormatAfterClear();
     selectFacing(state.facing);
     if (restoreError) {

@@ -2,6 +2,14 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 57 — Carl equipment and combat sprite assignment
+
+- Added a right-hand Medieval Sword option to the 3d studio, with size, position, rotation and reset controls. The separate GLB follows the animated hand; equipment settings persist with the workspace and captured-pose metadata. Equipment and grip lock after the first capture to keep a sheet consistent.
+- Preserved the uploaded sword at `assets/models/weapons/swords/medieval-sword.glb` and documented its source and grip preset.
+- Imported the supplied Dungeon Crawler Carl sprite ZIP as `assets/sprites/dungeon-crawler-carl/`, preserving all eighteen pose/facing images and the sheet byte-for-byte, including their authored scale and ground anchor.
+- Explicitly assigned that package to `fighter` in `data/sprite-sets.json`, so ordinary Combat System Test encounters use Carl's ready, attack and prone artwork for all six facings. Player-default bindings are validated and retained on re-import; deliberate studio test selections can override them for a session.
+- Added `docs/UNIT_ASSETS.md`, a readable roster of unit IDs, assigned sprites, pose coverage, footprints, source models and current test availability.
+
 ## R238 — Sprite studio and combat presentation milestone
 
 - Promoted the approved Candidate Rev 4–48 work to the stable release line and refreshed application and studio module cache versions to R238.

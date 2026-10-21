@@ -2667,6 +2667,7 @@ const UNIT_POSE_DEFINITIONS={
 
 const registeredStudioSpriteSets=new Map();
 const selectedStudioPlayerSpriteSets=new Map();
+const defaultStudioPlayerSpriteSets=new Map();
 const studioSpriteLoading=createStudioSpriteLoadingGate();
 
 function createStudioSpriteLoadingGate(timeoutMs=15000){
@@ -2698,6 +2699,24 @@ function isStudioPlayerSpriteTarget(type){
   return ["fighter","ranger","mage"].includes(type);
 }
 
+// Repository defaults are explicit unit-to-package bindings. Keep the binding
+// even if its package fails to load so another optional set cannot replace it.
+function configureDefaultPlayerSpriteSets(entries){
+  if(!Array.isArray(entries)) throw new Error("Sprite-set defaults require an index list.");
+  const defaults=new Map();
+  for(const entry of entries){
+    if(entry?.defaultFor===undefined) continue;
+    if(!isStudioPlayerSpriteTarget(entry.defaultFor) ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id || "")){
+      throw new Error("Invalid default player sprite binding.");
+    }
+    if(defaults.has(entry.defaultFor)) throw new Error(`Duplicate default sprites for ${entry.defaultFor}.`);
+    defaults.set(entry.defaultFor,`sprite-set:${entry.id}`);
+  }
+  defaultStudioPlayerSpriteSets.clear();
+  for(const [type,id] of defaults) defaultStudioPlayerSpriteSets.set(type,id);
+}
+
 function playerSpriteSetForType(type){
   if(!isStudioPlayerSpriteTarget(type)) return null;
   const selected=registeredStudioSpriteSets.get(selectedStudioPlayerSpriteSets.get(type));
@@ -2705,7 +2724,11 @@ function playerSpriteSetForType(type){
   // A timeout must not choose whichever optional package happened to decode
   // first. Automatic player bindings wait for the complete registration list.
   if(studioSpriteLoading.state!=="ready") return null;
-  // Folder IDs give a stable default independent of asynchronous PNG loading.
+  if(defaultStudioPlayerSpriteSets.has(type)){
+    const assigned=registeredStudioSpriteSets.get(defaultStudioPlayerSpriteSets.get(type));
+    return assigned?.mobType===type ? assigned : null;
+  }
+  // Unassigned player types retain the backward-compatible folder-ID default.
   return Array.from(registeredStudioSpriteSets.values())
     .filter(set=>set.mobType===type)
     .sort((a,b)=>a.manifestId<b.manifestId ? -1 : a.manifestId>b.manifestId ? 1 : 0)[0] || null;
@@ -3692,6 +3715,7 @@ function inspectStudioSpritePose(pose){
 
 window.adventurePartySpriteSets=Object.freeze({
   register:registerStudioSpriteSet,
+  setDefaults:configureDefaultPlayerSpriteSets,
   select:selectStudioSpriteSet,
   inspect:inspectStudioSpritePose,
   loadingState:()=>studioSpriteLoading.state,

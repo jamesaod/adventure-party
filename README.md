@@ -24,6 +24,10 @@ Choose **3d studio** on the title page to load a 3D model, inspect six synchroni
 
 Choose **Combat System Test → 6-facing Kobold → Begin Battle** to try the first exported six-direction ready sprite set in the game. See [docs/DIRECTIONAL_SPRITES.md](docs/DIRECTIONAL_SPRITES.md) for facing and ready/action pose registration.
 
+## Units and assets
+
+See [docs/UNIT_ASSETS.md](docs/UNIT_ASSETS.md) for the current unit roster, assigned sprite files, pose and facing coverage, footprints, saved 3D models, and equipment. It also identifies the runtime catalogs that control those assignments. Carl's imported six-direction, three-pose set is explicitly assigned to the normal Fighter player.
+
 
 ## Development channels
 

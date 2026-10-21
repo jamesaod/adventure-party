@@ -8,6 +8,7 @@ import { inflateSync } from 'node:zlib';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest, assembleSpriteSheet
 } from '../js/sprite-set-core.mjs';
+import { spriteMob } from '../js/sprite-layouts.mjs';
 
 const DEFAULT_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const MAX_ZIP = 32 * 1024 * 1024;
@@ -261,6 +262,14 @@ function packageRevision(files) {
   return hash.digest('hex');
 }
 
+function validateDefaultBinding(entry, manifest) {
+  if (entry.defaultFor === undefined) return;
+  let target;
+  try { target = spriteMob(entry.defaultFor); } catch { /* Report a binding error below. */ }
+  requireValue(target?.targetKind === 'player' && manifest.mobType === entry.defaultFor,
+    `${entry.id} default player binding must match its captured MOB.`);
+}
+
 /** CI and local validation use the same package checks as the importer. */
 export async function validateSpriteSetRepository({ repoRoot = DEFAULT_ROOT } = {}) {
   const root = path.resolve(repoRoot);
@@ -270,7 +279,7 @@ export async function validateSpriteSetRepository({ repoRoot = DEFAULT_ROOT } = 
   requireValue(info.isFile() && !info.isSymbolicLink(), 'sprite-sets.json must be an ordinary file.');
   const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
   requireValue(index.version === 1 && Array.isArray(index.sets), 'sprite-sets.json has an unsupported format.');
-  const ids = new Set();
+  const ids = new Set(), defaultTargets = new Set();
   for (const entry of index.sets) {
     requireValue(typeof entry?.id === 'string' && entry.id.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id),
       'sprite index contains an invalid character ID.');
@@ -282,6 +291,11 @@ export async function validateSpriteSetRepository({ repoRoot = DEFAULT_ROOT } = 
       `${entry.id} needs an import-generated content revision.`);
     const { manifest, files } = await readSpriteSetPackage(path.join(root, 'assets/sprites', entry.id));
     requireValue(manifest.id === entry.id, `${entry.id} manifest ID disagrees with the sprite index.`);
+    validateDefaultBinding(entry, manifest);
+    if (entry.defaultFor !== undefined) {
+      requireValue(!defaultTargets.has(entry.defaultFor), `duplicate default sprites for ${entry.defaultFor}.`);
+      defaultTargets.add(entry.defaultFor);
+    }
     requireValue(packageRevision(files) === entry.revision,
       `${entry.id} files changed after import; run the importer again to refresh its revision.`);
   }
@@ -307,6 +321,10 @@ export async function importSpriteSet(source, { repoRoot = DEFAULT_ROOT } = {}) 
   const revision = packageRevision(files);
   const entry = { id: manifest.id, manifest: `assets/sprites/${manifest.id}/manifest.json`, revision };
   const existing = index.sets.findIndex(item => item.id === manifest.id);
+  if (existing >= 0 && index.sets[existing].defaultFor !== undefined) {
+    entry.defaultFor = index.sets[existing].defaultFor;
+    validateDefaultBinding(entry, manifest);
+  }
   if (existing < 0) index.sets.push(entry); else index.sets[existing] = entry;
   const spritesRoot = path.join(root, 'assets/sprites');
   const destination = path.join(spritesRoot, manifest.id);

@@ -10,6 +10,16 @@ Loading this saved model selects **Y up** and **Dungeon Crawler Carl — Fighter
 
 The source GLB is preserved byte-for-byte under a descriptive versioned filename. Saved model entries live in `data/studio-models.json`; source-model files stay in `assets/models/`, separately from exported sprite assets in `assets/sprites/`. Loading a saved model does not replace Carl's combat sprites. Local files can still be opened with **Load from device**.
 
+## Equip Carl's right hand
+
+Load **Dungeon Crawler Carl Ver 2**, then choose **Equipment → Right hand → Medieval Sword**. The sword is a separate repository asset attached to the model's animated right-hand bone. It follows every selected animation and is rendered by all six previews and subsequent captures.
+
+**Sword size** adjusts the calibrated weapon size. Expand **Adjust grip** to move the handle within the hand or change its rotation. **Reset grip** restores the starting Carl preset. Selecting **None** removes the sword; selecting it again retains your adjusted fit. Equip/unequip and Reset grip fit all animations automatically. After a large manual size or grip change, use **Fit all animations** and check the six previews for clipping.
+
+Equipment and its grip save with the workspace, including page reload and return from combat. These controls lock after the first pose capture so a sheet uses one equipment configuration; clear all captured poses before changing it. A failed weapon load keeps existing captures available and prevents a new incomplete capture. Models without a supported right-hand bone display an explanation.
+
+The preset follows the character's existing hand and finger animation. Capturing and publishing a sword-equipped battle set uses the normal export/import workflow. The already-published Carl sprites retain their supplied artwork until a replacement package is imported. Source and calibration details are in [the weapons README](../assets/models/weapons/README.md); current unit-to-art assignments are in [UNIT_ASSETS.md](UNIT_ASSETS.md).
+
 ## Load and align a model
 
 1. Choose **Load from device**, or drop a model onto the central viewport.

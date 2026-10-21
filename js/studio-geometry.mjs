@@ -1,5 +1,5 @@
-import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238C56';
-import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238C56';
+import { CAMERA_ELEVATION, HEX_FACINGS } from './studio-core.mjs?v=R238C57';
+import { spriteLayout, spriteLayoutOffsets } from './sprite-layouts.mjs?v=R238C57';
 
 // Match TACTICAL_FEET_PER_HEX and HEX_W in the combat renderer. Native model
 // units are normalized on import; the battlefield hex is the scale reference.

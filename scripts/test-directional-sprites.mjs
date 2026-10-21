@@ -57,7 +57,7 @@ const sandbox = {
   game: {}, draw: () => {},
   combatAwaitingStart: false, selectedMobEncounter: "studio-kobold", currentScreen: "launcher",
   registeredStudioSpriteSets: new Map(), pixelEditorAssets: registeredAssets,
-  selectedStudioPlayerSpriteSets: new Map(), selectedStudioSpriteSetId: 'studio-kobold',
+  selectedStudioPlayerSpriteSets: new Map(), defaultStudioPlayerSpriteSets: new Map(), selectedStudioSpriteSetId: 'studio-kobold',
   studioSpriteLoading: { state: "ready" }, cancelPendingCombatStart() {},
   prepareCrispPixelSprite() {}, renderPixelAssetList() {},
   updateCombatMobSelection() {}, showCombatConditions() {},
@@ -86,7 +86,7 @@ const names = [
   "setTemporaryUnitPose", "triggerUnitAttackPose", "pixelAssetIdForUnitPose", "drawSpriteFacing",
   "runtimeAnchorForAsset", "trimmedRuntimeCanvasForAsset", "unitPoseNativeFacing",
   "getSpriteAssetSpec", "spriteRenderDimensions", "registerStudioSpriteSet", "inspectStudioSpritePose",
-  "isStudioPlayerSpriteTarget", "playerSpriteSetForType", "applyPlayerSpriteSet", "studioSpriteTestUnits", "selectStudioSpriteSet",
+  "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet", "studioSpriteTestUnits", "selectStudioSpriteSet",
   "clampNumber", "updatePixelPropertiesUi", "readPixelPropertiesFromUi"
 ];
 vm.createContext(sandbox);
@@ -367,6 +367,48 @@ for (const type of ["fighter", "ranger", "mage"]) {
   assert.equal(sandbox.triggerUnitAttackPose(character), true);
   assert.equal(sandbox.activeUnitPoseName(character), "attack");
 }
+// The published Carl package must bind in ordinary combat without selecting a
+// studio encounter. A declared but unavailable default retains legacy art;
+// it must not silently adopt an unrelated alphabetically earlier package.
+const repositoryIndex = JSON.parse(fs.readFileSync(new URL("../data/sprite-sets.json", import.meta.url), "utf8"));
+const carlBinding = repositoryIndex.sets.find(entry => entry.defaultFor === "fighter");
+assert.ok(carlBinding, "Carl needs an explicit repository sprite assignment");
+const carlManifest = validateSpriteSetManifest(JSON.parse(fs.readFileSync(new URL(`../${carlBinding.manifest}`, import.meta.url), "utf8")));
+assert.equal(carlManifest.mobType, "fighter");
+const carlImages = {}, carlUrls = {};
+for (const pose of SPRITE_POSES) for (const facing of SPRITE_DIRECTIONS) {
+  const name = carlManifest.poses[pose].frames[facing];
+  carlImages[name] = { complete: true, naturalWidth: carlManifest.frame.width, naturalHeight: carlManifest.frame.height };
+  carlUrls[name] = `assets/sprites/${carlManifest.id}/${name}?v=${carlBinding.revision}`;
+}
+const publishedCarl = sandbox.registerStudioSpriteSet({ manifest: carlManifest, images: carlImages, sourceUrls: carlUrls });
+sandbox.selectedStudioPlayerSpriteSets.delete("fighter");
+sandbox.configureDefaultPlayerSpriteSets(repositoryIndex.sets);
+assert.equal(sandbox.playerSpriteSetForType("fighter").id, publishedCarl, "Published Carl overrides alphabetic optional packages");
+const ordinaryCarl = { id: "player", type: "fighter", alive: true, facingHex: 0, effects: {}, hp: 50 };
+sandbox.selectedMobEncounter = "kobolds";
+sandbox.applyPlayerSpriteSet(ordinaryCarl);
+assert.equal(ordinaryCarl.spriteSetId, publishedCarl);
+for (const [pose, internal] of [["ready", "stand"], ["attack", "attack"], ["prone", "prone"]]) {
+  for (let facing = 0; facing < 6; facing++) {
+    ordinaryCarl.facingHex = facing;
+    const selected = sandbox.directionalUnitPoseFrame(ordinaryCarl, internal);
+    assert.equal(selected.image, carlImages[carlManifest.poses[pose].frames[SPRITE_DIRECTIONS[facing]]]);
+    assert.equal(selected.assetId, `sprite-set-${carlManifest.id}-${pose}-${SPRITE_DIRECTIONS[facing].toLowerCase()}`);
+  }
+}
+sandbox.configureDefaultPlayerSpriteSets([{ id: "unavailable-carl", defaultFor: "fighter" }]);
+assert.equal(sandbox.playerSpriteSetForType("fighter"), null, "Missing default cannot choose another fighter package");
+sandbox.applyPlayerSpriteSet(ordinaryCarl);
+assert.equal(ordinaryCarl.spriteSetId, undefined, "Unavailable declared default keeps the legacy renderer available");
+assert.throws(() => sandbox.configureDefaultPlayerSpriteSets([{ id: "a-fighter", defaultFor: "fighter" }, { id: "z-fighter", defaultFor: "fighter" }]), /Duplicate default/);
+assert.throws(() => sandbox.configureDefaultPlayerSpriteSets([{ id: "a-fighter", defaultFor: "orc" }]), /Invalid default/);
+assert.equal(sandbox.defaultStudioPlayerSpriteSets.get("fighter"), "sprite-set:unavailable-carl", "Invalid defaults cannot partially change the assignment");
+sandbox.configureDefaultPlayerSpriteSets(repositoryIndex.sets);
+sandbox.selectStudioSpriteSet("sprite-set:a-fighter");
+assert.equal(sandbox.playerSpriteSetForType("fighter").id, "sprite-set:a-fighter", "An explicit studio test may override the repository default");
+sandbox.selectedStudioPlayerSpriteSets.delete("fighter");
+
 const monster = { type: "orc", faction: "enemy" };
 sandbox.applyPlayerSpriteSet(monster);
 assert.deepEqual(monster, { type: "orc", faction: "enemy" }, "Player imports do not change existing monster sprite bindings");
@@ -401,7 +443,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
   const context = {
     currentScreen: "combat-conditions", pendingCombatStart: null, studioDraftAutoSelect: true,
     selectedCombatCondition: "grass", selectedMobEncounter: "kobolds", selectedStudioSpriteSetId: "studio-kobold",
-    registeredStudioSpriteSets: new Map(), selectedStudioPlayerSpriteSets: new Map(),
+    registeredStudioSpriteSets: new Map(), selectedStudioPlayerSpriteSets: new Map(), defaultStudioPlayerSpriteSets: new Map(),
     document: { getElementById: id => id === "beginBattleButton" ? button : null,
       querySelectorAll: selector => selector === "[data-combat-condition]" ? [conditionButton] : [mobButton],
       dispatchEvent() {} }, Event,
@@ -445,12 +487,13 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
   vm.createContext(context);
   vm.runInContext([
     ...["createStudioSpriteLoadingGate", "canAutoSelectStudioDraft", "cancelPendingCombatStart", "showCombat", "showLauncher", "showCombatConditions", "handleCombatConditionsKey",
-      "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
+      "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);
   context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
   context.api = {
     select: context.selectStudioSpriteSet,
+    setDefaults: context.configureDefaultPlayerSpriteSets,
     loadingState: () => context.studioSpriteLoading.state,
     finishLoading: () => context.studioSpriteLoading.finish(),
     canAutoSelectDraft: context.canAutoSelectStudioDraft

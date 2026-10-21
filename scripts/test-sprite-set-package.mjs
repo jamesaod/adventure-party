@@ -537,8 +537,25 @@ try {
     const importedPlayer = await importSpriteSet(playerZip, { repoRoot: formatsRoot });
     assert.equal(JSON.parse(await fs.readFile(path.join(importedPlayer.destination, 'manifest.json'), 'utf8')).mobType, target.id);
     for (const [name, bytes] of playerFiles) assert.deepEqual(await fs.readFile(path.join(importedPlayer.destination, name)), bytes);
+    const assignedIndex = JSON.parse(await fs.readFile(importedPlayer.indexPath, 'utf8'));
+    assignedIndex.sets.find(entry => entry.id === metadata.id).defaultFor = target.id;
+    await fs.writeFile(importedPlayer.indexPath, JSON.stringify(assignedIndex));
+    await importSpriteSet(playerZip, { repoRoot: formatsRoot });
+    const replacedIndex = JSON.parse(await fs.readFile(importedPlayer.indexPath, 'utf8'));
+    assert.equal(replacedIndex.sets.find(entry => entry.id === metadata.id).defaultFor, target.id,
+      'Reimport preserves the explicit unit-to-sprite assignment');
   }
   assert.equal((await validateSpriteSetRepository({ repoRoot: formatsRoot })).sets, 10);
+  const formatIndexPath = path.join(formatsRoot, 'data/sprite-sets.json');
+  const assignedIndex = JSON.parse(await fs.readFile(formatIndexPath, 'utf8'));
+  const mismatchedBinding = structuredClone(assignedIndex);
+  mismatchedBinding.sets.find(entry => entry.id === 'player-fighter').defaultFor = 'ranger';
+  await fs.writeFile(formatIndexPath, JSON.stringify(mismatchedBinding));
+  await assert.rejects(validateSpriteSetRepository({ repoRoot: formatsRoot }), /binding must match/);
+  await assert.rejects(importSpriteSet(path.join(temp, 'player-fighter.zip'), { repoRoot: formatsRoot }), /binding must match/);
+  assert.deepEqual(JSON.parse(await fs.readFile(formatIndexPath, 'utf8')), mismatchedBinding,
+    'A mismatched replacement cannot rewrite the asset assignment');
+  await fs.writeFile(formatIndexPath, JSON.stringify(assignedIndex));
 } finally {
   await fs.rm(temp, { recursive: true, force: true });
 }
