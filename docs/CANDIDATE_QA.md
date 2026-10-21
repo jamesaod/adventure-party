@@ -2,7 +2,17 @@
 
 Stable baseline: **R238**
 
-## Current candidate: Rev 53 — Combat tests stay in the current tab
+## Current candidate: Rev 54 — Selectable FBX animations and named ranges
+
+Pixel Studio lists every usable embedded animation with its own number, name and duration. FBX takes retain their identity even when names are duplicated. Valid authored take boundaries are cropped and shifted to a local timeline starting at zero; boundary poses and intentional holds are preserved. Empty takes are skipped, and layered FBX takes produce an explanatory note because the viewer uses the first usable layer.
+
+Selecting an animation stops the previous action before starting the selected one. Pausing, scrubbing and the six synchronized captures use that selected animation only. Reloading the studio or returning from combat restores the exact selected take or Rest pose, including files with duplicate or unnamed clips.
+
+For exports containing several motions on one timeline, expand **Create animation from range**, enter a name and start/end seconds (or use the current paused time), and choose **Save as animation**. Each named range appears in the Animation dropdown and is saved with the workspace. Removing a range preserves captured sprites and the original embedded animation.
+
+Validation includes actual FBX parsing for multiple takes, duplicate names, empty layers and authored ranges; exact vector, quaternion and morph boundary poses; single-action playback; and browser selection, reload and same-tab combat restoration. The user's own Tripo file was not supplied for this update, so its exact embedded take structure is not yet verified.
+
+## Candidate Rev 53 — Combat tests stay in the current tab
 
 **Test in combat** saves the exact sprite set and return workspace, then opens Combat Setup in the current tab. It no longer creates another tab or window. A failed save leaves the studio open with its captures available.
 

@@ -180,6 +180,13 @@ body.studio-page {
 .studio-timeline { display:block; width:100%; margin:11px 0; }
 .studio-animation-bottom { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:7px; }
 .studio-animation-bottom .studio-note { margin:0; }
+.studio-animation-ranges { margin-top:12px; border-top:1px solid var(--divider); padding-top:10px; }
+.studio-animation-ranges summary { color:var(--cyan); cursor:pointer; font-size:14px; }
+.studio-animation-ranges summary:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+.studio-range-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.studio-range-fields .studio-button { font-size:12px; }
+.studio-range-actions { margin-top:10px; flex-wrap:wrap; }
+#studioRangeSource { overflow-wrap:anywhere; }
 
 .studio-controls { grid-area:controls; min-width:0; display:grid; gap:10px; }
 .studio-model-name { color:var(--text); font-size:17px; line-height:1.15; overflow-wrap:anywhere; }
@@ -190,7 +197,8 @@ body.studio-page {
 .studio-label-row { display:flex; align-items:center; justify-content:space-between; gap:6px; }
 .studio-label-row output { color:var(--cyan); font-size:13px; font-variant-numeric:tabular-nums; }
 .studio-page select,
-.studio-page input[type="text"] {
+.studio-page input[type="text"],
+.studio-page input[type="number"] {
   width:100%;
   min-width:0;
   min-height:32px;

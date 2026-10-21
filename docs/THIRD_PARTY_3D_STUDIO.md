@@ -10,7 +10,7 @@ The studio serves its renderer and model loaders from this repository. It does n
 - Distribution SHA-256: `ad66d724565ee29a2467277fa84daa5ed0211d6b8d446e9ef29f6bae0cd14144`.
 - License: MIT; the complete notice is preserved in [`assets/vendor/three/LICENSE`](../assets/vendor/three/LICENSE).
 
-The following files are copied without modification from that distribution:
+The following files come from that distribution. They are unmodified except for the FBX animation-discovery patch described below:
 
 | Repository location under `assets/vendor/three/` | Distribution location |
 | --- | --- |
@@ -25,6 +25,12 @@ The following files are copied without modification from that distribution:
 | `addons/libs/fflate.module.js` | `examples/jsm/libs/fflate.module.js` |
 
 The HTML import map resolves `three` to the local `three.module.min.js` and `three/addons/` to the local `addons/` directory. Keep all these files on the same pinned Three.js version when updating them.
+
+### Local FBX animation patch
+
+`FBXLoader.js` preserves one clip per usable AnimationStack, safely skips empty/disconnected stacks and empty leading layers, and attaches stable stack identity, validated authored time spans, and discovery counts. Its ASCII and binary parsers retain named `Takes.LocalTime` records as a fallback when stack timing is absent. It retains the first usable layer; this patch does not implement FBX layer blending. The studio applies the take timing in `js/studio-animations.mjs` and displays a note for layered takes. Preserve or re-evaluate this patch when upgrading Three.js; `scripts/test-fbx-animations.mjs` exercises the production loader with an authored fixture.
+
+The import map has a versioned exact entry for the patched FBX loader so browser caches refresh when it changes.
 
 ## fflate
 

@@ -60,6 +60,20 @@ These controls affect the 3D model and the rendered sprite pixels. Set them befo
 
 The original imported ready sheet remains available in **Combat System Test → 6-facing Kobold**. The three-pose workflow below adds new complete sets without changing that artwork.
 
+## Select an animation
+
+The **Animation** dropdown lists every usable embedded clip with a number, name and duration. The number distinguishes duplicate names. Selecting a clip stops the previous animation; the central model and all six previews share that one animation clock. **Rest pose** stops animation completely.
+
+FBX files can contain multiple named takes. The studio honors each take's valid start/end markers and gives it a timeline starting at zero, retaining the exact boundary poses and intentional holds. Empty takes are skipped. If a take contains multiple animation layers, the studio uses the first usable layer and displays a note; export baked animations when those layers need to be blended together.
+
+If the file contains several motions on one continuous timeline, expand **Create animation from range**:
+
+1. Select the source animation and enter a name, such as Ready, Attack or Prone.
+2. Enter the start and end in seconds. Alternatively, pause or scrub the timeline and choose **Use current time as start** or **Use current time as end**.
+3. Choose **Save as animation**. The new named range appears in the dropdown with its own timeline starting at zero.
+
+Saved ranges retain their original source animation. When a range is selected, its editor shows times in that original source. **Remove selected range** removes only that range; captured sprites and the original animation remain available. The current selection, playback time and named ranges are saved with the workspace and restored after a combat test. Creating ranges from smooth cubic or packed glTF cubic-spline animations is not supported; those complete clips remain selectable.
+
 ## Capture ready, attack and prone
 
 1. Load the FBX containing the model and its animations. Choose a clip, press **Pause**, and drag the timeline to the moment you want. Scrubbing pauses playback and can hold the final instant of a clip. A static model or **Rest pose** can also be captured.

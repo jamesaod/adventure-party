@@ -9,11 +9,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/adventure-party.css?v=R238">
-  <link rel="stylesheet" href="css/3d-studio.css?v=R238C53">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C54">
   <script type="importmap">
   {
     "imports": {
       "three": "./assets/vendor/three/three.module.min.js",
+      "three/addons/loaders/FBXLoader.js": "./assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C54",
       "three/addons/": "./assets/vendor/three/addons/"
     }
   }
@@ -27,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 53</span>
+        <span class="studio-build">Candidate Rev 54</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -145,8 +146,8 @@
           </div>
           <div class="studio-animation-fields">
             <label class="studio-field studio-clip-field" for="studioClip">
-              <span>Clip</span>
-              <select id="studioClip" disabled><option value="">Loading clips…</option></select>
+              <span>Animation</span>
+              <select id="studioClip" aria-describedby="studioAnimationSummary studioAnimationWarning" disabled><option value="">Loading animations…</option></select>
             </label>
             <label class="studio-field studio-speed-field" for="studioSpeed">
               <span>Speed</span>
@@ -159,6 +160,8 @@
               </select>
             </label>
           </div>
+          <p id="studioAnimationSummary" class="studio-note studio-help" role="status">Looking for embedded animations…</p>
+          <p id="studioAnimationWarning" class="studio-note studio-help" hidden></p>
           <label class="studio-sr-only" for="studioTimeline">Animation position</label>
           <input id="studioTimeline" class="studio-timeline" type="range" min="0" max="1" step="0.001" value="0" disabled>
           <div class="studio-animation-bottom">
@@ -168,6 +171,32 @@
             </div>
             <span class="studio-note">All six previews stay in step.</span>
           </div>
+          <details id="studioAnimationRanges" class="studio-animation-ranges">
+            <summary>Create animation from range</summary>
+            <p class="studio-note">If several motions share one timeline, save each section as a named animation. Start and end are seconds in the source animation.</p>
+            <p id="studioRangeSource" class="studio-note">Select an animation first.</p>
+            <label class="studio-field" for="studioRangeName">
+              <span>Animation name</span>
+              <input id="studioRangeName" type="text" maxlength="120" placeholder="For example, Attack" disabled>
+            </label>
+            <div class="studio-range-fields">
+              <label class="studio-field" for="studioRangeStart">
+                <span>Start (seconds)</span>
+                <input id="studioRangeStart" type="number" min="0" step="any" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioRangeEnd">
+                <span>End (seconds)</span>
+                <input id="studioRangeEnd" type="number" min="0" step="any" value="0" disabled>
+              </label>
+              <button id="studioRangeStartButton" class="studio-button" type="button" disabled>Use current time as start</button>
+              <button id="studioRangeEndButton" class="studio-button" type="button" disabled>Use current time as end</button>
+            </div>
+            <div class="studio-button-row studio-range-actions">
+              <button id="studioAddRangeButton" class="studio-button studio-primary" type="button" disabled>Save as animation</button>
+              <button id="studioRemoveRangeButton" class="studio-button" type="button" disabled>Remove selected range</button>
+            </div>
+            <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
+          </details>
           <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
             <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled>Capture ready pose</button>
             <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
@@ -310,6 +339,6 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C53"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C54"></script>
 </body>
 </html>
