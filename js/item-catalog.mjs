@@ -112,7 +112,7 @@ export const ITEM_CATALOG=freezeRecord({
       appearanceId:'round-wooden-shield',
       studioId:'round-wooden-shield',
       visualClass:'round-shield',
-      representation:'procedural-round-shield-textured-v1',
+      representation:'procedural-round-shield-v1',
       attachment:'left-hand',
       nativeScale:0.45,
       modelOrigin:[0,0,0],
@@ -124,25 +124,8 @@ export const ITEM_CATALOG=freezeRecord({
         triangles:8478,
         textureResolution:1024
       },
-      texturePack:{
-        resolution:256,
-        baseColor:{
-          path:'assets/models/shields/round-wooden-shield-textures/basecolor.jpg.b64',
-          bytes:17079,
-          sha256:'101d884733e850625da37d3d629b5a8cd070785c2707069c081d1209de5f1fbd'
-        },
-        normal:{
-          path:'assets/models/shields/round-wooden-shield-textures/normal.jpg.b64',
-          bytes:5528,
-          sha256:'5a656d1e404a2b02fe2caa6c032daa7d3c1f711c1c81f3cffbe73403efa36220'
-        },
-        roughnessMetallic:{
-          path:'assets/models/shields/round-wooden-shield-textures/roughness-metallic.jpg.b64',
-          bytes:14372,
-          sha256:'e9c04df10678786d7dc8eb39f517059a78f7a3a76e1059e710a0533593db34f8'
-        },
-        derivation:'Texture maps are downsampled from the uploaded GLB; runtime geometry preserves the uploaded model proportions for reliable web loading.'
-      }
+      derivation:'Runtime shield preserves the uploaded model proportions and provenance while using self-contained wood/metal materials for reliable web rendering.'
+
     }
   }
 });
