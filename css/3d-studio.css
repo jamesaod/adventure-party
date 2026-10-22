@@ -51,8 +51,8 @@ body.studio-page {
 
 .studio-layout {
   display:grid;
-  grid-template-columns:290px minmax(0,1fr) 254px;
-  grid-template-areas:"previews viewer controls";
+  grid-template-columns:254px minmax(0,1fr) 420px;
+  grid-template-areas:"controls viewer previews";
   gap:10px;
   align-items:start;
   min-width:0;
@@ -105,7 +105,7 @@ body.studio-page {
 .studio-wide-button { display:block; width:100%; margin-top:9px; }
 .studio-button-row { display:flex; align-items:center; gap:8px; }
 
-.studio-previews { grid-area:previews; }
+.studio-preview-column { grid-area:previews; min-width:0; display:grid; gap:10px; }
 .studio-previews .studio-panel-heading { display:block; }
 .studio-previews .studio-chip { display:block; margin-top:4px; }
 .studio-preview-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
@@ -136,7 +136,7 @@ body.studio-page {
 .studio-preview-card canvas {
   display:block;
   width:100%;
-  max-width:112px;
+  max-width:185px;
   height:auto;
   object-fit:contain;
   align-self:center;
@@ -257,9 +257,11 @@ body.studio-page {
 .studio-workspace-status[data-state="error"], .studio-workspace-status.error { color:#ffb0a8; }
 
 .studio-size-control { margin-top:12px; }
-.studio-lighting-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:8px; }
-.studio-lighting-fields fieldset { min-width:0; padding:10px; margin:0; border:1px solid #555265; }
-.studio-lighting-fields legend { padding:0 5px; color:#dcc880; font-weight:700; }
+.studio-settings-heading { margin:18px 0 8px; color:var(--gold); font-size:17px; line-height:1.2; }
+.studio-lighting-fields { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; margin-top:8px; }
+.studio-appearance fieldset { min-width:0; padding:10px; margin:0; border:1px solid #555265; }
+.studio-appearance legend { padding:0 5px; color:#dcc880; font-weight:700; }
+.studio-appearance fieldset > .studio-field:first-of-type { margin-top:4px; }
 .studio-lighting-fields .studio-field + .studio-field { margin-top:12px; }
 .studio-field input[type="color"] { width:100%; height:34px; padding:3px; border:1px solid #777285; background:#17151e; cursor:pointer; }
 .studio-field input[type="color"]:disabled { opacity:.45; cursor:default; }
@@ -276,21 +278,21 @@ body.studio-page {
 #studioEquipmentLockNote.locked { color:var(--cyan); }
 
 @media (min-width:1450px) {
-  .studio-layout { grid-template-columns:304px minmax(0,1fr) 268px; }
-  .studio-preview-card canvas { max-width:118px; }
+  .studio-layout { grid-template-columns:268px minmax(0,1fr) 440px; }
+  .studio-preview-card canvas { max-width:200px; }
 }
 
 @media (max-width:1120px) {
   .studio-setup-fields { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
   .studio-footprint-figure { grid-column:1 / -1; grid-template-columns:150px auto; justify-content:start; align-items:center; gap:14px; }
-  .studio-layout { grid-template-columns:274px minmax(0,1fr); grid-template-areas:"previews viewer" "previews controls"; }
+  .studio-layout { grid-template-columns:minmax(0,1fr) 380px; grid-template-areas:"viewer previews" "controls previews"; }
   .studio-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .studio-controls > :last-child { grid-column:1 / -1; }
   .studio-center { max-width:none; }
   .studio-viewport { height:clamp(350px,51vh,480px); }
 }
 
-@media (max-width:740px) {
+@media (max-width:900px) {
   .studio-setup-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .studio-footprint-figure { grid-column:auto; grid-template-columns:1fr; gap:4px; }
   .studio-sheet-heading-meta { max-width:50%; }
@@ -300,10 +302,10 @@ body.studio-page {
   .studio-header-actions { flex-direction:column; align-items:flex-end; gap:5px; }
   .studio-build { font-size:12px; }
   .studio-return { min-height:32px; font-size:13px; padding:5px 7px; }
-  .studio-layout { grid-template-columns:minmax(0,1fr); grid-template-areas:"viewer" "previews" "controls"; gap:8px; }
+  .studio-layout { grid-template-columns:minmax(0,1fr); grid-template-areas:"controls" "viewer" "previews"; gap:8px; }
   .studio-viewport { height:clamp(300px,50vh,450px); }
-  .studio-preview-card canvas { max-width:136px; }
-  .studio-center { gap:8px; }
+  .studio-preview-card canvas { max-width:200px; }
+  .studio-center, .studio-preview-column { gap:8px; }
   .studio-controls { gap:8px; }
   .studio-footer-label { display:none; }
   .studio-sheet-intro { align-items:stretch; flex-direction:column; gap:10px; }
