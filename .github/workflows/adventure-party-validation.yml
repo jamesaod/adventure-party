@@ -37,6 +37,7 @@ jobs:
           node --check js/studio-capture.mjs
           node --check js/studio-animations.mjs
           node --check js/studio-equipment.mjs
+          node --check js/item-catalog.mjs
           node --check js/studio-shield.mjs
           node --check js/mob-appearance.mjs
           node --check js/mob-appearance-runtime.mjs
@@ -49,6 +50,7 @@ jobs:
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
           node scripts/test-studio-equipment.mjs
+          node scripts/test-item-catalog.mjs
           node scripts/test-mob-appearance.mjs
           node scripts/test-mob-appearance-runtime.mjs
           node scripts/test-combat-mob-renderer.mjs
