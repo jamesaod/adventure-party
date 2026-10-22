@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C61';
+} from './studio-equipment.mjs?v=R238C62';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -1126,16 +1126,39 @@ function drawDirectionalPreview(preview, bounds) {
 function renderFallbackPreviews(timestamp) {
   const image = state.fallbackImage;
   previews.forEach(preview => {
-    preview.context.fillStyle = '#808080';
-    preview.context.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
+    const ctx = preview.context;
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
+
+    // QA Rev 62: draw one battlefield hex behind the fallback sprite so Model
+    // Size changes have an immediate tactical scale reference.
+    const resolutionScale = state.resolutionPercent / 100;
+    const halfW = 32 * resolutionScale;
+    const halfH = 21 * resolutionScale;
+    const cx = preview.canvas.width / 2;
+    const cy = preview.canvas.height * 0.72;
+    ctx.save();
+    ctx.strokeStyle = '#e3ca79';
+    ctx.lineWidth = Math.max(1, resolutionScale);
+    ctx.beginPath();
+    for (const [x, y] of [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]]) {
+      if (!ctx.__hexStarted) { ctx.moveTo(cx+x, cy+y); ctx.__hexStarted = true; }
+      else ctx.lineTo(cx+x, cy+y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    delete ctx.__hexStarted;
+    ctx.restore();
+
     if (image?.naturalWidth && image?.naturalHeight) {
       const scale = state.modelScalePercent / 100;
       const targetH = Math.max(1, Math.round(preview.canvas.height * 0.5 * scale));
       const targetW = Math.max(1, Math.round(image.naturalWidth * targetH / image.naturalHeight));
-      preview.context.imageSmoothingEnabled = false;
-      preview.context.drawImage(image,
+      const groundY = Math.round(cy + halfH * 0.1);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image,
         Math.round((preview.canvas.width-targetW)/2),
-        Math.round((preview.canvas.height-targetH)/2),
+        groundY-targetH,
         targetW,targetH);
     }
     preview.canvas.dataset.frame = String(state.frame + 1);
