@@ -9,9 +9,10 @@ export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    // QA Rev 61: grip one hand-length above the butt, head up, blade forward.
-    grip: Object.freeze([0, 0.88, 0]), nativeScale: 0.55,
-    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 180]),
+    // QA Rev 62: the source axe haft runs +Y from butt (0) to head (1).
+    // Grip one hand-length above the butt; rotate around the haft so the blade faces forward.
+    grip: Object.freeze([0, 0.12, 0]), nativeScale: 0.55,
+    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 0]),
     defaultSizePercent: 75
   })
 ]);
