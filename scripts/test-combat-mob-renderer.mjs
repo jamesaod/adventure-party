@@ -20,6 +20,7 @@ for(const token of [
   "appearanceCacheKey(recipe)",
   "createWeaponAttachment",
   "createShieldAttachment",
+  "loadGltf('../'+recipe.shield.asset)",
   "recipe.shield",
   "recipe.renderSettings?.shield",
   "distanceInches",
@@ -42,9 +43,9 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C70")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C70")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C70",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C71")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C71")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C71",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
@@ -59,7 +60,7 @@ assert.ok(studio.includes('shieldEquipment'));
 assert.ok(studio.includes('distanceInches'));
 assert.ok(studio.includes('forearmSlideInches'));
 assert.ok(studio.includes('forearmRollDegrees'));
-for(const id of ['studioShieldDistance','studioShieldForearmSlide','studioShieldForearmRoll','studioResetShieldButton']){
+for(const id of ['studioShieldScale','studioShieldDistance','studioShieldForearmSlide','studioShieldForearmRoll','studioResetShieldButton']){
   assert.ok(studioHtml.includes(`id="${id}"`), `Studio shield control missing ${id}`);
 }
 assert.ok(studio.includes('renderFallbackPreviews'));
