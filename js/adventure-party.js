@@ -7037,56 +7037,67 @@ function formatMobHeight(totalInches){
 
 let combatMobAppearanceRuntimePromise=null;
 
-async function refreshCombatMobAppearance(unit,requestedRevision){
-  if(!unit || unit.type!=="fighter") return;
+async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipment-change"}={}){
+  if(!unit || unit.type!=="fighter") return null;
   try{
     if(!combatMobAppearanceRuntimePromise){
       combatMobAppearanceRuntimePromise=Promise.all([
-        import("./js/mob-appearance-runtime.mjs?v=R238C62"),
-        import("./js/combat-mob-renderer.mjs?v=R238C62")
+        import("./js/mob-appearance-runtime.mjs?v=R238C63"),
+        import("./js/combat-mob-renderer.mjs?v=R238C63")
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:12
       }));
     }
-    const runtime=await combatMobAppearanceRuntimePromise;
-    if((unit.appearanceRevision||0)!==requestedRevision) return;
+    const [runtime,poseModule]=await Promise.all([
+      combatMobAppearanceRuntimePromise,
+      import("./js/combat-pose-recipe.mjs?v=R238C63")
+    ]);
+    if((unit.appearanceRevision||0)!==requestedRevision) return null;
+    const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type});
+    if((unit.appearanceRevision||0)!==requestedRevision) return null;
     const result=await runtime.refresh(unit,{
       modelId:"dungeon-crawler-carl-v2-ual2-sword-test",
       modelHash:"4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9",
       bodyReferenceHeightInches:75,
-      renderSettings:{renderer:"combat-offscreen-v1",poses:["ready","attack","prone"],facings:["E","NE","NW","W","SW","SE"]}
+      poseProfile:captured.poseProfile,
+      renderSettings:captured.renderSettings
     });
-    if(!result.applied || (unit.appearanceRevision||0)!==requestedRevision) return;
+    if(!result.applied || (unit.appearanceRevision||0)!==requestedRevision) return null;
     const spriteSetId=window.adventurePartySpriteSets?.register(result.spriteSet);
-    if(!spriteSetId) return;
+    if(!spriteSetId) return null;
     unit.dynamicAppearanceSpriteSetId=spriteSetId;
     unit.spriteSetId=spriteSetId;
     unit.footprintId="single";
     unit.studioPlayerSpriteTarget=unit.type;
+    unit.appearancePoseSource=captured.source;
     if(game?.player===unit && currentScreen==="combat"){
       draw();
       renderCharacterSheet();
     }
     document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-ready",{
-      detail:{unitId:unit.id||null,revision:requestedRevision,spriteSetId,cached:result.cached}
+      detail:{unitId:unit.id||null,revision:requestedRevision,spriteSetId,cached:result.cached,reason,poseSource:captured.source}
     }));
+    return result;
   }catch(error){
     console.error("On-the-fly MOB appearance render failed; keeping the previous sprite set.",error);
     document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-error",{
-      detail:{unitId:unit?.id||null,revision:requestedRevision,message:String(error?.message||error)}
+      detail:{unitId:unit?.id||null,revision:requestedRevision,message:String(error?.message||error),reason}
     }));
+    return null;
   }
 }
 
-function markMobAppearanceDirty(unit){
-  if(!unit) return;
+function markMobAppearanceDirty(unit,{reason="equipment-change"}={}){
+  if(!unit) return Promise.resolve(null);
   unit.appearanceRevision=(unit.appearanceRevision||0)+1;
   const revision=unit.appearanceRevision;
   document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-dirty",{
-    detail:{unitId:unit.id||null,revision}
+    detail:{unitId:unit.id||null,revision,reason}
   }));
-  void refreshCombatMobAppearance(unit,revision);
+  const pending=refreshCombatMobAppearance(unit,revision,{reason});
+  unit.appearanceRefreshPromise=pending;
+  return pending;
 }
 
 let aimMode=false;
@@ -16574,6 +16585,10 @@ function newGame(condition=selectedCombatCondition){
   */
   combatOpeningSpeechDone=true;
   combatAwaitingStart=true;
+  // Model-capable MOBs generate their current equipment appearance as soon as
+  // the combat instance is created. The old/static sprite is only a temporary
+  // visual reference until this generated 18-frame set is ready.
+  markMobAppearanceDirty(player,{reason:"combat-start"});
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   ui.roundLabel.textContent="ROUND —";
@@ -26556,7 +26571,7 @@ function drawCombatMessageBox(){
   ctx.restore();
 }
 
-function beginCombatFromPrompt(){
+async function beginCombatFromPrompt(){
   if(
     !game ||
     game.over ||
@@ -26564,6 +26579,16 @@ function beginCombatFromPrompt(){
     !combatAwaitingStart
   ){
     return false;
+  }
+
+  const pending=game.player?.appearanceRefreshPromise;
+  if(pending){
+    ui.turnBanner.textContent="PREPARING APPEARANCE...";
+    setCombatMessage("Rendering current equipment...");
+    updateUi();
+    draw();
+    await pending;
+    if(!game || game.over || !combatAwaitingStart) return false;
   }
 
   combatAwaitingStart=false;
@@ -29856,7 +29881,7 @@ function handleCombatKey(event){
       combatOpeningSpeechDone &&
       combatAwaitingStart
     ){
-      beginCombatFromPrompt();
+      void beginCombatFromPrompt();
     }
 
     return;
