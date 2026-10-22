@@ -7008,7 +7008,7 @@ let hoverHex=null;
    Null means the art has not yet been physically calibrated and therefore keeps
    its existing legacy render scale. */
 const MOB_HEIGHT_INCHES=Object.freeze({
-  fighter:75,
+  fighter:76,
   ranger:null,
   mage:null,
   kobold:null,
@@ -7044,8 +7044,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C70")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C70"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C71")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C71"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:12
@@ -7053,7 +7053,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C70",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C71",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision) return null;
     const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type});
@@ -7061,7 +7061,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     const result=await runtime.refresh(unit,{
       modelId:"dungeon-crawler-carl-v2-ual2-sword-test",
       modelHash:"4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9",
-      bodyReferenceHeightInches:75,
+      bodyReferenceHeightInches:76,
       poseProfile:captured.poseProfile,
       renderSettings:captured.renderSettings
     });
@@ -14471,7 +14471,7 @@ function makeFighter(){
     const f=persistentFighter;
 
     f.name="Dungeon Crawler Carl";
-    f.heightInches=75;
+    f.heightInches=76;
     if(!f.race) f.race="Human";
     f.buffs=[];
     f.debuffs=[];
@@ -14512,8 +14512,11 @@ function makeFighter(){
       item?.name==="Mail hauberk or byrnie (chain)"
     );
     const oldShield=previousInventory.find(item=>
+      item?.appearanceId==="round-wooden-shield" ||
       item?.appearanceId==="bronze-round-shield" ||
+      item?.catalogItemId==="round-wooden-shield" ||
       item?.catalogArmorId==="shield-medium" ||
+      item?.name==="Round Wooden Shield" ||
       item?.name==="Bronze Round Shield"
     );
 
@@ -14526,6 +14529,7 @@ function makeFighter(){
         equipped:swordEquipped,
         qty:1,
         magical:true,
+        catalogItemId:"flaming-sword-5",
         catalogWeaponId:"sword-long",
         baseName:"Long Sword",
         magicHitBonus:5,
@@ -14544,6 +14548,7 @@ function makeFighter(){
         equipped:axeEquipped,
         qty:1,
         magical:false,
+        catalogItemId:"battle-axe",
         catalogWeaponId:"axe-battle",
         baseName:"Axe, battle",
         appearanceId:"battle-axe",
@@ -14558,20 +14563,22 @@ function makeFighter(){
         equipped:oldChain ? oldChain.equipped!==false : true,
         qty:1,
         magical:false,
+        catalogItemId:"chain-mail",
         catalogArmorId:"chain",
         detail:"Mail hauberk or byrnie (chain)."
       },
       {
-        name:"Bronze Round Shield",
+        name:"Round Wooden Shield",
         type:"Shield",
         slot:"shield",
         equippable:true,
         equipped:oldShield ? oldShield.equipped===true : true,
         qty:1,
         magical:false,
+        catalogItemId:"round-wooden-shield",
         catalogArmorId:"shield-medium",
-        appearanceId:"bronze-round-shield",
-        detail:"Medium-shield rules with the Rev 67 bronze round shield visual attached to Carl's left hand for animation QA."
+        appearanceId:"round-wooden-shield",
+        detail:"Round wooden shield using the canonical medium-shield rules and catalog-backed 3D appearance."
       }
 ,
       {
@@ -14637,7 +14644,7 @@ function makeFighter(){
     faction:"player",
     alignment:"neutral",
     sizeCategory:"medium",
-    heightInches:75,
+    heightInches:76,
     name:"Dungeon Crawler Carl",
     race:"Human",
     className:"Fighter",
@@ -14665,6 +14672,7 @@ function makeFighter(){
         equipped:true,
         qty:1,
         magical:true,
+        catalogItemId:"flaming-sword-5",
         catalogWeaponId:"sword-long",
         baseName:"Long Sword",
         magicHitBonus:5,
@@ -14683,6 +14691,7 @@ function makeFighter(){
         equipped:false,
         qty:1,
         magical:false,
+        catalogItemId:"battle-axe",
         catalogWeaponId:"axe-battle",
         baseName:"Axe, battle",
         appearanceId:"battle-axe",
@@ -14697,20 +14706,22 @@ function makeFighter(){
         equipped:true,
         qty:1,
         magical:false,
+        catalogItemId:"chain-mail",
         catalogArmorId:"chain",
         detail:"Mail hauberk or byrnie (chain)."
       },
       {
-        name:"Bronze Round Shield",
+        name:"Round Wooden Shield",
         type:"Shield",
         slot:"shield",
         equippable:true,
         equipped:true,
         qty:1,
         magical:false,
+        catalogItemId:"round-wooden-shield",
         catalogArmorId:"shield-medium",
-        appearanceId:"bronze-round-shield",
-        detail:"Medium-shield rules with the Rev 67 bronze round shield visual attached to Carl's left hand for animation QA."
+        appearanceId:"round-wooden-shield",
+        detail:"Round wooden shield using the canonical medium-shield rules and catalog-backed 3D appearance."
       }
  ,
       {
