@@ -25,8 +25,9 @@ claimed as a byte-for-byte repository asset in Rev 67.
 
 - Bone: `mixamorig:LeftHand` (Three.js also accepts the sanitized spelling)
 - Native proxy scale: **0.45**
-- Position: **(0, 0, -0.045)** in hand-local space
-- Rotation: **(0°, 180°, 0°)**
+- Position: **(0, 0, 0.14)** in hand-local space
+- Rotation: **(0°, 0°, 0°)**
+- Rev 68 moves the shield across the left-hand/forearm normal so its body sits on the opposite, outside side of the arm while keeping the boss facing outward.
 - Inventory/rules entry: existing `shield-medium` (+1 AC)
 - Appearance ID: `bronze-round-shield`
 
