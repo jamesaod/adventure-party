@@ -7043,8 +7043,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
   try{
     if(!combatMobAppearanceRuntimePromise){
       combatMobAppearanceRuntimePromise=Promise.all([
-        import("./mob-appearance-runtime.mjs?v=R238C63"),
-        import("./combat-mob-renderer.mjs?v=R238C63")
+        import("./mob-appearance-runtime.mjs?v=R238C64"),
+        import("./combat-mob-renderer.mjs?v=R238C64")
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:12
@@ -7052,7 +7052,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import("./combat-pose-recipe.mjs?v=R238C63")
+      import("./combat-pose-recipe.mjs?v=R238C64")
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision) return null;
     const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type});
