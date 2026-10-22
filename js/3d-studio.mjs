@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C79';
+} from './studio-equipment.mjs?v=R238C80';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C75';
@@ -311,7 +311,7 @@ function resetPreviewReferenceToReady() {
   setClip(index);
   if (state.action) {
     state.action.time = 0;
-    state.mixer.update(0); equipment.applyConstraints();
+    equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
   }
 }
@@ -956,7 +956,7 @@ function setClip(index) {
     state.action.paused = !state.playing;
   }
   ui.Clip.value = state.action ? String(index) : '-1';
-  state.mixer.update(0); equipment.applyConstraints();
+  equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
   updateRangeEditor();
   updateAnimationControls();
   invalidate();
@@ -1076,7 +1076,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     const clip = state.action.getClip();
     const oldTimeOffset = restoreSettings.animationTimingVersion === 1 ? 0 : clip.userData?.fbxAnimation?.start || 0;
     state.action.time = THREE.MathUtils.clamp(restoreSettings.time - oldTimeOffset, 0, clip.duration);
-    state.mixer.update(0); equipment.applyConstraints();
+    equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
   }
   const vector = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
@@ -1349,7 +1349,7 @@ function tick(timestamp) {
   const delta = state.lastTick ? Math.min((timestamp - state.lastTick) / 1000, 0.1) : 0;
   state.lastTick = timestamp;
   if (state.playing && state.action) {
-    state.mixer.update(delta); equipment.applyConstraints(); // One authored pose, then two-handed grip constraint.
+    equipment.restoreConstraints(); state.mixer.update(delta); equipment.applyConstraints(); // Restore clean authored pose, evaluate once, then constrain.
     state.mainDirty = true;
     state.previewsDirty = true;
     state.heightDirty = true;
@@ -1817,7 +1817,7 @@ function bindControls() {
   ui.RestartButton.addEventListener('click', () => {
     if (!state.action) return;
     state.action.time = 0;
-    state.mixer.update(0); equipment.applyConstraints();
+    equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
     poseCapture?.saveWorkspace();
     invalidate();
@@ -1832,7 +1832,7 @@ function bindControls() {
     state.playing = false;
     state.action.paused = true;
     state.action.time = Number(ui.Timeline.value) * state.action.getClip().duration;
-    state.mixer.update(0); equipment.applyConstraints();
+    equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
     poseCapture?.saveWorkspace();
     invalidate();
