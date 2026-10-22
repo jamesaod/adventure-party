@@ -32,6 +32,10 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
+assert.ok(game.includes('import("./mob-appearance-runtime.mjs?v=R238C63")'));
+assert.ok(game.includes('import("./combat-mob-renderer.mjs?v=R238C63")'));
+assert.ok(game.includes('import("./combat-pose-recipe.mjs?v=R238C63")'));
+assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
 assert.ok(game.includes('await pending'));
 assert.ok(game.includes('poseProfile:captured.poseProfile'));
