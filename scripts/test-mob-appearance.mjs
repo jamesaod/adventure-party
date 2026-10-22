@@ -23,7 +23,7 @@ assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129, -90, 0]);
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].attachmentBone,'mixamorig:LeftHand');
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
-assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].representation,'procedural-round-shield-textured-v1');
+assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].representation,'procedural-round-shield-v1');
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].asset,undefined);
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].mount.position,[0,0,0.04]);
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].mount.rotationDegrees,[0,0,0]);
