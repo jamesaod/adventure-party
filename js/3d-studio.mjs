@@ -336,11 +336,14 @@ async function changeEquipment(value, { fit = false } = {}) {
 }
 
 async function changeShield(value,{fit=false,resetPose=true}={}){
-  if(studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
+  if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
     updateEquipmentControls();
     return;
   }
-  if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
+  if(value!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
+    await equipment.select('none');
+  }
+
     updateEquipmentControls();
     return;
   }
@@ -1110,14 +1113,18 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
-  const shieldSettings=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
+  const requestedEquipment=restoreSettings?.equipment || {};
+  const requestedShield=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
     ? {leftHandShield:'round-wooden-shield'} : {leftHandShield:'none'});
-  return Promise.all([
-    equipment.setModel(model, restoreSettings?.equipment),
-    Promise.resolve(shieldEquipment.setModel(model, shieldSettings))
-  ]).then(result=>{
-    if(!restoreSettings && shieldSettings.leftHandShield!=='none') fitAllAnimations();
-    return result;
+  const requestedWeapon=studioWeapon(requestedEquipment?.rightHand);
+  const normalizedShield=requestedWeapon?.handsRequired===2
+    ? { ...requestedShield, leftHandShield:'none' }
+    : requestedShield;
+  return equipment.setModel(model,requestedEquipment).then(async weaponResult=>{
+    const shieldResult=await shieldEquipment.setModel(model,normalizedShield);
+    if(!restoreSettings&&normalizedShield.leftHandShield!=='none')fitAllAnimations();
+    updateEquipmentControls();
+    return [weaponResult,shieldResult];
   });
 }
 
@@ -1164,6 +1171,9 @@ function readCapturePose() {
   }
   if (shieldGear.settings.leftHandShield !== 'none' && !shieldGear.attached) {
     throw new Error(shieldGear.error || 'The equipped shield is unavailable. Reload the studio before capturing another pose.');
+  }
+  if (studioWeapon(gear.settings.rightHand)?.handsRequired===2 && shieldGear.settings.leftHandShield!=='none') {
+    throw new Error('Two-handed weapons and shields are mutually exclusive. Unequip one before capturing.');
   }
   state.playing = false;
   state.lastTick = 0;
