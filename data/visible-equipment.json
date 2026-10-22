@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "weapons": {
     "flaming-sword-5": {
       "itemName": "Flaming Sword +5",
@@ -15,8 +15,20 @@
       "poseProfileId": "one-handed-swing-v1",
       "asset": "assets/models/weapons/battle-axes/battle-axe.glb",
       "attachmentBone": "mixamorig:RightHand",
-      "grip": { "position": [0.015, 0.05, 0.005], "rotationDegrees": [0, -90, 0], "sizePercent": 100 },
-      "status": "first-pass; tune in 3D Studio and replace with exported profile calibration"
+      "grip": { "position": [0.015, 0.05, 0.005], "rotationDegrees": [-129, -90, 0], "sizePercent": 100 },
+      "primaryAxis": [4, 5, 0],
+      "status": "Rev 67: shaft aligned to the one-handed swing axis; cutting edge rolled 180 degrees around the shaft"
+    }
+  },
+  "shields": {
+    "bronze-round-shield": {
+      "itemName": "Bronze Round Shield",
+      "visualClass": "round-shield",
+      "attachmentBone": "mixamorig:LeftHand",
+      "sourceSha256": "c908d84a286a005a050934f0b5bb409c6d42b2cbfc85ae0669637802375994e0",
+      "mount": { "position": [0, 0, -0.045], "rotationDegrees": [0, 180, 0], "sizePercent": 100 },
+      "nativeScale": 0.45,
+      "status": "Rev 67 QA proxy matched to the uploaded source dimensions for animation positioning"
     }
   }
 }
