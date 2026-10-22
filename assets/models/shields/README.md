@@ -22,8 +22,8 @@ Adventure Party's current shield is based on the user-supplied
 The repository stores a web-optimized GLB at
 `assets/models/shields/round-wooden-shield.glb`.
 
-- Bytes: **331,276**
-- SHA-256: **0a2a2b4d9fe09f311e731e974a28da71584fc2516c7cbfb5f927b3572e64e9d8**
+- Bytes: **331,228**
+- SHA-256: **c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5**
 - Geometry and material map assignments are preserved.
 - The three embedded texture maps are reduced to **512 × 512** for Candidate loading.
 - The source-upload hash remains recorded in the item catalog for provenance.
