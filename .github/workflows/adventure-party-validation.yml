@@ -37,6 +37,7 @@ jobs:
           node --check js/studio-capture.mjs
           node --check js/studio-animations.mjs
           node --check js/studio-equipment.mjs
+          node --check js/studio-shield.mjs
           node --check js/mob-appearance.mjs
           node --check js/mob-appearance-runtime.mjs
           node --check js/combat-pose-recipe.mjs
