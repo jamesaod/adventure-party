@@ -17,26 +17,26 @@ Adventure Party's current shield is based on the user-supplied
 - three embedded 1024 × 1024 JPEG maps: normal, base color, and roughness/metallic
 - source bounds: X **-0.499817..0.499817**, Y **0..1**, Z **-0.124596..0.124596**
 
-### Repository web asset
+### Runtime representation
 
-The repository stores a web-optimized GLB at
-`assets/models/shields/round-wooden-shield.glb`.
+Candidate Rev 71 uses a lightweight textured round-shield renderer instead of
+shipping a second binary GLB. The runtime shield preserves the uploaded model's
+overall round proportions and uses texture maps derived from the uploaded GLB.
 
-- Bytes: **17,912**
-- SHA-256: **41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521**
-- The runtime derivative preserves the uploaded shield's round proportions and uses its uploaded wood base-color texture.
-- Runtime geometry is reduced to **258 vertices / 384 triangles** with one embedded **128 × 128** JPEG base-color map for fast Candidate loading.
-- The original Tripo upload remains the source-of-truth for provenance, detailed geometry, and the three original material maps.
+The repository stores 256 × 256 base-color, normal, and roughness/metallic maps
+under `assets/models/shields/round-wooden-shield-textures/`. The original GLB
+remains the authoritative source for provenance and detailed geometry.
 
 ### Canonical item record
 
-`js/item-catalog.mjs` owns the first canonical Adventure Party item record for
-the wooden shield. It ties together:
+`js/item-catalog.mjs` owns the canonical Adventure Party item record for the
+wooden shield. It ties together:
 
 - AD&D medium-shield rules
-- source and web-asset hashes
+- source model provenance and SHA-256
 - source model bounds
 - render-calibrated size
+- texture-pack identity
 - appearance / attachment identity
 
 At the current calibrated 100% visual scale, the shield is approximately
@@ -67,6 +67,6 @@ sprites use the same shield tuning.
 ## Historical bronze QA proxy
 
 Candidate Revs 67–70 used a procedural bronze round-shield proxy while the
-left-arm attachment system was being calibrated. Candidate Rev 71 replaces
-that proxy with a runtime-optimized derivative of the uploaded wooden-shield GLB while retaining the approved
-Rev 69 mount and Rev 70 controls. The original upload's SHA-256 and source geometry statistics remain recorded in the item catalog.
+left-arm attachment system was being calibrated. Candidate Rev 71 replaces its
+appearance with the wooden texture set and source proportions while retaining
+the approved Rev 69 mount and Rev 70 controls.
