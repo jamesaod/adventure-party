@@ -19,13 +19,14 @@ Adventure Party's current shield is based on the user-supplied
 
 ### Runtime representation
 
-Candidate Rev 71 uses a lightweight textured round-shield renderer instead of
+Candidate Rev 71 uses a self-contained wooden round-shield renderer rather than
 shipping a second binary GLB. The runtime shield preserves the uploaded model's
-overall round proportions and uses texture maps derived from the uploaded GLB.
+overall round proportions and source identity, then builds the visible wood
+face, darker rim/plank seams, and metal boss with Three.js materials.
 
-The repository stores 256 × 256 base-color, normal, and roughness/metallic maps
-under `assets/models/shields/round-wooden-shield-textures/`. The original GLB
-remains the authoritative source for provenance and detailed geometry.
+The original GLB remains the authoritative source for provenance and detailed
+geometry. This runtime representation keeps Candidate loading reliable while
+the equipment attachment and sizing system is being developed.
 
 ### Canonical item record
 
@@ -36,7 +37,6 @@ wooden shield. It ties together:
 - source model provenance and SHA-256
 - source model bounds
 - render-calibrated size
-- texture-pack identity
 - appearance / attachment identity
 
 At the current calibrated 100% visual scale, the shield is approximately
