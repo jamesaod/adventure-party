@@ -1571,6 +1571,7 @@ function bindControls() {
     const previousScalePercent = state.modelScalePercent;
     state.modelScalePercent = Math.min(STUDIO_MODEL_SCALE_MAX, validateSpriteModelScale(Number(ui.ModelScale.value)));
     applyModelSize(previousScalePercent);
+    if (state.spriteOnlyFallback) invalidate();
     updateSetupLabels();
     poseCapture?.updateModelScale(state.modelScalePercent);
   });
