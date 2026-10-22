@@ -23,6 +23,8 @@ assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129, -90, 0]);
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].attachmentBone,'mixamorig:LeftHand');
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
+assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].asset,'assets/models/shields/round-wooden-shield.glb');
+assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].assetSha256,'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521');
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].mount.position,[0,0,0.04]);
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].mount.rotationDegrees,[0,0,0]);
 const sword = appearanceRecipeForMob(carl, { modelId: 'dungeon-crawler-carl-v2-ual2-sword-test', bodyReferenceHeightInches: 76 });
@@ -32,7 +34,7 @@ const k1 = appearanceCacheKey(sword), k2 = appearanceCacheKey(structuredClone(sw
 assert.equal(k1, k2);
 const cache = new MobAppearanceCache(2); cache.set(k1, { id: 'sword-set' }); assert.equal(cache.get(k1).id, 'sword-set');
 const noShieldCarl=structuredClone(carl); noShieldCarl.inventory[2].equipped=false;
-const noShield=appearanceRecipeForMob(noShieldCarl,{modelId:'dungeon-crawler-carl-v2-ual2-sword-test',bodyReferenceHeightInches:75});
+const noShield=appearanceRecipeForMob(noShieldCarl,{modelId:'dungeon-crawler-carl-v2-ual2-sword-test',bodyReferenceHeightInches:76});
 assert.equal(noShield.shield,null);
 assert.notEqual(appearanceCacheKey(noShield),k1);
 const axeCarl = structuredClone(carl); axeCarl.inventory[0].equipped = false; axeCarl.inventory[1].equipped = true;
