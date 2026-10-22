@@ -42,7 +42,7 @@ function glb(path) {
 assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
 assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 100, 'Battle Axe UI default remains 100%');
 assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 180], 'Battle Axe source is flipped head-up and blade-forward');
-assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.32, 0.20, 0], 'Battle Axe grip lands on the diagonal wooden haft');
+assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.36, 0.15, 0], 'Battle Axe grip lands on the lower diagonal wooden haft');
 assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
 const migratedAxe = normalizeEquipment({
   rightHand:'battle-axe', sizePercent:75, position:[0.9,0.9,0.9], rotation:[0,90,0]
