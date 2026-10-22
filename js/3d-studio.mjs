@@ -300,6 +300,8 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
 }
 
 function readyClipIndex() {
+  const preferredTwoHandedRest = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_0\.5s$/i.test(clip.name));
+  if (preferredTwoHandedRest >= 0) return preferredTwoHandedRest;
   const twoHandedRest = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_/i.test(clip.name));
   if (twoHandedRest >= 0) return twoHandedRest;
   const explicit = state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
@@ -930,7 +932,8 @@ function updateRangeEditor() {
 }
 
 function updateAnimationChoices(index) {
-  ui.Clip.replaceChildren(new Option('Bind / generic rest pose', '-1'));
+  const isTwoHandedAudition = state.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition';
+  ui.Clip.replaceChildren(...(isTwoHandedAudition ? [] : [new Option('Bind / generic rest pose', '-1')]));
   state.clips.forEach((clip, clipIndex) => ui.Clip.add(new Option(animationOptionLabel(clip, clipIndex), String(clipIndex))));
   ui.Clip.value = String(index);
   ui.Clip.disabled = !state.clips.length;
@@ -998,7 +1001,9 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     if (!animationSourceId(clip)) clip.userData = { ...clip.userData, studioAnimationId: `source:${index}` };
   });
   const availableClips = [...sourceClips], animationRanges = [];
-  if (modelDefaults?.id === 'dungeon-crawler-carl-v2-ual2-two-handed-audition') {
+  const isTwoHandedAuditionModel = modelDefaults?.id === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'
+    || restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition';
+  if (isTwoHandedAuditionModel) {
     const source = sourceClips.find(clip => clip.name === 'UAL2_2H_Sword_Regular_Combo');
     if (source) {
       const restSamples=[0,0.5,1.0,1.5,2.0,2.5].filter(time=>time<=source.duration);
@@ -1073,8 +1078,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   upAxisGroup.add(model);
   let clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
   const preferredTwoHandedRest = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_0\.5s$/i.test(clip.name));
-  const isTwoHandedAudition = modelDefaults?.id === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'
-    || restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition';
+  const isTwoHandedAudition = isTwoHandedAuditionModel;
   if (isTwoHandedAudition && preferredTwoHandedRest >= 0 && (clipIndex < 0 || !state.clips[clipIndex])) {
     clipIndex = preferredTwoHandedRest;
   } else if (!restoreSettings) {
