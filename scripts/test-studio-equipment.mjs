@@ -45,7 +45,8 @@ assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 30], 'Battle Axe rotates ar
 assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.32, 0.20, 0], 'Battle Axe grip lands on the diagonal wooden haft');
 assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
 const migratedAxe = normalizeEquipment({
-  rightHand:'battle-axe', sizePercent:75, position:[0.9,0.9,0.9], rotation:[0,90,0]
+  rightHand:'battle-axe', presetRevision:2, sizePercent:100,
+  position:[0.015,0.05,0.005], rotation:[0,90,180]
 });
 assert.equal(migratedAxe.sizePercent,100,'Older saved axe settings migrate to the new 100% UI default');
 assert.deepEqual(migratedAxe.rotation,[0,90,30],'Older saved axe orientation migrates to the Rev 64 calibrated preset');
