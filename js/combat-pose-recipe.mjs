@@ -1,5 +1,5 @@
 import { loadStudioWorkspace, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES } from './mob-appearance.mjs?v=R238C69';
+import { WEAPON_POSE_PROFILES } from './mob-appearance.mjs?v=R238C70';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
 
@@ -101,6 +101,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
         }
       },
       lighting: structuredClone(settings.lighting || first.render?.lighting || {}),
+      shield: structuredClone(settings.shield || first.render?.shield || null),
       style: structuredClone(workspace.style || {}),
       poses: REQUIRED_POSES,
       facings: ['E','NE','NW','W','SW','SE']
