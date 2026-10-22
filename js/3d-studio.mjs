@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C62';
+} from './studio-equipment.mjs?v=R238C63';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -1508,7 +1508,9 @@ function bindControls() {
     catch (error) { showError(error); }
   });
   ui.RightHandWeapon.addEventListener('change', () => {
-    void changeEquipment({ ...equipment.snapshot().settings, rightHand: ui.RightHandWeapon.value }, { fit: true });
+    // Each weapon owns its own calibrated socket/grip preset. Do not carry the
+    // previous weapon's transform into the newly selected asset.
+    void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }), { fit: true });
   });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
