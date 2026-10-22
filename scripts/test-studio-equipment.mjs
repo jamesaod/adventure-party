@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {
   HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
-  findLeftForeArm, findLeftArm, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
+  findLeftForeArm, findLeftArm, findLeftShoulder, findUpperSpine, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 import {
   STUDIO_SHIELDS, SHIELD_MODEL_UNITS_PER_INCH, normalizeShield, findLeftHand, leftForearmAxisLocal,
@@ -67,29 +67,56 @@ assert.deepEqual(STUDIO_WEAPONS[2].primaryAxis,[0,-1,0]);
 assert.deepEqual(STUDIO_WEAPONS[2].rotation,[90,0,0]);
 assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
 
-// Focused IK fixture: the authored arm pose starts away from the secondary grip.
-// The solver must move the off-hand grip point onto the weapon without moving
-// the weapon, which remains driven by the primary/right-hand attachment.
+// Focused two-handed pose fixture: the authored pose starts with the arm
+// crossing the torso and open fingers. The body-aware pass should involve the
+// torso/shoulder, keep the off-hand on the secondary grip, and close the fingers.
 {
   const ikModel = new THREE.Group();
-  const upper = new THREE.Bone(); upper.name = 'mixamorigLeftArm'; upper.position.set(0,0,0);
-  const fore = new THREE.Bone(); fore.name = 'mixamorigLeftForeArm'; fore.position.set(0.9,0,0);
-  const offHand = new THREE.Bone(); offHand.name = 'mixamorigLeftHand'; offHand.position.set(0.8,0,0);
-  const finger = new THREE.Bone(); finger.name = 'mixamorigLeftHandMiddle1'; finger.position.set(0.18,0,0);
-  offHand.add(finger); fore.add(offHand); upper.add(fore); ikModel.add(upper);
-  const weaponModel = new THREE.Group(); weaponModel.position.set(1.1,1.0,0);
+  const spine = new THREE.Bone(); spine.name = 'mixamorigSpine2'; spine.position.set(0,0,0);
+  const shoulder = new THREE.Bone(); shoulder.name = 'mixamorigLeftShoulder'; shoulder.position.set(0.18,0.45,0);
+  const upper = new THREE.Bone(); upper.name = 'mixamorigLeftArm'; upper.position.set(0.18,0,0);
+  const fore = new THREE.Bone(); fore.name = 'mixamorigLeftForeArm'; fore.position.set(0.75,-0.12,0);
+  const offHand = new THREE.Bone(); offHand.name = 'mixamorigLeftHand'; offHand.position.set(0.68,-0.08,0);
+  const fingerNames=['Index','Middle','Ring','Pinky'];
+  for(const fingerName of fingerNames){
+    const b1=new THREE.Bone(); b1.name=`mixamorigLeftHand${fingerName}1`; b1.position.set(0.13,0,0);
+    const b2=new THREE.Bone(); b2.name=`mixamorigLeftHand${fingerName}2`; b2.position.set(0.10,0,0);
+    const b3=new THREE.Bone(); b3.name=`mixamorigLeftHand${fingerName}3`; b3.position.set(0.08,0,0);
+    b2.add(b3); b1.add(b2); offHand.add(b1);
+  }
+  const thumb1=new THREE.Bone(); thumb1.name='mixamorigLeftHandThumb1'; thumb1.position.set(0.08,-0.04,0.02);
+  const thumb2=new THREE.Bone(); thumb2.name='mixamorigLeftHandThumb2'; thumb2.position.set(0.08,0,0);
+  const thumb3=new THREE.Bone(); thumb3.name='mixamorigLeftHandThumb3'; thumb3.position.set(0.06,0,0);
+  thumb2.add(thumb3); thumb1.add(thumb2); offHand.add(thumb1);
+  fore.add(offHand); upper.add(fore); shoulder.add(upper); spine.add(shoulder); ikModel.add(spine);
+
+  const weaponModel = new THREE.Group(); weaponModel.position.set(0.95,0.9,0.35);
   const fixtureAttachment = {
     model: weaponModel,
     weapon: { handsRequired: 2, secondaryGrip: [0,0,0] }
   };
-  const before = offHand.localToWorld(finger.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
-  const result = solveTwoHandedGrip(THREE,{model:ikModel,attachment:fixtureAttachment,iterations:32,tolerance:0.005,maxStepDegrees:60});
-  const after = offHand.localToWorld(finger.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
+  ikModel.updateWorldMatrix(true,true);
+  const middle1=offHand.children.find(child=>child.name.endsWith('Middle1'));
+  const before = offHand.localToWorld(middle1.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
+  const shoulderBefore=shoulder.quaternion.clone(), spineBefore=spine.quaternion.clone();
+  const indexBefore=offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.clone();
+
+  const result = solveTwoHandedGrip(THREE,{model:ikModel,attachment:fixtureAttachment,iterations:40,tolerance:0.006,maxStepDegrees:60});
+  const after = offHand.localToWorld(middle1.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
+
   assert.equal(findEquipmentLeftHand(ikModel),offHand);
   assert.equal(findLeftForeArm(ikModel),fore);
   assert.equal(findLeftArm(ikModel),upper);
-  assert.ok(after < before * 0.1,`Two-handed IK should close the off-hand gap: ${before} -> ${after}`);
+  assert.equal(findLeftShoulder(ikModel),shoulder);
+  assert.equal(findUpperSpine(ikModel),spine);
+  assert.ok(after < before * 0.15,`Two-handed pose should close the off-hand gap: ${before} -> ${after}`);
   assert.ok(result.solved,`Two-handed IK should meet grip tolerance; remaining error ${result.error}`);
+  assert.equal(result.bodyPose.applied,true,'Body-aware two-handed pose participates before final grip solve');
+  assert.ok(shoulder.quaternion.angleTo(shoulderBefore)>1e-4,'Left shoulder participates in the reach');
+  assert.ok(spine.quaternion.angleTo(spineBefore)>1e-5,'Upper torso participates subtly in the two-handed pose');
+  assert.equal(result.fingerBonesCurled,15,'All four fingers and thumb segments receive the two-handed wrap pose');
+  assert.ok(offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.angleTo(indexBefore)>0.2,
+    'Left index finger visibly curls around the hilt');
 }
 const migratedAxe = normalizeEquipment({
   rightHand:'battle-axe', presetRevision:4, sizePercent:100,

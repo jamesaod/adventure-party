@@ -81,6 +81,122 @@ export function findRightHand(model) { return findBone(model, ['righthand', 'mix
 export function findLeftHand(model) { return findBone(model, ['lefthand', 'mixamoriglefthand']); }
 export function findLeftForeArm(model) { return findBone(model, ['leftforearm', 'mixamorigleftforearm']); }
 export function findLeftArm(model) { return findBone(model, ['leftarm', 'mixamorigleftarm']); }
+export function findLeftShoulder(model) { return findBone(model, ['leftshoulder', 'mixamorigleftshoulder']); }
+export function findUpperSpine(model) {
+  return findBone(model, ['spine2', 'mixamorigspine2', 'spine1', 'mixamorigspine1', 'spine', 'mixamorigspine']);
+}
+
+function rotateJointToward(THREE, joint, fromWorld, toWorld, maxDegrees, weight = 1) {
+  if (!joint?.isBone || fromWorld.lengthSq() < 1e-10 || toWorld.lengthSq() < 1e-10) return 0;
+  fromWorld.normalize(); toWorld.normalize();
+  const deltaWorld = new THREE.Quaternion().setFromUnitVectors(fromWorld, toWorld);
+  let angle = 2 * Math.acos(THREE.MathUtils.clamp(deltaWorld.w, -1, 1));
+  if (!Number.isFinite(angle) || angle < 1e-8) return 0;
+  angle = Math.min(angle * weight, THREE.MathUtils.degToRad(maxDegrees));
+  const axis = new THREE.Vector3(deltaWorld.x, deltaWorld.y, deltaWorld.z);
+  if (axis.lengthSq() < 1e-10) return 0;
+  deltaWorld.setFromAxisAngle(axis.normalize(), angle);
+  const parentWorld = joint.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
+  const deltaLocal = parentWorld.clone().invert().multiply(deltaWorld).multiply(parentWorld);
+  joint.quaternion.premultiply(deltaLocal).normalize();
+  joint.updateWorldMatrix(true, true);
+  return THREE.MathUtils.radToDeg(angle);
+}
+
+function twoHandedTargetWorld(THREE, attachment) {
+  attachment.model.updateWorldMatrix(true, true);
+  return attachment.model.localToWorld(new THREE.Vector3(...attachment.weapon.secondaryGrip));
+}
+
+function applyTwoHandedBodyPose(THREE, model, attachment) {
+  const shoulder = findLeftShoulder(model), arm = findLeftArm(model), forearm = findLeftForeArm(model), spine = findUpperSpine(model);
+  if (!shoulder || !arm || !forearm) return { applied: false, reason: 'left-body-chain-missing' };
+  model.updateWorldMatrix(true, true);
+
+  // Let the upper torso share a small amount of the reach instead of forcing
+  // the entire correction through the arm. This is intentionally subtle.
+  let spineDegrees = 0;
+  if (spine) {
+    const spineWorld = spine.getWorldPosition(new THREE.Vector3());
+    const shoulderWorld = shoulder.getWorldPosition(new THREE.Vector3());
+    const target = twoHandedTargetWorld(THREE, attachment);
+    spineDegrees = rotateJointToward(
+      THREE, spine,
+      shoulderWorld.clone().sub(spineWorld),
+      target.clone().sub(spineWorld),
+      7, 0.12
+    );
+    model.updateWorldMatrix(true, true);
+  }
+
+  // Open the clavicle/shoulder toward the secondary grip before solving the
+  // arm. This moves the arm around the chest rather than dragging it through it.
+  const shoulderWorld = shoulder.getWorldPosition(new THREE.Vector3());
+  const armWorld = arm.getWorldPosition(new THREE.Vector3());
+  let target = twoHandedTargetWorld(THREE, attachment);
+  const shoulderDegrees = rotateJointToward(
+    THREE, shoulder,
+    armWorld.clone().sub(shoulderWorld),
+    target.clone().sub(shoulderWorld),
+    18, 0.55
+  );
+  model.updateWorldMatrix(true, true);
+
+  // Pole-style elbow bias: keep the elbow on the body's outside. The desired
+  // elbow is the natural shoulder/weapon midpoint pushed laterally away from
+  // the chest by a fraction of total arm length.
+  target = twoHandedTargetWorld(THREE, attachment);
+  const chestWorld = (spine || shoulder.parent || shoulder).getWorldPosition(new THREE.Vector3());
+  const newShoulderWorld = shoulder.getWorldPosition(new THREE.Vector3());
+  const elbowWorld = forearm.getWorldPosition(new THREE.Vector3());
+  const handWorld = findLeftHand(model)?.getWorldPosition(new THREE.Vector3()) || elbowWorld.clone();
+  const upperLength = newShoulderWorld.distanceTo(elbowWorld);
+  const foreLength = elbowWorld.distanceTo(handWorld);
+  const outward = newShoulderWorld.clone().sub(chestWorld);
+  if (outward.lengthSq() < 1e-10) outward.set(1, 0, 0);
+  outward.normalize();
+  const desiredElbow = newShoulderWorld.clone().lerp(target, 0.46)
+    .addScaledVector(outward, Math.max(upperLength + foreLength, 0.01) * 0.22);
+  const armPivot = arm.getWorldPosition(new THREE.Vector3());
+  const elbowDegrees = rotateJointToward(
+    THREE, arm,
+    elbowWorld.clone().sub(armPivot),
+    desiredElbow.clone().sub(armPivot),
+    32, 1
+  );
+  model.updateWorldMatrix(true, true);
+  return { applied: true, spineDegrees, shoulderDegrees, elbowDegrees };
+}
+
+function leftFingerBones(model) {
+  const result = [];
+  model?.traverse(object => {
+    if (!object.isBone) return;
+    const name = normalizedBoneName(object);
+    if (/left(hand)?(thumb|index|middle|ring|pinky)[123]$/.test(name) ||
+        /mixamoriglefthand(thumb|index|middle|ring|pinky)[123]$/.test(name)) result.push(object);
+  });
+  return result;
+}
+
+function applyTwoHandedFingerWrap(THREE, model) {
+  const fingers = leftFingerBones(model);
+  let curled = 0;
+  for (const bone of fingers) {
+    const name = normalizedBoneName(bone);
+    const segment = Number(name.match(/([123])$/)?.[1] || 1);
+    const thumb = name.includes('thumb');
+    const degrees = thumb
+      ? [0, 32, 42, 28][segment]
+      : [0, 58, 72, 52][segment];
+    const axis = thumb ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+    const curl = new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees));
+    bone.quaternion.multiply(curl).normalize();
+    curled++;
+  }
+  model?.updateWorldMatrix(true, true);
+  return curled;
+}
 
 function inferHandGripLocal(THREE, hand) {
   const fingerBases = hand?.children?.filter(child => child.isBone && /(thumb|index|middle|ring|pinky)/.test(normalizedBoneName(child))) || [];
@@ -100,9 +216,9 @@ export function solveTwoHandedGrip(THREE, {
   const hand = findLeftHand(model), forearm = findLeftForeArm(model), arm = findLeftArm(model);
   if (!hand || !forearm || !arm) return { active: true, solved: false, error: null, reason: 'left-arm-chain-missing' };
 
+  const bodyPose = applyTwoHandedBodyPose(THREE, model, attachment);
   model.updateWorldMatrix(true, true);
-  attachment.model.updateWorldMatrix(true, true);
-  const target = attachment.model.localToWorld(new THREE.Vector3(...weapon.secondaryGrip));
+  const target = twoHandedTargetWorld(THREE, attachment);
   const handGripLocal = inferHandGripLocal(THREE, hand);
   const effectorWorld = () => hand.localToWorld(handGripLocal.clone());
   const joints = [forearm, arm];
@@ -134,13 +250,18 @@ export function solveTwoHandedGrip(THREE, {
     }
   }
   model.updateWorldMatrix(true, true);
+  const liveTarget = twoHandedTargetWorld(THREE, attachment);
   const offHand = effectorWorld();
-  error = offHand.distanceTo(target);
+  error = offHand.distanceTo(liveTarget);
+  const fingerBonesCurled = applyTwoHandedFingerWrap(THREE, model);
   return {
     active: true, solved: error <= tolerance, error,
-    targetWorldPosition: target.toArray(),
+    targetWorldPosition: liveTarget.toArray(),
     offHandWorldPosition: offHand.toArray(),
-    handBone: hand.name, forearmBone: forearm.name, armBone: arm.name
+    handBone: hand.name, forearmBone: forearm.name, armBone: arm.name,
+    shoulderBone: findLeftShoulder(model)?.name || null,
+    spineBone: findUpperSpine(model)?.name || null,
+    bodyPose, fingerBonesCurled
   };
 }
 export function createWeaponAttachment(THREE, hand, model, settings) {
