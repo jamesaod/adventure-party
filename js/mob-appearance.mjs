@@ -91,17 +91,17 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
     poseProfileId: 'one-handed-swing-v1',
     asset: 'assets/models/weapons/battle-axes/battle-axe.glb',
     attachmentBone: 'mixamorig:RightHand',
-    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, 90, 0], sizePercent: 75 })
+    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, 90, 180], sizePercent: 100 })
   })
 });
 
-export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReferenceHeightInches, renderSettings = {} } = {}) {
+export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReferenceHeightInches, poseProfile = null, renderSettings = {} } = {}) {
   if (!unit) throw new Error('A MOB is required.');
   applyMobHeight(unit);
   const inventory = Array.isArray(unit.inventory) ? unit.inventory : [];
   const equipped = inventory.find(item => item?.slot === 'weapon' && item?.equipped) || null;
   const visual = equipped?.appearanceId ? VISIBLE_WEAPON_ASSETS[equipped.appearanceId] : null;
-  const profile = visual ? WEAPON_POSE_PROFILES[visual.poseProfileId] : null;
+  const profile = poseProfile || (visual ? WEAPON_POSE_PROFILES[visual.poseProfileId] : WEAPON_POSE_PROFILES['one-handed-swing-v1']);
   return {
     format: 'adventure-party-mob-appearance-recipe',
     version: 1,
