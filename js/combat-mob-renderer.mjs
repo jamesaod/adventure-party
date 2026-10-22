@@ -2,8 +2,8 @@ import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C63';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C64';
+import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C65';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C65';
 
 const MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -133,16 +133,14 @@ function frameCanvas(renderer,target,scene,camera,turntable,yaw,frame,style){
   renderer.render(scene,camera);
   const raw=new Uint8Array(frame.width*frame.height*4);
   renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,raw);
-  const flipped=new Uint8Array(raw.length);
-  for(let y=0;y<frame.height;y++){
-    flipped.set(raw.subarray(y*frame.width*4,(y+1)*frame.width*4),(frame.height-1-y)*frame.width*4);
-  }
+  // quantizeRgba performs the one required WebGL bottom-up -> canvas top-down
+  // conversion. Pre-flipping here inverted the generated frame a second time.
   const canvas=document.createElement('canvas');
   canvas.width=frame.width;
   canvas.height=frame.height;
   const ctx=canvas.getContext('2d');
   const image=ctx.createImageData(frame.width,frame.height);
-  quantizeRgba(flipped,frame.width,frame.height,image.data,{
+  quantizeRgba(raw,frame.width,frame.height,image.data,{
     ...style,transparent:true,tileWidth:frame.width,tileHeight:frame.height
   });
   ctx.putImageData(image,0,0);
