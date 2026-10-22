@@ -2,7 +2,7 @@
 
 ## Round Wooden Shield — Candidate Rev 71
 
-Adventure Party's current shield is based on the user-supplied
+Adventure Party's current shield is derived from the user-supplied
 `round+wooden+shield+3d+model.glb`.
 
 ### Source upload
@@ -17,42 +17,44 @@ Adventure Party's current shield is based on the user-supplied
 - three embedded 1024 × 1024 JPEG maps: normal, base color, and roughness/metallic
 - source bounds: X **-0.499817..0.499817**, Y **0..1**, Z **-0.124596..0.124596**
 
-The original GLB is the source-of-truth for provenance and source dimensions.
+The source upload remains the authoritative provenance record.
 
-### Candidate runtime representation
+### Repository runtime asset
 
-Candidate Rev 71 uses a browser-safe textured round-shield mesh rather than
-claiming that the source GLB is stored byte-for-byte in the repository. The
-runtime disk preserves the uploaded model's approximately **1.0 × 1.0 × 0.249**
-proportions and uses texture maps downsampled from the uploaded GLB.
+The Candidate site uses the runtime-optimized derivative at
+`assets/models/shields/round-wooden-shield.glb`.
 
-Repository texture sources:
+- Bytes: **17,912**
+- SHA-256: **41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521**
+- 258 position vertices / 384 triangles
+- one embedded 128 × 128 JPEG wood base-color map derived from the uploaded shield
+- runtime bounds: X **-0.5..0.5**, Y **0..1**, Z **-0.12..0.055**
 
-- `round-wooden-shield-textures/basecolor.jpg.b64` — 256 × 256
-- `round-wooden-shield-textures/normal.jpg.b64` — 256 × 256
-- `round-wooden-shield-textures/roughness-metallic.jpg.b64` — 256 × 256
+The derivative deliberately preserves the uploaded shield's round proportions
+while reducing geometry and texture cost for Studio and on-demand combat sprite
+generation. The original upload's source statistics and SHA remain in the item
+catalog.
 
-The Base64 files decode to ordinary JPEG maps at runtime. Their byte counts and
-SHA-256 hashes are recorded in `js/item-catalog.mjs` and validated by CI.
+## Canonical item record
 
-### Canonical item record
+`js/item-catalog.mjs` is the first canonical Adventure Party modeled-item
+catalog. It currently records the Flaming Sword +5, Battle Axe, Chain Mail, and
+Round Wooden Shield.
 
-`js/item-catalog.mjs` owns the first canonical Adventure Party item records for
-the modeled equipment. The Round Wooden Shield record ties together:
+The wooden shield record connects:
 
-- AD&D medium-shield rules
-- uploaded-source provenance
-- source model bounds and proportions
-- render-calibrated size
-- runtime texture sources
-- appearance / attachment identity
+- existing AD&D medium-shield rules
+- physical/render size data
+- source-model provenance
+- runtime appearance asset
+- left-arm attachment identity
 
-At the current calibrated 100% visual scale, the shield is approximately
-**35 inches in diameter** relative to Dungeon Crawler Carl's canonical
-**76-inch (6′4″)** height. This is a render calibration, not a claim that the
-source model represents a historically exact 35-inch shield.
+At the calibrated 100% visual scale, the shield is approximately **35 inches in
+diameter** relative to Dungeon Crawler Carl's canonical **76-inch (6′4″)**
+height. This is a rendering calibration, not a claim that the source model has
+a historically exact real-world diameter.
 
-### Left-arm mount and Studio controls
+## Left-arm mount and Studio controls
 
 The approved base mount remains:
 
@@ -75,6 +77,6 @@ sprites use the same shield tuning.
 ## Historical bronze QA proxy
 
 Candidate Revs 67–70 used a procedural bronze round-shield proxy while the
-left-arm attachment system was being calibrated. Candidate Rev 71 replaces
-that proxy with the wooden shield's uploaded texture material and source
-proportions while retaining the approved Rev 69 mount and Rev 70 controls.
+left-arm attachment system was being calibrated. Candidate Rev 71 migrates that
+legacy appearance ID to the Round Wooden Shield while preserving its approved
+mount and equipment state.
