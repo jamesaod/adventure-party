@@ -46,7 +46,8 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
-  'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
+  'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
+  'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
@@ -227,6 +228,15 @@ function syncCaptureLock(locked) {
   updateEquipmentControls(locked);
 }
 
+function formatShieldDistance(value){
+  if(Math.abs(value)<0.001)return 'Base';
+  return `${Math.abs(value).toFixed(2)} in ${value>0?'farther':'closer'}`;
+}
+function formatShieldSlide(value){
+  if(Math.abs(value)<0.001)return 'Base';
+  return `${Math.abs(value).toFixed(2)} in ${value>0?'toward elbow':'toward hand'}`;
+}
+
 function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
   const current = equipment.snapshot(), settings = current.settings;
   const shieldCurrent = shieldEquipment.snapshot(), shieldSettings = shieldCurrent.settings;
@@ -235,6 +245,20 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
   ui.RightHandWeapon.disabled = busy || locked;
   ui.LeftHandShield.value = shieldSettings.leftHandShield;
   ui.LeftHandShield.disabled = busy || locked;
+  const shieldDisabled=busy||locked||shieldSettings.leftHandShield==='none';
+  ui.ShieldDistance.value=String(shieldSettings.distanceInches);
+  ui.ShieldDistanceValue.textContent=formatShieldDistance(shieldSettings.distanceInches);
+  ui.ShieldDistance.disabled=shieldDisabled;
+  ui.ShieldDistance.setAttribute('aria-valuetext',formatShieldDistance(shieldSettings.distanceInches));
+  ui.ShieldForearmSlide.value=String(shieldSettings.forearmSlideInches);
+  ui.ShieldForearmSlideValue.textContent=formatShieldSlide(shieldSettings.forearmSlideInches);
+  ui.ShieldForearmSlide.disabled=shieldDisabled;
+  ui.ShieldForearmSlide.setAttribute('aria-valuetext',formatShieldSlide(shieldSettings.forearmSlideInches));
+  ui.ShieldForearmRoll.value=String(shieldSettings.forearmRollDegrees);
+  ui.ShieldForearmRollValue.textContent=`${Math.round(shieldSettings.forearmRollDegrees)}°`;
+  ui.ShieldForearmRoll.disabled=shieldDisabled;
+  ui.ShieldForearmRoll.setAttribute('aria-valuetext',`${Math.round(shieldSettings.forearmRollDegrees)} degrees`);
+  ui.ResetShieldButton.disabled=shieldDisabled;
   ui.WeaponSize.value = String(settings.sizePercent);
   ui.WeaponSizeValue.textContent = `${settings.sizePercent}%`;
   ui.WeaponSize.disabled = busy || locked || settings.rightHand === 'none';
