@@ -13,24 +13,17 @@ const LIGHTING={ambientIntensity:3,ambientColor:'#abc7d4',keyIntensity:4.85,keyC
 const FACINGS=['E','NE','NW','W','SW','SE'];
 const POSES=[['ready','stand'],['attack','attack'],['prone','prone']];
 
-let modelPromise=null;
 const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
-async function baseModel(){
-  if(!modelPromise) modelPromise=loadGltf(MODEL_URL);
-  return modelPromise;
-}
-function cloneObject(source){
-  const clone=source.clone(true);
-  const sourceSkinned=[],cloneSkinned=[];
-  source.traverse(o=>{if(o.isSkinnedMesh) sourceSkinned.push(o);});
-  clone.traverse(o=>{if(o.isSkinnedMesh) cloneSkinned.push(o);});
-  for(let i=0;i<sourceSkinned.length;i++){
-    const src=sourceSkinned[i], dst=cloneSkinned[i];
-    if(!src?.skeleton||!dst) continue;
-    const bones=src.skeleton.bones.map(b=>clone.getObjectByName(b.name)).filter(Boolean);
-    if(bones.length===src.skeleton.bones.length) dst.bind(new THREE.Skeleton(bones,src.skeleton.boneInverses),dst.bindMatrix);
-  }
-  return clone;
+
+function normalizeModel(model){
+  model.updateMatrixWorld(true);
+  const initial=new THREE.Box3().setFromObject(model,true);
+  const size=initial.getSize(new THREE.Vector3());
+  const center=initial.getCenter(new THREE.Vector3());
+  const scale=2/Math.max(size.y,Math.max(size.x,size.z)*0.25,0.001);
+  model.scale.setScalar(scale);
+  model.position.set(-center.x*scale,-initial.min.y*scale,-center.z*scale);
+  model.updateMatrixWorld(true);
 }
 function loadImage(src){
   return new Promise((resolve,reject)=>{
@@ -60,8 +53,11 @@ function frameCanvas(renderer,target,scene,camera,turntable,yaw,options){
 }
 export async function generateCombatSpriteSet(recipe){
   if(recipe?.mob?.type!=='fighter') throw new Error('On-the-fly rendering is currently limited to Dungeon Crawler Carl.');
-  const gltf=await baseModel();
-  const model=cloneObject(gltf.scene);
+  // A fresh parsed scene keeps skinned skeleton state isolated between queued
+  // appearance recipes. Browser HTTP caching still prevents repeated asset transfer.
+  const gltf=await loadGltf(MODEL_URL);
+  const model=gltf.scene;
+  normalizeModel(model);
   model.traverse(o=>{if(o.isSkinnedMesh)o.frustumCulled=false;});
   const scene=new THREE.Scene();
   const turntable=new THREE.Group();
