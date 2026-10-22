@@ -1,19 +1,26 @@
 // Rigid visible equipment stays beneath the animated right hand. Weapon-specific grip presets remain independently tunable.
+// All one-handed weapon assets expose a local longitudinal axis that must resolve
+// to this hand-local direction. For a sword it is the blade; for an axe it is
+// the shaft. Cutting edges are deliberately not treated as the weapon axis.
+export const HELD_WEAPON_AXIS = Object.freeze([0, 0, -1]);
 export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'medieval-sword', label: 'Medieval Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/swords/medieval-sword.glb',
     grip: Object.freeze([0.34, 0.109, 0]), nativeScale: 0.55,
+    primaryAxis: Object.freeze([-1, 0, 0]),
     position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, -90, 0])
   }),
   Object.freeze({
     id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    // Rev 65: preserve the approved lower-haft grip and 0.75 native scale.
-    // Rotate only around that grip so the haft runs down-left to up-right.
+    // Rev 66: the shaft, not the axe blade, is the longitudinal weapon axis.
+    // The [4,5,0] source-space direction follows the diagonal haft from the
+    // approved lower grip toward the head. [-51,90,0] maps it to HELD_WEAPON_AXIS.
     grip: Object.freeze([-0.36, 0.15, 0]), nativeScale: 0.4125,
-    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 30]),
-    defaultSizePercent: 100, presetRevision: 3
+    primaryAxis: Object.freeze([4, 5, 0]),
+    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([-51, 90, 0]),
+    defaultSizePercent: 100, presetRevision: 4
   })
 ]);
 
