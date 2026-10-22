@@ -57,6 +57,7 @@ jobs:
           node scripts/test-mob-appearance-runtime.mjs
           node scripts/test-combat-mob-renderer.mjs
           node scripts/test-carl-ual2.mjs
+          node scripts/test-carl-ual2-two-handed-audition.mjs
 
       - name: Validate sprite capture packages and asset imports
         run: |
