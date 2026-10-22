@@ -1,5 +1,5 @@
 import { studioWeapon } from './studio-equipment.mjs?v=R238C67';
-import { studioShield } from './studio-shield.mjs?v=R238C70';
+import { studioShield } from './studio-shield.mjs?v=R238C71';
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
 export const MOB_HEIGHT_VERSION = 1;
@@ -22,7 +22,7 @@ export function formatHeight(totalInches) {
  * null keeps a legacy MOB at its existing render scale until an authored height is assigned.
  */
 export const MOB_HEIGHTS = Object.freeze({
-  fighter: Object.freeze({ heightInches: inches(6, 3), authored: true, label: 'Dungeon Crawler Carl' }),
+  fighter: Object.freeze({ heightInches: inches(6, 4), authored: true, label: 'Dungeon Crawler Carl' }),
   ranger: Object.freeze({ heightInches: null, authored: false, label: 'Elven Ranger' }),
   mage: Object.freeze({ heightInches: null, authored: false, label: 'Baub' }),
   kobold: Object.freeze({ heightInches: null, authored: false, label: 'Kobold' }),
@@ -108,8 +108,10 @@ function visibleShield(id,itemName,studioId){
   return Object.freeze({
     id,itemName,studioId,
     visualClass:preset.visualClass,
+    asset:preset.file,
     attachmentBone:'mixamorig:LeftHand',
     sourceSha256:preset.sourceSha256,
+    assetSha256:preset.assetSha256,
     mount:Object.freeze({
       position:Object.freeze([...preset.position]),
       rotationDegrees:Object.freeze([...preset.rotation]),
@@ -119,7 +121,7 @@ function visibleShield(id,itemName,studioId){
 }
 
 export const VISIBLE_SHIELD_ASSETS=Object.freeze({
-  'bronze-round-shield':visibleShield('bronze-round-shield','Bronze Round Shield','bronze-round-shield')
+  'round-wooden-shield':visibleShield('round-wooden-shield','Round Wooden Shield','round-wooden-shield')
 });
 
 export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReferenceHeightInches, poseProfile = null, renderSettings = {} } = {}) {
