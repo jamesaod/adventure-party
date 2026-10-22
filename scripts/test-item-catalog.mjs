@@ -3,11 +3,45 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { ITEM_CATALOG_VERSION, ITEM_CATALOG, itemCatalogEntry } from '../js/item-catalog.mjs';
 
-assert.equal(ITEM_CATALOG_VERSION,2);
-for(const id of ['flaming-sword-5','battle-axe','chain-mail','round-wooden-shield']){
+assert.equal(ITEM_CATALOG_VERSION,3);
+for(const id of ['flaming-sword-5','battle-axe','two-handed-sword','chain-mail','round-wooden-shield']){
   assert.equal(itemCatalogEntry(id),ITEM_CATALOG[id],`Catalog lookup resolves ${id}`);
   assert.ok(Object.isFrozen(ITEM_CATALOG[id]),`${id} is immutable`);
 }
+
+const twoHanded=itemCatalogEntry('two-handed-sword');
+assert.equal(twoHanded.appearance.poseProfileId,'two-handed-swing');
+assert.equal(twoHanded.appearance.handsRequired,2);
+assert.deepEqual(twoHanded.appearance.primaryAxis,[0,-1,0]);
+assert.deepEqual(twoHanded.appearance.grip,[0,0.81,0]);
+assert.deepEqual(twoHanded.appearance.secondaryGrip,[0,0.89,0]);
+assert.equal(twoHanded.appearance.nativeScale,0.78);
+assert.equal(twoHanded.appearance.source.originalBytes,646456);
+assert.equal(twoHanded.appearance.source.originalSha256,'85408b9b17fa38a72816d57ac55e63e6409862b5d5a305beb6cf5eee045c948a');
+const twoHandedBytes=fs.readFileSync(new URL('../'+twoHanded.appearance.asset,import.meta.url));
+assert.equal(twoHandedBytes.length,646456);
+assert.equal(crypto.createHash('sha256').update(twoHandedBytes).digest('hex'),twoHanded.appearance.source.originalSha256);
+assert.equal(twoHandedBytes.readUInt32LE(0),0x46546c67);
+assert.equal(twoHandedBytes.readUInt32LE(4),2);
+assert.equal(twoHandedBytes.readUInt32LE(8),twoHandedBytes.length);
+let twoHandedJson=null;
+for(let offset=12;offset<twoHandedBytes.length;){
+  const length=twoHandedBytes.readUInt32LE(offset),type=twoHandedBytes.readUInt32LE(offset+4);
+  const chunk=twoHandedBytes.subarray(offset+8,offset+8+length);
+  if(type===0x4e4f534a)twoHandedJson=JSON.parse(chunk.toString('utf8'));
+  offset+=8+length;
+}
+assert.ok(twoHandedJson);
+assert.equal(twoHandedJson.meshes.length,1);
+assert.equal(twoHandedJson.materials.length,1);
+assert.equal(twoHandedJson.skins?.length||0,0);
+assert.equal(twoHandedJson.animations?.length||0,0);
+assert.equal(twoHandedJson.accessors[twoHandedJson.meshes[0].primitives[0].indices].count/3,8333);
+assert.equal(twoHandedJson.accessors[twoHandedJson.meshes[0].primitives[0].attributes.POSITION].count,6623);
+assert.equal(twoHandedJson.images.length,3);
+assert.ok(twoHandedJson.images.every(image=>image.mimeType==='image/jpeg'&&Number.isInteger(image.bufferView)));
+assert.deepEqual(twoHandedJson.accessors[twoHandedJson.meshes[0].primitives[0].attributes.POSITION].min,[-0.1240234524011612,0,-0.029155734926462173]);
+assert.deepEqual(twoHandedJson.accessors[twoHandedJson.meshes[0].primitives[0].attributes.POSITION].max,[0.1240234524011612,1,0.029155734926462173]);
 
 const shield=itemCatalogEntry('round-wooden-shield');
 assert.equal(shield.rules.catalogArmorId,'shield-medium');
