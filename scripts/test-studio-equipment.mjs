@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {
-  HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, createWeaponAttachment, createStudioEquipment
+  HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
+  findLeftForeArm, findLeftArm, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 import {
   STUDIO_SHIELDS, SHIELD_MODEL_UNITS_PER_INCH, normalizeShield, findLeftHand, leftForearmAxisLocal,
@@ -65,6 +66,31 @@ assert.deepEqual(STUDIO_WEAPONS[2].secondaryGrip,[0,0.89,0]);
 assert.deepEqual(STUDIO_WEAPONS[2].primaryAxis,[0,-1,0]);
 assert.deepEqual(STUDIO_WEAPONS[2].rotation,[90,0,0]);
 assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
+
+// Focused IK fixture: the authored arm pose starts away from the secondary grip.
+// The solver must move the off-hand grip point onto the weapon without moving
+// the weapon, which remains driven by the primary/right-hand attachment.
+{
+  const ikModel = new THREE.Group();
+  const upper = new THREE.Bone(); upper.name = 'mixamorigLeftArm'; upper.position.set(0,0,0);
+  const fore = new THREE.Bone(); fore.name = 'mixamorigLeftForeArm'; fore.position.set(0.9,0,0);
+  const offHand = new THREE.Bone(); offHand.name = 'mixamorigLeftHand'; offHand.position.set(0.8,0,0);
+  const finger = new THREE.Bone(); finger.name = 'mixamorigLeftHandMiddle1'; finger.position.set(0.18,0,0);
+  offHand.add(finger); fore.add(offHand); upper.add(fore); ikModel.add(upper);
+  const weaponModel = new THREE.Group(); weaponModel.position.set(1.1,1.0,0);
+  const fixtureAttachment = {
+    model: weaponModel,
+    weapon: { handsRequired: 2, secondaryGrip: [0,0,0] }
+  };
+  const before = offHand.localToWorld(finger.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
+  const result = solveTwoHandedGrip(THREE,{model:ikModel,attachment:fixtureAttachment,iterations:12,tolerance:0.005,maxStepDegrees:35});
+  const after = offHand.localToWorld(finger.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
+  assert.equal(findEquipmentLeftHand(ikModel),offHand);
+  assert.equal(findLeftForeArm(ikModel),fore);
+  assert.equal(findLeftArm(ikModel),upper);
+  assert.ok(after < before * 0.1,`Two-handed IK should close the off-hand gap: ${before} -> ${after}`);
+  assert.ok(result.solved,`Two-handed IK should meet grip tolerance; remaining error ${result.error}`);
+}
 const migratedAxe = normalizeEquipment({
   rightHand:'battle-axe', presetRevision:4, sizePercent:100,
   position:[0.015,0.05,0.005], rotation:[-51,90,0]
