@@ -67,7 +67,7 @@ assert.equal(migratedAxe.presetRevision,5);
 assert.equal(STUDIO_SHIELDS.length,1);
 assert.equal(STUDIO_SHIELDS[0].id,'round-wooden-shield');
 assert.equal(STUDIO_SHIELDS[0].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
-assert.equal(STUDIO_SHIELDS[0].assetSha256,'0a2a2b4d9fe09f311e731e974a28da71584fc2516c7cbfb5f927b3572e64e9d8');
+assert.equal(STUDIO_SHIELDS[0].assetSha256,'c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5');
 assert.deepEqual(STUDIO_SHIELDS[0].position,[0,0,0.04],'Shield remains outside the left arm but is pulled close to the forearm');
 assert.deepEqual(STUDIO_SHIELDS[0].rotation,[0,0,0],'Shield keeps the Rev 68 outward-facing orientation');
 const migratedShield=normalizeShield({
