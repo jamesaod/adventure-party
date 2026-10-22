@@ -9,11 +9,11 @@ export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    // Rev 63: source geometry is diagonal in XY. This point sits on the wooden
-    // haft about one hand-length above the butt, matching the user's QA marker.
+    // Rev 64: preserve the QA-approved grip/scale and rotate only around that
+    // grip so the haft runs down-left to up-right, with the axe head forward.
     grip: Object.freeze([-0.32, 0.20, 0]), nativeScale: 0.4125,
-    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 180]),
-    defaultSizePercent: 100, presetRevision: 2
+    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 30]),
+    defaultSizePercent: 100, presetRevision: 3
   })
 ]);
 
