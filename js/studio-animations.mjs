@@ -104,6 +104,40 @@ export function prepareStudioAnimations(clips) {
   });
 }
 
+export function freezeAnimationClip(clip, time = 0, name = clip?.name) {
+  if (!validClip(clip)) throw new Error('Choose a usable animation before freezing a pose.');
+  if (!Number.isFinite(time) || time < 0 || time > clip.duration) {
+    throw new RangeError('Frozen pose time must be within the animation duration.');
+  }
+  if (typeof name !== 'string' || !name.trim()) throw new TypeError('Frozen pose name must be text.');
+  const tracks = clip.tracks.map(track => {
+    if (typeof track.createInterpolant !== 'function') throw new Error('The animation contains an unsupported track.');
+    const stride = track.getValueSize();
+    const sample = track.createInterpolant().evaluate(time);
+    if (!Number.isInteger(stride) || stride < 1 || sample.length < stride) {
+      throw new Error('The animation contains an invalid keyframe track.');
+    }
+    const frozen = track.clone();
+    frozen.times = copyBuffer(track.times, [0, 1]);
+    const values = [];
+    for (let repeat = 0; repeat < 2; repeat++) {
+      for (let i = 0; i < stride; i++) values.push(sample[i]);
+    }
+    frozen.values = copyBuffer(track.values, values);
+    return frozen;
+  });
+  const result = clip.clone();
+  result.name = name.trim();
+  result.duration = 1;
+  result.tracks = tracks;
+  result.userData = {
+    ...(result.userData || {}),
+    studioAnimationId: `frozen:${animationSourceId(clip) || clip.name}:${time.toFixed(3)}:${name.trim()}`,
+    frozenPose: { sourceName: clip.name, sourceId: animationSourceId(clip), timeSeconds: time }
+  };
+  return result;
+}
+
 export function animationOptionLabel(clip, index) {
   const name = typeof clip?.name === 'string' && clip.name.trim() ? clip.name.trim() : 'Unnamed animation';
   const duration = Number.isFinite(clip?.duration) ? clip.duration : 0;
