@@ -6,7 +6,8 @@ import {
   HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 import {
-  STUDIO_SHIELDS, normalizeShield, findLeftHand, createBronzeRoundShieldProxy, createShieldAttachment
+  STUDIO_SHIELDS, SHIELD_MODEL_UNITS_PER_INCH, normalizeShield, findLeftHand, leftForearmAxisLocal,
+  createBronzeRoundShieldProxy, createShieldAttachment
 } from '../js/studio-shield.mjs';
 
 const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
@@ -74,6 +75,16 @@ const migratedShield=normalizeShield({
 assert.deepEqual(migratedShield.position,[0,0,0.04],'Rev 68 shield mount migrates inward toward the forearm');
 assert.deepEqual(migratedShield.rotation,[0,0,0],'Rev 68 shield orientation remains unchanged');
 assert.equal(migratedShield.presetRevision,3);
+const tunedShield=normalizeShield({
+  leftHandShield:'bronze-round-shield',
+  distanceInches:2.25,forearmSlideInches:3.5,forearmRollDegrees:-37
+});
+assert.equal(tunedShield.distanceInches,2.25);
+assert.equal(tunedShield.forearmSlideInches,3.5);
+assert.equal(tunedShield.forearmRollDegrees,-37);
+assert.equal(normalizeShield({leftHandShield:'bronze-round-shield',distanceInches:99}).distanceInches,6);
+assert.equal(normalizeShield({leftHandShield:'bronze-round-shield',forearmSlideInches:-99}).forearmSlideInches,-8);
+assert.equal(normalizeShield({leftHandShield:'bronze-round-shield',forearmRollDegrees:999}).forearmRollDegrees,180);
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
@@ -123,6 +134,7 @@ const settings = normalizeEquipment({ rightHand: 'medieval-sword' });
 const attached = createWeaponAttachment(THREE, hand, swordModel, settings);
 const gripPoint = new THREE.Vector3(...STUDIO_WEAPONS[0].grip);
 const shieldSettings=normalizeShield({leftHandShield:'bronze-round-shield'});
+const shieldForearmAxis=leftForearmAxisLocal(THREE,leftHand);
 const shieldModel=createBronzeRoundShieldProxy(THREE);
 const shieldAttached=createShieldAttachment(THREE,leftHand,shieldModel,shieldSettings);
 const mixer = new THREE.AnimationMixer(character);
@@ -164,6 +176,30 @@ for (const animation of carl.json.animations) {
 }
 assert.ok(visited.size > 30, 'The weapon really moves through the authored animations and six views');
 assert.ok(shieldVisited.size > 30, 'The shield follows the animated left hand through the same poses and facings');
+
+display.rotation.y=0;
+display.updateMatrixWorld(true);
+const forearmAxis=shieldForearmAxis.clone();
+const outwardAxis=new THREE.Vector3(0,0,1)
+  .addScaledVector(forearmAxis,-new THREE.Vector3(0,0,1).dot(forearmAxis));
+if(outwardAxis.lengthSq()<1e-10)outwardAxis.set(0,1,0);
+outwardAxis.normalize();
+const interactiveShield=normalizeShield({
+  ...shieldSettings,distanceInches:2,forearmSlideInches:3,forearmRollDegrees:45
+});
+shieldAttached.update(interactiveShield);
+display.updateMatrixWorld(true);
+const expectedInteractiveCenter=leftHand.localToWorld(new THREE.Vector3(...shieldSettings.position)
+  .addScaledVector(outwardAxis,2*SHIELD_MODEL_UNITS_PER_INCH)
+  .addScaledVector(forearmAxis,3*SHIELD_MODEL_UNITS_PER_INCH));
+close(shieldModel.localToWorld(new THREE.Vector3()),expectedInteractiveCenter,
+  'Shield sliders move relative to the Rev 69 mount along arm-normal and forearm axes');
+const baseShieldRotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,0,'XYZ'));
+const expectedRoll=new THREE.Quaternion().setFromAxisAngle(forearmAxis,THREE.MathUtils.degToRad(45))
+  .multiply(baseShieldRotation);
+assert.ok(shieldAttached.socket.quaternion.angleTo(expectedRoll)<1e-6,
+  'Shield roll rotates around the actual forearm axis');
+shieldAttached.update(shieldSettings);
 attached.detach();
 shieldAttached.detach();
 assert.equal(attached.socket.parent, null);

@@ -6,6 +6,7 @@ const recipe=fs.readFileSync(new URL('../js/combat-pose-recipe.mjs', import.meta
 const game=fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url),'utf8');
 const studio=fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url),'utf8');
 const index=fs.readFileSync(new URL('../index.html', import.meta.url),'utf8');
+const studioHtml=fs.readFileSync(new URL('../3d-studio.html', import.meta.url),'utf8');
 
 for(const token of [
   "const POSES=['ready','attack','prone']",
@@ -20,6 +21,10 @@ for(const token of [
   "createWeaponAttachment",
   "createShieldAttachment",
   "recipe.shield",
+  "recipe.renderSettings?.shield",
+  "distanceInches",
+  "forearmSlideInches",
+  "forearmRollDegrees",
   "shieldAppearanceId",
   "quantizeRgba(raw,frame.width,frame.height,image.data",
   "carl-live-",
@@ -32,13 +37,14 @@ for(const token of [
   "capture.clip",
   "capture.time",
   "Studio's saved capture workspace is the authoritative pose recipe",
-  "Captured PNG pixels are deliberately ignored"
+  "Captured PNG pixels are deliberately ignored",
+  "shield: structuredClone"
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C69")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C69")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C69",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C70")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C70")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C70",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
@@ -50,6 +56,12 @@ assert.ok(game.includes('unit.dynamicAppearanceSpriteSetId=spriteSetId'));
 assert.ok(studio.includes('clipSourceId: animationSourceId'));
 assert.ok(studio.includes('state.previewReferenceBounds'));
 assert.ok(studio.includes('shieldEquipment'));
+assert.ok(studio.includes('distanceInches'));
+assert.ok(studio.includes('forearmSlideInches'));
+assert.ok(studio.includes('forearmRollDegrees'));
+for(const id of ['studioShieldDistance','studioShieldForearmSlide','studioShieldForearmRoll','studioResetShieldButton']){
+  assert.ok(studioHtml.includes(`id="${id}"`), `Studio shield control missing ${id}`);
+}
 assert.ok(studio.includes('renderFallbackPreviews'));
 assert.ok(studio.includes("ctx.strokeStyle = '#e3ca79'"));
 assert.ok(index.includes('<script type="importmap">'));
