@@ -1,0 +1,85 @@
+name: Build Rev 76 UAL2 Two-Handed Audition
+
+on:
+  push:
+    branches:
+      - build/rev76-ual2-two-handed-audition
+    paths:
+      - 'workflow/ual2/**'
+      - 'scripts/retarget-carl-ual2-audition.py'
+      - '.github/workflows/build-ual2-two-handed-audition.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out build branch
+        uses: actions/checkout@v4
+
+      - name: Reassemble exact UAL2 Standard donor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat workflow/ual2/chunk-00 \
+              workflow/ual2/chunk-01 \
+              workflow/ual2/chunk-02 \
+              workflow/ual2/chunk-03 \
+              workflow/ual2/chunk-04 > /tmp/UAL2_Standard.glb
+          echo "8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8  /tmp/UAL2_Standard.glb" | sha256sum -c -
+
+      - name: Retarget UAL2 audition clips onto Carl
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition
+          python scripts/retarget-carl-ual2-audition.py \
+            --source /tmp/UAL2_Standard.glb \
+            --target assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb \
+            --out assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/dungeon-crawler-carl-v2-ual2-two-handed-audition.glb \
+            --report assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/provenance.json
+
+      - name: Verify generated audition clip names
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, struct
+          path='assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/dungeon-crawler-carl-v2-ual2-two-handed-audition.glb'
+          raw=open(path,'rb').read()
+          assert raw[:4]==b'glTF'
+          pos=12
+          doc=None
+          while pos<len(raw):
+              size,typ=struct.unpack_from('<II',raw,pos); pos+=8
+              chunk=raw[pos:pos+size]; pos+=size
+              if typ==0x4e4f534a:
+                  doc=json.loads(chunk)
+          expected=[
+              'UAL2_2H_Sword_Heavy_Combo',
+              'UAL2_2H_Sword_Regular_Combo',
+              'UAL2_2H_Sword_Regular_B',
+              'UAL2_2H_Sword_Regular_C',
+              'UAL2_2H_TreeChopping_Loop',
+          ]
+          names=[a.get('name') for a in doc['animations']]
+          assert names[:5]==expected, names[:5]
+          assert names[5:]==['box_01','fall','box_02','box_03'], names[5:]
+          print('Generated clips:', ', '.join(expected))
+          PY
+
+      - name: Commit generated audition model
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+            exit 0
+          fi
+          git commit -m "Build Rev 76: generate UAL2 two-handed audition model [skip audition build]"
+          git push origin "HEAD:$GITHUB_REF_NAME"
