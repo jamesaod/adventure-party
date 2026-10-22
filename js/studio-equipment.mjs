@@ -11,7 +11,7 @@ export const STUDIO_WEAPONS = Object.freeze([
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
     // Rev 63: source geometry is diagonal in XY. This point sits on the wooden
     // haft about one hand-length above the butt, matching the user's QA marker.
-    grip: Object.freeze([-0.32, 0.20, 0]), nativeScale: 0.4125,
+    grip: Object.freeze([-0.36, 0.15, 0]), nativeScale: 0.4125,
     position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 180]),
     defaultSizePercent: 100, presetRevision: 2
   })
