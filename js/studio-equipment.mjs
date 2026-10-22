@@ -83,10 +83,13 @@ export function findLeftForeArm(model) { return findBone(model, ['leftforearm', 
 export function findLeftArm(model) { return findBone(model, ['leftarm', 'mixamorigleftarm']); }
 export function findLeftShoulder(model) { return findBone(model, ['leftshoulder', 'mixamorigleftshoulder']); }
 export function findUpperSpine(model) {
-  return findBone(model, ['spine2', 'mixamorigspine2', 'spine1', 'mixamorigspine1', 'spine', 'mixamorigspine']);
+  return findBone(model, ['spine2', 'mixamorigspine2'])
+    || findBone(model, ['spine1', 'mixamorigspine1'])
+    || findBone(model, ['spine', 'mixamorigspine']);
 }
 export function findLowerSpine(model) {
-  return findBone(model, ['spine', 'mixamorigspine', 'spine1', 'mixamorigspine1']);
+  return findBone(model, ['spine', 'mixamorigspine'])
+    || findBone(model, ['spine1', 'mixamorigspine1']);
 }
 export function findHips(model) { return findBone(model, ['hips', 'mixamorighips']); }
 
