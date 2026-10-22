@@ -2,6 +2,14 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 58 — Carl UAL2 sword animation proof
+
+- Added **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test** as a separate saved studio model. Its two new clips provide a held ready stance and the first Universal Animation Library 2 regular sword swing with recovery; Carl's original four clips remain available.
+- Retargeted the selected in-place motion from Quaternius's uploaded Standard GLB onto Carl's existing skeleton, preserving his mesh, textures, skin weights, bone lengths and hand attachment. The sword remains separate equipment with the existing grip controls.
+- Applied a small offline hips-height correction to keep Carl's feet above the floor through the crouch, preserving the rotation and horizontal motion paths.
+- Recorded the source identity and CC0 animation license, and included an offline reproduction script plus checks for asset preservation, finite animation, fixed limb lengths and sword attachment across six facings.
+- Updated the model catalog, studio instructions and unit asset roster. Loading this QA model does not publish a replacement combat sprite set.
+
 ## Candidate Rev 57 — Carl equipment and combat sprite assignment
 
 - Added a right-hand Medieval Sword option to the 3d studio, with size, position, rotation and reset controls. The separate GLB follows the animated hand; equipment settings persist with the workspace and captured-pose metadata. Equipment and grip lock after the first capture to keep a sheet consistent.

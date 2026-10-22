@@ -1,0 +1,91 @@
+name: Assemble verified Carl UAL2 model
+
+# Temporary transport helper. The connector removes this workflow and its
+# delta after the verified model commit, before opening the candidate PR.
+on:
+  push:
+    branches:
+      - feature/carl-ual2-sword-test
+    paths:
+      - workflow/transfer/carl-ual2-model.delta.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: assemble-carl-ual2-test
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    if: github.repository == 'jamesaod/adventure-party' && github.ref == 'refs/heads/feature/carl-ual2-sword-test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the exact transfer commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Rebuild the exact locally tested GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, json, struct, zlib
+          from pathlib import Path
+
+          source_path = Path('assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb')
+          output_path = Path('assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb')
+          source_sha = '5284bd3cd0b9fe6665c5d94ec0fc7fae8ec4a5856f0628f3084ae1190b044693'
+          output_sha = '4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9'
+          delta = json.loads(Path('workflow/transfer/carl-ual2-model.delta.json').read_text())
+          assert delta['format'] == 'adventure-party-glb-bin-prefix-v1'
+          assert delta['source']['path'] == str(source_path) and delta['source']['sha256'] == source_sha
+          assert delta['output']['path'] == str(output_path) and delta['output']['sha256'] == output_sha
+          source = source_path.read_bytes()
+          assert hashlib.sha256(source).hexdigest() == source_sha, 'Original Carl identity changed'
+          assert source[:4] == b'glTF' and struct.unpack_from('<II', source, 4) == (2, len(source))
+          binary = None
+          offset = 12
+          while offset < len(source):
+              size, kind = struct.unpack_from('<II', source, offset)
+              assert size % 4 == 0 and offset + 8 + size <= len(source)
+              if kind == 0x004e4942:
+                  assert binary is None
+                  binary = source[offset + 8:offset + 8 + size]
+              offset += size + 8
+          assert offset == len(source) and binary is not None
+          assert len(binary) == delta['source']['binaryBytes'] == 10951924
+          prefix = zlib.decompress(base64.b64decode(delta['prefix']['zlibBase64'], validate=True))
+          tail = zlib.decompress(base64.b64decode(delta['tail']['zlibBase64'], validate=True))
+          assert len(prefix) == delta['prefix']['bytes'] == 217808
+          assert len(tail) == delta['tail']['bytes'] == 90480
+          result = prefix + binary + tail
+          assert len(result) == delta['output']['bytes'] == 11260212
+          assert hashlib.sha256(result).hexdigest() == output_sha, 'Rebuilt model differs from tested bytes'
+          assert result[:4] == b'glTF' and struct.unpack_from('<II', result, 4) == (2, len(result))
+          output_path.parent.mkdir(parents=True, exist_ok=True)
+          output_path.write_bytes(result)
+          print(f'Verified model: {len(result)} bytes; SHA-256 {output_sha}')
+          PY
+
+      - name: Validate the reconstructed model and repository
+        run: |
+          node scripts/test-carl-ual2.mjs
+          node scripts/validate-repo.mjs
+
+      - name: Commit the verified model to its feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb
+          git commit -m 'Add checksum-verified Carl UAL2 model'
+          git push origin HEAD:refs/heads/feature/carl-ual2-sword-test

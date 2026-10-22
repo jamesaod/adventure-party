@@ -12,6 +12,67 @@
 - Up axis: **Y**. Studio target: **Dungeon Crawler Carl — Fighter** (`fighter`).
 - Embedded animation clips: `box_01`, `fall`, `box_02`, `box_03`.
 
-`data/studio-models.json` registers the model in Pixel Studio's Model library menu. Selecting and loading a model starts a studio workspace; it does not replace published combat sprites. Source models belong in `assets/models/`; separately approved sprite sets belong in `assets/sprites/`.
+## Version 2 — UAL2 sword test
+
+- Studio label: **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test**.
+- Catalog ID: `dungeon-crawler-carl-v2-ual2-sword-test`.
+- Asset: [`v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb`](v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb).
+- Size: 11,260,212 bytes. SHA-256: `4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9`.
+- Base character: the preserved Version 2 GLB above, with its mesh, textures, rig and four original animation clips retained.
+- Up axis: **Y**. Studio target: **Dungeon Crawler Carl — Fighter** (`fighter`).
+- Purpose: an alternate studio QA model with two added sword takes. The existing Version 2 model remains available for comparison.
+
+| Added clip | Duration | Derivation |
+| --- | --- | --- |
+| `UAL2_Sword_Ready` | 1 second | A held pose from `Sword_Regular_A` at source time `0`. This is a derived ready hold, not a separate idle animation supplied by Quaternius. |
+| `UAL2_Sword_Regular_A` | 1.4 seconds | `Sword_Regular_A` (0.433333 seconds) followed by `Sword_Regular_A_Rec` (0.966667 seconds), retargeted onto Carl's rig. |
+
+The animation source is **Universal Animation Library 2** by **Quaternius**, supplied in the user's `Universal Animation Library 2[Standard].zip`. The selected non-root-motion member is `Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb`. The library README identifies files ending in `_RM` as containing baked root motion; this test uses the other variant.
+
+| Source | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `Universal Animation Library 2[Standard].zip` | 18,735,003 | `4008ea208a604773a2b2177d965f0f5d3195498b5bf838c3f5785d68e95f2a68` |
+| `UAL2_Standard.glb` | 8,091,444 | `8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8` |
+
+The uploaded Standard and Source GLBs contain identical animation channel data for the two selected source clips. The full library and its mannequin are not added to the model catalog. Carl retains his existing Mixamo right-hand bone, so **Equipment → Right hand → Medieval Sword** uses the separate [studio weapon](../weapons/README.md).
+
+### Reproduce the adaptation
+
+[`scripts/retarget-carl-ual2.py`](../../../scripts/retarget-carl-ual2.py) is an offline Python 3 script using only the standard library. It is specific to the inspected UAL2 and Carl rigs. It checks their bind poses, orientation, bone mapping and source clips before generating a separate GLB. It does not add a retargeter to the studio UI.
+
+Extract the Standard archive's non-RM GLB, then run from the repository root:
+
+```sh
+python3 scripts/retarget-carl-ual2.py \
+  --source /path/to/UAL2_Standard.glb \
+  --target assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb \
+  --out assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb \
+  --report assets/models/dungeon-crawler-carl/v2-ual2-sword-test/provenance.json \
+  --source-member 'Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb'
+
+node scripts/test-carl-ual2.mjs
+```
+
+The adaptation transfers 64 joints' rotations relative to their world-space bind orientations, then expresses them in Carl's hierarchy. Carl's bone lengths and scales stay intact. His hips follow the source's displacement scaled by the bind hip-height ratio, approximately `0.572703`. The donor root stays fixed in the selected in-place clips; Carl's extra head-tip joint keeps its original local transform.
+
+Carl's different foot proportions initially put his soles below the floor in the crouch. A small hips-only vertical correction, measured from 1,951 original skinned foot vertices, now keeps them above the bind-ground plane. The maximum lift is about `0.030534` native units, or 3.12% of his bind-pose height. Rotation and horizontal motion are retained. The attack is baked at approximately 60 fps and checked between keys at 1,009 times; this correction provides floor clearance without foot locking or IK.
+
+The ready take is a still hold. The attack includes the source recovery but retains its slightly different final pose; it is not authored as a perfectly seamless idle loop. The sword uses the existing fixed hand-local grip transform throughout the motion. Detailed source identities, clip timing, mapping, corrections and checks are in [`provenance.json`](v2-ual2-sword-test/provenance.json).
+
+### Studio QA preview
+
+The [24-view motion sheet](../../../docs/qa/carl-ual2-sword-first-test.png) contains actual studio pixel previews at ready `0.00s`, wind-up `0.15s`, swing `0.30s`, and recovery `0.80s`, each in all six directions. It uses one shared crop and 2× nearest-neighbor enlargement for inspection; it is not a replacement combat sprite package.
+
+Independent browser checks sampled 49 poses of the corrected attack: geometry remained finite, the lowest body point stayed above the bind-ground plane, and the existing sword grip stayed attached. Repository checks also sample 588 pose/facing combinations across both new clips and verify the original asset data and clips remain intact.
+
+### Animation attribution and license
+
+Quaternius released the supplied library under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/). The archive's original license notice is preserved verbatim in [`v2-ual2-sword-test/LICENSE-UAL2.txt`](v2-ual2-sword-test/LICENSE-UAL2.txt). Source links: [Quaternius](https://quaternius.com/) and the [animation viewer](https://quaternius.com/animviewer.html).
+
+CC0 applies to the Quaternius animation contribution. It does not assign a new license to Carl's original model, textures or the separately supplied sword.
+
+## Studio and combat assignments
+
+`data/studio-models.json` registers these models in Pixel Studio's Model library menu. Selecting and loading a model starts a studio workspace; it does not replace published combat sprites. Source models belong in `assets/models/`; separately approved sprite sets belong in `assets/sprites/`.
 
 Keep later source versions in sibling version folders so existing models remain directly accessible. Add their catalog entries with unique IDs and descriptive labels.
