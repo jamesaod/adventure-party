@@ -5,14 +5,14 @@
 export const HELD_WEAPON_AXIS = Object.freeze([0, 0, -1]);
 export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
-    id: 'medieval-sword', label: 'Medieval Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing-v1',
+    id: 'medieval-sword', label: 'Medieval Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing',
     file: 'assets/models/weapons/swords/medieval-sword.glb',
     grip: Object.freeze([0.34, 0.109, 0]), nativeScale: 0.55,
     primaryAxis: Object.freeze([-1, 0, 0]),
     position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, -90, 0])
   }),
   Object.freeze({
-    id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
+    id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
     // Rev 67: keep the Rev 66 shaft axis, then roll the axe 180 degrees
     // around that shaft so the cutting edge faces the opposite direction.

@@ -1,9 +1,10 @@
 import { studioWeapon } from './studio-equipment.mjs?v=R238C67';
-import { studioShield } from './studio-shield.mjs?v=R238C71';
+import { studioShield } from './studio-shield.mjs?v=R238C72';
+import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C72';
+export { WEAPON_POSE_PROFILES };
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
 export const MOB_HEIGHT_VERSION = 1;
-export const POSE_PROFILE_VERSION = 1;
 
 export function inches(feet, extraInches = 0) {
   const total = Number(feet) * 12 + Number(extraInches);
@@ -51,31 +52,6 @@ export function bodyScaleForHeight({ targetHeightInches, referenceHeightInches }
   }
   return targetHeightInches / referenceHeightInches;
 }
-
-function freezePose(pose) {
-  return Object.freeze({
-    animation: String(pose.animation || ''),
-    sourceId: String(pose.sourceId || ''),
-    timeSeconds: Number(pose.timeSeconds || 0),
-    gripCorrection: pose.gripCorrection ? structuredClone(pose.gripCorrection) : null
-  });
-}
-
-export const WEAPON_POSE_PROFILES = Object.freeze({
-  'one-handed-swing-v1': Object.freeze({
-    id: 'one-handed-swing-v1',
-    version: POSE_PROFILE_VERSION,
-    label: 'One-handed swinging weapon',
-    handedness: 'one-handed',
-    attackStyle: 'swing',
-    compatibleVisualClasses: Object.freeze(['sword', 'battle-axe']),
-    poses: Object.freeze({
-      ready: freezePose({ animation: 'UAL2_Sword_Ready', sourceId: 'UAL2_Sword_Ready', timeSeconds: 0 }),
-      attack: freezePose({ animation: 'UAL2_Sword_Regular_A', sourceId: 'UAL2_Sword_Regular_A', timeSeconds: 0.30 }),
-      prone: freezePose({ animation: 'fall', sourceId: 'fall', timeSeconds: 1.20 })
-    })
-  })
-});
 
 function visibleWeapon(id, itemName, studioId) {
   const preset = studioWeapon(studioId);
@@ -125,7 +101,7 @@ export const VISIBLE_SHIELD_ASSETS=Object.freeze({
   'round-wooden-shield':visibleShield('round-wooden-shield','Round Wooden Shield','round-wooden-shield')
 });
 
-export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReferenceHeightInches, poseProfile = null, renderSettings = {} } = {}) {
+export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = null, bodyReferenceHeightInches, poseProfile = null, renderSettings = {}, presentationAction = null, presentationConditions = [] } = {}) {
   if (!unit) throw new Error('A MOB is required.');
   applyMobHeight(unit);
   const inventory = Array.isArray(unit.inventory) ? unit.inventory : [];
@@ -133,14 +109,26 @@ export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReference
   const visual = equipped?.appearanceId ? VISIBLE_WEAPON_ASSETS[equipped.appearanceId] : null;
   const equippedShield=inventory.find(item=>item?.slot==='shield'&&item?.equipped)||null;
   const shieldVisual=equippedShield?.appearanceId?VISIBLE_SHIELD_ASSETS[equippedShield.appearanceId]:null;
-  const profile = poseProfile || (visual ? WEAPON_POSE_PROFILES[visual.poseProfileId] : WEAPON_POSE_PROFILES['one-handed-swing-v1']);
+  const animationState=resolveHumanoidAnimationState(unit,{
+    action:presentationAction,
+    conditions:presentationConditions,
+    equipmentAnimationId:visual?.poseProfileId||null
+  });
+  const profile=poseProfile||poseProfileForHumanoid(animationState.semanticId);
+  const spriteFamilySignature=humanoidSpriteFamilySignature(unit,{
+    action:presentationAction,
+    conditions:presentationConditions,
+    equipmentAnimationId:visual?.poseProfileId||null,
+    modelId,modelHash,renderVersion:renderSettings?.renderer||null
+  });
   return {
     format: 'adventure-party-mob-appearance-recipe',
     version: 1,
     mob: { id: unit.id || null, type: unit.type || null, name: unit.name || null, heightInches: unit.heightInches },
-    model: { id: modelId || null, hash: modelHash || null, bodyReferenceHeightInches: bodyReferenceHeightInches ?? null },
+    model: { id: modelId || null, hash: modelHash || null, url: modelUrl || null, bodyReferenceHeightInches: bodyReferenceHeightInches ?? null },
     equipment: visual ? { itemName: equipped.name, appearanceId: equipped.appearanceId, ...visual } : null,
     shield: shieldVisual ? { itemName: equippedShield.name, appearanceId: equippedShield.appearanceId, ...shieldVisual } : null,
+    animation: { ...animationState, spriteFamilySignature },
     poseProfile: profile || null,
     renderSettings: structuredClone(renderSettings)
   };

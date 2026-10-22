@@ -16,6 +16,8 @@ for(const token of [
   "calibration.rotation.y",
   "upAxisGroup.rotation.x",
   "recipe.poseProfile",
+  "poseProfileForHumanoid",
+  "recipe?.model?.url",
   "for(const facing of HEX_FACINGS)",
   "appearanceCacheKey(recipe)",
   "createWeaponAttachment",
@@ -28,7 +30,6 @@ for(const token of [
   "forearmRollDegrees",
   "shieldAppearanceId",
   "quantizeRgba(raw,frame.width,frame.height,image.data",
-  "carl-live-",
   "generatedAtRuntime:true"
 ]) assert.ok(renderer.includes(token), `runtime renderer missing ${token}`);
 
@@ -43,12 +44,16 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C71")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C71")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C71",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C72")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C72")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C72",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
+assert.ok(game.includes('HUMANOID_RUNTIME_MODELS'));
+assert.ok(game.includes('runtime.ensure(unit'));
+assert.ok(game.includes('queueHumanoidPresentationReconcile'));
+assert.ok(renderer.includes("const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`"));
 assert.ok(game.includes('await pending'));
 assert.ok(game.includes('poseProfile:captured.poseProfile'));
 assert.ok(game.includes('renderSettings:captured.renderSettings'));

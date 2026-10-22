@@ -2,11 +2,12 @@ import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C71';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
+import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
 import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C67';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C71';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C72';
 
-const MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
+const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
   width:320,height:400,renderWidth:91.56,renderHeight:114.45,
   anchorX:160,anchorY:264.02889936721095
@@ -149,10 +150,9 @@ function frameCanvas(renderer,target,scene,camera,turntable,yaw,frame,style){
 }
 
 export async function generateCombatSpriteSet(recipe){
-  if(recipe?.mob?.type!=='fighter'){
-    throw new Error('On-the-fly rendering is currently limited to Dungeon Crawler Carl.');
-  }
-  const gltf=await loadGltf(MODEL_URL);
+  const modelUrl=recipe?.model?.url||(recipe?.mob?.type==='fighter'?DEFAULT_FIGHTER_MODEL_URL:null);
+  if(!modelUrl)throw new Error(`No humanoid runtime model is registered for ${recipe?.mob?.type||'this MOB'}.`);
+  const gltf=await loadGltf(modelUrl);
   const model=gltf.scene;
   model.traverse(object=>{if(object.isSkinnedMesh)object.frustumCulled=false;});
 
@@ -182,7 +182,7 @@ export async function generateCombatSpriteSet(recipe){
     const id=recipe.equipment.appearanceId==='battle-axe'?'battle-axe':'medieval-sword';
     const preset=studioWeapon(id);
     const hand=findRightHand(model);
-    if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to Carl.');
+    if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
     const weaponGltf=await loadGltf('../'+recipe.equipment.asset);
     attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
       rightHand:id,
@@ -195,7 +195,7 @@ export async function generateCombatSpriteSet(recipe){
   if(recipe.shield){
     const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
     const leftHand=findLeftHand(model);
-    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to Carl.');
+    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to this humanoid.');
     const shieldGltf=await loadGltf('../'+recipe.shield.asset);
     const savedShield=studioShield(recipe.renderSettings?.shield?.leftHandShield)?.id===preset.id
       ? recipe.renderSettings.shield : null;
@@ -212,17 +212,17 @@ export async function generateCombatSpriteSet(recipe){
   }
 
   const mixer=new THREE.AnimationMixer(model);
-  const profile=recipe.poseProfile||WEAPON_POSE_PROFILES['one-handed-swing-v1'];
+  const profile=recipe.poseProfile||poseProfileForHumanoid(recipe.animation?.semanticId||'one-handed-swing');
   const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
-  const manifestId='carl-live-'+keyId;
+  const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
   const images={},sourceUrls={},poses={};
   try{
     for(const capture of POSES){
       const pose=profile?.poses?.[capture];
       if(!pose) throw new Error(`Combat pose recipe is missing ${capture}.`);
       const clip=byName.get(pose.animation)||byName.get(pose.sourceId);
-      if(!clip) throw new Error(`Carl animation ${pose.animation} is unavailable.`);
+      if(!clip) throw new Error(`Humanoid animation ${pose.animation} is unavailable.`);
       mixer.stopAllAction();
       const action=mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1).play();
       action.paused=true;
@@ -255,12 +255,12 @@ export async function generateCombatSpriteSet(recipe){
   return {
     manifest:{
       schema:'adventure-party.sprite-set',version:1,id:manifestId,
-      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'}${recipe.shield?` + ${recipe.shield.itemName}`:''} (generated)`,
+      label:`${recipe.mob?.name||recipe.mob?.type||'Humanoid'} — ${recipe.equipment?.itemName||'Unarmed'}${recipe.shield?` + ${recipe.shield.itemName}`:''} (generated)`,
       frame:{...frame},
       facings:FACINGS,
       poses,
       layout:{id:recipe.renderSettings?.layoutId||'single',resolutionPercent:finite(recipe.renderSettings?.resolutionPercent,200)},
-      mobType:'fighter',
+      mobType:recipe.mob?.type||null,
       modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
       hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
       render:{
