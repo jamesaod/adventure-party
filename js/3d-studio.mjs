@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C62';
+} from './studio-equipment.mjs?v=R238C63';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -1079,7 +1079,9 @@ function readCapturePose() {
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
     renderWidth: size.renderWidth, renderHeight: size.renderHeight,
-    clip: state.action?.getClip().name || 'Rest pose', time: state.action?.time || 0,
+    clip: state.action?.getClip().name || 'Rest pose',
+    clipSourceId: animationSourceId(state.action?.getClip()) || state.action?.getClip().name || 'Rest pose',
+    time: state.action?.time || 0,
     anchorX: (ground.x + 1) * state.width / 2,
     anchorY: (1 - ground.y) * state.height / 2,
     render: {
@@ -1508,7 +1510,9 @@ function bindControls() {
     catch (error) { showError(error); }
   });
   ui.RightHandWeapon.addEventListener('change', () => {
-    void changeEquipment({ ...equipment.snapshot().settings, rightHand: ui.RightHandWeapon.value }, { fit: true });
+    // Each weapon owns its own calibrated socket/grip preset. Do not carry the
+    // previous weapon's transform into the newly selected asset.
+    void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }), { fit: true });
   });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });

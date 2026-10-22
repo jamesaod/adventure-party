@@ -1,21 +1,30 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C62';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C62';
+import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
+import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C63';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C63';
 
 const MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
-const WIDTH=320, HEIGHT=400;
-const RENDER_WIDTH=91.56, RENDER_HEIGHT=114.45;
-const FRAME_HEIGHT=10.58668090609295;
-const CENTER=new THREE.Vector3(0,2.0595906310059133,0);
-const LIGHTING={ambientIntensity:3,ambientColor:'#abc7d4',keyIntensity:4.85,keyColor:'#eeedc3'};
+const DEFAULT_FRAME=Object.freeze({
+  width:320,height:400,renderWidth:91.56,renderHeight:114.45,
+  anchorX:160,anchorY:264.02889936721095
+});
+const DEFAULT_FRAME_HEIGHT=10.58668090609295;
+const DEFAULT_CENTER=[0,2.0595906310059133,0];
+const DEFAULT_LIGHTING=Object.freeze({
+  ambientIntensity:3,ambientColor:'#abc7d4',keyIntensity:4.85,
+  keyColor:'#eeedc3',keyElevation:90,keyDirection:'SW'
+});
+const DEFAULT_STYLE=Object.freeze({brightness:1.22,contrast:.94,hue:0,saturation:1.97,outline:0});
 const FACINGS=['E','NE','NW','W','SW','SE'];
-const POSES=[['ready','stand'],['attack','attack'],['prone','prone']];
+const POSES=['ready','attack','prone'];
 
 const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
+const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
+const vec3=(value,fallback)=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite)?value:fallback;
 
-function normalizeModel(model){
+function normalizeFallbackModel(model){
   model.updateMatrixWorld(true);
   const initial=new THREE.Box3().setFromObject(model,true);
   const size=initial.getSize(new THREE.Vector3());
@@ -33,46 +42,142 @@ function loadImage(src){
     image.src=src;
   });
 }
-function frameCanvas(renderer,target,scene,camera,turntable,yaw,options){
+function normalizedFrame(recipe){
+  const frame=recipe.renderSettings?.frame||{};
+  return {
+    width:Number.isInteger(frame.width)&&frame.width>0?frame.width:DEFAULT_FRAME.width,
+    height:Number.isInteger(frame.height)&&frame.height>0?frame.height:DEFAULT_FRAME.height,
+    renderWidth:finite(frame.renderWidth,DEFAULT_FRAME.renderWidth),
+    renderHeight:finite(frame.renderHeight,DEFAULT_FRAME.renderHeight),
+    anchorX:finite(frame.anchorX,DEFAULT_FRAME.anchorX),
+    anchorY:finite(frame.anchorY,DEFAULT_FRAME.anchorY)
+  };
+}
+function normalizedStyle(recipe){
+  const style=recipe.renderSettings?.style||{};
+  return {
+    brightness:finite(style.brightness,DEFAULT_STYLE.brightness),
+    contrast:finite(style.contrast,DEFAULT_STYLE.contrast),
+    hue:finite(style.hue,DEFAULT_STYLE.hue),
+    saturation:finite(style.saturation,DEFAULT_STYLE.saturation),
+    outline:finite(style.outline,DEFAULT_STYLE.outline)
+  };
+}
+function configureLights(scene,recipe){
+  const saved=recipe.renderSettings?.lighting||{};
+  const light={...DEFAULT_LIGHTING,...saved};
+  scene.add(new THREE.AmbientLight(light.ambientColor||'#ffffff',finite(light.ambientIntensity,1)));
+  const key=new THREE.DirectionalLight(light.keyColor||'#ffffff',finite(light.keyIntensity,2.3));
+  const position=studioLightPosition(
+    HEX_FACINGS.some(f=>f.id===light.keyDirection)?light.keyDirection:'NW',
+    finite(light.keyElevation,45)
+  );
+  key.position.set(position.x,position.y,position.z);
+  key.target.position.set(0,0,0);
+  scene.add(key,key.target);
+}
+function buildSceneGraph(model,recipe){
+  const turntable=new THREE.Group();
+  const calibration=new THREE.Group();
+  const placement=new THREE.Group();
+  const upAxisGroup=new THREE.Group();
+  turntable.add(calibration);
+  calibration.add(placement);
+  placement.add(upAxisGroup);
+  upAxisGroup.add(model);
+
+  const transform=recipe.renderSettings?.transform;
+  if(transform?.placement && Number.isFinite(transform.placement.scale)){
+    const modelScale=finite(recipe.renderSettings.modelScalePercent,100)/100;
+    const hexScale=finite(recipe.renderSettings.hexScalePercent,100)/100;
+    const factor=modelScale*hexScale;
+    placement.position.fromArray(vec3(transform.placement.position,[0,0,0])).multiplyScalar(factor);
+    placement.scale.setScalar(transform.placement.scale*factor);
+    upAxisGroup.rotation.x=transform.upAxis==='Z'?-Math.PI/2:0;
+    calibration.rotation.y=THREE.MathUtils.degToRad(finite(transform.heading,0));
+  }else{
+    // Fallback only for older browsers with no complete Studio capture recipe.
+    normalizeFallbackModel(model);
+  }
+  return turntable;
+}
+function configureCamera(recipe,frame){
+  const transform=recipe.renderSettings?.transform;
+  const captured=!!transform?.placement;
+  const modelScale=finite(recipe.renderSettings?.modelScalePercent,100)/100;
+  const hexScale=finite(recipe.renderSettings?.hexScalePercent,100)/100;
+  const factor=modelScale*hexScale;
+  const frameHeight=captured?finite(transform.frameHeight,DEFAULT_FRAME_HEIGHT)*factor:DEFAULT_FRAME_HEIGHT;
+  const center=new THREE.Vector3(...(captured
+    ? vec3(transform.center,DEFAULT_CENTER).map(value=>value*factor)
+    : DEFAULT_CENTER));
+  const halfHeight=frameHeight/2;
+  const camera=new THREE.OrthographicCamera(
+    -halfHeight*(frame.width/frame.height),halfHeight*(frame.width/frame.height),
+    halfHeight,-halfHeight,.01,Math.max(100,frameHeight*6)
+  );
+  const distance=Math.max(8,frameHeight*2);
+  camera.position.copy(center).add(new THREE.Vector3(
+    0,Math.sin(CAMERA_ELEVATION),Math.cos(CAMERA_ELEVATION)
+  ).multiplyScalar(distance));
+  camera.up.set(0,1,0);
+  camera.lookAt(center);
+  camera.updateProjectionMatrix();
+  return camera;
+}
+function frameCanvas(renderer,target,scene,camera,turntable,yaw,frame,style){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
   renderer.clear(true,true,true);
   renderer.render(scene,camera);
-  const raw=new Uint8Array(WIDTH*HEIGHT*4);
-  renderer.readRenderTargetPixels(target,0,0,WIDTH,HEIGHT,raw);
+  const raw=new Uint8Array(frame.width*frame.height*4);
+  renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,raw);
   const flipped=new Uint8Array(raw.length);
-  for(let y=0;y<HEIGHT;y++) flipped.set(raw.subarray(y*WIDTH*4,(y+1)*WIDTH*4),(HEIGHT-1-y)*WIDTH*4);
+  for(let y=0;y<frame.height;y++){
+    flipped.set(raw.subarray(y*frame.width*4,(y+1)*frame.width*4),(frame.height-1-y)*frame.width*4);
+  }
   const canvas=document.createElement('canvas');
-  canvas.width=WIDTH; canvas.height=HEIGHT;
+  canvas.width=frame.width;
+  canvas.height=frame.height;
   const ctx=canvas.getContext('2d');
-  const image=ctx.createImageData(WIDTH,HEIGHT);
-  quantizeRgba(flipped,WIDTH,HEIGHT,image.data,{brightness:1.22,contrast:.94,hue:0,saturation:1.97,outline:0,transparent:true,tileWidth:WIDTH,tileHeight:HEIGHT});
+  const image=ctx.createImageData(frame.width,frame.height);
+  quantizeRgba(flipped,frame.width,frame.height,image.data,{
+    ...style,transparent:true,tileWidth:frame.width,tileHeight:frame.height
+  });
   ctx.putImageData(image,0,0);
   return canvas;
 }
+
 export async function generateCombatSpriteSet(recipe){
-  if(recipe?.mob?.type!=='fighter') throw new Error('On-the-fly rendering is currently limited to Dungeon Crawler Carl.');
-  // A fresh parsed scene keeps skinned skeleton state isolated between queued
-  // appearance recipes. Browser HTTP caching still prevents repeated asset transfer.
+  if(recipe?.mob?.type!=='fighter'){
+    throw new Error('On-the-fly rendering is currently limited to Dungeon Crawler Carl.');
+  }
   const gltf=await loadGltf(MODEL_URL);
   const model=gltf.scene;
-  normalizeModel(model);
-  model.traverse(o=>{if(o.isSkinnedMesh)o.frustumCulled=false;});
+  model.traverse(object=>{if(object.isSkinnedMesh)object.frustumCulled=false;});
+
+  const frame=normalizedFrame(recipe);
+  const style=normalizedStyle(recipe);
   const scene=new THREE.Scene();
-  const turntable=new THREE.Group();
-  turntable.add(model); scene.add(turntable);
-  scene.add(new THREE.AmbientLight(LIGHTING.ambientColor,LIGHTING.ambientIntensity));
-  const key=new THREE.DirectionalLight(LIGHTING.keyColor,LIGHTING.keyIntensity);
-  key.position.set(-1,8,-1); scene.add(key); scene.add(key.target);
-  const camera=new THREE.OrthographicCamera(-FRAME_HEIGHT*WIDTH/HEIGHT/2,FRAME_HEIGHT*WIDTH/HEIGHT/2,FRAME_HEIGHT/2,-FRAME_HEIGHT/2,.01,100);
-  const distance=22;
-  camera.position.copy(CENTER).add(new THREE.Vector3(0,Math.sin(CAMERA_ELEVATION),Math.cos(CAMERA_ELEVATION)).multiplyScalar(distance));
-  camera.lookAt(CENTER); camera.updateProjectionMatrix();
-  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:false,preserveDrawingBuffer:false});
-  renderer.setSize(WIDTH,HEIGHT,false); renderer.outputColorSpace=THREE.SRGBColorSpace;
-  const target=new THREE.WebGLRenderTarget(WIDTH,HEIGHT,{format:THREE.RGBAFormat,type:THREE.UnsignedByteType,minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true,stencilBuffer:false});
+  const turntable=buildSceneGraph(model,recipe);
+  scene.add(turntable);
+  configureLights(scene,recipe);
+  const camera=configureCamera(recipe,frame);
+
+  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
+  renderer.setPixelRatio(1);
+  renderer.setSize(frame.width,frame.height,false);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1;
+  const target=new THREE.WebGLRenderTarget(frame.width,frame.height,{
+    format:THREE.RGBAFormat,type:THREE.UnsignedByteType,
+    minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,
+    depthBuffer:true,stencilBuffer:false,samples:0
+  });
   target.texture.colorSpace=THREE.SRGBColorSpace;
+
   let attachment=null;
   if(recipe.equipment){
     const id=recipe.equipment.appearanceId==='battle-axe'?'battle-axe':'medieval-sword';
@@ -82,29 +187,33 @@ export async function generateCombatSpriteSet(recipe){
     const weaponGltf=await loadGltf('../'+recipe.equipment.asset);
     attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
       rightHand:id,
-      sizePercent:recipe.equipment.grip?.sizePercent??preset.defaultSizePercent??100,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:recipe.equipment.grip?.sizePercent??100,
       position:recipe.equipment.grip?.position??preset.position,
       rotation:recipe.equipment.grip?.rotationDegrees??preset.rotation
     });
   }
+
   const mixer=new THREE.AnimationMixer(model);
   const profile=recipe.poseProfile||WEAPON_POSE_PROFILES['one-handed-swing-v1'];
-  const byName=new Map(gltf.animations.map(c=>[c.name,c]));
+  const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId='carl-live-'+keyId;
-  const images={}, sourceUrls={}, poses={};
+  const images={},sourceUrls={},poses={};
   try{
-    for(const [capture] of POSES){
-      const pose=profile.poses[capture];
-      const clip=byName.get(pose.animation);
+    for(const capture of POSES){
+      const pose=profile?.poses?.[capture];
+      if(!pose) throw new Error(`Combat pose recipe is missing ${capture}.`);
+      const clip=byName.get(pose.animation)||byName.get(pose.sourceId);
       if(!clip) throw new Error(`Carl animation ${pose.animation} is unavailable.`);
       mixer.stopAllAction();
       const action=mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1).play();
-      action.paused=true; action.time=Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
+      action.paused=true;
+      action.time=Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
       poses[capture]={clip:clip.name,time:action.time,frames:{}};
       for(const facing of HEX_FACINGS){
-        const canvas=frameCanvas(renderer,target,scene,camera,turntable,facing.yawRadians);
+        const canvas=frameCanvas(renderer,target,scene,camera,turntable,facing.yawRadians,frame,style);
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
         const src=canvas.toDataURL('image/png');
         images[file]=await loadImage(src);
@@ -112,19 +221,33 @@ export async function generateCombatSpriteSet(recipe){
         poses[capture].frames[facing.id]=file;
       }
     }
-  } finally {
+  }finally{
     attachment?.detach();
     mixer.stopAllAction();
-    target.dispose(); renderer.dispose();
+    target.dispose();
+    renderer.dispose();
   }
+
   return {
     manifest:{
       schema:'adventure-party.sprite-set',version:1,id:manifestId,
-      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'} (live)`,
-      frame:{width:WIDTH,height:HEIGHT,renderWidth:RENDER_WIDTH,renderHeight:RENDER_HEIGHT,anchorX:160,anchorY:264.02889936721095},
-      facings:FACINGS,poses,layout:{id:'single',resolutionPercent:200},mobType:'fighter',modelScalePercent:175,hexScalePercent:109,
-      render:{generatedAtRuntime:true,appearanceKey:appearanceCacheKey(recipe),heightInches:recipe.mob.heightInches}
+      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'} (generated)`,
+      frame:{...frame},
+      facings:FACINGS,
+      poses,
+      layout:{id:recipe.renderSettings?.layoutId||'single',resolutionPercent:finite(recipe.renderSettings?.resolutionPercent,200)},
+      mobType:'fighter',
+      modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
+      hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
+      render:{
+        generatedAtRuntime:true,
+        poseSource:recipe.renderSettings?.source||'built-in-profile',
+        appearanceKey:appearanceCacheKey(recipe),
+        heightInches:recipe.mob.heightInches,
+        equipmentAppearanceId:recipe.equipment?.appearanceId||null
+      }
     },
-    images,sourceUrls
+    images,
+    sourceUrls
   };
 }
