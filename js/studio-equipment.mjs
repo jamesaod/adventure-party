@@ -14,13 +14,12 @@ export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    // Rev 66: the shaft, not the axe blade, is the longitudinal weapon axis.
-    // The [4,5,0] source-space direction follows the diagonal haft from the
-    // approved lower grip toward the head. [-51,90,0] maps it to HELD_WEAPON_AXIS.
+    // Rev 67: keep the Rev 66 shaft axis, then roll the axe 180 degrees
+    // around that shaft so the cutting edge faces the opposite direction.
     grip: Object.freeze([-0.36, 0.15, 0]), nativeScale: 0.4125,
     primaryAxis: Object.freeze([4, 5, 0]),
-    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([-51, 90, 0]),
-    defaultSizePercent: 100, presetRevision: 4
+    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([-129, -90, 0]),
+    defaultSizePercent: 100, presetRevision: 5
   })
 ]);
 

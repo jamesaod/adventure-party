@@ -18,6 +18,9 @@ for(const token of [
   "for(const facing of HEX_FACINGS)",
   "appearanceCacheKey(recipe)",
   "createWeaponAttachment",
+  "createShieldAttachment",
+  "recipe.shield",
+  "shieldAppearanceId",
   "quantizeRgba(raw,frame.width,frame.height,image.data",
   "carl-live-",
   "generatedAtRuntime:true"
@@ -33,9 +36,9 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C66")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C66")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C66",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C67")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C67")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C67",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
@@ -46,8 +49,9 @@ assert.ok(game.includes('window.adventurePartySpriteSets?.register(result.sprite
 assert.ok(game.includes('unit.dynamicAppearanceSpriteSetId=spriteSetId'));
 assert.ok(studio.includes('clipSourceId: animationSourceId'));
 assert.ok(studio.includes('state.previewReferenceBounds'));
+assert.ok(studio.includes('shieldEquipment'));
 assert.ok(studio.includes('renderFallbackPreviews'));
 assert.ok(studio.includes("ctx.strokeStyle = '#e3ca79'"));
 assert.ok(index.includes('<script type="importmap">'));
 assert.ok(index.includes('"three": "./assets/vendor/three/three.module.min.js"'));
-console.log('PASS captured-pose combat generation, upright runtime frames, equipment refresh and Studio QA integration');
+console.log('PASS captured-pose combat generation, upright runtime frames, weapon/shield refresh and Studio QA integration');

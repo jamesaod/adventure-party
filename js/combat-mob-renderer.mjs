@@ -2,8 +2,9 @@ import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C66';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C66';
+import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C67';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C67';
+import { studioShield, findLeftHand, createBronzeRoundShieldProxy, createShieldAttachment } from './studio-shield.mjs?v=R238C67';
 
 const MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -176,7 +177,7 @@ export async function generateCombatSpriteSet(recipe){
   });
   target.texture.colorSpace=THREE.SRGBColorSpace;
 
-  let attachment=null;
+  let attachment=null,shieldAttachment=null;
   if(recipe.equipment){
     const id=recipe.equipment.appearanceId==='battle-axe'?'battle-axe':'medieval-sword';
     const preset=studioWeapon(id);
@@ -189,6 +190,19 @@ export async function generateCombatSpriteSet(recipe){
       sizePercent:recipe.equipment.grip?.sizePercent??100,
       position:recipe.equipment.grip?.position??preset.position,
       rotation:recipe.equipment.grip?.rotationDegrees??preset.rotation
+    });
+  }
+  if(recipe.shield){
+    const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
+    const leftHand=findLeftHand(model);
+    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to Carl.');
+    const shieldModel=createBronzeRoundShieldProxy(THREE);
+    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldModel,{
+      leftHandShield:preset.id,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:recipe.shield.mount?.sizePercent??100,
+      position:recipe.shield.mount?.position??preset.position,
+      rotation:recipe.shield.mount?.rotationDegrees??preset.rotation
     });
   }
 
@@ -221,6 +235,13 @@ export async function generateCombatSpriteSet(recipe){
     }
   }finally{
     attachment?.detach();
+    shieldAttachment?.detach();
+    shieldAttachment?.model?.traverse(object=>{
+      object.geometry?.dispose?.();
+      const material=object.material;
+      if(Array.isArray(material)) material.forEach(item=>item?.dispose?.());
+      else material?.dispose?.();
+    });
     mixer.stopAllAction();
     target.dispose();
     renderer.dispose();
@@ -229,7 +250,7 @@ export async function generateCombatSpriteSet(recipe){
   return {
     manifest:{
       schema:'adventure-party.sprite-set',version:1,id:manifestId,
-      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'} (generated)`,
+      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'}${recipe.shield?` + ${recipe.shield.itemName}`:''} (generated)`,
       frame:{...frame},
       facings:FACINGS,
       poses,
@@ -242,7 +263,8 @@ export async function generateCombatSpriteSet(recipe){
         poseSource:recipe.renderSettings?.source||'built-in-profile',
         appearanceKey:appearanceCacheKey(recipe),
         heightInches:recipe.mob.heightInches,
-        equipmentAppearanceId:recipe.equipment?.appearanceId||null
+        equipmentAppearanceId:recipe.equipment?.appearanceId||null,
+        shieldAppearanceId:recipe.shield?.appearanceId||null
       }
     },
     images,

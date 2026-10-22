@@ -7044,8 +7044,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C66")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C66"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C67")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C67"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:12
@@ -7053,7 +7053,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C66",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C67",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision) return null;
     const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type});
@@ -14511,6 +14511,11 @@ function makeFighter(){
       item?.name==="Chain Mail" ||
       item?.name==="Mail hauberk or byrnie (chain)"
     );
+    const oldShield=previousInventory.find(item=>
+      item?.appearanceId==="bronze-round-shield" ||
+      item?.catalogArmorId==="shield-medium" ||
+      item?.name==="Bronze Round Shield"
+    );
 
     f.inventory=[
       {
@@ -14555,6 +14560,18 @@ function makeFighter(){
         magical:false,
         catalogArmorId:"chain",
         detail:"Mail hauberk or byrnie (chain)."
+      },
+      {
+        name:"Bronze Round Shield",
+        type:"Shield",
+        slot:"shield",
+        equippable:true,
+        equipped:oldShield ? oldShield.equipped===true : true,
+        qty:1,
+        magical:false,
+        catalogArmorId:"shield-medium",
+        appearanceId:"bronze-round-shield",
+        detail:"Medium-shield rules with the Rev 67 bronze round shield visual attached to Carl's left hand for animation QA."
       }
 ,
       {
@@ -14682,6 +14699,18 @@ function makeFighter(){
         magical:false,
         catalogArmorId:"chain",
         detail:"Mail hauberk or byrnie (chain)."
+      },
+      {
+        name:"Bronze Round Shield",
+        type:"Shield",
+        slot:"shield",
+        equippable:true,
+        equipped:true,
+        qty:1,
+        magical:false,
+        catalogArmorId:"shield-medium",
+        appearanceId:"bronze-round-shield",
+        detail:"Medium-shield rules with the Rev 67 bronze round shield visual attached to Carl's left hand for animation QA."
       }
  ,
       {
