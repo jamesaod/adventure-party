@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {
-  STUDIO_WEAPONS, normalizeEquipment, findRightHand, createWeaponAttachment, createStudioEquipment
+  HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 
 const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
@@ -40,17 +40,26 @@ function glb(path) {
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
 assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
+const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
+for (const weapon of STUDIO_WEAPONS) {
+  const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
+  const rotation = new THREE.Euler(...weapon.rotation.map(value => THREE.MathUtils.degToRad(value)), 'XYZ');
+  axis.applyEuler(rotation).normalize();
+  assert.ok(axis.angleTo(heldAxis) < THREE.MathUtils.degToRad(1),
+    `${weapon.label} longitudinal axis must align to the shared hand-held direction`);
+}
 assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 100, 'Battle Axe UI default remains 100%');
-assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 30], 'Battle Axe rotates around the approved grip into the QA-marked forward/up orientation');
+assert.deepEqual(STUDIO_WEAPONS[1].primaryAxis, [4, 5, 0], 'Battle Axe longitudinal axis follows the haft, not the cutting edge');
+assert.deepEqual(STUDIO_WEAPONS[1].rotation, [-51, 90, 0], 'Battle Axe shaft aligns to the same held direction as the sword blade');
 assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.36, 0.15, 0], 'Battle Axe grip lands on the lower diagonal wooden haft');
 assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
 const migratedAxe = normalizeEquipment({
-  rightHand:'battle-axe', presetRevision:2, sizePercent:100,
-  position:[0.015,0.05,0.005], rotation:[0,90,180]
+  rightHand:'battle-axe', presetRevision:3, sizePercent:100,
+  position:[0.015,0.05,0.005], rotation:[0,90,30]
 });
-assert.equal(migratedAxe.sizePercent,100,'Rev 64 saved axe size remains at the approved 100% UI default');
-assert.deepEqual(migratedAxe.rotation,[0,90,30],'Rev 64 saved axe orientation migrates to the Rev 65 calibrated preset');
-assert.equal(migratedAxe.presetRevision,3);
+assert.equal(migratedAxe.sizePercent,100,'Rev 65 saved axe size remains at the approved 100% UI default');
+assert.deepEqual(migratedAxe.rotation,[-51,90,0],'Rev 65 saved axe orientation migrates to the shaft-aligned Rev 66 preset');
+assert.equal(migratedAxe.presetRevision,4);
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
