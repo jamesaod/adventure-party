@@ -127,7 +127,7 @@ export const ITEM_CATALOG=freezeRecord({
       },
       webAsset:{
         bytes:17912,
-        sha256:'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521',
+        sha256:'d383f0a59bcf3ad0aa7d4b304e33d20e333c0d6a1567958c61710f278c178bb8',
         textureResolution:128,
         vertices:258,
         triangles:384,
