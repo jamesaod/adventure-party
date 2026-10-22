@@ -19,7 +19,7 @@ import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
 } from './studio-equipment.mjs?v=R238C67';
 import {
-  STUDIO_SHIELDS, normalizeShield, createRoundWoodenShieldModel, createStudioShield
+  STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C71';
 
 const DEFAULT_LIGHTING = Object.freeze({
@@ -102,8 +102,9 @@ const equipment = createStudioEquipment({
 const shieldEquipment = createStudioShield({
   THREE,
   loadAsset: async shield => {
-    if(shield.id!=='round-wooden-shield')throw new Error(`Unsupported shield asset: ${shield.id}`);
-    return createRoundWoodenShieldModel(THREE,new URL('../',import.meta.url));
+    const url=new URL(shield.file,new URL('../',import.meta.url));
+    const loaded=await new GLTFLoader().loadAsync(url.href);
+    return loaded.scene;
   },
   disposeObject: disposeModel,
   onChange: () => {
