@@ -134,6 +134,7 @@ const settings = normalizeEquipment({ rightHand: 'medieval-sword' });
 const attached = createWeaponAttachment(THREE, hand, swordModel, settings);
 const gripPoint = new THREE.Vector3(...STUDIO_WEAPONS[0].grip);
 const shieldSettings=normalizeShield({leftHandShield:'bronze-round-shield'});
+const shieldForearmAxis=leftForearmAxisLocal(THREE,leftHand);
 const shieldModel=createBronzeRoundShieldProxy(THREE);
 const shieldAttached=createShieldAttachment(THREE,leftHand,shieldModel,shieldSettings);
 const mixer = new THREE.AnimationMixer(character);
@@ -178,7 +179,7 @@ assert.ok(shieldVisited.size > 30, 'The shield follows the animated left hand th
 
 display.rotation.y=0;
 display.updateMatrixWorld(true);
-const forearmAxis=leftForearmAxisLocal(THREE,leftHand);
+const forearmAxis=shieldForearmAxis.clone();
 const outwardAxis=new THREE.Vector3(0,0,1)
   .addScaledVector(forearmAxis,-new THREE.Vector3(0,0,1).dot(forearmAxis));
 if(outwardAxis.lengthSq()<1e-10)outwardAxis.set(0,1,0);
