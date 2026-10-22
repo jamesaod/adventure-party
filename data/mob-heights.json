@@ -1,7 +1,7 @@
 {
   "version": 1,
   "units": {
-    "fighter": { "name": "Dungeon Crawler Carl", "heightInches": 75, "authored": true },
+    "fighter": { "name": "Dungeon Crawler Carl", "heightInches": 76, "authored": true },
     "ranger": { "name": "Elven Ranger", "heightInches": null, "authored": false },
     "mage": { "name": "Baub", "heightInches": null, "authored": false },
     "kobold": { "name": "Kobold", "heightInches": null, "authored": false },
@@ -12,5 +12,5 @@
     "orc-shaman": { "name": "Orc Shaman", "heightInches": null, "authored": false },
     "juvenile-red-dragon": { "name": "Juvenile Red Dragon", "heightInches": null, "authored": false }
   },
-  "note": "Height exists for every MOB type. Null entries deliberately preserve the legacy visual scale until an authored height is approved; Carl is calibrated at 6 ft 3 in."
+  "note": "Height exists for every MOB type. Null entries deliberately preserve the legacy visual scale until an authored height is approved; Carl is calibrated at 6 ft 4 in."
 }
