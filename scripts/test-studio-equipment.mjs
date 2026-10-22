@@ -7,7 +7,7 @@ import {
 } from '../js/studio-equipment.mjs';
 import {
   STUDIO_SHIELDS, SHIELD_MODEL_UNITS_PER_INCH, normalizeShield, findLeftHand, leftForearmAxisLocal,
-  createRoundWoodenShieldGeometry, createShieldAttachment
+  createShieldAttachment
 } from '../js/studio-shield.mjs';
 
 const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
@@ -67,8 +67,8 @@ assert.equal(migratedAxe.presetRevision,5);
 assert.equal(STUDIO_SHIELDS.length,1);
 assert.equal(STUDIO_SHIELDS[0].id,'round-wooden-shield');
 assert.equal(STUDIO_SHIELDS[0].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
-assert.equal(STUDIO_SHIELDS[0].representation,'procedural-round-shield-textured-v1');
-assert.equal(STUDIO_SHIELDS[0].texturePack.resolution,256);
+assert.equal(STUDIO_SHIELDS[0].representation,'runtime-gltf-derivative-v1');
+assert.equal(STUDIO_SHIELDS[0].assetSha256,'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521');
 assert.deepEqual(STUDIO_SHIELDS[0].position,[0,0,0.04],'Shield remains outside the left arm but is pulled close to the forearm');
 assert.deepEqual(STUDIO_SHIELDS[0].rotation,[0,0,0],'Shield keeps the Rev 68 outward-facing orientation');
 const migratedShield=normalizeShield({
@@ -104,12 +104,16 @@ assert.equal(axe.json.skins?.length || 0, 0);
 assert.equal(axe.json.animations?.length || 0, 0);
 const axePrimitive=axe.json.meshes[0].primitives[0];
 assert.equal(axe.json.accessors[axePrimitive.indices].count / 3, 54706, 'Battle Axe triangle benchmark');
-const shieldModel=createRoundWoodenShieldGeometry(THREE);
-const shieldBounds=new THREE.Box3().setFromObject(shieldModel);
-const shieldSize=shieldBounds.getSize(new THREE.Vector3());
-assert.ok(Math.abs(shieldSize.x-1)<1e-6,'Runtime wooden shield preserves unit diameter');
-assert.ok(Math.abs(shieldSize.y-1)<1e-6,'Runtime wooden shield preserves unit diameter');
-assert.ok(Math.abs(shieldSize.z-0.2491913139820099)<1e-6,'Runtime wooden shield preserves uploaded thickness proportion');
+const shieldAsset=glb(STUDIO_SHIELDS[0].file);
+assert.equal(shieldAsset.bytes.length,17912);
+assert.equal(crypto.createHash('sha256').update(shieldAsset.bytes).digest('hex'),STUDIO_SHIELDS[0].assetSha256);
+assert.equal(shieldAsset.json.meshes.length,1);
+assert.equal(shieldAsset.json.skins?.length||0,0);
+assert.equal(shieldAsset.json.animations?.length||0,0);
+assert.equal(shieldAsset.json.accessors[shieldAsset.json.meshes[0].primitives[0].indices].count/3,384);
+assert.equal(shieldAsset.json.accessors[shieldAsset.json.meshes[0].primitives[0].attributes.POSITION].count,258);
+assert.equal(shieldAsset.json.images.length,1);
+assert.ok(shieldAsset.json.images.every(image=>Number.isInteger(image.bufferView)),'Wooden shield texture is embedded');
 const swordModel = new THREE.Group();
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', new THREE.BufferAttribute(sword.accessor(
@@ -145,7 +149,12 @@ const attached = createWeaponAttachment(THREE, hand, swordModel, settings);
 const gripPoint = new THREE.Vector3(...STUDIO_WEAPONS[0].grip);
 const shieldSettings=normalizeShield({leftHandShield:'round-wooden-shield'});
 const shieldForearmAxis=leftForearmAxisLocal(THREE,leftHand);
-const shieldCenter=new THREE.Vector3(0,0,0);
+const shieldGeometry=new THREE.BufferGeometry();
+shieldGeometry.setAttribute('position',new THREE.BufferAttribute(shieldAsset.accessor(
+  shieldAsset.json.meshes[0].primitives[0].attributes.POSITION),3));
+const shieldModel=new THREE.Group();
+shieldModel.add(new THREE.Mesh(shieldGeometry));
+const shieldCenter=new THREE.Vector3(...STUDIO_SHIELDS[0].modelOrigin);
 const shieldAttached=createShieldAttachment(THREE,leftHand,shieldModel,shieldSettings);
 const mixer = new THREE.AnimationMixer(character);
 const visited = new Set(), shieldVisited = new Set();
