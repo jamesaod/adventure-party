@@ -2,6 +2,15 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 60 — MOB Height and visible weapon profile foundation
+
+- Added an explicit `heightInches` attribute to battlefield MOBs. Dungeon Crawler Carl is authored at **6′3″ / 75 inches**; other existing MOB types remain explicitly uncalibrated so their established visual scale is unchanged until a height is approved.
+- Added a Battle Axe to Carl's inventory using the existing mundane `axe-battle` combat statistics. Flaming Sword +5 and Battle Axe carry distinct visible-equipment IDs while sharing the first `one-handed-swing-v1` pose profile.
+- Added the user-supplied Battle Axe as a separate 3D Studio right-hand asset. Its source GLB is preserved byte-for-byte; the provisional grip starts from the sword-style attachment and is intended to be tuned in Studio.
+- Added reusable appearance recipes, deterministic cache keys, a bounded appearance cache, and async request revisioning so an older equipment render cannot overwrite a newer equip choice.
+- Added a Studio Weapon Pose Profile recorder/exporter. It captures exact animation identity/time, weapon/grip settings, MOB Height, model identity, lighting, framing, and Ready/Attack/Prone mappings as human-readable JSON for development handoff.
+- The existing published battle sprite set remains the visual fallback. Rev 60 establishes the data/profile/cache foundation and equipment-change handoff; full in-battle 18-frame WebGL regeneration remains a later rendering step.
+
 ## Candidate Rev 59 — Studio preview framing and controls
 
 - Centered each directional preview's visible sprite at 50% of its window height, including the equipped weapon and outline. Wider windows keep prone poses fully visible; native capture/export pixels and anchors are preserved.

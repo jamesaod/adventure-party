@@ -39,6 +39,7 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
+assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
@@ -46,6 +47,14 @@ assert.equal(sword.json.meshes.length, 1);
 assert.equal(sword.json.skins?.length || 0, 0);
 assert.equal(sword.json.animations?.length || 0, 0);
 assert.ok(sword.json.images.every(image => Number.isInteger(image.bufferView)), 'Textures are embedded');
+const axe = glb(STUDIO_WEAPONS[1].file);
+assert.equal(crypto.createHash('sha256').update(axe.bytes).digest('hex'),
+  'd7ba2e5d2cdc15e782d05f13d4d31d6e63a2142bd336a22248b2560323938b76');
+assert.equal(axe.json.meshes.length, 1);
+assert.equal(axe.json.skins?.length || 0, 0);
+assert.equal(axe.json.animations?.length || 0, 0);
+const axePrimitive=axe.json.meshes[0].primitives[0];
+assert.equal(axe.json.accessors[axePrimitive.indices].count / 3, 54706, 'Battle Axe triangle benchmark');
 const swordModel = new THREE.Group();
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', new THREE.BufferAttribute(sword.accessor(
@@ -186,4 +195,4 @@ for (const gear of [{ loading: true, settings }, { loading: false, attached: fal
   assert.throws(() => vm.runInContext('readCapturePose()', capture), /finish loading|Sword unavailable/);
 }
 
-console.log('Studio sword integrity, animated grip (4 clips × 6 facings), workspace settings, capture locks and loading/disposal races passed.');
+console.log('Studio weapon integrity, animated sword grip (4 clips × 6 facings), workspace settings, capture locks and loading/disposal races passed.');

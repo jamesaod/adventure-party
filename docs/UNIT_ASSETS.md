@@ -14,6 +14,9 @@ The tables below document the existing runtime catalogs. Update the relevant cat
 | Legacy sprite geometry | [`data/sprite-asset-registry.json`](../data/sprite-asset-registry.json) | Source/workspace sizes, render dimensions, anchors, and facing for the older flat PNG assets |
 | Combat factories, image references, and pose selection | [`js/adventure-party.js`](../js/adventure-party.js) | Unit statistics/encounters, `UNIT_POSE_DEFINITIONS`, player default binding, and live pose/facing selection |
 | Saved 3D character models | [`data/studio-models.json`](../data/studio-models.json) | Studio model menu entries and source GLB files |
+| MOB Height calibration | [`data/mob-heights.json`](../data/mob-heights.json) | Feet/inches body-height data used by the appearance pipeline; null preserves legacy scale |
+| Visible equipment recipes | [`data/visible-equipment.json`](../data/visible-equipment.json) | 3D asset, attachment, grip, visual class, and pose-profile association |
+| Weapon pose profiles | [`data/weapon-pose-profiles.json`](../data/weapon-pose-profiles.json) | Reproducible Ready/Attack/Prone animation samples for equipment classes |
 
 ## Player characters
 
@@ -21,7 +24,7 @@ All three targets use a single occupied hex by default. A registered sprite pack
 
 | Character / unit ID | Current artwork | Poses and facings | Current use |
 | --- | --- | --- | --- |
-| **Dungeon Crawler Carl** / `fighter` | [`assets/sprites/dungeon-crawler-carl/`](../assets/sprites/dungeon-crawler-carl/), explicitly assigned with `defaultFor: "fighter"` | **18 PNGs: ready, attack, prone × E, NE, NW, W, SW, SE** | The canonical player in ordinary Combat System Test encounters. Selecting his sprite test inspects that same Carl against six Kobolds; it does not add duplicate Carls. |
+| **Dungeon Crawler Carl** / `fighter` | [`assets/sprites/dungeon-crawler-carl/`](../assets/sprites/dungeon-crawler-carl/), explicitly assigned with `defaultFor: "fighter"` | **18 PNGs: ready, attack, prone × E, NE, NW, W, SW, SE** | The canonical player in ordinary Combat System Test encounters. Authored Height: **6′3″ / 75 in**. His inventory includes Flaming Sword +5 and Battle Axe. Selecting his sprite test inspects that same Carl against six Kobolds; it does not add duplicate Carls. |
 | **Elven Ranger** / `ranger` | No dedicated repository package assigned. Existing fallback renderer uses [`fighter.png`](../assets/sprites/fighter.png). | Fallback is one standing image mirrored for left/right. A supplied player package can provide all 18 frames. | Defined in the engine and offered as a studio capture target. Not a default party member; a selected Ranger sprite package creates the friendly inspection formation. |
 | **Baub — Mage** / `mage` | No dedicated repository package assigned. Existing fallback renderer uses [`fighter.png`](../assets/sprites/fighter.png). | Fallback is one standing image mirrored for left/right. A supplied player package can provide all 18 frames. | Defined in the engine and offered as a studio capture target. Not a default party member; a selected Mage sprite package creates the friendly inspection formation. |
 
@@ -76,6 +79,7 @@ The engine also contains a generic `makeClericCharacter()` class constructor, bu
 | **Dungeon Crawler Carl Ver 2** | [`assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb`](../assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb) | Saved character model for studio target `fighter`. Embedded clips: `box_01`, `fall`, `box_02`, `box_03`. Source identity is recorded in the [model README](../assets/models/dungeon-crawler-carl/README.md). |
 | **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test** | [`assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb`](../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb) | Studio QA alternate for `fighter`, retaining the four original clips and adding `UAL2_Sword_Ready` (1-second held stance) and `UAL2_Sword_Regular_A` (1.4-second attack/recovery). Quaternius animation sources and CC0 attribution are recorded in the [model README](../assets/models/dungeon-crawler-carl/README.md#version-2--ual2-sword-test). This model is not a new combat sprite assignment. |
 | **Medieval Sword** | [`assets/models/weapons/swords/medieval-sword.glb`](../assets/models/weapons/swords/medieval-sword.glb) | Separate studio equipment, attached through Carl's right-hand bone and a calibrated grip transform. |
+| **Battle Axe** | [`assets/models/weapons/battle-axes/battle-axe.glb`](../assets/models/weapons/battle-axes/battle-axe.glb) | Separate studio equipment for the first one-handed swing profile. Provisional grip is tunable/exportable in Studio. Source benchmark: 54,706 triangles. |
 
 These source models and the imported battle sprite package have separate identities. The imported Carl package records its original `stylized+character+3d+model.glb` capture source; it is not labeled as a new capture from **Dungeon Crawler Carl Ver 2**. Equipping the sword in the studio changes the live model and newly captured images. To publish a new sword-equipped battle set, capture the three poses, export, and import that package through the normal candidate workflow.
 

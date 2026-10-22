@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C57';
+} from './studio-equipment.mjs?v=R238C60';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -220,9 +220,9 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
   ui.EquipmentStatus.classList.toggle('error', !!current.error);
   ui.EquipmentStatus.textContent = current.loading ? 'Loading sword…' : current.error
     ? locked ? `${current.error} Reload the studio to retry without clearing your captures.` : current.error
-    : current.attached ? 'Medieval Sword follows the right hand in every animation.'
-    : current.rightHandBone ? 'Choose Medieval Sword to equip this model.'
-    : 'Load Dungeon Crawler Carl Ver 2 to use his right-hand attachment.';
+    : current.attached ? 'Equipped weapon follows the right hand in every animation.'
+    : current.rightHandBone ? 'Choose a right-hand weapon to equip this model.'
+    : 'Load a compatible rigged MOB model to use a right-hand attachment.';
   ui.EquipmentLockNote.classList.toggle('locked', locked);
   ui.EquipmentLockNote.textContent = locked
     ? 'Equipment and grip are shared by this sheet. Clear all captured poses before changing them.'
@@ -1021,9 +1021,9 @@ function pixelRenderOptions(transparent = false) {
 function readCapturePose() {
   if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
   const gear = equipment.snapshot();
-  if (gear.loading) throw new Error('Wait for the sword to finish loading before capturing a pose.');
+  if (gear.loading) throw new Error('Wait for the weapon to finish loading before capturing a pose.');
   if (gear.settings.rightHand !== 'none' && !gear.attached) {
-    throw new Error(gear.error || 'The equipped sword is unavailable. Reload the studio before capturing another pose.');
+    throw new Error(gear.error || 'The equipped weapon is unavailable. Reload the studio before capturing another pose.');
   }
   state.playing = false;
   state.lastTick = 0;
@@ -1783,6 +1783,7 @@ async function start() {
       frameHeight: state.frameHeight, frameCenter: state.center.toArray(),
       layoutId: state.layoutId, resolutionPercent: state.resolutionPercent, mobType: state.mobType,
       modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
+      heading: state.heading,
       upAxis: state.upAxis, demoSourceUpAxis: state.demoSourceUpAxis,
       lighting: { ...state.lighting },
       equipment: equipment.snapshot(),

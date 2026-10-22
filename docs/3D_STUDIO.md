@@ -26,6 +26,12 @@ The two added takes are the scope of this alternate model. Publishing a new batt
 
 ## Equip Carl's right hand
 
+Load either saved Carl model, then choose **Equipment → Right hand → Medieval Sword** or **Battle Axe**. Both use the first-pass one-handed swinging weapon pose family; their GLB assets and grip calibrations remain independent.
+
+The Battle Axe starts with a provisional sword-style right-hand calibration. Adjust its size, position, and rotation visually before treating the profile as approved.
+
+To preserve those artistic choices, the **Weapon pose profile** panel records exact Ready, Attack, and Prone animation samples. Equip one supported weapon, scrub to the desired animation moment, use **Record ready / attack / prone**, then choose **Export pose profile JSON**. The export includes the equipped appearance ID, complete grip settings, exact animation/source/time, Carl's 6′3″ Height, model identity, lighting, orientation, framing, and combat pose mappings. Give that JSON back to development to update an authored weapon pose profile without transcribing sliders or guessing frames.
+
 Load either saved Carl model, then choose **Equipment → Right hand → Medieval Sword**. The sword is a separate repository asset attached to the model's animated right-hand bone. It follows every selected animation and is rendered by all six previews and subsequent captures.
 
 **Sword size** adjusts the calibrated weapon size. Expand **Adjust grip** to move the handle within the hand or change its rotation. **Reset grip** restores the starting Carl preset. Selecting **None** removes the sword; selecting it again retains your adjusted fit. Equip/unequip and Reset grip fit all animations automatically. After a large manual size or grip change, use **Fit all animations** and check the six previews for clipping.

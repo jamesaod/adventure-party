@@ -197,6 +197,7 @@ body.studio-page {
 .studio-label-row { display:flex; align-items:center; justify-content:space-between; gap:6px; }
 .studio-label-row output { color:var(--cyan); font-size:13px; font-variant-numeric:tabular-nums; }
 .studio-page select,
+.studio-page textarea,
 .studio-page input[type="text"],
 .studio-page input[type="number"] {
   width:100%;
@@ -323,4 +324,18 @@ body.studio-page {
   .studio-controls { grid-template-columns:minmax(0,1fr); }
   .studio-animation-bottom { align-items:flex-start; }
   .studio-animation-bottom .studio-note { width:100%; margin-top:3px; }
+}
+
+
+/* Candidate Rev 60: weapon-pose recipe controls share the Studio form treatment. */
+.studio-weapon-pose-profile textarea {
+  resize:vertical;
+  min-height:58px;
+  border:1px solid #777287;
+  border-radius:0;
+  background:#17151f;
+  color:var(--cyan);
+  padding:6px;
+  font:inherit;
+  font-size:14px;
 }

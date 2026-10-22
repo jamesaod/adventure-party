@@ -37,11 +37,17 @@ jobs:
           node --check js/studio-capture.mjs
           node --check js/studio-animations.mjs
           node --check js/studio-equipment.mjs
+          node --check js/mob-appearance.mjs
+          node --check js/mob-appearance-runtime.mjs
+          node --check js/weapon-pose-profile-export.mjs
+          node --check js/studio-weapon-pose-panel.mjs
           node scripts/test-3d-studio.mjs
           node scripts/test-studio-geometry.mjs
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
           node scripts/test-studio-equipment.mjs
+          node scripts/test-mob-appearance.mjs
+          node scripts/test-mob-appearance-runtime.mjs
           node scripts/test-carl-ual2.mjs
 
       - name: Validate sprite capture packages and asset imports
