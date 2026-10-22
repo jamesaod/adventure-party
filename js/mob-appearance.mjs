@@ -91,7 +91,7 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
     poseProfileId: 'one-handed-swing-v1',
     asset: 'assets/models/weapons/battle-axes/battle-axe.glb',
     attachmentBone: 'mixamorig:RightHand',
-    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, 90, 180], sizePercent: 100 })
+    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, 90, 30], sizePercent: 100 })
   })
 });
 
