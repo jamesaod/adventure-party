@@ -21,6 +21,7 @@ for(const token of [
   "for(const facing of HEX_FACINGS)",
   "appearanceCacheKey(recipe)",
   "createWeaponAttachment",
+  "recipe.equipment.studioId||recipe.equipment.appearanceId",
   "createShieldAttachment",
   "loadGltf('../'+recipe.shield.asset)",
   "recipe.shield",
