@@ -1141,13 +1141,10 @@ function renderFallbackPreviews(timestamp) {
     ctx.strokeStyle = '#e3ca79';
     ctx.lineWidth = Math.max(1, resolutionScale);
     ctx.beginPath();
-    for (const [x, y] of [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]]) {
-      if (!ctx.__hexStarted) { ctx.moveTo(cx+x, cy+y); ctx.__hexStarted = true; }
-      else ctx.lineTo(cx+x, cy+y);
-    }
+    [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]]
+      .forEach(([x,y],index) => index ? ctx.lineTo(cx+x,cy+y) : ctx.moveTo(cx+x,cy+y));
     ctx.closePath();
     ctx.stroke();
-    delete ctx.__hexStarted;
     ctx.restore();
 
     if (image?.naturalWidth && image?.naturalHeight) {
