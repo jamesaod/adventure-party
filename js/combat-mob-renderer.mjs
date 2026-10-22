@@ -4,7 +4,7 @@ import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
 import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C71';
 import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C67';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C71';
+import { studioShield, findLeftHand, createRoundWoodenShieldModel, createShieldAttachment } from './studio-shield.mjs?v=R238C71';
 
 const MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -196,10 +196,10 @@ export async function generateCombatSpriteSet(recipe){
     const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
     const leftHand=findLeftHand(model);
     if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to Carl.');
-    const shieldGltf=await loadGltf('../'+recipe.shield.asset);
+    const shieldModel=await createRoundWoodenShieldModel(THREE,new URL('../',import.meta.url));
     const savedShield=studioShield(recipe.renderSettings?.shield?.leftHandShield)?.id===preset.id
       ? recipe.renderSettings.shield : null;
-    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldGltf.scene,{
+    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldModel,{
       leftHandShield:preset.id,
       presetRevision:preset.presetRevision||0,
       sizePercent:finite(savedShield?.sizePercent,recipe.shield.mount?.sizePercent??100),
