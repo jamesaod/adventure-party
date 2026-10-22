@@ -320,7 +320,7 @@ async function changeEquipment(value, { fit = false } = {}) {
   poseCapture?.saveWorkspace();
 }
 
-function changeShield(value,{fit=false}={}){
+function changeShield(value,{fit=false,resetPose=true}={}){
   if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
     updateEquipmentControls();
     return;
@@ -328,7 +328,7 @@ function changeShield(value,{fit=false}={}){
   const changed=shieldEquipment.select(value);
   if(changed){
     if(fit)fitAllAnimations();
-    resetPreviewReferenceToReady();
+    if(resetPose)resetPreviewReferenceToReady();
   }
   poseCapture?.saveWorkspace();
 }
@@ -1599,7 +1599,7 @@ function bindControls() {
     control.addEventListener('input',()=>{
       const next=shieldEquipment.snapshot().settings;
       next[key]=control.valueAsNumber;
-      changeShield(next);
+      changeShield(next,{resetPose:false});
     });
   }
   ui.ResetShieldButton.addEventListener('click',()=>{
