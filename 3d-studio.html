@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 66</span>
+        <span class="studio-build">Candidate Rev 67</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -86,6 +86,13 @@
               <option value="none">None</option>
             </select>
           </label>
+          <label class="studio-field" for="studioLeftHandShield">
+            <span>Left hand</span>
+            <select id="studioLeftHandShield" aria-describedby="studioShieldStatus" disabled>
+              <option value="none">None</option>
+            </select>
+          </label>
+          <p id="studioShieldStatus" class="studio-note studio-help" role="status" aria-live="polite">Load Carl to preview a shield on his left hand.</p>
           <label class="studio-field" for="studioWeaponSize">
             <span class="studio-label-row">Weapon size <output id="studioWeaponSizeValue" for="studioWeaponSize">100%</output></span>
             <input id="studioWeaponSize" type="range" min="25" max="200" step="5" value="100" disabled>
@@ -112,7 +119,7 @@
           </details>
           <button id="studioResetEquipmentButton" class="studio-button studio-wide-button" type="button" disabled>Reset grip</button>
           <p id="studioEquipmentStatus" class="studio-note studio-help" role="status" aria-live="polite">Load a compatible MOB model to test a weapon in its right hand.</p>
-          <p id="studioEquipmentLockNote" class="studio-note studio-help">Equipment is included in all six previews and new captures.</p>
+          <p id="studioEquipmentLockNote" class="studio-note studio-help">Right-hand weapon and left-hand shield are included in all six previews and new captures.</p>
         </section>
 
         <section class="studio-panel chrome" aria-labelledby="studioOrientationHeading">
@@ -385,7 +392,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C66"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C67"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C60"></script>
 </body>
 </html>
