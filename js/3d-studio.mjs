@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C67';
+} from './studio-equipment.mjs?v=R238C75';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C72';
