@@ -7042,8 +7042,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision){
   try{
     if(!combatMobAppearanceRuntimePromise){
       combatMobAppearanceRuntimePromise=Promise.all([
-        import("./js/mob-appearance-runtime.mjs?v=R238C61"),
-        import("./js/combat-mob-renderer.mjs?v=R238C61")
+        import("./js/mob-appearance-runtime.mjs?v=R238C62"),
+        import("./js/combat-mob-renderer.mjs?v=R238C62")
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:12

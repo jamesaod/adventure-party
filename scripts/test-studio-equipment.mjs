@@ -41,8 +41,8 @@ function glb(path) {
 // animation transforms are exercised, not only an idealized arm fixture.
 assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
 assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 75, 'Battle Axe defaults to QA-approved 75% scale');
-assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 180], 'Battle Axe head/blade orientation is QA-approved');
-assert.deepEqual(STUDIO_WEAPONS[1].grip, [0, 0.88, 0], 'Battle Axe grip is near the butt of the haft');
+assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 0], 'Battle Axe head stays up while blade turns forward');
+assert.deepEqual(STUDIO_WEAPONS[1].grip, [0, 0.12, 0], 'Battle Axe grip is one hand-length above the butt');
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');

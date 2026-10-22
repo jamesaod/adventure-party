@@ -1,8 +1,8 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C61';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C61';
+import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C62';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C62';
 
 const MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const WIDTH=320, HEIGHT=400;
