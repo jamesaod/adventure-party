@@ -43,7 +43,7 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
+assert.equal(STUDIO_WEAPONS.length, 3, 'Sword, Battle Axe, and Two-Handed Sword are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
 for (const weapon of STUDIO_WEAPONS) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
@@ -57,6 +57,14 @@ assert.deepEqual(STUDIO_WEAPONS[1].primaryAxis, [4, 5, 0], 'Battle Axe longitudi
 assert.deepEqual(STUDIO_WEAPONS[1].rotation, [-129, -90, 0], 'Battle Axe keeps the shaft axis but rolls the cutting edge 180 degrees');
 assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.36, 0.15, 0], 'Battle Axe grip lands on the lower diagonal wooden haft');
 assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
+assert.equal(STUDIO_WEAPONS[2].id,'medieval-two-handed-sword');
+assert.equal(STUDIO_WEAPONS[2].poseProfileId,'two-handed-swing');
+assert.equal(STUDIO_WEAPONS[2].handsRequired,2);
+assert.deepEqual(STUDIO_WEAPONS[2].grip,[0,0.81,0]);
+assert.deepEqual(STUDIO_WEAPONS[2].secondaryGrip,[0,0.89,0]);
+assert.deepEqual(STUDIO_WEAPONS[2].primaryAxis,[0,-1,0]);
+assert.deepEqual(STUDIO_WEAPONS[2].rotation,[90,0,0]);
+assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
 const migratedAxe = normalizeEquipment({
   rightHand:'battle-axe', presetRevision:4, sizePercent:100,
   position:[0.015,0.05,0.005], rotation:[-51,90,0]
@@ -104,6 +112,16 @@ assert.equal(axe.json.skins?.length || 0, 0);
 assert.equal(axe.json.animations?.length || 0, 0);
 const axePrimitive=axe.json.meshes[0].primitives[0];
 assert.equal(axe.json.accessors[axePrimitive.indices].count / 3, 54706, 'Battle Axe triangle benchmark');
+const twoHandedSword=glb(STUDIO_WEAPONS[2].file);
+assert.equal(twoHandedSword.bytes.length,646456);
+assert.equal(crypto.createHash('sha256').update(twoHandedSword.bytes).digest('hex'),
+  '85408b9b17fa38a72816d57ac55e63e6409862b5d5a305beb6cf5eee045c948a');
+assert.equal(twoHandedSword.json.meshes.length,1);
+assert.equal(twoHandedSword.json.skins?.length||0,0);
+assert.equal(twoHandedSword.json.animations?.length||0,0);
+assert.equal(twoHandedSword.json.accessors[twoHandedSword.json.meshes[0].primitives[0].indices].count/3,8333);
+assert.equal(twoHandedSword.json.accessors[twoHandedSword.json.meshes[0].primitives[0].attributes.POSITION].count,6623);
+assert.equal(twoHandedSword.json.images.length,3);
 const shieldAsset=glb(STUDIO_SHIELDS[0].file);
 assert.equal(shieldAsset.bytes.length,781832);
 assert.equal(crypto.createHash('sha256').update(shieldAsset.bytes).digest('hex'),STUDIO_SHIELDS[0].assetSha256);
@@ -284,6 +302,11 @@ assert.equal(disposed.filter(object => object === lateAsset).length, 1);
 
 // Exercise the production boundary, including a synthetic change event on a
 // disabled control, so a partial sheet cannot silently mix equipment states.
+const posePanel=fs.readFileSync(new URL('../js/studio-weapon-pose-panel.mjs',import.meta.url),'utf8');
+assert.ok(posePanel.includes("'medieval-two-handed-sword'"));
+assert.ok(posePanel.includes("poseProfileId: 'two-handed-swing'"));
+assert.ok(posePanel.includes("heightInches: snap.mobType === 'fighter' ? 76 : null"));
+assert.ok(posePanel.includes("bodyReferenceHeightInches: snap.mobType === 'fighter' ? 76 : null"));
 const studio = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
 const extract = (start, end) => studio.slice(studio.indexOf(start), studio.indexOf(end, studio.indexOf(start)));
 const locked = vm.createContext({
