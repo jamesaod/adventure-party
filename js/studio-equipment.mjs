@@ -1,8 +1,12 @@
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C75';
+
 // Rigid visible equipment stays beneath the animated right hand. Weapon-specific grip presets remain independently tunable.
 // All one-handed weapon assets expose a local longitudinal axis that must resolve
 // to this hand-local direction. For a sword it is the blade; for an axe it is
 // the shaft. Cutting edges are deliberately not treated as the weapon axis.
 export const HELD_WEAPON_AXIS = Object.freeze([0, 0, -1]);
+const TWO_HANDED_SWORD_ITEM=itemCatalogEntry('two-handed-sword');
+if(!TWO_HANDED_SWORD_ITEM?.appearance)throw new Error('Two-Handed Sword catalog appearance is required.');
 export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'medieval-sword', label: 'Medieval Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing',
@@ -20,6 +24,22 @@ export const STUDIO_WEAPONS = Object.freeze([
     primaryAxis: Object.freeze([4, 5, 0]),
     position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([-129, -90, 0]),
     defaultSizePercent: 100, presetRevision: 5
+  }),
+  Object.freeze({
+    id:TWO_HANDED_SWORD_ITEM.appearance.studioId,
+    label:TWO_HANDED_SWORD_ITEM.name,
+    visualClass:TWO_HANDED_SWORD_ITEM.appearance.visualClass,
+    poseProfileId:TWO_HANDED_SWORD_ITEM.appearance.poseProfileId,
+    file:TWO_HANDED_SWORD_ITEM.appearance.asset,
+    grip:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.grip]),
+    secondaryGrip:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.secondaryGrip]),
+    handsRequired:TWO_HANDED_SWORD_ITEM.appearance.handsRequired,
+    nativeScale:TWO_HANDED_SWORD_ITEM.appearance.nativeScale,
+    primaryAxis:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.primaryAxis]),
+    position:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.position]),
+    rotation:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.rotationDegrees]),
+    defaultSizePercent:TWO_HANDED_SWORD_ITEM.appearance.defaultSizePercent,
+    presetRevision:1
   })
 ]);
 
