@@ -1,6 +1,7 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
+import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
 import { WEAPON_POSE_PROFILES, appearanceCacheKey } from './mob-appearance.mjs?v=R238C63';
 import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C63';
 
@@ -10,24 +11,20 @@ const DEFAULT_FRAME=Object.freeze({
   anchorX:160,anchorY:264.02889936721095
 });
 const DEFAULT_FRAME_HEIGHT=10.58668090609295;
-const DEFAULT_CENTER=Object.freeze([0,2.0595906310059133,0]);
+const DEFAULT_CENTER=[0,2.0595906310059133,0];
 const DEFAULT_LIGHTING=Object.freeze({
-  ambientIntensity:3,ambientColor:'#abc7d4',
-  keyIntensity:4.85,keyColor:'#eeedc3',
-  keyElevation:90,keyDirection:'SW'
+  ambientIntensity:3,ambientColor:'#abc7d4',keyIntensity:4.85,
+  keyColor:'#eeedc3',keyElevation:90,keyDirection:'SW'
 });
-const DEFAULT_STYLE=Object.freeze({
-  brightness:1.22,contrast:.94,hue:0,saturation:1.97,outline:0
-});
-const FACINGS=Object.freeze(['E','NE','NW','W','SW','SE']);
-const POSES=Object.freeze(['ready','attack','prone']);
+const DEFAULT_STYLE=Object.freeze({brightness:1.22,contrast:.94,hue:0,saturation:1.97,outline:0});
+const FACINGS=['E','NE','NW','W','SW','SE'];
+const POSES=['ready','attack','prone'];
 
 const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
 const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
-const vector3=(value,fallback)=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite)
-  ? value.slice() : fallback.slice();
+const vec3=(value,fallback)=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite)?value:fallback;
 
-function normalizeModel(model){
+function normalizeFallbackModel(model){
   model.updateMatrixWorld(true);
   const initial=new THREE.Box3().setFromObject(model,true);
   const size=initial.getSize(new THREE.Vector3());
@@ -37,7 +34,6 @@ function normalizeModel(model){
   model.position.set(-center.x*scale,-initial.min.y*scale,-center.z*scale);
   model.updateMatrixWorld(true);
 }
-
 function loadImage(src){
   return new Promise((resolve,reject)=>{
     const image=new Image();
@@ -46,87 +42,108 @@ function loadImage(src){
     image.src=src;
   });
 }
-
-function lightingPosition(directionId,elevationDegrees,distance=10){
-  const facing=HEX_FACINGS.find(item=>item.id===directionId) || HEX_FACINGS[0];
-  const elevation=THREE.MathUtils.degToRad(finite(elevationDegrees,45));
-  const horizontal=Math.cos(elevation)*distance;
-  return new THREE.Vector3(
-    Math.sin(facing.yawRadians)*horizontal,
-    Math.sin(elevation)*distance,
-    Math.cos(facing.yawRadians)*horizontal
-  );
-}
-
-function buildRenderContext(model,settings){
-  const captured=settings?.source==='studio-capture-workspace' && settings?.transform;
-  const frame={
-    width:Math.max(1,Math.round(finite(settings?.frame?.width,DEFAULT_FRAME.width))),
-    height:Math.max(1,Math.round(finite(settings?.frame?.height,DEFAULT_FRAME.height))),
-    renderWidth:finite(settings?.frame?.renderWidth,DEFAULT_FRAME.renderWidth),
-    renderHeight:finite(settings?.frame?.renderHeight,DEFAULT_FRAME.renderHeight),
-    anchorX:finite(settings?.frame?.anchorX,DEFAULT_FRAME.anchorX),
-    anchorY:finite(settings?.frame?.anchorY,DEFAULT_FRAME.anchorY)
+function normalizedFrame(recipe){
+  const frame=recipe.renderSettings?.frame||{};
+  return {
+    width:Number.isInteger(frame.width)&&frame.width>0?frame.width:DEFAULT_FRAME.width,
+    height:Number.isInteger(frame.height)&&frame.height>0?frame.height:DEFAULT_FRAME.height,
+    renderWidth:finite(frame.renderWidth,DEFAULT_FRAME.renderWidth),
+    renderHeight:finite(frame.renderHeight,DEFAULT_FRAME.renderHeight),
+    anchorX:finite(frame.anchorX,DEFAULT_FRAME.anchorX),
+    anchorY:finite(frame.anchorY,DEFAULT_FRAME.anchorY)
   };
-  const turntable=new THREE.Group();
-  let center,frameHeight;
-
-  if(captured){
-    const calibration=new THREE.Group();
-    const placement=new THREE.Group();
-    const axis=new THREE.Group();
-    turntable.add(calibration);
-    calibration.add(placement);
-    placement.add(axis);
-    axis.add(model);
-
-    const factor=finite(settings.modelScalePercent,100)/100*finite(settings.hexScalePercent,100)/100;
-    const transform=settings.transform;
-    calibration.rotation.y=THREE.MathUtils.degToRad(finite(transform.heading,0));
-    axis.rotation.x=transform.upAxis==='Z' ? -Math.PI/2 : 0;
-    placement.position.fromArray(vector3(transform.placement?.position,[0,0,0])).multiplyScalar(factor);
-    placement.scale.setScalar(finite(transform.placement?.scale,1)*factor);
-    center=new THREE.Vector3(...vector3(transform.center,DEFAULT_CENTER)).multiplyScalar(factor);
-    frameHeight=finite(transform.frameHeight,DEFAULT_FRAME_HEIGHT)*factor;
-  }else{
-    normalizeModel(model);
-    turntable.add(model);
-    center=new THREE.Vector3(...DEFAULT_CENTER);
-    frameHeight=DEFAULT_FRAME_HEIGHT;
-  }
-
-  return {captured,frame,turntable,center,frameHeight};
 }
+function normalizedStyle(recipe){
+  const style=recipe.renderSettings?.style||{};
+  return {
+    brightness:finite(style.brightness,DEFAULT_STYLE.brightness),
+    contrast:finite(style.contrast,DEFAULT_STYLE.contrast),
+    hue:finite(style.hue,DEFAULT_STYLE.hue),
+    saturation:finite(style.saturation,DEFAULT_STYLE.saturation),
+    outline:finite(style.outline,DEFAULT_STYLE.outline)
+  };
+}
+function configureLights(scene,recipe){
+  const saved=recipe.renderSettings?.lighting||{};
+  const light={...DEFAULT_LIGHTING,...saved};
+  scene.add(new THREE.AmbientLight(light.ambientColor||'#ffffff',finite(light.ambientIntensity,1)));
+  const key=new THREE.DirectionalLight(light.keyColor||'#ffffff',finite(light.keyIntensity,2.3));
+  const position=studioLightPosition(
+    HEX_FACINGS.some(f=>f.id===light.keyDirection)?light.keyDirection:'NW',
+    finite(light.keyElevation,45)
+  );
+  key.position.set(position.x,position.y,position.z);
+  key.target.position.set(0,0,0);
+  scene.add(key,key.target);
+}
+function buildSceneGraph(model,recipe){
+  const turntable=new THREE.Group();
+  const calibration=new THREE.Group();
+  const placement=new THREE.Group();
+  const upAxisGroup=new THREE.Group();
+  turntable.add(calibration);
+  calibration.add(placement);
+  placement.add(upAxisGroup);
+  upAxisGroup.add(model);
 
+  const transform=recipe.renderSettings?.transform;
+  if(transform?.placement && Number.isFinite(transform.placement.scale)){
+    const modelScale=finite(recipe.renderSettings.modelScalePercent,100)/100;
+    const hexScale=finite(recipe.renderSettings.hexScalePercent,100)/100;
+    const factor=modelScale*hexScale;
+    placement.position.fromArray(vec3(transform.placement.position,[0,0,0])).multiplyScalar(factor);
+    placement.scale.setScalar(transform.placement.scale*factor);
+    upAxisGroup.rotation.x=transform.upAxis==='Z'?-Math.PI/2:0;
+    calibration.rotation.y=THREE.MathUtils.degToRad(finite(transform.heading,0));
+  }else{
+    // Fallback only for older browsers with no complete Studio capture recipe.
+    normalizeFallbackModel(model);
+  }
+  return turntable;
+}
+function configureCamera(recipe,frame){
+  const transform=recipe.renderSettings?.transform;
+  const captured=!!transform?.placement;
+  const modelScale=finite(recipe.renderSettings?.modelScalePercent,100)/100;
+  const hexScale=finite(recipe.renderSettings?.hexScalePercent,100)/100;
+  const factor=modelScale*hexScale;
+  const frameHeight=captured?finite(transform.frameHeight,DEFAULT_FRAME_HEIGHT)*factor:DEFAULT_FRAME_HEIGHT;
+  const center=new THREE.Vector3(...(captured
+    ? vec3(transform.center,DEFAULT_CENTER).map(value=>value*factor)
+    : DEFAULT_CENTER));
+  const halfHeight=frameHeight/2;
+  const camera=new THREE.OrthographicCamera(
+    -halfHeight*(frame.width/frame.height),halfHeight*(frame.width/frame.height),
+    halfHeight,-halfHeight,.01,Math.max(100,frameHeight*6)
+  );
+  const distance=Math.max(8,frameHeight*2);
+  camera.position.copy(center).add(new THREE.Vector3(
+    0,Math.sin(CAMERA_ELEVATION),Math.cos(CAMERA_ELEVATION)
+  ).multiplyScalar(distance));
+  camera.up.set(0,1,0);
+  camera.lookAt(center);
+  camera.updateProjectionMatrix();
+  return camera;
+}
 function frameCanvas(renderer,target,scene,camera,turntable,yaw,frame,style){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
   renderer.clear(true,true,true);
   renderer.render(scene,camera);
-
   const raw=new Uint8Array(frame.width*frame.height*4);
   renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,raw);
   const flipped=new Uint8Array(raw.length);
   for(let y=0;y<frame.height;y++){
-    flipped.set(
-      raw.subarray(y*frame.width*4,(y+1)*frame.width*4),
-      (frame.height-1-y)*frame.width*4
-    );
+    flipped.set(raw.subarray(y*frame.width*4,(y+1)*frame.width*4),(frame.height-1-y)*frame.width*4);
   }
-
   const canvas=document.createElement('canvas');
   canvas.width=frame.width;
   canvas.height=frame.height;
   const ctx=canvas.getContext('2d');
   const image=ctx.createImageData(frame.width,frame.height);
   quantizeRgba(flipped,frame.width,frame.height,image.data,{
-    brightness:finite(style?.brightness,DEFAULT_STYLE.brightness),
-    contrast:finite(style?.contrast,DEFAULT_STYLE.contrast),
-    hue:finite(style?.hue,DEFAULT_STYLE.hue),
-    saturation:finite(style?.saturation,DEFAULT_STYLE.saturation),
-    outline:finite(style?.outline,DEFAULT_STYLE.outline),
-    transparent:true,tileWidth:frame.width,tileHeight:frame.height
+    ...style,transparent:true,tileWidth:frame.width,tileHeight:frame.height
   });
   ctx.putImageData(image,0,0);
   return canvas;
@@ -136,38 +153,17 @@ export async function generateCombatSpriteSet(recipe){
   if(recipe?.mob?.type!=='fighter'){
     throw new Error('On-the-fly rendering is currently limited to Dungeon Crawler Carl.');
   }
-
   const gltf=await loadGltf(MODEL_URL);
   const model=gltf.scene;
-  model.traverse(object=>{ if(object.isSkinnedMesh) object.frustumCulled=false; });
+  model.traverse(object=>{if(object.isSkinnedMesh)object.frustumCulled=false;});
 
-  const settings=recipe.renderSettings || {};
-  const {frame,turntable,center,frameHeight}=buildRenderContext(model,settings);
+  const frame=normalizedFrame(recipe);
+  const style=normalizedStyle(recipe);
   const scene=new THREE.Scene();
+  const turntable=buildSceneGraph(model,recipe);
   scene.add(turntable);
-
-  const lighting={...DEFAULT_LIGHTING,...(settings.lighting||{})};
-  if(lighting.legacyRig){
-    scene.add(new THREE.HemisphereLight(0xe5efff,0x5b4634,1.8));
-  }
-  scene.add(new THREE.AmbientLight(lighting.ambientColor||'#ffffff',finite(lighting.ambientIntensity,1)));
-  const key=new THREE.DirectionalLight(lighting.keyColor||'#ffffff',finite(lighting.keyIntensity,2.3));
-  key.position.copy(lightingPosition(lighting.keyDirection||'NW',lighting.keyElevation,10)).add(center);
-  key.target.position.copy(center);
-  scene.add(key,key.target);
-
-  const aspect=frame.width/frame.height;
-  const camera=new THREE.OrthographicCamera(
-    -frameHeight*aspect/2,frameHeight*aspect/2,
-    frameHeight/2,-frameHeight/2,.01,Math.max(100,frameHeight*6)
-  );
-  const distance=Math.max(8,frameHeight*2);
-  camera.position.copy(center).add(
-    new THREE.Vector3(0,Math.sin(CAMERA_ELEVATION),Math.cos(CAMERA_ELEVATION)).multiplyScalar(distance)
-  );
-  camera.up.set(0,1,0);
-  camera.lookAt(center);
-  camera.updateProjectionMatrix();
+  configureLights(scene,recipe);
+  const camera=configureCamera(recipe,frame);
 
   const renderer=new THREE.WebGLRenderer({alpha:true,antialias:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(1);
@@ -175,7 +171,6 @@ export async function generateCombatSpriteSet(recipe){
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1;
-
   const target=new THREE.WebGLRenderTarget(frame.width,frame.height,{
     format:THREE.RGBAFormat,type:THREE.UnsignedByteType,
     minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,
@@ -192,10 +187,10 @@ export async function generateCombatSpriteSet(recipe){
     const weaponGltf=await loadGltf('../'+recipe.equipment.asset);
     attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
       rightHand:id,
-      sizePercent:recipe.equipment.grip?.sizePercent??preset.defaultSizePercent??100,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:recipe.equipment.grip?.sizePercent??100,
       position:recipe.equipment.grip?.position??preset.position,
-      rotation:recipe.equipment.grip?.rotationDegrees??preset.rotation,
-      presetRevision:preset.presetRevision
+      rotation:recipe.equipment.grip?.rotationDegrees??preset.rotation
     });
   }
 
@@ -205,26 +200,20 @@ export async function generateCombatSpriteSet(recipe){
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId='carl-live-'+keyId;
   const images={},sourceUrls={},poses={};
-
   try{
     for(const capture of POSES){
       const pose=profile?.poses?.[capture];
       if(!pose) throw new Error(`Combat pose recipe is missing ${capture}.`);
-      const clip=byName.get(pose.animation);
+      const clip=byName.get(pose.animation)||byName.get(pose.sourceId);
       if(!clip) throw new Error(`Carl animation ${pose.animation} is unavailable.`);
-
       mixer.stopAllAction();
       const action=mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1).play();
       action.paused=true;
-      action.time=Math.min(Math.max(0,finite(pose.timeSeconds,0)),clip.duration);
+      action.time=Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
-
       poses[capture]={clip:clip.name,time:action.time,frames:{}};
       for(const facing of HEX_FACINGS){
-        const canvas=frameCanvas(
-          renderer,target,scene,camera,turntable,facing.yawRadians,
-          frame,settings.style
-        );
+        const canvas=frameCanvas(renderer,target,scene,camera,turntable,facing.yawRadians,frame,style);
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
         const src=canvas.toDataURL('image/png');
         images[file]=await loadImage(src);
@@ -242,25 +231,23 @@ export async function generateCombatSpriteSet(recipe){
   return {
     manifest:{
       schema:'adventure-party.sprite-set',version:1,id:manifestId,
-      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'} (live)`,
-      frame:{
-        width:frame.width,height:frame.height,
-        renderWidth:frame.renderWidth,renderHeight:frame.renderHeight,
-        anchorX:frame.anchorX,anchorY:frame.anchorY
-      },
-      facings:FACINGS,poses,
-      layout:{id:settings.layoutId||'single',resolutionPercent:settings.resolutionPercent||200},
+      label:`Dungeon Crawler Carl — ${recipe.equipment?.itemName||'Unarmed'} (generated)`,
+      frame:{...frame},
+      facings:FACINGS,
+      poses,
+      layout:{id:recipe.renderSettings?.layoutId||'single',resolutionPercent:finite(recipe.renderSettings?.resolutionPercent,200)},
       mobType:'fighter',
-      modelScalePercent:finite(settings.modelScalePercent,175),
-      hexScalePercent:finite(settings.hexScalePercent,109),
+      modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
+      hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
       render:{
         generatedAtRuntime:true,
+        poseSource:recipe.renderSettings?.source||'built-in-profile',
         appearanceKey:appearanceCacheKey(recipe),
         heightInches:recipe.mob.heightInches,
-        poseRecipeSource:settings.source||'built-in-profile',
-        workspaceSavedAt:settings.workspaceSavedAt||null
+        equipmentAppearanceId:recipe.equipment?.appearanceId||null
       }
     },
-    images,sourceUrls
+    images,
+    sourceUrls
   };
 }
