@@ -67,14 +67,81 @@ export function normalizeEquipment(value = {}) {
     rotation: vector('rotation')
   };
 }
-export function findRightHand(model) {
-  let hand = null;
+const normalizedBoneName = object => String(object?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function findBone(model, aliases) {
+  let found = null;
   model?.traverse(object => {
-    if (!object.isBone) return;
-    const name = String(object.name).toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (name === 'righthand' || name.endsWith('mixamorigrighthand')) hand ||= object;
+    if (!object.isBone || found) return;
+    const name = normalizedBoneName(object);
+    if (aliases.some(alias => name === alias || name.endsWith(alias))) found = object;
   });
-  return hand;
+  return found;
+}
+export function findRightHand(model) { return findBone(model, ['righthand', 'mixamorigrighthand']); }
+export function findLeftHand(model) { return findBone(model, ['lefthand', 'mixamoriglefthand']); }
+export function findLeftForeArm(model) { return findBone(model, ['leftforearm', 'mixamorigleftforearm']); }
+export function findLeftArm(model) { return findBone(model, ['leftarm', 'mixamorigleftarm']); }
+
+function inferHandGripLocal(THREE, hand) {
+  const fingerBases = hand?.children?.filter(child => child.isBone && /(thumb|index|middle|ring|pinky)/.test(normalizedBoneName(child))) || [];
+  if (!fingerBases.length) return new THREE.Vector3();
+  const result = new THREE.Vector3();
+  for (const finger of fingerBases) result.add(finger.position);
+  return result.multiplyScalar(1 / fingerBases.length);
+}
+
+export function solveTwoHandedGrip(THREE, {
+  model, attachment, iterations = 8, tolerance = 0.003, maxStepDegrees = 30
+} = {}) {
+  const weapon = attachment?.weapon;
+  if (!model || !attachment || weapon?.handsRequired !== 2 || !weapon.secondaryGrip) {
+    return { active: false, solved: false, error: null };
+  }
+  const hand = findLeftHand(model), forearm = findLeftForeArm(model), arm = findLeftArm(model);
+  if (!hand || !forearm || !arm) return { active: true, solved: false, error: null, reason: 'left-arm-chain-missing' };
+
+  model.updateWorldMatrix(true, true);
+  attachment.model.updateWorldMatrix(true, true);
+  const target = attachment.model.localToWorld(new THREE.Vector3(...weapon.secondaryGrip));
+  const handGripLocal = inferHandGripLocal(THREE, hand);
+  const effectorWorld = () => hand.localToWorld(handGripLocal.clone());
+  const joints = [forearm, arm];
+  const maxStep = THREE.MathUtils.degToRad(maxStepDegrees);
+
+  let error = effectorWorld().distanceTo(target);
+  for (let pass = 0; pass < iterations && error > tolerance; pass++) {
+    for (const joint of joints) {
+      joint.parent?.updateWorldMatrix(true, false);
+      joint.updateWorldMatrix(true, true);
+      const jointWorld = joint.getWorldPosition(new THREE.Vector3());
+      const effector = effectorWorld();
+      const toEffector = effector.sub(jointWorld);
+      const toTarget = target.clone().sub(jointWorld);
+      if (toEffector.lengthSq() < 1e-10 || toTarget.lengthSq() < 1e-10) continue;
+      toEffector.normalize(); toTarget.normalize();
+      const deltaWorld = new THREE.Quaternion().setFromUnitVectors(toEffector, toTarget);
+      const angle = 2 * Math.acos(THREE.MathUtils.clamp(deltaWorld.w, -1, 1));
+      if (angle > maxStep && angle > 1e-8) {
+        const axis = new THREE.Vector3(deltaWorld.x, deltaWorld.y, deltaWorld.z);
+        if (axis.lengthSq() > 1e-10) deltaWorld.setFromAxisAngle(axis.normalize(), maxStep);
+      }
+      const parentWorld = joint.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
+      const deltaLocal = parentWorld.clone().invert().multiply(deltaWorld).multiply(parentWorld);
+      joint.quaternion.premultiply(deltaLocal).normalize();
+      joint.updateWorldMatrix(true, true);
+      error = effectorWorld().distanceTo(target);
+      if (error <= tolerance) break;
+    }
+  }
+  model.updateWorldMatrix(true, true);
+  const offHand = effectorWorld();
+  error = offHand.distanceTo(target);
+  return {
+    active: true, solved: error <= tolerance, error,
+    targetWorldPosition: target.toArray(),
+    offHandWorldPosition: offHand.toArray(),
+    handBone: hand.name, forearmBone: forearm.name, armBone: arm.name
+  };
 }
 export function createWeaponAttachment(THREE, hand, model, settings) {
   const value = normalizeEquipment(settings), weapon = studioWeapon(value.rightHand);
@@ -89,13 +156,19 @@ export function createWeaponAttachment(THREE, hand, model, settings) {
     socket.updateWorldMatrix(true, true);
   }
   update(value);
-  return { socket, model, update, detach: () => socket.removeFromParent() };
+  return { socket, model, weapon, update, detach: () => socket.removeFromParent() };
 }
 export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChange = () => {} }) {
   let model = null, settings = normalizeEquipment(), attachment = null, loading = false, error = '', request = 0, disposed = false;
-  const snapshot = () => ({ settings: normalizeEquipment(settings), attached: !!attachment, rightHandBone: findRightHand(model)?.name || null, loading, error, socketWorldPosition: attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray() || null });
+  let constraint = { active: false, solved: false, error: null };
+  const snapshot = () => ({
+    settings: normalizeEquipment(settings), attached: !!attachment, rightHandBone: findRightHand(model)?.name || null,
+    leftHandBone: findLeftHand(model)?.name || null, loading, error,
+    socketWorldPosition: attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray() || null,
+    twoHandedConstraint: constraint ? structuredClone(constraint) : null
+  });
   const notify = () => { if (!disposed) onChange(snapshot()); };
-  function detach() { if (!attachment) return; attachment.detach(); disposeObject(attachment.model); attachment = null; }
+  function detach() { if (!attachment) return; attachment.detach(); disposeObject(attachment.model); attachment = null; constraint = { active: false, solved: false, error: null }; }
   async function select(value) {
     if (disposed) return false;
     const next = normalizeEquipment(value), sameWeapon = next.rightHand === settings.rightHand; settings = next;
@@ -115,7 +188,12 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
       loading=false; error=`The weapon could not be loaded. ${cause?.message || cause} Use Reset grip to retry, or choose None.`; notify(); return false;
     }
   }
-  function setModel(next, value = {}) { ++request; detach(); model=next; settings=normalizeEquipment(); loading=false; error=''; return select(value); }
+  function applyConstraints() {
+    if (disposed) return constraint;
+    constraint = solveTwoHandedGrip(THREE, { model, attachment });
+    return constraint;
+  }
+  function setModel(next, value = {}) { ++request; detach(); model=next; settings=normalizeEquipment(); loading=false; error=''; constraint={active:false,solved:false,error:null}; return select(value); }
   function dispose() { disposed=true; ++request; detach(); model=null; loading=false; }
-  return { snapshot, select, setModel, dispose };
+  return { snapshot, select, setModel, applyConstraints, dispose };
 }
