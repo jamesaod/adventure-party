@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C71';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C72';
 
 const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');
 if(!WOODEN_SHIELD_ITEM?.appearance)throw new Error('Round Wooden Shield catalog appearance is required.');
@@ -11,14 +11,14 @@ export const STUDIO_SHIELDS=Object.freeze([
     representation:WOODEN_SHIELD_ITEM.appearance.representation,
     file:WOODEN_SHIELD_ITEM.appearance.asset,
     sourceSha256:WOODEN_SHIELD_ITEM.appearance.source.originalSha256,
-    assetSha256:WOODEN_SHIELD_ITEM.appearance.webAsset.sha256,
+    assetSha256:WOODEN_SHIELD_ITEM.appearance.runtimeAsset.sha256,
     sourceBounds:Object.freeze({
       min:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.min]),
       max:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.max])
     }),
     modelOrigin:Object.freeze([...WOODEN_SHIELD_ITEM.appearance.modelOrigin]),
     nativeScale:WOODEN_SHIELD_ITEM.appearance.nativeScale,
-    // Rev 69 approved base mount. Rev 71 changes the art asset, not the mount.
+    // Rev 69 approved base mount. Rev 72 keeps the exact uploaded art asset and does not change the mount.
     position:Object.freeze([0,0,0.04]),
     rotation:Object.freeze([0,0,0]),
     defaultSizePercent:100,

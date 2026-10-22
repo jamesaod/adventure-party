@@ -1,5 +1,5 @@
 import { loadStudioWorkspace, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES } from './mob-appearance.mjs?v=R238C71';
+import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
 
@@ -20,7 +20,7 @@ function fallbackRecipe(reason = 'No complete Carl capture workspace was found.'
   return {
     source: 'built-in-profile',
     reason,
-    poseProfile: structuredClone(WEAPON_POSE_PROFILES['one-handed-swing-v1']),
+    poseProfile: structuredClone(poseProfileForHumanoid('one-handed-swing')),
     renderSettings: {
       source: 'built-in-profile',
       renderer: 'combat-offscreen-v2',
@@ -52,7 +52,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
   const settings = workspace.settings;
   const captures = workspace.captures;
   const first = captures.ready;
-  const profile = structuredClone(WEAPON_POSE_PROFILES['one-handed-swing-v1']);
+  const profile = structuredClone(poseProfileForHumanoid('one-handed-swing'));
   profile.id = 'studio-captured-one-handed-swing-v1';
   profile.version = Math.max(2, Number(workspace.savedAt || 0));
   profile.label = 'Studio-captured one-handed swinging weapon';

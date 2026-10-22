@@ -7036,49 +7036,63 @@ function formatMobHeight(totalInches){
   return `${Math.floor(rounded/12)}′${rounded%12}″`;
 }
 
+const HUMANOID_RUNTIME_MODELS=Object.freeze({
+  fighter:Object.freeze({
+    modelId:"dungeon-crawler-carl-v2-ual2-sword-test",
+    modelHash:"4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9",
+    modelUrl:"../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb",
+    bodyReferenceHeightInches:76
+  })
+});
+const HUMANOID_PRESENTATION_CONDITION_IDS=new Set(["sleep","unconscious","prone","held","stunned"]);
+
 let combatMobAppearanceRuntimePromise=null;
 
+function humanoidRuntimeModel(unit){
+  return unit?HUMANOID_RUNTIME_MODELS[unit.type]||null:null;
+}
+
 async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipment-change"}={}){
-  if(!unit || unit.type!=="fighter") return null;
+  const model=humanoidRuntimeModel(unit);
+  if(!unit||!model)return null;
   try{
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C71")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C71"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C72")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C72"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
-        cacheLimit:12
+        cacheLimit:24
       }));
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C71",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C72",document.baseURI).href)
     ]);
-    if((unit.appearanceRevision||0)!==requestedRevision) return null;
+    if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type});
-    if((unit.appearanceRevision||0)!==requestedRevision) return null;
-    const result=await runtime.refresh(unit,{
-      modelId:"dungeon-crawler-carl-v2-ual2-sword-test",
-      modelHash:"4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9",
-      bodyReferenceHeightInches:76,
+    if((unit.appearanceRevision||0)!==requestedRevision)return null;
+    const result=await runtime.ensure(unit,{
+      ...model,
       poseProfile:captured.poseProfile,
       renderSettings:captured.renderSettings
     });
-    if(!result.applied || (unit.appearanceRevision||0)!==requestedRevision) return null;
+    if(!result.applied||(unit.appearanceRevision||0)!==requestedRevision)return null;
     const spriteSetId=window.adventurePartySpriteSets?.register(result.spriteSet);
-    if(!spriteSetId) return null;
+    if(!spriteSetId)return null;
     unit.dynamicAppearanceSpriteSetId=spriteSetId;
     unit.spriteSetId=spriteSetId;
     unit.footprintId="single";
     unit.studioPlayerSpriteTarget=unit.type;
     unit.appearancePoseSource=captured.source;
-    if(game?.player===unit && currentScreen==="combat"){
+    unit.appearanceFamilyKey=result.recipe?.animation?.spriteFamilySignature||result.key;
+    if(game?.player===unit&&currentScreen==="combat"){
       draw();
       renderCharacterSheet();
     }
     document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-ready",{
-      detail:{unitId:unit.id||null,revision:requestedRevision,spriteSetId,cached:result.cached,reason,poseSource:captured.source}
+      detail:{unitId:unit.id||null,revision:requestedRevision,spriteSetId,cached:result.cached,inFlight:result.inFlight,reason,poseSource:captured.source}
     }));
     return result;
   }catch(error){
@@ -7091,7 +7105,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
 }
 
 function markMobAppearanceDirty(unit,{reason="equipment-change"}={}){
-  if(!unit) return Promise.resolve(null);
+  if(!unit)return Promise.resolve(null);
   unit.appearanceRevision=(unit.appearanceRevision||0)+1;
   const revision=unit.appearanceRevision;
   document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-dirty",{
@@ -7100,6 +7114,11 @@ function markMobAppearanceDirty(unit,{reason="equipment-change"}={}){
   const pending=refreshCombatMobAppearance(unit,revision,{reason});
   unit.appearanceRefreshPromise=pending;
   return pending;
+}
+
+function queueHumanoidPresentationReconcile(unit,reason){
+  if(!humanoidRuntimeModel(unit))return;
+  queueMicrotask(()=>markMobAppearanceDirty(unit,{reason}));
 }
 
 let aimMode=false;
@@ -10628,6 +10647,9 @@ function removeUnitEffect(unit,id){
     }
   }
 
+  if(removed&&HUMANOID_PRESENTATION_CONDITION_IDS.has(id)){
+    queueHumanoidPresentationReconcile(unit,`condition-removed:${id}`);
+  }
   return removed;
 }
 
@@ -10653,6 +10675,10 @@ function addUnitEffect(unit,{
   };
 
   effectListFor(unit,kind).push(effect);
+
+  if(HUMANOID_PRESENTATION_CONDITION_IDS.has(id)){
+    queueHumanoidPresentationReconcile(unit,`condition-added:${id}`);
+  }
 
   if([
     "sleep",
@@ -10694,6 +10720,7 @@ function expireTimedUnitEffects(){
   if(!game) return;
 
   for(const unit of allUnits()){
+    let presentationConditionExpired=false;
     for(const key of ["buffs","debuffs"]){
       if(!Array.isArray(unit[key])) continue;
 
@@ -10708,6 +10735,7 @@ function expireTimedUnitEffects(){
           retained.push(effect);
           continue;
         }
+        if(HUMANOID_PRESENTATION_CONDITION_IDS.has(effect?.id))presentationConditionExpired=true;
 
         /*
           R193: Enlarge expires visually instead of snapping back to 100%.
@@ -10741,6 +10769,7 @@ function expireTimedUnitEffects(){
 
       unit[key]=retained;
     }
+    if(presentationConditionExpired)queueHumanoidPresentationReconcile(unit,"condition-expired");
   }
 
   game.areaEffects=(game.areaEffects || []).filter(effect=>

@@ -1,4 +1,4 @@
-export const ITEM_CATALOG_VERSION=1;
+export const ITEM_CATALOG_VERSION=2;
 
 function freezeRecord(value){
   if(value&&typeof value==='object'){
@@ -36,7 +36,7 @@ export const ITEM_CATALOG=freezeRecord({
       studioId:'medieval-sword',
       asset:'assets/models/weapons/swords/medieval-sword.glb',
       attachment:'right-hand',
-      poseProfileId:'one-handed-swing-v1'
+      poseProfileId:'one-handed-swing'
     }
   },
   'battle-axe':{
@@ -62,7 +62,7 @@ export const ITEM_CATALOG=freezeRecord({
       studioId:'battle-axe',
       asset:'assets/models/weapons/battle-axes/battle-axe.glb',
       attachment:'right-hand',
-      poseProfileId:'one-handed-swing-v1'
+      poseProfileId:'one-handed-swing'
     }
   },
   'chain-mail':{
@@ -112,7 +112,7 @@ export const ITEM_CATALOG=freezeRecord({
       appearanceId:'round-wooden-shield',
       studioId:'round-wooden-shield',
       visualClass:'round-shield',
-      representation:'runtime-gltf-derivative-v1',
+      representation:'source-gltf-v1',
       asset:'assets/models/shields/round-wooden-shield.glb',
       attachment:'left-hand',
       nativeScale:0.45,
@@ -125,13 +125,13 @@ export const ITEM_CATALOG=freezeRecord({
         triangles:8478,
         textureResolution:1024
       },
-      webAsset:{
-        bytes:17912,
-        sha256:'d383f0a59bcf3ad0aa7d4b304e33d20e333c0d6a1567958c61710f278c178bb8',
-        textureResolution:128,
-        vertices:258,
-        triangles:384,
-        derivation:'Runtime-optimized round shield mesh preserving the uploaded proportions and an uploaded wood base-color texture.'
+      runtimeAsset:{
+        bytes:781832,
+        sha256:'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928',
+        textureResolution:1024,
+        vertices:5648,
+        triangles:8478,
+        derivation:'Exact user-uploaded GLB used directly as the runtime shield asset.'
       }
     }
   }
