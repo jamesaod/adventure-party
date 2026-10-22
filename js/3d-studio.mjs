@@ -16,8 +16,8 @@ import {
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
 } from './studio-geometry.mjs?v=R238C57';
 import {
-  STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C75';
+  STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
+} from './studio-equipment.mjs?v=R238C77';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C75';
@@ -249,7 +249,8 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
   ui.RightHandWeapon.value = settings.rightHand;
   ui.RightHandWeapon.disabled = busy || locked;
   ui.LeftHandShield.value = shieldSettings.leftHandShield;
-  ui.LeftHandShield.disabled = busy || locked;
+  const twoHandedWeapon = studioWeapon(settings.rightHand)?.handsRequired === 2;
+  ui.LeftHandShield.disabled = busy || locked || twoHandedWeapon;
   const shieldDisabled=busy||locked||shieldSettings.leftHandShield==='none';
   ui.ShieldScale.value=String(shieldSettings.sizePercent);
   ui.ShieldScaleValue.textContent=`${Math.round(shieldSettings.sizePercent)}%`;
@@ -282,6 +283,7 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
   ui.EquipmentStatus.classList.toggle('error', !!current.error);
   ui.EquipmentStatus.textContent = current.loading ? 'Loading weapon…' : current.error
     ? locked ? `${current.error} Reload the studio to retry without clearing your captures.` : current.error
+    : current.twoHandedConstraint?.active ? (current.twoHandedConstraint.solved ? 'Two-handed grip active: right hand drives the weapon and left hand is constrained to the secondary grip.' : 'Two-handed grip is active, but the left hand cannot currently reach the secondary grip.')
     : current.attached ? 'Equipped weapon follows the right hand in every animation.'
     : current.rightHandBone ? 'Choose a right-hand weapon to equip this model.'
     : 'Load a compatible rigged MOB model to use a right-hand attachment.';
@@ -309,7 +311,7 @@ function resetPreviewReferenceToReady() {
   setClip(index);
   if (state.action) {
     state.action.time = 0;
-    state.mixer.update(0);
+    state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
   }
 }
@@ -320,6 +322,10 @@ async function changeEquipment(value, { fit = false } = {}) {
     return;
   }
   const model = state.model;
+  const selectedWeapon = studioWeapon(value);
+  if (selectedWeapon?.handsRequired === 2 && shieldEquipment.snapshot().settings.leftHandShield !== 'none') {
+    await shieldEquipment.select('none');
+  }
   const changed = await equipment.select(value);
   if (state.disposed || state.model !== model) return;
   if (changed) {
@@ -330,6 +336,10 @@ async function changeEquipment(value, { fit = false } = {}) {
 }
 
 async function changeShield(value,{fit=false,resetPose=true}={}){
+  if(studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
+    updateEquipmentControls();
+    return;
+  }
   if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
     updateEquipmentControls();
     return;
@@ -946,7 +956,7 @@ function setClip(index) {
     state.action.paused = !state.playing;
   }
   ui.Clip.value = state.action ? String(index) : '-1';
-  state.mixer.update(0);
+  state.mixer.update(0); equipment.applyConstraints();
   updateRangeEditor();
   updateAnimationControls();
   invalidate();
@@ -1066,7 +1076,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     const clip = state.action.getClip();
     const oldTimeOffset = restoreSettings.animationTimingVersion === 1 ? 0 : clip.userData?.fbxAnimation?.start || 0;
     state.action.time = THREE.MathUtils.clamp(restoreSettings.time - oldTimeOffset, 0, clip.duration);
-    state.mixer.update(0);
+    state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
   }
   const vector = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
@@ -1339,7 +1349,7 @@ function tick(timestamp) {
   const delta = state.lastTick ? Math.min((timestamp - state.lastTick) / 1000, 0.1) : 0;
   state.lastTick = timestamp;
   if (state.playing && state.action) {
-    state.mixer.update(delta); // Exactly once; all views use this one evaluated pose.
+    state.mixer.update(delta); equipment.applyConstraints(); // One authored pose, then two-handed grip constraint.
     state.mainDirty = true;
     state.previewsDirty = true;
     state.heightDirty = true;
@@ -1807,7 +1817,7 @@ function bindControls() {
   ui.RestartButton.addEventListener('click', () => {
     if (!state.action) return;
     state.action.time = 0;
-    state.mixer.update(0);
+    state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
     poseCapture?.saveWorkspace();
     invalidate();
@@ -1822,7 +1832,7 @@ function bindControls() {
     state.playing = false;
     state.action.paused = true;
     state.action.time = Number(ui.Timeline.value) * state.action.getClip().duration;
-    state.mixer.update(0);
+    state.mixer.update(0); equipment.applyConstraints();
     updateAnimationControls();
     poseCapture?.saveWorkspace();
     invalidate();
