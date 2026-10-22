@@ -64,7 +64,9 @@ function visibleWeapon(id, itemName, studioId) {
     poseProfileId: preset.poseProfileId,
     asset: preset.file,
     attachmentBone: 'mixamorig:RightHand',
+    handsRequired: preset.handsRequired ?? 1,
     primaryAxis: Object.freeze([...preset.primaryAxis]),
+    secondaryGrip: preset.secondaryGrip ? Object.freeze([...preset.secondaryGrip]) : null,
     grip: Object.freeze({
       position: Object.freeze([...preset.position]),
       rotationDegrees: Object.freeze([...preset.rotation]),
