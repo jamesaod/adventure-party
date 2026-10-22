@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 69</span>
+        <span class="studio-build">Candidate Rev 70</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -93,6 +93,23 @@
             </select>
           </label>
           <p id="studioShieldStatus" class="studio-note studio-help" role="status" aria-live="polite">Load Carl to preview a shield on his left hand.</p>
+          <details class="studio-equipment-grip">
+            <summary>Adjust shield</summary>
+            <label class="studio-field" for="studioShieldDistance">
+              <span class="studio-label-row">Closer / farther from arm <output id="studioShieldDistanceValue" for="studioShieldDistance">Base</output></span>
+              <input id="studioShieldDistance" type="range" min="-3" max="6" step="0.25" value="0" disabled>
+            </label>
+            <label class="studio-field" for="studioShieldForearmSlide">
+              <span class="studio-label-row">Up / down forearm <output id="studioShieldForearmSlideValue" for="studioShieldForearmSlide">Base</output></span>
+              <input id="studioShieldForearmSlide" type="range" min="-8" max="8" step="0.25" value="0" disabled>
+            </label>
+            <label class="studio-field" for="studioShieldForearmRoll">
+              <span class="studio-label-row">Rotate around forearm <output id="studioShieldForearmRollValue" for="studioShieldForearmRoll">0°</output></span>
+              <input id="studioShieldForearmRoll" type="range" min="-180" max="180" step="1" value="0" disabled>
+            </label>
+            <button id="studioResetShieldButton" class="studio-button studio-wide-button" type="button" disabled>Reset shield position</button>
+            <p class="studio-note studio-help">All three controls are relative to the current Rev 69 mount. Positive forearm movement goes toward the elbow; negative goes toward the hand.</p>
+          </details>
           <label class="studio-field" for="studioWeaponSize">
             <span class="studio-label-row">Weapon size <output id="studioWeaponSizeValue" for="studioWeaponSize">100%</output></span>
             <input id="studioWeaponSize" type="range" min="25" max="200" step="5" value="100" disabled>
@@ -392,7 +409,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C69"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C70"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C60"></script>
 </body>
 </html>
