@@ -19,7 +19,7 @@ import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
 } from './studio-equipment.mjs?v=R238C67';
 import {
-  STUDIO_SHIELDS, normalizeShield, createStudioShield
+  STUDIO_SHIELDS, normalizeShield, createStudioShield, createRoundWoodenShieldModel
 } from './studio-shield.mjs?v=R238C71';
 
 const DEFAULT_LIGHTING = Object.freeze({
@@ -101,11 +101,7 @@ const equipment = createStudioEquipment({
 });
 const shieldEquipment = createStudioShield({
   THREE,
-  loadAsset: async shield => {
-    const url=new URL(shield.file,new URL('../',import.meta.url));
-    const loaded=await new GLTFLoader().loadAsync(url.href);
-    return loaded.scene;
-  },
+  loadAsset: async () => createRoundWoodenShieldModel(THREE,new URL('../',import.meta.url)),
   disposeObject: disposeModel,
   onChange: () => {
     updateEquipmentControls();
