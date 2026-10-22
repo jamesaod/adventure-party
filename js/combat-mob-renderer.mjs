@@ -5,7 +5,7 @@ import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
 import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C75';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C72';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C75';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
