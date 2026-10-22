@@ -1,4 +1,4 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C67';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C75';
 import { studioShield } from './studio-shield.mjs?v=R238C72';
 import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C72';
 export { WEAPON_POSE_PROFILES };
@@ -64,7 +64,9 @@ function visibleWeapon(id, itemName, studioId) {
     poseProfileId: preset.poseProfileId,
     asset: preset.file,
     attachmentBone: 'mixamorig:RightHand',
+    handsRequired: preset.handsRequired ?? 1,
     primaryAxis: Object.freeze([...preset.primaryAxis]),
+    secondaryGrip: preset.secondaryGrip ? Object.freeze([...preset.secondaryGrip]) : null,
     grip: Object.freeze({
       position: Object.freeze([...preset.position]),
       rotationDegrees: Object.freeze([...preset.rotation]),
@@ -75,7 +77,8 @@ function visibleWeapon(id, itemName, studioId) {
 
 export const VISIBLE_WEAPON_ASSETS = Object.freeze({
   'flaming-sword-5': visibleWeapon('flaming-sword-5', 'Flaming Sword +5', 'medieval-sword'),
-  'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe')
+  'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe'),
+  'two-handed-sword': visibleWeapon('two-handed-sword', 'Two-Handed Sword', 'medieval-two-handed-sword')
 });
 
 function visibleShield(id,itemName,studioId){

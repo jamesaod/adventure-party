@@ -4,8 +4,8 @@ import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C67';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C72';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C75';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C75';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -179,7 +179,7 @@ export async function generateCombatSpriteSet(recipe){
 
   let attachment=null,shieldAttachment=null;
   if(recipe.equipment){
-    const id=recipe.equipment.appearanceId==='battle-axe'?'battle-axe':'medieval-sword';
+    const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
     const preset=studioWeapon(id);
     const hand=findRightHand(model);
     if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
