@@ -67,7 +67,7 @@ assert.equal(migratedAxe.presetRevision,5);
 assert.equal(STUDIO_SHIELDS.length,1);
 assert.equal(STUDIO_SHIELDS[0].id,'round-wooden-shield');
 assert.equal(STUDIO_SHIELDS[0].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
-assert.equal(STUDIO_SHIELDS[0].assetSha256,'c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5');
+assert.equal(STUDIO_SHIELDS[0].assetSha256,'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521');
 assert.deepEqual(STUDIO_SHIELDS[0].position,[0,0,0.04],'Shield remains outside the left arm but is pulled close to the forearm');
 assert.deepEqual(STUDIO_SHIELDS[0].rotation,[0,0,0],'Shield keeps the Rev 68 outward-facing orientation');
 const migratedShield=normalizeShield({
@@ -108,8 +108,10 @@ assert.equal(crypto.createHash('sha256').update(shieldAsset.bytes).digest('hex')
 assert.equal(shieldAsset.json.meshes.length,1);
 assert.equal(shieldAsset.json.skins?.length||0,0);
 assert.equal(shieldAsset.json.animations?.length||0,0);
-assert.equal(shieldAsset.json.accessors[shieldAsset.json.meshes[0].primitives[0].indices].count/3,8478);
-assert.ok(shieldAsset.json.images.every(image=>Number.isInteger(image.bufferView)),'Wooden shield textures are embedded');
+assert.equal(shieldAsset.json.accessors[shieldAsset.json.meshes[0].primitives[0].indices].count/3,384);
+assert.equal(shieldAsset.json.accessors[shieldAsset.json.meshes[0].primitives[0].attributes.POSITION].count,258);
+assert.equal(shieldAsset.json.images.length,1);
+assert.ok(shieldAsset.json.images.every(image=>Number.isInteger(image.bufferView)),'Wooden shield texture is embedded');
 const swordModel = new THREE.Group();
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', new THREE.BufferAttribute(sword.accessor(
