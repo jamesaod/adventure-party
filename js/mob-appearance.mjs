@@ -1,3 +1,5 @@
+import { studioWeapon } from './studio-equipment.mjs?v=R238C66';
+
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
 export const MOB_HEIGHT_VERSION = 1;
 export const POSE_PROFILE_VERSION = 1;
@@ -74,25 +76,29 @@ export const WEAPON_POSE_PROFILES = Object.freeze({
   })
 });
 
+function visibleWeapon(id, itemName, studioId) {
+  const preset = studioWeapon(studioId);
+  if (!preset) throw new Error(`Missing Studio weapon preset: ${studioId}`);
+  return Object.freeze({
+    id,
+    itemName,
+    studioId,
+    visualClass: preset.visualClass,
+    poseProfileId: preset.poseProfileId,
+    asset: preset.file,
+    attachmentBone: 'mixamorig:RightHand',
+    primaryAxis: Object.freeze([...preset.primaryAxis]),
+    grip: Object.freeze({
+      position: Object.freeze([...preset.position]),
+      rotationDegrees: Object.freeze([...preset.rotation]),
+      sizePercent: preset.defaultSizePercent ?? 100
+    })
+  });
+}
+
 export const VISIBLE_WEAPON_ASSETS = Object.freeze({
-  'flaming-sword-5': Object.freeze({
-    id: 'flaming-sword-5',
-    itemName: 'Flaming Sword +5',
-    visualClass: 'sword',
-    poseProfileId: 'one-handed-swing-v1',
-    asset: 'assets/models/weapons/swords/medieval-sword.glb',
-    attachmentBone: 'mixamorig:RightHand',
-    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, -90, 0], sizePercent: 100 })
-  }),
-  'battle-axe': Object.freeze({
-    id: 'battle-axe',
-    itemName: 'Battle Axe',
-    visualClass: 'battle-axe',
-    poseProfileId: 'one-handed-swing-v1',
-    asset: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    attachmentBone: 'mixamorig:RightHand',
-    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, 90, 30], sizePercent: 100 })
-  })
+  'flaming-sword-5': visibleWeapon('flaming-sword-5', 'Flaming Sword +5', 'medieval-sword'),
+  'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe')
 });
 
 export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReferenceHeightInches, poseProfile = null, renderSettings = {} } = {}) {
