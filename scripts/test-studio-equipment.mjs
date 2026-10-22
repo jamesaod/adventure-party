@@ -227,7 +227,11 @@ const locked = vm.createContext({
 vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), locked);
 await vm.runInContext('changeEquipment({ rightHand: "medieval-sword" })', locked);
 for (const gear of [{ loading: true, settings }, { loading: false, attached: false, settings, error: 'Sword unavailable' }]) {
-  const capture = vm.createContext({ state: { modelReady: true, model: {} }, equipment: { snapshot: () => gear } });
+  const capture = vm.createContext({
+    state: { modelReady: true, model: {} },
+    equipment: { snapshot: () => gear },
+    shieldEquipment: { snapshot: () => ({ settings: { leftHandShield: 'none' }, attached: false, error: '' }) }
+  });
   vm.runInContext(extract('function readCapturePose(', '\nfunction renderPreviews('), capture);
   assert.throws(() => vm.runInContext('readCapturePose()', capture), /finish loading|Sword unavailable/);
 }
