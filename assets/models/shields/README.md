@@ -29,6 +29,7 @@ claimed as a byte-for-byte repository asset in Rev 67.
 - Rotation: **(0°, 0°, 0°)**
 - Rev 68 established the outside-arm side and outward-facing boss.
 - Rev 69 preserves that orientation and pulls the shield inward so it sits close to the forearm with approximately one inch of visual clearance.
+- Rev 70 adds three Studio controls relative to that Rev 69 base: **Closer / farther from arm**, **Up / down forearm**, and **Rotate around forearm**. Movement is expressed in inches; roll is expressed in degrees. The forearm slide/roll axis is derived from Carl's actual animated left forearm/hand relationship, and saved values are carried into Test in Combat rendering.
 - Inventory/rules entry: existing `shield-medium` (+1 AC)
 - Appearance ID: `bronze-round-shield`
 
