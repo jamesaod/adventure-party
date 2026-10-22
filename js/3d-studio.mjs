@@ -340,20 +340,18 @@ async function changeShield(value,{fit=false,resetPose=true}={}){
     updateEquipmentControls();
     return;
   }
+  const model=state.model;
   if(value!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
     await equipment.select('none');
+    if(state.disposed||state.model!==model)return;
   }
-
-    updateEquipmentControls();
-    return;
-  }
-  const model=state.model;
   const changed=await shieldEquipment.select(value);
   if(state.disposed||state.model!==model)return;
   if(changed){
     if(fit)fitAllAnimations();
     if(resetPose)resetPreviewReferenceToReady();
   }
+  updateEquipmentControls();
   poseCapture?.saveWorkspace();
 }
 
