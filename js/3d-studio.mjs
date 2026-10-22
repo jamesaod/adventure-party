@@ -1591,6 +1591,20 @@ function bindControls() {
   ui.LeftHandShield.addEventListener('change',()=>{
     changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}),{fit:true});
   });
+  for(const [control,key] of [
+    [ui.ShieldDistance,'distanceInches'],
+    [ui.ShieldForearmSlide,'forearmSlideInches'],
+    [ui.ShieldForearmRoll,'forearmRollDegrees']
+  ]){
+    control.addEventListener('input',()=>{
+      const next=shieldEquipment.snapshot().settings;
+      next[key]=control.valueAsNumber;
+      changeShield(next);
+    });
+  }
+  ui.ResetShieldButton.addEventListener('click',()=>{
+    changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}),{fit:true});
+  });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
   });
