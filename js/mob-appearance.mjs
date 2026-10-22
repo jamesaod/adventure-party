@@ -1,4 +1,5 @@
 import { studioWeapon } from './studio-equipment.mjs?v=R238C66';
+import { studioShield } from './studio-shield.mjs?v=R238C67';
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
 export const MOB_HEIGHT_VERSION = 1;
@@ -101,12 +102,34 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
   'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe')
 });
 
+function visibleShield(id,itemName,studioId){
+  const preset=studioShield(studioId);
+  if(!preset)throw new Error(`Missing Studio shield preset: ${studioId}`);
+  return Object.freeze({
+    id,itemName,studioId,
+    visualClass:preset.visualClass,
+    attachmentBone:'mixamorig:LeftHand',
+    sourceSha256:preset.sourceSha256,
+    mount:Object.freeze({
+      position:Object.freeze([...preset.position]),
+      rotationDegrees:Object.freeze([...preset.rotation]),
+      sizePercent:preset.defaultSizePercent??100
+    })
+  });
+}
+
+export const VISIBLE_SHIELD_ASSETS=Object.freeze({
+  'bronze-round-shield':visibleShield('bronze-round-shield','Bronze Round Shield','bronze-round-shield')
+});
+
 export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReferenceHeightInches, poseProfile = null, renderSettings = {} } = {}) {
   if (!unit) throw new Error('A MOB is required.');
   applyMobHeight(unit);
   const inventory = Array.isArray(unit.inventory) ? unit.inventory : [];
   const equipped = inventory.find(item => item?.slot === 'weapon' && item?.equipped) || null;
   const visual = equipped?.appearanceId ? VISIBLE_WEAPON_ASSETS[equipped.appearanceId] : null;
+  const equippedShield=inventory.find(item=>item?.slot==='shield'&&item?.equipped)||null;
+  const shieldVisual=equippedShield?.appearanceId?VISIBLE_SHIELD_ASSETS[equippedShield.appearanceId]:null;
   const profile = poseProfile || (visual ? WEAPON_POSE_PROFILES[visual.poseProfileId] : WEAPON_POSE_PROFILES['one-handed-swing-v1']);
   return {
     format: 'adventure-party-mob-appearance-recipe',
@@ -114,6 +137,7 @@ export function appearanceRecipeForMob(unit, { modelId, modelHash, bodyReference
     mob: { id: unit.id || null, type: unit.type || null, name: unit.name || null, heightInches: unit.heightInches },
     model: { id: modelId || null, hash: modelHash || null, bodyReferenceHeightInches: bodyReferenceHeightInches ?? null },
     equipment: visual ? { itemName: equipped.name, appearanceId: equipped.appearanceId, ...visual } : null,
+    shield: shieldVisual ? { itemName: equippedShield.name, appearanceId: equippedShield.appearanceId, ...shieldVisual } : null,
     poseProfile: profile || null,
     renderSettings: structuredClone(renderSettings)
   };
