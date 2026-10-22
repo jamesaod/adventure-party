@@ -41,15 +41,16 @@ function glb(path) {
 // animation transforms are exercised, not only an idealized arm fixture.
 assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
 assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 100, 'Battle Axe UI default remains 100%');
-assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 180], 'Battle Axe source is flipped head-up and blade-forward');
+assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 30], 'Battle Axe rotates around the approved grip into the QA-marked forward/up orientation');
 assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.36, 0.15, 0], 'Battle Axe grip lands on the lower diagonal wooden haft');
 assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
 const migratedAxe = normalizeEquipment({
-  rightHand:'battle-axe', sizePercent:75, position:[0.9,0.9,0.9], rotation:[0,90,0]
+  rightHand:'battle-axe', presetRevision:2, sizePercent:100,
+  position:[0.015,0.05,0.005], rotation:[0,90,180]
 });
-assert.equal(migratedAxe.sizePercent,100,'Older saved axe settings migrate to the new 100% UI default');
-assert.deepEqual(migratedAxe.rotation,[0,90,180],'Older saved axe orientation migrates to the calibrated preset');
-assert.equal(migratedAxe.presetRevision,2);
+assert.equal(migratedAxe.sizePercent,100,'Rev 64 saved axe size remains at the approved 100% UI default');
+assert.deepEqual(migratedAxe.rotation,[0,90,30],'Rev 64 saved axe orientation migrates to the Rev 65 calibrated preset');
+assert.equal(migratedAxe.presetRevision,3);
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
