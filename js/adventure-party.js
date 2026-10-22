@@ -16591,7 +16591,9 @@ function newGame(condition=selectedCombatCondition){
   // Model-capable MOBs generate their current equipment appearance as soon as
   // the combat instance is created. The old/static sprite is only a temporary
   // visual reference until this generated 18-frame set is ready.
-  markMobAppearanceDirty(player,{reason:"combat-start"});
+  if(typeof markMobAppearanceDirty==="function"){
+    markMobAppearanceDirty(player,{reason:"combat-start"});
+  }
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
 
   ui.roundLabel.textContent="ROUND —";
