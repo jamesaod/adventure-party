@@ -21,9 +21,9 @@ assert.equal(shield.appearance.source.originalBytes,781832);
 assert.equal(shield.appearance.source.originalSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
 
 const bytes=fs.readFileSync(new URL('../'+shield.appearance.asset,import.meta.url));
-assert.equal(bytes.length,331276);
+assert.equal(bytes.length,331228);
 assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
-  '0a2a2b4d9fe09f311e731e974a28da71584fc2516c7cbfb5f927b3572e64e9d8');
+  'c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5');
 assert.equal(bytes.readUInt32LE(0),0x46546c67);
 assert.equal(bytes.readUInt32LE(4),2);
 assert.equal(bytes.readUInt32LE(8),bytes.length);
