@@ -1,5 +1,5 @@
 import { studioWeapon } from './studio-equipment.mjs?v=R238C67';
-import { studioShield } from './studio-shield.mjs?v=R238C67';
+import { studioShield } from './studio-shield.mjs?v=R238C68';
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
 export const MOB_HEIGHT_VERSION = 1;
