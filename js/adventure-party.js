@@ -2736,6 +2736,13 @@ function playerSpriteSetForType(type){
 
 function applyPlayerSpriteSet(unit){
   if(!unit || !isStudioPlayerSpriteTarget(unit.type)) return unit;
+  if(unit.dynamicAppearanceSpriteSetId && registeredStudioSpriteSets.has(unit.dynamicAppearanceSpriteSetId)){
+    const dynamicSet=registeredStudioSpriteSets.get(unit.dynamicAppearanceSpriteSetId);
+    unit.spriteSetId=dynamicSet.id;
+    unit.footprintId=dynamicSet.layoutId;
+    unit.studioPlayerSpriteTarget=unit.type;
+    return unit;
+  }
   const set=playerSpriteSetForType(unit.type);
   if(set){
     unit.spriteSetId=set.id;
@@ -7028,12 +7035,58 @@ function formatMobHeight(totalInches){
   return `${Math.floor(rounded/12)}′${rounded%12}″`;
 }
 
+let combatMobAppearanceRuntimePromise=null;
+
+async function refreshCombatMobAppearance(unit,requestedRevision){
+  if(!unit || unit.type!=="fighter") return;
+  try{
+    if(!combatMobAppearanceRuntimePromise){
+      combatMobAppearanceRuntimePromise=Promise.all([
+        import("./js/mob-appearance-runtime.mjs?v=R238C61"),
+        import("./js/combat-mob-renderer.mjs?v=R238C61")
+      ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
+        generateSpriteSet:rendererModule.generateCombatSpriteSet,
+        cacheLimit:12
+      }));
+    }
+    const runtime=await combatMobAppearanceRuntimePromise;
+    if((unit.appearanceRevision||0)!==requestedRevision) return;
+    const result=await runtime.refresh(unit,{
+      modelId:"dungeon-crawler-carl-v2-ual2-sword-test",
+      modelHash:"4fb2e7e1080586a90e1499527b659c6261f9f4ea1bb1c2681e34a25db9a76ab9",
+      bodyReferenceHeightInches:75,
+      renderSettings:{renderer:"combat-offscreen-v1",poses:["ready","attack","prone"],facings:["E","NE","NW","W","SW","SE"]}
+    });
+    if(!result.applied || (unit.appearanceRevision||0)!==requestedRevision) return;
+    const spriteSetId=window.adventurePartySpriteSets?.register(result.spriteSet);
+    if(!spriteSetId) return;
+    unit.dynamicAppearanceSpriteSetId=spriteSetId;
+    unit.spriteSetId=spriteSetId;
+    unit.footprintId="single";
+    unit.studioPlayerSpriteTarget=unit.type;
+    if(game?.player===unit && currentScreen==="combat"){
+      draw();
+      renderCharacterSheet();
+    }
+    document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-ready",{
+      detail:{unitId:unit.id||null,revision:requestedRevision,spriteSetId,cached:result.cached}
+    }));
+  }catch(error){
+    console.error("On-the-fly MOB appearance render failed; keeping the previous sprite set.",error);
+    document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-error",{
+      detail:{unitId:unit?.id||null,revision:requestedRevision,message:String(error?.message||error)}
+    }));
+  }
+}
+
 function markMobAppearanceDirty(unit){
   if(!unit) return;
   unit.appearanceRevision=(unit.appearanceRevision||0)+1;
+  const revision=unit.appearanceRevision;
   document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-dirty",{
-    detail:{unitId:unit.id||null,revision:unit.appearanceRevision}
+    detail:{unitId:unit.id||null,revision}
   }));
+  void refreshCombatMobAppearance(unit,revision);
 }
 
 let aimMode=false;

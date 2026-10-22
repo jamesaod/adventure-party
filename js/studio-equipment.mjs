@@ -9,10 +9,10 @@ export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    // First pass begins from the sword socket. The studio profile export will
-    // become the calibrated authority after the axe is visually tuned.
-    grip: Object.freeze([0, 0.5, 0]), nativeScale: 0.55,
-    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, -90, 0])
+    // QA Rev 61: grip one hand-length above the butt, head up, blade forward.
+    grip: Object.freeze([0, 0.88, 0]), nativeScale: 0.55,
+    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 180]),
+    defaultSizePercent: 75
   })
 ]);
 
@@ -26,7 +26,7 @@ export function studioWeapon(id) { return STUDIO_WEAPONS.find(weapon => weapon.i
 export function normalizeEquipment(value = {}) {
   const weapon = studioWeapon(value?.rightHand), preset = weapon || STUDIO_WEAPONS[0];
   const vector = key => preset[key].map((fallback, axis) => bounded(value?.[key]?.[axis], fallback, EQUIPMENT_LIMITS[key]));
-  return { version: 1, rightHand: weapon?.id || 'none', sizePercent: bounded(value?.sizePercent,100,EQUIPMENT_LIMITS.sizePercent), position: vector('position'), rotation: vector('rotation') };
+  return { version: 1, rightHand: weapon?.id || 'none', sizePercent: bounded(value?.sizePercent, weapon?.defaultSizePercent ?? 100, EQUIPMENT_LIMITS.sizePercent), position: vector('position'), rotation: vector('rotation') };
 }
 export function findRightHand(model) {
   let hand = null;
