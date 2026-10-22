@@ -300,8 +300,10 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
 }
 
 function readyClipIndex() {
+  const twoHandedRest = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_/i.test(clip.name));
+  if (twoHandedRest >= 0) return twoHandedRest;
   const explicit = state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
-  return explicit >= 0 ? explicit : state.clips.findIndex(clip => /ready/i.test(clip.name));
+  return explicit >= 0 ? explicit : state.clips.findIndex(clip => /ready|rest/i.test(clip.name));
 }
 
 function resetPreviewReferenceToReady() {
@@ -928,7 +930,7 @@ function updateRangeEditor() {
 }
 
 function updateAnimationChoices(index) {
-  ui.Clip.replaceChildren(new Option('Rest pose', '-1'));
+  ui.Clip.replaceChildren(new Option('Bind / generic rest pose', '-1'));
   state.clips.forEach((clip, clipIndex) => ui.Clip.add(new Option(animationOptionLabel(clip, clipIndex), String(clipIndex))));
   ui.Clip.value = String(index);
   ui.Clip.disabled = !state.clips.length;
@@ -1070,9 +1072,13 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   });
   upAxisGroup.add(model);
   let clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
-  if (!restoreSettings) {
-    const preferredReady = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_0\.5s$/i.test(clip.name));
-    const readyIndex = preferredReady >= 0 ? preferredReady : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
+  const preferredTwoHandedRest = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_0\.5s$/i.test(clip.name));
+  const isTwoHandedAudition = modelDefaults?.id === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'
+    || restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition';
+  if (isTwoHandedAudition && preferredTwoHandedRest >= 0 && (clipIndex < 0 || !state.clips[clipIndex])) {
+    clipIndex = preferredTwoHandedRest;
+  } else if (!restoreSettings) {
+    const readyIndex = preferredTwoHandedRest >= 0 ? preferredTwoHandedRest : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
     if (readyIndex >= 0) clipIndex = readyIndex;
   }
   state.previewReferenceBounds = null;
