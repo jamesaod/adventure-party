@@ -109,9 +109,10 @@ function visibleShield(id,itemName,studioId){
     id,itemName,studioId,
     visualClass:preset.visualClass,
     representation:preset.representation,
-    texturePack:structuredClone(preset.texturePack),
+    asset:preset.file,
     attachmentBone:'mixamorig:LeftHand',
     sourceSha256:preset.sourceSha256,
+    assetSha256:preset.assetSha256,
     mount:Object.freeze({
       position:Object.freeze([...preset.position]),
       rotationDegrees:Object.freeze([...preset.rotation]),
