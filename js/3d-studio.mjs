@@ -3,8 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import {
-  prepareStudioAnimations, sliceAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
-} from './studio-animations.mjs?v=R238C57';
+  prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
+} from './studio-animations.mjs?v=R238C81';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
 import { createPoseCapture } from './studio-capture.mjs?v=R238C57';
 import {
@@ -995,6 +995,10 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     if (!animationSourceId(clip)) clip.userData = { ...clip.userData, studioAnimationId: `source:${index}` };
   });
   const availableClips = [...sourceClips], animationRanges = [];
+  if (modelDefaults?.id === 'dungeon-crawler-carl-v2-ual2-two-handed-audition') {
+    const source = sourceClips.find(clip => clip.name === 'UAL2_2H_Sword_Regular_Combo');
+    if (source) availableClips.unshift(freezeAnimationClip(source, 0, 'UAL2_2H_Sword_Rest'));
+  }
   let skippedRanges = 0;
   for (const savedRange of Array.isArray(restoreSettings?.animationRanges) ? restoreSettings.animationRanges : []) {
     try {
@@ -1060,7 +1064,8 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   upAxisGroup.add(model);
   let clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
   if (!restoreSettings) {
-    const readyIndex = state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
+    const preferredReady = state.clips.findIndex(clip => /^UAL2_2H_Sword_Rest$/i.test(clip.name));
+    const readyIndex = preferredReady >= 0 ? preferredReady : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
     if (readyIndex >= 0) clipIndex = readyIndex;
   }
   state.previewReferenceBounds = null;
