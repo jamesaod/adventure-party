@@ -100,7 +100,7 @@ export const ITEM_CATALOG=freezeRecord({
     physical:{
       authoredDiameterInches:null,
       calibratedDiameterInches:35,
-      calibratedThicknessInches:8.72,
+      calibratedThicknessInches:6.13,
       sourceModelBounds:{
         min:[-0.4998169541358948,0,-0.12459565699100494],
         max:[0.4998169541358948,1,0.12459565699100494]
@@ -122,9 +122,12 @@ export const ITEM_CATALOG=freezeRecord({
         originalSha256:'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928'
       },
       webAsset:{
-        bytes:331228,
-        sha256:'c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5',
-        textureResolution:512
+        bytes:17912,
+        sha256:'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521',
+        textureResolution:128,
+        vertices:258,
+        triangles:384,
+        derivation:'Runtime-optimized round shield mesh using the uploaded model proportions and uploaded base-color texture.'
       }
     }
   }
