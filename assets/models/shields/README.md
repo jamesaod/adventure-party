@@ -25,7 +25,7 @@ The Candidate site uses the runtime-optimized derivative at
 `assets/models/shields/round-wooden-shield.glb`.
 
 - Bytes: **17,912**
-- SHA-256: **41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521**
+- SHA-256: **d383f0a59bcf3ad0aa7d4b304e33d20e333c0d6a1567958c61710f278c178bb8**
 - 258 position vertices / 384 triangles
 - one embedded 128 × 128 JPEG wood base-color map derived from the uploaded shield
 - runtime bounds: X **-0.5..0.5**, Y **0..1**, Z **-0.12..0.055**
