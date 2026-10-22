@@ -1,5 +1,5 @@
 import { loadStudioWorkspace, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
-import { WEAPON_POSE_PROFILES } from './mob-appearance.mjs?v=R238C67';
+import { WEAPON_POSE_PROFILES } from './mob-appearance.mjs?v=R238C68';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
 

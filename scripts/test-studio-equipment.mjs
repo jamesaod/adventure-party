@@ -65,6 +65,15 @@ assert.deepEqual(migratedAxe.rotation,[-129,-90,0],'Rev 66 axe migrates to the 1
 assert.equal(migratedAxe.presetRevision,5);
 assert.equal(STUDIO_SHIELDS.length,1);
 assert.equal(STUDIO_SHIELDS[0].sourceSha256,'c908d84a286a005a050934f0b5bb409c6d42b2cbfc85ae0669637802375994e0');
+assert.deepEqual(STUDIO_SHIELDS[0].position,[0,0,0.14],'Shield center is moved to the outside of the left arm');
+assert.deepEqual(STUDIO_SHIELDS[0].rotation,[0,0,0],'Shield face is flipped outward after crossing the arm');
+const migratedShield=normalizeShield({
+  leftHandShield:'bronze-round-shield',presetRevision:1,sizePercent:100,
+  position:[0,0,-0.045],rotation:[0,180,0]
+});
+assert.deepEqual(migratedShield.position,[0,0,0.14],'Rev 67 shield mount migrates across the arm');
+assert.deepEqual(migratedShield.rotation,[0,0,0],'Rev 67 shield face migrates to the outward-facing side');
+assert.equal(migratedShield.presetRevision,2);
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
