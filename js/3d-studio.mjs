@@ -27,6 +27,16 @@ const DEFAULT_LIGHTING = Object.freeze({
 // The shared asset format still accepts older sizes up to 2000%.
 const STUDIO_MODEL_SCALE_MAX = 1000;
 
+const FALLBACK_SPRITES = Object.freeze({
+  kobold: 'assets/sprites/kobold-stand.png',
+  'kobold-bodyguard': 'assets/sprites/kobold-bodyguard-stand.png',
+  'kobold-slinger': 'assets/sprites/kobold-slinger-stand.png',
+  orc: 'assets/sprites/orc-stand.png',
+  'orc-leader': 'assets/sprites/orc-leader-stand.png',
+  'orc-shaman': 'assets/sprites/orc-shaman-stand.png',
+  'juvenile-red-dragon': 'assets/sprites/juvenile-red-dragon.png'
+});
+
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
 const $ = id => document.getElementById(id);
@@ -62,6 +72,7 @@ const state = {
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
   heightDirty: true, heightFeet: null, lastHeightMeasure: -Infinity,
   viewVisible: true, frameHeight: 3.15, framingMode: 'pose', framingSamplesPerClip: 0,
+  previewReferenceBounds: null, spriteOnlyFallback: false, fallbackImage: null, fallbackSrc: '',
   center: new THREE.Vector3(0, 1, 0)
 };
 
@@ -189,7 +200,7 @@ function syncCaptureLock(locked) {
     control.disabled = locked || !state.modelReady;
   }
   const saved = poseCapture?.snapshot();
-  ui.ModelScale.disabled = saved?.modelScaleAdjustable === false || (!state.modelReady && !locked);
+  ui.ModelScale.disabled = saved?.modelScaleAdjustable === false || (!state.modelReady && !state.spriteOnlyFallback && !locked);
   for (const control of [ui.AmbientIntensity, ui.AmbientColor, ui.KeyIntensity, ui.KeyColor, ui.KeyElevation, ui.KeyDirection]) {
     control.disabled = locked || !state.modelReady;
   }
@@ -229,6 +240,23 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
     : 'Equipment is included in all six previews and new captures.';
 }
 
+function readyClipIndex() {
+  const explicit = state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
+  return explicit >= 0 ? explicit : state.clips.findIndex(clip => /ready/i.test(clip.name));
+}
+
+function resetPreviewReferenceToReady() {
+  state.previewReferenceBounds = null;
+  const index = readyClipIndex();
+  if (index < 0 || !state.mixer) return;
+  setClip(index);
+  if (state.action) {
+    state.action.time = 0;
+    state.mixer.update(0);
+    updateAnimationControls();
+  }
+}
+
 async function changeEquipment(value, { fit = false } = {}) {
   if (!state.modelReady || state.modelLoading || poseCapture?.snapshot().captureCount) {
     updateEquipmentControls();
@@ -237,7 +265,10 @@ async function changeEquipment(value, { fit = false } = {}) {
   const model = state.model;
   const changed = await equipment.select(value);
   if (state.disposed || state.model !== model) return;
-  if (changed && fit) fitAllAnimations();
+  if (changed) {
+    if (fit) fitAllAnimations();
+    resetPreviewReferenceToReady();
+  }
   poseCapture?.saveWorkspace();
 }
 
@@ -944,7 +975,15 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     if (object.isSkinnedMesh) object.frustumCulled = false;
   });
   upAxisGroup.add(model);
-  const clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
+  let clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
+  if (!restoreSettings) {
+    const readyIndex = state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
+    if (readyIndex >= 0) clipIndex = readyIndex;
+  }
+  state.previewReferenceBounds = null;
+  state.spriteOnlyFallback = false;
+  state.fallbackImage = null;
+  state.fallbackSrc = '';
   if (restoreSettings) {
     ui.Speed.value = ['0.25', '0.5', '1', '1.5', '2'].includes(String(restoreSettings.speed)) ? String(restoreSettings.speed) : '1';
   }
@@ -988,6 +1027,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
 
 function configureAtlas() {
   atlasTarget?.dispose();
+  state.previewReferenceBounds = null;
   const width = state.width * 3, height = state.height * 2;
   atlasTarget = new THREE.WebGLRenderTarget(width, height, {
     format: THREE.RGBAFormat, type: THREE.UnsignedByteType,
@@ -1083,7 +1123,33 @@ function drawDirectionalPreview(preview, bounds) {
     Math.round((preview.canvas.height - bounds.displayHeight) / 2), bounds.displayWidth, bounds.displayHeight);
 }
 
+function renderFallbackPreviews(timestamp) {
+  const image = state.fallbackImage;
+  previews.forEach(preview => {
+    preview.context.fillStyle = '#808080';
+    preview.context.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
+    if (image?.naturalWidth && image?.naturalHeight) {
+      const scale = state.modelScalePercent / 100;
+      const targetH = Math.max(1, Math.round(preview.canvas.height * 0.5 * scale));
+      const targetW = Math.max(1, Math.round(image.naturalWidth * targetH / image.naturalHeight));
+      preview.context.imageSmoothingEnabled = false;
+      preview.context.drawImage(image,
+        Math.round((preview.canvas.width-targetW)/2),
+        Math.round((preview.canvas.height-targetH)/2),
+        targetW,targetH);
+    }
+    preview.canvas.dataset.frame = String(state.frame + 1);
+  });
+  state.frame++;
+  state.lastPreview = timestamp;
+  state.previewsDirty = false;
+}
+
 function renderPreviews(timestamp) {
+  if (state.spriteOnlyFallback) {
+    renderFallbackPreviews(timestamp);
+    return;
+  }
   const background = scene.background;
   scene.background = null;
   helpers.visible = false;
@@ -1111,17 +1177,31 @@ function renderPreviews(timestamp) {
   // the original atlasSource and its shared camera, dimensions and anchors.
   quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, atlasImage.data, pixelRenderOptions(true));
   atlasContext.putImageData(atlasImage, 0, 0);
-  const bounds = previews.map((preview, index) => directionalPreviewBounds(index));
-  // Widen all six windows together for wide/prone poses. Keep that width for
-  // this format/model so animation cannot repeatedly resize the preview grid.
+  const currentBounds = previews.map((preview, index) => directionalPreviewBounds(index));
+  // Rev 61 QA: the preview transform is established once from Ready frame 0.
+  // Later animation poses move inside that fixed framing instead of re-zooming
+  // whenever the silhouette becomes shorter or taller.
+  if (!state.previewReferenceBounds) {
+    state.previewReferenceBounds = currentBounds.map(box => box ? ({...box}) : null);
+  }
+  const referenceBounds = state.previewReferenceBounds;
   const previewWidth = Math.max(previews[0].canvas.width,
-    ...bounds.map(box => box ? Math.ceil(box.displayWidth * 1.05) : 0));
+    ...referenceBounds.map(box => box ? Math.ceil(box.displayWidth * 1.05) : 0));
   previews.forEach((preview, index) => {
     if (preview.canvas.width !== previewWidth) {
       preview.canvas.width = previewWidth;
       preview.context.imageSmoothingEnabled = false;
     }
-    drawDirectionalPreview(preview, bounds[index]);
+    const current = currentBounds[index], reference = referenceBounds[index];
+    if (!current || !reference) drawDirectionalPreview(preview, current);
+    else {
+      const locked = {
+        ...current,
+        displayHeight: reference.displayHeight,
+        displayWidth: Math.round(current.width * reference.displayHeight / reference.height)
+      };
+      drawDirectionalPreview(preview, locked);
+    }
     preview.canvas.dataset.frame = String(state.frame + 1);
   });
   state.frame++;
@@ -1453,13 +1533,35 @@ function bindControls() {
     state.layoutId = spriteLayout(ui.Footprint.value).id;
     changeSpriteFormat({ refit: true });
   });
-  ui.MobTarget.addEventListener('change', () => {
+  ui.MobTarget.addEventListener('change', async () => {
     const mob = spriteMob(ui.MobTarget.value);
     state.mobType = mob.id;
+    const hasSavedModel = state.libraryModels.some(model => model.mobType === mob.id);
+    state.spriteOnlyFallback = !hasSavedModel && !!FALLBACK_SPRITES[mob.id];
+    state.previewReferenceBounds = null;
+    if (state.spriteOnlyFallback) {
+      state.fallbackSrc = FALLBACK_SPRITES[mob.id];
+      const image = new Image();
+      image.src = new URL('../' + state.fallbackSrc, import.meta.url).href;
+      try { await image.decode(); state.fallbackImage = image; } catch { state.fallbackImage = null; }
+      ui.EmptyMessage.hidden = false;
+      ui.EmptyMessage.textContent = '';
+      ui.HeightRuler.hidden = true;
+      ui.ModelHeight.hidden = true;
+      if (modelFrame) modelFrame.visible = false;
+      invalidate();
+    } else {
+      state.fallbackImage = null;
+      state.fallbackSrc = '';
+      if (modelFrame) modelFrame.visible = true;
+      ui.EmptyMessage.hidden = !!state.modelReady;
+      invalidate();
+    }
     if (!poseCapture?.snapshot().captureCount) {
       state.layoutId = mob.defaultLayout;
-      changeSpriteFormat({ refit: true });
+      changeSpriteFormat({ refit: !state.spriteOnlyFallback });
     } else poseCapture.updateMetadata();
+    syncCaptureLock(!!poseCapture?.snapshot().captureCount);
   });
   ui.ModelScale.addEventListener('input', () => {
     if (poseCapture?.snapshot().modelScaleAdjustable === false) { updateSetupLabels(); return; }
