@@ -1065,7 +1065,10 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   return Promise.all([
     equipment.setModel(model, restoreSettings?.equipment),
     Promise.resolve(shieldEquipment.setModel(model, shieldSettings))
-  ]);
+  ]).then(result=>{
+    if(!restoreSettings && shieldSettings.leftHandShield!=='none') fitAllAnimations();
+    return result;
+  });
 }
 
 function configureAtlas() {
