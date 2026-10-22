@@ -18,7 +18,8 @@ assert.equal(bodyScaleForHeight({ targetHeightInches: 75, referenceHeightInches:
 assert.equal(WEAPON_POSE_PROFILES['one-handed-swing-v1'].poses.attack.timeSeconds, 0.30);
 assert.equal(VISIBLE_WEAPON_ASSETS['battle-axe'].poseProfileId, 'one-handed-swing-v1');
 assert.equal(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.sizePercent, 100);
-assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [0, 90, 30]);
+assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
+assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-51, 90, 0]);
 const sword = appearanceRecipeForMob(carl, { modelId: 'dungeon-crawler-carl-v2-ual2-sword-test', bodyReferenceHeightInches: 75 });
 assert.equal(sword.equipment.appearanceId, 'flaming-sword-5');
 const k1 = appearanceCacheKey(sword), k2 = appearanceCacheKey(structuredClone(sword));
