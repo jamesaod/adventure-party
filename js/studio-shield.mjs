@@ -13,10 +13,12 @@ export const STUDIO_SHIELDS = Object.freeze([
       max:Object.freeze([0.499755859375,0.99951171875,0.118408203125])
     }),
     nativeScale:0.45,
-    position:Object.freeze([0,0,-0.045]),
-    rotation:Object.freeze([0,180,0]),
+    // Rev 68: move the shield across the hand/forearm normal to the outside
+    // of the arm, then flip the face so the boss still points outward.
+    position:Object.freeze([0,0,0.14]),
+    rotation:Object.freeze([0,0,0]),
     defaultSizePercent:100,
-    presetRevision:1
+    presetRevision:2
   })
 ]);
 
