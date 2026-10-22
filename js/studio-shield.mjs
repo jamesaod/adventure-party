@@ -1,28 +1,36 @@
-// Left-arm shield attachments are independent of right-hand weapon calibration.
-// The Bronze Round Shield QA proxy preserves the uploaded model's measured
-// diameter/thickness for pose testing; the full textured source remains the
-// authoritative art reference until a binary-asset transfer pass.
-export const STUDIO_SHIELDS = Object.freeze([
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C71';
+
+const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');
+if(!WOODEN_SHIELD_ITEM?.appearance)throw new Error('Round Wooden Shield catalog appearance is required.');
+
+export const STUDIO_SHIELDS=Object.freeze([
   Object.freeze({
-    id:'bronze-round-shield',
-    label:'Bronze Round Shield',
-    visualClass:'round-shield',
-    sourceSha256:'c908d84a286a005a050934f0b5bb409c6d42b2cbfc85ae0669637802375994e0',
+    id:'round-wooden-shield',
+    label:'Round Wooden Shield',
+    visualClass:WOODEN_SHIELD_ITEM.appearance.visualClass,
+    representation:WOODEN_SHIELD_ITEM.appearance.representation,
+    file:WOODEN_SHIELD_ITEM.appearance.asset,
+    sourceSha256:WOODEN_SHIELD_ITEM.appearance.source.originalSha256,
+    assetSha256:WOODEN_SHIELD_ITEM.appearance.webAsset.sha256,
     sourceBounds:Object.freeze({
-      min:Object.freeze([-0.499755859375,0,-0.118408203125]),
-      max:Object.freeze([0.499755859375,0.99951171875,0.118408203125])
+      min:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.min]),
+      max:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.max])
     }),
-    nativeScale:0.45,
-    // Rev 69: keep the Rev 68 side/orientation and pull the shield inward
-    // until it sits close to the forearm with roughly one-inch visual clearance.
+    modelOrigin:Object.freeze([...WOODEN_SHIELD_ITEM.appearance.modelOrigin]),
+    nativeScale:WOODEN_SHIELD_ITEM.appearance.nativeScale,
+    // Rev 69 approved base mount. Rev 71 changes the art asset, not the mount.
     position:Object.freeze([0,0,0.04]),
     rotation:Object.freeze([0,0,0]),
     defaultSizePercent:100,
-    presetRevision:3
+    presetRevision:4
   })
 ]);
 
-export const SHIELD_MODEL_UNITS_PER_INCH=0.9774781465530396/75;
+const SHIELD_ALIASES=Object.freeze({
+  'bronze-round-shield':'round-wooden-shield'
+});
+
+export const SHIELD_MODEL_UNITS_PER_INCH=0.9774781465530396/76;
 export const SHIELD_LIMITS=Object.freeze({
   sizePercent:Object.freeze({min:25,max:200,step:5}),
   position:Object.freeze({min:-1,max:1,step:0.005}),
@@ -33,14 +41,16 @@ export const SHIELD_LIMITS=Object.freeze({
 });
 
 const bounded=(value,fallback,range)=>Number.isFinite(value)
-  ? Math.min(range.max,Math.max(range.min,value)) : fallback;
+  ?Math.min(range.max,Math.max(range.min,value)):fallback;
 
 export function studioShield(id){
-  return STUDIO_SHIELDS.find(shield=>shield.id===id)||null;
+  const canonical=SHIELD_ALIASES[id]||id;
+  return STUDIO_SHIELDS.find(shield=>shield.id===canonical)||null;
 }
 
 export function normalizeShield(value={}){
-  const shield=studioShield(value?.leftHandShield);
+  const requested=SHIELD_ALIASES[value?.leftHandShield]||value?.leftHandShield;
+  const shield=studioShield(requested);
   const preset=shield||STUDIO_SHIELDS[0];
   const presetRevision=Number.isFinite(shield?.presetRevision)?shield.presetRevision:0;
   const storedRevision=Number.isFinite(value?.presetRevision)?value.presetRevision:0;
@@ -48,7 +58,7 @@ export function normalizeShield(value={}){
   const vector=key=>preset[key].map((fallback,axis)=>
     migratePreset?fallback:bounded(value?.[key]?.[axis],fallback,SHIELD_LIMITS[key]));
   return {
-    version:2,
+    version:3,
     presetRevision,
     leftHandShield:shield?.id||'none',
     sizePercent:migratePreset?(shield?.defaultSizePercent??100)
@@ -66,7 +76,7 @@ export function findLeftHand(model){
   model?.traverse(object=>{
     if(!object.isBone)return;
     const name=String(object.name).toLowerCase().replace(/[^a-z0-9]/g,'');
-    if(name==='lefthand'||name.endsWith('mixamoriglefthand')) hand||=object;
+    if(name==='lefthand'||name.endsWith('mixamoriglefthand'))hand||=object;
   });
   return hand;
 }
@@ -89,38 +99,6 @@ function shieldOutwardAxisLocal(THREE,forearmAxis){
   return outward.normalize();
 }
 
-export function createBronzeRoundShieldProxy(THREE){
-  const group=new THREE.Group();
-  group.name='BronzeRoundShieldProxy';
-  group.userData.sourceSha256=STUDIO_SHIELDS[0].sourceSha256;
-  const bronze=new THREE.MeshStandardMaterial({
-    color:0x965220,roughness:0.55,metalness:0.65,side:THREE.DoubleSide
-  });
-  const darkBronze=new THREE.MeshStandardMaterial({
-    color:0x5f3218,roughness:0.68,metalness:0.5,side:THREE.DoubleSide
-  });
-
-  // Uploaded source bounds are about 1.0 × 1.0 × 0.237. Build the QA proxy
-  // centered on the hand grip with the same major proportions.
-  const face=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.118,32,1,false),bronze);
-  face.rotation.x=Math.PI/2;
-  face.name='ShieldFace';
-  group.add(face);
-
-  const rim=new THREE.Mesh(new THREE.TorusGeometry(0.47,0.035,8,32),darkBronze);
-  rim.position.z=0.063;
-  rim.name='ShieldRim';
-  group.add(rim);
-
-  const boss=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,8),bronze);
-  boss.scale.z=0.45;
-  boss.position.z=0.075;
-  boss.name='ShieldBoss';
-  group.add(boss);
-
-  return group;
-}
-
 export function createShieldAttachment(THREE,hand,model,settings){
   const value=normalizeShield(settings),shield=studioShield(value.leftHandShield);
   if(!hand?.isBone||!shield||!model?.isObject3D){
@@ -129,8 +107,14 @@ export function createShieldAttachment(THREE,hand,model,settings){
   const socket=new THREE.Group();
   socket.name='StudioLeftHandShield';
   socket.userData.studioShield=true;
-  socket.add(model);
+
+  const origin=new THREE.Group();
+  origin.name='ShieldModelOrigin';
+  origin.position.fromArray(shield.modelOrigin).multiplyScalar(-1);
+  origin.add(model);
+  socket.add(origin);
   hand.add(socket);
+
   const forearmAxis=leftForearmAxisLocal(THREE,hand);
   const outwardAxis=shieldOutwardAxisLocal(THREE,forearmAxis);
 
@@ -150,16 +134,16 @@ export function createShieldAttachment(THREE,hand,model,settings){
     socket.updateWorldMatrix(true,true);
   }
   update(value);
-  return {socket,model,update,detach:()=>socket.removeFromParent()};
+  return {socket,origin,model,update,detach:()=>socket.removeFromParent()};
 }
 
-export function createStudioShield({THREE,disposeObject,onChange=()=>{}}){
-  let model=null,settings=normalizeShield(),attachment=null,error='',disposed=false;
+export function createStudioShield({THREE,loadAsset,disposeObject,onChange=()=>{}}){
+  let model=null,settings=normalizeShield(),attachment=null,loading=false,error='',request=0,disposed=false;
   const snapshot=()=>({
     settings:normalizeShield(settings),
     attached:!!attachment,
     leftHandBone:findLeftHand(model)?.name||null,
-    error,
+    loading,error,
     socketWorldPosition:attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray()||null
   });
   const notify=()=>{if(!disposed)onChange(snapshot());};
@@ -169,18 +153,20 @@ export function createStudioShield({THREE,disposeObject,onChange=()=>{}}){
     disposeObject(attachment.model);
     attachment=null;
   }
-  function select(value){
+  async function select(value){
     if(disposed)return false;
     const next=normalizeShield(value);
     const sameShield=next.leftHandShield===settings.leftHandShield;
     settings=next;
     error='';
-    if(sameShield&&attachment){
+    if(sameShield&&attachment&&!loading){
       attachment.update(settings);
       notify();
       return true;
     }
+    const version=++request;
     detach();
+    loading=false;
     const shield=studioShield(settings.leftHandShield);
     if(!shield){notify();return true;}
     const hand=findLeftHand(model);
@@ -189,22 +175,43 @@ export function createStudioShield({THREE,disposeObject,onChange=()=>{}}){
       notify();
       return false;
     }
-    const asset=createBronzeRoundShieldProxy(THREE);
-    attachment=createShieldAttachment(THREE,hand,asset,settings);
+    loading=true;
     notify();
-    return true;
+    let asset;
+    try{
+      asset=await loadAsset(shield);
+      if(disposed||request!==version){
+        disposeObject(asset);
+        return false;
+      }
+      attachment=createShieldAttachment(THREE,hand,asset,settings);
+      loading=false;
+      notify();
+      return true;
+    }catch(cause){
+      if(asset)disposeObject(asset);
+      if(disposed||request!==version)return false;
+      loading=false;
+      error=`The shield could not be loaded. ${cause?.message||cause}`;
+      notify();
+      return false;
+    }
   }
   function setModel(next,value={}){
+    ++request;
     detach();
     model=next;
     settings=normalizeShield();
+    loading=false;
     error='';
     return select(value);
   }
   function dispose(){
     disposed=true;
+    ++request;
     detach();
     model=null;
+    loading=false;
   }
   return {snapshot,select,setModel,dispose};
 }
