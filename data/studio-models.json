@@ -14,6 +14,13 @@
       "file": "assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb",
       "upAxis": "Y",
       "mobType": "fighter"
+    },
+    {
+      "id": "dungeon-crawler-carl-v2-ual2-two-handed-audition",
+      "label": "Dungeon Crawler Carl — UAL2 Two-Handed Audition",
+      "file": "assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/dungeon-crawler-carl-v2-ual2-two-handed-audition.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
     }
   ]
 }
