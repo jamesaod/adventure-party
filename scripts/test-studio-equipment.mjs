@@ -405,6 +405,14 @@ const studio = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 
 assert.equal((studio.match(/state\.mixer\.update\(/g)||[]).length,(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length,
   'Every Studio mixer evaluation restores the pre-IK skeleton first');
 
+assert.ok(studio.includes("selectedWeapon?.handsRequired === 2")&&studio.includes("shieldEquipment.select('none')"),
+  'Selecting a two-handed weapon actively unequips the shield');
+assert.ok(studio.includes("value!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2")&&studio.includes("await equipment.select('none')"),
+  'Equipping a shield actively removes an equipped two-handed weapon');
+assert.ok(studio.includes("requestedWeapon?.handsRequired===2")&&studio.includes("leftHandShield:'none'"),
+  'Workspace/model restore normalizes illegal two-handed weapon plus shield states');
+assert.ok(studio.includes("Two-handed weapons and shields are mutually exclusive"),
+  'Capture rejects an impossible two-handed weapon plus shield state');
 const extract = (start, end) => studio.slice(studio.indexOf(start), studio.indexOf(end, studio.indexOf(start)));
 const locked = vm.createContext({
   state: { modelReady: true }, poseCapture: { snapshot: () => ({ captureCount: 6 }) },

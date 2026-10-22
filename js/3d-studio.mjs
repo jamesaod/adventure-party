@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
-} from './studio-animations.mjs?v=R238C81';
+} from './studio-animations.mjs?v=R238C82';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
 import { createPoseCapture } from './studio-capture.mjs?v=R238C57';
 import {
@@ -17,7 +17,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C80';
+} from './studio-equipment.mjs?v=R238C82';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C75';
@@ -336,21 +336,22 @@ async function changeEquipment(value, { fit = false } = {}) {
 }
 
 async function changeShield(value,{fit=false,resetPose=true}={}){
-  if(studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
-    updateEquipmentControls();
-    return;
-  }
   if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
     updateEquipmentControls();
     return;
   }
   const model=state.model;
+  if(value!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
+    await equipment.select('none');
+    if(state.disposed||state.model!==model)return;
+  }
   const changed=await shieldEquipment.select(value);
   if(state.disposed||state.model!==model)return;
   if(changed){
     if(fit)fitAllAnimations();
     if(resetPose)resetPreviewReferenceToReady();
   }
+  updateEquipmentControls();
   poseCapture?.saveWorkspace();
 }
 
@@ -1110,14 +1111,18 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
-  const shieldSettings=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
+  const requestedEquipment=restoreSettings?.equipment || {};
+  const requestedShield=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
     ? {leftHandShield:'round-wooden-shield'} : {leftHandShield:'none'});
-  return Promise.all([
-    equipment.setModel(model, restoreSettings?.equipment),
-    Promise.resolve(shieldEquipment.setModel(model, shieldSettings))
-  ]).then(result=>{
-    if(!restoreSettings && shieldSettings.leftHandShield!=='none') fitAllAnimations();
-    return result;
+  const requestedWeapon=studioWeapon(requestedEquipment?.rightHand);
+  const normalizedShield=requestedWeapon?.handsRequired===2
+    ? { ...requestedShield, leftHandShield:'none' }
+    : requestedShield;
+  return equipment.setModel(model,requestedEquipment).then(async weaponResult=>{
+    const shieldResult=await shieldEquipment.setModel(model,normalizedShield);
+    if(!restoreSettings&&normalizedShield.leftHandShield!=='none')fitAllAnimations();
+    updateEquipmentControls();
+    return [weaponResult,shieldResult];
   });
 }
 
@@ -1164,6 +1169,9 @@ function readCapturePose() {
   }
   if (shieldGear.settings.leftHandShield !== 'none' && !shieldGear.attached) {
     throw new Error(shieldGear.error || 'The equipped shield is unavailable. Reload the studio before capturing another pose.');
+  }
+  if (studioWeapon(gear.settings.rightHand)?.handsRequired===2 && shieldGear.settings.leftHandShield!=='none') {
+    throw new Error('Two-handed weapons and shields are mutually exclusive. Unequip one before capturing.');
   }
   state.playing = false;
   state.lastTick = 0;
