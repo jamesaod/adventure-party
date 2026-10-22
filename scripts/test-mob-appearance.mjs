@@ -23,7 +23,7 @@ assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129, -90, 0]);
 assert.equal(VISIBLE_SHIELD_ASSETS['bronze-round-shield'].attachmentBone,'mixamorig:LeftHand');
 assert.equal(VISIBLE_SHIELD_ASSETS['bronze-round-shield'].sourceSha256,'c908d84a286a005a050934f0b5bb409c6d42b2cbfc85ae0669637802375994e0');
-assert.deepEqual(VISIBLE_SHIELD_ASSETS['bronze-round-shield'].mount.position,[0,0,0.14]);
+assert.deepEqual(VISIBLE_SHIELD_ASSETS['bronze-round-shield'].mount.position,[0,0,0.04]);
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['bronze-round-shield'].mount.rotationDegrees,[0,0,0]);
 const sword = appearanceRecipeForMob(carl, { modelId: 'dungeon-crawler-carl-v2-ual2-sword-test', bodyReferenceHeightInches: 75 });
 assert.equal(sword.equipment.appearanceId, 'flaming-sword-5');

@@ -26,9 +26,9 @@
       "visualClass": "round-shield",
       "attachmentBone": "mixamorig:LeftHand",
       "sourceSha256": "c908d84a286a005a050934f0b5bb409c6d42b2cbfc85ae0669637802375994e0",
-      "mount": { "position": [0, 0, 0.14], "rotationDegrees": [0, 0, 0], "sizePercent": 100 },
+      "mount": { "position": [0, 0, 0.04], "rotationDegrees": [0, 0, 0], "sizePercent": 100 },
       "nativeScale": 0.45,
-      "status": "Rev 68 QA mount moved across the left-arm normal so the shield sits on the outside of the arm" 
+      "status": "Rev 69 QA mount preserves the outside-arm orientation and pulls the shield close to the forearm" 
     }
   }
 }
