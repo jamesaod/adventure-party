@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "weapons": {
+    "flaming-sword-5": {
+      "itemName": "Flaming Sword +5",
+      "visualClass": "sword",
+      "poseProfileId": "one-handed-swing-v1",
+      "asset": "assets/models/weapons/swords/medieval-sword.glb",
+      "attachmentBone": "mixamorig:RightHand",
+      "grip": { "position": [0.015, 0.05, 0.005], "rotationDegrees": [0, -90, 0], "sizePercent": 100 }
+    },
+    "battle-axe": {
+      "itemName": "Battle Axe",
+      "visualClass": "battle-axe",
+      "poseProfileId": "one-handed-swing-v1",
+      "asset": "assets/models/weapons/battle-axes/battle-axe.glb",
+      "attachmentBone": "mixamorig:RightHand",
+      "grip": { "position": [0.015, 0.05, 0.005], "rotationDegrees": [0, -90, 0], "sizePercent": 100 },
+      "status": "first-pass; tune in 3D Studio and replace with exported profile calibration"
+    }
+  }
+}

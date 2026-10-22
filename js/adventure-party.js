@@ -6996,6 +6996,46 @@ let game=null;
 let aiTimer=null;
 let hoverHex=null;
 
+/* Candidate Rev 60: every battlefield MOB carries an explicit Height attribute.
+   Null means the art has not yet been physically calibrated and therefore keeps
+   its existing legacy render scale. */
+const MOB_HEIGHT_INCHES=Object.freeze({
+  fighter:75,
+  ranger:null,
+  mage:null,
+  kobold:null,
+  "kobold-bodyguard":null,
+  "kobold-slinger":null,
+  orc:null,
+  "orc-leader":null,
+  "orc-shaman":null,
+  "juvenile-red-dragon":null
+});
+
+function ensureMobHeightAttribute(unit){
+  if(!unit || typeof unit!=="object") return unit;
+  if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
+    unit.heightInches=Object.prototype.hasOwnProperty.call(MOB_HEIGHT_INCHES,unit.type)
+      ? MOB_HEIGHT_INCHES[unit.type]
+      : null;
+  }
+  return unit;
+}
+
+function formatMobHeight(totalInches){
+  if(!Number.isFinite(totalInches) || totalInches<=0) return "Uncalibrated";
+  const rounded=Math.round(totalInches);
+  return `${Math.floor(rounded/12)}′${rounded%12}″`;
+}
+
+function markMobAppearanceDirty(unit){
+  if(!unit) return;
+  unit.appearanceRevision=(unit.appearanceRevision||0)+1;
+  document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-dirty",{
+    detail:{unitId:unit.id||null,revision:unit.appearanceRevision}
+  }));
+}
+
 let aimMode=false;
 const aimCursor={x:0,y:0};
 let aimReturnBanner="";
@@ -14364,6 +14404,7 @@ function makeFighter(){
     const f=persistentFighter;
 
     f.name="Dungeon Crawler Carl";
+    f.heightInches=75;
     if(!f.race) f.race="Human";
     f.buffs=[];
     f.debuffs=[];
@@ -14391,6 +14432,13 @@ function makeFighter(){
     /* R44 canonical test loadout: named sword + equipped chain mail. */
     const previousInventory=Array.isArray(f.inventory) ? f.inventory : [];
     const oldSword=previousInventory.find(item=>item?.name==="Flaming Sword +5");
+    const oldAxe=previousInventory.find(item=>
+      item?.appearanceId==="battle-axe" ||
+      item?.catalogWeaponId==="axe-battle" ||
+      item?.name==="Battle Axe"
+    );
+    const swordEquipped=oldSword ? oldSword.equipped!==false : !oldAxe?.equipped;
+    const axeEquipped=!!oldAxe?.equipped && !swordEquipped;
     const oldChain=previousInventory.find(item=>
       item?.catalogArmorId==="chain" ||
       item?.name==="Chain Mail" ||
@@ -14403,7 +14451,7 @@ function makeFighter(){
         type:"Weapon",
         slot:"weapon",
         equippable:true,
-        equipped:oldSword ? oldSword.equipped!==false : true,
+        equipped:swordEquipped,
         qty:1,
         magical:true,
         catalogWeaponId:"sword-long",
@@ -14412,7 +14460,23 @@ function makeFighter(){
         magicDamageBonus:5,
         bonusDamageExpression:"1d6",
         bonusDamageType:"fire",
+        appearanceId:"flaming-sword-5",
+        weaponPoseProfileId:"one-handed-swing-v1",
         detail:"Magical item built on the catalog Sword, long base weapon."
+      },
+      {
+        name:"Battle Axe",
+        type:"Weapon",
+        slot:"weapon",
+        equippable:true,
+        equipped:axeEquipped,
+        qty:1,
+        magical:false,
+        catalogWeaponId:"axe-battle",
+        baseName:"Axe, battle",
+        appearanceId:"battle-axe",
+        weaponPoseProfileId:"one-handed-swing-v1",
+        detail:"One-handed battle axe. Uses the first-pass one-handed swinging weapon visual pose profile."
       },
       {
         name:"Chain Mail",
@@ -14489,6 +14553,7 @@ function makeFighter(){
     faction:"player",
     alignment:"neutral",
     sizeCategory:"medium",
+    heightInches:75,
     name:"Dungeon Crawler Carl",
     race:"Human",
     className:"Fighter",
@@ -14522,7 +14587,23 @@ function makeFighter(){
         magicDamageBonus:5,
         bonusDamageExpression:"1d6",
         bonusDamageType:"fire",
+        appearanceId:"flaming-sword-5",
+        weaponPoseProfileId:"one-handed-swing-v1",
         detail:"Magical item built on the catalog Sword, long base weapon."
+      },
+      {
+        name:"Battle Axe",
+        type:"Weapon",
+        slot:"weapon",
+        equippable:true,
+        equipped:false,
+        qty:1,
+        magical:false,
+        catalogWeaponId:"axe-battle",
+        baseName:"Axe, battle",
+        appearanceId:"battle-axe",
+        weaponPoseProfileId:"one-handed-swing-v1",
+        detail:"One-handed battle axe. Uses the first-pass one-handed swinging weapon visual pose profile."
       },
       {
         name:"Chain Mail",
@@ -16265,6 +16346,12 @@ function newGame(condition=selectedCombatCondition){
         }
       : null
   };
+
+  for(const unit of [player,...studioAllies,...enemies]){
+    if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
+      unit.heightInches=unit.type==="fighter" ? 75 : null;
+    }
+  }
 
   lastPlayerVisibilityObserverId=null;
 
@@ -24771,6 +24858,7 @@ function updateUnitInfoPanel(){
 
     ui.unitInfoRows.innerHTML=
       `<span>Class</span><span>Fighter ${inspected.level}</span>`+
+      `<span>Height</span><span>${formatMobHeight(inspected.heightInches)}</span>`+
       `<span>Facing</span><span>${facingText}</span>`+
       `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
       `<span>AC</span><span>${inspected.ac}</span>`+
@@ -25089,6 +25177,7 @@ function toggleInventoryEquip(index){
 
   syncFighterEquipment(fighter);
   applyFighterClassRules(fighter);
+  markMobAppearanceDirty(fighter);
 
   if(game?.player===fighter){
     updateUi();
@@ -25264,7 +25353,9 @@ function renderCharacterSheet(){
   const acBreakdown=armorClassBreakdown(fighter);
 
   document.getElementById("sheetIdentity").innerHTML=
-    `<span>Name</span><span>${fighter.name}</span>`+`<span>Class</span><span>${fighter.className} ${fighter.level}</span>`+
+    `<span>Name</span><span>${fighter.name}</span>`+
+    `<span>Height</span><span>${formatMobHeight(fighter.heightInches)}</span>`+
+    `<span>Class</span><span>${fighter.className} ${fighter.level}</span>`+
     `<span>Group</span><span>${fighter.classGroup}</span>`+`<span>Title</span><span>${fighter.title}</span>`+
     `<span>Alignment</span><span>${alignmentDisplayName(fighter.alignment)}</span>`+
     `<span>Rules</span><span>${fighter.ruleset}</span>`+`<span>XP</span><span>${fighter.xp}${nextXp!==null ? ` / ${nextXp}` : " / MAX"}</span>`+

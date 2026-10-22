@@ -5,6 +5,7 @@ Weapons remain separate GLB assets and attach rigidly beneath a supported right-
 | Studio selection | Repository asset | Source |
 | --- | --- | --- |
 | Medieval Sword | `swords/medieval-sword.glb` | User upload `medieval+sword+3d+model(1).glb` |
+| Battle Axe | `battle-axes/battle-axe.glb` | User upload `ornate+battle+axe+3d+model.glb` |
 
 The sword is an exact copy of the uploaded GLB, with its embedded textures:
 
@@ -27,3 +28,14 @@ Equipment selection and grip settings save with the browser workspace and return
 Models without a recognized right-hand bone show an explanation. A failed weapon load blocks further captures of that equipped set; existing captured sprites remain available. Reload the studio to retry a saved set, or clear the sheet and use **Reset grip** / **None**.
 
 The sword follows the existing hand animation. This feature does not replace the source animation's finger pose with a new gripping animation.
+
+## Battle Axe first-pass source
+
+The Battle Axe is preserved byte-for-byte from the uploaded GLB:
+
+- Bytes: **2,209,320**
+- SHA-256: **d7ba2e5d2cdc15e782d05f13d4d31d6e63a2142bd336a22248b2560323938b76**
+- One mesh, no skin or embedded animation; **54,706 triangles** and 31,186 position vertices.
+- It uses the `one-handed-swing-v1` profile and starts from a provisional sword-style right-hand calibration. Tune the exact grip in Studio and export the Weapon Pose Profile JSON before treating a calibration as final.
+
+Carl's body model is 18,672 triangles, so the axe intentionally serves as a relatively heavy accessory benchmark for future on-demand equipment rendering.
