@@ -91,9 +91,7 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
     poseProfileId: 'one-handed-swing-v1',
     asset: 'assets/models/weapons/battle-axes/battle-axe.glb',
     attachmentBone: 'mixamorig:RightHand',
-    // First-pass calibration intentionally starts from the working sword grip.
-    // The Studio profile export is the authority after the user tunes this asset.
-    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, -90, 0], sizePercent: 100 })
+    grip: Object.freeze({ position: [0.015, 0.05, 0.005], rotationDegrees: [0, 90, 180], sizePercent: 75 })
   })
 });
 
