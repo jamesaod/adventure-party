@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  sliceAnimationClip, prepareStudioAnimations, animationOptionLabel,
+  sliceAnimationClip, prepareStudioAnimations, freezeAnimationClip, animationOptionLabel,
   animationSourceId, restoreAnimationIndex
 } from '../js/studio-animations.mjs';
 
@@ -68,6 +68,21 @@ for (const time of [0, 6]) {
   assert.equal(model.name, time === 0 ? 'ready' : 'prone', 'String values survive real mixer evaluation');
 }
 mixer.stopAllAction();
+
+const frozen = freezeAnimationClip(original, 2.5, 'UAL2_2H_Sword_Rest');
+assert.equal(frozen.name,'UAL2_2H_Sword_Rest');
+assert.equal(frozen.duration,1);
+assert.match(animationSourceId(frozen),/^frozen:/);
+assert.deepEqual(frozen.userData.frozenPose,{sourceName:'Combined take',sourceId:'',timeSeconds:2.5});
+for(let index=0;index<tracks.length;index++){
+  const expected=Array.from(tracks[index].createInterpolant().evaluate(2.5));
+  for(const time of [0,0.5,1]){
+    const actual=Array.from(frozen.tracks[index].createInterpolant().evaluate(time));
+    if(['bool','string'].includes(tracks[index].ValueTypeName))assert.deepEqual(actual,expected);
+    else valuesClose(actual,expected,`Frozen track ${index} remains static at ${time}`);
+  }
+}
+assert.equal(JSON.stringify(THREE.AnimationClip.toJSON(original)),before,'Freezing a pose leaves source animation unchanged');
 
 const fbx = new THREE.AnimationClip('Named take', 12, [
   new THREE.VectorKeyframeTrack('.position', [10, 12], [1, 2, 3, 5, 6, 7])
