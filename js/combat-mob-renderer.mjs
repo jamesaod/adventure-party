@@ -179,7 +179,7 @@ export async function generateCombatSpriteSet(recipe){
 
   let attachment=null,shieldAttachment=null;
   if(recipe.equipment){
-    const id=recipe.equipment.appearanceId==='battle-axe'?'battle-axe':'medieval-sword';
+    const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
     const preset=studioWeapon(id);
     const hand=findRightHand(model);
     if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
