@@ -91,7 +91,7 @@ function inferHandGripLocal(THREE, hand) {
 }
 
 export function solveTwoHandedGrip(THREE, {
-  model, attachment, iterations = 8, tolerance = 0.003, maxStepDegrees = 30
+  model, attachment, iterations = 16, tolerance = 0.003, maxStepDegrees = 45
 } = {}) {
   const weapon = attachment?.weapon;
   if (!model || !attachment || weapon?.handsRequired !== 2 || !weapon.secondaryGrip) {
