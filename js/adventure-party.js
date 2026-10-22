@@ -16349,9 +16349,7 @@ function newGame(condition=selectedCombatCondition){
 
   for(const unit of [player,...studioAllies,...enemies]){
     if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
-      unit.heightInches=Object.prototype.hasOwnProperty.call(MOB_HEIGHT_INCHES,unit.type)
-        ? MOB_HEIGHT_INCHES[unit.type]
-        : null;
+      unit.heightInches=unit.type==="fighter" ? 75 : null;
     }
   }
 
