@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C72';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C75';
 
 const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');
 if(!WOODEN_SHIELD_ITEM?.appearance)throw new Error('Round Wooden Shield catalog appearance is required.');
