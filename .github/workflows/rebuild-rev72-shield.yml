@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .rev72-transfer/geometry-*.part > /tmp/geometry.xz.b64
+          cat .rev72-transfer/geometry-00.part .rev72-transfer/geometry-01.part .rev72-transfer/geometry-02.part .rev72-transfer/geometry-03.part .rev72-transfer/geometry-04a.part .rev72-transfer/geometry-04b.part .rev72-transfer/geometry-05a.part .rev72-transfer/geometry-05b.part > /tmp/geometry.xz.b64
           base64 --decode /tmp/geometry.xz.b64 > /tmp/geometry.xz
           xz --decompress --stdout /tmp/geometry.xz > /tmp/geometry.bin
           echo "bbdbf940fd629311ddd5fbb7224256c2cd963ec49141abf5e29a4e89ec2806c9  /tmp/geometry.bin" | sha256sum -c -
