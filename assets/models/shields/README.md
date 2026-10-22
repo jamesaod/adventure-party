@@ -2,7 +2,7 @@
 
 ## Round Wooden Shield — Candidate Rev 71
 
-Adventure Party's current shield is derived from the user-supplied
+Adventure Party's current shield is based on the user-supplied
 `round+wooden+shield+3d+model.glb`.
 
 ### Source upload
@@ -17,44 +17,34 @@ Adventure Party's current shield is derived from the user-supplied
 - three embedded 1024 × 1024 JPEG maps: normal, base color, and roughness/metallic
 - source bounds: X **-0.499817..0.499817**, Y **0..1**, Z **-0.124596..0.124596**
 
-The source upload remains the authoritative provenance record.
+### Repository web asset
 
-### Repository runtime asset
-
-The Candidate site uses the runtime-optimized derivative at
+The repository stores a web-optimized GLB at
 `assets/models/shields/round-wooden-shield.glb`.
 
 - Bytes: **17,912**
 - SHA-256: **41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521**
-- 258 position vertices / 384 triangles
-- one embedded 128 × 128 JPEG wood base-color map derived from the uploaded shield
-- runtime bounds: X **-0.5..0.5**, Y **0..1**, Z **-0.12..0.055**
+- The runtime derivative preserves the uploaded shield's round proportions and uses its uploaded wood base-color texture.
+- Runtime geometry is reduced to **258 vertices / 384 triangles** with one embedded **128 × 128** JPEG base-color map for fast Candidate loading.
+- The original Tripo upload remains the source-of-truth for provenance, detailed geometry, and the three original material maps.
 
-The derivative deliberately preserves the uploaded shield's round proportions
-while reducing geometry and texture cost for Studio and on-demand combat sprite
-generation. The original upload's source statistics and SHA remain in the item
-catalog.
+### Canonical item record
 
-## Canonical item record
+`js/item-catalog.mjs` owns the first canonical Adventure Party item record for
+the wooden shield. It ties together:
 
-`js/item-catalog.mjs` is the first canonical Adventure Party modeled-item
-catalog. It currently records the Flaming Sword +5, Battle Axe, Chain Mail, and
-Round Wooden Shield.
+- AD&D medium-shield rules
+- source and web-asset hashes
+- source model bounds
+- render-calibrated size
+- appearance / attachment identity
 
-The wooden shield record connects:
+At the current calibrated 100% visual scale, the shield is approximately
+**35 inches in diameter** relative to Dungeon Crawler Carl's canonical
+**76-inch (6′4″)** height. This is a render calibration, not a claim that the
+source model represents a historically exact 35-inch shield.
 
-- existing AD&D medium-shield rules
-- physical/render size data
-- source-model provenance
-- runtime appearance asset
-- left-arm attachment identity
-
-At the calibrated 100% visual scale, the shield is approximately **35 inches in
-diameter** relative to Dungeon Crawler Carl's canonical **76-inch (6′4″)**
-height. This is a rendering calibration, not a claim that the source model has
-a historically exact real-world diameter.
-
-## Left-arm mount and Studio controls
+### Left-arm mount and Studio controls
 
 The approved base mount remains:
 
@@ -77,6 +67,6 @@ sprites use the same shield tuning.
 ## Historical bronze QA proxy
 
 Candidate Revs 67–70 used a procedural bronze round-shield proxy while the
-left-arm attachment system was being calibrated. Candidate Rev 71 migrates that
-legacy appearance ID to the Round Wooden Shield while preserving its approved
-mount and equipment state.
+left-arm attachment system was being calibrated. Candidate Rev 71 replaces
+that proxy with a runtime-optimized derivative of the uploaded wooden-shield GLB while retaining the approved
+Rev 69 mount and Rev 70 controls. The original upload's SHA-256 and source geometry statistics remain recorded in the item catalog.
