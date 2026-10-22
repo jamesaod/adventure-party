@@ -24,7 +24,7 @@ assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].attachmentBone,'mixamorig:LeftHand');
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].asset,'assets/models/shields/round-wooden-shield.glb');
-assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].assetSha256,'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521');
+assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].assetSha256,'d383f0a59bcf3ad0aa7d4b304e33d20e333c0d6a1567958c61710f278c178bb8');
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].mount.position,[0,0,0.04]);
 assert.deepEqual(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].mount.rotationDegrees,[0,0,0]);
 const sword = appearanceRecipeForMob(carl, { modelId: 'dungeon-crawler-carl-v2-ual2-sword-test', bodyReferenceHeightInches: 76 });
