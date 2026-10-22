@@ -1195,10 +1195,11 @@ function renderPreviews(timestamp) {
     const current = currentBounds[index], reference = referenceBounds[index];
     if (!current || !reference) drawDirectionalPreview(preview, current);
     else {
+      const scale = reference.displayHeight / reference.height;
       const locked = {
         ...current,
-        displayHeight: reference.displayHeight,
-        displayWidth: Math.round(current.width * reference.displayHeight / reference.height)
+        displayHeight: Math.max(1, Math.round(current.height * scale)),
+        displayWidth: Math.max(1, Math.round(current.width * scale))
       };
       drawDirectionalPreview(preview, locked);
     }
@@ -1248,8 +1249,10 @@ function tick(timestamp) {
     renderer.setRenderTarget(null);
     renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
     renderer.clear(true, true, true);
-    renderer.render(scene, mainCamera);
-    updateHeightGuide(timestamp);
+    if (!state.spriteOnlyFallback) {
+      renderer.render(scene, mainCamera);
+      updateHeightGuide(timestamp);
+    }
     state.mainDirty = false;
   }
   if ((state.playing && state.action) || moving || state.previewsDirty) requestFrame();
