@@ -20,7 +20,7 @@ import {
 } from './studio-equipment.mjs?v=R238C67';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C70';
+} from './studio-shield.mjs?v=R238C71';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -46,7 +46,7 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
-  'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
+  'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
@@ -101,6 +101,11 @@ const equipment = createStudioEquipment({
 });
 const shieldEquipment = createStudioShield({
   THREE,
+  loadAsset: async shield => {
+    const url=new URL(shield.file,new URL('../',import.meta.url));
+    const loaded=await new GLTFLoader().loadAsync(url.href);
+    return loaded.scene;
+  },
   disposeObject: disposeModel,
   onChange: () => {
     updateEquipmentControls();
@@ -240,12 +245,16 @@ function formatShieldSlide(value){
 function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
   const current = equipment.snapshot(), settings = current.settings;
   const shieldCurrent = shieldEquipment.snapshot(), shieldSettings = shieldCurrent.settings;
-  const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || state.disposed;
+  const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || shieldCurrent.loading || state.disposed;
   ui.RightHandWeapon.value = settings.rightHand;
   ui.RightHandWeapon.disabled = busy || locked;
   ui.LeftHandShield.value = shieldSettings.leftHandShield;
   ui.LeftHandShield.disabled = busy || locked;
   const shieldDisabled=busy||locked||shieldSettings.leftHandShield==='none';
+  ui.ShieldScale.value=String(shieldSettings.sizePercent);
+  ui.ShieldScaleValue.textContent=`${Math.round(shieldSettings.sizePercent)}%`;
+  ui.ShieldScale.disabled=shieldDisabled;
+  ui.ShieldScale.setAttribute('aria-valuetext',`${Math.round(shieldSettings.sizePercent)} percent`);
   ui.ShieldDistance.value=String(shieldSettings.distanceInches);
   ui.ShieldDistanceValue.textContent=formatShieldDistance(shieldSettings.distanceInches);
   ui.ShieldDistance.disabled=shieldDisabled;
@@ -277,9 +286,9 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
     : current.rightHandBone ? 'Choose a right-hand weapon to equip this model.'
     : 'Load a compatible rigged MOB model to use a right-hand attachment.';
   ui.ShieldStatus.classList.toggle('error', !!shieldCurrent.error);
-  ui.ShieldStatus.textContent = shieldCurrent.error
+  ui.ShieldStatus.textContent = shieldCurrent.loading ? 'Loading wooden shield…' : shieldCurrent.error
     ? shieldCurrent.error
-    : shieldCurrent.attached ? 'Shield follows the left hand through the selected animation.'
+    : shieldCurrent.attached ? 'Wooden shield follows the left hand through the selected animation.'
     : shieldCurrent.leftHandBone ? 'Choose a left-hand shield for animation QA.'
     : 'Load a compatible rigged MOB model to use a left-hand shield.';
   ui.EquipmentLockNote.classList.toggle('locked', locked);
@@ -320,12 +329,14 @@ async function changeEquipment(value, { fit = false } = {}) {
   poseCapture?.saveWorkspace();
 }
 
-function changeShield(value,{fit=false,resetPose=true}={}){
+async function changeShield(value,{fit=false,resetPose=true}={}){
   if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
     updateEquipmentControls();
     return;
   }
-  const changed=shieldEquipment.select(value);
+  const model=state.model;
+  const changed=await shieldEquipment.select(value);
+  if(state.disposed||state.model!==model)return;
   if(changed){
     if(fit)fitAllAnimations();
     if(resetPose)resetPreviewReferenceToReady();
@@ -1085,7 +1096,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
   const shieldSettings=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
-    ? {leftHandShield:'bronze-round-shield'} : {leftHandShield:'none'});
+    ? {leftHandShield:'round-wooden-shield'} : {leftHandShield:'none'});
   return Promise.all([
     equipment.setModel(model, restoreSettings?.equipment),
     Promise.resolve(shieldEquipment.setModel(model, shieldSettings))
@@ -1589,9 +1600,10 @@ function bindControls() {
     void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }), { fit: true });
   });
   ui.LeftHandShield.addEventListener('change',()=>{
-    changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}),{fit:true});
+    void changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}),{fit:true});
   });
   for(const [control,key] of [
+    [ui.ShieldScale,'sizePercent'],
     [ui.ShieldDistance,'distanceInches'],
     [ui.ShieldForearmSlide,'forearmSlideInches'],
     [ui.ShieldForearmRoll,'forearmRollDegrees']
@@ -1599,11 +1611,11 @@ function bindControls() {
     control.addEventListener('input',()=>{
       const next=shieldEquipment.snapshot().settings;
       next[key]=control.valueAsNumber;
-      changeShield(next,{resetPose:false});
+      void changeShield(next,{resetPose:false});
     });
   }
   ui.ResetShieldButton.addEventListener('click',()=>{
-    changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}),{fit:true});
+    void changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}),{fit:true});
   });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
