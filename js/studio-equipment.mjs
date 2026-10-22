@@ -9,11 +9,11 @@ export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'battle-axe', label: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing-v1',
     file: 'assets/models/weapons/battle-axes/battle-axe.glb',
-    // QA Rev 62: the source axe haft runs +Y from butt (0) to head (1).
-    // Grip one hand-length above the butt; rotate around the haft so the blade faces forward.
-    grip: Object.freeze([0, 0.12, 0]), nativeScale: 0.55,
-    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 0]),
-    defaultSizePercent: 75
+    // Rev 63: source geometry is diagonal in XY. This point sits on the wooden
+    // haft about one hand-length above the butt, matching the user's QA marker.
+    grip: Object.freeze([-0.32, 0.20, 0]), nativeScale: 0.4125,
+    position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, 90, 180]),
+    defaultSizePercent: 100, presetRevision: 2
   })
 ]);
 
@@ -26,8 +26,20 @@ const bounded = (value, fallback, range) => Number.isFinite(value) ? Math.min(ra
 export function studioWeapon(id) { return STUDIO_WEAPONS.find(weapon => weapon.id === id) || null; }
 export function normalizeEquipment(value = {}) {
   const weapon = studioWeapon(value?.rightHand), preset = weapon || STUDIO_WEAPONS[0];
-  const vector = key => preset[key].map((fallback, axis) => bounded(value?.[key]?.[axis], fallback, EQUIPMENT_LIMITS[key]));
-  return { version: 1, rightHand: weapon?.id || 'none', sizePercent: bounded(value?.sizePercent, weapon?.defaultSizePercent ?? 100, EQUIPMENT_LIMITS.sizePercent), position: vector('position'), rotation: vector('rotation') };
+  const presetRevision = Number.isFinite(weapon?.presetRevision) ? weapon.presetRevision : 0;
+  const storedRevision = Number.isFinite(value?.presetRevision) ? value.presetRevision : 0;
+  const migratePreset = !!weapon && presetRevision > storedRevision;
+  const vector = key => preset[key].map((fallback, axis) =>
+    migratePreset ? fallback : bounded(value?.[key]?.[axis], fallback, EQUIPMENT_LIMITS[key]));
+  return {
+    version: 2,
+    presetRevision,
+    rightHand: weapon?.id || 'none',
+    sizePercent: migratePreset ? (weapon?.defaultSizePercent ?? 100)
+      : bounded(value?.sizePercent, weapon?.defaultSizePercent ?? 100, EQUIPMENT_LIMITS.sizePercent),
+    position: vector('position'),
+    rotation: vector('rotation')
+  };
 }
 export function findRightHand(model) {
   let hand = null;
