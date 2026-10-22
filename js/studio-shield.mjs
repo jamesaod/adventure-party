@@ -9,9 +9,8 @@ export const STUDIO_SHIELDS=Object.freeze([
     label:'Round Wooden Shield',
     visualClass:WOODEN_SHIELD_ITEM.appearance.visualClass,
     representation:WOODEN_SHIELD_ITEM.appearance.representation,
-    file:WOODEN_SHIELD_ITEM.appearance.asset,
+    texturePack:WOODEN_SHIELD_ITEM.appearance.texturePack,
     sourceSha256:WOODEN_SHIELD_ITEM.appearance.source.originalSha256,
-    assetSha256:WOODEN_SHIELD_ITEM.appearance.webAsset.sha256,
     sourceBounds:Object.freeze({
       min:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.min]),
       max:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.max])
