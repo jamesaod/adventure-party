@@ -18,6 +18,9 @@ import {
 import {
   STUDIO_WEAPONS, normalizeEquipment, createStudioEquipment
 } from './studio-equipment.mjs?v=R238C66';
+import {
+  STUDIO_SHIELDS, normalizeShield, createStudioShield
+} from './studio-shield.mjs?v=R238C67';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -43,7 +46,7 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
-  'RightHandWeapon', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
+  'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
@@ -95,6 +98,15 @@ const equipment = createStudioEquipment({
     if (renderer) invalidate();
   }
 });
+const shieldEquipment = createStudioShield({
+  THREE,
+  disposeObject: disposeModel,
+  onChange: () => {
+    updateEquipmentControls();
+    if (state.model) updateModelInfo();
+    if (renderer) invalidate();
+  }
+});
 const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d');
@@ -114,6 +126,7 @@ function getWorkspaceSettings() {
     mobType: state.mobType, width: state.width, height: state.height,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent, lighting: { ...state.lighting },
     equipment: equipment.snapshot().settings,
+    shield: shieldEquipment.snapshot().settings,
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
     center: state.center.toArray(), framingMode: state.framingMode,
     framingSamplesPerClip: state.framingSamplesPerClip,
@@ -168,6 +181,8 @@ function updateSetupLabels() {
 function populateSetupControls() {
   ui.RightHandWeapon.replaceChildren(new Option('None', 'none'),
     ...STUDIO_WEAPONS.map(weapon => new Option(weapon.label, weapon.id)));
+  ui.LeftHandShield.replaceChildren(new Option('None', 'none'),
+    ...STUDIO_SHIELDS.map(shield => new Option(shield.label, shield.id)));
   ui.MobTarget.replaceChildren(...['monster', 'player'].map(kind => {
     const group = document.createElement('optgroup');
     group.label = kind === 'player' ? 'Test player characters' : 'MOBs';
@@ -214,9 +229,12 @@ function syncCaptureLock(locked) {
 
 function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
   const current = equipment.snapshot(), settings = current.settings;
+  const shieldCurrent = shieldEquipment.snapshot(), shieldSettings = shieldCurrent.settings;
   const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || state.disposed;
   ui.RightHandWeapon.value = settings.rightHand;
   ui.RightHandWeapon.disabled = busy || locked;
+  ui.LeftHandShield.value = shieldSettings.leftHandShield;
+  ui.LeftHandShield.disabled = busy || locked;
   ui.WeaponSize.value = String(settings.sizePercent);
   ui.WeaponSizeValue.textContent = `${settings.sizePercent}%`;
   ui.WeaponSize.disabled = busy || locked || settings.rightHand === 'none';
@@ -229,15 +247,21 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
   }
   ui.ResetEquipmentButton.disabled = busy || locked || settings.rightHand === 'none';
   ui.EquipmentStatus.classList.toggle('error', !!current.error);
-  ui.EquipmentStatus.textContent = current.loading ? 'Loading sword…' : current.error
+  ui.EquipmentStatus.textContent = current.loading ? 'Loading weapon…' : current.error
     ? locked ? `${current.error} Reload the studio to retry without clearing your captures.` : current.error
     : current.attached ? 'Equipped weapon follows the right hand in every animation.'
     : current.rightHandBone ? 'Choose a right-hand weapon to equip this model.'
     : 'Load a compatible rigged MOB model to use a right-hand attachment.';
+  ui.ShieldStatus.classList.toggle('error', !!shieldCurrent.error);
+  ui.ShieldStatus.textContent = shieldCurrent.error
+    ? shieldCurrent.error
+    : shieldCurrent.attached ? 'Shield follows the left hand through the selected animation.'
+    : shieldCurrent.leftHandBone ? 'Choose a left-hand shield for animation QA.'
+    : 'Load a compatible rigged MOB model to use a left-hand shield.';
   ui.EquipmentLockNote.classList.toggle('locked', locked);
   ui.EquipmentLockNote.textContent = locked
     ? 'Equipment and grip are shared by this sheet. Clear all captured poses before changing them.'
-    : 'Equipment is included in all six previews and new captures.';
+    : 'Right-hand weapon and left-hand shield are included in all six previews and new captures.';
 }
 
 function readyClipIndex() {
@@ -267,6 +291,19 @@ async function changeEquipment(value, { fit = false } = {}) {
   if (state.disposed || state.model !== model) return;
   if (changed) {
     if (fit) fitAllAnimations();
+    resetPreviewReferenceToReady();
+  }
+  poseCapture?.saveWorkspace();
+}
+
+function changeShield(value,{fit=false}={}){
+  if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
+    updateEquipmentControls();
+    return;
+  }
+  const changed=shieldEquipment.select(value);
+  if(changed){
+    if(fit)fitAllAnimations();
     resetPreviewReferenceToReady();
   }
   poseCapture?.saveWorkspace();
@@ -941,6 +978,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   }
   // Release equipment before disposing the old character's object tree.
   equipment.setModel(null);
+  shieldEquipment.setModel(null);
   if (state.model) upAxisGroup.remove(state.model);
   disposeModel(state.model);
   state.model = model;
@@ -1022,7 +1060,12 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
-  return equipment.setModel(model, restoreSettings?.equipment);
+  const shieldSettings=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
+    ? {leftHandShield:'bronze-round-shield'} : {leftHandShield:'none'});
+  return Promise.all([
+    equipment.setModel(model, restoreSettings?.equipment),
+    Promise.resolve(shieldEquipment.setModel(model, shieldSettings))
+  ]);
 }
 
 function configureAtlas() {
@@ -1061,9 +1104,13 @@ function pixelRenderOptions(transparent = false) {
 function readCapturePose() {
   if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
   const gear = equipment.snapshot();
+  const shieldGear = shieldEquipment.snapshot();
   if (gear.loading) throw new Error('Wait for the weapon to finish loading before capturing a pose.');
   if (gear.settings.rightHand !== 'none' && !gear.attached) {
     throw new Error(gear.error || 'The equipped weapon is unavailable. Reload the studio before capturing another pose.');
+  }
+  if (shieldGear.settings.leftHandShield !== 'none' && !shieldGear.attached) {
+    throw new Error(shieldGear.error || 'The equipped shield is unavailable. Reload the studio before capturing another pose.');
   }
   state.playing = false;
   state.lastTick = 0;
@@ -1090,7 +1137,7 @@ function readCapturePose() {
       frameHeight: state.frameHeight * state.modelScalePercent / 100 * state.hexScalePercent / 100,
       center: state.center.clone().multiplyScalar(state.modelScalePercent / 100 * state.hexScalePercent / 100).toArray(),
       framingMode: state.framingMode, modelScalePercent: state.modelScalePercent,
-      lighting: { ...state.lighting }, equipment: gear.settings
+      lighting: { ...state.lighting }, equipment: gear.settings, shield: shieldGear.settings
     }
   };
   invalidate(false);
@@ -1514,6 +1561,9 @@ function bindControls() {
     // previous weapon's transform into the newly selected asset.
     void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }), { fit: true });
   });
+  ui.LeftHandShield.addEventListener('change',()=>{
+    changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}),{fit:true});
+  });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
   });
@@ -1746,6 +1796,7 @@ function bindControls() {
     orbit?.dispose();
     state.mixer?.stopAllAction();
     equipment.dispose();
+    shieldEquipment.dispose();
     disposeModel(state.model);
     disposeModel(helpers);
     atlasTarget?.dispose();
