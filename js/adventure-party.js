@@ -138,6 +138,7 @@ function showLauncher(){
 
   combatOpeningSpeechDone=false;
   combatAwaitingStart=false;
+  combatStartPending=false;
   if(combatMessageClearTimer){
     clearTimeout(combatMessageClearTimer);
     combatMessageClearTimer=null;
@@ -7147,6 +7148,7 @@ let activityDetectedClearTimer=null;
    Carl is silent; combat begins when the player presses Space. */
 let combatOpeningSpeechDone=false;
 let combatAwaitingStart=false;
+let combatStartPending=false;
 
 /* Lower-edge combat notification bar. */
 let combatMessageText="";
@@ -16464,6 +16466,7 @@ function newGame(condition=selectedCombatCondition){
 
   combatOpeningSpeechDone=false;
   combatAwaitingStart=false;
+  combatStartPending=false;
   if(combatMessageClearTimer){
     clearTimeout(combatMessageClearTimer);
     combatMessageClearTimer=null;
@@ -26576,32 +26579,38 @@ async function beginCombatFromPrompt(){
     !game ||
     game.over ||
     !combatOpeningSpeechDone ||
-    !combatAwaitingStart
+    !combatAwaitingStart ||
+    combatStartPending
   ){
     return false;
   }
 
-  const pending=game.player?.appearanceRefreshPromise;
-  if(pending){
-    ui.turnBanner.textContent="PREPARING APPEARANCE...";
-    setCombatMessage("Rendering current equipment...");
+  combatStartPending=true;
+  try{
+    const pending=game.player?.appearanceRefreshPromise;
+    if(pending){
+      ui.turnBanner.textContent="PREPARING APPEARANCE...";
+      setCombatMessage("Rendering current equipment...");
+      updateUi();
+      draw();
+      await pending;
+      if(!game || game.over || !combatAwaitingStart) return false;
+    }
+
+    combatAwaitingStart=false;
+    for(const unit of studioSpriteTestUnits()) delete unit.studioPoseInspection;
+    document.dispatchEvent(new Event("adventure-party:sprite-state"));
+
+    setCombatMessage("Combat begins.");
+    ui.turnBanner.textContent="ROLLING INITIATIVE...";
     updateUi();
     draw();
-    await pending;
-    if(!game || game.over || !combatAwaitingStart) return false;
+
+    startRound();
+    return true;
+  }finally{
+    combatStartPending=false;
   }
-
-  combatAwaitingStart=false;
-  for(const unit of studioSpriteTestUnits()) delete unit.studioPoseInspection;
-  document.dispatchEvent(new Event("adventure-party:sprite-state"));
-
-  setCombatMessage("Combat begins.");
-  ui.turnBanner.textContent="ROLLING INITIATIVE...";
-  updateUi();
-  draw();
-
-  startRound();
-  return true;
 }
 
 function drawFighter(p){
