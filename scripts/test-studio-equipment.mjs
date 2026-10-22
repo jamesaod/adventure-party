@@ -40,9 +40,10 @@ function glb(path) {
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
 assert.equal(STUDIO_WEAPONS.length, 2, 'Sword and Battle Axe are registered');
-assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 75, 'Battle Axe defaults to QA-approved 75% scale');
-assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 0], 'Battle Axe head stays up while blade turns forward');
-assert.deepEqual(STUDIO_WEAPONS[1].grip, [0, 0.12, 0], 'Battle Axe grip is one hand-length above the butt');
+assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 100, 'Battle Axe UI default remains 100%');
+assert.deepEqual(STUDIO_WEAPONS[1].rotation, [0, 90, 180], 'Battle Axe source is flipped head-up and blade-forward');
+assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.32, 0.20, 0], 'Battle Axe grip lands on the diagonal wooden haft');
+assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
