@@ -280,7 +280,7 @@ for (const layout of allLayoutPresets) {
     assert.equal(player.studioPoseInspection, internal);
     assert.ok(sandbox.game.enemies.every(unit => unit.studioPoseInspection === undefined));
   }
-  assert.equal(sandbox.beginCombatFromPrompt(), true);
+  assert.equal(await sandbox.beginCombatFromPrompt(), true);
   assert.equal(player.studioPoseInspection, undefined);
   assert.equal(sandbox.game.order.length, 7);
   assert.equal(new Set(sandbox.game.order).size, 7);
