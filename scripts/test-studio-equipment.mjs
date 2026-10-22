@@ -5,6 +5,9 @@ import vm from 'node:vm';
 import {
   HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
+import {
+  STUDIO_SHIELDS, normalizeShield, findLeftHand, createBronzeRoundShieldProxy, createShieldAttachment
+} from '../js/studio-shield.mjs';
 
 const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${source.toString('base64')}`);
@@ -50,16 +53,18 @@ for (const weapon of STUDIO_WEAPONS) {
 }
 assert.equal(STUDIO_WEAPONS[1].defaultSizePercent, 100, 'Battle Axe UI default remains 100%');
 assert.deepEqual(STUDIO_WEAPONS[1].primaryAxis, [4, 5, 0], 'Battle Axe longitudinal axis follows the haft, not the cutting edge');
-assert.deepEqual(STUDIO_WEAPONS[1].rotation, [-51, 90, 0], 'Battle Axe shaft aligns to the same held direction as the sword blade');
+assert.deepEqual(STUDIO_WEAPONS[1].rotation, [-129, -90, 0], 'Battle Axe keeps the shaft axis but rolls the cutting edge 180 degrees');
 assert.deepEqual(STUDIO_WEAPONS[1].grip, [-0.36, 0.15, 0], 'Battle Axe grip lands on the lower diagonal wooden haft');
 assert.equal(STUDIO_WEAPONS[1].nativeScale, 0.4125, 'Battle Axe 100% UI size is 75% of the original 0.55 base scale');
 const migratedAxe = normalizeEquipment({
-  rightHand:'battle-axe', presetRevision:3, sizePercent:100,
-  position:[0.015,0.05,0.005], rotation:[0,90,30]
+  rightHand:'battle-axe', presetRevision:4, sizePercent:100,
+  position:[0.015,0.05,0.005], rotation:[-51,90,0]
 });
-assert.equal(migratedAxe.sizePercent,100,'Rev 65 saved axe size remains at the approved 100% UI default');
-assert.deepEqual(migratedAxe.rotation,[-51,90,0],'Rev 65 saved axe orientation migrates to the shaft-aligned Rev 66 preset');
-assert.equal(migratedAxe.presetRevision,4);
+assert.equal(migratedAxe.sizePercent,100,'Rev 66 saved axe size remains at the approved 100% UI default');
+assert.deepEqual(migratedAxe.rotation,[-129,-90,0],'Rev 66 axe migrates to the 180-degree blade roll without changing shaft alignment');
+assert.equal(migratedAxe.presetRevision,5);
+assert.equal(STUDIO_SHIELDS.length,1);
+assert.equal(STUDIO_SHIELDS[0].sourceSha256,'c908d84a286a005a050934f0b5bb409c6d42b2cbfc85ae0669637802375994e0');
 const sword = glb(STUDIO_WEAPONS[0].file);
 assert.equal(crypto.createHash('sha256').update(sword.bytes).digest('hex'),
   '1f4a381aae5aa3779f5b1d03cca706ed7273972e4e31a03f622ea923c3d1edb6');
@@ -99,15 +104,20 @@ display.position.set(0.2, -0.3, 0.4);
 display.scale.setScalar(2.35);
 display.add(character);
 const hand = findRightHand(character);
+const leftHand = findLeftHand(character);
 assert.equal(hand?.name, 'mixamorigRightHand');
+assert.equal(leftHand?.name, 'mixamorigLeftHand');
 hand.name = 'mixamorig:RightHand';
 assert.equal(findRightHand(character), hand, 'Colon spelling is accepted');
 hand.name = 'mixamorigRightHand';
 const settings = normalizeEquipment({ rightHand: 'medieval-sword' });
 const attached = createWeaponAttachment(THREE, hand, swordModel, settings);
 const gripPoint = new THREE.Vector3(...STUDIO_WEAPONS[0].grip);
+const shieldSettings=normalizeShield({leftHandShield:'bronze-round-shield'});
+const shieldModel=createBronzeRoundShieldProxy(THREE);
+const shieldAttached=createShieldAttachment(THREE,leftHand,shieldModel,shieldSettings);
 const mixer = new THREE.AnimationMixer(character);
-const visited = new Set();
+const visited = new Set(), shieldVisited = new Set();
 for (const animation of carl.json.animations) {
   const tracks = animation.channels.map(channel => {
     const sampler = animation.samplers[channel.sampler];
@@ -135,13 +145,20 @@ for (const animation of carl.json.animations) {
       const expectedTip = hand.localToWorld(new THREE.Vector3(...settings.position).add(new THREE.Vector3(0, 0, -0.55)));
       const actualTip = swordModel.localToWorld(gripPoint.clone().add(new THREE.Vector3(-1, 0, 0)));
       close(actualTip, expectedTip, 'Sword orientation and inherited scale');
+      const expectedShield=leftHand.localToWorld(new THREE.Vector3(...shieldSettings.position));
+      const actualShield=shieldModel.localToWorld(new THREE.Vector3());
+      close(actualShield,expectedShield,`${animation.name}/${fraction}/facing${facing}: shield remains centered on left-hand mount`);
+      shieldVisited.add(actualShield.toArray().map(value=>value.toFixed(3)).join(','));
     }
   }
   mixer.stopAllAction();
 }
 assert.ok(visited.size > 30, 'The weapon really moves through the authored animations and six views');
+assert.ok(shieldVisited.size > 30, 'The shield follows the animated left hand through the same poses and facings');
 attached.detach();
+shieldAttached.detach();
 assert.equal(attached.socket.parent, null);
+assert.equal(shieldAttached.socket.parent, null);
 
 const weird = normalizeEquipment({ rightHand: 'unknown', sizePercent: Infinity, position: [NaN, 7, -4], rotation: [999] });
 assert.equal(weird.rightHand, 'none');
