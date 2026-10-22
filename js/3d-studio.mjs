@@ -20,7 +20,7 @@ import {
 } from './studio-equipment.mjs?v=R238C67';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C69';
+} from './studio-shield.mjs?v=R238C70';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
