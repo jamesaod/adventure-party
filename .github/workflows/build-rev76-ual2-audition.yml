@@ -1,0 +1,45 @@
+name: Build Rev 76 UAL2 two-handed audition model
+
+on:
+  push:
+    branches:
+      - build/rev76-ual2-two-handed-audition
+    paths:
+      - '.github/workflows/build-rev76-ual2-audition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out audition branch
+        uses: actions/checkout@v4
+        with:
+          ref: build/rev76-ual2-two-handed-audition
+          fetch-depth: 0
+
+      - name: Reconstruct and verify audition GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/models/dungeon-crawler-carl/ual2-two-handed-audition
+          cat .rev76-transfer/audition-*.b64 | base64 --decode > assets/models/dungeon-crawler-carl/ual2-two-handed-audition/dungeon-crawler-carl-ual2-two-handed-audition.glb
+          test "$(wc -c < assets/models/dungeon-crawler-carl/ual2-two-handed-audition/dungeon-crawler-carl-ual2-two-handed-audition.glb)" -eq 11557544
+          echo "87580762870db1334a5dbb7727394887143213f05ed816f61e1a26821003658a  assets/models/dungeon-crawler-carl/ual2-two-handed-audition/dungeon-crawler-carl-ual2-two-handed-audition.glb" | sha256sum -c -
+
+      - name: Commit audition model
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/dungeon-crawler-carl/ual2-two-handed-audition/dungeon-crawler-carl-ual2-two-handed-audition.glb
+          if git diff --cached --quiet; then
+            echo "Audition model already present."
+            exit 0
+          fi
+          git commit -m "Rev 76: add UAL2 two-handed audition model"
+          git push origin HEAD:build/rev76-ual2-two-handed-audition
