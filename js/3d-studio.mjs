@@ -214,7 +214,7 @@ function syncCaptureLock(locked) {
 
 function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
   const current = equipment.snapshot(), settings = current.settings;
-  const busy = !state.modelReady || state.modelLoading || current.loading || state.disposed;
+  const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || state.disposed;
   ui.RightHandWeapon.value = settings.rightHand;
   ui.RightHandWeapon.disabled = busy || locked;
   ui.WeaponSize.value = String(settings.sizePercent);
@@ -1551,12 +1551,12 @@ function bindControls() {
       ui.EmptyMessage.textContent = '';
       ui.HeightRuler.hidden = true;
       ui.ModelHeight.hidden = true;
-      if (modelFrame) modelFrame.visible = false;
+      if (state.model) state.model.visible = false;
       invalidate();
     } else {
       state.fallbackImage = null;
       state.fallbackSrc = '';
-      if (modelFrame) modelFrame.visible = true;
+      if (state.model) state.model.visible = true;
       ui.EmptyMessage.hidden = !!state.modelReady;
       invalidate();
     }
