@@ -19,6 +19,9 @@ assert.equal(bodyScaleForHeight({ targetHeightInches: 76, referenceHeightInches:
 assert.equal(WEAPON_POSE_PROFILES['one-handed-swing-v1'].poses.attack.timeSeconds, 0.30);
 assert.equal(VISIBLE_WEAPON_ASSETS['battle-axe'].poseProfileId, 'one-handed-swing');
 assert.equal(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.sizePercent, 100);
+assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].poseProfileId,'two-handed-swing');
+assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].asset,'assets/models/weapons/two-handed-swords/medieval-two-handed-sword.glb');
+assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].grip.sizePercent,100);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129, -90, 0]);
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].attachmentBone,'mixamorig:LeftHand');
