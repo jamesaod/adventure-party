@@ -42,6 +42,7 @@ jobs:
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
           node scripts/test-studio-equipment.mjs
+          node scripts/test-carl-ual2.mjs
 
       - name: Validate sprite capture packages and asset imports
         run: |

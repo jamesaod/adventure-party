@@ -4,15 +4,29 @@ Open **3d studio** from the Adventure Party title page. The dedicated page has a
 
 ## Saved model library
 
-Under **Model**, choose **Dungeon Crawler Carl Ver 2** from **Model library**, then press **Load selected model**. The GLB is stored in the repository at `assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb`, so it can be opened without uploading a local copy. It includes four independent animations: `box_01`, `fall`, `box_02`, and `box_03`.
+Under **Model**, choose an entry from **Model library**, then press **Load selected model**. The GLBs are stored in the repository, so they can be opened without uploading local copies.
 
-Loading this saved model selects **Y up** and **Dungeon Crawler Carl — Fighter**, with a single-hex footprint. Its display name, source model, selected animation and studio settings persist through the existing workspace save/restore flow. Simply choosing a menu entry leaves the current workspace in place; pressing **Load selected model** loads it and starts a fresh capture sheet after a successful import. A failed download/import retains the existing model and captures.
+| Saved model | Use |
+| --- | --- |
+| **Dungeon Crawler Carl Ver 2** | Original saved model with four independent animations: `box_01`, `fall`, `box_02`, and `box_03`. |
+| **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test** | Alternate QA model retaining the original four clips and adding `UAL2_Sword_Ready` and `UAL2_Sword_Regular_A`, retargeted from Quaternius's Universal Animation Library 2. |
 
-The source GLB is preserved byte-for-byte under a descriptive versioned filename. Saved model entries live in `data/studio-models.json`; source-model files stay in `assets/models/`, separately from exported sprite assets in `assets/sprites/`. Loading a saved model does not replace Carl's combat sprites. Local files can still be opened with **Load from device**.
+Both Carl entries select **Y up** and **Dungeon Crawler Carl — Fighter**, with a single-hex footprint. Their display name, source model, selected animation and studio settings persist through the existing workspace save/restore flow. Simply choosing a menu entry leaves the current workspace in place; pressing **Load selected model** loads it and starts a fresh capture sheet after a successful import. A failed download/import retains the existing model and captures.
+
+The original Version 2 GLB is preserved byte-for-byte; the UAL2 test is a separate derived file. Saved model entries live in `data/studio-models.json`; source-model files stay in `assets/models/`, separately from exported sprite assets in `assets/sprites/`. Loading a saved model does not replace Carl's combat sprites. Source identities, clip derivations and the animation license are recorded in the [Carl model README](../assets/models/dungeon-crawler-carl/README.md). Local files can still be opened with **Load from device**.
+
+### Test the UAL2 sword clips
+
+1. Load **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test** and choose **Equipment → Right hand → Medieval Sword**.
+2. Select **UAL2_Sword_Ready** in **Animation**. It holds the opening stance of the source sword attack for one second; it is a derived ready pose, not a separate source idle loop.
+3. Select **UAL2_Sword_Regular_A** to preview the 1.4-second attack and recovery. Play or scrub the timeline, checking the right-hand attachment and all six previews before capturing.
+4. Capture the chosen Ready and Attack poses. For a complete three-pose test set, the original **fall** clip remains available for Prone. Continue with the normal [combat test and export workflow](#quick-combat-check-and-permanent-import).
+
+The two added takes are the scope of this alternate model. Publishing a new battle sprite set remains a separate export/import step.
 
 ## Equip Carl's right hand
 
-Load **Dungeon Crawler Carl Ver 2**, then choose **Equipment → Right hand → Medieval Sword**. The sword is a separate repository asset attached to the model's animated right-hand bone. It follows every selected animation and is rendered by all six previews and subsequent captures.
+Load either saved Carl model, then choose **Equipment → Right hand → Medieval Sword**. The sword is a separate repository asset attached to the model's animated right-hand bone. It follows every selected animation and is rendered by all six previews and subsequent captures.
 
 **Sword size** adjusts the calibrated weapon size. Expand **Adjust grip** to move the handle within the hand or change its rotation. **Reset grip** restores the starting Carl preset. Selecting **None** removes the sword; selecting it again retains your adjusted fit. Equip/unequip and Reset grip fit all animations automatically. After a large manual size or grip change, use **Fit all animations** and check the six previews for clipping.
 
@@ -143,7 +157,7 @@ node scripts/import-sprite-set.mjs /path/to/character-sprite-set.zip
 
 This writes `assets/sprites/<set-id>/` and updates `data/sprite-sets.json`. The game loads that small index and each character's manifest; another character does not require adding 18 image declarations to the main game file. Re-importing the same ID replaces that set while retaining other sets. Follow the existing validation and candidate publishing flow. See [Sprite set import](SPRITE_SET_IMPORT.md) for the complete file contract and [Six-direction combat sprites](DIRECTIONAL_SPRITES.md) for runtime pose behavior.
 
-An imported `fighter`, `ranger`, or `mage` collection also supplies the corresponding test character's sprites when that character is created. If several imported sets target the same character, the first package ID alphabetically is the default; choosing a set in Combat Setup overrides that character's choice for the current session. Keep the same set name/ID when replacing its ready, attack and prone collection. Monster sets remain selectable test sets, preserving existing monster artwork in ordinary encounters.
+An imported `fighter`, `ranger`, or `mage` collection also supplies the corresponding character's sprites when that character is created. A `defaultFor` field in `data/sprite-sets.json` explicitly assigns the published collection to a player type; Carl's `dungeon-crawler-carl` set is assigned to `fighter` and appears in ordinary combat. The assignment must be unique for that player type and match the package's `mobType`. If the assigned package cannot load, the character retains its legacy fallback artwork. Choosing a set in Combat Setup overrides that player type for the current session; player types without an explicit assignment retain the earlier alphabetical package-ID default. Keep the same set name/ID when replacing its ready, attack and prone collection. Monster sets remain selectable test sets, preserving existing monster artwork in ordinary encounters.
 
 ## Six-direction geometry
 
