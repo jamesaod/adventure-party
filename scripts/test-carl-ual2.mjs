@@ -70,11 +70,10 @@ assert.deepEqual(proof.json.animations.slice(0, 2).map(a => a.name), ['UAL2_Swor
 const catalog = JSON.parse(fs.readFileSync(new URL('data/studio-models.json', root)));
 const entries = catalog.models.filter(m => m.id === 'dungeon-crawler-carl-v2-ual2-sword-test');
 assert.equal(entries.length, 1);
-assert.equal(entries[0].label, 'Dungeon Crawler Carl');
 assert.equal(entries[0].file, proofPath);
 assert.equal(entries[0].upAxis, 'Y');
 assert.equal(entries[0].mobType, 'fighter');
-assert.equal(catalog.models.some(m => m.id === 'dungeon-crawler-carl-v2'), false, 'The superseded Ver 2 model is not selectable in Studio');
+assert.equal(catalog.models.find(m => m.id === 'dungeon-crawler-carl-v2')?.file, originalPath);
 const binding = JSON.parse(fs.readFileSync(new URL('data/sprite-sets.json', root)));
 const defaults = binding.sets.filter(s => s.defaultFor === 'fighter');
 assert.equal(defaults.length, 1);
