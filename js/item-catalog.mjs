@@ -100,7 +100,7 @@ export const ITEM_CATALOG=freezeRecord({
     physical:{
       authoredDiameterInches:null,
       calibratedDiameterInches:35,
-      calibratedThicknessInches:6.13,
+      calibratedThicknessInches:8.72,
       sourceModelBounds:{
         min:[-0.4998169541358948,0,-0.12459565699100494],
         max:[0.4998169541358948,1,0.12459565699100494]
@@ -112,11 +112,10 @@ export const ITEM_CATALOG=freezeRecord({
       appearanceId:'round-wooden-shield',
       studioId:'round-wooden-shield',
       visualClass:'round-shield',
-      representation:'runtime-gltf-derivative-v1',
-      asset:'assets/models/shields/round-wooden-shield.glb',
+      representation:'procedural-round-shield-textured-v1',
       attachment:'left-hand',
       nativeScale:0.45,
-      modelOrigin:[0,0.5,0],
+      modelOrigin:[0,0,0],
       source:{
         originalFilename:'round+wooden+shield+3d+model.glb',
         originalBytes:781832,
@@ -125,13 +124,24 @@ export const ITEM_CATALOG=freezeRecord({
         triangles:8478,
         textureResolution:1024
       },
-      webAsset:{
-        bytes:17912,
-        sha256:'41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521',
-        textureResolution:128,
-        vertices:258,
-        triangles:384,
-        derivation:'Runtime-optimized round shield mesh preserving the uploaded proportions and an uploaded wood base-color texture.'
+      texturePack:{
+        resolution:256,
+        baseColor:{
+          path:'assets/models/shields/round-wooden-shield-textures/basecolor.jpg.b64',
+          bytes:17079,
+          sha256:'101d884733e850625da37d3d629b5a8cd070785c2707069c081d1209de5f1fbd'
+        },
+        normal:{
+          path:'assets/models/shields/round-wooden-shield-textures/normal.jpg.b64',
+          bytes:5528,
+          sha256:'5a656d1e404a2b02fe2caa6c032daa7d3c1f711c1c81f3cffbe73403efa36220'
+        },
+        roughnessMetallic:{
+          path:'assets/models/shields/round-wooden-shield-textures/roughness-metallic.jpg.b64',
+          bytes:14372,
+          sha256:'e9c04df10678786d7dc8eb39f517059a78f7a3a76e1059e710a0533593db34f8'
+        },
+        derivation:'Texture maps are downsampled from the uploaded GLB; runtime geometry preserves the uploaded model proportions for reliable web loading.'
       }
     }
   }
