@@ -2,6 +2,12 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 59 — Studio preview framing and controls
+
+- Centered each directional preview's visible sprite at 50% of its window height, including the equipped weapon and outline. Wider windows keep prone poses fully visible; native capture/export pixels and anchors are preserved.
+- Capped the Model size slider at 1000%. Saved workspaces with layout metadata above that limit restore at 1000%, with captured-pose render metadata updated together; older asset packages remain readable.
+- Moved Pixel previews to the right-hand column and combined pixel color/outline and lighting controls in one logically ordered box directly underneath.
+
 ## Candidate Rev 58 — Carl UAL2 sword animation proof
 
 - Added **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test** as a separate saved studio model. Its two new clips provide a held ready stance and the first Universal Animation Library 2 regular sword swing with recovery; Carl's original four clips remain available.

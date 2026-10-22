@@ -48,7 +48,7 @@ Files are read locally by the browser. Selecting a model does not upload it or r
 
 Before the first capture, choose the **MOB / player character**, **Footprint and sheet format**, and **Resolution**. The dropdown groups the seven implemented MOBs (Kobold, Kobold Body Guard, Kobold Slinger, Orc, Orc Leader, Orc Shaman, and Juvenile Red Dragon) and the test player characters: **Dungeon Crawler Carl — Fighter**, **Elven Ranger — Ranger**, and **Baub — Mage**. Combat tests use the selected character's existing statistics, controller and behavior. Selecting a target before capturing chooses its default footprint: single hex for the humanoids, or seven hexes for the dragon. You can then choose another footprint for the set.
 
-The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The separate **Model size** slider runs from **25–2000% in 5% steps**, also defaulting to 100%. It changes how large the model appears against the floor footprint and how large its sprite renders in combat. The viewer automatically adjusts its zoom as Model size changes, keeping the model at the same on-screen size and position while preserving your viewing angle, pan, and manual zoom. The fixed-size footprint and height ruler show the change in battlefield scale. Changing resolution does not enlarge the creature, and changing model size does not resize the PNGs or change its occupied hexes.
+The **Resolution** slider runs from **50–200% in 5% steps**, with 100% as the default. It changes the native PNG dimensions and pixel detail. The separate **Model size** slider runs from **25–1000% in 5% steps**, also defaulting to 100%. It changes how large the model appears against the floor footprint and how large its sprite renders in combat. The viewer automatically adjusts its zoom as Model size changes, keeping the model at the same on-screen size and position while preserving your viewing angle, pan, and manual zoom. The fixed-size footprint and height ruler show the change in battlefield scale. Changing resolution does not enlarge the creature, and changing model size does not resize the PNGs or change its occupied hexes.
 
 | Footprint | Format ID | Source frame at 100% resolution | Complete sheet at 100% resolution | Game render size at 100% model size |
 | --- | --- | --- | --- | --- |
@@ -65,6 +65,8 @@ Earlier two-wide (`wide2`), trapezoid (`trapezoid5`), and tall-diamond (`diamond
 
 Model size multiplies the table's game render dimensions. For example, a single-hex set at 50% model size renders at 26.16 × 32.7; at 200% resolution its PNGs are still 320 × 400. Model size remains editable after capture: it updates the shared rendering metadata without recapturing or resampling the saved sprites. A recovered older capture without layout metadata retains its original scale and must be cleared and captured again before its model size can be adjusted.
 
+Saved workspaces above 1000% with layout metadata reopen at the new 1000% maximum, updating every captured pose's render size together while preserving its source pixels and ground anchor. Older exported packages retain support for their original sizes.
+
 ### Measure model height
 
 The Model View has a **0–75-foot ruler** beside the model, with one-foot ticks and labels every five feet. Its lower-right corner shows **Model height** in feet. Both use the battlefield's existing **10 feet per hex**, so the size shown agrees with the sprite's combat scale rather than relying on a source file's native units.
@@ -75,6 +77,8 @@ The ruler and height readout are viewing guides only. They are never included in
 
 ## Set the lighting
 
+The **Pixel rendering & lighting** box sits directly beneath **Pixel previews** in the right-hand column. Its controls are ordered as pixel color adjustments and outline, environmental light, then directional light. On narrow screens the same combined box remains immediately below the previews.
+
 **Environmental light** supplies light around the model. Its color starts white; use its color and intensity controls to change the overall illumination. **Directional light** also starts white and has its own color, intensity, elevation, and hex-direction controls. Choose **E, NE, NW, W, SW, or SE** to place that light around the model, then adjust its elevation above the floor.
 
 These controls affect the 3D model and the rendered sprite pixels. Set them before the first pose capture. Lighting locks as soon as any pose is captured so all three poses retain the same illumination; **Clear sheet** unlocks it. Lighting is saved with the workspace and capture metadata. The pixel color and outline controls below remain editable after capture.
@@ -82,6 +86,7 @@ These controls affect the 3D model and the rendered sprite pixels. Set them befo
 ## Pixel previews and export
 
 - Preview windows use two columns in three rows: **NW, NE**; **W, E**; **SW, SE**, at every screen width.
+- Each directional preview centers the current visible sprite at **50% of the window height**, including equipped weapons and the outline, using nearest-neighbor scaling. The windows use wider proportions to accommodate prone poses. If a pose needs additional width, all six windows widen together and retain that width until the model or format changes. This display framing remains independent of Model size and Resolution. Captures and PNG exports retain their native pixels, shared capture framing and ground anchors.
 - All six views use the existing Pixel Editor's fixed 256-entry VGA palette: 16 RGBI entries, a 216-color cube, and 24 gray entries.
 - The **Resolution** slider scales the selected footprint's source frame. For a single hex, 50%, 100%, and 200% produce 80 × 100, 160 × 200, and 320 × 400 respectively. Preview backgrounds are palette gray; images display with nearest-neighbor scaling.
 - **Brightness**, **Contrast**, **Hue**, and **Saturation** update all six pixel previews and saved PNGs together. Brightness, contrast, and saturation range from 0–200% (100% is neutral); hue shifts from −180° to +180° (0° is neutral). **Reset colors** restores all four defaults.

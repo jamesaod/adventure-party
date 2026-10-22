@@ -24,6 +24,9 @@ const DEFAULT_LIGHTING = Object.freeze({
   keyColor: '#ffffff', keyElevation: 45, keyDirection: 'NW'
 });
 
+// The shared asset format still accepts older sizes up to 2000%.
+const STUDIO_MODEL_SCALE_MAX = 1000;
+
 // One model, one animation clock, one WebGL context. All six directions are
 // rendered into an atlas before a single readback and palette conversion.
 const $ = id => document.getElementById(id);
@@ -83,7 +86,7 @@ const equipment = createStudioEquipment({
 });
 const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
-const atlasContext = atlasCanvas.getContext('2d', { alpha: false });
+const atlasContext = atlasCanvas.getContext('2d');
 const previews = HEX_FACINGS.map(facing => ({
   ...facing,
   canvas: $(`studioPreview${facing.id}`),
@@ -164,6 +167,7 @@ function populateSetupControls() {
   ui.Footprint.replaceChildren(...SPRITE_LAYOUT_PRESETS.map(layout => new Option(layout.label, layout.id)));
   for (const key of ['min', 'max', 'step']) ui.Resolution[key] = String(SPRITE_RESOLUTION[key]);
   for (const key of ['min', 'max', 'step']) ui.ModelScale[key] = String(SPRITE_MODEL_SCALE[key]);
+  ui.ModelScale.max = String(STUDIO_MODEL_SCALE_MAX);
   ui.KeyDirection.replaceChildren(...HEX_FACINGS.map(facing => new Option(`${facing.label} (${facing.id})`, facing.id)));
   updateSetupLabels();
   const svgElement = name => document.createElementNS('http://www.w3.org/2000/svg', name);
@@ -918,6 +922,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   if (!restoreSettings) {
     state.mobType = nextMobType;
     state.layoutId = nextLayoutId;
+    state.modelScalePercent = Math.min(STUDIO_MODEL_SCALE_MAX, state.modelScalePercent);
     state.hexScalePercent = SPRITE_HEX_SCALE_PERCENT;
     state.width = nextSize.width;
     state.height = nextSize.height;
@@ -996,7 +1001,7 @@ function configureAtlas() {
   atlasCanvas.height = height;
   atlasImage = atlasContext.createImageData(width, height);
   previews.forEach(preview => {
-    preview.canvas.width = state.width;
+    preview.canvas.width = Math.max(state.width, Math.ceil(state.height * 1.25));
     preview.canvas.height = state.height;
     preview.context.imageSmoothingEnabled = false;
   });
@@ -1050,6 +1055,34 @@ function readCapturePose() {
   return result;
 }
 
+function directionalPreviewBounds(index) {
+  const left = (index % 3) * state.width, top = Math.floor(index / 3) * state.height;
+  let minX = left + state.width, minY = top + state.height, maxX = -1, maxY = -1;
+  // Use the quantized silhouette so the sword and outline count toward the
+  // displayed height, including pixels whose color matches the background.
+  for (let y = top; y < top + state.height; y++) {
+    for (let x = left; x < left + state.width; x++) {
+      if (!atlasImage.data[(y * atlasCanvas.width + x) * 4 + 3]) continue;
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    }
+  }
+  if (maxX < minX || maxY < minY) return null;
+  const width = maxX - minX + 1, height = maxY - minY + 1;
+  const displayHeight = Math.round(state.height / 2);
+  const displayWidth = Math.round(width * displayHeight / height);
+  return { x: minX, y: minY, width, height, displayWidth, displayHeight };
+}
+
+function drawDirectionalPreview(preview, bounds) {
+  preview.context.fillStyle = '#808080';
+  preview.context.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
+  if (!bounds) return;
+  preview.context.drawImage(atlasCanvas, bounds.x, bounds.y, bounds.width, bounds.height,
+    Math.round((preview.canvas.width - bounds.displayWidth) / 2),
+    Math.round((preview.canvas.height - bounds.displayHeight) / 2), bounds.displayWidth, bounds.displayHeight);
+}
+
 function renderPreviews(timestamp) {
   const background = scene.background;
   scene.background = null;
@@ -1074,12 +1107,21 @@ function renderPreviews(timestamp) {
   helpers.visible = true;
   renderer.setClearColor(0x808080, 1);
   turntable.rotation.y = HEX_FACINGS.find(item => item.id === state.facing).yawRadians;
-  quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, atlasImage.data, pixelRenderOptions());
+  // Preview framing is display-only. Captures and PNG exports continue using
+  // the original atlasSource and its shared camera, dimensions and anchors.
+  quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, atlasImage.data, pixelRenderOptions(true));
   atlasContext.putImageData(atlasImage, 0, 0);
+  const bounds = previews.map((preview, index) => directionalPreviewBounds(index));
+  // Widen all six windows together for wide/prone poses. Keep that width for
+  // this format/model so animation cannot repeatedly resize the preview grid.
+  const previewWidth = Math.max(previews[0].canvas.width,
+    ...bounds.map(box => box ? Math.ceil(box.displayWidth * 1.05) : 0));
   previews.forEach((preview, index) => {
-    preview.context.drawImage(atlasCanvas,
-      (index % 3) * state.width, Math.floor(index / 3) * state.height,
-      state.width, state.height, 0, 0, state.width, state.height);
+    if (preview.canvas.width !== previewWidth) {
+      preview.canvas.width = previewWidth;
+      preview.context.imageSmoothingEnabled = false;
+    }
+    drawDirectionalPreview(preview, bounds[index]);
     preview.canvas.dataset.frame = String(state.frame + 1);
   });
   state.frame++;
@@ -1422,7 +1464,7 @@ function bindControls() {
   ui.ModelScale.addEventListener('input', () => {
     if (poseCapture?.snapshot().modelScaleAdjustable === false) { updateSetupLabels(); return; }
     const previousScalePercent = state.modelScalePercent;
-    state.modelScalePercent = validateSpriteModelScale(Number(ui.ModelScale.value));
+    state.modelScalePercent = Math.min(STUDIO_MODEL_SCALE_MAX, validateSpriteModelScale(Number(ui.ModelScale.value)));
     applyModelSize(previousScalePercent);
     updateSetupLabels();
     poseCapture?.updateModelScale(state.modelScalePercent);
@@ -1583,6 +1625,13 @@ function bindControls() {
 
 function useCurrentFormatAfterClear() {
   if (!poseCapture?.snapshot().captureCount) {
+    if (state.modelScalePercent > STUDIO_MODEL_SCALE_MAX) {
+      const previousScalePercent = state.modelScalePercent;
+      poseCapture.updateModelScale(STUDIO_MODEL_SCALE_MAX);
+      state.modelScalePercent = STUDIO_MODEL_SCALE_MAX;
+      applyModelSize(previousScalePercent);
+      updateSetupLabels();
+    }
     if (state.hexScalePercent !== SPRITE_HEX_SCALE_PERCENT) {
       const previousHexScale = state.hexScalePercent;
       state.hexScalePercent = SPRITE_HEX_SCALE_PERCENT;
@@ -1716,7 +1765,8 @@ async function start() {
       model: state.modelName, facing: state.facing,
       libraryModelId: state.libraryModelId,
       directions: HEX_FACINGS.map(item => item.id),
-      previewSize: [state.width, state.height], frame: state.frame,
+      previewSize: [previews[0].canvas.width, previews[0].canvas.height],
+      sourceFrameSize: [state.width, state.height], frame: state.frame,
       animationTime: state.animationTime, playing: state.playing,
       clips: state.clips.map(clip => clip.name),
       animationClips: state.clips.map(clip => ({
@@ -1763,7 +1813,17 @@ async function start() {
   let restored = null, restoreError = null;
   try { restored = await poseCapture.restore({ fromCombat }); }
   catch (error) { restoreError = error; }
-  if (restored) restoreWorkspaceValues(restored);
+  if (restored) {
+    restoreWorkspaceValues(restored);
+    if (state.modelScalePercent > STUDIO_MODEL_SCALE_MAX && poseCapture.snapshot().modelScaleAdjustable) {
+      // Change saved render metadata together with the restored model size;
+      // the captured source pixels and anchors must stay intact.
+      poseCapture.updateModelScale(STUDIO_MODEL_SCALE_MAX);
+      state.modelScalePercent = STUDIO_MODEL_SCALE_MAX;
+      restored.settings = { ...restored.settings, modelScalePercent: STUDIO_MODEL_SCALE_MAX };
+      updateSetupLabels();
+    }
+  }
   if (restored && fromCombat && restored.persisted !== false) {
     const url = new URL(location.href);
     url.searchParams.delete('studioRestore');

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/adventure-party.css?v=R238">
-  <link rel="stylesheet" href="css/3d-studio.css?v=R238C57">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C59">
   <script type="importmap">
   {
     "imports": {
@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 58</span>
+        <span class="studio-build">Candidate Rev 59</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -60,188 +60,6 @@
     </section>
 
     <main class="studio-layout">
-      <aside class="studio-previews studio-panel chrome" aria-labelledby="studioPreviewsHeading">
-        <div class="studio-panel-heading">
-          <h2 id="studioPreviewsHeading">Pixel previews</h2>
-          <span class="studio-chip">VGA · 256 colors</span>
-        </div>
-        <p class="studio-note">Six fixed views of the same pose.</p>
-        <div class="studio-preview-grid">
-          <figure class="studio-preview-card" data-studio-card="NW">
-            <figcaption><span class="studio-direction">NW</span><span>Northwest</span></figcaption>
-            <canvas id="studioPreviewNW" data-studio-preview="NW" width="160" height="200" aria-label="Northwest-facing pixel preview">Northwest-facing pixel preview</canvas>
-            <button class="studio-button studio-export" type="button" data-studio-export="NW" aria-label="Save northwest-facing preview as PNG">Save PNG</button>
-          </figure>
-          <figure class="studio-preview-card" data-studio-card="NE">
-            <figcaption><span class="studio-direction">NE</span><span>Northeast</span></figcaption>
-            <canvas id="studioPreviewNE" data-studio-preview="NE" width="160" height="200" aria-label="Northeast-facing pixel preview">Northeast-facing pixel preview</canvas>
-            <button class="studio-button studio-export" type="button" data-studio-export="NE" aria-label="Save northeast-facing preview as PNG">Save PNG</button>
-          </figure>
-          <figure class="studio-preview-card" data-studio-card="W">
-            <figcaption><span class="studio-direction">W</span><span>West</span></figcaption>
-            <canvas id="studioPreviewW" data-studio-preview="W" width="160" height="200" aria-label="West-facing pixel preview">West-facing pixel preview</canvas>
-            <button class="studio-button studio-export" type="button" data-studio-export="W" aria-label="Save west-facing preview as PNG">Save PNG</button>
-          </figure>
-          <figure class="studio-preview-card" data-studio-card="E">
-            <figcaption><span class="studio-direction">E</span><span>East</span></figcaption>
-            <canvas id="studioPreviewE" data-studio-preview="E" width="160" height="200" aria-label="East-facing pixel preview">East-facing pixel preview</canvas>
-            <button class="studio-button studio-export" type="button" data-studio-export="E" aria-label="Save east-facing preview as PNG">Save PNG</button>
-          </figure>
-          <figure class="studio-preview-card" data-studio-card="SW">
-            <figcaption><span class="studio-direction">SW</span><span>Southwest</span></figcaption>
-            <canvas id="studioPreviewSW" data-studio-preview="SW" width="160" height="200" aria-label="Southwest-facing pixel preview">Southwest-facing pixel preview</canvas>
-            <button class="studio-button studio-export" type="button" data-studio-export="SW" aria-label="Save southwest-facing preview as PNG">Save PNG</button>
-          </figure>
-          <figure class="studio-preview-card" data-studio-card="SE">
-            <figcaption><span class="studio-direction">SE</span><span>Southeast</span></figcaption>
-            <canvas id="studioPreviewSE" data-studio-preview="SE" width="160" height="200" aria-label="Southeast-facing pixel preview">Southeast-facing pixel preview</canvas>
-            <button class="studio-button studio-export" type="button" data-studio-export="SE" aria-label="Save southeast-facing preview as PNG">Save PNG</button>
-          </figure>
-        </div>
-        <button id="studioExportSheetButton" class="studio-button studio-wide-button" type="button">Save all six as a sheet</button>
-      </aside>
-
-      <section class="studio-center" aria-labelledby="studioViewerHeading">
-        <div class="studio-viewer-panel studio-panel chrome">
-          <div class="studio-panel-heading">
-            <h2 id="studioViewerHeading">Model view</h2>
-            <span class="studio-chip studio-chip-subtle">3D</span>
-          </div>
-          <div id="studioViewport" class="studio-viewport">
-            <canvas id="studioCanvas" width="580" height="480" aria-label="Interactive 3D model. Drag to rotate the view and scroll to zoom.">Interactive 3D model view</canvas>
-            <svg id="studioHeightRuler" class="studio-height-ruler" aria-hidden="true" hidden></svg>
-            <div id="studioModelHeight" class="studio-model-height" title="Height of the current pose, including equipment, at the battlefield's 10 feet per hex." hidden>
-              <span>Model height</span>
-              <output id="studioModelHeightValue" aria-label="Current model height in feet">— ft</output>
-              <small>Current pose · 10 ft / hex</small>
-            </div>
-            <div id="studioEmptyMessage" class="studio-empty-message" hidden>Load a model to begin.</div>
-          </div>
-          <div class="studio-view-hint">Drag to turn · Scroll to zoom</div>
-          <div class="studio-directions" role="group" aria-label="View a hex facing">
-            <button class="studio-button" type="button" data-studio-facing="E" aria-pressed="false">E</button>
-            <button class="studio-button" type="button" data-studio-facing="NE" aria-pressed="false">NE</button>
-            <button class="studio-button" type="button" data-studio-facing="NW" aria-pressed="false">NW</button>
-            <button class="studio-button" type="button" data-studio-facing="W" aria-pressed="false">W</button>
-            <button class="studio-button" type="button" data-studio-facing="SW" aria-pressed="false">SW</button>
-            <button class="studio-button" type="button" data-studio-facing="SE" aria-pressed="false">SE</button>
-          </div>
-          <div class="studio-button-row studio-view-actions">
-            <button id="studioFrameButton" class="studio-button" type="button">Fit model</button>
-            <button id="studioFrameAnimationsButton" class="studio-button" type="button">Fit all animations</button>
-            <button id="studioResetViewButton" class="studio-button" type="button">Reset view</button>
-          </div>
-          <label class="studio-field studio-size-control" for="studioModelScale">
-            <span class="studio-label-row">Model size <output id="studioModelScaleValue" for="studioModelScale">100%</output></span>
-            <input id="studioModelScale" type="range" min="25" max="2000" step="5" value="100" disabled>
-            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
-          </label>
-          <p class="studio-note studio-help">Reset view fits the model to 50% of the window. Automatic zoom keeps it steady as Model size changes. Models use 109% of the original hex scale; the 0–75 ft ruler reflects that size.</p>
-        </div>
-
-        <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
-          <div class="studio-panel-heading">
-            <h2 id="studioAnimationHeading">Animation</h2>
-            <output id="studioTime" class="studio-time" for="studioTimeline">0.00 / 0.00 s</output>
-          </div>
-          <div class="studio-animation-fields">
-            <label class="studio-field studio-clip-field" for="studioClip">
-              <span>Animation</span>
-              <select id="studioClip" aria-describedby="studioAnimationSummary studioAnimationWarning" disabled><option value="">Loading animations…</option></select>
-            </label>
-            <label class="studio-field studio-speed-field" for="studioSpeed">
-              <span>Speed</span>
-              <select id="studioSpeed">
-                <option value="0.25">0.25×</option>
-                <option value="0.5">0.5×</option>
-                <option value="1" selected>1×</option>
-                <option value="1.5">1.5×</option>
-                <option value="2">2×</option>
-              </select>
-            </label>
-          </div>
-          <p id="studioAnimationSummary" class="studio-note studio-help" role="status">Looking for embedded animations…</p>
-          <p id="studioAnimationWarning" class="studio-note studio-help" hidden></p>
-          <label class="studio-sr-only" for="studioTimeline">Animation position</label>
-          <input id="studioTimeline" class="studio-timeline" type="range" min="0" max="1" step="0.001" value="0" disabled>
-          <div class="studio-animation-bottom">
-            <div class="studio-button-row">
-              <button id="studioPlayButton" class="studio-button studio-primary" type="button" disabled>Play</button>
-              <button id="studioRestartButton" class="studio-button" type="button" disabled>Restart</button>
-            </div>
-            <span class="studio-note">All six previews stay in step.</span>
-          </div>
-          <details id="studioAnimationRanges" class="studio-animation-ranges">
-            <summary>Create animation from range</summary>
-            <p class="studio-note">If several motions share one timeline, save each section as a named animation. Start and end are seconds in the source animation.</p>
-            <p id="studioRangeSource" class="studio-note">Select an animation first.</p>
-            <label class="studio-field" for="studioRangeName">
-              <span>Animation name</span>
-              <input id="studioRangeName" type="text" maxlength="120" placeholder="For example, Attack" disabled>
-            </label>
-            <div class="studio-range-fields">
-              <label class="studio-field" for="studioRangeStart">
-                <span>Start (seconds)</span>
-                <input id="studioRangeStart" type="number" min="0" step="any" value="0" disabled>
-              </label>
-              <label class="studio-field" for="studioRangeEnd">
-                <span>End (seconds)</span>
-                <input id="studioRangeEnd" type="number" min="0" step="any" value="0" disabled>
-              </label>
-              <button id="studioRangeStartButton" class="studio-button" type="button" disabled>Use current time as start</button>
-              <button id="studioRangeEndButton" class="studio-button" type="button" disabled>Use current time as end</button>
-            </div>
-            <div class="studio-button-row studio-range-actions">
-              <button id="studioAddRangeButton" class="studio-button studio-primary" type="button" disabled>Save as animation</button>
-              <button id="studioRemoveRangeButton" class="studio-button" type="button" disabled>Remove selected range</button>
-            </div>
-            <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
-          </details>
-          <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
-            <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled>Capture ready pose</button>
-            <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
-            <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled>Capture prone pose</button>
-          </div>
-          <p class="studio-note studio-help">Pause or drag the timeline to any moment. Each capture freezes that moment and saves all six directions. Capture again to replace a pose.</p>
-        </section>
-        <section class="studio-lighting studio-panel chrome" aria-labelledby="studioLightingHeading">
-          <h2 id="studioLightingHeading">Lighting</h2>
-          <div id="studioLightingFields" class="studio-lighting-fields">
-            <fieldset>
-              <legend>Environmental light</legend>
-              <label class="studio-field" for="studioAmbientIntensity">
-                <span class="studio-label-row">Intensity <output id="studioAmbientIntensityValue" for="studioAmbientIntensity">100%</output></span>
-                <input id="studioAmbientIntensity" type="range" min="0" max="300" step="5" value="100" disabled>
-              </label>
-              <label class="studio-field" for="studioAmbientColor">
-                <span>Color</span>
-                <input id="studioAmbientColor" type="color" value="#ffffff" disabled>
-              </label>
-            </fieldset>
-            <fieldset>
-              <legend>Directional light</legend>
-              <label class="studio-field" for="studioKeyIntensity">
-                <span class="studio-label-row">Intensity <output id="studioKeyIntensityValue" for="studioKeyIntensity">230%</output></span>
-                <input id="studioKeyIntensity" type="range" min="0" max="500" step="5" value="230" disabled>
-              </label>
-              <label class="studio-field" for="studioKeyColor">
-                <span>Color</span>
-                <input id="studioKeyColor" type="color" value="#ffffff" disabled>
-              </label>
-              <label class="studio-field" for="studioKeyElevation">
-                <span class="studio-label-row">Elevation <output id="studioKeyElevationValue" for="studioKeyElevation">45°</output></span>
-                <input id="studioKeyElevation" type="range" min="0" max="90" step="1" value="45" disabled>
-              </label>
-              <label class="studio-field" for="studioKeyDirection">
-                <span>Light comes from</span>
-                <select id="studioKeyDirection" disabled><option value="NW">Northwest (NW)</option></select>
-              </label>
-            </fieldset>
-          </div>
-          <p id="studioLightingLockNote" class="studio-note studio-help">Both lights affect the model, six pixel previews and captured sprites.</p>
-        </section>
-      </section>
-
       <aside class="studio-controls" aria-label="Studio controls">
         <section class="studio-panel chrome" aria-labelledby="studioModelHeading">
           <h2 id="studioModelHeading">Model</h2>
@@ -313,33 +131,218 @@
           <p class="studio-note studio-help">Adjust the front if a loaded model faces the wrong way.</p>
           <p id="studioCaptureLockNote" class="studio-note studio-help">Animation clips are fitted together. Set the front and resolution before your first capture.</p>
         </section>
+      </aside>
 
-        <section class="studio-panel chrome" aria-labelledby="studioPixelHeading">
-          <h2 id="studioPixelHeading">Pixel rendering</h2>
-          <label class="studio-field" for="studioBrightness">
-            <span class="studio-label-row">Brightness <output id="studioBrightnessValue" for="studioBrightness">100%</output></span>
-            <input id="studioBrightness" type="range" min="0" max="200" step="1" value="100">
+      <section class="studio-center" aria-labelledby="studioViewerHeading">
+        <div class="studio-viewer-panel studio-panel chrome">
+          <div class="studio-panel-heading">
+            <h2 id="studioViewerHeading">Model view</h2>
+            <span class="studio-chip studio-chip-subtle">3D</span>
+          </div>
+          <div id="studioViewport" class="studio-viewport">
+            <canvas id="studioCanvas" width="580" height="480" aria-label="Interactive 3D model. Drag to rotate the view and scroll to zoom.">Interactive 3D model view</canvas>
+            <svg id="studioHeightRuler" class="studio-height-ruler" aria-hidden="true" hidden></svg>
+            <div id="studioModelHeight" class="studio-model-height" title="Height of the current pose, including equipment, at the battlefield's 10 feet per hex." hidden>
+              <span>Model height</span>
+              <output id="studioModelHeightValue" aria-label="Current model height in feet">— ft</output>
+              <small>Current pose · 10 ft / hex</small>
+            </div>
+            <div id="studioEmptyMessage" class="studio-empty-message" hidden>Load a model to begin.</div>
+          </div>
+          <div class="studio-view-hint">Drag to turn · Scroll to zoom</div>
+          <div class="studio-directions" role="group" aria-label="View a hex facing">
+            <button class="studio-button" type="button" data-studio-facing="E" aria-pressed="false">E</button>
+            <button class="studio-button" type="button" data-studio-facing="NE" aria-pressed="false">NE</button>
+            <button class="studio-button" type="button" data-studio-facing="NW" aria-pressed="false">NW</button>
+            <button class="studio-button" type="button" data-studio-facing="W" aria-pressed="false">W</button>
+            <button class="studio-button" type="button" data-studio-facing="SW" aria-pressed="false">SW</button>
+            <button class="studio-button" type="button" data-studio-facing="SE" aria-pressed="false">SE</button>
+          </div>
+          <div class="studio-button-row studio-view-actions">
+            <button id="studioFrameButton" class="studio-button" type="button">Fit model</button>
+            <button id="studioFrameAnimationsButton" class="studio-button" type="button">Fit all animations</button>
+            <button id="studioResetViewButton" class="studio-button" type="button">Reset view</button>
+          </div>
+          <label class="studio-field studio-size-control" for="studioModelScale">
+            <span class="studio-label-row">Model size <output id="studioModelScaleValue" for="studioModelScale">100%</output></span>
+            <input id="studioModelScale" type="range" min="25" max="1000" step="5" value="100" disabled>
+            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
           </label>
-          <label class="studio-field" for="studioContrast">
-            <span class="studio-label-row">Contrast <output id="studioContrastValue" for="studioContrast">100%</output></span>
-            <input id="studioContrast" type="range" min="0" max="200" step="1" value="100">
-          </label>
-          <label class="studio-field" for="studioHue">
-            <span class="studio-label-row">Hue <output id="studioHueValue" for="studioHue">0°</output></span>
-            <input id="studioHue" type="range" min="-180" max="180" step="1" value="0">
-          </label>
-          <label class="studio-field" for="studioSaturation">
-            <span class="studio-label-row">Saturation <output id="studioSaturationValue" for="studioSaturation">100%</output></span>
-            <input id="studioSaturation" type="range" min="0" max="200" step="1" value="100">
-          </label>
-          <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
-          <label class="studio-field" for="studioOutline">
-            <span class="studio-label-row">Outline width <output id="studioOutlineValue" for="studioOutline">1 px</output></span>
-            <input id="studioOutline" type="range" min="0" max="10" step="1" value="1" aria-valuetext="1 pixel">
-          </label>
-          <p class="studio-note studio-help">Black outline · 0 px turns it off.</p>
-          <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="studio-note studio-help">Color adjustments apply to all six previews and saved PNGs, using one shared 256-color VGA palette.</p>
+          <p class="studio-note studio-help">Reset view fits the model to 50% of the window. Automatic zoom keeps it steady as Model size changes. Models use 109% of the original hex scale; the 0–75 ft ruler reflects that size.</p>
+        </div>
+
+        <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
+          <div class="studio-panel-heading">
+            <h2 id="studioAnimationHeading">Animation</h2>
+            <output id="studioTime" class="studio-time" for="studioTimeline">0.00 / 0.00 s</output>
+          </div>
+          <div class="studio-animation-fields">
+            <label class="studio-field studio-clip-field" for="studioClip">
+              <span>Animation</span>
+              <select id="studioClip" aria-describedby="studioAnimationSummary studioAnimationWarning" disabled><option value="">Loading animations…</option></select>
+            </label>
+            <label class="studio-field studio-speed-field" for="studioSpeed">
+              <span>Speed</span>
+              <select id="studioSpeed">
+                <option value="0.25">0.25×</option>
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="1.5">1.5×</option>
+                <option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+          <p id="studioAnimationSummary" class="studio-note studio-help" role="status">Looking for embedded animations…</p>
+          <p id="studioAnimationWarning" class="studio-note studio-help" hidden></p>
+          <label class="studio-sr-only" for="studioTimeline">Animation position</label>
+          <input id="studioTimeline" class="studio-timeline" type="range" min="0" max="1" step="0.001" value="0" disabled>
+          <div class="studio-animation-bottom">
+            <div class="studio-button-row">
+              <button id="studioPlayButton" class="studio-button studio-primary" type="button" disabled>Play</button>
+              <button id="studioRestartButton" class="studio-button" type="button" disabled>Restart</button>
+            </div>
+            <span class="studio-note">All six previews stay in step.</span>
+          </div>
+          <details id="studioAnimationRanges" class="studio-animation-ranges">
+            <summary>Create animation from range</summary>
+            <p class="studio-note">If several motions share one timeline, save each section as a named animation. Start and end are seconds in the source animation.</p>
+            <p id="studioRangeSource" class="studio-note">Select an animation first.</p>
+            <label class="studio-field" for="studioRangeName">
+              <span>Animation name</span>
+              <input id="studioRangeName" type="text" maxlength="120" placeholder="For example, Attack" disabled>
+            </label>
+            <div class="studio-range-fields">
+              <label class="studio-field" for="studioRangeStart">
+                <span>Start (seconds)</span>
+                <input id="studioRangeStart" type="number" min="0" step="any" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioRangeEnd">
+                <span>End (seconds)</span>
+                <input id="studioRangeEnd" type="number" min="0" step="any" value="0" disabled>
+              </label>
+              <button id="studioRangeStartButton" class="studio-button" type="button" disabled>Use current time as start</button>
+              <button id="studioRangeEndButton" class="studio-button" type="button" disabled>Use current time as end</button>
+            </div>
+            <div class="studio-button-row studio-range-actions">
+              <button id="studioAddRangeButton" class="studio-button studio-primary" type="button" disabled>Save as animation</button>
+              <button id="studioRemoveRangeButton" class="studio-button" type="button" disabled>Remove selected range</button>
+            </div>
+            <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
+          </details>
+          <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
+            <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled>Capture ready pose</button>
+            <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
+            <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled>Capture prone pose</button>
+          </div>
+          <p class="studio-note studio-help">Pause or drag the timeline to any moment. Each capture freezes that moment and saves all six directions. Capture again to replace a pose.</p>
+        </section>
+      </section>
+
+      <aside class="studio-preview-column" aria-label="Pixel previews and rendering settings">
+        <section class="studio-previews studio-panel chrome" aria-labelledby="studioPreviewsHeading">
+          <div class="studio-panel-heading">
+            <h2 id="studioPreviewsHeading">Pixel previews</h2>
+            <span class="studio-chip">VGA · 256 colors</span>
+          </div>
+          <p class="studio-note">Six views of the same pose, each scaled to 50% of the preview height.</p>
+          <div class="studio-preview-grid">
+            <figure class="studio-preview-card" data-studio-card="NW">
+              <figcaption><span class="studio-direction">NW</span><span>Northwest</span></figcaption>
+              <canvas id="studioPreviewNW" data-studio-preview="NW" width="160" height="200" aria-label="Northwest-facing pixel preview">Northwest-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="NW" aria-label="Save northwest-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="NE">
+              <figcaption><span class="studio-direction">NE</span><span>Northeast</span></figcaption>
+              <canvas id="studioPreviewNE" data-studio-preview="NE" width="160" height="200" aria-label="Northeast-facing pixel preview">Northeast-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="NE" aria-label="Save northeast-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="W">
+              <figcaption><span class="studio-direction">W</span><span>West</span></figcaption>
+              <canvas id="studioPreviewW" data-studio-preview="W" width="160" height="200" aria-label="West-facing pixel preview">West-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="W" aria-label="Save west-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="E">
+              <figcaption><span class="studio-direction">E</span><span>East</span></figcaption>
+              <canvas id="studioPreviewE" data-studio-preview="E" width="160" height="200" aria-label="East-facing pixel preview">East-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="E" aria-label="Save east-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="SW">
+              <figcaption><span class="studio-direction">SW</span><span>Southwest</span></figcaption>
+              <canvas id="studioPreviewSW" data-studio-preview="SW" width="160" height="200" aria-label="Southwest-facing pixel preview">Southwest-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="SW" aria-label="Save southwest-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="SE">
+              <figcaption><span class="studio-direction">SE</span><span>Southeast</span></figcaption>
+              <canvas id="studioPreviewSE" data-studio-preview="SE" width="160" height="200" aria-label="Southeast-facing pixel preview">Southeast-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="SE" aria-label="Save southeast-facing preview as PNG">Save PNG</button>
+            </figure>
+          </div>
+          <button id="studioExportSheetButton" class="studio-button studio-wide-button" type="button">Save all six as a sheet</button>
+        </section>
+
+        <section class="studio-appearance studio-panel chrome" aria-labelledby="studioAppearanceHeading">
+          <h2 id="studioAppearanceHeading">Pixel rendering &amp; lighting</h2>
+          <fieldset class="studio-pixel-fields">
+            <legend id="studioPixelHeading">Pixel rendering</legend>
+            <label class="studio-field" for="studioBrightness">
+              <span class="studio-label-row">Brightness <output id="studioBrightnessValue" for="studioBrightness">100%</output></span>
+              <input id="studioBrightness" type="range" min="0" max="200" step="1" value="100">
+            </label>
+            <label class="studio-field" for="studioContrast">
+              <span class="studio-label-row">Contrast <output id="studioContrastValue" for="studioContrast">100%</output></span>
+              <input id="studioContrast" type="range" min="0" max="200" step="1" value="100">
+            </label>
+            <label class="studio-field" for="studioHue">
+              <span class="studio-label-row">Hue <output id="studioHueValue" for="studioHue">0°</output></span>
+              <input id="studioHue" type="range" min="-180" max="180" step="1" value="0">
+            </label>
+            <label class="studio-field" for="studioSaturation">
+              <span class="studio-label-row">Saturation <output id="studioSaturationValue" for="studioSaturation">100%</output></span>
+              <input id="studioSaturation" type="range" min="0" max="200" step="1" value="100">
+            </label>
+            <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
+            <label class="studio-field" for="studioOutline">
+              <span class="studio-label-row">Outline width <output id="studioOutlineValue" for="studioOutline">1 px</output></span>
+              <input id="studioOutline" type="range" min="0" max="10" step="1" value="1" aria-valuetext="1 pixel">
+            </label>
+            <p class="studio-note studio-help">Black outline · 0 px turns it off.</p>
+            <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p class="studio-note studio-help">Color adjustments apply to all six previews and saved PNGs, using one shared 256-color VGA palette.</p>
+          </fieldset>
+          <h3 id="studioLightingHeading" class="studio-settings-heading">Lighting</h3>
+          <div id="studioLightingFields" class="studio-lighting-fields">
+            <fieldset>
+              <legend>Environmental light</legend>
+              <label class="studio-field" for="studioAmbientIntensity">
+                <span class="studio-label-row">Intensity <output id="studioAmbientIntensityValue" for="studioAmbientIntensity">100%</output></span>
+                <input id="studioAmbientIntensity" type="range" min="0" max="300" step="5" value="100" disabled>
+              </label>
+              <label class="studio-field" for="studioAmbientColor">
+                <span>Color</span>
+                <input id="studioAmbientColor" type="color" value="#ffffff" disabled>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Directional light</legend>
+              <label class="studio-field" for="studioKeyIntensity">
+                <span class="studio-label-row">Intensity <output id="studioKeyIntensityValue" for="studioKeyIntensity">230%</output></span>
+                <input id="studioKeyIntensity" type="range" min="0" max="500" step="5" value="230" disabled>
+              </label>
+              <label class="studio-field" for="studioKeyColor">
+                <span>Color</span>
+                <input id="studioKeyColor" type="color" value="#ffffff" disabled>
+              </label>
+              <label class="studio-field" for="studioKeyElevation">
+                <span class="studio-label-row">Elevation <output id="studioKeyElevationValue" for="studioKeyElevation">45°</output></span>
+                <input id="studioKeyElevation" type="range" min="0" max="90" step="1" value="45" disabled>
+              </label>
+              <label class="studio-field" for="studioKeyDirection">
+                <span>Light comes from</span>
+                <select id="studioKeyDirection" disabled><option value="NW">Northwest (NW)</option></select>
+              </label>
+            </fieldset>
+          </div>
+          <p id="studioLightingLockNote" class="studio-note studio-help">Both lights affect the model, six pixel previews and captured sprites.</p>
         </section>
       </aside>
     </main>
@@ -382,6 +385,6 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C57"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C59"></script>
 </body>
 </html>
