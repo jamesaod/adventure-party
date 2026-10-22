@@ -25,14 +25,19 @@
       "catalogItemId": "round-wooden-shield",
       "itemName": "Round Wooden Shield",
       "visualClass": "round-shield",
-      "asset": "assets/models/shields/round-wooden-shield.glb",
+      "representation": "procedural-round-shield-textured-v1",
       "attachmentBone": "mixamorig:LeftHand",
       "sourceSha256": "4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928",
-      "assetSha256": "c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5",
+      "texturePack": {
+        "resolution": 256,
+        "baseColor": "assets/models/shields/round-wooden-shield-textures/basecolor.jpg.b64",
+        "normal": "assets/models/shields/round-wooden-shield-textures/normal.jpg.b64",
+        "roughnessMetallic": "assets/models/shields/round-wooden-shield-textures/roughness-metallic.jpg.b64"
+      },
       "mount": { "position": [0, 0, 0.04], "rotationDegrees": [0, 0, 0], "sizePercent": 100 },
       "nativeScale": 0.45,
       "adjustmentDefaults": { "distanceInches": 0, "forearmSlideInches": 0, "forearmRollDegrees": 0 },
-      "status": "Rev 71 actual wooden GLB; Rev 69 base mount plus Rev 70 live scale/position controls"
+      "status": "Rev 71 textured runtime shield derived from the uploaded wooden GLB; Rev 69 base mount plus Rev 70 live scale/position controls"
     }
   }
 }
