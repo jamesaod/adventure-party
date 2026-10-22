@@ -998,7 +998,13 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   const availableClips = [...sourceClips], animationRanges = [];
   if (modelDefaults?.id === 'dungeon-crawler-carl-v2-ual2-two-handed-audition') {
     const source = sourceClips.find(clip => clip.name === 'UAL2_2H_Sword_Regular_Combo');
-    if (source) availableClips.unshift(freezeAnimationClip(source, 0, 'UAL2_2H_Sword_Rest'));
+    if (source) {
+      const restSamples=[0,0.5,1.0,1.5,2.0,2.5].filter(time=>time<=source.duration);
+      const frozen=restSamples.map(time=>freezeAnimationClip(
+        source,time,`UAL2_2H_Rest_Candidate_${time.toFixed(1)}s`
+      ));
+      availableClips.unshift(...frozen);
+    }
   }
   let skippedRanges = 0;
   for (const savedRange of Array.isArray(restoreSettings?.animationRanges) ? restoreSettings.animationRanges : []) {
@@ -1065,7 +1071,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   upAxisGroup.add(model);
   let clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
   if (!restoreSettings) {
-    const preferredReady = state.clips.findIndex(clip => /^UAL2_2H_Sword_Rest$/i.test(clip.name));
+    const preferredReady = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_0\.5s$/i.test(clip.name));
     const readyIndex = preferredReady >= 0 ? preferredReady : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
     if (readyIndex >= 0) clipIndex = readyIndex;
   }
