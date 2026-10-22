@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {
   HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
-  findLeftForeArm, findLeftArm, findLeftShoulder, findUpperSpine, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
+  findLeftForeArm, findLeftArm, findLeftShoulder, findUpperSpine, findLowerSpine, findHips, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 import {
   STUDIO_SHIELDS, SHIELD_MODEL_UNITS_PER_INCH, normalizeShield, findLeftHand, leftForearmAxisLocal,
@@ -72,7 +72,9 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
 // torso/shoulder, keep the off-hand on the secondary grip, and close the fingers.
 {
   const ikModel = new THREE.Group();
-  const spine = new THREE.Bone(); spine.name = 'mixamorigSpine2'; spine.position.set(0,0,0);
+  const hips = new THREE.Bone(); hips.name = 'mixamorigHips'; hips.position.set(0,0,0);
+  const lowerSpine = new THREE.Bone(); lowerSpine.name = 'mixamorigSpine'; lowerSpine.position.set(0,0.28,0);
+  const spine = new THREE.Bone(); spine.name = 'mixamorigSpine2'; spine.position.set(0,0.28,0);
   const shoulder = new THREE.Bone(); shoulder.name = 'mixamorigLeftShoulder'; shoulder.position.set(0.18,0.45,0);
   const upper = new THREE.Bone(); upper.name = 'mixamorigLeftArm'; upper.position.set(0.18,0,0);
   const fore = new THREE.Bone(); fore.name = 'mixamorigLeftForeArm'; fore.position.set(0.75,-0.12,0);
@@ -88,7 +90,7 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   const thumb2=new THREE.Bone(); thumb2.name='mixamorigLeftHandThumb2'; thumb2.position.set(0.08,0,0);
   const thumb3=new THREE.Bone(); thumb3.name='mixamorigLeftHandThumb3'; thumb3.position.set(0.06,0,0);
   thumb2.add(thumb3); thumb1.add(thumb2); offHand.add(thumb1);
-  fore.add(offHand); upper.add(fore); shoulder.add(upper); spine.add(shoulder); ikModel.add(spine);
+  fore.add(offHand); upper.add(fore); shoulder.add(upper); spine.add(shoulder); lowerSpine.add(spine); hips.add(lowerSpine); ikModel.add(hips);
 
   const weaponModel = new THREE.Group(); weaponModel.position.set(0.95,0.9,0.35);
   const fixtureAttachment = {
@@ -98,7 +100,7 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   ikModel.updateWorldMatrix(true,true);
   const middle1=offHand.children.find(child=>child.name.endsWith('Middle1'));
   const before = offHand.localToWorld(middle1.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
-  const shoulderBefore=shoulder.quaternion.clone(), spineBefore=spine.quaternion.clone();
+  const shoulderBefore=shoulder.quaternion.clone(), spineBefore=spine.quaternion.clone(), lowerSpineBefore=lowerSpine.quaternion.clone(), hipsBefore=hips.quaternion.clone();
   const indexBefore=offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.clone();
 
   const result = solveTwoHandedGrip(THREE,{model:ikModel,attachment:fixtureAttachment,iterations:40,tolerance:0.006,maxStepDegrees:60});
@@ -109,11 +111,15 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   assert.equal(findLeftArm(ikModel),upper);
   assert.equal(findLeftShoulder(ikModel),shoulder);
   assert.equal(findUpperSpine(ikModel),spine);
+  assert.equal(findLowerSpine(ikModel),lowerSpine);
+  assert.equal(findHips(ikModel),hips);
   assert.ok(after < before * 0.15,`Two-handed pose should close the off-hand gap: ${before} -> ${after}`);
   assert.ok(result.solved,`Two-handed IK should meet grip tolerance; remaining error ${result.error}`);
   assert.equal(result.bodyPose.applied,true,'Body-aware two-handed pose participates before final grip solve');
   assert.ok(shoulder.quaternion.angleTo(shoulderBefore)>1e-4,'Left shoulder participates in the reach');
   assert.ok(spine.quaternion.angleTo(spineBefore)>1e-5,'Upper torso participates subtly in the two-handed pose');
+  assert.ok(lowerSpine.quaternion.angleTo(lowerSpineBefore)>1e-6,'Lower spine participates subtly in the two-handed pose');
+  assert.ok(hips.quaternion.angleTo(hipsBefore)>1e-7,'Pelvis participates subtly in the two-handed pose');
   assert.equal(result.fingerBonesCurled,15,'All four fingers and thumb segments receive the two-handed wrap pose');
   assert.ok(offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.angleTo(indexBefore)>0.2,
     'Left index finger visibly curls around the hilt');
