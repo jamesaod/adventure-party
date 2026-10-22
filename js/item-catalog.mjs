@@ -1,4 +1,4 @@
-export const ITEM_CATALOG_VERSION=2;
+export const ITEM_CATALOG_VERSION=3;
 
 function freezeRecord(value){
   if(value&&typeof value==='object'){
@@ -63,6 +63,51 @@ export const ITEM_CATALOG=freezeRecord({
       asset:'assets/models/weapons/battle-axes/battle-axe.glb',
       attachment:'right-hand',
       poseProfileId:'one-handed-swing'
+    }
+  },
+  'two-handed-sword':{
+    id:'two-handed-sword',
+    name:'Two-Handed Sword',
+    category:'weapon',
+    slot:'weapon',
+    rules:{
+      catalogWeaponId:'sword-two-handed',
+      baseName:'Two-Handed Sword'
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:60.6,
+      sourceModelBounds:{
+        min:[-0.1240234524011612,0,-0.029155734926462173],
+        max:[0.1240234524011612,1,0.029155734926462173]
+      },
+      status:'Studio-calibrated test length relative to Dungeon Crawler Carl at 76 inches; gameplay dimensions/rules are not yet authored.'
+    },
+    appearance:{
+      appearanceId:'two-handed-sword',
+      studioId:'medieval-two-handed-sword',
+      visualClass:'two-handed-sword',
+      representation:'source-gltf-v1',
+      asset:'assets/models/weapons/two-handed-swords/medieval-two-handed-sword.glb',
+      attachment:'right-hand',
+      secondaryAttachment:'left-hand',
+      handsRequired:2,
+      poseProfileId:'two-handed-swing',
+      primaryAxis:[0,-1,0],
+      grip:[0,0.81,0],
+      secondaryGrip:[0,0.89,0],
+      nativeScale:0.78,
+      defaultSizePercent:100,
+      position:[0.015,0.05,0.005],
+      rotationDegrees:[90,0,0],
+      source:{
+        originalFilename:'medieval+sword+3d+model (1).glb',
+        originalBytes:646456,
+        originalSha256:'85408b9b17fa38a72816d57ac55e63e6409862b5d5a305beb6cf5eee045c948a',
+        vertices:6623,
+        triangles:8333,
+        textureResolution:1024
+      }
     }
   },
   'chain-mail':{
