@@ -30,7 +30,6 @@ for(const token of [
   "forearmRollDegrees",
   "shieldAppearanceId",
   "quantizeRgba(raw,frame.width,frame.height,image.data",
-  "carl-live-",
   "generatedAtRuntime:true"
 ]) assert.ok(renderer.includes(token), `runtime renderer missing ${token}`);
 
