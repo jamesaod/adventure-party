@@ -175,4 +175,11 @@ const studioSource2=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.ur
 assert.ok(studioSource2.includes("Bind / generic rest pose"),'Generic rest is clearly distinguished from 2H rest candidates');
 assert.ok(studioSource2.includes("clipIndex < 0 || !state.clips[clipIndex]"),'Saved generic rest migrates to 2H rest candidate');
 assert.ok(studioSource2.includes("/^UAL2_2H_Rest_Candidate_/i"),'Ready/reset logic recognizes 2H rest candidates');
+const studioSource3=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+assert.ok(studioSource3.includes("restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'"),
+  'Restored 2H audition workspaces inject frozen rest candidates');
+assert.ok(studioSource3.includes("isTwoHandedAudition ? [] : [new Option('Bind / generic rest pose', '-1')]"),
+  '2H audition model hides unusable bind/T-pose rest option');
+assert.ok(studioSource3.includes("UAL2_2H_Rest_Candidate_0\\.5s"),
+  'Ready/reset prefers the 0.5-second 2H rest candidate');
 console.log('Studio animation slicing, FBX timing, endpoint poses and selection restoration passed.');
