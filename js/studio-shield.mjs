@@ -22,10 +22,14 @@ export const STUDIO_SHIELDS = Object.freeze([
   })
 ]);
 
+export const SHIELD_MODEL_UNITS_PER_INCH=0.9774781465530396/75;
 export const SHIELD_LIMITS=Object.freeze({
   sizePercent:Object.freeze({min:25,max:200,step:5}),
   position:Object.freeze({min:-1,max:1,step:0.005}),
-  rotation:Object.freeze({min:-180,max:180,step:1})
+  rotation:Object.freeze({min:-180,max:180,step:1}),
+  distanceInches:Object.freeze({min:-3,max:6,step:0.25}),
+  forearmSlideInches:Object.freeze({min:-8,max:8,step:0.25}),
+  forearmRollDegrees:Object.freeze({min:-180,max:180,step:1})
 });
 
 const bounded=(value,fallback,range)=>Number.isFinite(value)
@@ -44,13 +48,16 @@ export function normalizeShield(value={}){
   const vector=key=>preset[key].map((fallback,axis)=>
     migratePreset?fallback:bounded(value?.[key]?.[axis],fallback,SHIELD_LIMITS[key]));
   return {
-    version:1,
+    version:2,
     presetRevision,
     leftHandShield:shield?.id||'none',
     sizePercent:migratePreset?(shield?.defaultSizePercent??100)
       :bounded(value?.sizePercent,shield?.defaultSizePercent??100,SHIELD_LIMITS.sizePercent),
     position:vector('position'),
-    rotation:vector('rotation')
+    rotation:vector('rotation'),
+    distanceInches:bounded(value?.distanceInches,0,SHIELD_LIMITS.distanceInches),
+    forearmSlideInches:bounded(value?.forearmSlideInches,0,SHIELD_LIMITS.forearmSlideInches),
+    forearmRollDegrees:bounded(value?.forearmRollDegrees,0,SHIELD_LIMITS.forearmRollDegrees)
   };
 }
 
@@ -62,6 +69,24 @@ export function findLeftHand(model){
     if(name==='lefthand'||name.endsWith('mixamoriglefthand')) hand||=object;
   });
   return hand;
+}
+
+export function leftForearmAxisLocal(THREE,hand){
+  if(!hand?.isBone||!hand.parent)return new THREE.Vector3(1,0,0);
+  hand.updateWorldMatrix(true,false);
+  hand.parent.updateWorldMatrix(true,false);
+  const handWorld=hand.getWorldPosition(new THREE.Vector3());
+  const elbowWorld=hand.parent.getWorldPosition(new THREE.Vector3());
+  const inverseHandWorld=hand.getWorldQuaternion(new THREE.Quaternion()).invert();
+  const axis=elbowWorld.sub(handWorld).applyQuaternion(inverseHandWorld);
+  return axis.lengthSq()>1e-10?axis.normalize():new THREE.Vector3(1,0,0);
+}
+
+function shieldOutwardAxisLocal(THREE,forearmAxis){
+  const outward=new THREE.Vector3(0,0,1);
+  outward.addScaledVector(forearmAxis,-outward.dot(forearmAxis));
+  if(outward.lengthSq()<1e-10)outward.set(0,1,0);
+  return outward.normalize();
 }
 
 export function createBronzeRoundShieldProxy(THREE){
@@ -106,11 +131,21 @@ export function createShieldAttachment(THREE,hand,model,settings){
   socket.userData.studioShield=true;
   socket.add(model);
   hand.add(socket);
+  const forearmAxis=leftForearmAxisLocal(THREE,hand);
+  const outwardAxis=shieldOutwardAxisLocal(THREE,forearmAxis);
 
   function update(next){
     const normalized=normalizeShield(next);
-    socket.position.fromArray(normalized.position);
-    socket.rotation.set(...normalized.rotation.map(degrees=>degrees*Math.PI/180),'XYZ');
+    socket.position.fromArray(normalized.position)
+      .addScaledVector(outwardAxis,normalized.distanceInches*SHIELD_MODEL_UNITS_PER_INCH)
+      .addScaledVector(forearmAxis,normalized.forearmSlideInches*SHIELD_MODEL_UNITS_PER_INCH);
+    const baseRotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(
+      ...normalized.rotation.map(degrees=>degrees*Math.PI/180),'XYZ'
+    ));
+    const roll=new THREE.Quaternion().setFromAxisAngle(
+      forearmAxis,normalized.forearmRollDegrees*Math.PI/180
+    );
+    socket.quaternion.copy(baseRotation).premultiply(roll);
     socket.scale.setScalar(shield.nativeScale*normalized.sizePercent/100);
     socket.updateWorldMatrix(true,true);
   }
@@ -136,9 +171,16 @@ export function createStudioShield({THREE,disposeObject,onChange=()=>{}}){
   }
   function select(value){
     if(disposed)return false;
-    settings=normalizeShield(value);
-    detach();
+    const next=normalizeShield(value);
+    const sameShield=next.leftHandShield===settings.leftHandShield;
+    settings=next;
     error='';
+    if(sameShield&&attachment){
+      attachment.update(settings);
+      notify();
+      return true;
+    }
+    detach();
     const shield=studioShield(settings.leftHandShield);
     if(!shield){notify();return true;}
     const hand=findLeftHand(model);
