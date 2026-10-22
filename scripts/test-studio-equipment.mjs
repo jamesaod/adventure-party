@@ -83,7 +83,7 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
     weapon: { handsRequired: 2, secondaryGrip: [0,0,0] }
   };
   const before = offHand.localToWorld(finger.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
-  const result = solveTwoHandedGrip(THREE,{model:ikModel,attachment:fixtureAttachment,iterations:12,tolerance:0.005,maxStepDegrees:35});
+  const result = solveTwoHandedGrip(THREE,{model:ikModel,attachment:fixtureAttachment,iterations:32,tolerance:0.005,maxStepDegrees:60});
   const after = offHand.localToWorld(finger.position.clone()).distanceTo(weaponModel.getWorldPosition(new THREE.Vector3()));
   assert.equal(findEquipmentLeftHand(ikModel),offHand);
   assert.equal(findLeftForeArm(ikModel),fore);
