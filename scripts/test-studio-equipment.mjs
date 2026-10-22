@@ -124,6 +124,41 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   assert.ok(offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.angleTo(indexBefore)>0.2,
     'Left index finger visibly curls around the hilt');
 }
+// Rev 80 regression: procedural two-handed corrections must be temporary.
+// Restoring before the next animation evaluation must return every modified
+// bone to the exact authored quaternion, and a second pass must not drift.
+{
+  const rig = new THREE.Group();
+  const hips = new THREE.Bone(); hips.name='mixamorigHips';
+  const spine = new THREE.Bone(); spine.name='mixamorigSpine'; spine.position.set(0,0.25,0);
+  const spine2 = new THREE.Bone(); spine2.name='mixamorigSpine2'; spine2.position.set(0,0.25,0);
+  const shoulder = new THREE.Bone(); shoulder.name='mixamorigLeftShoulder'; shoulder.position.set(0.2,0.35,0);
+  const arm = new THREE.Bone(); arm.name='mixamorigLeftArm'; arm.position.set(0.2,0,0);
+  const fore = new THREE.Bone(); fore.name='mixamorigLeftForeArm'; fore.position.set(0.65,0,0);
+  const hand = new THREE.Bone(); hand.name='mixamorigLeftHand'; hand.position.set(0.6,0,0);
+  const middle = new THREE.Bone(); middle.name='mixamorigLeftHandMiddle1'; middle.position.set(0.12,0,0);
+  hand.add(middle); fore.add(hand); arm.add(fore); shoulder.add(arm); spine2.add(shoulder); spine.add(spine2); hips.add(spine); rig.add(hips);
+  const right = new THREE.Bone(); right.name='mixamorigRightHand'; right.position.set(0.85,0.9,0.2); rig.add(right);
+
+  const manager=createStudioEquipment({
+    THREE,
+    loadAsset:async()=>new THREE.Group(),
+    disposeObject:()=>{}
+  });
+  await manager.setModel(rig,{rightHand:'medieval-two-handed-sword'});
+  const watched=[hips,spine,spine2,shoulder,arm,fore,hand,middle];
+  const authored=watched.map(bone=>bone.quaternion.clone());
+  manager.applyConstraints();
+  const corrected=watched.map(bone=>bone.quaternion.clone());
+  assert.ok(corrected.some((q,i)=>q.angleTo(authored[i])>1e-6),'Two-handed pass must actually modify the authored pose');
+  assert.equal(manager.restoreConstraints(),true,'A corrected pose reports that it was restored');
+  watched.forEach((bone,i)=>assert.ok(bone.quaternion.angleTo(authored[i])<1e-12,'Restore returns exact authored quaternion'));
+  manager.applyConstraints();
+  manager.restoreConstraints();
+  watched.forEach((bone,i)=>assert.ok(bone.quaternion.angleTo(authored[i])<1e-12,'Repeated IK passes do not accumulate drift'));
+  manager.dispose();
+}
+
 const migratedAxe = normalizeEquipment({
   rightHand:'battle-axe', presetRevision:4, sizePercent:100,
   position:[0.015,0.05,0.005], rotation:[-51,90,0]
@@ -367,6 +402,9 @@ assert.ok(posePanel.includes("poseProfileId: 'two-handed-swing'"));
 assert.ok(posePanel.includes("heightInches: snap.mobType === 'fighter' ? 76 : null"));
 assert.ok(posePanel.includes("bodyReferenceHeightInches: snap.mobType === 'fighter' ? 76 : null"));
 const studio = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
+assert.equal((studio.match(/state\.mixer\.update\(/g)||[]).length,(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length,
+  'Every Studio mixer evaluation restores the pre-IK skeleton first');
+
 const extract = (start, end) => studio.slice(studio.indexOf(start), studio.indexOf(end, studio.indexOf(start)));
 const locked = vm.createContext({
   state: { modelReady: true }, poseCapture: { snapshot: () => ({ captureCount: 6 }) },
