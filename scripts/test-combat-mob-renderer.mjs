@@ -18,6 +18,7 @@ for(const token of [
   "for(const facing of HEX_FACINGS)",
   "appearanceCacheKey(recipe)",
   "createWeaponAttachment",
+  "quantizeRgba(raw,frame.width,frame.height,image.data",
   "carl-live-",
   "generatedAtRuntime:true"
 ]) assert.ok(renderer.includes(token), `runtime renderer missing ${token}`);
@@ -32,9 +33,10 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('import("./mob-appearance-runtime.mjs?v=R238C63")'));
-assert.ok(game.includes('import("./combat-mob-renderer.mjs?v=R238C63")'));
-assert.ok(game.includes('import("./combat-pose-recipe.mjs?v=R238C63")'));
+assert.ok(game.includes('import("./mob-appearance-runtime.mjs?v=R238C64")'));
+assert.ok(game.includes('import("./combat-mob-renderer.mjs?v=R238C64")'));
+assert.ok(game.includes('import("./combat-pose-recipe.mjs?v=R238C64")'));
+assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
 assert.ok(game.includes('await pending'));
@@ -48,4 +50,4 @@ assert.ok(studio.includes('renderFallbackPreviews'));
 assert.ok(studio.includes("ctx.strokeStyle = '#e3ca79'"));
 assert.ok(index.includes('<script type="importmap">'));
 assert.ok(index.includes('"three": "./assets/vendor/three/three.module.min.js"'));
-console.log('PASS captured-pose combat generation, equipment refresh and Studio QA integration');
+console.log('PASS captured-pose combat generation, upright runtime frames, equipment refresh and Studio QA integration');
