@@ -21,9 +21,9 @@ assert.equal(shield.appearance.source.originalBytes,781832);
 assert.equal(shield.appearance.source.originalSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
 
 const bytes=fs.readFileSync(new URL('../'+shield.appearance.asset,import.meta.url));
-assert.equal(bytes.length,331228);
+assert.equal(bytes.length,17912);
 assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
-  'c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5');
+  '41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521');
 assert.equal(bytes.readUInt32LE(0),0x46546c67);
 assert.equal(bytes.readUInt32LE(4),2);
 assert.equal(bytes.readUInt32LE(8),bytes.length);
@@ -39,14 +39,14 @@ assert.equal(json.meshes.length,1);
 assert.equal(json.materials.length,1);
 assert.equal(json.skins?.length||0,0);
 assert.equal(json.animations?.length||0,0);
-assert.equal(json.accessors[json.meshes[0].primitives[0].indices].count/3,8478);
-assert.equal(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].count,5648);
-assert.equal(json.images.length,3);
+assert.equal(json.accessors[json.meshes[0].primitives[0].indices].count/3,384);
+assert.equal(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].count,258);
+assert.equal(json.images.length,1);
 assert.ok(json.images.every(image=>image.mimeType==='image/jpeg'&&Number.isInteger(image.bufferView)));
 assert.deepEqual(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].min,
-  [-0.4998169541358948,0,-0.12459565699100494]);
+  [-0.5,0,-0.12]);
 assert.deepEqual(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].max,
-  [0.4998169541358948,1,0.12459565699100494]);
+  [0.5,1,0.055]);
 
 const game=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 assert.ok(game.includes('heightInches:76'));
