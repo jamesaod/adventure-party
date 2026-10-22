@@ -179,7 +179,7 @@ const expectedMobs = {
   'orc-leader': { ac: 6, thaco: 19, move: 9, hitDiceValue: 1, weapon: 'Axe, battle' },
   'orc-shaman': { ac: 6, thaco: 19, move: 9, hitDiceValue: 2, priestLevel: 3, weapon: 'Spear' },
   'juvenile-red-dragon': { ac: -3, thaco: 7, move: 9, hitDiceValue: 15, weapon: 'Bite', attacksPerRound: 3 },
-  fighter: { ac: 5, thaco: 1, move: 9, level: 20, weapon: 'Flaming Sword +5', faction: 'player', attacksThisRound: 2 },
+  fighter: { ac: 4, thaco: 1, move: 9, level: 20, weapon: 'Flaming Sword +5', faction: 'player', attacksThisRound: 2 },
   ranger: { ac: 5, thaco: 11, move: 9, level: 10, weapon: 'Short Sword', rangedWeapon: 'Longbow', controller: 'npc', faction: 'player' },
   mage: { ac: 9, thaco: 14, move: 12, level: 20, weapon: 'Staff', controller: 'player', faction: 'player' }
 };
@@ -220,6 +220,9 @@ for (const mob of SPRITE_MOBS) {
         assert.equal(units[0], player, 'Carl inspection reuses the canonical player instead of cloning him');
         assert.equal(sandbox.isPlayerControlledUnit(units[0]), true);
         assert.equal(player.spriteSetId, id, 'The actual Carl receives the selected fighter collection');
+        const shield=player.inventory.find(item=>item.slot==='shield'&&item.equipped);
+        assert.equal(shield?.appearanceId,'bronze-round-shield','Carl inspection keeps the equipped Bronze Round Shield');
+        assert.equal(shield?.catalogArmorId,'shield-medium','Bronze Round Shield uses the existing medium-shield rules');
       }
       if (mob.id === 'mage') {
         assert.ok(units[0].knownSpellIds.includes('magic-missile'));
