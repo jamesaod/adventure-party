@@ -22,11 +22,11 @@ Adventure Party's current shield is based on the user-supplied
 The repository stores a web-optimized GLB at
 `assets/models/shields/round-wooden-shield.glb`.
 
-- Bytes: **331,228**
-- SHA-256: **c46d4a738d2e4ad5c9cc278e782e1f94786bd542b57e2ce7cb1f01174a641ea5**
-- Geometry and material map assignments are preserved.
-- The three embedded texture maps are reduced to **512 × 512** for Candidate loading.
-- The source-upload hash remains recorded in the item catalog for provenance.
+- Bytes: **17,912**
+- SHA-256: **41ded942279d704aa22e9c4979a44976d5b22584fa875f0f0e792851d6e8a521**
+- The runtime derivative preserves the uploaded shield's round proportions and uses its uploaded wood base-color texture.
+- Runtime geometry is reduced to **258 vertices / 384 triangles** with one embedded **128 × 128** JPEG base-color map for fast Candidate loading.
+- The original Tripo upload remains the source-of-truth for provenance, detailed geometry, and the three original material maps.
 
 ### Canonical item record
 
@@ -68,5 +68,5 @@ sprites use the same shield tuning.
 
 Candidate Revs 67–70 used a procedural bronze round-shield proxy while the
 left-arm attachment system was being calibrated. Candidate Rev 71 replaces
-that proxy with the actual wooden-shield GLB while retaining the approved
-Rev 69 mount and Rev 70 controls.
+that proxy with a runtime-optimized derivative of the uploaded wooden-shield GLB while retaining the approved
+Rev 69 mount and Rev 70 controls. The original upload's SHA-256 and source geometry statistics remain recorded in the item catalog.
