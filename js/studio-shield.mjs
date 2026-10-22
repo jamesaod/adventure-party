@@ -9,7 +9,6 @@ export const STUDIO_SHIELDS=Object.freeze([
     label:'Round Wooden Shield',
     visualClass:WOODEN_SHIELD_ITEM.appearance.visualClass,
     representation:WOODEN_SHIELD_ITEM.appearance.representation,
-    texturePack:WOODEN_SHIELD_ITEM.appearance.texturePack,
     sourceSha256:WOODEN_SHIELD_ITEM.appearance.source.originalSha256,
     sourceBounds:Object.freeze({
       min:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.min]),
@@ -104,69 +103,44 @@ export function createRoundWoodenShieldGeometry(THREE){
   group.userData.sourceSha256=WOODEN_SHIELD_ITEM.appearance.source.originalSha256;
   group.userData.representation=WOODEN_SHIELD_ITEM.appearance.representation;
 
-  const geometry=new THREE.CylinderGeometry(
-    0.5,0.5,
-    WOODEN_SHIELD_ITEM.physical.sourceModelExtent[2],
-    64,2,false
-  );
-  geometry.rotateX(Math.PI/2);
-  const body=new THREE.Mesh(
-    geometry,
-    new THREE.MeshStandardMaterial({color:0x8b5a2b,roughness:0.82,metalness:0.08})
-  );
-  body.name='RoundWoodenShieldBody';
-  group.add(body);
+  const thickness=WOODEN_SHIELD_ITEM.physical.sourceModelExtent[2];
+  const wood=new THREE.MeshStandardMaterial({
+    color:0x7b4a24,roughness:0.92,metalness:0.02,side:THREE.DoubleSide
+  });
+  const darkWood=new THREE.MeshStandardMaterial({
+    color:0x4a2b16,roughness:0.88,metalness:0.03,side:THREE.DoubleSide
+  });
+  const iron=new THREE.MeshStandardMaterial({
+    color:0x655f55,roughness:0.62,metalness:0.48,side:THREE.DoubleSide
+  });
+
+  const face=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.10,64,1,false),wood);
+  face.rotation.x=Math.PI/2;
+  face.name='RoundWoodenShieldBody';
+  group.add(face);
+
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(0.465,0.028,8,48),darkWood);
+  rim.position.z=0.055;
+  rim.name='RoundWoodenShieldRim';
+  group.add(rim);
+
+  const boss=new THREE.Mesh(new THREE.SphereGeometry(0.14,20,12),iron);
+  boss.scale.z=0.45;
+  boss.position.z=Math.min(thickness/2-0.004,0.06);
+  boss.name='RoundWoodenShieldBoss';
+  group.add(boss);
+
+  for(const x of [-0.30,-0.15,0,0.15,0.30]){
+    const seam=new THREE.Mesh(new THREE.BoxGeometry(0.008,0.86,0.006),darkWood);
+    seam.position.set(x,0,0.053);
+    seam.name='RoundWoodenShieldPlankSeam';
+    group.add(seam);
+  }
   return group;
 }
 
-async function loadBase64Texture(THREE,path,baseUrl,{colorSpace=null}={}){
-  const response=await fetch(new URL(path,baseUrl));
-  if(!response.ok)throw new Error(`Shield texture load failed: ${path} (${response.status}).`);
-  const encoded=(await response.text()).trim();
-  if(!encoded)throw new Error(`Shield texture is empty: ${path}.`);
-  const texture=await new THREE.TextureLoader().loadAsync(`data:image/jpeg;base64,${encoded}`);
-  if(colorSpace)texture.colorSpace=colorSpace;
-  texture.wrapS=THREE.ClampToEdgeWrapping;
-  texture.wrapT=THREE.ClampToEdgeWrapping;
-  return texture;
-}
-
-export async function createRoundWoodenShieldModel(THREE,baseUrl){
-  const shield=STUDIO_SHIELDS[0];
-  const pack=shield.texturePack;
-  const model=createRoundWoodenShieldGeometry(THREE);
-  const body=model.getObjectByName('RoundWoodenShieldBody');
-  let baseColor,normal,roughnessMetallic;
-  try{
-    [baseColor,normal,roughnessMetallic]=await Promise.all([
-      loadBase64Texture(THREE,pack.baseColor.path,baseUrl,{colorSpace:THREE.SRGBColorSpace}),
-      loadBase64Texture(THREE,pack.normal.path,baseUrl),
-      loadBase64Texture(THREE,pack.roughnessMetallic.path,baseUrl)
-    ]);
-    body.material.dispose();
-    body.material=new THREE.MeshStandardMaterial({
-      map:baseColor,
-      normalMap:normal,
-      roughnessMap:roughnessMetallic,
-      metalnessMap:roughnessMetallic,
-      roughness:1,
-      metalness:0.7,
-      side:THREE.DoubleSide
-    });
-    model.userData.textureResolution=pack.resolution;
-    return model;
-  }catch(error){
-    baseColor?.dispose?.();
-    normal?.dispose?.();
-    roughnessMetallic?.dispose?.();
-    model.traverse(object=>{
-      object.geometry?.dispose?.();
-      const material=object.material;
-      if(Array.isArray(material))material.forEach(item=>item?.dispose?.());
-      else material?.dispose?.();
-    });
-    throw error;
-  }
+export async function createRoundWoodenShieldModel(THREE){
+  return createRoundWoodenShieldGeometry(THREE);
 }
 
 export function createShieldAttachment(THREE,hand,model,settings){
