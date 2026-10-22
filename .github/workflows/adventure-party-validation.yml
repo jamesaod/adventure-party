@@ -39,6 +39,7 @@ jobs:
           node --check js/studio-equipment.mjs
           node --check js/mob-appearance.mjs
           node --check js/mob-appearance-runtime.mjs
+          node --check js/combat-pose-recipe.mjs
           node --check js/combat-mob-renderer.mjs
           node --check js/weapon-pose-profile-export.mjs
           node --check js/studio-weapon-pose-panel.mjs
