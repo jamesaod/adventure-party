@@ -20,7 +20,7 @@ for(const token of [
   "appearanceCacheKey(recipe)",
   "createWeaponAttachment",
   "createShieldAttachment",
-  "loadGltf('../'+recipe.shield.asset)",
+  "createRoundWoodenShieldModel",
   "recipe.shield",
   "recipe.renderSettings?.shield",
   "distanceInches",
