@@ -8,16 +8,16 @@ export const STUDIO_SHIELDS=Object.freeze([
     id:'round-wooden-shield',
     label:'Round Wooden Shield',
     visualClass:WOODEN_SHIELD_ITEM.appearance.visualClass,
-    file:WOODEN_SHIELD_ITEM.appearance.asset,
+    representation:WOODEN_SHIELD_ITEM.appearance.representation,
+    texturePack:WOODEN_SHIELD_ITEM.appearance.texturePack,
     sourceSha256:WOODEN_SHIELD_ITEM.appearance.source.originalSha256,
-    assetSha256:WOODEN_SHIELD_ITEM.appearance.webAsset.sha256,
     sourceBounds:Object.freeze({
       min:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.min]),
       max:Object.freeze([...WOODEN_SHIELD_ITEM.physical.sourceModelBounds.max])
     }),
     modelOrigin:Object.freeze([...WOODEN_SHIELD_ITEM.appearance.modelOrigin]),
     nativeScale:WOODEN_SHIELD_ITEM.appearance.nativeScale,
-    // Rev 69 approved base mount. Rev 71 changes the art asset, not the mount.
+    // Rev 69 approved base mount. Rev 71 changes the art, not the mount.
     position:Object.freeze([0,0,0.04]),
     rotation:Object.freeze([0,0,0]),
     defaultSizePercent:100,
@@ -96,6 +96,79 @@ function shieldOutwardAxisLocal(THREE,forearmAxis){
   outward.addScaledVector(forearmAxis,-outward.dot(forearmAxis));
   if(outward.lengthSq()<1e-10)outward.set(0,1,0);
   return outward.normalize();
+}
+
+export function createRoundWoodenShieldGeometry(THREE){
+  const group=new THREE.Group();
+  group.name='RoundWoodenShieldVisual';
+  group.userData.sourceSha256=WOODEN_SHIELD_ITEM.appearance.source.originalSha256;
+  group.userData.representation=WOODEN_SHIELD_ITEM.appearance.representation;
+
+  // The uploaded GLB is approximately 1.0 x 1.0 x 0.249 model units.
+  // Center the runtime disk at its mount origin while preserving those proportions.
+  const geometry=new THREE.CylinderGeometry(
+    0.5,0.5,
+    WOODEN_SHIELD_ITEM.physical.sourceModelExtent[2],
+    64,2,false
+  );
+  geometry.rotateX(Math.PI/2);
+  const body=new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({color:0x8b5a2b,roughness:0.82,metalness:0.08})
+  );
+  body.name='RoundWoodenShieldBody';
+  group.add(body);
+  return group;
+}
+
+async function loadBase64Texture(THREE,path,baseUrl,{colorSpace=null}={}){
+  const response=await fetch(new URL(path,baseUrl));
+  if(!response.ok)throw new Error(`Shield texture load failed: ${path} (${response.status}).`);
+  const encoded=(await response.text()).trim();
+  if(!encoded)throw new Error(`Shield texture is empty: ${path}.`);
+  const texture=await new THREE.TextureLoader().loadAsync(`data:image/jpeg;base64,${encoded}`);
+  if(colorSpace)texture.colorSpace=colorSpace;
+  texture.wrapS=THREE.ClampToEdgeWrapping;
+  texture.wrapT=THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+export async function createRoundWoodenShieldModel(THREE,baseUrl){
+  const shield=STUDIO_SHIELDS[0];
+  const pack=shield.texturePack;
+  const model=createRoundWoodenShieldGeometry(THREE);
+  const body=model.getObjectByName('RoundWoodenShieldBody');
+  let baseColor,normal,roughnessMetallic;
+  try{
+    [baseColor,normal,roughnessMetallic]=await Promise.all([
+      loadBase64Texture(THREE,pack.baseColor.path,baseUrl,{colorSpace:THREE.SRGBColorSpace}),
+      loadBase64Texture(THREE,pack.normal.path,baseUrl),
+      loadBase64Texture(THREE,pack.roughnessMetallic.path,baseUrl)
+    ]);
+    body.material.dispose();
+    body.material=new THREE.MeshStandardMaterial({
+      map:baseColor,
+      normalMap:normal,
+      roughnessMap:roughnessMetallic,
+      metalnessMap:roughnessMetallic,
+      roughness:1,
+      metalness:0.7,
+      side:THREE.DoubleSide
+    });
+    model.userData.textureResolution=pack.resolution;
+    return model;
+  }catch(error){
+    baseColor?.dispose?.();
+    normal?.dispose?.();
+    roughnessMetallic?.dispose?.();
+    model.traverse(object=>{
+      object.geometry?.dispose?.();
+      const material=object.material;
+      if(Array.isArray(material))material.forEach(item=>item?.dispose?.());
+      else material?.dispose?.();
+    });
+    throw error;
+  }
 }
 
 export function createShieldAttachment(THREE,hand,model,settings){
