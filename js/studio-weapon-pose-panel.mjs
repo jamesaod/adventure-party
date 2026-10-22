@@ -9,10 +9,13 @@ const POSE_NAMES = ['ready', 'attack', 'prone'];
 const saved = new Map();
 const APPEARANCE_BY_STUDIO_WEAPON = Object.freeze({
   'medieval-sword': Object.freeze({
-    appearanceId: 'flaming-sword-5', itemName: 'Flaming Sword +5', visualClass: 'sword'
+    appearanceId: 'flaming-sword-5', itemName: 'Flaming Sword +5', visualClass: 'sword', poseProfileId: 'one-handed-swing'
   }),
   'battle-axe': Object.freeze({
-    appearanceId: 'battle-axe', itemName: 'Battle Axe', visualClass: 'battle-axe'
+    appearanceId: 'battle-axe', itemName: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing'
+  }),
+  'medieval-two-handed-sword': Object.freeze({
+    appearanceId: 'two-handed-sword', itemName: 'Two-Handed Sword', visualClass: 'two-handed-sword', poseProfileId: 'two-handed-swing'
   })
 });
 
@@ -23,7 +26,7 @@ function currentSample(note = '') {
   const selected = snap?.selectedAnimation;
   if (!snap || !selected) throw new Error('Select an animation before recording a pose.');
   const rightHand = snap.equipment?.settings?.rightHand || 'none';
-  if (!APPEARANCE_BY_STUDIO_WEAPON[rightHand]) throw new Error('Equip the Medieval Sword or Battle Axe before recording this profile.');
+  if (!APPEARANCE_BY_STUDIO_WEAPON[rightHand]) throw new Error('Equip a registered Studio weapon before recording this profile.');
   return {
     animation: selected.name,
     sourceId: selected.sourceId || selected.name,
@@ -45,8 +48,8 @@ function slug(value) { return String(value || 'weapon-pose-profile').trim().repl
 function descriptorForSnapshot(snap) {
   const rightHand = snap?.equipment?.settings?.rightHand || 'none';
   const descriptor = APPEARANCE_BY_STUDIO_WEAPON[rightHand];
-  if (!descriptor) throw new Error('Equip the Medieval Sword or Battle Axe before exporting.');
-  return { ...descriptor, studioAssetId: rightHand, poseProfileId: 'one-handed-swing-v1' };
+  if (!descriptor) throw new Error('Equip a registered Studio weapon before exporting.');
+  return { ...descriptor, studioAssetId: rightHand };
 }
 
 function init() {
@@ -58,7 +61,7 @@ function init() {
   panel.innerHTML = `
     <h2>Weapon pose profile</h2>
     <p class="studio-note">Record the exact current animation time and equipment grip, then export reproducible profile data for development.</p>
-    <label class="studio-field">Profile ID<input id="studioPoseProfileId" value="one-handed-swing-v1"></label>
+    <label class="studio-field">Profile ID<input id="studioPoseProfileId" value="one-handed-swing"></label>
     <label class="studio-field">Profile name<input id="studioPoseProfileName" value="One-handed swinging weapon"></label>
     <label class="studio-field">Pose note<textarea id="studioPoseNote" rows="2" placeholder="Optional note about this exact frame"></textarea></label>
     <div class="studio-capture-buttons" id="studioPoseRecordButtons"></div>
@@ -86,6 +89,10 @@ function init() {
       if (!snap) throw new Error('Studio diagnostics are not ready yet.');
       for (const pose of POSE_NAMES) if (!saved.has(pose)) throw new Error(`Record ${pose} before exporting.`);
       const equipmentDescriptor = descriptorForSnapshot(snap);
+      const profileIdField=panel.querySelector('#studioPoseProfileId');
+      const profileNameField=panel.querySelector('#studioPoseProfileName');
+      if(!profileIdField.value.trim()||profileIdField.value.trim()==='one-handed-swing')profileIdField.value=equipmentDescriptor.poseProfileId;
+      if(equipmentDescriptor.poseProfileId==='two-handed-swing'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Two-handed swinging weapon';
       const rightHand = snap.equipment?.settings?.rightHand;
       for (const pose of POSE_NAMES) {
         if (saved.get(pose)?.studioEquipment?.rightHand !== rightHand) {
@@ -99,10 +106,10 @@ function init() {
           revision: 1,
           visualClass: equipmentDescriptor.visualClass
         },
-        mob: { type: snap.mobType, name: snap.model, heightInches: snap.mobType === 'fighter' ? 75 : null },
+        mob: { type: snap.mobType, name: snap.model, heightInches: snap.mobType === 'fighter' ? 76 : null },
         model: {
           id: snap.libraryModelId || snap.model,
-          bodyReferenceHeightInches: snap.mobType === 'fighter' ? 75 : null
+          bodyReferenceHeightInches: snap.mobType === 'fighter' ? 76 : null
         },
         equipment: {
           ...equipmentDescriptor,
