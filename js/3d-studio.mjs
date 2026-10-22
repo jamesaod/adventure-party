@@ -1079,7 +1079,9 @@ function readCapturePose() {
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
     renderWidth: size.renderWidth, renderHeight: size.renderHeight,
-    clip: state.action?.getClip().name || 'Rest pose', time: state.action?.time || 0,
+    clip: state.action?.getClip().name || 'Rest pose',
+    clipSourceId: animationSourceId(state.action?.getClip()) || state.action?.getClip().name || 'Rest pose',
+    time: state.action?.time || 0,
     anchorX: (ground.x + 1) * state.width / 2,
     anchorY: (1 - ground.y) * state.height / 2,
     render: {
