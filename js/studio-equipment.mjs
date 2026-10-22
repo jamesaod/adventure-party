@@ -85,6 +85,10 @@ export function findLeftShoulder(model) { return findBone(model, ['leftshoulder'
 export function findUpperSpine(model) {
   return findBone(model, ['spine2', 'mixamorigspine2', 'spine1', 'mixamorigspine1', 'spine', 'mixamorigspine']);
 }
+export function findLowerSpine(model) {
+  return findBone(model, ['spine', 'mixamorigspine', 'spine1', 'mixamorigspine1']);
+}
+export function findHips(model) { return findBone(model, ['hips', 'mixamorighips']); }
 
 function rotateJointToward(THREE, joint, fromWorld, toWorld, maxDegrees, weight = 1) {
   if (!joint?.isBone || fromWorld.lengthSq() < 1e-10 || toWorld.lengthSq() < 1e-10) return 0;
@@ -110,12 +114,41 @@ function twoHandedTargetWorld(THREE, attachment) {
 
 function applyTwoHandedBodyPose(THREE, model, attachment) {
   const shoulder = findLeftShoulder(model), arm = findLeftArm(model), forearm = findLeftForeArm(model), spine = findUpperSpine(model);
+  const lowerSpine = findLowerSpine(model), hips = findHips(model);
   if (!shoulder || !arm || !forearm) return { applied: false, reason: 'left-body-chain-missing' };
   model.updateWorldMatrix(true, true);
 
+  // Start the turn lower in the body. Small pelvis/lower-spine participation
+  // prevents the upper torso from looking corkscrewed while the legs remain
+  // completely disconnected from the sword action.
+  let hipsDegrees = 0, lowerSpineDegrees = 0, spineDegrees = 0;
+  const targetAtWaist = twoHandedTargetWorld(THREE, attachment);
+  if (hips) {
+    const hipsWorld = hips.getWorldPosition(new THREE.Vector3());
+    const shoulderWorld = shoulder.getWorldPosition(new THREE.Vector3());
+    hipsDegrees = rotateJointToward(
+      THREE, hips,
+      shoulderWorld.clone().sub(hipsWorld),
+      targetAtWaist.clone().sub(hipsWorld),
+      4, 0.08
+    );
+    model.updateWorldMatrix(true, true);
+  }
+  if (lowerSpine && lowerSpine !== spine) {
+    const lowWorld = lowerSpine.getWorldPosition(new THREE.Vector3());
+    const shoulderWorld = shoulder.getWorldPosition(new THREE.Vector3());
+    const target = twoHandedTargetWorld(THREE, attachment);
+    lowerSpineDegrees = rotateJointToward(
+      THREE, lowerSpine,
+      shoulderWorld.clone().sub(lowWorld),
+      target.clone().sub(lowWorld),
+      6, 0.10
+    );
+    model.updateWorldMatrix(true, true);
+  }
+
   // Let the upper torso share a small amount of the reach instead of forcing
   // the entire correction through the arm. This is intentionally subtle.
-  let spineDegrees = 0;
   if (spine) {
     const spineWorld = spine.getWorldPosition(new THREE.Vector3());
     const shoulderWorld = shoulder.getWorldPosition(new THREE.Vector3());
@@ -165,7 +198,7 @@ function applyTwoHandedBodyPose(THREE, model, attachment) {
     32, 1
   );
   model.updateWorldMatrix(true, true);
-  return { applied: true, spineDegrees, shoulderDegrees, elbowDegrees };
+  return { applied: true, hipsDegrees, lowerSpineDegrees, spineDegrees, shoulderDegrees, elbowDegrees };
 }
 
 function leftFingerBones(model) {
@@ -179,19 +212,36 @@ function leftFingerBones(model) {
   return result;
 }
 
-function applyTwoHandedFingerWrap(THREE, model) {
+function applyTwoHandedFingerWrap(THREE, model, attachment) {
   const fingers = leftFingerBones(model);
+  if (!fingers.length) return 0;
+  const target = twoHandedTargetWorld(THREE, attachment);
   let curled = 0;
   for (const bone of fingers) {
     const name = normalizedBoneName(bone);
     const segment = Number(name.match(/([123])$/)?.[1] || 1);
     const thumb = name.includes('thumb');
     const degrees = thumb
-      ? [0, 32, 42, 28][segment]
-      : [0, 58, 72, 52][segment];
+      ? [0, 24, 34, 24][segment]
+      : [0, 42, 56, 40][segment];
     const axis = thumb ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-    const curl = new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees));
-    bone.quaternion.multiply(curl).normalize();
+    const base = bone.quaternion.clone();
+    const probeDegrees = 8;
+    let bestSign = -1, bestDistance = Infinity;
+    for (const sign of [-1, 1]) {
+      bone.quaternion.copy(base).multiply(
+        new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(probeDegrees * sign))
+      ).normalize();
+      bone.updateWorldMatrix(true, true);
+      const endpoint = bone.children.find(child => child.isBone)?.getWorldPosition(new THREE.Vector3())
+        || bone.getWorldPosition(new THREE.Vector3());
+      const distance = endpoint.distanceTo(target);
+      if (distance < bestDistance) { bestDistance = distance; bestSign = sign; }
+    }
+    bone.quaternion.copy(base).multiply(
+      new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees * bestSign))
+    ).normalize();
+    bone.updateWorldMatrix(true, true);
     curled++;
   }
   model?.updateWorldMatrix(true, true);
@@ -199,11 +249,15 @@ function applyTwoHandedFingerWrap(THREE, model) {
 }
 
 function inferHandGripLocal(THREE, hand) {
-  const fingerBases = hand?.children?.filter(child => child.isBone && /(thumb|index|middle|ring|pinky)/.test(normalizedBoneName(child))) || [];
+  const fingerBases = hand?.children?.filter(child => child.isBone && /(index|middle|ring|pinky)1$/.test(normalizedBoneName(child))) || [];
   if (!fingerBases.length) return new THREE.Vector3();
-  const result = new THREE.Vector3();
-  for (const finger of fingerBases) result.add(finger.position);
-  return result.multiplyScalar(1 / fingerBases.length);
+  // Finger roots sit at the knuckles, not the center of the palm. Pull the
+  // anchor back toward the wrist so the actual palm/hilt contact is solved,
+  // rather than parking the knuckles on the weapon.
+  const knuckles = new THREE.Vector3();
+  for (const finger of fingerBases) knuckles.add(finger.position);
+  knuckles.multiplyScalar(1 / fingerBases.length);
+  return knuckles.multiplyScalar(0.52);
 }
 
 export function solveTwoHandedGrip(THREE, {
@@ -253,7 +307,7 @@ export function solveTwoHandedGrip(THREE, {
   const liveTarget = twoHandedTargetWorld(THREE, attachment);
   const offHand = effectorWorld();
   error = offHand.distanceTo(liveTarget);
-  const fingerBonesCurled = applyTwoHandedFingerWrap(THREE, model);
+  const fingerBonesCurled = applyTwoHandedFingerWrap(THREE, model, attachment);
   return {
     active: true, solved: error <= tolerance, error,
     targetWorldPosition: liveTarget.toArray(),
