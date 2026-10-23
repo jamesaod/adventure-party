@@ -60,8 +60,8 @@ const index=new Attribute(accessor(primitive.indices));
 const threeSource=fs.readFileSync(new URL('assets/vendor/three/three.core.min.js',root));
 const THREE=await import(`data:text/javascript;base64,${threeSource.toString('base64')}`);
 const sanitizeName=THREE.PropertyBinding.sanitizeNodeName;
-assert.equal(sanitizeName('mixamorig:LeftUpLeg'),'mixamorig_LeftUpLeg');
-assert.equal(sanitizeName('mixamorig:LeftHandPinky3'),'mixamorig_LeftHandPinky3');
+assert.equal(sanitizeName('mixamorig:LeftUpLeg'),'mixamorigLeftUpLeg');
+assert.equal(sanitizeName('mixamorig:LeftHandPinky3'),'mixamorigLeftHandPinky3');
 
 const object={
   isSkinnedMesh:true,
