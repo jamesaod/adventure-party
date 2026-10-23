@@ -38,7 +38,10 @@ function targetBindData(THREE, model) {
     world.decompose(position, quaternion, scale);
     byRole.set(role, {
       bone,
-      name: THREE.PropertyBinding.sanitizeNodeName(bone.name),
+      boneName: bone.name || '',
+      // UUID binding is independent of punctuation/namespace conventions in
+      // authoring names such as upper_arm.L or mixamorig:RightHand.
+      bindingName: bone.uuid,
       bindWorldQuaternion: quaternion,
       parentRole: parentSemanticRole(bone, roleByBone)
     });
@@ -161,7 +164,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   for (const role of mappedRoles) {
     const info=target.get(role), values=valuesByRole.get(role);
     if (!values?.length) continue;
-    tracks.push(new THREE.QuaternionKeyframeTrack(`${info.name}.quaternion`,times,values));
+    tracks.push(new THREE.QuaternionKeyframeTrack(`${info.bindingName}.quaternion`,times,values));
   }
   if (!tracks.length) throw new Error('No compatible humanoid rotation tracks matched the current model.');
 
