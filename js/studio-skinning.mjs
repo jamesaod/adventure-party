@@ -7,10 +7,14 @@
 export const CROSS_LIMB_REPAIR = 'cross-limb-components-v1';
 
 function boneFamily(name) {
-  const label = String(name || '').split(':').pop();
-  if (/^(Left|Right)(UpLeg|Leg|Foot|Toe(?:Base|_End)?)$/.test(label)) return 'leg';
-  if (/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/.test(label)) return 'arm';
-  if (/^(Hips|Spine\d*)$/.test(label)) return 'torso';
+  // Three.js GLTFLoader sanitizes Mixamo names such as
+  // 'mixamorig:LeftUpLeg' into 'mixamorig_LeftUpLeg'. Treat both identically.
+  const normalized = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const label = normalized.startsWith('mixamorig')
+    ? normalized.slice('mixamorig'.length) : normalized;
+  if (/^(left|right)(upleg|leg|foot|toebase|toeend)$/.test(label)) return 'leg';
+  if (/^(left|right)(shoulder|arm|forearm|hand.*)$/.test(label)) return 'arm';
+  if (/^(hips|spine\d*)$/.test(label)) return 'torso';
   return 'other';
 }
 
