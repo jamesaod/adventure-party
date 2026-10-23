@@ -254,6 +254,39 @@ assert.equal(sandbox.inspectStudioSpritePose("live"), true);
 assert.equal(sandbox.activeUnitPoseName(imported), "stand");
 assert.equal(sandbox.runtimeAnchorForAsset("sprite-set-test-package-prone-e").y, 145 / 200);
 
+const nativeManifest=createSpriteSetManifest({
+  id:"native-runtime",label:"Native runtime",captures:Object.fromEntries(
+    SPRITE_POSES.map(pose=>[pose,{clip:pose,time:0.5}])
+  ),
+  frame:{width:160,height:200,renderWidth:48,renderHeight:60,anchorX:80,anchorY:145},
+  battlefield:{renderer:"native-battlefield-v1",width:48,height:60,anchorX:24,anchorY:45}
+});
+const nativeImages={},nativeRuntimeImages={},nativeUrls={};
+for(const pose of SPRITE_POSES){
+  for(const facing of SPRITE_DIRECTIONS){
+    const sourceName=nativeManifest.poses[pose].frames[facing];
+    nativeImages[sourceName]=image(`native-source-${pose}-${facing}`);
+    nativeUrls[sourceName]=`assets/sprites/native-runtime/${sourceName}`;
+    const runtimeName=nativeManifest.battlefield.poses[pose].frames[facing];
+    nativeRuntimeImages[runtimeName]={
+      id:`native-runtime-${pose}-${facing}`,complete:true,naturalWidth:48,naturalHeight:60
+    };
+    nativeUrls[runtimeName]=`assets/sprites/native-runtime/${runtimeName}`;
+  }
+}
+const nativeSetId=sandbox.registerStudioSpriteSet({
+  manifest:nativeManifest,images:nativeImages,runtimeImages:nativeRuntimeImages,sourceUrls:nativeUrls
+});
+const nativeUnit={type:"kobold",spriteSetId:nativeSetId,alive:true,facing:"right",facingHex:0,x:0,y:0};
+const nativeFrame=sandbox.directionalUnitPoseFrame(nativeUnit);
+assert.equal(nativeFrame.image,nativeRuntimeImages["ready-e-battlefield.png"],
+  "Combat uses the native battlefield rendition instead of the high-resolution editor image");
+const nativeEditorAsset=registeredAssets.find(asset=>asset.id==="sprite-set-native-runtime-ready-e");
+assert.equal(nativeEditorAsset.gameImage,nativeImages["ready-e.png"],
+  "Pixel Editor retains the high-resolution source image");
+assert.equal(sandbox.runtimeAnchorForAsset(nativeEditorAsset.id).y,0.75,
+  "Combat uses the native battlefield anchor");
+
 // A 5% model-size step can produce fractional game dimensions. Registration
 // and Pixel Editor Apply's property read must preserve those exact dimensions;
 // the already-scaled manifest must not be scaled again at runtime.
