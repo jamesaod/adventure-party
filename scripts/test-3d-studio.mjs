@@ -76,12 +76,17 @@ for (const outline of [0, 1, 3, 10]) for (const flipY of [false, true]) {
   // Two occupied diagonal cells and two empty cells test both boundary axes.
   checkOutline(tiled, 16, 18, outline, flipY, 8, 9);
 }
-for (const [input, expected] of [[true, 1], [false, 0], [-3, 0], [20, 10], [2.4, 2], [2.6, 3], [NaN, 0], [Infinity, 0]]) {
+for (const [input, expected] of [[true, 1], [false, 0], [-3, 0], [300, 256], [NaN, 0], [Infinity, 0]]) {
   assert.deepEqual(
     quantizeRgba(dot, 25, 27, undefined, { outline: input, transparent: true }),
     quantizeRgba(dot, 25, 27, undefined, { outline: expected, transparent: true })
   );
 }
+const halfPixelOutline = quantizeRgba(sample, 3, 3, undefined, { transparent: true, outline: 0.5 });
+assert.deepEqual(Array.from(halfPixelOutline.slice(4 * 4, 4 * 5)), [0, 0, 0, 128],
+  'A half-pixel physical outline uses half alpha on the one-pixel edge ring');
+assert.deepEqual(Array.from(halfPixelOutline.slice(4 * 3, 4 * 4)), [0, 0, 0, 0],
+  'Fractional one-pixel outlines retain the original four-neighbor shape');
 assert.ok(quantizeRgba(new Uint8Array(tiled.length), 16, 18, undefined,
   { outline: 10, tileWidth: 8, tileHeight: 9, transparent: true }).every(value => value === 0));
 for (const options of [{ tileWidth: 0 }, { tileWidth: 3 }, { tileWidth: 1.5 }, { tileHeight: -1 }, { tileHeight: 4 }, { tileHeight: Infinity }]) {
@@ -159,6 +164,7 @@ for (const options of [
   }
 }
 const studioSource=fs.readFileSync(new URL("../js/3d-studio.mjs",import.meta.url),"utf8");
+const studioCaptureSource=fs.readFileSync(new URL("../js/studio-capture.mjs",import.meta.url),"utf8");
 const studioHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
 assert.ok(studioHtml.includes('id="studioAnimationFiles"')&&studioHtml.includes('id="studioLoadAnimationButton"'),
   'Studio exposes a separate Mixamo FBX animation importer');
@@ -205,12 +211,17 @@ assert.equal(studioSource.split('geometryBounds(normalized').length - 1, 0,
   'Equipment-inclusive bounds cannot participate in model fitting');
 assert.ok(!studioSource.includes('{ fit: true }') && !studioSource.includes('{fit:true}'),
   'Equipping, unequipping and resetting gear do not trigger a model refit');
-assert.ok(studioSource.includes('outline: state.outline, transparent, tileWidth: state.width, tileHeight: state.height') &&
-  studioSource.includes('tileWidth:battlefieldWidth') && studioSource.includes('tileHeight:battlefieldHeight'),
-  'Outline width is applied directly in each target pixel grid, including final battlefield pixels');
-assert.ok(!studioSource.includes('state.outline * state.resolutionPercent') &&
-  !studioSource.includes('state.outline*state.resolutionPercent'),
-  'Resolution never multiplies the requested outline width');
+assert.ok(studioHtml.includes('id="studioOutline" type="range" min="0" max="6" step="0.125" value="1.875"'),
+  'Outline control is expressed in eighth-inch battlefield units');
+assert.ok(studioSource.includes('BATTLEFIELD_PIXELS_PER_INCH = 64 / (STUDIO_FEET_PER_HEX * 12)') &&
+  studioSource.includes('function outlinePixelsForTarget('),
+  'Studio converts physical inches through the 10-foot / 64-pixel battlefield scale');
+assert.ok(studioSource.includes('outlineInches: state.outlineInches') &&
+  studioCaptureSource.includes('function physicalOutlinePixels('),
+  'Saved captures retain physical outline inches and convert them for source and battlefield frames');
+assert.ok(!studioSource.includes('outlineInches * state.resolutionPercent') &&
+  !studioSource.includes('outlineInches*state.resolutionPercent'),
+  'Resolution never directly multiplies the physical outline width');
 assert.ok(studioSource.includes("['ambientIntensity', 5]"),
   'Environmental lighting normalization accepts 500 percent');
 assert.ok(studioSource.includes("measuredHeightInches") && studioSource.includes("pose: 'T-Pose'"),
@@ -223,4 +234,4 @@ assert.ok(studioSource.includes("secondaryGripOffsetInches[index] = event.target
   'Off-hand calibration controls update persistent equipment settings');
 assert.ok(studioSource.includes("changeEquipment(next,{resetPose:false})"),
   'Fine off-hand calibration does not reset the current animation pose');
-console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, 0–10px tiled outlines and color controls passed.");
+console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, fractional physical outlines and color controls passed.");
