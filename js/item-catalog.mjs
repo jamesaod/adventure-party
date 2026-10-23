@@ -95,7 +95,7 @@ export const ITEM_CATALOG=freezeRecord({
       poseProfileId:'two-handed-swing',
       primaryAxis:[0,-1,0],
       grip:[0,0.81,0],
-      secondaryGrip:[0,0.89,0],
+      secondaryGrip:[0,0.95,0],
       nativeScale:0.78,
       defaultSizePercent:100,
       position:[0.015,0.05,0.005],
