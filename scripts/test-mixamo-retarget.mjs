@@ -14,8 +14,8 @@ sourceParent.add(sourceChild); sourceRig.add(sourceParent);
 sourceRig.updateWorldMatrix(true,true);
 
 const targetRig=new THREE.Group();
-const targetParent=new THREE.Bone(); targetParent.name='mixamorig:Spine'; targetParent.quaternion.copy(q(x,-35));
-const targetChild=new THREE.Bone(); targetChild.name='mixamorig:LeftArm'; targetChild.quaternion.copy(q(y,40));
+const targetParent=new THREE.Bone(); targetParent.name='mixamorigSpine'; targetParent.quaternion.copy(q(x,-35));
+const targetChild=new THREE.Bone(); targetChild.name='mixamorigLeftArm'; targetChild.quaternion.copy(q(y,40));
 targetParent.add(targetChild); targetRig.add(targetParent);
 targetRig.updateWorldMatrix(true,true);
 
