@@ -261,6 +261,21 @@ assert.equal(leftHand?.name, 'mixamorigLeftHand');
 hand.name = 'mixamorig:RightHand';
 assert.equal(findRightHand(character), hand, 'Colon spelling is accepted');
 hand.name = 'mixamorigRightHand';
+const twoHandCalibration=normalizeEquipment({
+  rightHand:'medieval-two-handed-sword',
+  secondaryGripOffsetInches:[1.25,-2.5,0.75]
+});
+assert.deepEqual(twoHandCalibration.secondaryGripOffsetInches,[1.25,-2.5,0.75],
+  '2H off-hand calibration survives normalization in inches');
+const calibrationAsset=new THREE.Group();
+const calibrationAttachment=createWeaponAttachment(THREE,hand,calibrationAsset,twoHandCalibration);
+assert.deepEqual(calibrationAttachment.secondaryGripOffsetInches,[1.25,-2.5,0.75],
+  'Weapon attachment carries live off-hand calibration offsets');
+calibrationAttachment.update({...twoHandCalibration,secondaryGripOffsetInches:[-1,2,0.5]});
+assert.deepEqual(calibrationAttachment.secondaryGripOffsetInches,[-1,2,0.5],
+  'Off-hand calibration updates without moving the primary attachment');
+calibrationAttachment.detach();
+
 const settings = normalizeEquipment({ rightHand: 'medieval-sword' });
 const attached = createWeaponAttachment(THREE, hand, swordModel, settings);
 const gripPoint = new THREE.Vector3(...STUDIO_WEAPONS[0].grip);
@@ -348,6 +363,7 @@ assert.equal(weird.rightHand, 'none');
 assert.equal(weird.sizePercent, 100);
 assert.deepEqual(weird.position, [0.015, 1, -1]);
 assert.deepEqual(weird.rotation, [180, -90, 0]);
+assert.deepEqual(weird.secondaryGripOffsetInches,[0,0,0]);
 
 // Late network responses, retries, model replacement and page teardown must
 // never attach old equipment to a new model or leak loaded resources.
@@ -377,7 +393,7 @@ assert.equal(await failed, false);
 assert.match(equipment.snapshot().error, /Reset grip/);
 assert.equal(equipment.snapshot().loading, false);
 const loadedAsset = new THREE.Group();
-const restoredSettings = JSON.parse(JSON.stringify({ ...settings, sizePercent: 145, position: [0.02, 0.06, 0.01], rotation: [10, -80, 7] }));
+const restoredSettings = JSON.parse(JSON.stringify({ ...settings, sizePercent: 145, position: [0.02, 0.06, 0.01], rotation: [10, -80, 7], secondaryGripOffsetInches:[0.5,-0.75,1.25] }));
 const retry = equipment.select(restoredSettings);
 pending.shift().resolve(loadedAsset);
 assert.equal(await retry, true);
