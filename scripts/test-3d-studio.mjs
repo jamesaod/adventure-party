@@ -76,7 +76,7 @@ for (const outline of [0, 1, 3, 10]) for (const flipY of [false, true]) {
   // Two occupied diagonal cells and two empty cells test both boundary axes.
   checkOutline(tiled, 16, 18, outline, flipY, 8, 9);
 }
-for (const [input, expected] of [[true, 1], [false, 0], [-3, 0], [300, 256], [NaN, 0], [Infinity, 0]]) {
+for (const [input, expected] of [[true, 1], [false, 0], [-3, 0], [1000, 768], [NaN, 0], [Infinity, 0]]) {
   assert.deepEqual(
     quantizeRgba(dot, 25, 27, undefined, { outline: input, transparent: true }),
     quantizeRgba(dot, 25, 27, undefined, { outline: expected, transparent: true })
@@ -211,7 +211,7 @@ assert.equal(studioSource.split('geometryBounds(normalized').length - 1, 0,
   'Equipment-inclusive bounds cannot participate in model fitting');
 assert.ok(!studioSource.includes('{ fit: true }') && !studioSource.includes('{fit:true}'),
   'Equipping, unequipping and resetting gear do not trigger a model refit');
-assert.ok(studioHtml.includes('id="studioOutline" type="range" min="0" max="6" step="0.125" value="1.875"'),
+assert.ok(studioHtml.includes('id="studioOutline" type="range" min="0" max="18.75" step="0.125" value="1.875"'),
   'Outline control is expressed in eighth-inch battlefield units');
 assert.ok(studioSource.includes('BATTLEFIELD_PIXELS_PER_INCH = 64 / (STUDIO_FEET_PER_HEX * 12)') &&
   studioSource.includes('function outlinePixelsForTarget('),
