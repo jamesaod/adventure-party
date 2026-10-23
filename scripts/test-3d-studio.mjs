@@ -174,6 +174,12 @@ assert.ok(studioSource.includes('retargetHumanoidClip(THREE, clip, parsed, state
   'Studio supplies both source and target rigs when retargeting');
 assert.ok(studioSource.includes("Imported_") && studioSource.includes('analyzeHumanoidRig(state.model)'),
   'Imported clips receive visible names and Studio reports semantic rig analysis');
+assert.ok(studioSource.includes('function loadRepositoryAnimationFamilies(') &&
+  studioSource.includes("data/humanoid-animation-sources.json") &&
+  studioSource.includes("repositoryAnimationFamily: familyId"),
+  'Saved humanoid models can request repository animation families before Studio framing');
+assert.ok(studioSource.includes("effectiveModelDefaults?.animationFamilies || []"),
+  'Model-library animation families are applied on initial load and saved-workspace reopen');
 assert.ok(studioHtml.includes('id="studioResolution" type="range" min="50" max="500"'),
   'Resolution control reaches 500 percent');
 assert.ok(studioHtml.includes('id="studioAmbientIntensity" type="range" min="0" max="500"'),
