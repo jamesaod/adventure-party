@@ -101,7 +101,11 @@ assert.ok(differing>50,'Experiment must meaningfully change the Orc limb basis')
 for(const [key,carlRot] of ref){
   const transported=new THREE.Quaternion(...carlRot).premultiply(
     originalBind.get(key).clone().multiply(new THREE.Quaternion(...carlRot).invert())).normalize();
-  assert.ok(transported.angleTo(originalBind.get(key))<0.0005,`Bind mismatch on ${key}`);
+  const nativeQ=originalBind.get(key);
+  const distance=Math.min(
+    Math.hypot(transported.x-nativeQ.x,transported.y-nativeQ.y,transported.z-nativeQ.z,transported.w-nativeQ.w),
+    Math.hypot(transported.x+nativeQ.x,transported.y+nativeQ.y,transported.z+nativeQ.z,transported.w+nativeQ.w));
+  assert.ok(distance<2e-5,`Bind mismatch on ${key}: ${distance}`);
 }
 const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root),'utf8'));
 const modelEntry=catalog.models.find(item=>item.id==='male-orc-fighter-ual2-native-bind-experiment');
