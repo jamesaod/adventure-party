@@ -55,7 +55,10 @@ function getColorLookup() {
 const clampByte = value => Math.max(0, Math.min(255, Math.round(value)));
 const colorFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(2, value)) : 1;
 const saturationFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(5, value)) : 1;
-const MAX_OUTLINE = 10;
+// Large source frames may need many source pixels to represent a small physical
+// battlefield outline. Uint32 scratch space keeps that conversion safe while
+// final combat widths remain only a few pixels.
+const MAX_OUTLINE = 256;
 const OUTLINE_DISTANCE_LIMIT = (MAX_OUTLINE + 1) ** 2;
 let outlineWorkspace;
 
@@ -66,8 +69,8 @@ function outlineDistances(source, width, height, tileWidth, tileHeight) {
   if (!outlineWorkspace || outlineWorkspace.distances.length !== width * height ||
       outlineWorkspace.line.length < tileHeight) {
     outlineWorkspace = {
-      distances: new Uint8Array(width * height),
-      line: new Uint8Array(tileHeight),
+      distances: new Uint32Array(width * height),
+      line: new Uint32Array(tileHeight),
       sites: new Int32Array(tileHeight),
       breaks: new Float64Array(tileHeight + 1)
     };
@@ -156,9 +159,15 @@ export function quantizeRgba(source, width, height, target, {
   const contrastValue = colorFactor(contrast);
   const saturationValue = saturationFactor(saturation);
   const hueShift = Number.isFinite(hue) ? ((hue % 360 + 360) % 360) / 60 : 0;
-  // Boolean options remain compatible with the original on/off outline.
-  const outlineWidth = outline === true ? 1 : Number.isFinite(outline) ? Math.max(0, Math.min(MAX_OUTLINE, Math.round(outline))) : 0;
-  const distances = outlineWidth > 1 ? outlineDistances(source, width, height, tileWidth, tileHeight) : null;
+  // Integer widths preserve the original hard pixel outline exactly. Fractional
+  // widths interpolate only the next outward pixel ring through alpha coverage,
+  // allowing physical-inch controls to represent sub-pixel battlefield widths.
+  const outlineWidth = outline === true ? 1 : Number.isFinite(outline)
+    ? Math.max(0, Math.min(MAX_OUTLINE, outline)) : 0;
+  const outlineFloor = Math.floor(outlineWidth);
+  const outlineCeil = Math.ceil(outlineWidth);
+  const outlineFraction = outlineWidth - outlineFloor;
+  const distances = outlineCeil > 1 ? outlineDistances(source, width, height, tileWidth, tileHeight) : null;
   const backgroundIndex = (clampByte(background[0]) >> 3) << 10 |
     (clampByte(background[1]) >> 3) << 5 | (clampByte(background[2]) >> 3);
   const bg = VGA_PALETTE[lookup[backgroundIndex]];
@@ -171,16 +180,33 @@ export function quantizeRgba(source, width, height, target, {
       const ti = (y * width + x) * 4;
       if (source[si + 3] < 128) {
         const tileX = x % tileWidth;
-        const edge = outlineWidth === 1 ? (
+        const onePixelEdge = (
           (tileX > 0 && source[si - 1] >= 128) ||
           (tileX + 1 < tileWidth && source[si + 7] >= 128) ||
           (tileY > 0 && source[si - width * 4 + 3] >= 128) ||
           (tileY + 1 < tileHeight && source[si + width * 4 + 3] >= 128)
-        ) : outlineWidth > 1 && distances[si / 4] <= outlineWidth * outlineWidth;
-        target[ti] = edge || transparent ? 0 : bg[0];
-        target[ti + 1] = edge || transparent ? 0 : bg[1];
-        target[ti + 2] = edge || transparent ? 0 : bg[2];
-        target[ti + 3] = edge || !transparent ? 255 : 0;
+        );
+        const edgeAt = width => width <= 0 ? false : width === 1
+          ? onePixelEdge : distances[si / 4] <= width * width;
+        const innerEdge = edgeAt(outlineFloor);
+        const outerEdge = outlineFraction > 0 && edgeAt(outlineCeil);
+        const coverage = innerEdge ? 1 : outerEdge ? outlineFraction : 0;
+        if (coverage > 0) {
+          if (transparent) {
+            target[ti] = target[ti + 1] = target[ti + 2] = 0;
+            target[ti + 3] = clampByte(255 * coverage);
+          } else {
+            target[ti] = clampByte(bg[0] * (1 - coverage));
+            target[ti + 1] = clampByte(bg[1] * (1 - coverage));
+            target[ti + 2] = clampByte(bg[2] * (1 - coverage));
+            target[ti + 3] = 255;
+          }
+        } else {
+          target[ti] = transparent ? 0 : bg[0];
+          target[ti + 1] = transparent ? 0 : bg[1];
+          target[ti + 2] = transparent ? 0 : bg[2];
+          target[ti + 3] = transparent ? 0 : 255;
+        }
         continue;
       }
       let r = source[si], g = source[si + 1], b = source[si + 2];
