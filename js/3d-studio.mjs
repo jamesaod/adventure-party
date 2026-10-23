@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C111';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C112';
 import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
@@ -1917,7 +1917,8 @@ async function loadRetargetQaClips(targetModel, experiment) {
     return experiment.clips.map(sourceName => {
       const sourceClip = sourceClips.find(clip => clip.name === sourceName);
       if (!sourceClip) throw new Error('Carl QA donor is missing the required clip: ' + sourceName);
-      const variantName = experiment.mode === 'world-bind-delta' ? 'World Delta' : 'Joint Relative';
+      const variantName = experiment.mode === 'world-bind-delta' ? 'World Delta'
+        : experiment.mode === 'anatomical-aim' ? 'Bone Direction + Hip Y' : 'Joint Relative';
       const label = 'QA ' + variantName + ' — ' + sourceName;
       const clip = retargetHumanoidClip(THREE, sourceClip, gltf.scene, targetModel,
         label, { mode: experiment.mode });
@@ -1976,7 +1977,7 @@ async function loadModelLibrary() {
         const qa = entry.retargetQa;
         const qaUrl = new URL(qa?.carrier || '', appRoot);
         if (entry.file !== 'assets/models/orcs/new-orc/new-orc.glb' ||
-            !['world-bind-delta','joint-bind-relative'].includes(qa?.mode) ||
+            !['world-bind-delta','joint-bind-relative','anatomical-aim'].includes(qa?.mode) ||
             !Array.isArray(qa.clips) || qa.clips.length !== 1 ||
             qa.clips[0] !== 'Mixamo_sword_and_shield_attack' ||
             qaUrl.origin !== appRoot.origin ||
