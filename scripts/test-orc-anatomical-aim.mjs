@@ -90,7 +90,10 @@ sourceLeft.quaternion.copy(sourceLeftRest);
 sourceRight.quaternion.copy(sourceRightRest);
 carl.scene.updateWorldMatrix(true,true);
 const player=new THREE.AnimationMixer(orc.scene);
-player.clipAction(retargeted).play();
+const action=player.clipAction(retargeted);
+action.setLoop(THREE.LoopOnce,1);
+action.clampWhenFinished=true;
+action.play();
 player.setTime(1);
 orc.scene.updateWorldMatrix(true,true);
 assert.ok(Math.abs(hipTarget.position.y-hipExpected)<1e-4,
