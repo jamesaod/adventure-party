@@ -205,7 +205,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   const sourceHips = source.get('hips');
   const targetHips = target.get('hips')?.bone;
   const hipsTranslation = mode === 'anatomical-aim' ? (clip.tracks || []).find(track => {
-    const match = String(track.name || '').match(/^(.*)\\.position$/);
+    const match = String(track.name || '').match(/^(.*)\.position$/);
     return match && resolveRole(match[1]) === 'hips';
   }) : null;
   if (mode === 'anatomical-aim' && (!sourceHips || !targetHips || !hipsTranslation)) {
