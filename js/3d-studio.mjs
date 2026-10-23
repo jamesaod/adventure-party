@@ -1197,7 +1197,10 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   } else if (!restoreSettings) {
     const firstQaClip = modelDefaults?.retargetQa?.initialClip;
     const qaStartIndex = firstQaClip
-      ? state.clips.findIndex(clip => clip.userData?.retargetQa?.sourceClip === firstQaClip)
+      ? state.clips.findIndex(clip =>
+        clip.userData?.retargetQa?.sourceClip === firstQaClip ||
+        (clip.name.startsWith('QA Bone Direction + Hip Y — ') &&
+         clip.name.endsWith(' — ' + firstQaClip)))
       : -1;
     const readyIndex = qaStartIndex >= 0 ? qaStartIndex
       : preferredTwoHandedRest >= 0 ? preferredTwoHandedRest
