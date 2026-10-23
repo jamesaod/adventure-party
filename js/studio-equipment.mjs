@@ -1,4 +1,7 @@
 import { itemCatalogEntry } from './item-catalog.mjs?v=R238C75';
+import {
+  findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
+} from './humanoid-rig.mjs?v=R238C101';
 
 // Rigid visible equipment stays beneath the animated right hand. Weapon-specific grip presets remain independently tunable.
 // All one-handed weapon assets expose a local longitudinal axis that must resolve
@@ -72,31 +75,22 @@ export function normalizeEquipment(value = {}) {
     secondaryGripOffsetInches
   };
 }
-const normalizedBoneName = object => String(object?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-function findBone(model, aliases) {
-  let found = null;
-  model?.traverse(object => {
-    if (!object.isBone || found) return;
-    const name = normalizedBoneName(object);
-    if (aliases.some(alias => name === alias || name.endsWith(alias))) found = object;
-  });
-  return found;
-}
-export function findRightHand(model) { return findBone(model, ['righthand', 'mixamorigrighthand']); }
-export function findLeftHand(model) { return findBone(model, ['lefthand', 'mixamoriglefthand']); }
-export function findLeftForeArm(model) { return findBone(model, ['leftforearm', 'mixamorigleftforearm']); }
-export function findLeftArm(model) { return findBone(model, ['leftarm', 'mixamorigleftarm']); }
-export function findLeftShoulder(model) { return findBone(model, ['leftshoulder', 'mixamorigleftshoulder']); }
+const normalizedBoneName = object => normalizeHumanoidBoneName(object?.name);
+export function findRightHand(model) { return findHumanoidBone(model, 'rightHand'); }
+export function findLeftHand(model) { return findHumanoidBone(model, 'leftHand'); }
+export function findLeftForeArm(model) { return findHumanoidBone(model, 'leftForeArm'); }
+export function findLeftArm(model) { return findHumanoidBone(model, 'leftUpperArm'); }
+export function findLeftShoulder(model) { return findHumanoidBone(model, 'leftShoulder'); }
 export function findUpperSpine(model) {
-  return findBone(model, ['spine2', 'mixamorigspine2'])
-    || findBone(model, ['spine1', 'mixamorigspine1'])
-    || findBone(model, ['spine', 'mixamorigspine']);
+  return findHumanoidBone(model, 'upperChest')
+    || findHumanoidBone(model, 'chest')
+    || findHumanoidBone(model, 'spine');
 }
 export function findLowerSpine(model) {
-  return findBone(model, ['spine', 'mixamorigspine'])
-    || findBone(model, ['spine1', 'mixamorigspine1']);
+  return findHumanoidBone(model, 'spine')
+    || findHumanoidBone(model, 'chest');
 }
-export function findHips(model) { return findBone(model, ['hips', 'mixamorighips']); }
+export function findHips(model) { return findHumanoidBone(model, 'hips'); }
 
 function rotateJointToward(THREE, joint, fromWorld, toWorld, maxDegrees, weight = 1) {
   if (!joint?.isBone || fromWorld.lengthSq() < 1e-10 || toWorld.lengthSq() < 1e-10) return 0;
@@ -216,20 +210,7 @@ function applyTwoHandedBodyPose(THREE, model, attachment) {
 }
 
 function leftFingerChains(model) {
-  const hand = findLeftHand(model);
-  if (!hand) return [];
-  const chains = [];
-  for (const fingerName of ['index','middle','ring','pinky','thumb']) {
-    const bones = [];
-    model.traverse(object => {
-      if (!object.isBone) return;
-      const name = normalizedBoneName(object);
-      const match = name.match(new RegExp(`(?:mixamorig)?lefthand${fingerName}([123])$`));
-      if (match) bones[Number(match[1]) - 1] = object;
-    });
-    if (bones.filter(Boolean).length === 3) chains.push({ fingerName, bones });
-  }
-  return chains;
+  return humanoidFingerChains(model, 'left');
 }
 
 function fingerTipWorld(THREE, chain) {
@@ -378,14 +359,17 @@ function applyTwoHandedFingerWrap(THREE, model, attachment) {
   return { bonesAdjusted, fingertips, wristOrientation };
 }
 
-function inferHandGripLocal(THREE, hand) {
-  const fingerBases = hand?.children?.filter(child => child.isBone && /(index|middle|ring|pinky)1$/.test(normalizedBoneName(child))) || [];
-  if (!fingerBases.length) return new THREE.Vector3();
-  // Finger roots sit at the knuckles, not the center of the palm. Pull the
-  // anchor back toward the wrist so the actual palm/hilt contact is solved,
-  // rather than parking the knuckles on the weapon.
+function inferHandGripLocal(THREE, hand, model) {
+  const chains = humanoidFingerChains(model, 'left').filter(chain => chain.fingerName !== 'thumb');
+  const fingerBases = chains.map(chain => chain.bones[0]).filter(Boolean);
+  if (!hand || !fingerBases.length) return new THREE.Vector3();
+  // Work in hand-local space even when a rig inserts palm/metacarpal helpers
+  // between the hand and finger roots.
+  model?.updateWorldMatrix(true, true);
   const knuckles = new THREE.Vector3();
-  for (const finger of fingerBases) knuckles.add(finger.position);
+  for (const finger of fingerBases) {
+    knuckles.add(hand.worldToLocal(finger.getWorldPosition(new THREE.Vector3())));
+  }
   knuckles.multiplyScalar(1 / fingerBases.length);
   return knuckles.multiplyScalar(0.52);
 }
@@ -403,7 +387,7 @@ export function solveTwoHandedGrip(THREE, {
   const bodyPose = applyTwoHandedBodyPose(THREE, model, attachment);
   model.updateWorldMatrix(true, true);
   const target = twoHandedTargetWorld(THREE, attachment);
-  const handGripLocal = inferHandGripLocal(THREE, hand);
+  const handGripLocal = inferHandGripLocal(THREE, hand, model);
   const effectorWorld = () => hand.localToWorld(handGripLocal.clone());
   const joints = [forearm, arm];
   const maxStep = THREE.MathUtils.degToRad(maxStepDegrees);
@@ -485,6 +469,7 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   const snapshot = () => ({
     settings: normalizeEquipment(settings), attached: !!attachment, rightHandBone: findRightHand(model)?.name || null,
     leftHandBone: findLeftHand(model)?.name || null, loading, error,
+    rig: model ? analyzeHumanoidRig(model) : null,
     socketWorldPosition: attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray() || null,
     twoHandedConstraint: constraint ? structuredClone(constraint) : null
   });
