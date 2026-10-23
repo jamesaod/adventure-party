@@ -27,6 +27,11 @@ import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mj
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 import { readHumanoidQaPack } from './studio-qa-pack.mjs?v=R238C107';
 
+// The six previews share one WebGL atlas; throttling its costly GPU readback
+// and CPU palette pipeline leaves the main 3D viewport at browser refresh.
+// Forced sprite captures/exports call renderPreviews directly, without throttle.
+const LIVE_PREVIEW_FPS = 12;
+
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
   keyColor: '#ffffff', keyElevation: 45, keyDirection: 'NW'
@@ -1699,7 +1704,7 @@ function tick(timestamp) {
   }
   const moving = orbit.update();
   resizeRenderer();
-  if (state.previewsDirty && timestamp - state.lastPreview >= 1000 / 30) {
+  if (state.previewsDirty && timestamp - state.lastPreview >= 1000 / LIVE_PREVIEW_FPS) {
     renderPreviews(timestamp);
     state.mainDirty = true;
   }

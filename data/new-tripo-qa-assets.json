@@ -1,7 +1,7 @@
 {
   "version": 1,
   "status": "repository-backed",
-  "note": "All three exact user-supplied GLBs are committed as native Git blobs and validated against these byte sizes and SHA-256 digests. The baked Carl clip is a single one-second visual QA proof, not approval of all Mixamo animations.",
+  "note": "Five repository-backed GLBs: unmodified New Carl/Orc source, Carl single-clip proof, and separate full 17-clip Carl/Orc QA outputs. Exact SHA and source BIN preservation checked in CI; visual QA pending.",
   "models": [
     {
       "id": "new-carl-tripo-source",
@@ -27,6 +27,26 @@
       "sha256": "208cc1fd496346aa035fdd83b56f1540d464a8efc2d7a40d9f633f47c7a7f392",
       "animated": true,
       "clip": "Mixamo_Sword_Shield_Attack_InPlace_QA"
+    },
+    {
+      "id": "new-carl-mixamo-sword-shield-full-17",
+      "path": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+      "sourceFilename": "New+DCC(1).glb",
+      "sizeBytes": 2799568,
+      "sha256": "65aec8f790b9de9dda10f2efa8561075fc144518b93b15b376f47c5c7e411f08",
+      "animated": true,
+      "clipCount": 17,
+      "sourceId": "new-carl-tripo-source"
+    },
+    {
+      "id": "new-orc-mixamo-sword-shield-full-17",
+      "path": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
+      "sourceFilename": "New+Orc(1).glb",
+      "sizeBytes": 2753636,
+      "sha256": "3f400dfb12ef9ed0f39fe5ebe473fdec769ccb17f7654bba000772a6b0349f3c",
+      "animated": true,
+      "clipCount": 17,
+      "sourceId": "new-orc-tripo-source"
     }
   ],
   "animationSource": {

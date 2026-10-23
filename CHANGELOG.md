@@ -1,5 +1,14 @@
 # Changelog
 
+## Candidate Rev 110 — 17 Mixamo clips each for New Carl and Orc; reduced preview overhead
+
+- Added SHA-verified, independently offline-baked 17-clip sword/shield GLBs for New Carl and New Orc to the Model Library. The original GLBs, older models and one-clip proof are all preserved, with QA labels on the new entries.
+- Embedded clips use X Bot's reference skeleton, world/bind-space correction and animated-parent local rotations. The source GLB's nodes, meshes, skin, materials and original BIN bytes remain unchanged. Both full 17-clip bake scripts and detailed per-model provenance are permanently included in the repository.
+- Carl full GLB SHA-256: `65aec8f790b9de9dda10f2efa8561075fc144518b93b15b376f47c5c7e411f08` (2,799,568 bytes); Orc: `3f400dfb12ef9ed0f39fe5ebe473fdec769ccb17f7654bba000772a6b0349f3c` (2,753,636 bytes). The CI GLB checks now validate 34 animation clips and original binary prefix preservation.
+- Reduce live six-directional preview updates from 30 FPS to **12 FPS**, decoupled from the full-rate main 3D animation. This mitigates repeated six-angle renders, GPU readback and two CPU palette passes; forced capture/export still renders at full quality. Browser performance gains are not yet benchmarked.
+- **Human visual QA still needed** for all clips, six facings, feet, limb deformation and weapon/shield alignment. Stable main unchanged.
+
+
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
 ## Candidate Rev 109 — publish real New Carl, New Orc, and offline-baked Carl GLBs
