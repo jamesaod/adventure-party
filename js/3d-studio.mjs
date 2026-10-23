@@ -7,11 +7,11 @@ import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C93';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C93';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C95';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
-  spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C93';
+  spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
+} from './sprite-layouts.mjs?v=R238C95';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
@@ -85,6 +85,7 @@ const state = {
 let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
 let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbientLight, keyLight, modelFrame;
 let atlasTarget, atlasSource, atlasImage;
+let battlefieldTarget, battlefieldSource, battlefieldImage, battlefieldWidth=1, battlefieldHeight=1;
 let resizeObserver, visibilityObserver, poseCapture;
 let modelBounds = null, heightRulerLine;
 const equipment = createStudioEquipment({
@@ -118,6 +119,8 @@ const shieldEquipment = createStudioShield({
 const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d');
+const battlefieldCanvas=document.createElement('canvas');
+const battlefieldContext=battlefieldCanvas.getContext('2d');
 const previewGrassImage = new Image();
 previewGrassImage.onload = () => invalidate();
 previewGrassImage.src = new URL('../assets/terrain/grass-outdoors-tiles.png', import.meta.url).href;
@@ -519,6 +522,7 @@ function applyModelSize(previousScalePercent = state.modelScalePercent) {
   placement.scale.setScalar(modelFrame.scale * factor);
   rescaleModelView(state.modelScalePercent / previousScalePercent);
   updateCaptureCamera();
+  if(renderer) configureBattlefieldAtlas();
   invalidate();
 }
 
@@ -1223,6 +1227,24 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   });
 }
 
+function configureBattlefieldAtlas() {
+  battlefieldTarget?.dispose();
+  const size=spriteLayoutDimensions(state.layoutId,state.resolutionPercent,state.modelScalePercent,state.hexScalePercent);
+  battlefieldWidth=Math.max(1,Math.round(size.renderWidth));
+  battlefieldHeight=Math.max(1,Math.round(size.renderHeight));
+  const width=battlefieldWidth*3,height=battlefieldHeight*2;
+  battlefieldTarget=new THREE.WebGLRenderTarget(width,height,{
+    format:THREE.RGBAFormat,type:THREE.UnsignedByteType,
+    minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,
+    depthBuffer:true,stencilBuffer:false,samples:0
+  });
+  battlefieldTarget.texture.colorSpace=THREE.SRGBColorSpace;
+  battlefieldSource=new Uint8Array(width*height*4);
+  battlefieldImage=battlefieldContext.createImageData(width,height);
+  battlefieldCanvas.width=width;
+  battlefieldCanvas.height=height;
+}
+
 function configureAtlas() {
   atlasTarget?.dispose();
   state.previewReferenceBounds = null;
@@ -1244,6 +1266,7 @@ function configureAtlas() {
     preview.context.imageSmoothingEnabled = false;
   });
   updateCaptureCamera();
+  configureBattlefieldAtlas();
   state.lastPreview = -Infinity;
   invalidate();
 }
@@ -1254,6 +1277,98 @@ function pixelRenderOptions(transparent = false) {
     hue: state.hue, saturation: state.saturation,
     outline: state.outline, transparent, tileWidth: state.width, tileHeight: state.height
   };
+}
+
+function renderBattlefieldAtlas() {
+  if(!renderer||!scene||!pixelCamera||!battlefieldTarget)return;
+  const background=scene.background;
+  const helpersVisible=helpers?.visible;
+  const originalFacing=state.facing;
+  scene.background=null;
+  if(helpers)helpers.visible=false;
+  renderer.setClearColor(0x000000,0);
+  renderer.setRenderTarget(battlefieldTarget);
+  renderer.setScissorTest(false);
+  renderer.clear(true,true,true);
+  renderer.setScissorTest(true);
+
+  const factor=state.modelScalePercent/100*state.hexScalePercent/100;
+  const frameHeight=state.frameHeight*factor;
+  setCameraFrustum(pixelCamera,battlefieldWidth/battlefieldHeight,frameHeight);
+  fixedCamera(pixelCamera,state.center.clone().multiplyScalar(factor),frameHeight);
+
+  for(let index=0;index<HEX_FACINGS.length;index++){
+    const x=(index%3)*battlefieldWidth;
+    const y=(1-Math.floor(index/3))*battlefieldHeight;
+    turntable.rotation.y=HEX_FACINGS[index].yawRadians;
+    renderer.setViewport(x,y,battlefieldWidth,battlefieldHeight);
+    renderer.setScissor(x,y,battlefieldWidth,battlefieldHeight);
+    renderer.render(scene,pixelCamera);
+  }
+  renderer.setScissorTest(false);
+  renderer.readRenderTargetPixels(
+    battlefieldTarget,0,0,battlefieldTarget.width,battlefieldTarget.height,battlefieldSource
+  );
+  renderer.setRenderTarget(null);
+  scene.background=background;
+  if(helpers)helpers.visible=helpersVisible;
+  renderer.setClearColor(0x808080,1);
+  turntable.rotation.y=HEX_FACINGS.find(item=>item.id===originalFacing).yawRadians;
+  updateCaptureCamera();
+
+  quantizeRgba(
+    battlefieldSource,battlefieldTarget.width,battlefieldTarget.height,battlefieldImage.data,
+    {
+      ...pixelRenderOptions(true),
+      tileWidth:battlefieldWidth,
+      tileHeight:battlefieldHeight
+    }
+  );
+  battlefieldContext.putImageData(battlefieldImage,0,0);
+}
+
+function drawBattlefieldPreview(preview,index){
+  const ctx=preview.context;
+  ctx.fillStyle='#808080';
+  ctx.fillRect(0,0,preview.canvas.width,preview.canvas.height);
+  if(!battlefieldCanvas.width||!battlefieldCanvas.height)return;
+
+  const ground=new THREE.Vector3(0,0,0).project(pixelCamera);
+  const anchorX=(ground.x+1)*battlefieldWidth/2;
+  const anchorY=(1-ground.y)*battlefieldHeight/2;
+  const footprint=spriteLayoutOffsets(state.layoutId,index);
+  const hexVertices=[[0,-21],[32,-10.5],[32,10.5],[0,21],[-32,10.5],[-32,-10.5]];
+  const centers=footprint.map(({x,y})=>({x:64*(x+y/2),y:31.5*y}));
+
+  let minX=-anchorX,maxX=battlefieldWidth-anchorX,minY=-anchorY,maxY=battlefieldHeight-anchorY;
+  for(const center of centers){
+    for(const [vx,vy] of hexVertices){
+      minX=Math.min(minX,center.x+vx);maxX=Math.max(maxX,center.x+vx);
+      minY=Math.min(minY,center.y+vy);maxY=Math.max(maxY,center.y+vy);
+    }
+  }
+  const margin=10;
+  const scale=Math.max(0.01,Math.min(
+    (preview.canvas.width-margin*2)/Math.max(1,maxX-minX),
+    (preview.canvas.height-margin*2)/Math.max(1,maxY-minY)
+  ));
+  const originX=(preview.canvas.width-(minX+maxX)*scale)/2;
+  const originY=(preview.canvas.height-(minY+maxY)*scale)/2;
+
+  for(const center of centers){
+    drawGrassPreviewPolygon(ctx,hexVertices.map(([vx,vy])=>({
+      x:originX+(center.x+vx)*scale,
+      y:originY+(center.y+vy)*scale
+    })),scale);
+  }
+
+  const sx=(index%3)*battlefieldWidth,sy=Math.floor(index/3)*battlefieldHeight;
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(
+    battlefieldCanvas,sx,sy,battlefieldWidth,battlefieldHeight,
+    originX-anchorX*scale,originY-anchorY*scale,
+    battlefieldWidth*scale,battlefieldHeight*scale
+  );
 }
 
 function readCapturePose() {
@@ -1277,11 +1392,16 @@ function readCapturePose() {
   updateAnimationControls();
   // Do not advance the mixer between directions or wait for another browser frame.
   renderPreviews(performance.now());
+  renderBattlefieldAtlas();
   pixelCamera.updateMatrixWorld(true);
   const ground = new THREE.Vector3(0, 0, 0).project(pixelCamera);
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
   const result = {
     raw: atlasSource.slice(), width: state.width, height: state.height,
+    battlefieldRaw:battlefieldSource.slice(),
+    battlefieldWidth,battlefieldHeight,
+    battlefieldAnchorX:(ground.x+1)*battlefieldWidth/2,
+    battlefieldAnchorY:(1-ground.y)*battlefieldHeight/2,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
     renderWidth: size.renderWidth, renderHeight: size.renderHeight,
@@ -1400,16 +1520,7 @@ function drawFallbackPreviewFootprint(preview) {
 }
 
 function drawDirectionalPreview(preview,bounds,index) {
-  preview.context.fillStyle='#808080';
-  preview.context.fillRect(0,0,preview.canvas.width,preview.canvas.height);
-  if (!bounds) return;
-  // The hex and the character use the same pixel-camera projection and the
-  // exact same crop/display transform, preserving their Model View scale ratio.
-  drawProjectedPreviewFootprint(preview,bounds,index);
-  preview.context.imageSmoothingEnabled=false;
-  preview.context.drawImage(atlasCanvas,bounds.x,bounds.y,bounds.width,bounds.height,
-    Math.round((preview.canvas.width-bounds.displayWidth)/2),
-    Math.round((preview.canvas.height-bounds.displayHeight)/2),bounds.displayWidth,bounds.displayHeight);
+  drawBattlefieldPreview(preview,index);
 }
 
 function renderFallbackPreviews(timestamp) {
@@ -1475,6 +1586,7 @@ function renderPreviews(timestamp) {
   // the original atlasSource and its shared camera, dimensions and anchors.
   quantizeRgba(atlasSource, atlasTarget.width, atlasTarget.height, atlasImage.data, pixelRenderOptions(true));
   atlasContext.putImageData(atlasImage, 0, 0);
+  renderBattlefieldAtlas();
   const currentBounds = previews.map((preview, index) => directionalPreviewBounds(index));
   // Rev 61 QA: the preview transform is established once from Ready frame 0.
   // Later animation poses move inside that fixed framing instead of re-zooming
@@ -2109,6 +2221,7 @@ function bindControls() {
     disposeModel(state.model);
     disposeModel(helpers);
     atlasTarget?.dispose();
+    battlefieldTarget?.dispose();
     renderer?.dispose();
   });
 }

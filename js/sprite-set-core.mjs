@@ -89,6 +89,34 @@ export function validateSpriteSetManifest(value) {
       (Number.isFinite(calibration.measuredHeightInches) && calibration.measuredHeightInches > 0 && calibration.measuredHeightInches <= 900),
       'unit calibrated height must be positive inches or null.');
   }
+  if(value.battlefield !== undefined){
+    const battlefield=value.battlefield;
+    requireValue(object(battlefield)&&battlefield.renderer==='native-battlefield-v1',
+      'battlefield rendition must use the native battlefield renderer.');
+    for(const key of ['width','height']){
+      requireValue(Number.isInteger(battlefield[key])&&battlefield[key]>0&&battlefield[key]<=4096,
+        `battlefield ${key} must be an integer from 1 to 4096.`);
+    }
+    requireValue(battlefield.width===Math.max(1,Math.round(frame.renderWidth)) &&
+      battlefield.height===Math.max(1,Math.round(frame.renderHeight)),
+      'battlefield rendition dimensions must match rounded battlefield render size.');
+    requireValue(Number.isFinite(battlefield.anchorX)&&battlefield.anchorX>=0&&battlefield.anchorX<=battlefield.width &&
+      Number.isFinite(battlefield.anchorY)&&battlefield.anchorY>=0&&battlefield.anchorY<=battlefield.height,
+      'battlefield anchor must be within the native frame.');
+    requireValue(object(battlefield.poses),'battlefield poses are missing.');
+    const battlefieldFiles=new Set();
+    for(const pose of SPRITE_POSES){
+      const capture=battlefield.poses[pose];
+      requireValue(object(capture)&&object(capture.frames),`battlefield ${pose} frames are missing.`);
+      for(const facing of SPRITE_DIRECTIONS){
+        const name=capture.frames[facing];
+        requireValue(typeof name==='string'&&name.length<=96&&PNG_PATTERN.test(name),
+          `battlefield ${pose}/${facing} must reference a PNG filename.`);
+        requireValue(!battlefieldFiles.has(name),`battlefield image filename is used more than once: ${name}.`);
+        battlefieldFiles.add(name);
+      }
+    }
+  }
   requireValue(sameOrder(value.facings, SPRITE_DIRECTIONS), 'the six facing directions are missing or out of order.');
   requireValue(object(value.poses), 'pose captures are missing.');
   const files = new Set();
@@ -118,7 +146,7 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit }) {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield }) {
   const poses = Object.fromEntries(SPRITE_POSES.map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -127,6 +155,16 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
       frames: Object.fromEntries(SPRITE_DIRECTIONS.map(facing => [facing, `${pose}-${facing.toLowerCase()}.png`]))
     }];
   }));
+  const battlefieldMetadata = battlefield === undefined ? undefined : {
+    renderer:'native-battlefield-v1',
+    width:battlefield.width,height:battlefield.height,
+    anchorX:battlefield.anchorX,anchorY:battlefield.anchorY,
+    poses:Object.fromEntries(SPRITE_POSES.map(pose=>[pose,{
+      frames:Object.fromEntries(SPRITE_DIRECTIONS.map(facing=>[
+        facing,`${pose}-${facing.toLowerCase()}-battlefield.png`
+      ]))
+    }]))
+  };
   return validateSpriteSetManifest({
     schema: SPRITE_SET_SCHEMA, version: 1, id, label, frame: { ...frame },
     facings: [...SPRITE_DIRECTIONS], poses,
@@ -136,7 +174,8 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     ...(mobType === undefined ? {} : { mobType }),
     ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
     ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
-    ...(unit === undefined ? {} : { unit: structuredClone(unit) })
+    ...(unit === undefined ? {} : { unit: structuredClone(unit) }),
+    ...(battlefieldMetadata === undefined ? {} : { battlefield:battlefieldMetadata })
   });
 }
 

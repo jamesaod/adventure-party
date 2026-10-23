@@ -79,6 +79,15 @@ function packageFiles(metadata, frames) {
   SPRITE_POSES.forEach((pose, row) => SPRITE_DIRECTIONS.forEach((facing, column) => {
     files.set(metadata.poses[pose].frames[facing], rgbaPng(frames[pose][facing], w, h, (row + column) % 5));
   }));
+  if(metadata.battlefield){
+    const battlefieldFrames=fixtureFrames(metadata.battlefield.width,metadata.battlefield.height);
+    SPRITE_POSES.forEach((pose,row)=>SPRITE_DIRECTIONS.forEach((facing,column)=>{
+      const name=metadata.battlefield.poses[pose].frames[facing];
+      files.set(name,rgbaPng(
+        battlefieldFrames[pose][facing],metadata.battlefield.width,metadata.battlefield.height,(row+column)%5
+      ));
+    }));
+  }
   const sheet = assembleSpriteSheet(frames, w, h);
   files.set(metadata.sheet.file, rgbaPng(sheet.data, sheet.width, sheet.height, 4));
   return files;
@@ -232,6 +241,26 @@ const scaledManifest = createSpriteSetManifest({
 assert.equal(scaledManifest.version, 1);
 assert.equal(scaledManifest.modelScalePercent, 55);
 assert.deepEqual(scaledManifest.frame, { width: 320, height: 400, renderWidth: 26.4, renderHeight: 33, anchorX: 160, anchorY: 300 });
+const nativeManifest=createSpriteSetManifest({
+  id:'native-character',label:'Native character',captures,
+  frame:{width:80,height:100,renderWidth:48,renderHeight:60,anchorX:40,anchorY:75},
+  mobType:'fighter',
+  battlefield:{renderer:'native-battlefield-v1',width:48,height:60,anchorX:24,anchorY:45}
+});
+assert.equal(nativeManifest.battlefield.renderer,'native-battlefield-v1');
+assert.equal(nativeManifest.battlefield.width,48);
+assert.equal(nativeManifest.battlefield.height,60);
+assert.equal(nativeManifest.battlefield.poses.ready.frames.E,'ready-e-battlefield.png');
+assert.equal(validateSpritePackage(nativeManifest,packageFiles(nativeManifest,fixtureFrames(80,100))).manifest,nativeManifest);
+for(const alter of [
+  value=>{value.battlefield.width=49;},
+  value=>{value.battlefield.renderer='scaled-source';},
+  value=>{value.battlefield.anchorY=61;},
+  value=>{delete value.battlefield.poses.attack.frames.NE;}
+]){
+  const bad=structuredClone(nativeManifest);alter(bad);
+  assert.throws(()=>validateSpriteSetManifest(bad));
+}
 for (const alter of [
   value => { value.modelScalePercent = 54; },
   value => { value.modelScalePercent = '55'; },
