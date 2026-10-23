@@ -115,6 +115,20 @@
         ],
         "mode": "joint-bind-relative"
       }
+    },
+    {
+      "id": "new-orc-retarget-anatomical-aim-qa",
+      "label": "New Orc — Bone Direction + Hip Motion (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_sword_and_shield_attack"
+        ],
+        "mode": "anatomical-aim"
+      }
     }
   ]
 }

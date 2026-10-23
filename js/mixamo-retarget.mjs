@@ -90,6 +90,45 @@ function targetBindData(THREE, model) {
   return byRole;
 }
 
+
+// Rev 112 diagnostic: aim each target bone toward the direction of its
+// corresponding source bone's animated child. This works with A-pose versus
+// T-pose arms and unrelated local bone axes, without modifying skin binds.
+const DIRECTION_CHILD_PRIORITY = [
+  'spine','chest','upperChest','neck','head',
+  'leftUpperArm','rightUpperArm','leftForeArm','rightForeArm',
+  'leftHand','rightHand','leftLowerLeg','rightLowerLeg',
+  'leftFoot','rightFoot','leftToe','rightToe',
+  'leftMiddle1','rightMiddle1'
+];
+function directionalChildPairs(source, target) {
+  const pairs = new Map();
+  for (const [role, sourceBone] of source) {
+    const targetInfo = target.get(role);
+    if (!targetInfo) continue;
+    const targetBone = targetInfo.bone;
+    const sourceChildren = new Map(sourceBone.children
+      .filter(child => child.isBone)
+      .map(child => [semanticRoleForBoneName(child.name), child]));
+    const targetChildren = new Map(targetBone.children
+      .filter(child => child.isBone)
+      .map(child => [semanticRoleForBoneName(child.name), child]));
+    const common = [...sourceChildren.keys()].filter(key =>
+      key && targetChildren.has(key) &&
+      sourceChildren.get(key).position.lengthSq() > 1e-9 &&
+      targetChildren.get(key).position.lengthSq() > 1e-9);
+    common.sort((a,b) =>
+      (DIRECTION_CHILD_PRIORITY.indexOf(a) < 0 ? 999 : DIRECTION_CHILD_PRIORITY.indexOf(a)) -
+      (DIRECTION_CHILD_PRIORITY.indexOf(b) < 0 ? 999 : DIRECTION_CHILD_PRIORITY.indexOf(b)));
+    const childRole = common[0];
+    if (childRole) pairs.set(role, {
+      sourceOffset: sourceChildren.get(childRole).position.clone(),
+      targetOffset: targetChildren.get(childRole).position.clone()
+    });
+  }
+  return pairs;
+}
+
 function sampleTimes(clip, mappedRoles, resolveRole = semanticRoleForBoneName) {
   const values = new Set([0, Math.max(0, clip.duration || 0)]);
   for (const track of clip.tracks || []) {
@@ -122,7 +161,7 @@ function restoreLocalPose(pose) {
 export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, label, options = {}) {
   // Rev 111: QA-only comparison; existing callers retain the original mode.
   const mode = options.mode || 'joint-bind-relative';
-  if (mode !== 'joint-bind-relative' && mode !== 'world-bind-delta') {
+  if (!['joint-bind-relative', 'world-bind-delta', 'anatomical-aim'].includes(mode)) {
     throw new Error('Unknown retargeting mode: ' + mode);
   }
   const source = sourceBones(sourceModel);
@@ -159,6 +198,24 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   const resolveRole = name => rolesByUUID.get(name) || semanticRoleForBoneName(name);
   const times = sampleTimes(clip, mappedRoles, resolveRole);
   const valuesByRole = new Map([...mappedRoles].map(role=>[role,[]]));
+  const directionPairs = mode === 'anatomical-aim' ? directionalChildPairs(source, target) : new Map();
+  if (mode === 'anatomical-aim' && directionPairs.size < 12) {
+    throw new Error('Anatomical QA requires at least 12 source/target child-direction matches.');
+  }
+  const sourceHips = source.get('hips');
+  const targetHips = target.get('hips')?.bone;
+  const hipsTranslation = mode === 'anatomical-aim' ? (clip.tracks || []).find(track => {
+    const match = String(track.name || '').match(/^(.*)\.position$/);
+    return match && resolveRole(match[1]) === 'hips';
+  }) : null;
+  if (mode === 'anatomical-aim' && (!sourceHips || !targetHips || !hipsTranslation)) {
+    throw new Error('Anatomical QA requires a source hips position track and mapped target hips.');
+  }
+  const sourceHipRestY = sourceHips?.position.y ?? 0;
+  const targetHipRestY = targetHips?.position.y ?? 0;
+  const hipHeightScale = sourceHips && targetHips && Math.abs(sourceHipRestY) > 1e-4
+    ? Math.abs(targetHipRestY / sourceHipRestY) : 1;
+  const hipYValues = [];
   const pose = snapshotLocalPose(sourceModel);
   const quaternionTracks = new Map();
   for (const track of clip.tracks || []) {
@@ -178,6 +235,14 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
         bone.quaternion.set(sample[0],sample[1],sample[2],sample[3]).normalize();
       }
       sourceModel.updateWorldMatrix(true,true);
+      if (hipsTranslation) {
+        const sample = hipsTranslation.createInterpolant()
+          .evaluate(Math.min(Math.max(time,0),clip.duration));
+        if (sample.length < 3 || !Number.isFinite(sample[1])) {
+          throw new Error('Source hips translation is invalid.');
+        }
+        hipYValues.push(targetHipRestY + (sample[1] - sourceHipRestY) * hipHeightScale);
+      }
 
       const desiredWorld = new Map();
       const pending = new Set(mappedRoles);
@@ -199,15 +264,30 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
           //   targetWorld = C * D * inverse(C) * targetBindWorld.
           // joint-bind-relative: M = inverse(sourceBindWorld) * animatedWorld;
           //   targetWorld = targetBindWorld * M.
-          const targetWorld = mode === 'world-bind-delta'
-            ? sourceToTargetBasis.clone()
+          let targetWorld;
+          if (mode === 'anatomical-aim' && directionPairs.has(role)) {
+            const pair = directionPairs.get(role);
+            // Each bone's child offset is in the bone's *own local frame*.
+            // Compare world-space physical limb directions, not the author's
+            // arbitrary local quaternion axes. Preserve original skin bind.
+            const from = pair.targetOffset.clone()
+              .applyQuaternion(targetInfo.bindWorldQuaternion).normalize();
+            const to = pair.sourceOffset.clone()
+              .applyQuaternion(sourceAnimatedWorld)
+              .applyQuaternion(sourceToTargetBasis).normalize();
+            targetWorld = new THREE.Quaternion().setFromUnitVectors(from,to)
+              .multiply(targetInfo.bindWorldQuaternion).normalize();
+          } else if (mode === 'world-bind-delta') {
+            targetWorld = sourceToTargetBasis.clone()
               .multiply(sourceAnimatedWorld.clone().multiply(sourceBind.clone().invert()))
               .multiply(sourceToTargetBasis.clone().invert())
               .multiply(targetInfo.bindWorldQuaternion)
-              .normalize()
-            : targetInfo.bindWorldQuaternion.clone()
+              .normalize();
+          } else {
+            targetWorld = targetInfo.bindWorldQuaternion.clone()
               .multiply(sourceBind.clone().invert().multiply(sourceAnimatedWorld))
               .normalize();
+          }
           desiredWorld.set(role,targetWorld);
 
           const parentWorld = parentRole && desiredWorld.has(parentRole)
@@ -237,6 +317,10 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     if (!values?.length) continue;
     tracks.push(new THREE.QuaternionKeyframeTrack(`${info.bindingName}.quaternion`,times,values));
   }
+  if (hipsTranslation) {
+    tracks.push(new THREE.VectorKeyframeTrack(`${targetHips.uuid}.position`, times,
+      hipYValues.flatMap(y => [targetHips.position.x,y,targetHips.position.z])));
+  }
   if (!tracks.length) throw new Error('No compatible humanoid rotation tracks matched the current model.');
 
   const importInfo = {
@@ -244,7 +328,10 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     mappedTracks: tracks.length,
     mappedRoles: [...mappedRoles],
     skippedTracks: Math.max(0,(clip.tracks?.length||0)-tracks.length),
-    retargetMode: mode === 'world-bind-delta' ? 'semantic-world-bind-delta' : 'semantic-joint-bind-relative',
+    retargetMode: mode === 'anatomical-aim' ? 'anatomical-child-direction-with-hip-y' : mode === 'world-bind-delta' ? 'semantic-world-bind-delta' : 'semantic-joint-bind-relative',
+    aimedBoneRoles: [...directionPairs.keys()],
+    hipYTransferred: !!hipsTranslation,
+    hipHeightScale: hipsTranslation ? hipHeightScale : null,
     sourceRigFamily: sourceRig.family,
     targetRigFamily: targetRig.family,
     targetCoverage: targetRig.coverage,

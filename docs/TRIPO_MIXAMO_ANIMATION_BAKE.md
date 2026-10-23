@@ -1,6 +1,48 @@
 # Reproducible Tripo GLB → Mixamo FBX animation bake (Carl + Orc)
 
 
+## Candidate Rev 112: anatomical direction + vertical hips test (visual QA pending)
+
+Rev 111 visual feedback: joint-bind-relative transfer keeps arms on approximately the
+right anatomical sides, but the animation remains chaotic. World delta also fails.
+We extracted **the exact repository-identical New Carl and New Orc source GLBs** and
+the 17-clip saved carrier data; source SHA-256 checks match the catalog.
+
+**Confirmed structural differences:** Carl has outstretched arms in a T-style bind
+pose; Orc has noticeably lowered arms, closer to A-pose. Actual bind world
+quaternion discrepancies for the right shoulder, right upper arm, and right
+forearm are approximately **156.8°, 176.5°, and 140.8°** respectively.
+Thus 65+ matched Mixamo names are not evidence of interchangeable joint axes.
+
+**Confirmed missing runtime motion:** Rev 111's Three.js runtime retargeter
+transferred rotations but dropped the source's hips translation. In the selected
+2.33-second `Mixamo_sword_and_shield_attack`, Carl's hips significantly
+rise and fall; pinning hips causes crouches and airborne actions to deform.
+
+The **New Orc — Bone Direction + Hip Motion (QA)** option in the same Model Library:
+1. Loads the exact original, animationless `new-orc.glb`, unchanged.
+2. Loads the existing Carl 17-clip baked GLB as a source carrier, but selects only
+   `Mixamo_sword_and_shield_attack`, the identical clip used in Rev 111.
+3. For each matching bone/child pair, rotates Orc's **bind-space physical bone
+   direction** to match Carl's animated bone direction in the anatomically
+   corrected world frame. This handles local axis discrepancies without
+   rewriting Orc skin weights or bind matrices. Unpaired terminal bones
+   retain the legacy joint-relative motion as a diagnostic fallback.
+4. Retains **Y-axis hips translation**, scaled by target/source bind hips height,
+   while intentionally discarding horizontal XZ travel for sprite capture.
+5. Records the number of anatomically aimed bone roles and translation transfer
+   in clip diagnostics. New CI tests use the actual Carl and Orc Tripo GLBs to
+   check the mismatched rest frames and direction transfer.
+
+This is a *controlled experiment*, not a guarantee of correct twists or mesh
+deformation: aligning bone directions leaves the **roll/twist around each bone
+axis** underconstrained. Real-time human visual QA of all three axes, joints,
+mesh sleeves/thighs, and equipment is mandatory before further clips are processed.
+
+Research references: <https://github.com/upf-gti/retargeting-threejs/blob/main/docs/Algorithm.md>
+and <https://dev.epicgames.com/documentation/en-us/unreal-engine/ik-rig-animation-retargeting-in-unreal-engine>.
+Both emphasize matching source and target retarget reference poses.
+
 ## Candidate Rev 111: controlled retarget diagnosis (human QA required)
 
 Two new Model Library entries provide a controlled A/B comparison on the **same untouched**
