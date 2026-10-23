@@ -1,5 +1,12 @@
 # Reproducible Tripo GLB → Mixamo FBX animation bake (Carl + Orc)
 
+## Candidate Rev 113: review all 17 using successful anatomical-direction method
+
+Rev 112 user QA found its `anatomical-aim` one-clip Orc test visually good across the attack. To check static poses and motion families, a **separate Model Library entry** now loads all 17 original Carl sword-and-shield source clips, retargeted **at runtime** using exactly the same `anatomical-aim` and vertical hips motion algorithm. It opens on `Mixamo_sword_and_shield_idle`; please review `Mixamo_sword_and_shield_block_idle`, then `Mixamo_sword_and_shield_block` before attacks, runs and turns. All originals and Rev 112 single-clip QA remain intact. All 17 clips are mathematically checked against the real GLBs, but full animation quality is **pending visual QA**, especially bone-axis twist and skin weights.
+
+**Permanent reusable method and safety gates: [ANATOMICAL_BIPED_RETARGET_WORKFLOW.md](ANATOMICAL_BIPED_RETARGET_WORKFLOW.md).** This is not the old world-space offline bake: a separate post-QA native GLB bake is future work, not something to infer from this runtime test.
+
+
 
 ## Candidate Rev 112: anatomical direction + vertical hips test (visual QA pending)
 

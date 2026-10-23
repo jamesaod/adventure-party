@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C112';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C113';
 import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
@@ -1195,7 +1195,16 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   if (!restoredTPose && isTwoHandedAudition && preferredTwoHandedRest >= 0 && (clipIndex < 0 || !state.clips[clipIndex])) {
     clipIndex = preferredTwoHandedRest;
   } else if (!restoreSettings) {
-    const readyIndex = preferredTwoHandedRest >= 0 ? preferredTwoHandedRest : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
+    const firstQaClip = modelDefaults?.retargetQa?.initialClip;
+    const qaStartIndex = firstQaClip
+      ? state.clips.findIndex(clip =>
+        clip.userData?.retargetQa?.sourceClip === firstQaClip ||
+        (clip.name.startsWith('QA Bone Direction + Hip Y — ') &&
+         clip.name.endsWith(' — ' + firstQaClip)))
+      : -1;
+    const readyIndex = qaStartIndex >= 0 ? qaStartIndex
+      : preferredTwoHandedRest >= 0 ? preferredTwoHandedRest
+      : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
     if (readyIndex >= 0) clipIndex = readyIndex;
   }
   state.previewReferenceBounds = null;
@@ -1914,16 +1923,21 @@ async function loadRetargetQaClips(targetModel, experiment) {
   const gltf = await new GLTFLoader().parseAsync(await response.arrayBuffer(), '');
   try {
     const sourceClips = prepareStudioAnimations(gltf.animations || []);
-    return experiment.clips.map(sourceName => {
-      const sourceClip = sourceClips.find(clip => clip.name === sourceName);
+    const sourceByName = new Map(sourceClips.map(clip => [clip.name, clip]));
+    return experiment.clips.map((sourceName, index) => {
+      status(`Retargeting Orc QA animation ${index + 1}/${experiment.clips.length}: ${sourceName}…`);
+      const sourceClip = sourceByName.get(sourceName);
       if (!sourceClip) throw new Error('Carl QA donor is missing the required clip: ' + sourceName);
       const variantName = experiment.mode === 'world-bind-delta' ? 'World Delta'
         : experiment.mode === 'anatomical-aim' ? 'Bone Direction + Hip Y' : 'Joint Relative';
       const label = 'QA ' + variantName + ' — ' + sourceName;
       const clip = retargetHumanoidClip(THREE, sourceClip, gltf.scene, targetModel,
         label, { mode: experiment.mode });
-      if (clip.userData.humanoidImport.mappedTracks < 60) {
-        throw new Error('QA comparison refused: fewer than 60 animation joints were mapped.');
+      if (clip.userData.humanoidImport.mappedTracks < 60 ||
+          (experiment.mode === 'anatomical-aim' &&
+            (!clip.userData.humanoidImport.hipYTransferred ||
+             clip.userData.humanoidImport.aimedBoneRoles.length < 12))) {
+        throw new Error('QA retarget rejected incompatible joint coverage or missing hip motion: ' + sourceName);
       }
       clip.userData = { ...clip.userData, retargetQa: {
         mode: experiment.mode, donor: experiment.carrier, sourceClip: sourceName
@@ -1976,10 +1990,18 @@ async function loadModelLibrary() {
       if (entry.retargetQa !== undefined) {
         const qa = entry.retargetQa;
         const qaUrl = new URL(qa?.carrier || '', appRoot);
+        const singleClipProof = Array.isArray(qa?.clips) && qa.clips.length === 1 &&
+          qa.clips[0] === 'Mixamo_sword_and_shield_attack' && qa.initialClip === undefined;
+        const fullAnatomicalQa = qa?.mode === 'anatomical-aim' &&
+          Array.isArray(qa?.clips) && qa.clips.length === 17 &&
+          new Set(qa.clips).size === 17 &&
+          qa.clips.every(name => /^Mixamo_[a-z0-9_]+$/.test(name)) &&
+          qa.clips.includes('Mixamo_sword_and_shield_idle') &&
+          qa.clips.includes('Mixamo_sword_and_shield_block_idle') &&
+          qa.initialClip === 'Mixamo_sword_and_shield_idle';
         if (entry.file !== 'assets/models/orcs/new-orc/new-orc.glb' ||
             !['world-bind-delta','joint-bind-relative','anatomical-aim'].includes(qa?.mode) ||
-            !Array.isArray(qa.clips) || qa.clips.length !== 1 ||
-            qa.clips[0] !== 'Mixamo_sword_and_shield_attack' ||
+            !(singleClipProof || fullAnatomicalQa) ||
             qaUrl.origin !== appRoot.origin ||
             !qaUrl.pathname.startsWith(appRoot.pathname + 'assets/models/') ||
             !/\.glb$/i.test(qaUrl.pathname) ||

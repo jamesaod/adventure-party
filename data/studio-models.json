@@ -129,6 +129,37 @@
         ],
         "mode": "anatomical-aim"
       }
+    },
+    {
+      "id": "new-orc-retarget-anatomical-full-17-qa",
+      "label": "New Orc — Bone Direction + Hip Motion / All 17 (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_draw_sword_1",
+          "Mixamo_sheath_sword_1",
+          "Mixamo_sword_and_shield_attack_2",
+          "Mixamo_sword_and_shield_attack_3",
+          "Mixamo_sword_and_shield_attack_4",
+          "Mixamo_sword_and_shield_attack",
+          "Mixamo_sword_and_shield_block_2",
+          "Mixamo_sword_and_shield_block_idle",
+          "Mixamo_sword_and_shield_block",
+          "Mixamo_sword_and_shield_death",
+          "Mixamo_sword_and_shield_idle",
+          "Mixamo_sword_and_shield_run_2",
+          "Mixamo_sword_and_shield_run",
+          "Mixamo_sword_and_shield_strafe_2",
+          "Mixamo_sword_and_shield_strafe",
+          "Mixamo_sword_and_shield_turn_2",
+          "Mixamo_sword_and_shield_turn"
+        ],
+        "mode": "anatomical-aim",
+        "initialClip": "Mixamo_sword_and_shield_idle"
+      }
     }
   ]
 }

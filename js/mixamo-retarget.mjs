@@ -225,19 +225,24 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     if (role && mappedRoles.has(role) && !quaternionTracks.has(role)) quaternionTracks.set(role, track);
   }
 
+  // Reuse interpolation buffers over the clip. Recreating interpolants once per
+  // joint per frame is especially costly when QA imports 17 full motions.
+  const interpolants = new Map([...quaternionTracks].map(([role,track])=>
+    [role,track.createInterpolant()]));
+  const hipInterpolant = hipsTranslation?.createInterpolant() || null;
+
   try {
     for (const time of times) {
       restoreLocalPose(pose);
-      for (const [role, track] of quaternionTracks) {
-        const sample = track.createInterpolant().evaluate(Math.min(Math.max(time,0),clip.duration));
+      for (const [role, interpolant] of interpolants) {
+        const sample = interpolant.evaluate(Math.min(Math.max(time,0),clip.duration));
         const bone = source.get(role);
         if (!bone || sample.length < 4) continue;
         bone.quaternion.set(sample[0],sample[1],sample[2],sample[3]).normalize();
       }
       sourceModel.updateWorldMatrix(true,true);
-      if (hipsTranslation) {
-        const sample = hipsTranslation.createInterpolant()
-          .evaluate(Math.min(Math.max(time,0),clip.duration));
+      if (hipInterpolant) {
+        const sample = hipInterpolant.evaluate(Math.min(Math.max(time,0),clip.duration));
         if (sample.length < 3 || !Number.isFinite(sample[1])) {
           throw new Error('Source hips translation is invalid.');
         }

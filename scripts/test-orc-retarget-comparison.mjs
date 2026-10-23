@@ -62,14 +62,19 @@ assert.throws(()=>retargetHumanoidClip(THREE,sourceClip,source,target,'bad',{mod
 
 const catalog=JSON.parse(readFileSync('data/studio-models.json','utf8'));
 const variants=catalog.models.filter(m=>m.retargetQa);
-assert.equal(variants.length,3,'Rev 111 comparison and Rev 112 anatomical QA stay separate');
-assert.deepEqual(variants.map(m=>m.retargetQa.mode).sort(),['anatomical-aim','joint-bind-relative','world-bind-delta']);
+assert.equal(variants.length,4,'Rev 111 single proofs and Rev 113 full pack remain separate');
+assert.deepEqual(variants.map(m=>m.retargetQa.mode).sort(),['anatomical-aim','anatomical-aim','joint-bind-relative','world-bind-delta']);
 const donor='assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb';
 const originalOrc='assets/models/orcs/new-orc/new-orc.glb';
 for(const entry of variants){
+  if (entry.id === 'new-orc-retarget-anatomical-full-17-qa') {
+    assert.equal(entry.retargetQa.clips.length,17);
+    assert.equal(entry.retargetQa.initialClip,'Mixamo_sword_and_shield_idle');
+  } else {
+    assert.deepEqual(entry.retargetQa.clips,['Mixamo_sword_and_shield_attack']);
+  }
   assert.equal(entry.file,originalOrc,'Always load the original Orc');
   assert.equal(entry.retargetQa.carrier,donor,'Both experiments use identical Carl donor');
-  assert.deepEqual(entry.retargetQa.clips,['Mixamo_sword_and_shield_attack']);
   assert.ok(!entry.skinWeightRepair && !entry.animationBindRebase && !entry.animationFamilies,
     'Do not change skin, bind or approved production animation family');
 }
