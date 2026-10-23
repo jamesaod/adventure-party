@@ -671,6 +671,22 @@ function updateModelInfo() {
   ui.ModelInfo.textContent = `${meshes} mesh${meshes === 1 ? '' : 'es'} · ${bones} bones · ${state.clips.length} animation${state.clips.length === 1 ? '' : 's'}`;
 }
 
+function geometryBodyBounds(root, options = {}) {
+  const attachments = [];
+  root?.traverse(object => {
+    if ((object.userData?.studioEquipment || object.userData?.studioShield) && object.parent) {
+      attachments.push({ object, parent: object.parent });
+    }
+  });
+  for (const { object, parent } of attachments) parent.remove(object);
+  try {
+    return geometryBounds(root, options);
+  } finally {
+    for (const { object, parent } of attachments) parent.add(object);
+    root?.updateWorldMatrix(true, true);
+  }
+}
+
 function geometryBounds(root, { refreshSkinnedBounds = true } = {}) {
   root.updateWorldMatrix(true, false);
   // SkinnedMesh overrides updateMatrixWorld to refresh its bind inverse;
@@ -693,12 +709,16 @@ function updateHeightGuide(timestamp) {
   if (!state.modelReady || !state.model) return;
   if (!modelBounds || (state.heightDirty &&
       (!state.playing || !state.action || timestamp - state.lastHeightMeasure >= 100))) {
-    modelBounds = geometryBounds(state.model, { refreshSkinnedBounds: false });
+    modelBounds = isTPoseSelected()
+      ? geometryBodyBounds(state.model, { refreshSkinnedBounds: false })
+      : geometryBounds(state.model, { refreshSkinnedBounds: false });
     state.heightFeet = studioModelHeightFeet(modelBounds.max.y - modelBounds.min.y, state.layoutId, state.frameHeight);
+    if (isTPoseSelected()) state.tPoseHeightFeet = state.heightFeet;
     ui.ModelHeightValue.textContent = `${state.heightFeet.toFixed(1)} ft`;
     state.heightDirty = false;
     state.lastHeightMeasure = timestamp;
   }
+  ui.ModelHeight.querySelector('small').textContent = isTPoseSelected() ? 'T-Pose calibration · body only' : 'Current pose · 10 ft / hex';
   const width = ui.Viewport.clientWidth, height = ui.Viewport.clientHeight;
   if (!width || !height) return;
   const screen = point => {
