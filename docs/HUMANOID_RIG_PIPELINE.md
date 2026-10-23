@@ -41,7 +41,7 @@ Observed source facts:
 - repository path: `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`
 - Studio library ID: `male-orc-fighter`
 
-The rig maps all 20 current core humanoid roles and therefore qualifies automatically for external humanoid animation retargeting and equipment attachment. The exact uploaded GLB is now repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. The absence of embedded clips is expected; animations must be imported separately until a generic repository animation library is wired into Studio.
+The rig maps all 20 current core humanoid roles and therefore qualifies automatically for external humanoid animation retargeting and equipment attachment. The exact uploaded GLB is repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. Its source contains no embedded clips, but Studio now assigns it the shared repository `one-handed-swing` family and retargets `UAL2_Sword_Ready` plus `UAL2_Sword_Regular_A` when the model loads.
 
 ## Current limitations
 
@@ -51,6 +51,7 @@ This is a first pass, not a promise that every humanoid rig will be zero-touch.
 - A skeleton with unusual names that do not match the alias catalog may need a saved model-specific mapping profile.
 - Weapon and shield attachment bones can be found generically, but unusual hand anatomy or asset pivots may still need a small model-specific socket correction.
 - The two-handed solver requires recognizable shoulder/upper-arm/forearm/hand chains. Finger wrapping requires recognizable finger chains.
-- The semantic animation catalog exists, but Studio does not yet provide a repository-backed generic animation picker. External FBX import is the current bridge.
+- Repository-backed animation families now exist, beginning with `one-handed-swing`. The first carrier is Carl's approved UAL2 proof GLB, so loading this family currently downloads more data than a future lightweight skeleton-only animation asset will require.
+- There is not yet a general animation-family picker in Studio; saved model entries opt into approved families through data, while **Load animation FBX** remains available for ad hoc testing.
 
 The target architecture is **model + semantic rig profile + generic animation family + equipment profile**, with model-specific corrections stored as data.
