@@ -37,6 +37,14 @@
       "upAxis": "Y",
       "mobType": "orc",
       "skinWeightRepair": "cross-limb-components-v1"
+    },
+    {
+      "id": "male-orc-fighter-ual2-native-bind-experiment",
+      "label": "Male Orc Fighter — Native-Bind Animation Test",
+      "file": "assets/models/orcs/male-orc-fighter/ual2-one-handed/male-orc-fighter-ual2-one-handed.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationBindRebase": "orc-native-bind-v1"
     }
   ]
 }
