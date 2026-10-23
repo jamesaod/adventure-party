@@ -44,7 +44,7 @@ const FALLBACK_SPRITES = Object.freeze({
 // rendered into an atlas before a single readback and palette conversion.
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
-  'Canvas', 'Viewport', 'Files', 'LoadButton', 'DemoButton', 'ModelName',
+  'Canvas', 'Viewport', 'Files', 'LoadButton', 'AnimationFiles', 'LoadAnimationButton', 'DemoButton', 'ModelName',
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
@@ -366,6 +366,7 @@ function setModelReady(ready) {
   ui.HeightRuler.toggleAttribute('hidden', !ready);
   ui.ModelHeight.hidden = !ready;
   ui.LoadButton.disabled = ui.DemoButton.disabled = !renderer || state.disposed;
+  ui.LoadAnimationButton.disabled = !ready || state.spriteOnlyFallback || state.modelLoading || state.disposed;
   syncModelLibraryControls();
   ui.ResetViewButton.disabled = !ready;
   ui.ExportSheetButton.disabled = !ready;
@@ -1405,6 +1406,99 @@ function tick(timestamp) {
   else state.lastTick = 0;
 }
 
+function normalizedRigName(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function targetRigBones(model) {
+  const bones = new Map();
+  model?.traverse(object => {
+    if (!object.isBone) return;
+    const key = normalizedRigName(object.name);
+    if (key && !bones.has(key)) bones.set(key, object.name);
+  });
+  return bones;
+}
+
+function retargetMixamoClip(clip, model, label) {
+  const bones = targetRigBones(model);
+  if (!bones.size) throw new Error('The current model has no skeleton to receive animation.');
+  let mapped = 0, skipped = 0;
+  const tracks = [];
+  for (const track of clip.tracks || []) {
+    const match = String(track.name || '').match(/^(.*)\.(position|quaternion|scale)$/);
+    if (!match) { skipped++; continue; }
+    const [, sourceName, property] = match;
+    const key = normalizedRigName(sourceName);
+    const targetName = bones.get(key);
+    if (!targetName) { skipped++; continue; }
+    if (property === 'scale') { skipped++; continue; }
+    if (property === 'position' && !/hips$/.test(key)) { skipped++; continue; }
+    const cloned = track.clone();
+    cloned.name = `${targetName}.${property}`;
+    tracks.push(cloned);
+    mapped++;
+  }
+  if (!tracks.length) throw new Error('No compatible Mixamo skeleton tracks matched the current model.');
+  const result = new THREE.AnimationClip(label, clip.duration, tracks);
+  result.userData = {
+    studioAnimationId: `mixamo:${label}`,
+    mixamoImport: { sourceName: clip.name || '', mappedTracks: mapped, skippedTracks: skipped }
+  };
+  return result;
+}
+
+async function loadAnimationFiles(fileList) {
+  if (!state.modelReady || !state.model || state.modelLoading || state.disposed) {
+    showError(new Error('Load a rigged model before importing animation FBX files.'));
+    return false;
+  }
+  if (poseCapture?.snapshot().captureCount) {
+    showError(new Error('Clear captured poses before changing the animation library.'));
+    return false;
+  }
+  const files = [...fileList].filter(file => /\.fbx$/i.test(file.name));
+  if (!files.length) {
+    showError(new Error('Choose one or more FBX animation files.'));
+    return false;
+  }
+  clearError();
+  const added = [];
+  try {
+    for (const file of files) {
+      status(`Loading animation ${file.name}…`);
+      const buffer = await file.arrayBuffer();
+      const parsed = new FBXLoader().parse(buffer, '');
+      const clips = prepareStudioAnimations(parsed.animations || []);
+      if (!clips.length) throw new Error(`${file.name} contains no usable animation clips.`);
+      const base = file.name.replace(/\.fbx$/i, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+      clips.forEach((clip, index) => {
+        const label = clips.length === 1 ? `Mixamo_${base}` : `Mixamo_${base}_${index + 1}`;
+        const retargeted = retargetMixamoClip(clip, state.model, label);
+        state.sourceClips.push(retargeted);
+        state.clips.push(retargeted);
+        added.push(retargeted);
+      });
+      disposeModel(parsed);
+    }
+    const selected = state.clips.length - added.length;
+    updateAnimationChoices(selected);
+    setClip(selected);
+    updateModelInfo();
+    fitAllAnimations();
+    state.previewReferenceBounds = null;
+    poseCapture?.saveWorkspace();
+    status(`Added ${added.length} Mixamo animation${added.length === 1 ? '' : 's'} · Select from Animation`);
+    return true;
+  } catch (error) {
+    showError(friendlyImportError(error));
+    status('Animation import failed · Existing model and animations retained');
+    return false;
+  } finally {
+    ui.AnimationFiles.value = '';
+  }
+}
+
 function normalizePath(value) {
   let path = value;
   try { path = decodeURIComponent(path); } catch { /* Keep literal malformed percent names. */ }
@@ -1628,6 +1722,8 @@ function bindControls() {
   ui.LoadLibraryButton.addEventListener('click', loadLibraryModel);
   ui.LoadButton.addEventListener('click', () => ui.Files.click());
   ui.Files.addEventListener('change', () => { if (ui.Files.files.length) loadFiles(ui.Files.files); });
+  ui.LoadAnimationButton.addEventListener('click', () => ui.AnimationFiles.click());
+  ui.AnimationFiles.addEventListener('change', () => { if (ui.AnimationFiles.files.length) void loadAnimationFiles(ui.AnimationFiles.files); });
   ui.DemoButton.addEventListener('click', async () => {
     ++state.loadingVersion;
     try { await installModel(makeDemo(), { isDemo: true }); }
