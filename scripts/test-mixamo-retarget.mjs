@@ -39,14 +39,14 @@ const moved = new THREE.AnimationClip('Moved', 1, [
 
 const retargetedRest=retargetMixamoClip(THREE,noMotion,sourceRig,targetRig,'Rest');
 const restQ=new THREE.Quaternion(...Array.from(retargetedRest.tracks[0].values.slice(0,4)));
-assert.ok(restQ.angleTo(targetBind)<1e-7,'Source bind pose maps exactly to target bind pose');
+assert.ok(restQ.angleTo(targetBind)<1e-4,'Source bind pose maps to target bind pose within Float32 animation precision');
 
 const retargetedMove=retargetMixamoClip(THREE,moved,sourceRig,targetRig,'Move');
 const movedQ=new THREE.Quaternion(...Array.from(retargetedMove.tracks[0].values.slice(0,4)));
 const expected=targetBind.clone().multiply(
   new THREE.Quaternion().setFromAxisAngle(axis,THREE.MathUtils.degToRad(30))
 ).normalize();
-assert.ok(movedQ.angleTo(expected)<1e-7,'Source bind-relative motion is applied on target bind pose');
+assert.ok(movedQ.angleTo(expected)<1e-4,'Source bind-relative motion is applied on target bind pose within Float32 animation precision');
 assert.ok(movedQ.angleTo(sourceMotion)>THREE.MathUtils.degToRad(20),
   'Retargeted result is not a raw source quaternion copy');
 
