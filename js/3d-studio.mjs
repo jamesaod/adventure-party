@@ -6,8 +6,8 @@ import { retargetMixamoClip } from './mixamo-retarget.mjs?v=R238C88';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C93';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C95';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C99';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -30,6 +30,8 @@ const DEFAULT_LIGHTING = Object.freeze({
 
 // The shared asset format still accepts older sizes up to 2000%.
 const STUDIO_MODEL_SCALE_MAX = 1000;
+const BATTLEFIELD_PIXELS_PER_INCH = 64 / (STUDIO_FEET_PER_HEX * 12);
+const DEFAULT_OUTLINE_INCHES = 1 / BATTLEFIELD_PIXELS_PER_INCH; // 1 legacy battlefield pixel = 1.875 in
 
 const FALLBACK_SPRITES = Object.freeze({
   kobold: 'assets/sprites/kobold-stand.png',
@@ -73,7 +75,7 @@ const state = {
   modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
   sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
   libraryModels: [], libraryModelId: '', libraryLoading: false, modelLoading: false,
-  brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
+  brightness: 1, contrast: 1, hue: 0, saturation: 1, outlineInches: DEFAULT_OUTLINE_INCHES,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
   heightDirty: true, heightFeet: null, tPoseHeightFeet: null, lastHeightMeasure: -Infinity,
@@ -1275,11 +1277,19 @@ function configureAtlas() {
   invalidate();
 }
 
-function pixelRenderOptions(transparent = false) {
+function outlinePixelsForTarget(targetWidth = state.width, battlefieldFrameWidth = battlefieldWidth) {
+  const battlefieldPixels = Math.max(0, state.outlineInches) * BATTLEFIELD_PIXELS_PER_INCH;
+  const sourceScale = battlefieldFrameWidth > 0 ? targetWidth / battlefieldFrameWidth : 1;
+  return battlefieldPixels * sourceScale;
+}
+
+function pixelRenderOptions(transparent = false, targetWidth = state.width, battlefieldFrameWidth = battlefieldWidth) {
   return {
     brightness: state.brightness, contrast: state.contrast,
     hue: state.hue, saturation: state.saturation,
-    outline: state.outline, transparent, tileWidth: state.width, tileHeight: state.height
+    outline: outlinePixelsForTarget(targetWidth, battlefieldFrameWidth),
+    outlineInches: state.outlineInches,
+    transparent, tileWidth: targetWidth, tileHeight: state.height
   };
 }
 
@@ -1327,7 +1337,7 @@ function renderBattlefieldAtlas() {
   quantizeRgba(
     battlefieldSource,targetWidth,targetHeight,battlefieldImage.data,
     {
-      ...pixelRenderOptions(true),
+      ...pixelRenderOptions(true,battlefieldWidth,battlefieldWidth),
       tileWidth:battlefieldWidth,
       tileHeight:battlefieldHeight
     }
@@ -1455,7 +1465,7 @@ function directionalPreviewBounds(index) {
   // displayed height, including pixels whose color matches the background.
   for (let y = top; y < top + state.height; y++) {
     for (let x = left; x < left + state.width; x++) {
-      if (!atlasImage.data[(y * atlasCanvas.width + x) * 4 + 3]) continue;
+      if (atlasImage.data[(y * atlasCanvas.width + x) * 4 + 3] < 128) continue;
       minX = Math.min(minX, x); maxX = Math.max(maxX, x);
       minY = Math.min(minY, y); maxY = Math.max(maxY, y);
     }
@@ -2123,16 +2133,21 @@ function bindControls() {
     update();
     return { input, update };
   });
-  ui.Outline.value = String(state.outline);
+  ui.Outline.value = String(state.outlineInches);
   ui.ResetColorsButton.addEventListener('click', () => {
     colorControls.forEach(({ input, update }) => { input.value = input.defaultValue; update(); });
     poseCapture?.updateStyle(pixelRenderOptions(true));
     invalidate();
   });
   const updateOutline = () => {
-    state.outline = Number(ui.Outline.value);
-    ui.OutlineValue.textContent = state.outline ? `${state.outline} px` : '0 px (off)';
-    ui.Outline.setAttribute('aria-valuetext', state.outline ? `${state.outline} ${state.outline === 1 ? 'pixel' : 'pixels'}` : 'Off');
+    state.outlineInches = Math.max(0, Number(ui.Outline.value));
+    const battlefieldPixels = state.outlineInches * BATTLEFIELD_PIXELS_PER_INCH;
+    ui.OutlineValue.textContent = state.outlineInches
+      ? `${Number(state.outlineInches.toFixed(3))} in · ${battlefieldPixels.toFixed(2)} px`
+      : '0 in (off)';
+    ui.Outline.setAttribute('aria-valuetext', state.outlineInches
+      ? `${Number(state.outlineInches.toFixed(3))} inches, ${battlefieldPixels.toFixed(2)} battlefield pixels`
+      : 'Off');
   };
   ui.Outline.addEventListener('input', () => { updateOutline(); poseCapture?.updateStyle(pixelRenderOptions(true)); invalidate(); });
   updateOutline();
@@ -2358,8 +2373,13 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   state.heading = Number.isFinite(settings.heading) ? settings.heading : 0;
   state.upAxis = settings.upAxis === 'Y' ? 'Y' : 'Z';
   state.facing = HEX_FACINGS.some(item => item.id === settings.facing) ? settings.facing : 'SE';
-  for (const key of ['brightness', 'contrast', 'hue', 'saturation', 'outline']) {
+  for (const key of ['brightness', 'contrast', 'hue', 'saturation']) {
     if (Number.isFinite(style[key])) state[key] = style[key];
+  }
+  if (Number.isFinite(style.outlineInches)) state.outlineInches = Math.max(0, style.outlineInches);
+  else if (Number.isFinite(style.outline)) {
+    // Older workspaces stored a hard battlefield pixel width.
+    state.outlineInches = Math.max(0, style.outline) / BATTLEFIELD_PIXELS_PER_INCH;
   }
   ui.Heading.value = String(state.heading);
   ui.HeadingValue.textContent = `${state.heading}°`;

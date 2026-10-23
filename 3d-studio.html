@@ -348,10 +348,10 @@
             </label>
             <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
             <label class="studio-field" for="studioOutline">
-              <span class="studio-label-row">Outline width <output id="studioOutlineValue" for="studioOutline">1 px</output></span>
-              <input id="studioOutline" type="range" min="0" max="10" step="1" value="1" aria-valuetext="1 pixel">
+              <span class="studio-label-row">Outline width <output id="studioOutlineValue" for="studioOutline">1.875 in · 1.00 px</output></span>
+              <input id="studioOutline" type="range" min="0" max="18.75" step="0.125" value="1.875" aria-valuetext="1.875 inches, 1 battlefield pixel">
             </label>
-            <p class="studio-note studio-help">Black outline · measured in output pixels · Resolution does not multiply it · 0 px turns it off.</p>
+            <p class="studio-note studio-help">Black outline · measured in battlefield inches · 1.875 in equals the former 1 px outline · fractional pixel coverage allows thinner outlines · 0 in turns it off.</p>
             <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
             <p class="studio-note studio-help">Color adjustments apply to all six previews and saved PNGs, using one shared 256-color VGA palette.</p>
           </fieldset>
@@ -431,7 +431,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C98"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C100"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>
