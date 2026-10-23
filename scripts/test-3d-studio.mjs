@@ -158,7 +158,7 @@ const studioSource=fs.readFileSync(new URL("../js/3d-studio.mjs",import.meta.url
 const studioHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
 assert.ok(studioHtml.includes('id="studioAnimationFiles"')&&studioHtml.includes('id="studioLoadAnimationButton"'),
   'Studio exposes a separate Mixamo FBX animation importer');
-assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C87'")&&studioSource.includes('function loadAnimationFiles('),
+assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C88'")&&studioSource.includes('function loadAnimationFiles('),
   'Studio uses the bind-space Mixamo retargeter');
 assert.ok(studioSource.includes('retargetMixamoClip(THREE, clip, parsed, state.model, label)'),
   'Studio supplies both source and target rigs when retargeting');
