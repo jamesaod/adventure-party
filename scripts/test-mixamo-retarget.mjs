@@ -12,15 +12,66 @@ function readGlbJson(url) {
   assert.equal(bytes.readUInt32LE(0),0x46546c67,'GLB magic');
   assert.equal(bytes.readUInt32LE(4),2,'GLB version');
   assert.equal(bytes.readUInt32LE(8),bytes.length,'GLB declared byte length');
-  let json=null;
+  let json=null,binary=null;
   for(let offset=12;offset<bytes.length;){
     const length=bytes.readUInt32LE(offset),type=bytes.readUInt32LE(offset+4);
     const chunk=bytes.subarray(offset+8,offset+8+length);
     if(type===0x4e4f534a) json=JSON.parse(chunk.toString('utf8').replace(/\\u0000+$/,'').trimEnd());
+    if(type===0x004e4942) binary=chunk;
     offset+=8+length;
   }
   assert.ok(json,'GLB JSON chunk');
-  return {bytes,json};
+  return {bytes,json,binary};
+}
+
+function glbAccessor(glb,index){
+  const accessor=glb.json.accessors[index];
+  const view=glb.json.bufferViews[accessor.bufferView];
+  assert.equal(accessor.componentType,5126,'diagnostic accessor is float32');
+  const components={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT4:16}[accessor.type];
+  const stride=view.byteStride||components*4;
+  const base=(view.byteOffset||0)+(accessor.byteOffset||0);
+  return Array.from({length:accessor.count},(_,row)=>
+    Array.from({length:components},(_,component)=>glb.binary.readFloatLE(base+row*stride+component*4))
+  );
+}
+
+function diagnosticRig(THREE,glb){
+  const objects=(glb.json.nodes||[]).map(node=>{
+    const object=new THREE.Bone();
+    object.name=node.name||'';
+    if(node.matrix)new THREE.Matrix4().fromArray(node.matrix).decompose(object.position,object.quaternion,object.scale);
+    else{
+      object.position.fromArray(node.translation||[0,0,0]);
+      object.quaternion.fromArray(node.rotation||[0,0,0,1]);
+      object.scale.fromArray(node.scale||[1,1,1]);
+    }
+    return object;
+  });
+  (glb.json.nodes||[]).forEach((node,index)=>(node.children||[]).forEach(child=>objects[index].add(objects[child])));
+  const scene=new THREE.Group();
+  for(const root of glb.json.scenes?.[glb.json.scene||0]?.nodes||[])scene.add(objects[root]);
+  scene.updateWorldMatrix(true,true);
+  return {scene,objects};
+}
+
+function bindSpaceDiagnostics(THREE,glb,label){
+  const skin=glb.json.skins?.[0];
+  assert.ok(skin?.joints?.length,'diagnostic skin');
+  const ibms=glbAccessor(glb,skin.inverseBindMatrices);
+  const {scene,objects}=diagnosticRig(THREE,glb);
+  const rows=[];
+  for(let i=0;i<skin.joints.length;i++){
+    const nodeIndex=skin.joints[i],bone=objects[nodeIndex];
+    const nodeWorld=bone.getWorldQuaternion(new THREE.Quaternion());
+    const bindWorld=new THREE.Matrix4().fromArray(ibms[i]).invert();
+    const pos=new THREE.Vector3(),ibmWorld=new THREE.Quaternion(),scale=new THREE.Vector3();
+    bindWorld.decompose(pos,ibmWorld,scale);
+    rows.push({name:bone.name,angle:THREE.MathUtils.radToDeg(nodeWorld.angleTo(ibmWorld))});
+  }
+  rows.sort((a,b)=>b.angle-a.angle);
+  console.log('BINDSPACE',label,JSON.stringify({max:rows[0],arms:rows.filter(r=>/(Shoulder|Arm|ForeArm|Hand)$/.test(r.name))}));
+  return rows;
 }
 const q=(axis,degrees)=>new THREE.Quaternion().setFromAxisAngle(axis,THREE.MathUtils.degToRad(degrees));
 const z=new THREE.Vector3(0,0,1), x=new THREE.Vector3(1,0,0), y=new THREE.Vector3(0,1,0);
@@ -170,7 +221,11 @@ assert.equal(findHumanoidBone(aliasRig,'rightHand').name,'hand.R');
 
 // The repository-backed Orc must remain the exact user-supplied acceptance asset.
 const orcFileUrl=new URL('../assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',import.meta.url);
-const {bytes:orcBytes,json:orcJson}=readGlbJson(orcFileUrl);
+const orcGlb=readGlbJson(orcFileUrl);
+const {bytes:orcBytes,json:orcJson}=orcGlb;
+bindSpaceDiagnostics(THREE,orcGlb,'orc');
+const carlCarrierGlb=readGlbJson(new URL('../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb',import.meta.url));
+bindSpaceDiagnostics(THREE,carlCarrierGlb,'carl-carrier');
 assert.equal(orcBytes.length,1413200,'Orc source byte length is preserved');
 assert.equal(
   crypto.createHash('sha256').update(orcBytes).digest('hex'),
