@@ -27,14 +27,16 @@
       "label": "Male Orc Fighter",
       "file": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
       "upAxis": "Y",
-      "mobType": "orc"
+      "mobType": "orc",
+      "skinWeightRepair": "cross-limb-components-v1"
     },
     {
       "id": "male-orc-fighter-ual2-one-handed-proof",
       "label": "Male Orc Fighter — UAL2 One-Handed Proof",
       "file": "assets/models/orcs/male-orc-fighter/ual2-one-handed/male-orc-fighter-ual2-one-handed.glb",
       "upAxis": "Y",
-      "mobType": "orc"
+      "mobType": "orc",
+      "skinWeightRepair": "cross-limb-components-v1"
     }
   ]
 }
