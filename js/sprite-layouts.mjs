@@ -1,5 +1,5 @@
 /** Capture formats and tactical footprints shared by the studio and combat. */
-export const SPRITE_RESOLUTION = Object.freeze({ min: 50, max: 200, step: 5 });
+export const SPRITE_RESOLUTION = Object.freeze({ min: 50, max: 500, step: 5 });
 export const SPRITE_MODEL_SCALE = Object.freeze({ min: 25, max: 2000, step: 5 });
 export const SPRITE_HEX_SCALE_PERCENT = 109;
 
@@ -92,7 +92,7 @@ export function spriteLayoutDimensions(id = 'single', resolutionPercent = 100, m
   const layout = spriteLayout(metadata.id);
   const width = Math.round(layout.baseWidth * metadata.resolutionPercent / 100);
   const height = Math.round(layout.baseHeight * metadata.resolutionPercent / 100);
-  if (width > 1024 || height > 1024) throw new Error('Sprite source frames cannot exceed 1024 pixels per side.');
+  if (width > 4096 || height > 4096) throw new Error('Sprite source frames cannot exceed 4096 pixels per side.');
   return {
     width, height,
     renderWidth: layout.renderWidth * modelScale * hexScale / 10000,
