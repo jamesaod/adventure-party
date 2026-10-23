@@ -1258,6 +1258,7 @@ function pixelRenderOptions(transparent = false) {
 
 function readCapturePose() {
   if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
+  if (isTPoseSelected()) throw new Error('T-Pose is for height and model-size calibration only. Select an animation before capturing Ready, Attack, or Prone.');
   const gear = equipment.snapshot();
   const shieldGear = shieldEquipment.snapshot();
   if (gear.loading) throw new Error('Wait for the weapon to finish loading before capturing a pose.');
