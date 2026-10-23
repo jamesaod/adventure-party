@@ -100,7 +100,7 @@ for (const alter of [
   value => { value.poses.attack.frames.NE = '../attack-ne.png'; },
   value => { value.poses.prone.frames.SE = value.poses.ready.frames.E; },
   value => { value.frame.width = Infinity; },
-  value => { value.frame.height = 2048; },
+  value => { value.frame.height = 4097; },
   value => { value.frame.anchorY = -1; },
   value => { value.poses.ready.time = -0.1; },
   value => { delete value.poses.prone; },
