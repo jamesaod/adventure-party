@@ -208,7 +208,7 @@ function updateSetupLabels() {
   ui.ModelScaleValue.textContent = `${state.modelScalePercent}%`;
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
   const renderWidth = Number(size.renderWidth.toFixed(2)), renderHeight = Number(size.renderHeight.toFixed(2));
-  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px`;
+  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px · ${isTPoseSelected() ? 'T-Pose calibration' : 'Model size locked from T-Pose'}`;
   ui.ModelScale.setAttribute('aria-valuetext', `${state.modelScalePercent} percent, ${renderWidth} by ${renderHeight} battlefield pixels`);
   renderFootprintPreview();
 }
@@ -2175,8 +2175,8 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   state.lighting = normalizedLighting(settings.lighting);
   if (!settings.lighting && captureCount) state.lighting.legacyRig = 'rev47';
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);
-  state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 1024 ? settings.width : size.width;
-  state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 1024 ? settings.height : size.height;
+  state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 4096 ? settings.width : size.width;
+  state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 4096 ? settings.height : size.height;
   state.modelName = settings.modelName || 'Saved character';
   state.libraryModelId = typeof settings.libraryModelId === 'string' ? settings.libraryModelId : '';
   state.sourceFiles = Array.isArray(settings.sourceFiles) ? settings.sourceFiles : [];
