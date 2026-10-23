@@ -38,8 +38,10 @@ Observed source facts:
 - complete Mixamo-style body hierarchy
 - five complete finger chains per hand
 - no embedded animation clips in the uploaded GLB
+- repository path: `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`
+- Studio library ID: `male-orc-fighter`
 
-The rig maps all 20 current core humanoid roles and therefore qualifies automatically for external humanoid animation retargeting and equipment attachment. The absence of embedded clips is expected; animations must be imported separately until a generic repository animation library is wired into Studio.
+The rig maps all 20 current core humanoid roles and therefore qualifies automatically for external humanoid animation retargeting and equipment attachment. The exact uploaded GLB is now repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. The absence of embedded clips is expected; animations must be imported separately until a generic repository animation library is wired into Studio.
 
 ## Current limitations
 

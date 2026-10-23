@@ -1,10 +1,27 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { retargetHumanoidClip } from '../js/mixamo-retarget.mjs';
 import { analyzeHumanoidRig, findHumanoidBone, humanoidFingerChains } from '../js/humanoid-rig.mjs';
 
 const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${source.toString('base64')}`);
+
+function readGlbJson(url) {
+  const bytes=fs.readFileSync(url);
+  assert.equal(bytes.readUInt32LE(0),0x46546c67,'GLB magic');
+  assert.equal(bytes.readUInt32LE(4),2,'GLB version');
+  assert.equal(bytes.readUInt32LE(8),bytes.length,'GLB declared byte length');
+  let json=null;
+  for(let offset=12;offset<bytes.length;){
+    const length=bytes.readUInt32LE(offset),type=bytes.readUInt32LE(offset+4);
+    const chunk=bytes.subarray(offset+8,offset+8+length);
+    if(type===0x4e4f534a) json=JSON.parse(chunk.toString('utf8').replace(/\\u0000+$/,'').trimEnd());
+    offset+=8+length;
+  }
+  assert.ok(json,'GLB JSON chunk');
+  return {bytes,json};
+}
 const q=(axis,degrees)=>new THREE.Quaternion().setFromAxisAngle(axis,THREE.MathUtils.degToRad(degrees));
 const z=new THREE.Vector3(0,0,1), x=new THREE.Vector3(1,0,0), y=new THREE.Vector3(0,1,0);
 
@@ -106,4 +123,32 @@ assert.equal(aliasAnalysis.mappedCoreRoles,aliasAnalysis.coreRoleCount);
 assert.equal(aliasAnalysis.animationReady,true);
 assert.equal(findHumanoidBone(aliasRig,'rightHand').name,'hand.R');
 
-console.log('PASS semantic humanoid world-space bind retargeting and Orc rig detection');
+// The repository-backed Orc must remain the exact user-supplied acceptance asset.
+const orcFileUrl=new URL('../assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',import.meta.url);
+const {bytes:orcBytes,json:orcJson}=readGlbJson(orcFileUrl);
+assert.equal(orcBytes.length,1413200,'Orc source byte length is preserved');
+assert.equal(
+  crypto.createHash('sha256').update(orcBytes).digest('hex'),
+  'a0b63e9ae67c47779baf9e254660918c073ab1684237f528c43bb9f7e9f9c688',
+  'Orc repository GLB is byte-for-byte the uploaded source'
+);
+assert.equal(orcJson.asset?.generator,'Tripo');
+assert.equal(orcJson.skins?.length,1);
+assert.equal(orcJson.skins[0]?.joints?.length,65);
+assert.equal(orcJson.animations?.length||0,0,'Orc source intentionally has no embedded animation clips');
+const orcNodeNames=new Set((orcJson.nodes||[]).map(node=>node.name));
+for(const name of ['mixamorig:Hips','mixamorig:LeftHand','mixamorig:RightHand','mixamorig:LeftFoot','mixamorig:RightFoot']){
+  assert.ok(orcNodeNames.has(name),`Orc GLB contains ${name}`);
+}
+
+const studioModels=JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8'));
+const orcEntry=studioModels.models.find(model=>model.id==='male-orc-fighter');
+assert.deepEqual(orcEntry,{
+  id:'male-orc-fighter',
+  label:'Male Orc Fighter',
+  file:'assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',
+  upAxis:'Y',
+  mobType:'orc'
+},'Orc is registered as a Y-up Orc Studio model');
+
+console.log('PASS semantic humanoid world-space bind retargeting, repository Orc integrity, and model-library registration');

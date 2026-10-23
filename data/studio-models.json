@@ -21,6 +21,13 @@
       "file": "assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/dungeon-crawler-carl-v2-ual2-two-handed-audition.glb",
       "upAxis": "Y",
       "mobType": "fighter"
+    },
+    {
+      "id": "male-orc-fighter",
+      "label": "Male Orc Fighter",
+      "file": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
+      "upAxis": "Y",
+      "mobType": "orc"
     }
   ]
 }
