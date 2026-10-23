@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 85</span>
+        <span class="studio-build">Candidate Rev 86</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -73,8 +73,10 @@
           <p id="studioModelLibraryStatus" class="studio-note studio-help" role="status">Saved models are available without choosing a file from your device.</p>
           <input id="studioFiles" class="studio-file-input" type="file" multiple accept=".glb,.gltf,.bin,.fbx,.png,.jpg,.jpeg,.webp,.bmp" aria-label="Choose a 3D model and its related files">
           <button id="studioLoadButton" class="studio-button studio-wide-button" type="button">Load from device</button>
+          <input id="studioAnimationFiles" class="studio-file-input" type="file" multiple accept=".fbx" aria-label="Choose Mixamo FBX animation files">
+          <button id="studioLoadAnimationButton" class="studio-button studio-wide-button" type="button">Load animation FBX</button>
           <button id="studioDemoButton" class="studio-button studio-wide-button" type="button">Use demo model</button>
-          <p class="studio-note studio-help">GLB, glTF or FBX. Include any separate textures and model files in the same selection.</p>
+          <p class="studio-note studio-help">Model: GLB, glTF or FBX. Animation import: Mixamo-style FBX onto the currently loaded rig.</p>
           <p class="studio-local-note">Files opened from your device are not uploaded.</p>
         </section>
 
@@ -413,7 +415,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C85"></script>
-  <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C85"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C86"></script>
+  <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C86"></script>
 </body>
 </html>
