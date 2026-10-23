@@ -403,7 +403,8 @@ def generate(args):
     source, target = Glb(args.source), Glb(args.target)
     reference = Glb(args.reference_target) if args.reference_target else target
     sr, tr, rr = Rig(source), Rig(target), Rig(reference)
-    original_animation_names = [a.get('name', '') for a in target.doc.get('animations', [])]
+    original_animations = copy.deepcopy(target.doc.get('animations', []))
+    original_animation_names = [a.get('name', '') for a in original_animations]
     require(not any(name in {'UAL2_Sword_Ready', 'UAL2_Sword_Regular_A'} for name in original_animation_names),
             "Target already contains the proof animation names")
     names = bone_names()
@@ -553,14 +554,14 @@ def generate(args):
                                      'joinTime': attack.duration,
                                      'joinPolicy': 'Keep attack endpoint; omit duplicate recovery t=0; interpolate to next recovery sample.',
                                      'groundClearance': 'Hips-Y lift from original skinned foot bounds; approximately 60 fps; no foot locking or IK.'})
-    output['animations'] = [ready, combined] + output['animations']
+    output['animations'] = [ready, combined] + original_animations
     output['buffers'][0]['byteLength'] = len(binary)
     # Check preservation before writing; the independent project test checks it again.
     preserved = ['asset', 'scene', 'scenes', 'nodes', 'meshes', 'materials', 'skins', 'textures', 'images', 'samplers']
     require(all(output.get(key) == target.doc.get(key) for key in preserved), "Target structure changed")
     require(output['accessors'][:len(target.doc['accessors'])] == target.doc['accessors'], "Original accessors changed")
     require(output['bufferViews'][:len(target.doc['bufferViews'])] == target.doc['bufferViews'], "Original buffer views changed")
-    require(output['animations'][2:] == target.doc['animations'], "Original animations changed")
+    require(output['animations'][2:] == original_animations, "Original animations changed")
     require(bytes(binary[:len(target.binary)]) == target.binary, "Original BIN changed")
     require(max(baked_q_errors) < 1e-6, "Baked quaternion precision failed")
     for poses_ in [ready_locals, combined_locals]:
