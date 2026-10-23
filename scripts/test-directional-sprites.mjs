@@ -261,10 +261,18 @@ const scaledManifest = createSpriteSetManifest({
   id: "scaled-package", label: "Scaled package", modelScalePercent: 105,
   layout: { id: "single", resolutionPercent: 100 },
   frame: { width: 160, height: 200, renderWidth: 50.4, renderHeight: 63, anchorX: 80, anchorY: 145 },
-  captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: pose, time: 0.5 }]))
+  captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: pose, time: 0.5 }])),
+  unit: {
+    type: "kobold", modelId: "test-model", modelName: "Test model",
+    calibration: { pose: "T-Pose", modelScalePercent: 105, measuredHeightInches: 32 }
+  }
 });
 const scaledId = sandbox.registerStudioSpriteSet({ manifest: scaledManifest, images, sourceUrls });
 assert.equal(sandbox.registeredStudioSpriteSets.get(scaledId).modelScalePercent, 105);
+assert.deepEqual(plain(sandbox.registeredStudioSpriteSets.get(scaledId).unit), {
+  type:"kobold",modelId:"test-model",modelName:"Test model",
+  calibration:{pose:"T-Pose",modelScalePercent:105,measuredHeightInches:32}
+}, "Combat registry retains Pixel Studio unit calibration");
 const scaledAsset = registeredAssets.find(asset => asset.id === "sprite-set-scaled-package-prone-e");
 assert.equal(sandbox.spriteRenderDimensions(scaledAsset.id, scaledAsset.gameImage).width, 50.4);
 Object.assign(sandbox, {
