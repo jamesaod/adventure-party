@@ -72,7 +72,8 @@
       "label": "New Orc — Original Tripo (No Animation)",
       "file": "assets/models/orcs/new-orc/new-orc.glb",
       "upAxis": "Y",
-      "mobType": "orc"
+      "mobType": "orc",
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
     },
     {
       "id": "new-carl-mixamo-sword-shield-full-17",
@@ -86,7 +87,8 @@
       "label": "New Orc — All 17 Sword & Shield Animations (QA)",
       "file": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
       "upAxis": "Y",
-      "mobType": "orc"
+      "mobType": "orc",
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
     },
     {
       "id": "new-orc-retarget-world-delta-qa",
@@ -100,7 +102,8 @@
           "Mixamo_sword_and_shield_attack"
         ],
         "mode": "world-bind-delta"
-      }
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
     },
     {
       "id": "new-orc-retarget-joint-relative-qa",
@@ -114,7 +117,8 @@
           "Mixamo_sword_and_shield_attack"
         ],
         "mode": "joint-bind-relative"
-      }
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
     },
     {
       "id": "new-orc-retarget-anatomical-aim-qa",
@@ -128,7 +132,8 @@
           "Mixamo_sword_and_shield_attack"
         ],
         "mode": "anatomical-aim"
-      }
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
     },
     {
       "id": "new-orc-retarget-anatomical-full-17-qa",
@@ -159,7 +164,25 @@
         ],
         "mode": "anatomical-aim",
         "initialClip": "Mixamo_sword_and_shield_idle"
-      }
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
     }
-  ]
+  ],
+  "weaponAttachmentProfiles": {
+    "tripo-mixamo-orc-one-hand-sword-downward-v1": {
+      "weaponId": "medieval-sword",
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotation": [
+        0,
+        -90,
+        -115
+      ],
+      "status": "experimental-visual-qa-pending",
+      "description": "One-handed sword reoriented from a blade-up Orc stance to a down-and-out guard; original right-hand grip pivot remains fixed. Model-specific starting profile, not a verified universal biped axis."
+    }
+  }
 }
