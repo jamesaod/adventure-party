@@ -243,19 +243,19 @@ assert.equal(scaledManifest.modelScalePercent, 55);
 assert.deepEqual(scaledManifest.frame, { width: 320, height: 400, renderWidth: 26.4, renderHeight: 33, anchorX: 160, anchorY: 300 });
 const nativeManifest=createSpriteSetManifest({
   id:'native-character',label:'Native character',captures,
-  frame:{width:800,height:1000,renderWidth:83.712,renderHeight:104.64,anchorX:400,anchorY:750},
-  layout:createSpriteLayoutMetadata('single',500),mobType:'fighter',modelScalePercent:160,hexScalePercent:109,
-  battlefield:{renderer:'native-battlefield-v1',width:84,height:105,anchorX:42,anchorY:78.75}
+  frame:{width:80,height:100,renderWidth:48,renderHeight:60,anchorX:40,anchorY:75},
+  mobType:'fighter',
+  battlefield:{renderer:'native-battlefield-v1',width:48,height:60,anchorX:24,anchorY:45}
 });
 assert.equal(nativeManifest.battlefield.renderer,'native-battlefield-v1');
-assert.equal(nativeManifest.battlefield.width,84);
-assert.equal(nativeManifest.battlefield.height,105);
+assert.equal(nativeManifest.battlefield.width,48);
+assert.equal(nativeManifest.battlefield.height,60);
 assert.equal(nativeManifest.battlefield.poses.ready.frames.E,'ready-e-battlefield.png');
-assert.equal(validateSpritePackage(nativeManifest,packageFiles(nativeManifest,fixtureFrames(800,1000))).manifest,nativeManifest);
+assert.equal(validateSpritePackage(nativeManifest,packageFiles(nativeManifest,fixtureFrames(80,100))).manifest,nativeManifest);
 for(const alter of [
-  value=>{value.battlefield.width=85;},
+  value=>{value.battlefield.width=49;},
   value=>{value.battlefield.renderer='scaled-source';},
-  value=>{value.battlefield.anchorY=106;},
+  value=>{value.battlefield.anchorY=61;},
   value=>{delete value.battlefield.poses.attack.frames.NE;}
 ]){
   const bad=structuredClone(nativeManifest);alter(bad);
