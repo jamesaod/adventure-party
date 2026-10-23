@@ -1367,6 +1367,7 @@ function drawDirectionalPreview(preview, bounds) {
   preview.context.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
   drawPreviewBattlefieldHex(preview);
   if (!bounds) return;
+  preview.context.imageSmoothingEnabled = false;
   preview.context.drawImage(atlasCanvas, bounds.x, bounds.y, bounds.width, bounds.height,
     Math.round((preview.canvas.width - bounds.displayWidth) / 2),
     Math.round((preview.canvas.height - bounds.displayHeight) / 2), bounds.displayWidth, bounds.displayHeight);
@@ -1385,6 +1386,7 @@ function renderFallbackPreviews(timestamp) {
     const cy = preview.canvas.height * 0.72;
 
     if (image?.naturalWidth && image?.naturalHeight) {
+      ctx.imageSmoothingEnabled = false;
       const scale = state.modelScalePercent / 100;
       const targetH = Math.max(1, Math.round(preview.canvas.height * 0.5 * scale));
       const targetW = Math.max(1, Math.round(image.naturalWidth * targetH / image.naturalHeight));
