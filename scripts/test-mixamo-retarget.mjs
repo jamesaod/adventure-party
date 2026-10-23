@@ -248,8 +248,9 @@ assert.deepEqual(orcEntry,{
   label:'Male Orc Fighter',
   file:'assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',
   upAxis:'Y',
-  mobType:'orc'
-},'Raw Orc remains a Y-up Orc Studio source model without automatic runtime retargeting');
+  mobType:'orc',
+  skinWeightRepair:'cross-limb-components-v1'
+},'Raw Orc source stays untouched, with opt-in skinning cleanup and no automatic runtime retargeting');
 
 const animationSources=JSON.parse(fs.readFileSync(new URL('../data/humanoid-animation-sources.json',import.meta.url),'utf8'));
 assert.equal(animationSources.version,1);
