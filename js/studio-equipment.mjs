@@ -264,7 +264,7 @@ function applyTwoHandedFingerWrap(THREE, model, attachment) {
   // The weapon's primary axis gives us the hilt direction in world space.
   // Keep each fingertip near its original longitudinal position so all four
   // fingers do not collapse onto one identical point along the grip.
-  const weaponAxis = new THREE.Vector3(...attachment.weapon.primaryAxis).normalize();
+  const weaponAxis = new THREE.Vector3(...(attachment.weapon.primaryAxis || HELD_WEAPON_AXIS)).normalize();
   attachment.model.getWorldQuaternion(new THREE.Quaternion());
   weaponAxis.applyQuaternion(attachment.model.getWorldQuaternion(new THREE.Quaternion())).normalize();
 
