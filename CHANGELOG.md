@@ -2,6 +2,14 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 108 — controlled offline New Carl Mixamo animation proof (visual QA pending)
+
+- Built an isolated **New Carl** proof GLB from the exact uploaded `New DCC.glb`, `X Bot.fbx` reference, and `sword and shield attack.fbx`. The **single** 1-second in-place take is baked offline at 60 FPS into the unchanged Tripo skeleton: 65 bone quaternion tracks and an intentional hips translation track.
+- Unlike the broken Rev 107 runtime importer, the proof evaluates source FBX pre/post-rotations, source world bind orientation, model anatomical basis correction and target *animated-parent* local rotations before writing a new GLB. It never modifies the original GLB nodes, skin, meshes, textures, material or original binary prefix.
+- Structural QA: source/model SHA-256 checks, 13,168 source vertices, `3.21e-7` maximum rest skin deviation, 15 finite CPU-skinned pose samples, head-above-hips and bounded geometry assertions. **Human visual QA is still required.**
+- Added the detailed preserved engineering runbook `docs/TRIPO_MIXAMO_ANIMATION_BAKE.md` and displayed a direct Studio instruction to load the offline proof through **Load from device**, not the 17-FBX runtime ZIP importer.
+- The derived binary proof is delivered separately as a ChatGPT downloadable asset and **is not yet in the public GitHub asset library**. No changes to previous Carl/Orc models or animation machinery. Do not expand to all clips or the Orc until Carl passes visual QA.
+
 ## Candidate Rev 107 — New Carl and Orc Mixamo QA import
 
 - Prepared a single user-supplied **New Carl + New Orc / Lite Sword and Shield Pack** ZIP containing both source GLBs, 17 sword/shield Mixamo FBX clips, an X Bot reference FBX, and SHA-256 provenance. The ZIP is distributed as a ChatGPT test artifact; the large binary assets are **not yet committed to GitHub**.
