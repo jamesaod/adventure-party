@@ -10,8 +10,11 @@ Under **Model**, choose an entry from **Model library**, then press **Load selec
 | --- | --- |
 | **Dungeon Crawler Carl Ver 2** | Original saved model with four independent animations: `box_01`, `fall`, `box_02`, and `box_03`. |
 | **Dungeon Crawler Carl Ver 2 — UAL2 Sword Test** | Alternate QA model retaining the original four clips and adding `UAL2_Sword_Ready` and `UAL2_Sword_Regular_A`, retargeted from Quaternius's Universal Animation Library 2. |
+| **Male Orc Fighter** | Repository-backed first non-Carl humanoid acceptance model. Mixamo-style 65-joint rig, no embedded clips; use **Load animation FBX** to test generic retargeting and equipment. |
 
-Both Carl entries select **Y up** and **Dungeon Crawler Carl — Fighter**, with a single-hex footprint. Their display name, source model, selected animation and studio settings persist through the existing workspace save/restore flow. Simply choosing a menu entry leaves the current workspace in place; pressing **Load selected model** loads it and starts a fresh capture sheet after a successful import. A failed download/import retains the existing model and captures.
+The Carl entries select **Y up** and **Dungeon Crawler Carl — Fighter**. **Male Orc Fighter** selects **Y up** and the **Orc** Studio target. All use a single-hex footprint. Their display name, source model, selected animation and studio settings persist through the existing workspace save/restore flow. Simply choosing a menu entry leaves the current workspace in place; pressing **Load selected model** loads it and starts a fresh capture sheet after a successful import. A failed download/import retains the existing model and captures.
+
+The Orc source is preserved byte-for-byte at `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`. Its uploaded GLB contains no animation clips, so T-Pose is the only animation choice until an external humanoid FBX is imported. Its integrity and rig facts are recorded in the adjacent `provenance.json`.
 
 The original Version 2 GLB is preserved byte-for-byte; the UAL2 test is a separate derived file. Saved model entries live in `data/studio-models.json`; source-model files stay in `assets/models/`, separately from exported sprite assets in `assets/sprites/`. Loading a saved model does not replace Carl's combat sprites. Source identities, clip derivations and the animation license are recorded in the [Carl model README](../assets/models/dungeon-crawler-carl/README.md). Local files can still be opened with **Load from device**.
 
