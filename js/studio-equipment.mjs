@@ -60,7 +60,7 @@ export function normalizeEquipment(value = {}) {
   const vector = key => preset[key].map((fallback, axis) =>
     migratePreset ? fallback : bounded(value?.[key]?.[axis], fallback, EQUIPMENT_LIMITS[key]));
   const secondaryGripOffsetInches = [0,1,2].map(axis =>
-    migratePreset ? 0 : bounded(value?.secondaryGripOffsetInches?.[axis], 0, EQUIPMENT_LIMITS.secondaryGripOffsetInches));
+    bounded(value?.secondaryGripOffsetInches?.[axis], 0, EQUIPMENT_LIMITS.secondaryGripOffsetInches));
   return {
     version: 3,
     presetRevision,
