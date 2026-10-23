@@ -2,6 +2,17 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 102 — Joint-bind-relative Orc arm retargeting
+
+- Fixed the remaining Male Orc Fighter ready-pose failure where both arms folded inward and clipped through the torso.
+- Diagnostics against the actual repository Orc GLB and Carl UAL2 carrier proved their node-world and inverse-bind rotations already agree closely; the failure was not caused by a skin bind-space mismatch.
+- Replaced world-space humanoid rotation deltas with **per-joint bind-relative motion**: source animation is measured as `inverse(sourceBind) × sourceAnimated`, then applied as `targetBind × relativeMotion`.
+- This preserves each target shoulder, upper-arm, forearm, and hand rest frame instead of forcing Carl's world-space joint delta onto differently oriented Orc joints.
+- Left/Right semantic bone roles remain unchanged, so weapon attachment, shields, and IK continue to use the correct limbs.
+- Added regression coverage for rigs whose corresponding arm bones have different bind orientations.
+- Also fixed a browser-cache oversight from Rev 101 by advancing both the 3D Studio module URL and the `mixamo-retarget.mjs` import cache key. Rev 102 therefore forces the new retargeter to load without requiring a manual hard refresh.
+
+
 ## Candidate Rev 101 — Opposite-facing humanoid retarget correction
 
 - Fixed the first Male Orc Fighter one-handed animation QA failure where the arms appeared crossed/mirrored despite correct semantic Left/Right bone names.
