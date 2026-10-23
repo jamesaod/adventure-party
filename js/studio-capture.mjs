@@ -273,7 +273,20 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (count() !== 18) throw new Error('Capture all three poses before exporting or testing the set.');
     const { width, height, anchorX, anchorY, render, layout, modelScalePercent, hexScalePercent,
       renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
-    const mobType = (!modelReady && savedSettings ? savedSettings : getWorkspaceSettings()).mobType || captures.ready.mobType;
+    const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
+    const mobType = settings.mobType || captures.ready.mobType;
+    const calibration = captures.ready.unitCalibration || settings.unitCalibration || null;
+    const unit = calibration ? {
+      type: mobType,
+      modelId: calibration.modelId ?? settings.libraryModelId ?? null,
+      modelName: calibration.modelName ?? settings.modelName ?? null,
+      calibration: {
+        pose: 'T-Pose',
+        modelScalePercent: calibration.modelScalePercent ?? modelScalePercent ?? 100,
+        measuredHeightInches: Number.isFinite(calibration.measuredHeightInches)
+          ? calibration.measuredHeightInches : null
+      }
+    } : undefined;
     const label = ui.SpriteSetName.value.trim() || 'Studio character';
     const manifest = createSpriteSetManifest({
       id: spriteSetSlug(label), label,
@@ -281,6 +294,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(layout ? { layout } : {}), ...(mobType ? { mobType } : {}),
       ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
       ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
+      ...(unit ? { unit } : {}),
       captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render, brightness: style.brightness, contrast: style.contrast,
@@ -370,9 +384,18 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       if (dimensions.width !== capture.width || dimensions.height !== capture.height) {
         throw new Error('The captured frame does not match its footprint. Clear the sheet before changing its model size.');
       }
+      const oldScale = capture.modelScalePercent ?? 100;
+      const unitCalibration = capture.unitCalibration ? {
+        ...capture.unitCalibration,
+        modelScalePercent: nextScale,
+        measuredHeightInches: Number.isFinite(capture.unitCalibration.measuredHeightInches)
+          ? Number((capture.unitCalibration.measuredHeightInches * nextScale / oldScale).toFixed(2))
+          : null
+      } : undefined;
       return [capture, {
         modelScalePercent: nextScale, renderWidth: dimensions.renderWidth, renderHeight: dimensions.renderHeight,
-        render: scaledFrameMetadata(capture.render, capture.modelScalePercent ?? 100, nextScale)
+        render: scaledFrameMetadata(capture.render, oldScale, nextScale),
+        ...(unitCalibration ? { unitCalibration } : {})
       }];
     });
     for (const [capture, metadata] of changes) Object.assign(capture, metadata);
@@ -437,7 +460,18 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         layoutId: manifest.layout?.id || 'single', resolutionPercent: manifest.layout?.resolutionPercent || (width / 160 * 100),
         ...(manifest.layout ? { layout: manifest.layout } : {}), mobType: manifest.mobType || 'kobold',
         modelScalePercent: manifest.modelScalePercent ?? 100,
-        hexScalePercent: manifest.hexScalePercent ?? 100
+        hexScalePercent: manifest.hexScalePercent ?? 100,
+        ...(manifest.unit?.calibration ? {
+          unitCalibration: {
+            version: 1,
+            mobType: manifest.unit.type,
+            modelId: manifest.unit.modelId ?? null,
+            modelName: manifest.unit.modelName ?? null,
+            pose: 'T-Pose',
+            modelScalePercent: manifest.unit.calibration.modelScalePercent,
+            measuredHeightInches: manifest.unit.calibration.measuredHeightInches ?? null
+          }
+        } : {})
       },
       savedAt: draft.savedAt, recoveredFromCombat: true
     };
