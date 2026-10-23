@@ -1,0 +1,78 @@
+name: Build Orc Carl-Method UAL2 Proof
+
+on:
+  push:
+    branches:
+      - feature/orc-carl-offline-bake
+
+permissions:
+  contents: read
+
+jobs:
+  build-orc-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch exact Quaternius UAL2 Standard donor
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, io, json, pathlib, urllib.parse, urllib.request, zipfile
+
+          endpoint = 'https://quaternius.itch.io/universal-animation-library-2/file/17958478?source=game_download&as_props=1'
+          request = urllib.request.Request(
+              endpoint,
+              data=b'',
+              method='POST',
+              headers={'User-Agent':'Adventure-Party-CI/1.0'}
+          )
+          with urllib.request.urlopen(request, timeout=60) as response:
+              props = json.load(response)
+          url = props.get('url')
+          if not url:
+              raise SystemExit('itch.io did not return a signed download URL')
+          with urllib.request.urlopen(url, timeout=120) as response:
+              archive = response.read()
+          zip_sha = hashlib.sha256(archive).hexdigest()
+          print('UAL2 standard ZIP bytes', len(archive), 'sha256', zip_sha)
+
+          with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+              candidates = [name for name in zf.namelist()
+                            if name.replace('\\\\','/').endswith('/Unreal-Godot/UAL2_Standard.glb')]
+              if len(candidates) != 1:
+                  raise SystemExit(f'Expected one Unreal-Godot/UAL2_Standard.glb, got {candidates!r}')
+              member = candidates[0]
+              donor = zf.read(member)
+
+          expected_bytes = 8091444
+          expected_sha = '8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8'
+          actual_sha = hashlib.sha256(donor).hexdigest()
+          print('UAL2 donor member', member, 'bytes', len(donor), 'sha256', actual_sha)
+          if len(donor) != expected_bytes or actual_sha != expected_sha:
+              raise SystemExit('UAL2 donor does not match Carl proof provenance; refusing to bake')
+          pathlib.Path('/tmp/UAL2_Standard.glb').write_bytes(donor)
+          PY
+
+      - name: Bake Orc with Carl production method
+        run: |
+          mkdir -p /tmp/orc-proof
+          python scripts/bake-ual2-mixamo-humanoid.py \
+            --source /tmp/UAL2_Standard.glb \
+            --target assets/models/orcs/male-orc-fighter/male-orc-fighter.glb \
+            --out /tmp/orc-proof/male-orc-fighter-ual2-one-handed.glb \
+            --report /tmp/orc-proof/provenance.json \
+            --source-member 'Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb'
+          sha256sum /tmp/orc-proof/male-orc-fighter-ual2-one-handed.glb
+          cat /tmp/orc-proof/provenance.json
+
+      - name: Upload Orc proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: male-orc-fighter-ual2-one-handed-proof
+          path: /tmp/orc-proof/
+          if-no-files-found: error
+          retention-days: 7
