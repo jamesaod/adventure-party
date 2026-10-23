@@ -10,6 +10,47 @@ function sourceBones(model) {
   return semanticBoneMap(model);
 }
 
+function humanoidRigBasis(THREE, model) {
+  const bones=semanticBoneMap(model);
+  const left=bones.get('leftShoulder')||bones.get('leftUpperArm')||bones.get('leftHand');
+  const right=bones.get('rightShoulder')||bones.get('rightUpperArm')||bones.get('rightHand');
+  const hips=bones.get('hips')||bones.get('spine');
+  const head=bones.get('head')||bones.get('neck')||bones.get('upperChest')||bones.get('chest');
+  if(!left||!right||!hips||!head)return { quaternion:new THREE.Quaternion(),resolved:false };
+
+  model.updateWorldMatrix(true,true);
+  const leftPos=left.getWorldPosition(new THREE.Vector3());
+  const rightPos=right.getWorldPosition(new THREE.Vector3());
+  const hipsPos=hips.getWorldPosition(new THREE.Vector3());
+  const headPos=head.getWorldPosition(new THREE.Vector3());
+
+  // Anatomical basis: +X points to the character's right, +Y points up the
+  // torso, and +Z is the character's forward direction. This is derived from
+  // semantics rather than assuming every asset was authored facing +Z.
+  const rightAxis=rightPos.sub(leftPos);
+  const upAxis=headPos.sub(hipsPos);
+  if(rightAxis.lengthSq()<1e-10||upAxis.lengthSq()<1e-10){
+    return { quaternion:new THREE.Quaternion(),resolved:false };
+  }
+  rightAxis.normalize();
+  upAxis.addScaledVector(rightAxis,-upAxis.dot(rightAxis));
+  if(upAxis.lengthSq()<1e-10)return { quaternion:new THREE.Quaternion(),resolved:false };
+  upAxis.normalize();
+  const forwardAxis=rightAxis.clone().cross(upAxis);
+  if(forwardAxis.lengthSq()<1e-10)return { quaternion:new THREE.Quaternion(),resolved:false };
+  forwardAxis.normalize();
+  upAxis.copy(forwardAxis).cross(rightAxis).normalize();
+
+  const matrix=new THREE.Matrix4().makeBasis(rightAxis,upAxis,forwardAxis);
+  return {
+    quaternion:new THREE.Quaternion().setFromRotationMatrix(matrix).normalize(),
+    resolved:true,
+    rightAxis:rightAxis.toArray(),
+    upAxis:upAxis.toArray(),
+    forwardAxis:forwardAxis.toArray()
+  };
+}
+
 function targetBindData(THREE, model) {
   const byRole = new Map();
   const worldByBone = new Map();
@@ -92,6 +133,15 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   }
 
   sourceModel.updateWorldMatrix(true, true);
+  targetModel.updateWorldMatrix(true, true);
+  const sourceBasis=humanoidRigBasis(THREE,sourceModel);
+  const targetBasis=humanoidRigBasis(THREE,targetModel);
+  const sourceToTargetBasis=targetBasis.quaternion.clone()
+    .multiply(sourceBasis.quaternion.clone().invert()).normalize();
+  const sourceToTargetBasisInverse=sourceToTargetBasis.clone().invert();
+  const basisCorrectionDegrees=THREE.MathUtils.radToDeg(
+    2*Math.acos(THREE.MathUtils.clamp(Math.abs(sourceToTargetBasis.w),-1,1))
+  );
   const sourceBindWorld = new Map();
   for (const [role,bone] of source) {
     const q=new THREE.Quaternion();
@@ -136,7 +186,14 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
           const sourceAnimatedWorld = sourceBone.getWorldQuaternion(new THREE.Quaternion());
           const sourceBind = sourceBindWorld.get(role);
           const worldDelta = sourceAnimatedWorld.clone().multiply(sourceBind.clone().invert()).normalize();
-          const targetWorld = worldDelta.multiply(targetInfo.bindWorldQuaternion.clone()).normalize();
+          // Move the source's world-space rotation delta into the target
+          // character's anatomical basis. Without this conjugation a +Z-forward
+          // source drives a -Z-forward target as if left/right were mirrored.
+          const targetDelta = sourceToTargetBasis.clone()
+            .multiply(worldDelta)
+            .multiply(sourceToTargetBasisInverse)
+            .normalize();
+          const targetWorld = targetDelta.multiply(targetInfo.bindWorldQuaternion.clone()).normalize();
           desiredWorld.set(role,targetWorld);
 
           const parentWorld = parentRole && desiredWorld.has(parentRole)
@@ -173,10 +230,15 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     mappedTracks: tracks.length,
     mappedRoles: [...mappedRoles],
     skippedTracks: Math.max(0,(clip.tracks?.length||0)-tracks.length),
-    retargetMode: 'semantic-world-space-bind-delta',
+    retargetMode: 'semantic-anatomical-basis-bind-delta',
     sourceRigFamily: sourceRig.family,
     targetRigFamily: targetRig.family,
-    targetCoverage: targetRig.coverage
+    targetCoverage: targetRig.coverage,
+    sourceBasisResolved:sourceBasis.resolved,
+    targetBasisResolved:targetBasis.resolved,
+    basisCorrectionDegrees,
+    sourceForwardAxis:sourceBasis.forwardAxis||null,
+    targetForwardAxis:targetBasis.forwardAxis||null
   };
   const result = new THREE.AnimationClip(label, clip.duration, tracks);
   result.userData = {
