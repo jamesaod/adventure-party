@@ -92,6 +92,7 @@ let battlefieldSource,battlefieldImage,battlefieldWidth=1,battlefieldHeight=1;
 let supersampleImage;
 let resizeObserver, visibilityObserver, poseCapture;
 let modelBounds = null, heightRulerLine;
+let humanoidAnimationSourcesPromise = null;
 const equipment = createStudioEquipment({
   THREE,
   loadAsset: async weapon => {
@@ -1222,7 +1223,9 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
     ui.RangeStatus.textContent = `${skippedRanges} saved animation range${skippedRanges === 1 ? '' : 's'} could not be restored. Your captured sprites are still available.`;
     ui.AnimationRanges.open = true;
   }
+  const repositoryClipCount = state.clips.filter(clip => clip.userData?.repositoryAnimationFamily).length;
   status(restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
+    repositoryClipCount ? `Ready · ${repositoryClipCount} repository animation${repositoryClipCount === 1 ? '' : 's'} retargeted · All animations framed` :
     state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded');
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
   const requestedEquipment=restoreSettings?.equipment || {};
@@ -1814,6 +1817,70 @@ function friendlyImportError(error) {
   return new Error(message);
 }
 
+async function loadHumanoidAnimationSourceCatalog() {
+  if (!humanoidAnimationSourcesPromise) {
+    const appRoot = new URL('../', import.meta.url);
+    humanoidAnimationSourcesPromise = fetch(new URL('data/humanoid-animation-sources.json', appRoot), { cache: 'no-cache' })
+      .then(async response => {
+        if (!response.ok) throw new Error(`Humanoid animation library returned ${response.status}.`);
+        const catalog = await response.json();
+        if (catalog.version !== 1 || !catalog.families || typeof catalog.families !== 'object') {
+          throw new Error('Unsupported humanoid animation library.');
+        }
+        return catalog;
+      })
+      .catch(error => {
+        humanoidAnimationSourcesPromise = null;
+        throw error;
+      });
+  }
+  return humanoidAnimationSourcesPromise;
+}
+
+async function loadRepositoryAnimationFamilies(targetModel, familyIds = []) {
+  const requested = [...new Set(familyIds.filter(id => typeof id === 'string' && id))];
+  if (!requested.length) return [];
+  const appRoot = new URL('../', import.meta.url);
+  const catalog = await loadHumanoidAnimationSourceCatalog();
+  const retargeted = [];
+
+  for (const familyId of requested) {
+    const family = catalog.families[familyId];
+    if (!family || typeof family.carrier !== 'string' || !Array.isArray(family.clips) || !family.clips.length) {
+      throw new Error(`Unknown or invalid humanoid animation family: ${familyId}`);
+    }
+    const carrierUrl = new URL(family.carrier, appRoot);
+    if (carrierUrl.origin !== appRoot.origin ||
+        !carrierUrl.pathname.startsWith(`${appRoot.pathname}assets/models/`) ||
+        !/\.glb$/i.test(carrierUrl.pathname)) {
+      throw new Error(`Animation family ${familyId} must use a repository GLB carrier.`);
+    }
+
+    status(`Loading ${family.label || familyId} animation library…`);
+    const response = await fetch(carrierUrl, { cache: 'force-cache' });
+    if (!response.ok) throw new Error(`Animation carrier for ${familyId} returned ${response.status}.`);
+    const sourceGltf = await new GLTFLoader().parseAsync(await response.arrayBuffer(), '');
+    try {
+      const sourceClips = prepareStudioAnimations(sourceGltf.animations || []);
+      for (const clipName of family.clips) {
+        const sourceClip = sourceClips.find(clip => clip.name === clipName);
+        if (!sourceClip) throw new Error(`Animation family ${familyId} is missing ${clipName}.`);
+        const clip = retargetHumanoidClip(THREE, sourceClip, sourceGltf.scene, targetModel, clipName);
+        clip.userData = {
+          ...clip.userData,
+          repositoryAnimationFamily: familyId,
+          repositoryAnimationCarrier: family.carrier,
+          repositoryAnimationSource: family.source || ''
+        };
+        retargeted.push(clip);
+      }
+    } finally {
+      disposeModel(sourceGltf.scene);
+    }
+  }
+  return retargeted;
+}
+
 function syncModelLibraryControls() {
   const busy = state.libraryLoading || state.modelLoading;
   ui.ModelLibrary.disabled = busy || !state.libraryModels.length;
@@ -1838,8 +1905,13 @@ async function loadModelLibrary() {
       if (url.origin !== appRoot.origin || !url.pathname.startsWith(`${appRoot.pathname}assets/models/`) ||
           !/\.glb$/i.test(url.pathname)) throw new Error('Saved models must be GLB files in the model assets folder.');
       if (entry.mobType) spriteMob(entry.mobType);
+      if (entry.animationFamilies !== undefined &&
+          (!Array.isArray(entry.animationFamilies) ||
+           entry.animationFamilies.some(id => typeof id !== 'string' || !id))) {
+        throw new Error('Saved model animationFamilies must be a non-empty string array.');
+      }
       ids.add(entry.id);
-      return { ...entry, url: url.href };
+      return { ...entry, animationFamilies: [...(entry.animationFamilies || [])], url: url.href };
     });
     ui.ModelLibrary.replaceChildren(new Option('Choose a saved model…', ''),
       ...state.libraryModels.map(model => new Option(model.label, model.id)));
@@ -1914,9 +1986,23 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
       disposeModel(loaded.model);
       return false;
     }
-    loaded.name = restoreSettings?.modelName || modelDefaults?.label || loaded.name;
+    const effectiveModelDefaults = modelDefaults ||
+      state.libraryModels.find(model => model.id === restoreSettings?.libraryModelId) || null;
+    loaded.name = restoreSettings?.modelName || effectiveModelDefaults?.label || loaded.name;
+
+    const repositoryClips = await loadRepositoryAnimationFamilies(
+      loaded.model, effectiveModelDefaults?.animationFamilies || []
+    );
+    if (repositoryClips.length) {
+      const existingNames = new Set((loaded.clips || []).map(clip => clip.name));
+      loaded.clips = [
+        ...(loaded.clips || []),
+        ...repositoryClips.filter(clip => !existingNames.has(clip.name))
+      ];
+    }
+
     await installModel(loaded, {
-      restoreSettings, modelDefaults,
+      restoreSettings, modelDefaults: effectiveModelDefaults,
       sourceFiles: files.map(source => ({
         name: source.name, type: source.type, lastModified: source.lastModified,
         relativePath: source.studioRelativePath || source.webkitRelativePath || '', blob: source
