@@ -56,6 +56,7 @@ jobs:
           node scripts/test-fbx-animations.mjs
           node scripts/test-studio-equipment.mjs
           node scripts/test-mixamo-retarget.mjs
+          node scripts/test-orc-retarget-comparison.mjs
           node scripts/test-item-catalog.mjs
           node scripts/test-humanoid-animation-catalog.mjs
           node scripts/test-mob-appearance.mjs

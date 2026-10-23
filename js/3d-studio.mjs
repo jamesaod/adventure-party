@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C105';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C111';
 import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
@@ -1241,9 +1241,12 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   const skinNote = state.skinRepairReport?.correctedVertices ?
     ` · Skin weights repaired (${state.skinRepairReport.correctedVertices} vertices)` : '';
   const rebaseNote = state.nativeBindReport ? ' · Native Orc bind animation experiment (original weights)' : '';
+  const qaNote = modelDefaults?.retargetQa
+    ? ' · Experimental Carl→Orc ' + modelDefaults.retargetQa.mode + ' (unchanged Orc source)'
+    : '';
   status((restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     repositoryClipCount ? `Ready · ${repositoryClipCount} repository animation${repositoryClipCount === 1 ? '' : 's'} retargeted · All animations framed` :
-    state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded') + skinNote + rebaseNote);
+    state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded') + skinNote + rebaseNote + qaNote);
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
   const requestedEquipment=restoreSettings?.equipment || {};
   const requestedShield=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
@@ -1898,6 +1901,39 @@ async function loadRepositoryAnimationFamilies(targetModel, familyIds = []) {
   return retargeted;
 }
 
+// Controlled Rev 111 experiment. Both QA choices load the exact untouched
+// New Orc GLB. Only the retarget mode changes; the one test clip and Carl
+// donor GLB are identical. No skin-weight or bind-pose mutations are made.
+async function loadRetargetQaClips(targetModel, experiment) {
+  if (!experiment) return [];
+  const appRoot = new URL('../', import.meta.url);
+  const donorUrl = new URL(experiment.carrier, appRoot);
+  status('Loading saved Carl animation as the Orc comparison donor…');
+  const response = await fetch(donorUrl, { cache: 'force-cache' });
+  if (!response.ok) throw new Error('Carl QA animation donor could not be loaded (' + response.status + ').');
+  const gltf = await new GLTFLoader().parseAsync(await response.arrayBuffer(), '');
+  try {
+    const sourceClips = prepareStudioAnimations(gltf.animations || []);
+    return experiment.clips.map(sourceName => {
+      const sourceClip = sourceClips.find(clip => clip.name === sourceName);
+      if (!sourceClip) throw new Error('Carl QA donor is missing the required clip: ' + sourceName);
+      const variantName = experiment.mode === 'world-bind-delta' ? 'World Delta' : 'Joint Relative';
+      const label = 'QA ' + variantName + ' — ' + sourceName;
+      const clip = retargetHumanoidClip(THREE, sourceClip, gltf.scene, targetModel,
+        label, { mode: experiment.mode });
+      if (clip.userData.humanoidImport.mappedTracks < 60) {
+        throw new Error('QA comparison refused: fewer than 60 animation joints were mapped.');
+      }
+      clip.userData = { ...clip.userData, retargetQa: {
+        mode: experiment.mode, donor: experiment.carrier, sourceClip: sourceName
+      } };
+      return clip;
+    });
+  } finally {
+    disposeModel(gltf.scene);
+  }
+}
+
 function syncModelLibraryControls() {
   const busy = state.libraryLoading || state.modelLoading;
   ui.ModelLibrary.disabled = busy || !state.libraryModels.length;
@@ -1935,6 +1971,20 @@ async function loadModelLibrary() {
           (!Array.isArray(entry.animationFamilies) ||
            entry.animationFamilies.some(id => typeof id !== 'string' || !id))) {
         throw new Error('Saved model animationFamilies must be a non-empty string array.');
+      }
+      if (entry.retargetQa !== undefined) {
+        const qa = entry.retargetQa;
+        const qaUrl = new URL(qa?.carrier || '', appRoot);
+        if (entry.file !== 'assets/models/orcs/new-orc/new-orc.glb' ||
+            !['world-bind-delta','joint-bind-relative'].includes(qa?.mode) ||
+            !Array.isArray(qa.clips) || qa.clips.length !== 1 ||
+            qa.clips[0] !== 'Mixamo_sword_and_shield_attack' ||
+            qaUrl.origin !== appRoot.origin ||
+            !qaUrl.pathname.startsWith(appRoot.pathname + 'assets/models/') ||
+            !/\.glb$/i.test(qaUrl.pathname) ||
+            entry.skinWeightRepair || entry.animationBindRebase || entry.animationFamilies?.length) {
+          throw new Error('Unsafe model library Orc retarget QA configuration.');
+        }
       }
       ids.add(entry.id);
       return { ...entry, animationFamilies: [...(entry.animationFamilies || [])], url: url.href };
@@ -2041,6 +2091,8 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
         ...repositoryClips.filter(clip => !existingNames.has(clip.name))
       ];
     }
+    const qaClips = await loadRetargetQaClips(loaded.model, effectiveModelDefaults?.retargetQa);
+    if (qaClips.length) loaded.clips = [...(loaded.clips || []), ...qaClips];
 
     await installModel(loaded, {
       restoreSettings, modelDefaults: effectiveModelDefaults,

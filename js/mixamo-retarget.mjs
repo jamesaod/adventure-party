@@ -90,12 +90,12 @@ function targetBindData(THREE, model) {
   return byRole;
 }
 
-function sampleTimes(clip, mappedRoles) {
+function sampleTimes(clip, mappedRoles, resolveRole = semanticRoleForBoneName) {
   const values = new Set([0, Math.max(0, clip.duration || 0)]);
   for (const track of clip.tracks || []) {
     const match = String(track.name || '').match(/^(.*)\.(quaternion)$/);
     if (!match) continue;
-    const role = semanticRoleForBoneName(match[1]);
+    const role = resolveRole(match[1]);
     if (!role || !mappedRoles.has(role)) continue;
     for (const time of track.times || []) if (Number.isFinite(time)) values.add(Number(time));
   }
@@ -119,7 +119,12 @@ function restoreLocalPose(pose) {
   }
 }
 
-export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, label) {
+export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, label, options = {}) {
+  // Rev 111: QA-only comparison; existing callers retain the original mode.
+  const mode = options.mode || 'joint-bind-relative';
+  if (mode !== 'joint-bind-relative' && mode !== 'world-bind-delta') {
+    throw new Error('Unknown retargeting mode: ' + mode);
+  }
   const source = sourceBones(sourceModel);
   const target = targetBindData(THREE, targetModel);
   const sourceRig = analyzeHumanoidRig(sourceModel);
@@ -148,14 +153,18 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     sourceBindWorld.set(role,q.clone());
   }
 
-  const times = sampleTimes(clip, mappedRoles);
+  // GLTFLoader may address a joint by UUID rather than its Mixamo name.
+  // Resolve both formats so the saved Carl GLB is a valid test donor.
+  const rolesByUUID = new Map([...source].map(([role, bone]) => [bone.uuid, role]));
+  const resolveRole = name => rolesByUUID.get(name) || semanticRoleForBoneName(name);
+  const times = sampleTimes(clip, mappedRoles, resolveRole);
   const valuesByRole = new Map([...mappedRoles].map(role=>[role,[]]));
   const pose = snapshotLocalPose(sourceModel);
   const quaternionTracks = new Map();
   for (const track of clip.tracks || []) {
     const match = String(track.name || '').match(/^(.*)\.(quaternion)$/);
     if (!match) continue;
-    const role = semanticRoleForBoneName(match[1]);
+    const role = resolveRole(match[1]);
     if (role && mappedRoles.has(role) && !quaternionTracks.has(role)) quaternionTracks.set(role, track);
   }
 
@@ -184,16 +193,21 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
           const sourceBone = source.get(role);
           const sourceAnimatedWorld = sourceBone.getWorldQuaternion(new THREE.Quaternion());
           const sourceBind = sourceBindWorld.get(role);
-          // Extract the animation in the source joint's own bind frame,
-          // then apply that relative rotation after the target joint's bind
-          // orientation. This is the key distinction from a world-space delta:
-          // different shoulder/arm rest axes keep their own anatomical frame.
-          const bindRelative = sourceBind.clone().invert()
-            .multiply(sourceAnimatedWorld)
-            .normalize();
-          const targetWorld = targetInfo.bindWorldQuaternion.clone()
-            .multiply(bindRelative)
-            .normalize();
+          // Compare the two historically used transfer formulas without
+          // rewriting the Orc's bind matrices or changing its skin weights.
+          // world-bind-delta: D = animatedWorld * inverse(sourceBindWorld);
+          //   targetWorld = C * D * inverse(C) * targetBindWorld.
+          // joint-bind-relative: M = inverse(sourceBindWorld) * animatedWorld;
+          //   targetWorld = targetBindWorld * M.
+          const targetWorld = mode === 'world-bind-delta'
+            ? sourceToTargetBasis.clone()
+              .multiply(sourceAnimatedWorld.clone().multiply(sourceBind.clone().invert()))
+              .multiply(sourceToTargetBasis.clone().invert())
+              .multiply(targetInfo.bindWorldQuaternion)
+              .normalize()
+            : targetInfo.bindWorldQuaternion.clone()
+              .multiply(sourceBind.clone().invert().multiply(sourceAnimatedWorld))
+              .normalize();
           desiredWorld.set(role,targetWorld);
 
           const parentWorld = parentRole && desiredWorld.has(parentRole)
@@ -230,7 +244,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     mappedTracks: tracks.length,
     mappedRoles: [...mappedRoles],
     skippedTracks: Math.max(0,(clip.tracks?.length||0)-tracks.length),
-    retargetMode: 'semantic-joint-bind-relative',
+    retargetMode: mode === 'world-bind-delta' ? 'semantic-world-bind-delta' : 'semantic-joint-bind-relative',
     sourceRigFamily: sourceRig.family,
     targetRigFamily: targetRig.family,
     targetCoverage: targetRig.coverage,
