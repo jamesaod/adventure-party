@@ -70,7 +70,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     return {
       version: 1, name: ui.SpriteSetName.value.slice(0, 120), style: { ...style }, settings,
       captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => {
-        const { frames, ...saved } = value;
+        const { frames, battlefieldFrames, ...saved } = value;
         return [pose, saved];
       }))
     };
@@ -155,7 +155,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function count() { return Object.keys(captures).length * 6; }
-  function modelScaleAdjustable() { return Object.values(captures).every(capture => !!capture.layout); }
+  function modelScaleAdjustable() { return Object.values(captures).every(capture => !!capture.layout && !capture.battlefieldRaw); }
 
   function refreshControls() {
     const captured = count();
@@ -220,6 +220,15 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...renderStyle, transparent: true, tileWidth: width, tileHeight: height
     });
     capture.frames = splitSixFacingAtlas(rgba, width, height);
+
+    if(capture.battlefieldRaw && Number.isInteger(capture.battlefieldWidth) && Number.isInteger(capture.battlefieldHeight)){
+      const bw=capture.battlefieldWidth,bh=capture.battlefieldHeight;
+      const battlefieldRgba=new Uint8ClampedArray(capture.battlefieldRaw.length);
+      quantizeRgba(capture.battlefieldRaw,bw*3,bh*2,battlefieldRgba,{
+        ...renderStyle,transparent:true,tileWidth:bw,tileHeight:bh
+      });
+      capture.battlefieldFrames=splitSixFacingAtlas(battlefieldRgba,bw,bh);
+    }
   }
 
   function capture(pose) {
@@ -264,6 +273,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         modelScalePercent: value.modelScalePercent ?? 100,
         hexScalePercent: value.hexScalePercent ?? 100,
         renderWidth: value.renderWidth, renderHeight: value.renderHeight,
+        battlefieldWidth:value.battlefieldWidth ?? null,battlefieldHeight:value.battlefieldHeight ?? null,
         edgeDirections: [...value.edgeDirections]
       }]))
     };
@@ -288,6 +298,13 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
     } : undefined;
     const label = ui.SpriteSetName.value.trim() || 'Studio character';
+    const battlefield = captures.ready.battlefieldFrames ? {
+      renderer:'native-battlefield-v1',
+      width:captures.ready.battlefieldWidth,
+      height:captures.ready.battlefieldHeight,
+      anchorX:captures.ready.battlefieldAnchorX,
+      anchorY:captures.ready.battlefieldAnchorY
+    } : undefined;
     const manifest = createSpriteSetManifest({
       id: spriteSetSlug(label), label,
       frame: { width, height, renderWidth, renderHeight, anchorX, anchorY },
@@ -295,6 +312,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
       ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
       ...(unit ? { unit } : {}),
+      ...(battlefield ? { battlefield } : {}),
       captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render, brightness: style.brightness, contrast: style.contrast,
@@ -303,15 +321,35 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
     });
     const poseFrames = Object.fromEntries(SPRITE_POSES.map(pose => [pose, captures[pose].frames]));
-    return { manifest, poseFrames, sheet: assembleSpriteSheet(poseFrames, width, height), workspace: workspaceSnapshot() };
+    const battlefieldPoseFrames = battlefield
+      ? Object.fromEntries(SPRITE_POSES.map(pose=>[pose,captures[pose].battlefieldFrames]))
+      : null;
+    return {
+      manifest,poseFrames,battlefieldPoseFrames,
+      sheet:assembleSpriteSheet(poseFrames,width,height),
+      workspace:workspaceSnapshot()
+    };
   }
 
   async function packageFiles(exported) {
-    const { manifest, poseFrames, sheet } = exported;
+    const { manifest, poseFrames, battlefieldPoseFrames, sheet } = exported;
     const { width, height } = manifest.frame;
     const jobs = SPRITE_POSES.flatMap(pose => SPRITE_DIRECTIONS.map(async direction => [
       manifest.poses[pose].frames[direction], await pngBlob(poseFrames[pose][direction], width, height)
     ]));
+    if(manifest.battlefield && battlefieldPoseFrames){
+      for(const pose of SPRITE_POSES){
+        for(const direction of SPRITE_DIRECTIONS){
+          jobs.push(Promise.resolve([
+            manifest.battlefield.poses[pose].frames[direction],
+            await pngBlob(
+              battlefieldPoseFrames[pose][direction],
+              manifest.battlefield.width,manifest.battlefield.height
+            )
+          ]));
+        }
+      }
+    }
     jobs.push(pngBlob(sheet.data, sheet.width, sheet.height).then(blob => [manifest.sheet.file, blob]));
     return Object.fromEntries(await Promise.all(jobs));
   }
@@ -376,7 +414,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   function updateModelScale(percent) {
     const nextScale = validateSpriteModelScale(percent);
-    if (!modelScaleAdjustable()) throw new Error('This older set has no footprint metadata. Clear the sheet before changing its model size.');
+    if (!modelScaleAdjustable()) throw new Error('Clear the captured poses before changing Model size so native battlefield sprites can be re-rendered.');
     // Stage every row before committing: a size change must never leave poses
     // with different presentation sizes or alter their original captured pixels.
     const changes = Object.values(captures).map(capture => {
