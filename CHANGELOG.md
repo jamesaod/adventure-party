@@ -2,6 +2,16 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 104 — Remove Orc thigh-to-hand skin weights during sword swing
+
+- Investigated QA screenshots where an upper-thigh/skirt section followed the Orc's hand during `UAL2_Sword_Regular_A` while ready sword/shield placement looked correct.
+- Inspected the **exact original** 1,413,200-byte Orc GLB: 7,008 vertices, including 544 with mixed arm/leg influences at 5% or more. One thigh vertex was approximately 70% upper-leg and 29% pinky-finger weighted.
+- Added an **opt-in, catalog-driven** in-memory skinning repair for the raw and Carl-method Orc proof. It uses connected triangle islands and skeletal influence families to remove cross-limb weights while preserving legitimate leg/hip and arm/torso weights.
+- The Orc profile corrects **750 vertices across 53 disconnected mesh components**, reducing the mixed arm/leg vertex count from 544 to **zero**. The source/proof GLBs remain byte-for-byte unchanged; no bone, texture, animation, socket, or other model is rewritten.
+- Repair runs before animation retargeting, equipment setup, camera fitting and sprite captures. Saved workspace restores apply the profile again. Studio snapshots expose `skinRepair` counts for QA.
+- Added validation against the actual Orc source GLB in CI, together with the original-source preservation check. The proof clips remain `UAL2_Sword_Ready` and `UAL2_Sword_Regular_A`.
+- **Visual QA required:** confirm both thigh/skirt pieces stay attached to the legs throughout the sword swing, and confirm the sword/shield still line up. This is a targeted skinning correction, not an animation pipeline rewrite.
+
 ## Candidate Rev 103 — Orc one-handed proof rebuilt with Carl's offline UAL2 pipeline
 
 - Retired automatic runtime one-handed animation assignment from the raw **Male Orc Fighter** after Rev 100–102 QA showed persistent torso-crossing arm poses.
