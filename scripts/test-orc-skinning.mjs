@@ -55,10 +55,18 @@ const attrs={
   skinWeight:new Attribute(accessor(a.WEIGHTS_0))
 };
 const index=new Attribute(accessor(primitive.indices));
+// Mirror the real GLTFLoader: it sanitizes Mixamo colon-delimited bone
+// names before attaching the Skeleton. This was missing from Rev 104 CI.
+const threeSource=fs.readFileSync(new URL('assets/vendor/three/three.core.min.js',root));
+const THREE=await import(`data:text/javascript;base64,${threeSource.toString('base64')}`);
+const sanitizeName=THREE.PropertyBinding.sanitizeNodeName;
+assert.equal(sanitizeName('mixamorig:LeftUpLeg'),'mixamorig_LeftUpLeg');
+assert.equal(sanitizeName('mixamorig:LeftHandPinky3'),'mixamorig_LeftHandPinky3');
+
 const object={
   isSkinnedMesh:true,
   geometry:{index,getAttribute(name){return attrs[name]}},
-  skeleton:{bones:doc.skins[0].joints.map(i=>({name:doc.nodes[i].name}))}
+  skeleton:{bones:doc.skins[0].joints.map(i=>({name:sanitizeName(doc.nodes[i].name)}))}
 };
 const scene={traverse(visitor){visitor(object)}};
 const initial=Float32Array.from(attrs.skinWeight.array);
