@@ -199,6 +199,17 @@ assert.ok(!studioSource.includes('const scale=1;'),
   'Pixel Preview no longer assumes internal battlefield pixels equal displayed combat CSS pixels');
 assert.ok(studioSource.includes('battlefieldRaw:battlefieldSource.slice()'),
   'Captured poses retain native unquantized battlefield pixels for later style changes');
+assert.equal((studioSource.match(/geometryBodyBounds\\(normalized/g) || []).length, 4,
+  'Model fitting measures the animated body only at rest and across sampled clips');
+assert.equal((studioSource.match(/geometryBounds\\(normalized/g) || []).length, 0,
+  'Equipment-inclusive bounds cannot participate in model fitting');
+assert.ok(!/change(?:Equipment|Shield)\\([^\\n]*fit\\s*:\\s*true/.test(studioSource),
+  'Equipping, unequipping and resetting gear do not trigger a model refit');
+assert.ok(studioSource.includes('outline: state.outline, transparent, tileWidth: state.width, tileHeight: state.height') &&
+  studioSource.includes('tileWidth:battlefieldWidth') && studioSource.includes('tileHeight:battlefieldHeight'),
+  'Outline width is applied directly in each target pixel grid, including final battlefield pixels');
+assert.ok(!/outline\\s*:\\s*state\\.outline\\s*\\*[^,\\n]*resolutionPercent/.test(studioSource),
+  'Resolution never multiplies the requested outline width');
 assert.ok(studioSource.includes("['ambientIntensity', 5]"),
   'Environmental lighting normalization accepts 500 percent');
 assert.ok(studioSource.includes("measuredHeightInches") && studioSource.includes("pose: 'T-Pose'"),
