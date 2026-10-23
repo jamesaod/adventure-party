@@ -183,12 +183,19 @@ assert.ok(studioSource.includes("assets/terrain/grass-outdoors-tiles.png") &&
   'Pixel previews use the combat grass tile sheet inside a tactical hex');
 assert.ok(studioSource.includes('function configureBattlefieldAtlas()') &&
   studioSource.includes('function renderBattlefieldAtlas()') &&
-  studioSource.includes('battlefieldWidth=Math.max(1,Math.round(size.renderWidth))'),
-  'Studio renders a second WebGL atlas directly at rounded battlefield dimensions');
+  studioSource.includes("battlefieldWidth=Math.max(1,Math.round(size.renderWidth))"),
+  'Studio maintains a native battlefield atlas at rounded combat dimensions');
+assert.ok(studioSource.includes("supersampleContext.putImageData(supersampleImage,0,0)") &&
+  studioSource.includes("battlefieldContext.imageSmoothingQuality='high'") &&
+  studioSource.includes("Downsample each facing independently BEFORE VGA quantization"),
+  'Battlefield sprites are supersampled from unquantized WebGL pixels before VGA conversion');
 assert.ok(studioSource.includes('function drawBattlefieldPreview(preview,index)') &&
+  studioSource.includes('const scale=1') &&
   studioSource.includes('battlefieldCanvas') &&
   studioSource.includes('spriteLayoutOffsets(state.layoutId,index)'),
-  'Live Pixel Preview uses the native battlefield pixels over combat-scale hex geometry');
+  'Live Pixel Preview uses native combat pixels at literal 1-to-1 battlefield zoom');
+assert.ok(studioHtml.includes('1 preview pixel = 1 battlefield pixel'),
+  'Pixel Preview explains the literal battlefield zoom');
 assert.ok(studioSource.includes('battlefieldRaw:battlefieldSource.slice()'),
   'Captured poses retain native unquantized battlefield pixels for later style changes');
 assert.ok(studioSource.includes("['ambientIntensity', 5]"),

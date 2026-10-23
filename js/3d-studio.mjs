@@ -85,7 +85,8 @@ const state = {
 let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
 let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbientLight, keyLight, modelFrame;
 let atlasTarget, atlasSource, atlasImage;
-let battlefieldTarget, battlefieldSource, battlefieldImage, battlefieldWidth=1, battlefieldHeight=1;
+let battlefieldSource,battlefieldImage,battlefieldWidth=1,battlefieldHeight=1;
+let supersampleImage;
 let resizeObserver, visibilityObserver, poseCapture;
 let modelBounds = null, heightRulerLine;
 const equipment = createStudioEquipment({
@@ -120,7 +121,9 @@ const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d');
 const battlefieldCanvas=document.createElement('canvas');
-const battlefieldContext=battlefieldCanvas.getContext('2d');
+const battlefieldContext=battlefieldCanvas.getContext('2d',{willReadFrequently:true});
+const supersampleCanvas=document.createElement('canvas');
+const supersampleContext=supersampleCanvas.getContext('2d');
 const previewGrassImage = new Image();
 previewGrassImage.onload = () => invalidate();
 previewGrassImage.src = new URL('../assets/terrain/grass-outdoors-tiles.png', import.meta.url).href;
@@ -1228,21 +1231,14 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
 }
 
 function configureBattlefieldAtlas() {
-  battlefieldTarget?.dispose();
   const size=spriteLayoutDimensions(state.layoutId,state.resolutionPercent,state.modelScalePercent,state.hexScalePercent);
   battlefieldWidth=Math.max(1,Math.round(size.renderWidth));
   battlefieldHeight=Math.max(1,Math.round(size.renderHeight));
   const width=battlefieldWidth*3,height=battlefieldHeight*2;
-  battlefieldTarget=new THREE.WebGLRenderTarget(width,height,{
-    format:THREE.RGBAFormat,type:THREE.UnsignedByteType,
-    minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,
-    depthBuffer:true,stencilBuffer:false,samples:0
-  });
-  battlefieldTarget.texture.colorSpace=THREE.SRGBColorSpace;
   battlefieldSource=new Uint8Array(width*height*4);
-  battlefieldImage=battlefieldContext.createImageData(width,height);
   battlefieldCanvas.width=width;
   battlefieldCanvas.height=height;
+  battlefieldImage=battlefieldContext.createImageData(width,height);
 }
 
 function configureAtlas() {
@@ -1260,10 +1256,15 @@ function configureAtlas() {
   atlasCanvas.width = width;
   atlasCanvas.height = height;
   atlasImage = atlasContext.createImageData(width, height);
+  supersampleCanvas.width=width;
+  supersampleCanvas.height=height;
+  supersampleImage=supersampleContext.createImageData(width,height);
   previews.forEach(preview => {
-    preview.canvas.width = Math.max(state.width, Math.ceil(state.height * 1.25));
-    preview.canvas.height = state.height;
-    preview.context.imageSmoothingEnabled = false;
+    preview.canvas.width=180;
+    preview.canvas.height=150;
+    preview.canvas.style.width='180px';
+    preview.canvas.style.height='150px';
+    preview.context.imageSmoothingEnabled=false;
   });
   updateCaptureCamera();
   configureBattlefieldAtlas();
@@ -1280,44 +1281,48 @@ function pixelRenderOptions(transparent = false) {
 }
 
 function renderBattlefieldAtlas() {
-  if(!renderer||!scene||!pixelCamera||!battlefieldTarget)return;
-  const background=scene.background;
-  const helpersVisible=helpers?.visible;
-  const originalFacing=state.facing;
-  scene.background=null;
-  if(helpers)helpers.visible=false;
-  renderer.setClearColor(0x000000,0);
-  renderer.setRenderTarget(battlefieldTarget);
-  renderer.setScissorTest(false);
-  renderer.clear(true,true,true);
-  renderer.setScissorTest(true);
+  if(!atlasSource||!supersampleImage||!battlefieldSource)return;
 
-  const factor=state.modelScalePercent/100*state.hexScalePercent/100;
-  const frameHeight=state.frameHeight*factor;
-  setCameraFrustum(pixelCamera,battlefieldWidth/battlefieldHeight,frameHeight);
-  fixedCamera(pixelCamera,state.center.clone().multiplyScalar(factor),frameHeight);
-
-  for(let index=0;index<HEX_FACINGS.length;index++){
-    const x=(index%3)*battlefieldWidth;
-    const y=(1-Math.floor(index/3))*battlefieldHeight;
-    turntable.rotation.y=HEX_FACINGS[index].yawRadians;
-    renderer.setViewport(x,y,battlefieldWidth,battlefieldHeight);
-    renderer.setScissor(x,y,battlefieldWidth,battlefieldHeight);
-    renderer.render(scene,pixelCamera);
+  // Convert the unquantized WebGL framebuffer to a normal top-down canvas.
+  const sourceWidth=state.width*3,sourceHeight=state.height*2;
+  const sourceStride=sourceWidth*4;
+  for(let y=0;y<sourceHeight;y++){
+    const from=(sourceHeight-1-y)*sourceStride;
+    supersampleImage.data.set(atlasSource.subarray(from,from+sourceStride),y*sourceStride);
   }
-  renderer.setScissorTest(false);
-  renderer.readRenderTargetPixels(
-    battlefieldTarget,0,0,battlefieldTarget.width,battlefieldTarget.height,battlefieldSource
-  );
-  renderer.setRenderTarget(null);
-  scene.background=background;
-  if(helpers)helpers.visible=helpersVisible;
-  renderer.setClearColor(0x808080,1);
-  turntable.rotation.y=HEX_FACINGS.find(item=>item.id===originalFacing).yawRadians;
-  updateCaptureCamera();
+  supersampleContext.putImageData(supersampleImage,0,0);
+
+  // Downsample each facing independently BEFORE VGA quantization. This is the
+  // key detail-preserving step: no palette pixels are discarded by shrinking.
+  battlefieldContext.clearRect(0,0,battlefieldCanvas.width,battlefieldCanvas.height);
+  battlefieldContext.imageSmoothingEnabled=true;
+  battlefieldContext.imageSmoothingQuality='high';
+  for(let index=0;index<HEX_FACINGS.length;index++){
+    const sx=(index%3)*state.width;
+    const sy=Math.floor(index/3)*state.height;
+    const dx=(index%3)*battlefieldWidth;
+    const dy=Math.floor(index/3)*battlefieldHeight;
+    battlefieldContext.drawImage(
+      supersampleCanvas,sx,sy,state.width,state.height,
+      dx,dy,battlefieldWidth,battlefieldHeight
+    );
+  }
+
+  // Store the supersampled result in framebuffer row order so the existing
+  // quantizer/capture path remains identical to WebGL readback semantics.
+  const downsampled=battlefieldContext.getImageData(
+    0,0,battlefieldCanvas.width,battlefieldCanvas.height
+  ).data;
+  const targetWidth=battlefieldCanvas.width,targetHeight=battlefieldCanvas.height;
+  const targetStride=targetWidth*4;
+  for(let y=0;y<targetHeight;y++){
+    const from=y*targetStride;
+    const to=(targetHeight-1-y)*targetStride;
+    battlefieldSource.set(downsampled.subarray(from,from+targetStride),to);
+  }
 
   quantizeRgba(
-    battlefieldSource,battlefieldTarget.width,battlefieldTarget.height,battlefieldImage.data,
+    battlefieldSource,targetWidth,targetHeight,battlefieldImage.data,
     {
       ...pixelRenderOptions(true),
       tileWidth:battlefieldWidth,
@@ -1340,34 +1345,23 @@ function drawBattlefieldPreview(preview,index){
   const hexVertices=[[0,-21],[32,-10.5],[32,10.5],[0,21],[-32,10.5],[-32,-10.5]];
   const centers=footprint.map(({x,y})=>({x:64*(x+y/2),y:31.5*y}));
 
-  let minX=-anchorX,maxX=battlefieldWidth-anchorX,minY=-anchorY,maxY=battlefieldHeight-anchorY;
-  for(const center of centers){
-    for(const [vx,vy] of hexVertices){
-      minX=Math.min(minX,center.x+vx);maxX=Math.max(maxX,center.x+vx);
-      minY=Math.min(minY,center.y+vy);maxY=Math.max(maxY,center.y+vy);
-    }
-  }
-  const margin=10;
-  const scale=Math.max(0.01,Math.min(
-    (preview.canvas.width-margin*2)/Math.max(1,maxX-minX),
-    (preview.canvas.height-margin*2)/Math.max(1,maxY-minY)
-  ));
-  const originX=(preview.canvas.width-(minX+maxX)*scale)/2;
-  const originY=(preview.canvas.height-(minY+maxY)*scale)/2;
+  // Literal battlefield zoom: 1 canvas/CSS pixel = 1 combat pixel.
+  const scale=1;
+  const originX=Math.round(preview.canvas.width/2);
+  const originY=Math.round(preview.canvas.height/2+10);
 
   for(const center of centers){
     drawGrassPreviewPolygon(ctx,hexVertices.map(([vx,vy])=>({
-      x:originX+(center.x+vx)*scale,
-      y:originY+(center.y+vy)*scale
-    })),scale);
+      x:originX+(center.x+vx),
+      y:originY+(center.y+vy)
+    })),1);
   }
 
   const sx=(index%3)*battlefieldWidth,sy=Math.floor(index/3)*battlefieldHeight;
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(
     battlefieldCanvas,sx,sy,battlefieldWidth,battlefieldHeight,
-    originX-anchorX*scale,originY-anchorY*scale,
-    battlefieldWidth*scale,battlefieldHeight*scale
+    originX-anchorX,originY-anchorY,battlefieldWidth,battlefieldHeight
   );
 }
 
@@ -1392,7 +1386,6 @@ function readCapturePose() {
   updateAnimationControls();
   // Do not advance the mixer between directions or wait for another browser frame.
   renderPreviews(performance.now());
-  renderBattlefieldAtlas();
   pixelCamera.updateMatrixWorld(true);
   const ground = new THREE.Vector3(0, 0, 0).project(pixelCamera);
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
@@ -2221,7 +2214,6 @@ function bindControls() {
     disposeModel(state.model);
     disposeModel(helpers);
     atlasTarget?.dispose();
-    battlefieldTarget?.dispose();
     renderer?.dispose();
   });
 }
