@@ -21,7 +21,7 @@ function targetBindMap(THREE, model) {
   const worldByBone = new Map();
 
   model?.traverse(object => {
-    if (!object.isSkinnedMesh?.valueOf?.() && !object.isSkinnedMesh) return;
+    if (!object.isSkinnedMesh) return;
     const skeleton = object.skeleton;
     if (!skeleton?.bones?.length || skeleton.boneInverses.length !== skeleton.bones.length) return;
     skeleton.bones.forEach((bone, index) => {
