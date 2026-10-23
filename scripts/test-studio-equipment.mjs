@@ -423,8 +423,14 @@ assert.ok(posePanel.includes("poseProfileId: 'two-handed-swing'"));
 assert.ok(posePanel.includes("heightInches: snap.mobType === 'fighter' ? 76 : null"));
 assert.ok(posePanel.includes("bodyReferenceHeightInches: snap.mobType === 'fighter' ? 76 : null"));
 const studio = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
-assert.equal((studio.match(/state\.mixer\.update\(/g)||[]).length,(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length,
-  'Every Studio mixer evaluation restores the pre-IK skeleton first');
+const mixerEvaluationCount=(studio.match(/state\.mixer\.update\(/g)||[]).length;
+const inlineRestoreCount=(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length;
+assert.equal(mixerEvaluationCount-inlineRestoreCount,1,
+  'Only setClip uses a function-level restore instead of the inline restore form');
+const setClipSource=extract('function setClip(index) {','function updateAnimationControls()');
+assert.ok(setClipSource.indexOf('equipment.restoreConstraints();')>=0 &&
+  setClipSource.indexOf('equipment.restoreConstraints();')<setClipSource.indexOf('state.mixer.update(0);'),
+  'setClip restores the pre-IK skeleton before evaluating an authored animation');
 
 assert.ok(studio.includes("selectedWeapon?.handsRequired === 2")&&studio.includes("shieldEquipment.select('none')"),
   'Selecting a two-handed weapon actively unequips the shield');
