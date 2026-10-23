@@ -2,6 +2,18 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 100 — Shared one-handed swing animations on Male Orc Fighter
+
+- Added the first repository-backed humanoid animation source catalog at `data/humanoid-animation-sources.json`.
+- Registered the approved `one-handed-swing` family with `UAL2_Sword_Ready` and `UAL2_Sword_Regular_A`, sourced from the existing Quaternius UAL2 proof asset and license record.
+- Assigned **Male Orc Fighter** to the shared `one-handed-swing` family. Loading the Orc from the Studio Model Library now automatically fetches and retargets those two clips through the Rev 98 semantic humanoid rig adapter.
+- Repository animation families are loaded before model framing, so the Orc's capture camera, preview reference, and Animation dropdown account for the retargeted motions from the start.
+- The Orc source GLB remains byte-for-byte unchanged; animations are supplied at runtime rather than baking a second Orc-specific model.
+- Saved-workspace reopen resolves approved animation families again from the Model Library entry, while **Load animation FBX** remains available for ad hoc animation QA.
+- Added regression coverage verifying the Orc's animation-family assignment, the repository carrier path, and the presence of both approved one-handed clips.
+- This first pass intentionally reuses Carl's UAL2 proof GLB as the animation carrier. A future cleanup can extract the approved motions into a smaller skeleton-only generic animation asset without changing the model/family API.
+
+
 ## Candidate Rev 99 — Male Orc Fighter repository and Model Library integration
 
 - Preserved the exact user-supplied **Male Orc Fighter** GLB in the repository at `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`.
