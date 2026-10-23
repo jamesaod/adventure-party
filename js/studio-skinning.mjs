@@ -8,7 +8,7 @@ export const CROSS_LIMB_REPAIR = 'cross-limb-components-v1';
 
 function boneFamily(name) {
   // Three.js GLTFLoader sanitizes Mixamo names such as
-  // 'mixamorig:LeftUpLeg' into 'mixamorig_LeftUpLeg'. Treat both identically.
+  // 'mixamorig:LeftUpLeg' into 'mixamorigLeftUpLeg'. Treat both identically.
   const normalized = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const label = normalized.startsWith('mixamorig')
     ? normalized.slice('mixamorig'.length) : normalized;
