@@ -43,6 +43,36 @@ Observed source facts:
 
 The rig maps all 20 current core humanoid roles and therefore qualifies for equipment attachment and retargeting experiments. The exact uploaded GLB is repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. Its source contains no embedded clips and, importantly, its skin bind stance has lowered arms rather than the true T-pose used by Carl and the UAL2 donor. Automatic runtime retargeting produced torso-clipping arm poses, so the raw Orc is kept animationless. A separate **Male Orc Fighter — UAL2 One-Handed Proof** is generated offline with the proven Carl bake, using Carl's T-pose bind rotations as a same-exporter reference while preserving the Orc's own model data.
 
+## Orc skin-weight QA (Candidate Rev 104)
+
+Visual QA of the baked one-handed sword animation identified thigh/skirt geometry
+following a hand during the attack. The uploaded Orc source itself has **544 vertices**
+with both arm and leg influences of at least 5%; one upper-thigh vertex is 70% leg
+and 29% left pinky. The source GLB and the Carl-method baked proof remain unchanged.
+
+The Studio catalog now opts both Orc entries into `skinWeightRepair:
+"cross-limb-components-v1"`. After GLTF loading, before framing and equipment
+setup, `js/studio-skinning.mjs` uses triangle connectivity and dominant anatomical
+bone families to remove cross-limb weights from affected disconnected mesh pieces.
+It renormalizes retained weights and updates the GPU skin-weight attribute. No
+bone hierarchy, animation, inverse bind matrix, material, or equipment socket is
+changed. Carl and other models do not opt into the repair.
+
+The exact uploaded Orc has 7,008 vertices; this profile corrects **750 vertices**
+in 53 disconnected surfaces and reduces the mixed arm/leg count from 544 to zero.
+Use `node scripts/test-orc-skinning.mjs` to verify the repair against the actual
+source GLB and `node scripts/audit-orc-skin-weights.mjs` for detailed diagnostics.
+The Studio's read-only `adventureParty3DStudio.snapshot().skinRepair` exposes
+the applied correction count during QA. The original source SHA-256 is protected
+by regression tests.
+
+**Visual acceptance remains necessary:** in the Model Library choose
+**Male Orc Fighter — UAL2 One-Handed Proof**, equip sword and shield, and scrub
+`UAL2_Sword_Regular_A` across all frames. Inspect both upper legs, skirt,
+shoulders, hands, and equipment sockets. This fix removes anatomically impossible
+arm/leg skin influences but does not claim to repair other model-weight errors
+or guarantee every future character model is clean.
+
 ## Current limitations
 
 This is a first pass, not a promise that every humanoid rig will be zero-touch.
