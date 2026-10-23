@@ -202,10 +202,18 @@ export function validateSpritePackage(manifest, files) {
       expected.add(filename);
       requireValue(files.has(filename), `missing ${filename}.`);
       frames[pose][facing] = decodeSpritePng(files.get(filename), manifest.frame.width, manifest.frame.height, filename);
+      const battlefieldName=manifest.battlefield?.poses?.[pose]?.frames?.[facing];
+      if(battlefieldName){
+        expected.add(battlefieldName);
+        requireValue(files.has(battlefieldName),`missing ${battlefieldName}.`);
+        decodeSpritePng(files.get(battlefieldName),manifest.battlefield.width,manifest.battlefield.height,battlefieldName);
+      }
     }
   }
   requireValue(files.size === expected.size && [...files.keys()].every(name => expected.has(name)),
-    'package must contain only its manifest, 18 facing images, and sheet.');
+    manifest.battlefield
+      ? 'package must contain only its manifest, 18 editable images, 18 battlefield images, and sheet.'
+      : 'package must contain only its manifest, 18 facing images, and sheet.');
   const assembled = assembleSpriteSheet(frames, manifest.frame.width, manifest.frame.height);
   const sheet = decodeSpritePng(files.get(manifest.sheet.file), assembled.width, assembled.height, manifest.sheet.file);
   requireValue(Buffer.from(sheet).equals(Buffer.from(assembled.data)), 'sheet pixels do not match the 18 facing images.');
@@ -346,8 +354,11 @@ export async function importSpriteSet(source, { repoRoot = DEFAULT_ROOT } = {}) 
         'that character folder contains assets without a sprite-set manifest; choose a new character ID.');
       const oldManifest = validateSpriteSetManifest(JSON.parse(await fs.readFile(oldManifestPath, 'utf8')));
       requireValue(oldManifest.id === manifest.id, 'existing character folder belongs to a different sprite set.');
-      const managedNames = new Set(['manifest.json', oldManifest.sheet.file,
-        ...SPRITE_POSES.flatMap(pose => SPRITE_DIRECTIONS.map(facing => oldManifest.poses[pose].frames[facing]))]);
+      const managedNames = new Set(['manifest.json',oldManifest.sheet.file,
+        ...SPRITE_POSES.flatMap(pose=>SPRITE_DIRECTIONS.flatMap(facing=>[
+          oldManifest.poses[pose].frames[facing],
+          oldManifest.battlefield?.poses?.[pose]?.frames?.[facing]
+        ].filter(Boolean)))]);
       const oldEntries = await fs.readdir(destination, { withFileTypes: true });
       requireValue(oldEntries.every(item => item.isFile() && managedNames.has(item.name)),
         'existing character folder has additional files; choose a new character ID to preserve them.');
