@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "status": "repository-backed",
+  "note": "All three exact user-supplied GLBs are committed as native Git blobs and validated against these byte sizes and SHA-256 digests. The baked Carl clip is a single one-second visual QA proof, not approval of all Mixamo animations.",
+  "models": [
+    {
+      "id": "new-carl-tripo-source",
+      "path": "assets/models/dungeon-crawler-carl/new-carl/new-carl.glb",
+      "sourceFilename": "New+DCC(1).glb",
+      "sizeBytes": 1274824,
+      "sha256": "07fd945a1c9d08690b4619c997d700b2989d238c2b0cf68674ca0cc898962156",
+      "animated": false
+    },
+    {
+      "id": "new-orc-tripo-source",
+      "path": "assets/models/orcs/new-orc/new-orc.glb",
+      "sourceFilename": "New+Orc(1).glb",
+      "sizeBytes": 1228892,
+      "sha256": "50f2c69c60c8f72a0c2d60941d4cae853e023babaa75e969573aabc581a0b909",
+      "animated": false
+    },
+    {
+      "id": "new-carl-mixamo-baked-proof",
+      "path": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-qa/new-carl-sword-shield-attack-inplace-proof.glb",
+      "sourceFilename": "new-carl-sword-shield-attack-inplace-proof.glb",
+      "sizeBytes": 1353836,
+      "sha256": "208cc1fd496346aa035fdd83b56f1540d464a8efc2d7a40d9f633f47c7a7f392",
+      "animated": true,
+      "clip": "Mixamo_Sword_Shield_Attack_InPlace_QA"
+    }
+  ],
+  "animationSource": {
+    "packFilename": "Lite Sword and Shield Pack(1).zip",
+    "xbotFbxSha256": "7cda48832cd2e612224c08f75269b7dea5731fa0d798abada6040fee94002e29",
+    "attackFbxSha256": "ef639b9ef713e80c538278c111af7fe8d93d1b61f32931af144e7f82eb5767a3"
+  }
+}
