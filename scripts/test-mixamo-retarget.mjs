@@ -70,7 +70,6 @@ function bindSpaceDiagnostics(THREE,glb,label){
     rows.push({name:bone.name,angle:THREE.MathUtils.radToDeg(nodeWorld.angleTo(ibmWorld))});
   }
   rows.sort((a,b)=>b.angle-a.angle);
-  console.log('BINDSPACE',label,JSON.stringify({max:rows[0],arms:rows.filter(r=>/(Shoulder|Arm|ForeArm|Hand)$/.test(r.name))}));
   return rows;
 }
 const q=(axis,degrees)=>new THREE.Quaternion().setFromAxisAngle(axis,THREE.MathUtils.degToRad(degrees));
@@ -106,7 +105,7 @@ const clip=new THREE.AnimationClip('Hierarchy',1,[
 ]);
 
 const retargeted=retargetHumanoidClip(THREE,clip,sourceRig,targetRig,'Retargeted');
-assert.equal(retargeted.userData.humanoidImport.retargetMode,'semantic-anatomical-basis-bind-delta');
+assert.equal(retargeted.userData.humanoidImport.retargetMode,'semantic-joint-bind-relative');
 assert.equal(retargeted.userData.humanoidImport.sourceRigFamily,'generic');
 assert.equal(retargeted.userData.humanoidImport.targetRigFamily,'generic');
 assert.equal(retargeted.tracks.length,2,'Only rotation tracks are baked');
@@ -129,8 +128,8 @@ const sourceParentAnimWorld=sourceParent.getWorldQuaternion(new THREE.Quaternion
 const sourceChildAnimWorld=sourceChild.getWorldQuaternion(new THREE.Quaternion());
 const targetParentBindWorld=q(x,-35);
 const targetChildBindWorld=targetParentBindWorld.clone().multiply(q(y,40));
-const expectedParentWorld=sourceParentAnimWorld.clone().multiply(sourceParentBindWorld.clone().invert()).multiply(targetParentBindWorld);
-const expectedChildWorld=sourceChildAnimWorld.clone().multiply(sourceChildBindWorld.clone().invert()).multiply(targetChildBindWorld);
+const expectedParentWorld=targetParentBindWorld.clone().multiply(sourceParentBindWorld.clone().invert()).multiply(sourceParentAnimWorld);
+const expectedChildWorld=targetChildBindWorld.clone().multiply(sourceChildBindWorld.clone().invert()).multiply(sourceChildAnimWorld);
 const actualParentWorld=targetParent.getWorldQuaternion(new THREE.Quaternion());
 const actualChildWorld=targetChild.getWorldQuaternion(new THREE.Quaternion());
 assert.ok(actualParentWorld.angleTo(expectedParentWorld)<8e-4,'Parent world-space motion is preserved');
@@ -138,14 +137,16 @@ assert.ok(actualChildWorld.angleTo(expectedChildWorld)<8e-4,'Child world-space m
 
 mixer.stopAllAction();
 
-// Opposite native front axes must not mirror an otherwise semantic match.
-// The source is anatomically +Z forward; the target is anatomically -Z
-// forward because its named left/right shoulders occupy opposite X sides.
+// Different joint bind frames must preserve the animation relative to each
+// joint's own rest orientation instead of forcing the source world delta onto
+// the target. This is the failure mode that folded the Orc's arms inward.
 {
   const source=new THREE.Group();
   const target=new THREE.Group();
-  const add=(root,name,position)=>{
-    const bone=new THREE.Bone(); bone.name=name; bone.position.fromArray(position); root.add(bone); return bone;
+  const add=(root,name,position,rotation=null)=>{
+    const bone=new THREE.Bone(); bone.name=name; bone.position.fromArray(position);
+    if(rotation)bone.quaternion.copy(rotation);
+    root.add(bone); return bone;
   };
   add(source,'mixamorig:Hips',[0,0,0]);
   add(source,'mixamorig:Head',[0,1,0]);
@@ -157,30 +158,27 @@ mixer.stopAllAction();
   add(target,'mixamorig:Head',[0,1,0]);
   add(target,'mixamorig:LeftShoulder',[0.4,0.75,0]);
   add(target,'mixamorig:RightShoulder',[-0.4,0.75,0]);
-  const targetArm=add(target,'mixamorig:RightArm',[-0.5,0.65,0]);
+  const targetBind=q(y,180);
+  const targetArm=add(target,'mixamorig:RightArm',[-0.5,0.65,0],targetBind);
 
   source.updateWorldMatrix(true,true);
   target.updateWorldMatrix(true,true);
   const identity=new THREE.Quaternion();
   const sourceMoved=q(x,30);
-  const frontClip=new THREE.AnimationClip('OppositeFront',1,[
+  const frontClip=new THREE.AnimationClip('DifferentBindFrame',1,[
     new THREE.QuaternionKeyframeTrack('mixamorigRightArm.quaternion',[0,1],[
       identity.x,identity.y,identity.z,identity.w,
       sourceMoved.x,sourceMoved.y,sourceMoved.z,sourceMoved.w
     ])
   ]);
-  const mapped=retargetHumanoidClip(THREE,frontClip,source,target,'OppositeFrontMapped');
-  assert.equal(mapped.userData.humanoidImport.sourceBasisResolved,true);
-  assert.equal(mapped.userData.humanoidImport.targetBasisResolved,true);
-  assert.ok(Math.abs(mapped.userData.humanoidImport.basisCorrectionDegrees-180)<1e-4,
-    'Opposite-facing rigs report a 180-degree anatomical-basis correction');
-
+  const mapped=retargetHumanoidClip(THREE,frontClip,source,target,'DifferentBindFrameMapped');
   const track=mapped.tracks.find(track=>track.name===`${targetArm.uuid}.quaternion`);
-  assert.ok(track,'Target right arm receives the semantic right-arm animation');
+  assert.ok(track,'Target semantic right arm receives the animation');
   const last=track.values.slice(track.values.length-4);
   const mappedEnd=new THREE.Quaternion(...last);
-  assert.ok(mappedEnd.angleTo(q(x,-30))<5e-4,
-    'A +X source arm rotation becomes -X on a 180-degree opposite-facing target');
+  const expected=targetBind.clone().multiply(sourceMoved);
+  assert.ok(mappedEnd.angleTo(expected)<5e-4,
+    'Target keeps its own bind orientation and receives the source bind-relative motion');
 }
 
 // Uploaded Orc acceptance fixture: the actual GLB has these Mixamo bone names.
@@ -223,9 +221,11 @@ assert.equal(findHumanoidBone(aliasRig,'rightHand').name,'hand.R');
 const orcFileUrl=new URL('../assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',import.meta.url);
 const orcGlb=readGlbJson(orcFileUrl);
 const {bytes:orcBytes,json:orcJson}=orcGlb;
-bindSpaceDiagnostics(THREE,orcGlb,'orc');
+const orcBindDiagnostics=bindSpaceDiagnostics(THREE,orcGlb,'orc');
 const carlCarrierGlb=readGlbJson(new URL('../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb',import.meta.url));
-bindSpaceDiagnostics(THREE,carlCarrierGlb,'carl-carrier');
+const carlBindDiagnostics=bindSpaceDiagnostics(THREE,carlCarrierGlb,'carl-carrier');
+assert.ok(orcBindDiagnostics[0].angle<0.1 && carlBindDiagnostics[0].angle<0.1,
+  'Node-world and inverse-bind rotations agree closely in both real rigs; bind coordinate-space mismatch is not the Orc failure');
 assert.equal(orcBytes.length,1413200,'Orc source byte length is preserved');
 assert.equal(
   crypto.createHash('sha256').update(orcBytes).digest('hex'),
