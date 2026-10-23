@@ -23,7 +23,7 @@ assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].poseProfileId,'two-handed
 assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].asset,'assets/models/weapons/two-handed-swords/medieval-two-handed-sword.glb');
 assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].grip.sizePercent,100);
 assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].handsRequired,2);
-assert.deepEqual(VISIBLE_WEAPON_ASSETS['two-handed-sword'].secondaryGrip,[0,0.89,0]);
+assert.deepEqual(VISIBLE_WEAPON_ASSETS['two-handed-sword'].secondaryGrip,[0,0.95,0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129, -90, 0]);
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].attachmentBone,'mixamorig:LeftHand');
