@@ -1,4 +1,4 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C93';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C95';
 import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C93';
 import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C93';
 
