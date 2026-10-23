@@ -135,10 +135,10 @@ body.studio-page {
 .studio-direction { color:var(--gold); font-size:16px; }
 .studio-preview-card canvas {
   display:block;
-  width:100%;
-  max-width:185px;
-  height:auto;
-  object-fit:contain;
+  width:180px;
+  max-width:none;
+  height:150px;
+  object-fit:none;
   align-self:center;
   background:#555352;
   image-rendering:pixelated;
@@ -280,7 +280,7 @@ body.studio-page {
 
 @media (min-width:1450px) {
   .studio-layout { grid-template-columns:268px minmax(0,1fr) 440px; }
-  .studio-preview-card canvas { max-width:200px; }
+  .studio-preview-card canvas { max-width:none; }
 }
 
 @media (max-width:1120px) {
