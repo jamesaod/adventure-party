@@ -87,6 +87,39 @@
       "file": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
       "upAxis": "Y",
       "mobType": "orc"
+    },
+    {
+      "id": "new-orc-carl-reference-world-qa",
+      "label": "New Orc — Carl Reference: Anatomical World Delta (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationFamilies": [
+        "carl-baked-single-clip-qa"
+      ],
+      "animationRetargetMode": "anatomical-world-delta"
+    },
+    {
+      "id": "new-orc-carl-reference-joint-qa",
+      "label": "New Orc — Carl Reference: Joint Bind Relative (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationFamilies": [
+        "carl-baked-single-clip-qa"
+      ],
+      "animationRetargetMode": "semantic-joint-bind-relative"
+    },
+    {
+      "id": "new-orc-carl-reference-local-qa",
+      "label": "New Orc — Carl Reference: Local Bind Delta (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationFamilies": [
+        "carl-baked-single-clip-qa"
+      ],
+      "animationRetargetMode": "local-bind-delta"
     }
   ]
 }
