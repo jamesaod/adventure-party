@@ -14,7 +14,7 @@ assert.equal(twoHanded.appearance.poseProfileId,'two-handed-swing');
 assert.equal(twoHanded.appearance.handsRequired,2);
 assert.deepEqual(twoHanded.appearance.primaryAxis,[0,-1,0]);
 assert.deepEqual(twoHanded.appearance.grip,[0,0.81,0]);
-assert.deepEqual(twoHanded.appearance.secondaryGrip,[0,0.89,0]);
+assert.deepEqual(twoHanded.appearance.secondaryGrip,[0,0.95,0]);
 assert.equal(twoHanded.appearance.nativeScale,0.78);
 assert.equal(twoHanded.appearance.source.originalBytes,646456);
 assert.equal(twoHanded.appearance.source.originalSha256,'85408b9b17fa38a72816d57ac55e63e6409862b5d5a305beb6cf5eee045c948a');
