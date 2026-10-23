@@ -112,8 +112,13 @@ for(const gltfClip of carl.doc.animations){
   assert.ok(retarget.userData.humanoidImport.hipYTransferred);
   assert.ok(retarget.userData.humanoidImport.aimedBoneRoles.length>=35);
   const mapped=retarget.userData.humanoidImport.mappedTracks;
-  assert.ok(mapped>=60, 'At least 60 semantic Mixamo roles mapped; got '+mapped);
-  assert.equal(retarget.tracks.length,mapped+1,'All mapped rotations plus 1 vertical hips motion');
+  // mappedTracks already includes the hips position track. The 65 original
+  // donor joints need not all be recognized by the semantic-role adapter.
+  const rotCount=retarget.tracks.filter(t=>t.ValueTypeName==='quaternion').length;
+  const hipCount=retarget.tracks.filter(t=>t.ValueTypeName==='vector').length;
+  assert.ok(rotCount>=60,'At least 60 compatible animated skeleton joints; got '+rotCount);
+  assert.equal(hipCount,1,'One target hips position track is preserved');
+  assert.equal(retarget.tracks.length,mapped,'Import diagnostic counts both quaternion and hips tracks');
   assert.ok(retarget.duration>0,'Clip duration is positive');
   assert.ok(retarget.tracks.every(t=>t.values.every(Number.isFinite)),
     'All target animation samples remain finite');
