@@ -54,6 +54,7 @@ function getColorLookup() {
 
 const clampByte = value => Math.max(0, Math.min(255, Math.round(value)));
 const colorFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(2, value)) : 1;
+const saturationFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(5, value)) : 1;
 const MAX_OUTLINE = 10;
 const OUTLINE_DISTANCE_LIMIT = (MAX_OUTLINE + 1) ** 2;
 let outlineWorkspace;
@@ -153,7 +154,7 @@ export function quantizeRgba(source, width, height, target, {
   const lookup = getColorLookup();
   const brightnessValue = colorFactor(brightness);
   const contrastValue = colorFactor(contrast);
-  const saturationValue = colorFactor(saturation);
+  const saturationValue = saturationFactor(saturation);
   const hueShift = Number.isFinite(hue) ? ((hue % 360 + 360) % 360) / 60 : 0;
   // Boolean options remain compatible with the original on/off outline.
   const outlineWidth = outline === true ? 1 : Number.isFinite(outline) ? Math.max(0, Math.min(MAX_OUTLINE, Math.round(outline))) : 0;
