@@ -87,6 +87,34 @@
       "file": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
       "upAxis": "Y",
       "mobType": "orc"
+    },
+    {
+      "id": "new-orc-retarget-world-delta-qa",
+      "label": "New Orc — Carl Animation / World Delta (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_sword_and_shield_attack"
+        ],
+        "mode": "world-bind-delta"
+      }
+    },
+    {
+      "id": "new-orc-retarget-joint-relative-qa",
+      "label": "New Orc — Carl Animation / Joint Relative (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_sword_and_shield_attack"
+        ],
+        "mode": "joint-bind-relative"
+      }
     }
   ]
 }
