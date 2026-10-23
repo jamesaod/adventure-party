@@ -1,5 +1,41 @@
 # Reproducible Tripo GLB → Mixamo FBX animation bake (Carl + Orc)
 
+
+## Candidate Rev 111: controlled retarget diagnosis (human QA required)
+
+Two new Model Library entries provide a controlled A/B comparison on the **same untouched**
+`assets/models/orcs/new-orc/new-orc.glb`. They do **not** edit the source GLB,
+skin weights, inverse binds, node rotations or repository-backed Rev 110 baked outputs.
+
+- **New Orc — Carl Animation / World Delta (QA)**: `animatedSourceWorld × inverse(sourceBindWorld)`,
+  converted by the anatomical rig basis `C`, then left-multiplied onto the Orc target bind.
+  This parallels the offline 17-clip bake's rotation transfer.
+- **New Orc — Carl Animation / Joint Relative (QA)**: `inverse(sourceBindWorld) × animatedSourceWorld`,
+  right-multiplied after the Orc target bind. This is the older live Three.js formula.
+
+Both options use precisely the same **already baked Carl GLB** as their animation carrier,
+`new-carl-mixamo-sword-shield-full-17.glb`, and import its single
+`Mixamo_sword_and_shield_attack` clip. We intentionally test **one clip** to avoid
+generating more potentially broken derived assets. The comparison explicitly supports
+UUID-addressed glTF animation tracks, in addition to named Mixamo tracks. The variants
+appear in Studio's normal Model Library; no asset downloads or new uploads are needed.
+
+**QA order:** Load **New Carl — All 17 Sword & Shield Animations (QA)** and play
+`Mixamo_sword_and_shield_attack` as the known comparison source; then load the **Rev 110
+baked Orc** and play the matching clip; finally load each of the two **Rev 111 Orc QA**
+entries. Scrub at 0%, 25%, 50%, 75%, and 100% while facing front, sides, and rear.
+Keep equipment unequipped for the initial check. Record whether arms remain on their
+correct anatomical sides, shoulder orientation is natural, and thighs do not move with
+arms. Only after the naked model passes should sword and shield sockets be evaluated.
+
+**Decision rule:** If only one formula renders a correct Orc, prefer that formula for
+this donor/rig family, then rerun a fully validated offline bake separately. If neither
+works, stop and investigate joint rest-frame axes, transforms, and skinning rather than
+continuing arbitrary left/right switches or changing Carl. Automated regression checks
+verify mathematical modes, clip availability, provenance, and original Orc isolation;
+they **cannot** certify the absence of visual arm crossing.
+
+
 **Status: Candidate Rev 110 — 17 clips each baked for Carl and Orc, structurally verified; human visual Studio QA still PENDING.**
 
 The complete, non-destructive 17-motion production scripts are now `scripts/bake_mixamo_pack_v2.py` and `scripts/tripo_mixamo_bake_core.py`. They take a pristine Tripo GLB, Mixamo X Bot reference FBX, and the original 17 sword/shield motion FBXs; use world/bind deltas and animated-parent local rotations; sample full-duration motions at 60 FPS; and remove horizontal XZ hip motion for stationary sprite capture. Python dependencies are `numpy` and `scipy`. Inspect usage with `python scripts/bake_mixamo_pack_v2.py --help`; inputs are third-party source files and are not downloaded by Studio. Verified full-bake outputs and their per-clip `provenance.json` reports are in:
