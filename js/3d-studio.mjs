@@ -25,6 +25,7 @@ import {
 } from './studio-shield.mjs?v=R238C102';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
+import { readHumanoidQaPack } from './studio-qa-pack.mjs?v=R238C107';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -52,6 +53,7 @@ const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'AnimationFiles', 'LoadAnimationButton', 'DemoButton', 'ModelName',
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
+  'QaPackFiles', 'QaPackLoadButton', 'QaPackModel', 'QaPackUseButton', 'QaPackStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
@@ -96,6 +98,8 @@ let supersampleImage;
 let resizeObserver, visibilityObserver, poseCapture;
 let modelBounds = null, heightRulerLine;
 let humanoidAnimationSourcesPromise = null;
+let qaPack = null;
+let qaPackBusy = false;
 const equipment = createStudioEquipment({
   THREE,
   loadAsset: async weapon => {
@@ -2091,7 +2095,78 @@ function exportImage(facing = null) {
   invalidate(false);
 }
 
+function syncQaPack() {
+  const ready = !!qaPack && !qaPackBusy;
+  ui.QaPackLoadButton.disabled = qaPackBusy;
+  ui.QaPackModel.disabled = !ready;
+  ui.QaPackUseButton.disabled = !ready || !ui.QaPackModel.value || state.modelLoading;
+}
+async function openQaPack() {
+  const file = ui.QaPackFiles.files?.[0];
+  if (!file) return;
+  qaPackBusy = true;
+  syncQaPack();
+  clearError();
+  ui.QaPackStatus.textContent = 'Reading local models and FBX animations…';
+  try {
+    const loaded = await readHumanoidQaPack(file);
+    qaPack = loaded;
+    ui.QaPackModel.replaceChildren(...loaded.manifest.models.map(item => new Option(item.label,item.id)));
+    ui.QaPackStatus.textContent = loaded.modelCount + ' models and ' + loaded.animationCount + ' animations ready. Choose a model to test.';
+  } catch(error) {
+    qaPack = null;
+    ui.QaPackModel.replaceChildren(new Option('Choose a QA pack first…',''));
+    ui.QaPackStatus.textContent = 'Could not open testing pack.';
+    showError(friendlyImportError(error));
+  } finally {
+    qaPackBusy = false;
+    syncQaPack();
+    ui.QaPackFiles.value = '';
+  }
+}
+async function loadQaPackModel() {
+  if (!qaPack || qaPackBusy) return;
+  const entry=qaPack.manifest.models.find(item => item.id === ui.QaPackModel.value);
+  if (!entry) return;
+  if (poseCapture?.snapshot().captureCount) {
+    showError(new Error('Clear captured poses before changing the model and animation library.'));
+    return;
+  }
+  qaPackBusy = true;
+  syncQaPack();
+  clearError();
+  try {
+    ui.QaPackStatus.textContent = 'Loading ' + entry.label + ' without skin or bind-pose modifications…';
+    const glb=qaPack.files.get(entry.path);
+    const modelLoaded=await loadFiles([glb],{modelDefaults:{
+      id:'',label:entry.label,mobType:entry.mobType||'fighter',upAxis:entry.upAxis||'Y'
+    }});
+    if (!modelLoaded) {
+      ui.QaPackStatus.textContent = 'Could not load ' + entry.label + '. Model unchanged.';
+      return;
+    }
+    const animations=qaPack.manifest.animations.map(item=>qaPack.files.get(item.path));
+    ui.QaPackStatus.textContent = 'Applying ' + animations.length + ' Mixamo FBXs to ' + entry.label + '…';
+    const imported=await loadAnimationFiles(animations);
+    const clipCount=state.clips.filter(clip=>/^Imported_/.test(clip.name)).length;
+    ui.QaPackStatus.textContent = imported
+      ? entry.label + ' · ' + clipCount + ' imported animations in Animation dropdown.'
+      : 'Model loaded, but animation import was interrupted; ' + clipCount + ' animation(s) succeeded.';
+  } catch(error) {
+    showError(friendlyImportError(error));
+    ui.QaPackStatus.textContent = 'QA model or animation import failed.';
+  } finally {
+    qaPackBusy = false;
+    syncQaPack();
+  }
+}
 function bindControls() {
+  ui.QaPackLoadButton.addEventListener('click', () => ui.QaPackFiles.click());
+  ui.QaPackFiles.addEventListener('change', () => {
+    if (ui.QaPackFiles.files.length) void openQaPack();
+  });
+  ui.QaPackModel.addEventListener('change', syncQaPack);
+  ui.QaPackUseButton.addEventListener('click', () => void loadQaPackModel());
   ui.ModelLibrary.addEventListener('change', syncModelLibraryControls);
   ui.LoadLibraryButton.addEventListener('click', loadLibraryModel);
   ui.LoadButton.addEventListener('click', () => ui.Files.click());
@@ -2530,6 +2605,7 @@ async function start() {
       model: state.modelName, facing: state.facing,
       libraryModelId: state.libraryModelId,
       skinRepair: state.skinRepairReport ? { ...state.skinRepairReport } : null,
+      qaPack: qaPack ? {models:qaPack.modelCount,animations:qaPack.animationCount,busy:qaPackBusy} : null,
       nativeBindExperiment: state.nativeBindReport ? { ...state.nativeBindReport } : null,
       directions: HEX_FACINGS.map(item => item.id),
       previewSize: [previews[0].canvas.width, previews[0].canvas.height],

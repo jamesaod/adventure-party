@@ -2,6 +2,14 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 107 — New Carl and Orc Mixamo QA import
+
+- Prepared a single user-supplied **New Carl + New Orc / Lite Sword and Shield Pack** ZIP containing both source GLBs, 17 sword/shield Mixamo FBX clips, an X Bot reference FBX, and SHA-256 provenance. The ZIP is distributed as a ChatGPT test artifact; the large binary assets are **not yet committed to GitHub**.
+- The Studio now has **New Carl + Orc / Mixamo QA pack → Open local QA pack (ZIP)**. Choose either model, then **Apply all Mixamo animations to model** to load the unchanged rig and all 17 FBX takes using the existing humanoid retargeter. Test the same animation on both models without the old Orc skin-weight or reference-bake modifications.
+- Both uploaded models have Mixamo skeletons and zero embedded animations. The new Carl has 65 skin joints; the new Orc has 66 including one extra `neutral_bone`. Both skin-weight arrays normalize to 1.0. Their severe cross-limb contamination counts are dramatically lower than the prior Orc.
+- The source pack stays local in the browser; nothing is uploaded by the 3D Studio control. Previous Carl/Orc entries and animations remain intact. Animation importing is a QA workflow, **not yet a persistent repository model/animation library integration**.
+- Added ZIP central-directory parser with path validation, size limits, GLB/FBX format checks, and a Node regression test. Full visual retargeting and equipment validation is still required.
+
 ## Candidate Rev 106 — Isolated Orc native-bind animation experiment
 
 - **Last controlled Orc test before considering a newly generated model:** preserve the Rev 103 proof, existing Rev 104/105 behavior and untouched uploaded Orc GLB.
