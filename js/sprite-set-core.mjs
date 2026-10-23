@@ -33,8 +33,8 @@ export function validateSpriteSetManifest(value) {
   const frame = value.frame;
   requireValue(object(frame), 'frame metadata is missing.');
   for (const key of ['width', 'height']) {
-    requireValue(Number.isInteger(frame[key]) && frame[key] > 0 && frame[key] <= 1024,
-      `${key} must be an integer from 1 to 1024.`);
+    requireValue(Number.isInteger(frame[key]) && frame[key] > 0 && frame[key] <= 4096,
+      `${key} must be an integer from 1 to 4096.`);
   }
   for (const key of ['renderWidth', 'renderHeight']) {
     requireValue(Number.isFinite(frame[key]) && frame[key] > 0 && frame[key] <= 4096,
@@ -126,7 +126,7 @@ function checkPixels(data, width, height) {
 
 /** Input uses normal top-down RGBA rows and the existing E NE NW / W SW SE atlas. */
 export function splitSixFacingAtlas(data, width, height) {
-  requireValue(Number.isInteger(width) && width > 0 && width <= 1024 && Number.isInteger(height) && height > 0 && height <= 1024,
+  requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid atlas frame dimensions.');
   checkPixels(data, width * 3, height * 2);
   return Object.fromEntries(SPRITE_DIRECTIONS.map((facing, index) => {
@@ -141,7 +141,7 @@ export function splitSixFacingAtlas(data, width, height) {
 
 /** Missing rows are transparent, allowing the same layout for a growing preview. */
 export function assembleSpriteSheet(poseFrames, width, height) {
-  requireValue(Number.isInteger(width) && width > 0 && width <= 1024 && Number.isInteger(height) && height > 0 && height <= 1024,
+  requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid sheet frame dimensions.');
   const sheetWidth = width * SPRITE_DIRECTIONS.length;
   const sheetHeight = height * SPRITE_POSES.length;
