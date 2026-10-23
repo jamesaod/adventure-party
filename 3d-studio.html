@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 109</span>
+        <span class="studio-build">Candidate Rev 110</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -89,7 +89,7 @@
             <p id="studioQaPackStatus" class="studio-note studio-help" role="status" aria-live="polite">No testing pack loaded yet.</p>
           </details>
           <p class="studio-note studio-help">Model: GLB, glTF or FBX. Saved humanoids may automatically load approved repository animation families. Animation import can also retarget a humanoid FBX onto the current rig. Studio maps common Mixamo, Rigify/Blender, Unreal and Bip01 bone names to shared humanoid roles.</p>
-          <p class="studio-note studio-help"><strong>Rev 109 — repository-backed model QA:</strong> In <strong>Model library</strong> choose <strong>New Carl — Original Tripo (No Animation)</strong>, <strong>New Orc — Original Tripo (No Animation)</strong>, or <strong>New Carl — Offline Sword &amp; Shield Attack QA</strong>, then press <strong>Load selected model</strong>. The last model contains <code>Mixamo_Sword_Shield_Attack_InPlace_QA</code>. Check T-Pose and bare animation first; then add sword and shield. These assets are loaded directly from the GitHub repository; no ZIP download or local import is necessary. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Offline bake and QA procedure</a>.</p>
+          <p class="studio-note studio-help"><strong>Rev 110 — new 17-animation models:</strong> In <strong>Model library</strong> select <strong>New Carl — 17 Sword &amp; Shield Animations</strong> or <strong>New Orc — 17 Sword &amp; Shield Animations</strong> and press <strong>Load selected model</strong>. All 17 motions are embedded in each GLB. The untouched sources and original one-clip Carl proof remain selectable. No download required. Check the model without gear before testing sword/shield alignment. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Baking runbook</a>.</p>
           <p class="studio-local-note">Files opened from your device are not uploaded.</p>
         </section>
 
@@ -250,7 +250,16 @@
                 <option value="2">2×</option>
               </select>
             </label>
+            <label class="studio-field studio-speed-field" for="studioPreviewFps">
+              <span>Pixel preview FPS</span>
+              <select id="studioPreviewFps">
+                <option value="10">10 (lighter)</option>
+                <option value="15" selected>15 (balanced)</option>
+                <option value="30">30 (full)</option>
+              </select>
+            </label>
           </div>
+          <p class="studio-note studio-help">The six directional pixel previews update at this rate. The main 3D animation runs independently.</p>
           <p id="studioAnimationSummary" class="studio-note studio-help" role="status">Looking for embedded animations…</p>
           <p id="studioAnimationWarning" class="studio-note studio-help" hidden></p>
           <label class="studio-sr-only" for="studioTimeline">Animation position</label>
@@ -444,7 +453,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C107"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C110"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>
