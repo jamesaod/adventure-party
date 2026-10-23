@@ -39,6 +39,7 @@ export const STUDIO_WEAPONS = Object.freeze([
     position:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.position]),
     rotation:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.rotationDegrees]),
     defaultSizePercent:TWO_HANDED_SWORD_ITEM.appearance.defaultSizePercent,
+    calibratedLengthInches:TWO_HANDED_SWORD_ITEM.physical?.calibratedLengthInches || 60.6,
     presetRevision:1
   })
 ]);
@@ -46,7 +47,8 @@ export const STUDIO_WEAPONS = Object.freeze([
 export const EQUIPMENT_LIMITS = Object.freeze({
   sizePercent: Object.freeze({ min: 25, max: 200, step: 5 }),
   position: Object.freeze({ min: -1, max: 1, step: 0.005 }),
-  rotation: Object.freeze({ min: -180, max: 180, step: 1 })
+  rotation: Object.freeze({ min: -180, max: 180, step: 1 }),
+  secondaryGripOffsetInches: Object.freeze({ min: -5, max: 5, step: 0.25 })
 });
 const bounded = (value, fallback, range) => Number.isFinite(value) ? Math.min(range.max, Math.max(range.min, value)) : fallback;
 export function studioWeapon(id) { return STUDIO_WEAPONS.find(weapon => weapon.id === id) || null; }
@@ -57,14 +59,17 @@ export function normalizeEquipment(value = {}) {
   const migratePreset = !!weapon && presetRevision > storedRevision;
   const vector = key => preset[key].map((fallback, axis) =>
     migratePreset ? fallback : bounded(value?.[key]?.[axis], fallback, EQUIPMENT_LIMITS[key]));
+  const secondaryGripOffsetInches = [0,1,2].map(axis =>
+    migratePreset ? 0 : bounded(value?.secondaryGripOffsetInches?.[axis], 0, EQUIPMENT_LIMITS.secondaryGripOffsetInches));
   return {
-    version: 2,
+    version: 3,
     presetRevision,
     rightHand: weapon?.id || 'none',
     sizePercent: migratePreset ? (weapon?.defaultSizePercent ?? 100)
       : bounded(value?.sizePercent, weapon?.defaultSizePercent ?? 100, EQUIPMENT_LIMITS.sizePercent),
     position: vector('position'),
-    rotation: vector('rotation')
+    rotation: vector('rotation'),
+    secondaryGripOffsetInches
   };
 }
 const normalizedBoneName = object => String(object?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -112,7 +117,13 @@ function rotateJointToward(THREE, joint, fromWorld, toWorld, maxDegrees, weight 
 
 function twoHandedTargetWorld(THREE, attachment) {
   attachment.model.updateWorldMatrix(true, true);
-  return attachment.model.localToWorld(new THREE.Vector3(...attachment.weapon.secondaryGrip));
+  const target = new THREE.Vector3(...attachment.weapon.secondaryGrip);
+  const inchesPerLocalUnit = Number(attachment.weapon.calibratedLengthInches) || 60.6;
+  const offset = attachment.secondaryGripOffsetInches || [0,0,0];
+  target.x += offset[0] / inchesPerLocalUnit;
+  target.y += offset[1] / inchesPerLocalUnit;
+  target.z += offset[2] / inchesPerLocalUnit;
+  return attachment.model.localToWorld(target);
 }
 
 function applyTwoHandedBodyPose(THREE, model, attachment) {
@@ -442,15 +453,18 @@ export function createWeaponAttachment(THREE, hand, model, settings) {
   if (!hand?.isBone || !weapon || !model?.isObject3D) throw new Error('A weapon and a right-hand bone are required.');
   const socket = new THREE.Group(); socket.name = 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
   const grip = new THREE.Group(); grip.name = 'WeaponGripOrigin'; grip.position.fromArray(weapon.grip).multiplyScalar(-1); grip.add(model); socket.add(grip); hand.add(socket);
+  const attachment = { socket, model, weapon, secondaryGripOffsetInches:[0,0,0], update:null, detach: () => socket.removeFromParent() };
   function update(next) {
     const normalized = normalizeEquipment(next);
     socket.position.fromArray(normalized.position);
     socket.rotation.set(...normalized.rotation.map(degrees => degrees * Math.PI / 180), 'XYZ');
     socket.scale.setScalar(weapon.nativeScale * normalized.sizePercent / 100);
+    attachment.secondaryGripOffsetInches = [...normalized.secondaryGripOffsetInches];
     socket.updateWorldMatrix(true, true);
   }
+  attachment.update = update;
   update(value);
-  return { socket, model, weapon, update, detach: () => socket.removeFromParent() };
+  return attachment;
 }
 function captureBonePose(model) {
   const pose = [];
