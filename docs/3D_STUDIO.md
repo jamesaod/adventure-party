@@ -50,6 +50,14 @@ The preset follows the character's existing hand and finger animation. Capturing
 
 Files are read locally by the browser. Selecting a model does not upload it or replace a game asset. Errors retain the last usable model. Unsupported compressed glTF extensions produce an export-without-compression message; see [third-party dependencies](THIRD_PARTY_3D_STUDIO.md) for loader scope.
 
+### Humanoid rig analysis and external animations
+
+When a rigged humanoid is loaded, Studio analyzes its skeleton into semantic roles instead of requiring Carl's exact bone names. The Model summary shows the detected rig family and mapped core-role count. The first pass recognizes common Mixamo, Blender/Rigify, Unreal-style, Bip01/Biped and generic naming conventions.
+
+**Load animation FBX** now retargets a humanoid FBX through those semantic roles. A source `upper_arm.L`, `Bip01_L_UpperArm`, or `mixamorig:LeftArm` can therefore drive the target model's semantic left upper arm even when their literal names differ. Right/left weapon sockets, shields and the two-handed arm chain use the same mapping.
+
+See [HUMANOID_RIG_PIPELINE.md](HUMANOID_RIG_PIPELINE.md) for the onboarding pipeline, current limitations, and the first Orc acceptance model.
+
 ## Choose the MOB, footprint and resolution
 
 Before the first capture, choose the **MOB / player character**, **Footprint and sheet format**, and **Resolution**. The dropdown groups the seven implemented MOBs (Kobold, Kobold Body Guard, Kobold Slinger, Orc, Orc Leader, Orc Shaman, and Juvenile Red Dragon) and the test player characters: **Dungeon Crawler Carl — Fighter**, **Elven Ranger — Ranger**, and **Baub — Mage**. Combat tests use the selected character's existing statistics, controller and behavior. Selecting a target before capturing chooses its default footprint: single hex for the humanoids, or seven hexes for the dragon. You can then choose another footprint for the set.

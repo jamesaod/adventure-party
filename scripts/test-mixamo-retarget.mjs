@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { retargetMixamoClip } from '../js/mixamo-retarget.mjs';
+import { retargetHumanoidClip } from '../js/mixamo-retarget.mjs';
+import { analyzeHumanoidRig, findHumanoidBone, humanoidFingerChains } from '../js/humanoid-rig.mjs';
 
 const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${source.toString('base64')}`);
@@ -14,8 +15,8 @@ sourceParent.add(sourceChild); sourceRig.add(sourceParent);
 sourceRig.updateWorldMatrix(true,true);
 
 const targetRig=new THREE.Group();
-const targetParent=new THREE.Bone(); targetParent.name='mixamorigSpine'; targetParent.quaternion.copy(q(x,-35));
-const targetChild=new THREE.Bone(); targetChild.name='mixamorigLeftArm'; targetChild.quaternion.copy(q(y,40));
+const targetParent=new THREE.Bone(); targetParent.name='spine'; targetParent.quaternion.copy(q(x,-35));
+const targetChild=new THREE.Bone(); targetChild.name='upper_arm.L'; targetChild.quaternion.copy(q(y,40));
 targetParent.add(targetChild); targetRig.add(targetParent);
 targetRig.updateWorldMatrix(true,true);
 
@@ -36,8 +37,10 @@ const clip=new THREE.AnimationClip('Hierarchy',1,[
   new THREE.VectorKeyframeTrack('mixamorigHips.position',[0,1],[0,0,0,1,2,3])
 ]);
 
-const retargeted=retargetMixamoClip(THREE,clip,sourceRig,targetRig,'Retargeted');
-assert.equal(retargeted.userData.mixamoImport.retargetMode,'world-space-bind-delta');
+const retargeted=retargetHumanoidClip(THREE,clip,sourceRig,targetRig,'Retargeted');
+assert.equal(retargeted.userData.humanoidImport.retargetMode,'semantic-world-space-bind-delta');
+assert.equal(retargeted.userData.humanoidImport.sourceRigFamily,'generic');
+assert.equal(retargeted.userData.humanoidImport.targetRigFamily,'generic');
 assert.equal(retargeted.tracks.length,2,'Only rotation tracks are baked');
 
 const mixer=new THREE.AnimationMixer(targetRig);
@@ -66,4 +69,41 @@ assert.ok(actualParentWorld.angleTo(expectedParentWorld)<8e-4,'Parent world-spac
 assert.ok(actualChildWorld.angleTo(expectedChildWorld)<8e-4,'Child world-space motion is preserved despite different parent bind axes');
 
 mixer.stopAllAction();
-console.log('PASS Mixamo world-space bind retargeting');
+
+// Uploaded Orc acceptance fixture: the actual GLB has these Mixamo bone names.
+// The adapter must classify the model as animation/equipment ready without an
+// Orc-specific code path.
+const orcRig=new THREE.Group();
+const orcCore=[
+  'mixamorig:Hips','mixamorig:Spine','mixamorig:Spine1','mixamorig:Spine2','mixamorig:Neck','mixamorig:Head',
+  'mixamorig:LeftShoulder','mixamorig:LeftArm','mixamorig:LeftForeArm','mixamorig:LeftHand',
+  'mixamorig:RightShoulder','mixamorig:RightArm','mixamorig:RightForeArm','mixamorig:RightHand',
+  'mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot',
+  'mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot'
+];
+for(const name of orcCore){const bone=new THREE.Bone();bone.name=name;orcRig.add(bone);}
+for(const side of ['Left','Right'])for(const digit of ['Index','Middle','Ring','Pinky','Thumb'])for(let i=1;i<=3;i++){
+  const bone=new THREE.Bone(); bone.name=`mixamorig:${side}Hand${digit}${i}`; orcRig.add(bone);
+}
+const orcAnalysis=analyzeHumanoidRig(orcRig);
+assert.equal(orcAnalysis.family,'mixamo');
+assert.equal(orcAnalysis.mappedCoreRoles,orcAnalysis.coreRoleCount);
+assert.equal(orcAnalysis.animationReady,true);
+assert.equal(orcAnalysis.equipmentReady,true);
+assert.equal(orcAnalysis.twoHandedReady,true);
+assert.deepEqual(orcAnalysis.fingerChains,{left:5,right:5});
+assert.equal(findHumanoidBone(orcRig,'rightHand').name,'mixamorig:RightHand');
+assert.equal(humanoidFingerChains(orcRig,'left').length,5);
+
+// Cross-convention bone aliases are semantic equivalents.
+const aliasRig=new THREE.Group();
+for(const name of ['pelvis','spine','chest','upper_chest','neck','head','shoulder.L','upper_arm.L','forearm.L','hand.L',
+  'shoulder.R','upper_arm.R','forearm.R','hand.R','thigh.L','shin.L','foot.L','thigh.R','shin.R','foot.R']){
+  const bone=new THREE.Bone(); bone.name=name; aliasRig.add(bone);
+}
+const aliasAnalysis=analyzeHumanoidRig(aliasRig);
+assert.equal(aliasAnalysis.mappedCoreRoles,aliasAnalysis.coreRoleCount);
+assert.equal(aliasAnalysis.animationReady,true);
+assert.equal(findHumanoidBone(aliasRig,'rightHand').name,'hand.R');
+
+console.log('PASS semantic humanoid world-space bind retargeting and Orc rig detection');

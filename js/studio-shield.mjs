@@ -1,4 +1,5 @@
 import { itemCatalogEntry } from './item-catalog.mjs?v=R238C75';
+import { findHumanoidBone, analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 
 const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');
 if(!WOODEN_SHIELD_ITEM?.appearance)throw new Error('Round Wooden Shield catalog appearance is required.');
@@ -72,13 +73,7 @@ export function normalizeShield(value={}){
 }
 
 export function findLeftHand(model){
-  let hand=null;
-  model?.traverse(object=>{
-    if(!object.isBone)return;
-    const name=String(object.name).toLowerCase().replace(/[^a-z0-9]/g,'');
-    if(name==='lefthand'||name.endsWith('mixamoriglefthand'))hand||=object;
-  });
-  return hand;
+  return findHumanoidBone(model,'leftHand');
 }
 
 export function leftForearmAxisLocal(THREE,hand){
@@ -143,6 +138,7 @@ export function createStudioShield({THREE,loadAsset,disposeObject,onChange=()=>{
     settings:normalizeShield(settings),
     attached:!!attachment,
     leftHandBone:findLeftHand(model)?.name||null,
+    rig:model?analyzeHumanoidRig(model):null,
     loading,error,
     socketWorldPosition:attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray()||null
   });
