@@ -248,9 +248,8 @@ assert.deepEqual(orcEntry,{
   label:'Male Orc Fighter',
   file:'assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',
   upAxis:'Y',
-  mobType:'orc',
-  animationFamilies:['one-handed-swing']
-},'Orc is registered as a Y-up Orc Studio model using the shared one-handed swing family');
+  mobType:'orc'
+},'Raw Orc remains a Y-up Orc Studio source model without automatic runtime retargeting');
 
 const animationSources=JSON.parse(fs.readFileSync(new URL('../data/humanoid-animation-sources.json',import.meta.url),'utf8'));
 assert.equal(animationSources.version,1);
