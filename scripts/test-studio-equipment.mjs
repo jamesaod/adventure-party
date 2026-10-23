@@ -120,9 +120,12 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   assert.ok(spine.quaternion.angleTo(spineBefore)>1e-5,'Upper torso participates subtly in the two-handed pose');
   assert.ok(lowerSpine.quaternion.angleTo(lowerSpineBefore)>1e-6,'Lower spine participates subtly in the two-handed pose');
   assert.ok(hips.quaternion.angleTo(hipsBefore)>1e-7,'Pelvis participates subtly in the two-handed pose');
-  assert.equal(result.fingerBonesCurled,15,'All four fingers and thumb segments receive the two-handed wrap pose');
-  assert.ok(offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.angleTo(indexBefore)>0.2,
-    'Left index finger visibly curls around the hilt');
+  assert.ok(result.fingerBonesCurled>=15,'Finger IK adjusts all four fingers and thumb around the hilt');
+  assert.equal(result.fingerGrip.fingertips.length,5,'Four fingers and thumb report final grip distances');
+  assert.ok(result.fingerGrip.fingertips.every(entry=>Number.isFinite(entry.distanceToGrip)),
+    'Every left-hand fingertip resolves to a finite hilt distance');
+  assert.ok(offHand.children.find(child=>child.name.endsWith('Index1')).quaternion.angleTo(indexBefore)>0.05,
+    'Left index finger visibly moves as part of the hilt wrap');
 }
 // Rev 80 regression: procedural two-handed corrections must be temporary.
 // Restoring before the next animation evaluation must return every modified

@@ -204,51 +204,110 @@ function applyTwoHandedBodyPose(THREE, model, attachment) {
   return { applied: true, hipsDegrees, lowerSpineDegrees, spineDegrees, shoulderDegrees, elbowDegrees };
 }
 
-function leftFingerBones(model) {
-  const result = [];
-  model?.traverse(object => {
-    if (!object.isBone) return;
-    const name = normalizedBoneName(object);
-    if (/left(hand)?(thumb|index|middle|ring|pinky)[123]$/.test(name) ||
-        /mixamoriglefthand(thumb|index|middle|ring|pinky)[123]$/.test(name)) result.push(object);
-  });
-  return result;
+function leftFingerChains(model) {
+  const hand = findLeftHand(model);
+  if (!hand) return [];
+  const chains = [];
+  for (const fingerName of ['index','middle','ring','pinky','thumb']) {
+    const bones = [];
+    model.traverse(object => {
+      if (!object.isBone) return;
+      const name = normalizedBoneName(object);
+      const match = name.match(new RegExp(`(?:mixamorig)?lefthand${fingerName}([123])$`));
+      if (match) bones[Number(match[1]) - 1] = object;
+    });
+    if (bones.filter(Boolean).length === 3) chains.push({ fingerName, bones });
+  }
+  return chains;
+}
+
+function fingerTipWorld(THREE, chain) {
+  const last = chain.bones[2];
+  const child = last.children.find(object => object.isBone);
+  if (child) return child.getWorldPosition(new THREE.Vector3());
+  const direction = last.position.lengthSq() > 1e-10
+    ? last.position.clone().normalize()
+    : new THREE.Vector3(1,0,0);
+  return last.localToWorld(direction.multiplyScalar(0.04));
+}
+
+function rotateFingerJointToward(THREE, joint, tipWorld, targetWorld, maxDegrees) {
+  const jointWorld = joint.getWorldPosition(new THREE.Vector3());
+  const from = tipWorld.clone().sub(jointWorld);
+  const to = targetWorld.clone().sub(jointWorld);
+  if (from.lengthSq() < 1e-10 || to.lengthSq() < 1e-10) return 0;
+  from.normalize();
+  to.normalize();
+  const deltaWorld = new THREE.Quaternion().setFromUnitVectors(from, to);
+  let angle = 2 * Math.acos(THREE.MathUtils.clamp(deltaWorld.w, -1, 1));
+  if (!Number.isFinite(angle) || angle < 1e-8) return 0;
+  angle = Math.min(angle, THREE.MathUtils.degToRad(maxDegrees));
+  const axis = new THREE.Vector3(deltaWorld.x, deltaWorld.y, deltaWorld.z);
+  if (axis.lengthSq() < 1e-10) return 0;
+  deltaWorld.setFromAxisAngle(axis.normalize(), angle);
+
+  const parentWorld = joint.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
+  const deltaLocal = parentWorld.clone().invert().multiply(deltaWorld).multiply(parentWorld);
+  joint.quaternion.premultiply(deltaLocal).normalize();
+  joint.updateWorldMatrix(true, true);
+  return THREE.MathUtils.radToDeg(angle);
 }
 
 function applyTwoHandedFingerWrap(THREE, model, attachment) {
-  const fingers = leftFingerBones(model);
-  if (!fingers.length) return 0;
-  const target = twoHandedTargetWorld(THREE, attachment);
-  let curled = 0;
-  for (const bone of fingers) {
-    const name = normalizedBoneName(bone);
-    const segment = Number(name.match(/([123])$/)?.[1] || 1);
-    const thumb = name.includes('thumb');
-    const degrees = thumb
-      ? [0, 24, 34, 24][segment]
-      : [0, 42, 56, 40][segment];
-    const axis = thumb ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-    const base = bone.quaternion.clone();
-    const probeDegrees = 8;
-    let bestSign = -1, bestDistance = Infinity;
-    for (const sign of [-1, 1]) {
-      bone.quaternion.copy(base).multiply(
-        new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(probeDegrees * sign))
-      ).normalize();
-      bone.updateWorldMatrix(true, true);
-      const endpoint = bone.children.find(child => child.isBone)?.getWorldPosition(new THREE.Vector3())
-        || bone.getWorldPosition(new THREE.Vector3());
-      const distance = endpoint.distanceTo(target);
-      if (distance < bestDistance) { bestDistance = distance; bestSign = sign; }
+  const hand = findLeftHand(model);
+  const chains = leftFingerChains(model);
+  if (!hand || !chains.length) return { bonesAdjusted: 0, fingertips: [] };
+
+  model.updateWorldMatrix(true, true);
+  const hiltCenter = twoHandedTargetWorld(THREE, attachment);
+
+  // The weapon's primary axis gives us the hilt direction in world space.
+  // Keep each fingertip near its original longitudinal position so all four
+  // fingers do not collapse onto one identical point along the grip.
+  const weaponAxis = new THREE.Vector3(...(attachment.weapon.primaryAxis || HELD_WEAPON_AXIS)).normalize();
+  attachment.model.getWorldQuaternion(new THREE.Quaternion());
+  weaponAxis.applyQuaternion(attachment.model.getWorldQuaternion(new THREE.Quaternion())).normalize();
+
+  const palmWorld = hand.getWorldPosition(new THREE.Vector3());
+  const palmToHilt = hiltCenter.clone().sub(palmWorld);
+  const radial = palmToHilt.clone().addScaledVector(
+    weaponAxis, -palmToHilt.dot(weaponAxis)
+  );
+  if (radial.lengthSq() < 1e-10) radial.set(0,0,1);
+  radial.normalize();
+
+  let bonesAdjusted = 0;
+  const fingertips = [];
+
+  for (const chain of chains) {
+    const rootWorld = chain.bones[0].getWorldPosition(new THREE.Vector3());
+    const along = rootWorld.clone().sub(hiltCenter).dot(weaponAxis);
+    // Aim just beyond the hilt center from the palm so fingers visibly wrap
+    // around the grip rather than merely touching the near side.
+    const wrapDepth = chain.fingerName === 'thumb' ? -0.010 : 0.014;
+    const target = hiltCenter.clone()
+      .addScaledVector(weaponAxis, along * 0.55)
+      .addScaledVector(radial, wrapDepth);
+
+    // Distal-to-proximal CCD gives natural closure while preserving the
+    // authored hand/wrist pose from Mixamo.
+    const limits = chain.fingerName === 'thumb' ? [24,34,30] : [34,46,38];
+    for (let pass = 0; pass < 3; pass++) {
+      for (let index = 2; index >= 0; index--) {
+        const tip = fingerTipWorld(THREE, chain);
+        const changed = rotateFingerJointToward(THREE, chain.bones[index], tip, target, limits[index]);
+        if (changed > 1e-6) bonesAdjusted++;
+      }
     }
-    bone.quaternion.copy(base).multiply(
-      new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(degrees * bestSign))
-    ).normalize();
-    bone.updateWorldMatrix(true, true);
-    curled++;
+    const finalTip = fingerTipWorld(THREE, chain);
+    fingertips.push({
+      finger: chain.fingerName,
+      distanceToGrip: finalTip.distanceTo(target)
+    });
   }
-  model?.updateWorldMatrix(true, true);
-  return curled;
+
+  model.updateWorldMatrix(true, true);
+  return { bonesAdjusted, fingertips };
 }
 
 function inferHandGripLocal(THREE, hand) {
@@ -310,7 +369,7 @@ export function solveTwoHandedGrip(THREE, {
   const liveTarget = twoHandedTargetWorld(THREE, attachment);
   const offHand = effectorWorld();
   error = offHand.distanceTo(liveTarget);
-  const fingerBonesCurled = applyTwoHandedFingerWrap(THREE, model, attachment);
+  const fingerGrip = applyTwoHandedFingerWrap(THREE, model, attachment);
   return {
     active: true, solved: error <= tolerance, error,
     targetWorldPosition: liveTarget.toArray(),
@@ -318,7 +377,7 @@ export function solveTwoHandedGrip(THREE, {
     handBone: hand.name, forearmBone: forearm.name, armBone: arm.name,
     shoulderBone: findLeftShoulder(model)?.name || null,
     spineBone: findUpperSpine(model)?.name || null,
-    bodyPose, fingerBonesCurled
+    bodyPose, fingerBonesCurled: fingerGrip.bonesAdjusted, fingerGrip
   };
 }
 export function createWeaponAttachment(THREE, hand, model, settings) {
