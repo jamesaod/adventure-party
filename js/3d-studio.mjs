@@ -15,7 +15,7 @@ import {
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C57';
+} from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
 } from './studio-equipment.mjs?v=R238C92';
@@ -1329,49 +1329,87 @@ function directionalPreviewBounds(index) {
   return { x: minX, y: minY, width, height, displayWidth, displayHeight };
 }
 
-function drawPreviewBattlefieldHex(preview) {
-  const ctx = preview.context;
-  const resolutionScale = state.resolutionPercent / 100;
-  const halfW = 32 * resolutionScale;
-  const halfH = 21 * resolutionScale;
-  const cx = preview.canvas.width / 2;
-  const cy = preview.canvas.height * 0.72;
-  const points = [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]];
+function drawGrassPreviewPolygon(ctx, points, lineWidth = 1) {
+  if (!points?.length) return;
+  const xs=points.map(point=>point.x), ys=points.map(point=>point.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
 
   ctx.save();
   ctx.beginPath();
-  points.forEach(([x,y],index) => index ? ctx.lineTo(cx+x,cy+y) : ctx.moveTo(cx+x,cy+y));
+  points.forEach((point,index) => index ? ctx.lineTo(point.x,point.y) : ctx.moveTo(point.x,point.y));
   ctx.closePath();
   ctx.clip();
-  ctx.fillStyle = '#4d613e';
-  ctx.fillRect(cx-halfW,cy-halfH,halfW*2,halfH*2);
+  ctx.fillStyle='#4d613e';
+  ctx.fillRect(minX,minY,Math.max(1,maxX-minX),Math.max(1,maxY-minY));
   if (previewGrassImage.complete && previewGrassImage.naturalWidth > 0) {
-    // Use a quiet grass tile from the same 8x4 combat sheet (tile 16).
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(previewGrassImage, 0, 2*176, 168, 176,
-      cx-halfW-0.6, cy-halfH-0.6, halfW*2+1.2, halfH*2+1.2);
+    // Quiet combat-grass tile 16. The polygon clip supplies the tactical hex edge.
+    ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(previewGrassImage,0,2*176,168,176,
+      minX-0.6,minY-0.6,Math.max(1,maxX-minX)+1.2,Math.max(1,maxY-minY)+1.2);
   }
   ctx.restore();
 
   ctx.save();
   ctx.strokeStyle = '#e3ca79';
-  ctx.lineWidth = Math.max(1, resolutionScale);
+  ctx.lineWidth = Math.max(1,lineWidth);
   ctx.beginPath();
-  points.forEach(([x,y],index) => index ? ctx.lineTo(cx+x,cy+y) : ctx.moveTo(cx+x,cy+y));
+  points.forEach((point,index) => index ? ctx.lineTo(point.x,point.y) : ctx.moveTo(point.x,point.y));
   ctx.closePath();
   ctx.stroke();
   ctx.restore();
 }
 
-function drawDirectionalPreview(preview, bounds) {
-  preview.context.fillStyle = '#808080';
-  preview.context.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
-  drawPreviewBattlefieldHex(preview);
+function previewFootprintAtlasPolygons(index) {
+  if (!pixelCamera) return [];
+  pixelCamera.updateMatrixWorld(true);
+  const left=(index%3)*state.width;
+  const top=Math.floor(index/3)*state.height;
+  return studioFootprintGuide(state.layoutId,index,state.frameHeight).map(cell =>
+    cell.vertices.map(vertex => {
+      const projected=new THREE.Vector3(vertex.x,0.003,vertex.z).project(pixelCamera);
+      return {
+        x:left+(projected.x+1)*state.width/2,
+        y:top+(1-projected.y)*state.height/2
+      };
+    })
+  );
+}
+
+function drawProjectedPreviewFootprint(preview,bounds,index) {
   if (!bounds) return;
-  preview.context.imageSmoothingEnabled = false;
-  preview.context.drawImage(atlasCanvas, bounds.x, bounds.y, bounds.width, bounds.height,
-    Math.round((preview.canvas.width - bounds.displayWidth) / 2),
-    Math.round((preview.canvas.height - bounds.displayHeight) / 2), bounds.displayWidth, bounds.displayHeight);
+  const scale=bounds.displayHeight/bounds.height;
+  const offsetX=(preview.canvas.width-bounds.displayWidth)/2;
+  const offsetY=(preview.canvas.height-bounds.displayHeight)/2;
+  const polygons=previewFootprintAtlasPolygons(index).map(points => points.map(point => ({
+    x:offsetX+(point.x-bounds.x)*scale,
+    y:offsetY+(point.y-bounds.y)*scale
+  })));
+  for (const polygon of polygons) drawGrassPreviewPolygon(preview.context,polygon,scale);
+}
+
+function drawFallbackPreviewFootprint(preview) {
+  const resolutionScale=state.resolutionPercent/100;
+  const halfW=32*resolutionScale;
+  const halfH=21*resolutionScale;
+  const cx=preview.canvas.width/2;
+  const cy=preview.canvas.height*0.72;
+  drawGrassPreviewPolygon(preview.context,
+    [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]]
+      .map(([x,y])=>({x:cx+x,y:cy+y})),
+    resolutionScale);
+}
+
+function drawDirectionalPreview(preview,bounds,index) {
+  preview.context.fillStyle='#808080';
+  preview.context.fillRect(0,0,preview.canvas.width,preview.canvas.height);
+  if (!bounds) return;
+  // The hex and the character use the same pixel-camera projection and the
+  // exact same crop/display transform, preserving their Model View scale ratio.
+  drawProjectedPreviewFootprint(preview,bounds,index);
+  preview.context.imageSmoothingEnabled=false;
+  preview.context.drawImage(atlasCanvas,bounds.x,bounds.y,bounds.width,bounds.height,
+    Math.round((preview.canvas.width-bounds.displayWidth)/2),
+    Math.round((preview.canvas.height-bounds.displayHeight)/2),bounds.displayWidth,bounds.displayHeight);
 }
 
 function renderFallbackPreviews(timestamp) {
@@ -1381,7 +1419,7 @@ function renderFallbackPreviews(timestamp) {
     ctx.fillStyle = '#808080';
     ctx.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
 
-    drawPreviewBattlefieldHex(preview);
+    drawFallbackPreviewFootprint(preview);
     const resolutionScale = state.resolutionPercent / 100;
     const halfH = 21 * resolutionScale;
     const cy = preview.canvas.height * 0.72;
@@ -1453,7 +1491,7 @@ function renderPreviews(timestamp) {
       preview.context.imageSmoothingEnabled = false;
     }
     const current = currentBounds[index], reference = referenceBounds[index];
-    if (!current || !reference) drawDirectionalPreview(preview, current);
+    if (!current || !reference) drawDirectionalPreview(preview,current,index);
     else {
       const scale = reference.displayHeight / reference.height;
       const locked = {
@@ -1461,7 +1499,7 @@ function renderPreviews(timestamp) {
         displayHeight: Math.max(1, Math.round(current.height * scale)),
         displayWidth: Math.max(1, Math.round(current.width * scale))
       };
-      drawDirectionalPreview(preview, locked);
+      drawDirectionalPreview(preview,locked,index);
     }
     preview.canvas.dataset.frame = String(state.frame + 1);
   });

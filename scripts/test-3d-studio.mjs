@@ -179,8 +179,17 @@ assert.ok(studioSource.includes("new Option('T-Pose (height calibration)', '-1')
 assert.ok(studioSource.includes('object.skeleton.pose()') && studioSource.includes('!isTPoseSelected()'),
   'T-Pose restores the bind skeleton and model size is gated to that mode');
 assert.ok(studioSource.includes("assets/terrain/grass-outdoors-tiles.png") &&
-  studioSource.includes('function drawPreviewBattlefieldHex('),
+  studioSource.includes('function drawGrassPreviewPolygon('),
   'Pixel previews use the combat grass tile sheet inside a tactical hex');
+assert.ok(studioSource.includes('function previewFootprintAtlasPolygons(index)') &&
+  studioSource.includes('studioFootprintGuide(state.layoutId,index,state.frameHeight)') &&
+  studioSource.includes('.project(pixelCamera)'),
+  'Pixel preview footprint is projected from the same calibrated world hex geometry as Model View');
+assert.ok(studioSource.includes('const scale=bounds.displayHeight/bounds.height') &&
+  studioSource.includes("drawProjectedPreviewFootprint(preview,bounds,index)"),
+  'Projected hex and character share the exact same preview crop/display scale');
+assert.ok(!studioSource.includes('function drawPreviewBattlefieldHex(preview)'),
+  '3D previews no longer use the old resolution-only fixed 32 by 21 hex approximation');
 assert.ok(studioSource.includes("['ambientIntensity', 5]"),
   'Environmental lighting normalization accepts 500 percent');
 assert.ok(studioSource.includes("measuredHeightInches") && studioSource.includes("pose: 'T-Pose'"),
