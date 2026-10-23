@@ -2,6 +2,16 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 101 — Opposite-facing humanoid retarget correction
+
+- Fixed the first Male Orc Fighter one-handed animation QA failure where the arms appeared crossed/mirrored despite correct semantic Left/Right bone names.
+- The retargeter now derives an anatomical basis from each rig: character-right from semantic shoulder/arm/hand positions, up from hips-to-head, and forward from the orthogonal right/up frame.
+- Source world-space bind-pose rotation deltas are conjugated through the source-to-target anatomical basis before being applied to the target bind pose.
+- This allows a **+Z-forward** animation source to drive a **−Z-forward** target humanoid without swapping Left/Right semantic roles or breaking equipment attachment.
+- Added regression coverage for an explicit +Z source / −Z target pair requiring a 180° correction; the target semantic right arm receives the correctly sign-flipped rotation.
+- The fix is generic to the humanoid pipeline and is not an Orc-specific bone-name override.
+
+
 ## Candidate Rev 100 — Shared one-handed swing animations on Male Orc Fighter
 
 - Added the first repository-backed humanoid animation source catalog at `data/humanoid-animation-sources.json`.
