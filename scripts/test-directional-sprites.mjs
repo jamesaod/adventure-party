@@ -269,7 +269,7 @@ const scaledManifest = createSpriteSetManifest({
 });
 const scaledId = sandbox.registerStudioSpriteSet({ manifest: scaledManifest, images, sourceUrls });
 assert.equal(sandbox.registeredStudioSpriteSets.get(scaledId).modelScalePercent, 105);
-assert.deepEqual(plain(sandbox.registeredStudioSpriteSets.get(scaledId).unit), {
+assert.deepEqual(JSON.parse(JSON.stringify(sandbox.registeredStudioSpriteSets.get(scaledId).unit)), {
   type:"kobold",modelId:"test-model",modelName:"Test model",
   calibration:{pose:"T-Pose",modelScalePercent:105,measuredHeightInches:32}
 }, "Combat registry retains Pixel Studio unit calibration");
