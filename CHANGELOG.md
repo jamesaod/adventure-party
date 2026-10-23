@@ -2,6 +2,16 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 98 — Stable model scaling, physical outlines, and generic humanoid rigs
+
+- Fixed 3D Studio model scaling so equipping, unequipping, or resetting weapons and shields cannot change a character's calibrated body size. Model fitting and height measurement now use body-only bounds while attached equipment inherits the existing unit transform.
+- Changed sprite outline thickness from raw pixels to battlefield inches. The default **1.875 in** reproduces the previous 1-pixel combat outline, while fractional final-pixel coverage allows visibly thinner values such as 1.0 in without tying appearance to capture Resolution.
+- Added a semantic humanoid rig adapter so animation retargeting, right-hand weapons, shields, two-handed IK, and finger-grip solving use roles such as `rightHand`, `leftForeArm`, and `hips` instead of Carl-specific literal bone names.
+- External humanoid FBX animation import now maps common Mixamo, Blender/Rigify, Unreal-style, Bip01/Biped, and generic naming conventions through the semantic rig roles before preserving world-space bind-pose deltas on the target skeleton.
+- Added rig diagnostics to the Studio model summary, including detected rig family, mapped core roles, and animation-readiness status.
+- Used the supplied **Male Orc Fighter** rig as the first non-Carl acceptance case. Its 65-joint Mixamo-style skeleton maps all 20 core humanoid roles and complete finger chains on both hands, qualifying it for external animation retargeting and equipment attachment without Orc-specific renderer code. The uploaded source GLB has no embedded animation clips and is still loaded locally for QA rather than stored in the repository model library.
+- Added regression tests for cross-convention bone names, target-bone UUID animation binding, Orc rig detection, body-only fitting, and resolution-independent physical outlines.
+
 ## Candidate Rev 60 — MOB Height and visible weapon profile foundation
 
 - Added an explicit `heightInches` attribute to battlefield MOBs. Dungeon Crawler Carl is authored at **6′3″ / 75 inches**; other existing MOB types remain explicitly uncalibrated so their established visual scale is unchanged until a height is approved.
