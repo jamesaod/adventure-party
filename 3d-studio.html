@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 112</span>
+        <span class="studio-build">Candidate Rev 113</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -89,6 +89,7 @@
             <p id="studioQaPackStatus" class="studio-note studio-help" role="status" aria-live="polite">No testing pack loaded yet.</p>
           </details>
           <p class="studio-note studio-help">Model: GLB, glTF or FBX. Saved humanoids may automatically load approved repository animation families. Animation import can also retarget a humanoid FBX onto the current rig. Studio maps common Mixamo, Rigify/Blender, Unreal and Bip01 bone names to shared humanoid roles.</p>
+          <p class="studio-note studio-help"><strong>Rev 113 — all 17 Orc animations, including quiet poses:</strong> In <strong>Model library</strong> select <strong>New Orc — Bone Direction + Hip Motion / All 17 (QA)</strong>, then <strong>Load selected model</strong>. The viewer begins automatically on <code>Mixamo_sword_and_shield_idle</code>; next test <code>Mixamo_sword_and_shield_block_idle</code> and <code>Mixamo_sword_and_shield_block</code> using the Animation selector. Then examine draw, sheathe, all attacks, running, strafing, turning and death. All 17 use the same anatomical direction + vertical hip approach as the Rev 112 one-clip proof; both Carl and original Orc source assets are unchanged. Inspect arms, wrists, shield, feet and skirt from multiple facings, with and without equipment. These animations remain experimental pending visual review, especially bone twist and clothing skinning.</p>
           <p class="studio-note studio-help"><strong>Rev 112 — A/T-pose direction + vertical motion:</strong> Select <strong>New Orc — Bone Direction + Hip Motion (QA)</strong> under Model library. The unchanged Orc receives the same Carl sword/shield attack, but the arm and leg rotations are determined by matching the physical direction of corresponding bones, instead of copying incompatible rest-pose axes. Vertical hips motion is retained so jumps and crouches are not pinned in midair. Begin without weapons, scrub the full attack and inspect 6 facings, then compare with Rev 111 Joint Relative and World Delta. This is an experiment, <strong>not</strong> a verified animation fix.</p>
           <p class="studio-note studio-help"><strong>Rev 111 — Orc arm-crossing comparison:</strong> Under <strong>Model library</strong>, test <strong>New Orc — Carl Animation / World Delta (QA)</strong> and <strong>New Orc — Carl Animation / Joint Relative (QA)</strong> one at a time. Both load the identical untouched New Orc GLB and the identical <code>Mixamo_sword_and_shield_attack</code> from saved Carl; only the retargeting formula changes. Start without equipment. Play or scrub the attack, inspect left/right arms from the front, sides and rear, and compare against <strong>New Carl — All 17 Sword &amp; Shield Animations (QA)</strong>. Also compare the original Rev 110 baked Orc. No test variant is production-approved until human visual QA passes.</p>
           <p class="studio-note studio-help"><strong>Rev 110 — all 17 clips for Carl and Orc:</strong> In <strong>Model library</strong> select <strong>New Carl — All 17 Sword &amp; Shield Animations (QA)</strong> or <strong>New Orc — All 17 Sword &amp; Shield Animations (QA)</strong>, then <strong>Load selected model</strong>. Use the Animation menu to test all motions; inspect limbs and sword/shield placement in six facings. The main 3D model runs at normal browser refresh; pixel previews refresh up to 12 FPS to reduce CPU/GPU work. Full-resolution capture/export is unchanged. The original unmodified sources and one-clip proof are still available. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Full reproducible bake workflow</a>.</p>
@@ -447,7 +448,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C112"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C113"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>
