@@ -154,4 +154,16 @@ for (const options of [
     assert.equal(transparentImage[p + 3], unadjustedAlpha[p + 3]);
   }
 }
+const studioSource=fs.readFileSync(new URL("../js/3d-studio.mjs",import.meta.url),"utf8");
+const studioHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
+assert.ok(studioHtml.includes('id="studioAnimationFiles"')&&studioHtml.includes('id="studioLoadAnimationButton"'),
+  'Studio exposes a separate Mixamo FBX animation importer');
+assert.ok(studioSource.includes('function retargetMixamoClip(')&&studioSource.includes('function loadAnimationFiles('),
+  'Studio implements animation-only Mixamo retargeting');
+assert.ok(studioSource.includes("if (property !== 'quaternion')"),
+  'First Mixamo audition transfers rotations only and never raw FBX translation/scale');
+assert.ok(studioSource.includes('THREE.PropertyBinding.sanitizeNodeName(object.name)'),
+  'Imported tracks use Three.js node-name sanitization');
+assert.ok(studioSource.includes("mixamo:")&&studioSource.includes("Mixamo_"),
+  'Imported clips receive stable Mixamo identifiers and visible names');
 console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, 0–10px tiled outlines and color controls passed.");
