@@ -94,15 +94,23 @@ export function retargetMixamoClip(THREE, clip, sourceModel, targetModel, label)
   const times = sampleTimes(clip, mappedKeys);
   const valuesByKey = new Map([...mappedKeys].map(key=>[key,[]]));
   const pose = snapshotLocalPose(sourceModel);
-  const mixer = new THREE.AnimationMixer(sourceModel);
-  const action = mixer.clipAction(clip);
-  action.reset().setLoop(THREE.LoopOnce,1).play();
-  action.paused = true;
+  const quaternionTracks = new Map();
+  for (const track of clip.tracks || []) {
+    const match = String(track.name || '').match(/^(.*)\.(quaternion)$/);
+    if (!match) continue;
+    const key = normalizedRigName(match[1]);
+    if (mappedKeys.has(key) && !quaternionTracks.has(key)) quaternionTracks.set(key, track);
+  }
 
   try {
     for (const time of times) {
-      action.time = Math.min(Math.max(time,0),clip.duration);
-      mixer.update(0);
+      restoreLocalPose(pose);
+      for (const [key, track] of quaternionTracks) {
+        const sample = track.createInterpolant().evaluate(Math.min(Math.max(time,0),clip.duration));
+        const bone = source.get(key);
+        if (!bone || sample.length < 4) continue;
+        bone.quaternion.set(sample[0],sample[1],sample[2],sample[3]).normalize();
+      }
       sourceModel.updateWorldMatrix(true,true);
 
       const desiredWorld = new Map();
@@ -138,8 +146,6 @@ export function retargetMixamoClip(THREE, clip, sourceModel, targetModel, label)
       if (pending.size) throw new Error('The target skeleton hierarchy could not be resolved during Mixamo retargeting.');
     }
   } finally {
-    mixer.stopAllAction();
-    mixer.uncacheRoot(sourceModel);
     restoreLocalPose(pose);
     sourceModel.updateWorldMatrix(true,true);
   }
