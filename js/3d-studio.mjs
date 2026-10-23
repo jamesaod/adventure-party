@@ -378,6 +378,17 @@ function resetPreviewReferenceToReady() {
   }
 }
 
+// Catalog-driven per-rig weapon mounts. Current Carl and other humanoids keep
+// their existing global weapon defaults; a model explicitly opts into a
+// calibrated profile by ID. Changing gear or pressing Reset grip reapplies it.
+function defaultEquipmentSettingsForModel(weaponId) {
+  const entry = state.libraryModels.find(model => model.id === state.libraryModelId);
+  const profile = entry?.weaponAttachmentProfile;
+  return normalizeEquipment(profile?.weaponId === weaponId
+    ? { rightHand: weaponId, position: [...profile.position], rotation: [...profile.rotation] }
+    : { rightHand: weaponId });
+}
+
 async function changeEquipment(value, { resetPose = true } = {}) {
   if (!state.modelReady || state.modelLoading || poseCapture?.snapshot().captureCount) {
     updateEquipmentControls();
@@ -1964,6 +1975,10 @@ async function loadModelLibrary() {
     if (!response.ok) throw new Error(`Model library returned ${response.status}.`);
     const catalog = await response.json();
     if (catalog.version !== 1 || !Array.isArray(catalog.models)) throw new Error('Unsupported model library.');
+    const attachmentProfiles = catalog.weaponAttachmentProfiles || {};
+    if (!attachmentProfiles || typeof attachmentProfiles !== 'object' || Array.isArray(attachmentProfiles)) {
+      throw new Error('Unsupported weapon attachment profile catalog.');
+    }
     const ids = new Set();
     state.libraryModels = catalog.models.map(entry => {
       if (!entry || typeof entry.id !== 'string' || !entry.id || ids.has(entry.id) ||
@@ -2009,8 +2024,32 @@ async function loadModelLibrary() {
           throw new Error('Unsafe model library Orc retarget QA configuration.');
         }
       }
+      let weaponAttachmentProfile = null;
+      if (entry.weaponAttachmentProfileId !== undefined) {
+        const profileId = entry.weaponAttachmentProfileId;
+        const profile = attachmentProfiles[profileId];
+        const validVector = (value, min, max) => Array.isArray(value) && value.length === 3 &&
+          value.every(item => Number.isFinite(item) && item >= min && item <= max);
+        if (typeof profileId !== 'string' || !profileId || !profile ||
+            profile.weaponId !== 'medieval-sword' ||
+            !validVector(profile.position, -1, 1) ||
+            !validVector(profile.rotation, -180, 180) ||
+            typeof profile.status !== 'string' ||
+            (entry.file !== 'assets/models/orcs/new-orc/new-orc.glb' &&
+             !entry.file.startsWith('assets/models/orcs/new-orc/'))) {
+          throw new Error('Invalid model-specific sword attachment profile.');
+        }
+        weaponAttachmentProfile = {
+          weaponId: profile.weaponId,
+          position: [...profile.position],
+          rotation: [...profile.rotation]
+        };
+      }
       ids.add(entry.id);
-      return { ...entry, animationFamilies: [...(entry.animationFamilies || [])], url: url.href };
+      return {
+        ...entry, weaponAttachmentProfile,
+        animationFamilies: [...(entry.animationFamilies || [])], url: url.href
+      };
     });
     ui.ModelLibrary.replaceChildren(new Option('Choose a saved model…', ''),
       ...state.libraryModels.map(model => new Option(model.label, model.id)));
@@ -2261,7 +2300,7 @@ function bindControls() {
   ui.RightHandWeapon.addEventListener('change', () => {
     // Each weapon owns its own calibrated socket/grip preset. Do not carry the
     // previous weapon's transform into the newly selected asset.
-    void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }));
+    void changeEquipment(defaultEquipmentSettingsForModel(ui.RightHandWeapon.value));
   });
   ui.LeftHandShield.addEventListener('change',()=>{
     void changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}));
@@ -2301,7 +2340,7 @@ function bindControls() {
     }
   }
   ui.ResetEquipmentButton.addEventListener('click', () => {
-    void changeEquipment(normalizeEquipment({ rightHand: equipment.snapshot().settings.rightHand }));
+    void changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand));
   });
   ui.FrameButton.addEventListener('click', fitModel);
   ui.FrameAnimationsButton.addEventListener('click', fitAllAnimations);
