@@ -148,7 +148,19 @@ assert.deepEqual(orcEntry,{
   label:'Male Orc Fighter',
   file:'assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',
   upAxis:'Y',
-  mobType:'orc'
-},'Orc is registered as a Y-up Orc Studio model');
+  mobType:'orc',
+  animationFamilies:['one-handed-swing']
+},'Orc is registered as a Y-up Orc Studio model using the shared one-handed swing family');
 
-console.log('PASS semantic humanoid world-space bind retargeting, repository Orc integrity, and model-library registration');
+const animationSources=JSON.parse(fs.readFileSync(new URL('../data/humanoid-animation-sources.json',import.meta.url),'utf8'));
+assert.equal(animationSources.version,1);
+const oneHanded=animationSources.families['one-handed-swing'];
+assert.deepEqual(oneHanded.clips,['UAL2_Sword_Ready','UAL2_Sword_Regular_A']);
+assert.equal(oneHanded.carrier,'assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb');
+const {json:carrierJson}=readGlbJson(new URL('../'+oneHanded.carrier,import.meta.url));
+const carrierClipNames=(carrierJson.animations||[]).map(animation=>animation.name);
+for(const clipName of oneHanded.clips){
+  assert.ok(carrierClipNames.includes(clipName),`Repository animation carrier contains ${clipName}`);
+}
+
+console.log('PASS semantic humanoid retargeting, Orc integrity, model-library registration, and one-handed animation source catalog');
