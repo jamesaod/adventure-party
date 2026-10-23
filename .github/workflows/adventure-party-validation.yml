@@ -58,6 +58,7 @@ jobs:
           node scripts/test-mixamo-retarget.mjs
           node scripts/test-orc-retarget-comparison.mjs
           node scripts/test-orc-anatomical-aim.mjs
+          node scripts/test-orc-full-anatomical-qa.mjs
           node scripts/test-item-catalog.mjs
           node scripts/test-humanoid-animation-catalog.mjs
           node scripts/test-mob-appearance.mjs
