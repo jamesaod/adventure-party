@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 110</span>
+        <span class="studio-build">Candidate Rev 111</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -89,6 +89,7 @@
             <p id="studioQaPackStatus" class="studio-note studio-help" role="status" aria-live="polite">No testing pack loaded yet.</p>
           </details>
           <p class="studio-note studio-help">Model: GLB, glTF or FBX. Saved humanoids may automatically load approved repository animation families. Animation import can also retarget a humanoid FBX onto the current rig. Studio maps common Mixamo, Rigify/Blender, Unreal and Bip01 bone names to shared humanoid roles.</p>
+          <p class="studio-note studio-help"><strong>Rev 111 — Orc arm-crossing comparison:</strong> Under <strong>Model library</strong>, test <strong>New Orc — Carl Animation / World Delta (QA)</strong> and <strong>New Orc — Carl Animation / Joint Relative (QA)</strong> one at a time. Both load the identical untouched New Orc GLB and the identical <code>Mixamo_sword_and_shield_attack</code> from saved Carl; only the retargeting formula changes. Start without equipment. Play or scrub the attack, inspect left/right arms from the front, sides and rear, and compare against <strong>New Carl — All 17 Sword &amp; Shield Animations (QA)</strong>. Also compare the original Rev 110 baked Orc. No test variant is production-approved until human visual QA passes.</p>
           <p class="studio-note studio-help"><strong>Rev 110 — all 17 clips for Carl and Orc:</strong> In <strong>Model library</strong> select <strong>New Carl — All 17 Sword &amp; Shield Animations (QA)</strong> or <strong>New Orc — All 17 Sword &amp; Shield Animations (QA)</strong>, then <strong>Load selected model</strong>. Use the Animation menu to test all motions; inspect limbs and sword/shield placement in six facings. The main 3D model runs at normal browser refresh; pixel previews refresh up to 12 FPS to reduce CPU/GPU work. Full-resolution capture/export is unchanged. The original unmodified sources and one-clip proof are still available. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Full reproducible bake workflow</a>.</p>
           <p class="studio-note studio-help"><strong>Rev 109 — repository-backed model QA:</strong> In <strong>Model library</strong> choose <strong>New Carl — Original Tripo (No Animation)</strong>, <strong>New Orc — Original Tripo (No Animation)</strong>, or <strong>New Carl — Offline Sword &amp; Shield Attack QA</strong>, then press <strong>Load selected model</strong>. The last model contains <code>Mixamo_Sword_Shield_Attack_InPlace_QA</code>. Check T-Pose and bare animation first; then add sword and shield. These assets are loaded directly from the GitHub repository; no ZIP download or local import is necessary. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Offline bake and QA procedure</a>.</p>
           <p class="studio-local-note">Files opened from your device are not uploaded.</p>
@@ -445,7 +446,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C110"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C111"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>
