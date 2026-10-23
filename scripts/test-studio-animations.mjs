@@ -172,14 +172,15 @@ for(const sample of ['0.0','0.5','1.0','1.5','2.0','2.5']){
 }
 assert.ok(studioSource.includes("UAL2_2H_Rest_Candidate_0\\.5s"),'0.5-second rest candidate is the default audition frame');
 const studioSource2=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
-assert.ok(studioSource2.includes("Bind / generic rest pose"),'Generic rest is clearly distinguished from 2H rest candidates');
-assert.ok(studioSource2.includes("clipIndex < 0 || !state.clips[clipIndex]"),'Saved generic rest migrates to 2H rest candidate');
+assert.ok(studioSource2.includes("T-Pose (height calibration)"),'T-Pose is clearly distinguished from 2H rest candidates');
+assert.ok(studioSource2.includes("const restoredTPose")&&studioSource2.includes("clipSourceId === 't-pose'"),
+  'Saved T-Pose calibration restores without being replaced by a 2H rest candidate');
 assert.ok(studioSource2.includes("/^UAL2_2H_Rest_Candidate_/i"),'Ready/reset logic recognizes 2H rest candidates');
 const studioSource3=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 assert.ok(studioSource3.includes("restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'"),
   'Restored 2H audition workspaces inject frozen rest candidates');
-assert.ok(studioSource3.includes("isTwoHandedAudition ? [] : [new Option('Bind / generic rest pose', '-1')]"),
-  '2H audition model hides unusable bind/T-pose rest option');
+assert.ok(studioSource3.includes("ui.Clip.replaceChildren(new Option('T-Pose (height calibration)', '-1'))"),
+  '2H audition model keeps T-Pose available for height calibration');
 assert.ok(studioSource3.includes("UAL2_2H_Rest_Candidate_0\\.5s"),
   'Ready/reset prefers the 0.5-second 2H rest candidate');
 console.log('Studio animation slicing, FBX timing, endpoint poses and selection restoration passed.');
