@@ -73,6 +73,20 @@
       "file": "assets/models/orcs/new-orc/new-orc.glb",
       "upAxis": "Y",
       "mobType": "orc"
+    },
+    {
+      "id": "new-carl-mixamo-sword-shield-full-17",
+      "label": "New Carl — All 17 Sword & Shield Animations (QA)",
+      "file": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
+    },
+    {
+      "id": "new-orc-mixamo-sword-shield-full-17",
+      "label": "New Orc — All 17 Sword & Shield Animations (QA)",
+      "file": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
+      "upAxis": "Y",
+      "mobType": "orc"
     }
   ]
 }

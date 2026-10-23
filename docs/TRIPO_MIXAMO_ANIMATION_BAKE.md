@@ -1,6 +1,13 @@
-# Reproducible Tripo GLB → Mixamo FBX animation bake (Carl proof)
+# Reproducible Tripo GLB → Mixamo FBX animation bake (Carl + Orc)
 
-**Status: Candidate Rev 108 — automated structural tests PASS; visual Studio QA PENDING.**
+**Status: Candidate Rev 110 — 17 clips each baked for Carl and Orc, structurally verified; human visual Studio QA still PENDING.**
+
+The complete, non-destructive 17-motion production scripts are now `scripts/bake_mixamo_pack_v2.py` and `scripts/tripo_mixamo_bake_core.py`. They take a pristine Tripo GLB, Mixamo X Bot reference FBX, and the original 17 sword/shield motion FBXs; use world/bind deltas and animated-parent local rotations; sample full-duration motions at 60 FPS; and remove horizontal XZ hip motion for stationary sprite capture. Python dependencies are `numpy` and `scipy`. Inspect usage with `python scripts/bake_mixamo_pack_v2.py --help`; inputs are third-party source files and are not downloaded by Studio. Verified full-bake outputs and their per-clip `provenance.json` reports are in:
+- `assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/`
+- `assets/models/orcs/new-orc/mixamo-sword-shield-full-17/`
+
+All original Tripo data and binaries are preserved as separate Model Library entries. Never automatically mark new clips production-approved until their complete motions have been visually reviewed on both characters.
+
 
 This document is the permanent development record for reproducing the original successful Carl-style animation import. Do **not** declare an animation family production-ready based only on load success or finite geometry.
 
