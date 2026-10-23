@@ -55,7 +55,7 @@ const clip=new THREE.AnimationClip('Hierarchy',1,[
 ]);
 
 const retargeted=retargetHumanoidClip(THREE,clip,sourceRig,targetRig,'Retargeted');
-assert.equal(retargeted.userData.humanoidImport.retargetMode,'semantic-world-space-bind-delta');
+assert.equal(retargeted.userData.humanoidImport.retargetMode,'semantic-anatomical-basis-bind-delta');
 assert.equal(retargeted.userData.humanoidImport.sourceRigFamily,'generic');
 assert.equal(retargeted.userData.humanoidImport.targetRigFamily,'generic');
 assert.equal(retargeted.tracks.length,2,'Only rotation tracks are baked');
@@ -86,6 +86,51 @@ assert.ok(actualParentWorld.angleTo(expectedParentWorld)<8e-4,'Parent world-spac
 assert.ok(actualChildWorld.angleTo(expectedChildWorld)<8e-4,'Child world-space motion is preserved despite different parent bind axes');
 
 mixer.stopAllAction();
+
+// Opposite native front axes must not mirror an otherwise semantic match.
+// The source is anatomically +Z forward; the target is anatomically -Z
+// forward because its named left/right shoulders occupy opposite X sides.
+{
+  const source=new THREE.Group();
+  const target=new THREE.Group();
+  const add=(root,name,position)=>{
+    const bone=new THREE.Bone(); bone.name=name; bone.position.fromArray(position); root.add(bone); return bone;
+  };
+  add(source,'mixamorig:Hips',[0,0,0]);
+  add(source,'mixamorig:Head',[0,1,0]);
+  add(source,'mixamorig:LeftShoulder',[-0.4,0.75,0]);
+  add(source,'mixamorig:RightShoulder',[0.4,0.75,0]);
+  const sourceArm=add(source,'mixamorig:RightArm',[0.5,0.65,0]);
+
+  add(target,'mixamorig:Hips',[0,0,0]);
+  add(target,'mixamorig:Head',[0,1,0]);
+  add(target,'mixamorig:LeftShoulder',[0.4,0.75,0]);
+  add(target,'mixamorig:RightShoulder',[-0.4,0.75,0]);
+  const targetArm=add(target,'mixamorig:RightArm',[-0.5,0.65,0]);
+
+  source.updateWorldMatrix(true,true);
+  target.updateWorldMatrix(true,true);
+  const identity=new THREE.Quaternion();
+  const sourceMoved=q(x,30);
+  const frontClip=new THREE.AnimationClip('OppositeFront',1,[
+    new THREE.QuaternionKeyframeTrack('mixamorigRightArm.quaternion',[0,1],[
+      identity.x,identity.y,identity.z,identity.w,
+      sourceMoved.x,sourceMoved.y,sourceMoved.z,sourceMoved.w
+    ])
+  ]);
+  const mapped=retargetHumanoidClip(THREE,frontClip,source,target,'OppositeFrontMapped');
+  assert.equal(mapped.userData.humanoidImport.sourceBasisResolved,true);
+  assert.equal(mapped.userData.humanoidImport.targetBasisResolved,true);
+  assert.ok(Math.abs(mapped.userData.humanoidImport.basisCorrectionDegrees-180)<1e-4,
+    'Opposite-facing rigs report a 180-degree anatomical-basis correction');
+
+  const track=mapped.tracks.find(track=>track.name===`${targetArm.uuid}.quaternion`);
+  assert.ok(track,'Target right arm receives the semantic right-arm animation');
+  const last=track.values.slice(track.values.length-4);
+  const mappedEnd=new THREE.Quaternion(...last);
+  assert.ok(mappedEnd.angleTo(q(x,-30))<5e-4,
+    'A +X source arm rotation becomes -X on a 180-degree opposite-facing target');
+}
 
 // Uploaded Orc acceptance fixture: the actual GLB has these Mixamo bone names.
 // The adapter must classify the model as animation/equipment ready without an
