@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetMixamoClip } from './mixamo-retarget.mjs?v=R238C87';
+import { retargetMixamoClip } from './mixamo-retarget.mjs?v=R238C88';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
