@@ -52,7 +52,7 @@ const FALLBACK_SPRITES = Object.freeze({
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'AnimationFiles', 'LoadAnimationButton', 'DemoButton', 'ModelName',
-  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
+  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus', 'PreviewFps',
   'QaPackFiles', 'QaPackLoadButton', 'QaPackModel', 'QaPackUseButton', 'QaPackStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
@@ -78,7 +78,7 @@ const state = {
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Z',
   width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
   modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
-  sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
+  sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false, previewFps: 15,
   libraryModels: [], libraryModelId: '', libraryLoading: false, modelLoading: false,
   skinRepairReport: null, nativeBindReport: null,
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outlineInches: DEFAULT_OUTLINE_INCHES,
@@ -822,7 +822,8 @@ function measureModelFrame(model, clips, { upAxis = 'Z', mixer = null, action = 
         sampled.paused = true;
         sampled.clampWhenFinished = true;
         // Endpoints and midpoint included; extra space covers between-sample motion.
-        const intervals = 48;
+        // Large animation libraries otherwise require 49 full-body geometry scans per clip.
+        const intervals = clips.length > 8 ? 12 : clips.length > 3 ? 24 : 48;
         for (let step = 0; step <= intervals; step++) {
           sampled.time = clip.duration * step / intervals;
           sampler.update(0);
@@ -843,7 +844,7 @@ function measureModelFrame(model, clips, { upAxis = 'Z', mixer = null, action = 
     return {
       scale, position: normalized.position.clone(), center: new THREE.Vector3(0, (high + low) / 2, 0),
       frameHeight: Math.max(projectedHeight, 2 * radius / aspect, 1) * 1.24,
-      mode: clips.length ? 'animations' : 'pose', samplesPerClip: clips.length ? 49 : 0
+      mode: clips.length ? 'animations' : 'pose', samplesPerClip: clips.length ? (clips.length > 8 ? 13 : clips.length > 3 ? 25 : 49) : 0
     };
   } finally {
     if (sampler) {
@@ -1699,7 +1700,7 @@ function tick(timestamp) {
   }
   const moving = orbit.update();
   resizeRenderer();
-  if (state.previewsDirty && timestamp - state.lastPreview >= 1000 / 30) {
+  if (state.previewsDirty && timestamp - state.lastPreview >= 1000 / state.previewFps) {
     renderPreviews(timestamp);
     state.mainDirty = true;
   }
@@ -2413,6 +2414,14 @@ function bindControls() {
     poseCapture?.saveWorkspace();
     invalidate();
   });
+  ui.PreviewFps.value = String(state.previewFps);
+  ui.PreviewFps.addEventListener('change', () => {
+    const fps = Number(ui.PreviewFps.value);
+    if (![10, 15, 30].includes(fps)) { ui.PreviewFps.value = String(state.previewFps); return; }
+    state.previewFps = fps;
+    state.lastPreview = -Infinity;
+    invalidate();
+  });
   ui.Speed.addEventListener('change', () => {
     if (state.action) state.action.timeScale = Number(ui.Speed.value);
     poseCapture?.saveWorkspace();
@@ -2608,7 +2617,7 @@ async function start() {
       qaPack: qaPack ? {models:qaPack.modelCount,animations:qaPack.animationCount,busy:qaPackBusy} : null,
       nativeBindExperiment: state.nativeBindReport ? { ...state.nativeBindReport } : null,
       directions: HEX_FACINGS.map(item => item.id),
-      previewSize: [previews[0].canvas.width, previews[0].canvas.height],
+      previewFps: state.previewFps, previewSize: [previews[0].canvas.width, previews[0].canvas.height],
       sourceFrameSize: [state.width, state.height], frame: state.frame,
       animationTime: state.animationTime, playing: state.playing,
       clips: state.clips.map(clip => clip.name),
