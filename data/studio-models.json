@@ -73,7 +73,7 @@
       "file": "assets/models/orcs/new-orc/new-orc.glb",
       "upAxis": "Y",
       "mobType": "orc",
-      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     },
     {
       "id": "new-carl-mixamo-sword-shield-full-17",
@@ -88,7 +88,7 @@
       "file": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
       "upAxis": "Y",
       "mobType": "orc",
-      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     },
     {
       "id": "new-orc-retarget-world-delta-qa",
@@ -103,7 +103,7 @@
         ],
         "mode": "world-bind-delta"
       },
-      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     },
     {
       "id": "new-orc-retarget-joint-relative-qa",
@@ -118,7 +118,7 @@
         ],
         "mode": "joint-bind-relative"
       },
-      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     },
     {
       "id": "new-orc-retarget-anatomical-aim-qa",
@@ -133,7 +133,7 @@
         ],
         "mode": "anatomical-aim"
       },
-      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     },
     {
       "id": "new-orc-retarget-anatomical-full-17-qa",
@@ -165,11 +165,11 @@
         "mode": "anatomical-aim",
         "initialClip": "Mixamo_sword_and_shield_idle"
       },
-      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-downward-v1"
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     }
   ],
   "weaponAttachmentProfiles": {
-    "tripo-mixamo-orc-one-hand-sword-downward-v1": {
+    "tripo-mixamo-orc-one-hand-sword-upward-v2": {
       "weaponId": "medieval-sword",
       "position": [
         0.015,
@@ -179,10 +179,10 @@
       "rotation": [
         0,
         -90,
-        -115
+        90
       ],
       "status": "experimental-visual-qa-pending",
-      "description": "One-handed sword reoriented from a blade-up Orc stance to a down-and-out guard; original right-hand grip pivot remains fixed. Model-specific starting profile, not a verified universal biped axis."
+      "description": "Rev 115: correct the reversed Rev 114 sword axis; sword blade now points up and outward from the fist toward the red QA guide at the Studio's SE facing. Keep grip anchor fixed; visual QA pending."
     }
   }
 }
