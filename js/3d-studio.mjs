@@ -1415,7 +1415,7 @@ function targetRigBones(model) {
   model?.traverse(object => {
     if (!object.isBone) return;
     const key = normalizedRigName(object.name);
-    if (key && !bones.has(key)) bones.set(key, object.name);
+    if (key && !bones.has(key)) bones.set(key, THREE.PropertyBinding.sanitizeNodeName(object.name));
   });
   return bones;
 }
