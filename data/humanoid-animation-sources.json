@@ -11,6 +11,15 @@
       "source": "Quaternius Universal Animation Library 2",
       "licenseFile": "assets/models/dungeon-crawler-carl/v2-ual2-sword-test/LICENSE-UAL2.txt",
       "note": "Temporary repository animation carrier: the approved clips are read from Carl's proof GLB and retargeted at load time. The target character mesh is never replaced."
+    },
+    "carl-baked-single-clip-qa": {
+      "label": "Carl single-clip reference for Orc retarget QA",
+      "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-qa/new-carl-sword-shield-attack-inplace-proof.glb",
+      "clips": [
+        "Mixamo_Sword_Shield_Attack_InPlace_QA"
+      ],
+      "source": "Carl offline-baked sword-and-shield proof (Candidate Rev 109)",
+      "note": "Rev 111 compares three opt-in Orc retargeting modes against one unchanged Carl clip. Not a production animation family."
     }
   }
 }
