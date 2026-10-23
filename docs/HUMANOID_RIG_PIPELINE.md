@@ -19,7 +19,7 @@ The first-pass alias set recognizes Mixamo, common Blender/Rigify naming, Unreal
 1. Load a GLB, glTF or FBX model in **3d studio**.
 2. Studio analyzes the skeleton automatically. The Model summary reports the detected rig family and mapped core-role count.
 3. Correct model orientation and calibrate physical size in T-Pose.
-4. Use **Load animation FBX** to add a humanoid animation. The retargeter maps source and target bones through semantic roles, then preserves source world-space bind deltas on the target bind pose.
+4. Use **Load animation FBX** to add a humanoid animation. The retargeter maps source and target bones through semantic roles, derives each rig's anatomical right/up/forward basis, converts source bind-pose rotation deltas into the target basis, then applies them to the target bind pose. This allows +Z-forward and -Z-forward humanoids to share the same animation family without mirroring the limbs.
 5. Equip a weapon or shield. Equipment sockets resolve `rightHand` and `leftHand` through the same rig adapter.
 6. For two-handed equipment, the solver resolves the left shoulder, upper arm, forearm, hand, torso and finger chains through semantic roles.
 7. Tune model-specific grip/socket offsets only when anatomy or authored pivots require an artistic correction.
