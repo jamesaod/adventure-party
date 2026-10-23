@@ -2,6 +2,13 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 109 — publish real New Carl, New Orc, and offline-baked Carl GLBs
+
+- Committed three original SHA-256 verified binary GLBs into `assets/models/` as native Git blobs: **New Carl — Original Tripo (No Animation)**, **New Orc — Original Tripo (No Animation)**, and **New Carl — Offline Sword & Shield Attack QA**. All three are now directly selectable in 3D Studio **Model library** without any ChatGPT file download or local QA pack.
+- The only embedded new animation is the controlled one-second, 60-FPS Carl `Mixamo_Sword_Shield_Attack_InPlace_QA`; the unchanged Carl and Orc originals have no embedded clips. The remaining 16 FBXs have not passed offline baking or QA. Do not use the old runtime FBX ZIP experiment to judge the offline proof.
+- Verified exact source sizes and SHA-256 through `scripts/test-new-tripo-assets.mjs`; the derived Carl proof preserves all target node/skin/mesh/material data and the complete original GLB binary prefix. **Human visual QA still required** for the baked attack and equipment alignment.
+- Previous stable and candidate models remain available and unchanged. Detailed reproducible method remains in `docs/TRIPO_MIXAMO_ANIMATION_BAKE.md`.
+
 ## Candidate Rev 108 — controlled offline New Carl Mixamo animation proof (visual QA pending)
 
 - Built an isolated **New Carl** proof GLB from the exact uploaded `New DCC.glb`, `X Bot.fbx` reference, and `sword and shield attack.fbx`. The **single** 1-second in-place take is baked offline at 60 FPS into the unchanged Tripo skeleton: 65 bone quaternion tracks and an intentional hips translation track.

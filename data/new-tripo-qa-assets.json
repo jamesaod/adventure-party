@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "status": "awaiting-binary-upload",
-  "note": "These checked SHA-256 hashes are from the exact user-supplied assets. Never publish Studio model paths unless each binary exists at the documented path.",
+  "status": "repository-backed",
+  "note": "All three exact user-supplied GLBs are committed as native Git blobs and validated against these byte sizes and SHA-256 digests. The baked Carl clip is a single one-second visual QA proof, not approval of all Mixamo animations.",
   "models": [
     {
       "id": "new-carl-tripo-source",

@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 108</span>
+        <span class="studio-build">Candidate Rev 109</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -78,7 +78,7 @@
           <button id="studioDemoButton" class="studio-button studio-wide-button" type="button">Use demo model</button>
           <details class="studio-equipment-grip" id="studioQaPackPanel" open>
             <summary>New Carl + Orc / Mixamo QA pack</summary>
-            <p class="studio-note studio-help">Import the combined testing ZIP, then load either model with the full sword-and-shield animation library. Original models remain untouched. Files stay in your browser.</p>
+            <p class="studio-note studio-help">Experimental Rev 107 local FBX retarget testing (known visual defects). For the approved controlled offline-bake QA workflow, select the Rev 109 entries in Model library above.</p>
             <input id="studioQaPackFiles" class="studio-file-input" type="file" accept=".zip,application/zip" aria-label="Choose Carl Orc Mixamo testing ZIP">
             <button id="studioQaPackLoadButton" class="studio-button studio-wide-button" type="button">Open local QA pack (ZIP)</button>
             <label class="studio-field" for="studioQaPackModel">
@@ -89,7 +89,7 @@
             <p id="studioQaPackStatus" class="studio-note studio-help" role="status" aria-live="polite">No testing pack loaded yet.</p>
           </details>
           <p class="studio-note studio-help">Model: GLB, glTF or FBX. Saved humanoids may automatically load approved repository animation families. Animation import can also retarget a humanoid FBX onto the current rig. Studio maps common Mixamo, Rigify/Blender, Unreal and Bip01 bone names to shared humanoid roles.</p>
-          <p class="studio-note studio-help"><strong>Rev 108 offline-bake Carl test:</strong> Use <strong>Load from device</strong> to open the separate <code>new-carl-sword-shield-attack-inplace-proof.glb</code> downloaded from ChatGPT. First check T-Pose, then select <code>Mixamo_Sword_Shield_Attack_InPlace_QA</code> with no equipment. Do <strong>not</strong> use the Rev 107 local QA ZIP to test this offline-baked clip. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Baking and QA procedure</a>.</p>
+          <p class="studio-note studio-help"><strong>Rev 109 — repository-backed model QA:</strong> In <strong>Model library</strong> choose <strong>New Carl — Original Tripo (No Animation)</strong>, <strong>New Orc — Original Tripo (No Animation)</strong>, or <strong>New Carl — Offline Sword &amp; Shield Attack QA</strong>, then press <strong>Load selected model</strong>. The last model contains <code>Mixamo_Sword_Shield_Attack_InPlace_QA</code>. Check T-Pose and bare animation first; then add sword and shield. These assets are loaded directly from the GitHub repository; no ZIP download or local import is necessary. <a href="./docs/TRIPO_MIXAMO_ANIMATION_BAKE.md">Offline bake and QA procedure</a>.</p>
           <p class="studio-local-note">Files opened from your device are not uploaded.</p>
         </section>
 

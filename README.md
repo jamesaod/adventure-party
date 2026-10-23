@@ -18,6 +18,10 @@ See [ATTRIBUTIONS.md](ATTRIBUTIONS.md) for third-party artwork credits and licen
 
 See [docs/THIRD_PARTY_3D_STUDIO.md](docs/THIRD_PARTY_3D_STUDIO.md) for the studio's renderer/loader versions and licenses.
 
+## Candidate Rev 109 model QA
+
+Open [Candidate 3d studio](https://jamesaod.github.io/adventure-party/candidate/3d-studio.html) and use **Model library → Load selected model** to load **New Carl — Original Tripo**, **New Orc — Original Tripo**, or **New Carl — Offline Sword & Shield Attack QA** directly from the repository. No local ZIP upload is needed. The first two are animationless originals; the last contains a single offline-baked Mixamo attack pending visual QA. See [Rev 109 QA instructions](docs/REV109_NEW_MODELS_PENDING_ASSETS.md) and [the permanent offline bake runbook](docs/TRIPO_MIXAMO_ANIMATION_BAKE.md).
+
 ## 3d studio
 
 Choose **3d studio** on the title page to load a 3D model, inspect six synchronized VGA pixel views, play embedded animations, and export transparent PNGs. See [docs/3D_STUDIO.md](docs/3D_STUDIO.md) for supported files, orientation controls, rendering rules, and animation extension guidance.
