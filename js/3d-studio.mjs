@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C102';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C105';
 import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
