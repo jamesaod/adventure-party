@@ -362,7 +362,7 @@ function resetPreviewReferenceToReady() {
   }
 }
 
-async function changeEquipment(value, { fit = false, resetPose = true } = {}) {
+async function changeEquipment(value, { resetPose = true } = {}) {
   if (!state.modelReady || state.modelLoading || poseCapture?.snapshot().captureCount) {
     updateEquipmentControls();
     return;
@@ -375,13 +375,14 @@ async function changeEquipment(value, { fit = false, resetPose = true } = {}) {
   const changed = await equipment.select(value);
   if (state.disposed || state.model !== model) return;
   if (changed) {
-    if (fit) fitAllAnimations();
+    // Equipment is an attachment, not a scale input. Keep the body calibration
+    // and capture framing unchanged when gear is equipped or removed.
     if (resetPose) resetPreviewReferenceToReady();
   }
   poseCapture?.saveWorkspace();
 }
 
-async function changeShield(value,{fit=false,resetPose=true}={}){
+async function changeShield(value,{resetPose=true}={}){
   if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
     updateEquipmentControls();
     return;
@@ -394,7 +395,7 @@ async function changeShield(value,{fit=false,resetPose=true}={}){
   const changed=await shieldEquipment.select(value);
   if(state.disposed||state.model!==model)return;
   if(changed){
-    if(fit)fitAllAnimations();
+    // Shields follow the already-calibrated unit transform; they never refit it.
     if(resetPose)resetPreviewReferenceToReady();
   }
   updateEquipmentControls();
@@ -716,16 +717,16 @@ function updateHeightGuide(timestamp) {
   if (!state.modelReady || !state.model) return;
   if (!modelBounds || (state.heightDirty &&
       (!state.playing || !state.action || timestamp - state.lastHeightMeasure >= 100))) {
-    modelBounds = isTPoseSelected()
-      ? geometryBodyBounds(state.model, { refreshSkinnedBounds: false })
-      : geometryBounds(state.model, { refreshSkinnedBounds: false });
+    // Height is always a body measurement. Held equipment can extend the
+    // silhouette, but must never make the unit itself appear taller or shorter.
+    modelBounds = geometryBodyBounds(state.model, { refreshSkinnedBounds: false });
     state.heightFeet = studioModelHeightFeet(modelBounds.max.y - modelBounds.min.y, state.layoutId, state.frameHeight);
     if (isTPoseSelected()) state.tPoseHeightFeet = state.heightFeet;
     ui.ModelHeightValue.textContent = `${state.heightFeet.toFixed(1)} ft`;
     state.heightDirty = false;
     state.lastHeightMeasure = timestamp;
   }
-  ui.ModelHeight.querySelector('small').textContent = isTPoseSelected() ? 'T-Pose calibration · body only' : 'Current pose · 10 ft / hex';
+  ui.ModelHeight.querySelector('small').textContent = isTPoseSelected() ? 'T-Pose calibration · body only' : 'Current pose · body only · 10 ft / hex';
   const width = ui.Viewport.clientWidth, height = ui.Viewport.clientHeight;
   if (!width || !height) return;
   const screen = point => {
@@ -785,20 +786,22 @@ function measureModelFrame(model, clips, { upAxis = 'Z', mixer = null, action = 
   let sampler = null;
   try {
     axis.add(model);
-    const initial = geometryBounds(normalized);
+    // Scale and framing are calibrated from the animated body only. Equipment
+    // may change the silhouette, but cannot change the unit's battlefield scale.
+    const initial = geometryBodyBounds(normalized);
     const size = initial.getSize(new THREE.Vector3());
     const center = initial.getCenter(new THREE.Vector3());
     const scale = 2 / Math.max(size.y, Math.max(size.x, size.z) * 0.25, 0.001);
     normalized.scale.setScalar(scale);
     normalized.position.set(-center.x * scale, -initial.min.y * scale, -center.z * scale);
-    const envelope = geometryBounds(normalized);
+    const envelope = geometryBodyBounds(normalized);
 
     if (clips.length) {
       // Stop the active action before the temporary mixer binds. Each clip then
       // starts from the original rest values rather than blending with another.
       mixer?.stopAllAction();
       sampler = new THREE.AnimationMixer(model);
-      envelope.union(geometryBounds(normalized));
+      envelope.union(geometryBodyBounds(normalized));
       for (const clip of clips) {
         const sampled = sampler.clipAction(clip).reset().setLoop(THREE.LoopOnce, 1).play();
         sampled.paused = true;
@@ -808,7 +811,7 @@ function measureModelFrame(model, clips, { upAxis = 'Z', mixer = null, action = 
         for (let step = 0; step <= intervals; step++) {
           sampled.time = clip.duration * step / intervals;
           sampler.update(0);
-          envelope.union(geometryBounds(normalized));
+          envelope.union(geometryBodyBounds(normalized));
         }
         sampler.stopAllAction();
       }
@@ -1969,10 +1972,10 @@ function bindControls() {
   ui.RightHandWeapon.addEventListener('change', () => {
     // Each weapon owns its own calibrated socket/grip preset. Do not carry the
     // previous weapon's transform into the newly selected asset.
-    void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }), { fit: true });
+    void changeEquipment(normalizeEquipment({ rightHand: ui.RightHandWeapon.value }));
   });
   ui.LeftHandShield.addEventListener('change',()=>{
-    void changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}),{fit:true});
+    void changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}));
   });
   for(const [control,key] of [
     [ui.ShieldScale,'sizePercent'],
@@ -1987,7 +1990,7 @@ function bindControls() {
     });
   }
   ui.ResetShieldButton.addEventListener('click',()=>{
-    void changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}),{fit:true});
+    void changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}));
   });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
@@ -2009,7 +2012,7 @@ function bindControls() {
     }
   }
   ui.ResetEquipmentButton.addEventListener('click', () => {
-    void changeEquipment(normalizeEquipment({ rightHand: equipment.snapshot().settings.rightHand }), { fit: true });
+    void changeEquipment(normalizeEquipment({ rightHand: equipment.snapshot().settings.rightHand }));
   });
   ui.FrameButton.addEventListener('click', fitModel);
   ui.FrameAnimationsButton.addEventListener('click', fitAllAnimations);
