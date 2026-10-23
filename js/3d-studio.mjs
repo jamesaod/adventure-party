@@ -1350,8 +1350,8 @@ function drawGrassPreviewPolygon(ctx, points, lineWidth = 1) {
   ctx.restore();
 
   ctx.save();
-  ctx.strokeStyle='#e3ca79';
-  ctx.lineWidth=Math.max(1,lineWidth);
+  ctx.strokeStyle = '#e3ca79';
+  ctx.lineWidth = Math.max(1,lineWidth);
   ctx.beginPath();
   points.forEach((point,index) => index ? ctx.lineTo(point.x,point.y) : ctx.moveTo(point.x,point.y));
   ctx.closePath();
