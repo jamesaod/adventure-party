@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 92</span>
+        <span class="studio-build">Candidate Rev 93</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -49,7 +49,7 @@
         </label>
         <label class="studio-field" for="studioResolution">
           <span class="studio-label-row">Resolution <output id="studioResolutionValue" for="studioResolution">100%</output></span>
-          <input id="studioResolution" type="range" min="50" max="200" step="5" value="100">
+          <input id="studioResolution" type="range" min="50" max="500" step="5" value="100">
           <span id="studioFormatSummary" class="studio-note studio-help" aria-live="polite">Frame 160 × 200 · Sheet 960 × 600</span>
         </label>
         <figure class="studio-footprint-figure">
@@ -214,7 +214,7 @@
             <input id="studioModelScale" type="range" min="25" max="1000" step="5" value="100" disabled>
             <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
           </label>
-          <p class="studio-note studio-help">Reset view fits the model to 50% of the window. Automatic zoom keeps it steady as Model size changes. Models use 109% of the original hex scale; the 0–75 ft ruler reflects that size.</p>
+          <p class="studio-note studio-help">Select T-Pose to calibrate Model size against the height ruler. The chosen size is then locked across every animation and saved with the unit. Models use 109% of the original hex scale.</p>
         </div>
 
         <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
@@ -344,7 +344,7 @@
             </label>
             <label class="studio-field" for="studioSaturation">
               <span class="studio-label-row">Saturation <output id="studioSaturationValue" for="studioSaturation">100%</output></span>
-              <input id="studioSaturation" type="range" min="0" max="200" step="1" value="100">
+              <input id="studioSaturation" type="range" min="0" max="500" step="1" value="100">
             </label>
             <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
             <label class="studio-field" for="studioOutline">
@@ -361,7 +361,7 @@
               <legend>Environmental light</legend>
               <label class="studio-field" for="studioAmbientIntensity">
                 <span class="studio-label-row">Intensity <output id="studioAmbientIntensityValue" for="studioAmbientIntensity">100%</output></span>
-                <input id="studioAmbientIntensity" type="range" min="0" max="300" step="5" value="100" disabled>
+                <input id="studioAmbientIntensity" type="range" min="0" max="500" step="5" value="100" disabled>
               </label>
               <label class="studio-field" for="studioAmbientColor">
                 <span>Color</span>
@@ -431,7 +431,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C92"></script>
-  <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C92"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C93"></script>
+  <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C93"></script>
 </body>
 </html>

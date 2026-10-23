@@ -6,7 +6,7 @@ const scope = new URL('.', location.href).pathname;
 const databaseName = `adventure-party-studio:${scope}`;
 const storeName = 'sprite-drafts';
 const WORKSPACE_VERSION = 1;
-const MAX_WORKSPACE_BYTES = 256 * 1024 * 1024;
+const MAX_WORKSPACE_BYTES = 512 * 1024 * 1024;
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function storedBytes(value, seen = new WeakSet()) {
@@ -34,7 +34,7 @@ export function validateStudioWorkspace(workspace) {
   for (const [pose, capture] of Object.entries(workspace.captures)) {
     if (!SPRITE_POSES.includes(pose) || !plain(capture)) invalid('invalid pose.');
     const { width, height, raw, anchorX, anchorY, clip, time } = capture;
-    if (![width, height].every(value => Number.isInteger(value) && value > 0 && value <= 1024)) invalid('invalid frame size.');
+    if (![width, height].every(value => Number.isInteger(value) && value > 0 && value <= 4096)) invalid('invalid frame size.');
     if (!(raw instanceof Uint8Array || raw instanceof Uint8ClampedArray) || raw.length !== width * height * 6 * 4) invalid('incomplete captured pixels.');
     if (!Number.isFinite(anchorX) || anchorX < 0 || anchorX > width || !Number.isFinite(anchorY) || anchorY < 0 || anchorY > height) invalid('invalid ground anchor.');
     if (typeof clip !== 'string' || clip.length > 512 || !Number.isFinite(time) || time < 0) invalid('invalid animation time.');

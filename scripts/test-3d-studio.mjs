@@ -108,11 +108,15 @@ assert.deepEqual(pixel([255, 102, 51], { brightness: 0 }), [0, 0, 0]);
 assert.deepEqual(pixel([255, 102, 51], { contrast: 0 }), [128, 128, 128]);
 assert.deepEqual(pixel([64, 64, 64], { contrast: 2 }), [0, 0, 0]);
 assert.deepEqual(pixel([192, 192, 192], { contrast: 2 }), [255, 255, 255]);
-for (const control of ["brightness", "contrast", "saturation"]) {
+for (const control of ["brightness", "contrast"]) {
   for (const [input, expected] of [[-1, 0], [3, 2], [NaN, 1], [Infinity, 1]]) {
     assert.deepEqual(pixel([204, 102, 51], { [control]: input }),
       pixel([204, 102, 51], { [control]: expected }));
   }
+}
+for (const [input, expected] of [[-1, 0], [6, 5], [NaN, 1], [Infinity, 1]]) {
+  assert.deepEqual(pixel([204, 102, 51], { saturation: input }),
+    pixel([204, 102, 51], { saturation: expected }));
 }
 assert.deepEqual(pixel([204, 102, 51], { hue: NaN }), pixel([204, 102, 51]));
 assert.deepEqual(pixel([204, 102, 51], { hue: Infinity }), pixel([204, 102, 51]));
@@ -133,7 +137,7 @@ for (let p = 0; p < gradient.length; p += 4) {
   gradient[p + 3] = Math.floor(p / 4) % 256;
 }
 const allowed = new Set(VGA_PALETTE.map(rgb => rgb.join(",")));
-for (const saturation of [0, 1, 1.8]) {
+for (const saturation of [0, 1, 1.8, 5]) {
   assert.deepEqual(
     quantizeRgba(gradient, 64, 64, undefined, { saturation, outline: true }),
     quantizeRgba(gradient, 64, 64, undefined, { saturation, outline: true, brightness: 1, hue: 0, contrast: 1 })
@@ -141,7 +145,7 @@ for (const saturation of [0, 1, 1.8]) {
 }
 const unadjustedAlpha = quantizeRgba(gradient, 64, 64, undefined, { outline: true, transparent: true });
 for (const options of [
-  { saturation: 0 }, { saturation: 1 }, { saturation: 1.8 },
+  { saturation: 0 }, { saturation: 1 }, { saturation: 1.8 }, { saturation: 5 },
   { brightness: 0, contrast: 0, hue: -180 },
   { brightness: 2, contrast: 2, saturation: 2, hue: 180 },
   adjusted,
@@ -164,6 +168,23 @@ assert.ok(studioSource.includes('retargetMixamoClip(THREE, clip, parsed, state.m
   'Studio supplies both source and target rigs when retargeting');
 assert.ok(studioSource.includes("Mixamo_"),
   'Imported clips receive visible Mixamo names');
+assert.ok(studioHtml.includes('id="studioResolution" type="range" min="50" max="500"'),
+  'Resolution control reaches 500 percent');
+assert.ok(studioHtml.includes('id="studioAmbientIntensity" type="range" min="0" max="500"'),
+  'Environmental lighting reaches 500 percent');
+assert.ok(studioHtml.includes('id="studioSaturation" type="range" min="0" max="500"'),
+  'Saturation reaches 500 percent');
+assert.ok(studioSource.includes("new Option('T-Pose (height calibration)', '-1')"),
+  'T-Pose is always exposed as the explicit calibration pose');
+assert.ok(studioSource.includes('object.skeleton.pose()') && studioSource.includes('!isTPoseSelected()'),
+  'T-Pose restores the bind skeleton and model size is gated to that mode');
+assert.ok(studioSource.includes("assets/terrain/grass-outdoors-tiles.png") &&
+  studioSource.includes('function drawPreviewBattlefieldHex('),
+  'Pixel previews use the combat grass tile sheet inside a tactical hex');
+assert.ok(studioSource.includes("['ambientIntensity', 5]"),
+  'Environmental lighting normalization accepts 500 percent');
+assert.ok(studioSource.includes("measuredHeightInches") && studioSource.includes("pose: 'T-Pose'"),
+  'Studio records T-Pose scale and measured height as unit calibration metadata');
 const equipmentUiHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
 for(const id of ['studioOffHandGripAlong','studioOffHandGripAcross','studioOffHandGripDepth']){
   assert.ok(equipmentUiHtml.includes(`id="${id}"`),`Studio exposes ${id} calibration control`);

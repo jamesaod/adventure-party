@@ -1,5 +1,5 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
-import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
+import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C93';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 export const SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
@@ -33,8 +33,8 @@ export function validateSpriteSetManifest(value) {
   const frame = value.frame;
   requireValue(object(frame), 'frame metadata is missing.');
   for (const key of ['width', 'height']) {
-    requireValue(Number.isInteger(frame[key]) && frame[key] > 0 && frame[key] <= 1024,
-      `${key} must be an integer from 1 to 1024.`);
+    requireValue(Number.isInteger(frame[key]) && frame[key] > 0 && frame[key] <= 4096,
+      `${key} must be an integer from 1 to 4096.`);
   }
   for (const key of ['renderWidth', 'renderHeight']) {
     requireValue(Number.isFinite(frame[key]) && frame[key] > 0 && frame[key] <= 4096,
@@ -67,6 +67,28 @@ export function validateSpriteSetManifest(value) {
     requireValue(typeof value.mobType === 'string', 'MOB type must be an implemented creature ID.');
     spriteMob(value.mobType);
   }
+  if (value.unit !== undefined) {
+    requireValue(object(value.unit), 'unit calibration metadata must be an object.');
+    requireValue(typeof value.unit.type === 'string', 'unit type must be an implemented creature ID.');
+    spriteMob(value.unit.type);
+    if (value.mobType !== undefined) requireValue(value.unit.type === value.mobType,
+      'unit type must match the sprite-set MOB type.');
+    requireValue(value.unit.modelId === null || (typeof value.unit.modelId === 'string' && value.unit.modelId.length <= 160),
+      'unit model ID must be text or null.');
+    requireValue(value.unit.modelName === null || (typeof value.unit.modelName === 'string' && value.unit.modelName.length <= 160),
+      'unit model name must be text or null.');
+    const calibration = value.unit.calibration;
+    requireValue(object(calibration) && calibration.pose === 'T-Pose',
+      'unit calibration must use T-Pose.');
+    const calibratedScale = validateSpriteModelScale(calibration.modelScalePercent);
+    if (value.modelScalePercent !== undefined) {
+      requireValue(calibratedScale === value.modelScalePercent,
+        'unit calibration model scale must match sprite-set model scale.');
+    }
+    requireValue(calibration.measuredHeightInches === null ||
+      (Number.isFinite(calibration.measuredHeightInches) && calibration.measuredHeightInches > 0 && calibration.measuredHeightInches <= 900),
+      'unit calibrated height must be positive inches or null.');
+  }
   requireValue(sameOrder(value.facings, SPRITE_DIRECTIONS), 'the six facing directions are missing or out of order.');
   requireValue(object(value.poses), 'pose captures are missing.');
   const files = new Set();
@@ -96,7 +118,7 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent }) {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit }) {
   const poses = Object.fromEntries(SPRITE_POSES.map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -113,7 +135,8 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     ...(layout === undefined ? {} : { layout: { ...layout } }),
     ...(mobType === undefined ? {} : { mobType }),
     ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
-    ...(hexScalePercent === undefined ? {} : { hexScalePercent })
+    ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
+    ...(unit === undefined ? {} : { unit: structuredClone(unit) })
   });
 }
 
@@ -126,7 +149,7 @@ function checkPixels(data, width, height) {
 
 /** Input uses normal top-down RGBA rows and the existing E NE NW / W SW SE atlas. */
 export function splitSixFacingAtlas(data, width, height) {
-  requireValue(Number.isInteger(width) && width > 0 && width <= 1024 && Number.isInteger(height) && height > 0 && height <= 1024,
+  requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid atlas frame dimensions.');
   checkPixels(data, width * 3, height * 2);
   return Object.fromEntries(SPRITE_DIRECTIONS.map((facing, index) => {
@@ -141,7 +164,7 @@ export function splitSixFacingAtlas(data, width, height) {
 
 /** Missing rows are transparent, allowing the same layout for a growing preview. */
 export function assembleSpriteSheet(poseFrames, width, height) {
-  requireValue(Number.isInteger(width) && width > 0 && width <= 1024 && Number.isInteger(height) && height > 0 && height <= 1024,
+  requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid sheet frame dimensions.');
   const sheetWidth = width * SPRITE_DIRECTIONS.length;
   const sheetHeight = height * SPRITE_POSES.length;

@@ -6,12 +6,12 @@ import { retargetMixamoClip } from './mixamo-retarget.mjs?v=R238C88';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C57';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C93';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C93';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C57';
+} from './sprite-layouts.mjs?v=R238C93';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
@@ -76,7 +76,7 @@ const state = {
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outline: 1,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
-  heightDirty: true, heightFeet: null, lastHeightMeasure: -Infinity,
+  heightDirty: true, heightFeet: null, tPoseHeightFeet: null, lastHeightMeasure: -Infinity,
   viewVisible: true, frameHeight: 3.15, framingMode: 'pose', framingSamplesPerClip: 0,
   previewReferenceBounds: null, spriteOnlyFallback: false, fallbackImage: null, fallbackSrc: '',
   center: new THREE.Vector3(0, 1, 0)
@@ -118,6 +118,10 @@ const shieldEquipment = createStudioShield({
 const heightRulerTicks = [];
 const atlasCanvas = document.createElement('canvas');
 const atlasContext = atlasCanvas.getContext('2d');
+const previewGrassImage = new Image();
+previewGrassImage.onload = () => invalidate();
+previewGrassImage.src = new URL('../assets/terrain/grass-outdoors-tiles.png', import.meta.url).href;
+
 const previews = HEX_FACINGS.map(facing => ({
   ...facing,
   canvas: $(`studioPreview${facing.id}`),
@@ -133,6 +137,16 @@ function getWorkspaceSettings() {
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
     mobType: state.mobType, width: state.width, height: state.height,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent, lighting: { ...state.lighting },
+    unitCalibration: {
+      version: 1,
+      mobType: state.mobType,
+      modelId: state.libraryModelId || null,
+      modelName: state.modelName || null,
+      pose: 'T-Pose',
+      modelScalePercent: state.modelScalePercent,
+      measuredHeightInches: Number.isFinite(state.tPoseHeightFeet)
+        ? Number((state.tPoseHeightFeet * 12).toFixed(2)) : null
+    },
     equipment: equipment.snapshot().settings,
     shield: shieldEquipment.snapshot().settings,
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
@@ -140,8 +154,8 @@ function getWorkspaceSettings() {
     framingSamplesPerClip: state.framingSamplesPerClip,
     // Store the base transform. Model size is applied once when reopening it.
     placement: modelFrame ? { position: modelFrame.position.toArray(), scale: modelFrame.scale } : null,
-    clipIndex: Number(ui.Clip.value), clipName: state.action?.getClip().name || '',
-    clipSourceId: animationSourceId(state.action?.getClip()), animationTimingVersion: 1,
+    clipIndex: Number(ui.Clip.value), clipName: state.action?.getClip().name || 'T-Pose',
+    clipSourceId: animationSourceId(state.action?.getClip()) || 't-pose', animationTimingVersion: 1,
     animationRanges: state.animationRanges.map(range => ({ ...range })),
     time: state.action?.time || 0, playing: state.playing,
     speed: Number(ui.Speed.value) || 1, facing: state.facing
@@ -166,6 +180,19 @@ function renderFootprintPreview() {
   ui.FootprintDescription.textContent = `${centers.length} occupied ${centers.length === 1 ? 'hex' : 'hexes'} · E-facing footprint`;
 }
 
+function isTPoseSelected() {
+  return state.modelReady && !state.action && String(ui.Clip?.value) === '-1';
+}
+
+function updateModelScaleAvailability() {
+  const saved = poseCapture?.snapshot();
+  ui.ModelScale.disabled = !isTPoseSelected() || state.spriteOnlyFallback || state.modelLoading || state.disposed ||
+    saved?.modelScaleAdjustable === false;
+  ui.ModelScale.title = isTPoseSelected()
+    ? 'Calibrate model size in T-Pose. This value is shared by every animation.'
+    : 'Select T-Pose to calibrate model size.';
+}
+
 function updateSetupLabels() {
   const legacy = !SPRITE_LAYOUT_PRESETS.some(layout => layout.id === state.layoutId);
   ui.Footprint.hidden = legacy;
@@ -181,7 +208,7 @@ function updateSetupLabels() {
   ui.ModelScaleValue.textContent = `${state.modelScalePercent}%`;
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
   const renderWidth = Number(size.renderWidth.toFixed(2)), renderHeight = Number(size.renderHeight.toFixed(2));
-  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px`;
+  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px · ${isTPoseSelected() ? 'T-Pose calibration' : 'Model size locked from T-Pose'}`;
   ui.ModelScale.setAttribute('aria-valuetext', `${state.modelScalePercent} percent, ${renderWidth} by ${renderHeight} battlefield pixels`);
   renderFootprintPreview();
 }
@@ -222,8 +249,7 @@ function syncCaptureLock(locked) {
   for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis]) {
     control.disabled = locked || !state.modelReady;
   }
-  const saved = poseCapture?.snapshot();
-  ui.ModelScale.disabled = saved?.modelScaleAdjustable === false || (!state.modelReady && !state.spriteOnlyFallback && !locked);
+  updateModelScaleAvailability();
   for (const control of [ui.AmbientIntensity, ui.AmbientColor, ui.KeyIntensity, ui.KeyColor, ui.KeyElevation, ui.KeyDirection]) {
     control.disabled = locked || !state.modelReady;
   }
@@ -399,7 +425,7 @@ function changeSpriteFormat({ refit = false } = {}) {
 
 function normalizedLighting(value = {}) {
   const result = { ...DEFAULT_LIGHTING };
-  for (const [key, max] of [['ambientIntensity', 3], ['keyIntensity', 5], ['keyElevation', 90]]) {
+  for (const [key, max] of [['ambientIntensity', 5], ['keyIntensity', 5], ['keyElevation', 90]]) {
     if (Number.isFinite(value[key])) result[key] = THREE.MathUtils.clamp(value[key], 0, max);
   }
   for (const key of ['ambientColor', 'keyColor']) {
@@ -645,6 +671,22 @@ function updateModelInfo() {
   ui.ModelInfo.textContent = `${meshes} mesh${meshes === 1 ? '' : 'es'} · ${bones} bones · ${state.clips.length} animation${state.clips.length === 1 ? '' : 's'}`;
 }
 
+function geometryBodyBounds(root, options = {}) {
+  const attachments = [];
+  root?.traverse(object => {
+    if ((object.userData?.studioEquipment || object.userData?.studioShield) && object.parent) {
+      attachments.push({ object, parent: object.parent });
+    }
+  });
+  for (const { object, parent } of attachments) parent.remove(object);
+  try {
+    return geometryBounds(root, options);
+  } finally {
+    for (const { object, parent } of attachments) parent.add(object);
+    root?.updateWorldMatrix(true, true);
+  }
+}
+
 function geometryBounds(root, { refreshSkinnedBounds = true } = {}) {
   root.updateWorldMatrix(true, false);
   // SkinnedMesh overrides updateMatrixWorld to refresh its bind inverse;
@@ -667,12 +709,16 @@ function updateHeightGuide(timestamp) {
   if (!state.modelReady || !state.model) return;
   if (!modelBounds || (state.heightDirty &&
       (!state.playing || !state.action || timestamp - state.lastHeightMeasure >= 100))) {
-    modelBounds = geometryBounds(state.model, { refreshSkinnedBounds: false });
+    modelBounds = isTPoseSelected()
+      ? geometryBodyBounds(state.model, { refreshSkinnedBounds: false })
+      : geometryBounds(state.model, { refreshSkinnedBounds: false });
     state.heightFeet = studioModelHeightFeet(modelBounds.max.y - modelBounds.min.y, state.layoutId, state.frameHeight);
+    if (isTPoseSelected()) state.tPoseHeightFeet = state.heightFeet;
     ui.ModelHeightValue.textContent = `${state.heightFeet.toFixed(1)} ft`;
     state.heightDirty = false;
     state.lastHeightMeasure = timestamp;
   }
+  ui.ModelHeight.querySelector('small').textContent = isTPoseSelected() ? 'T-Pose calibration · body only' : 'Current pose · 10 ft / hex';
   const width = ui.Viewport.clientWidth, height = ui.Viewport.clientHeight;
   if (!width || !height) return;
   const screen = point => {
@@ -943,11 +989,10 @@ function updateRangeEditor() {
 }
 
 function updateAnimationChoices(index) {
-  const isTwoHandedAudition = state.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition';
-  ui.Clip.replaceChildren(...(isTwoHandedAudition ? [] : [new Option('Bind / generic rest pose', '-1')]));
+  ui.Clip.replaceChildren(new Option('T-Pose (height calibration)', '-1'));
   state.clips.forEach((clip, clipIndex) => ui.Clip.add(new Option(animationOptionLabel(clip, clipIndex), String(clipIndex))));
   ui.Clip.value = String(index);
-  ui.Clip.disabled = !state.clips.length;
+  ui.Clip.disabled = !state.model;
   const count = state.sourceClips.length;
   const info = state.model?.userData?.fbxAnimations;
   const sourceSummary = info ? `${count} selectable animation${count === 1 ? '' : 's'} from ${info.stackCount} FBX take${info.stackCount === 1 ? '' : 's'}` :
@@ -964,18 +1009,36 @@ function updateAnimationChoices(index) {
 
 function setClip(index) {
   if (!state.mixer) return;
+  equipment.restoreConstraints();
   state.mixer.stopAllAction();
   state.action = null;
+
   if (state.clips[index]) {
     state.action = state.mixer.clipAction(state.clips[index]);
     state.action.reset().setEffectiveWeight(1).setLoop(THREE.LoopRepeat, Infinity).play();
     state.action.timeScale = Number(ui.Speed.value) || 1;
     state.action.paused = !state.playing;
+    state.mixer.update(0);
+    equipment.applyConstraints();
+    ui.Clip.value = String(index);
+  } else {
+    // A real bind/T-pose calibration mode. Do not apply procedural weapon IK:
+    // body height and scale must be measured from the unmodified rig.
+    const posed = new Set();
+    state.model?.traverse(object => {
+      if (object.isSkinnedMesh && object.skeleton && !posed.has(object.skeleton)) {
+        posed.add(object.skeleton);
+        object.skeleton.pose();
+      }
+    });
+    state.model?.updateWorldMatrix(true, true);
+    ui.Clip.value = '-1';
   }
-  ui.Clip.value = state.action ? String(index) : '-1';
-  equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
+
+  state.heightDirty = true;
   updateRangeEditor();
   updateAnimationControls();
+  updateModelScaleAvailability();
   invalidate();
 }
 
@@ -1080,6 +1143,8 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
   state.upAxis = nextUpAxis;
   state.playing = restoreSettings ? !!restoreSettings.playing : true;
+  state.tPoseHeightFeet = Number.isFinite(restoreSettings?.unitCalibration?.measuredHeightInches)
+    ? restoreSettings.unitCalibration.measuredHeightInches / 12 : null;
   ui.Heading.value = String(state.heading);
   ui.HeadingValue.textContent = `${state.heading}°`;
   ui.UpAxis.value = state.upAxis;
@@ -1090,7 +1155,12 @@ function installModel({ model, clips, name, demoSourceUpAxis = null }, {
   let clipIndex = restoreAnimationIndex(state.clips, restoreSettings);
   const preferredTwoHandedRest = state.clips.findIndex(clip => /^UAL2_2H_Rest_Candidate_0\.5s$/i.test(clip.name));
   const isTwoHandedAudition = isTwoHandedAuditionModel;
-  if (isTwoHandedAudition && preferredTwoHandedRest >= 0 && (clipIndex < 0 || !state.clips[clipIndex])) {
+  const restoredTPose = !!restoreSettings && (
+    restoreSettings.clipSourceId === 't-pose' ||
+    restoreSettings.clipName === 'T-Pose' ||
+    Number(restoreSettings.clipIndex) === -1
+  );
+  if (!restoredTPose && isTwoHandedAudition && preferredTwoHandedRest >= 0 && (clipIndex < 0 || !state.clips[clipIndex])) {
     clipIndex = preferredTwoHandedRest;
   } else if (!restoreSettings) {
     const readyIndex = preferredTwoHandedRest >= 0 ? preferredTwoHandedRest : state.clips.findIndex(clip => /^UAL2_Sword_Ready$/i.test(clip.name));
@@ -1188,6 +1258,7 @@ function pixelRenderOptions(transparent = false) {
 
 function readCapturePose() {
   if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
+  if (!state.action) throw new Error('T-Pose is for height and model-size calibration only. Select an animation before capturing Ready, Attack, or Prone.');
   const gear = equipment.snapshot();
   const shieldGear = shieldEquipment.snapshot();
   if (gear.loading) throw new Error('Wait for the weapon to finish loading before capturing a pose.');
@@ -1214,8 +1285,15 @@ function readCapturePose() {
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent), mobType: state.mobType,
     modelScalePercent: state.modelScalePercent, hexScalePercent: state.hexScalePercent,
     renderWidth: size.renderWidth, renderHeight: size.renderHeight,
-    clip: state.action?.getClip().name || 'Rest pose',
-    clipSourceId: animationSourceId(state.action?.getClip()) || state.action?.getClip().name || 'Rest pose',
+    unitCalibration: {
+      version: 1, mobType: state.mobType, modelId: state.libraryModelId || null,
+      modelName: state.modelName || null, pose: 'T-Pose',
+      modelScalePercent: state.modelScalePercent,
+      measuredHeightInches: Number.isFinite(state.tPoseHeightFeet)
+        ? Number((state.tPoseHeightFeet * 12).toFixed(2)) : null
+    },
+    clip: state.action?.getClip().name || 'T-Pose',
+    clipSourceId: animationSourceId(state.action?.getClip()) || state.action?.getClip().name || 't-pose',
     time: state.action?.time || 0,
     anchorX: (ground.x + 1) * state.width / 2,
     anchorY: (1 - ground.y) * state.height / 2,
@@ -1251,10 +1329,46 @@ function directionalPreviewBounds(index) {
   return { x: minX, y: minY, width, height, displayWidth, displayHeight };
 }
 
+function drawPreviewBattlefieldHex(preview) {
+  const ctx = preview.context;
+  const resolutionScale = state.resolutionPercent / 100;
+  const halfW = 32 * resolutionScale;
+  const halfH = 21 * resolutionScale;
+  const cx = preview.canvas.width / 2;
+  const cy = preview.canvas.height * 0.72;
+  const points = [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]];
+
+  ctx.save();
+  ctx.beginPath();
+  points.forEach(([x,y],index) => index ? ctx.lineTo(cx+x,cy+y) : ctx.moveTo(cx+x,cy+y));
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = '#4d613e';
+  ctx.fillRect(cx-halfW,cy-halfH,halfW*2,halfH*2);
+  if (previewGrassImage.complete && previewGrassImage.naturalWidth > 0) {
+    // Use a quiet grass tile from the same 8x4 combat sheet (tile 16).
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(previewGrassImage, 0, 2*176, 168, 176,
+      cx-halfW-0.6, cy-halfH-0.6, halfW*2+1.2, halfH*2+1.2);
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = '#e3ca79';
+  ctx.lineWidth = Math.max(1, resolutionScale);
+  ctx.beginPath();
+  points.forEach(([x,y],index) => index ? ctx.lineTo(cx+x,cy+y) : ctx.moveTo(cx+x,cy+y));
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawDirectionalPreview(preview, bounds) {
   preview.context.fillStyle = '#808080';
   preview.context.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
+  drawPreviewBattlefieldHex(preview);
   if (!bounds) return;
+  preview.context.imageSmoothingEnabled = false;
   preview.context.drawImage(atlasCanvas, bounds.x, bounds.y, bounds.width, bounds.height,
     Math.round((preview.canvas.width - bounds.displayWidth) / 2),
     Math.round((preview.canvas.height - bounds.displayHeight) / 2), bounds.displayWidth, bounds.displayHeight);
@@ -1267,24 +1381,13 @@ function renderFallbackPreviews(timestamp) {
     ctx.fillStyle = '#808080';
     ctx.fillRect(0, 0, preview.canvas.width, preview.canvas.height);
 
-    // QA Rev 62: draw one battlefield hex behind the fallback sprite so Model
-    // Size changes have an immediate tactical scale reference.
+    drawPreviewBattlefieldHex(preview);
     const resolutionScale = state.resolutionPercent / 100;
-    const halfW = 32 * resolutionScale;
     const halfH = 21 * resolutionScale;
-    const cx = preview.canvas.width / 2;
     const cy = preview.canvas.height * 0.72;
-    ctx.save();
-    ctx.strokeStyle = '#e3ca79';
-    ctx.lineWidth = Math.max(1, resolutionScale);
-    ctx.beginPath();
-    [[0,-halfH],[halfW,-halfH/2],[halfW,halfH/2],[0,halfH],[-halfW,halfH/2],[-halfW,-halfH/2]]
-      .forEach(([x,y],index) => index ? ctx.lineTo(cx+x,cy+y) : ctx.moveTo(cx+x,cy+y));
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
 
     if (image?.naturalWidth && image?.naturalHeight) {
+      ctx.imageSmoothingEnabled = false;
       const scale = state.modelScalePercent / 100;
       const targetH = Math.max(1, Math.round(preview.canvas.height * 0.5 * scale));
       const targetW = Math.max(1, Math.round(image.naturalWidth * targetH / image.naturalHeight));
@@ -1804,13 +1907,18 @@ function bindControls() {
     syncCaptureLock(!!poseCapture?.snapshot().captureCount);
   });
   ui.ModelScale.addEventListener('input', () => {
-    if (poseCapture?.snapshot().modelScaleAdjustable === false) { updateSetupLabels(); return; }
+    if (!isTPoseSelected() || poseCapture?.snapshot().modelScaleAdjustable === false) {
+      updateSetupLabels();
+      updateModelScaleAvailability();
+      return;
+    }
     const previousScalePercent = state.modelScalePercent;
     state.modelScalePercent = Math.min(STUDIO_MODEL_SCALE_MAX, validateSpriteModelScale(Number(ui.ModelScale.value)));
     applyModelSize(previousScalePercent);
     if (state.spriteOnlyFallback) invalidate();
     updateSetupLabels();
     poseCapture?.updateModelScale(state.modelScalePercent);
+    poseCapture?.saveWorkspace();
   });
   for (const [name, key, divisor] of [
     ['AmbientIntensity', 'ambientIntensity', 100], ['KeyIntensity', 'keyIntensity', 100],
@@ -2069,8 +2177,8 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   state.lighting = normalizedLighting(settings.lighting);
   if (!settings.lighting && captureCount) state.lighting.legacyRig = 'rev47';
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);
-  state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 1024 ? settings.width : size.width;
-  state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 1024 ? settings.height : size.height;
+  state.width = Number.isInteger(settings.width) && settings.width > 0 && settings.width <= 4096 ? settings.width : size.width;
+  state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 4096 ? settings.height : size.height;
   state.modelName = settings.modelName || 'Saved character';
   state.libraryModelId = typeof settings.libraryModelId === 'string' ? settings.libraryModelId : '';
   state.sourceFiles = Array.isArray(settings.sourceFiles) ? settings.sourceFiles : [];
