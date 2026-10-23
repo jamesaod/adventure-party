@@ -8,6 +8,9 @@ Bone *names* and source animation coverage do not establish that two models shar
 
 The new `scripts/test-orc-retarget-qa.mjs` audits the actual uploaded source GLB skin-joint names and their immediate parents, and prints the local orientation differences in all eight shoulder/arm/hand bones. It also verifies which quaternion multiplication order each test mode uses in a controlled arm-bind fixture.
 
+**Verified by Rev 111 CI against the two original source GLBs:** Carl has **65** skinned joints; the Orc has **66**, including an additional `neutral_bone`. The other **65 joint labels and all their immediate parent names match**. The measured Carl-to-Orc local rest-quaternion differences are: LeftShoulder 20.23°, **RightShoulder 148.83°**, LeftArm 53.39°, RightArm 61.51°, LeftForeArm 14.23°, RightForeArm 77.26°, LeftHand 15.07°, RightHand 29.59°. These angles demonstrate different local bind axes; they do not establish which algorithm looks right without in-browser QA.
+
+
 ## Test models in Model library
 
 All three new entries preserve the unmodified original Orc GLB. They retarget **the same one-second, known-good baked Carl sword/shield reference animation** dynamically, using a selectable math strategy:
