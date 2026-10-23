@@ -3690,6 +3690,7 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
     id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length,
     targetKind:isStudioPlayerSpriteTarget(mobType) ? "player" : "monster",
     modelScalePercent:manifest.modelScalePercent ?? 100,
+    unit:manifest.unit ? structuredClone(manifest.unit) : null,
     renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
   });
   if(currentScreen==="pixel") renderPixelAssetList();
@@ -3747,6 +3748,7 @@ window.adventurePartySpriteSets=Object.freeze({
         facing:frame?.facing,pose:frame?.poseName,footprintId:unitFootprintDefinition(unit).id,
         occupied:occupiedHexes(unit),groundCenter:unitFootprintScreenCenter(unit),
         modelScalePercent:registeredStudioSpriteSets.get(unit.spriteSetId)?.modelScalePercent ?? 100,
+        studioUnitCalibration:registeredStudioSpriteSets.get(unit.spriteSetId)?.unit ?? null,
         renderDimensions:frame ? spriteRenderDimensions(frame.assetId,frame.image) : null,
         stats:{ac:unit.ac,thaco:unit.thaco,move:unit.move,weapon:unit.weapon,hitDiceValue:unit.hitDiceValue,
           level:unit.level,attacksPerRound:unit.attacksPerRound,attacksThisRound:unit.attacksThisRound},
