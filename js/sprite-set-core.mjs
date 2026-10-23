@@ -67,6 +67,26 @@ export function validateSpriteSetManifest(value) {
     requireValue(typeof value.mobType === 'string', 'MOB type must be an implemented creature ID.');
     spriteMob(value.mobType);
   }
+  if (value.unit !== undefined) {
+    requireValue(object(value.unit), 'unit calibration metadata must be an object.');
+    requireValue(typeof value.unit.type === 'string', 'unit type must be an implemented creature ID.');
+    spriteMob(value.unit.type);
+    requireValue(value.unit.modelId === null || (typeof value.unit.modelId === 'string' && value.unit.modelId.length <= 160),
+      'unit model ID must be text or null.');
+    requireValue(value.unit.modelName === null || (typeof value.unit.modelName === 'string' && value.unit.modelName.length <= 160),
+      'unit model name must be text or null.');
+    const calibration = value.unit.calibration;
+    requireValue(object(calibration) && calibration.pose === 'T-Pose',
+      'unit calibration must use T-Pose.');
+    const calibratedScale = validateSpriteModelScale(calibration.modelScalePercent);
+    if (value.modelScalePercent !== undefined) {
+      requireValue(calibratedScale === value.modelScalePercent,
+        'unit calibration model scale must match sprite-set model scale.');
+    }
+    requireValue(calibration.measuredHeightInches === null ||
+      (Number.isFinite(calibration.measuredHeightInches) && calibration.measuredHeightInches > 0 && calibration.measuredHeightInches <= 900),
+      'unit calibrated height must be positive inches or null.');
+  }
   requireValue(sameOrder(value.facings, SPRITE_DIRECTIONS), 'the six facing directions are missing or out of order.');
   requireValue(object(value.poses), 'pose captures are missing.');
   const files = new Set();
@@ -96,7 +116,7 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent }) {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit }) {
   const poses = Object.fromEntries(SPRITE_POSES.map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -113,7 +133,8 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     ...(layout === undefined ? {} : { layout: { ...layout } }),
     ...(mobType === undefined ? {} : { mobType }),
     ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
-    ...(hexScalePercent === undefined ? {} : { hexScalePercent })
+    ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
+    ...(unit === undefined ? {} : { unit: structuredClone(unit) })
   });
 }
 
