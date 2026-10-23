@@ -1465,7 +1465,7 @@ function directionalPreviewBounds(index) {
   // displayed height, including pixels whose color matches the background.
   for (let y = top; y < top + state.height; y++) {
     for (let x = left; x < left + state.width; x++) {
-      if (!atlasImage.data[(y * atlasCanvas.width + x) * 4 + 3]) continue;
+      if (atlasImage.data[(y * atlasCanvas.width + x) * 4 + 3] < 128) continue;
       minX = Math.min(minX, x); maxX = Math.max(maxX, x);
       minY = Math.min(minY, y); maxY = Math.max(maxY, y);
     }
