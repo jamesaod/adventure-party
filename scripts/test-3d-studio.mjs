@@ -168,8 +168,8 @@ const studioCaptureSource=fs.readFileSync(new URL("../js/studio-capture.mjs",imp
 const studioHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
 assert.ok(studioHtml.includes('id="studioAnimationFiles"')&&studioHtml.includes('id="studioLoadAnimationButton"'),
   'Studio exposes a separate humanoid FBX animation importer');
-assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C102'")&&studioSource.includes('function loadAnimationFiles('),
-  'Studio uses the semantic humanoid retargeter');
+assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C105'")&&studioSource.includes('function loadAnimationFiles('),
+  'Studio uses the cache-busted semantic humanoid retargeter');
 assert.ok(studioSource.includes('retargetHumanoidClip(THREE, clip, parsed, state.model, label)'),
   'Studio supplies both source and target rigs when retargeting');
 assert.ok(studioSource.includes("Imported_") && studioSource.includes('analyzeHumanoidRig(state.model)'),
