@@ -2,6 +2,15 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 106 — Isolated Orc native-bind animation experiment
+
+- **Last controlled Orc test before considering a newly generated model:** preserve the Rev 103 proof, existing Rev 104/105 behavior and untouched uploaded Orc GLB.
+- Add **Male Orc Fighter — Original Source (No Animation)** (unmodified source, no skin reweighting) and **Male Orc Fighter — Native-Bind Animation Test** (same original-mesh Rev 103 proof GLB, but with new opt-in animation quaternion correction and **no** skin-weight repair).
+- The earlier bake composed Orc target poses from Carl's known-good T-pose local rotations without reconciling the Orc's different native skin bind orientation. The isolated experiment applies `nativeOrcBind × inverse(CarlReferenceBind) × bakedRotation` to every animated joint, leaving the original Orc bone hierarchy, GLB inverse bind matrices, mesh, skin weights, translations, and weapon/shield attachment unchanged.
+- Store Carl's verified 64 native bind quaternions as compact reference data (~2.4 KB) rather than redownloading his ~11 MB 3D model. Validate against the exact Carl and Orc GLBs and animation tracks in CI.
+- The previous model entries and Carl are **not affected**; the option is an experiment awaiting visual QA, not a declaration that the mesh deformation is solved.
+- For visual QA select **Male Orc Fighter — Native-Bind Animation Test**, equip sword/shield, and scrub both UAL2 ready and swing. Compare with **Original Source (No Animation)** if the attack deforms. Do not promote this test to the default until visual acceptance.
+
 ## Candidate Rev 105 — Restore Orc GLB Studio loading after Rev 104
 
 - Fixed Orc Model Library load regression caused by Three.js `GLTFLoader` sanitizing `mixamorig:LeftUpLeg` to `mixamorigLeftUpLeg`, while the new skin-weight repair expected a colon-delimited bone name.

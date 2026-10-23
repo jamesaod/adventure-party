@@ -105,9 +105,13 @@ assert.equal(repairCrossLimbSkinning(scene,CROSS_LIMB_REPAIR).correctedVertices,
   'Repair is idempotent when reopening a saved studio');
 assert.throws(()=>repairCrossLimbSkinning(scene,'not-a-profile'),/Unknown skin repair profile/);
 const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root),'utf8'));
-const orcs=catalog.models.filter(model=>model.id.startsWith('male-orc-fighter'));
-assert.equal(orcs.length,2,'Both library Orc variations are covered');
-assert.ok(orcs.every(model=>model.skinWeightRepair===CROSS_LIMB_REPAIR));
+const repairedOrcs=catalog.models.filter(model=>model.skinWeightRepair===CROSS_LIMB_REPAIR);
+assert.deepEqual(repairedOrcs.map(model=>model.id).sort(),
+  ['male-orc-fighter','male-orc-fighter-ual2-one-handed-proof'],
+  'Only legacy Rev 104/105 Orc entries opt into skin-weight repair');
+const untouched=catalog.models.find(model=>model.id==='male-orc-fighter-unmodified-source');
+assert.ok(untouched&&!untouched.skinWeightRepair&&!untouched.animationBindRebase,
+  'The raw Orc can be loaded without any corrections');
 assert.ok(catalog.models.filter(model=>model.id.includes('carl'))
   .every(model=>model.skinWeightRepair===undefined),'No change to Carl models');
 
