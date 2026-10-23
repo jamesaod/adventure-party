@@ -98,12 +98,14 @@ const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)
 const raw=catalog.models.find(model=>model.id==='male-orc-fighter');
 const derived=catalog.models.find(model=>model.id==='male-orc-fighter-ual2-one-handed-proof');
 assert.ok(raw&&!raw.animationFamilies,'Raw Orc remains untouched and does not runtime-retarget animations');
+assert.equal(raw.skinWeightRepair,'cross-limb-components-v1','Raw Orc opts into in-memory cross-limb cleanup');
 assert.deepEqual(derived,{
   id:'male-orc-fighter-ual2-one-handed-proof',
   label:'Male Orc Fighter — UAL2 One-Handed Proof',
   file:proofPath,
   upAxis:'Y',
-  mobType:'orc'
+  mobType:'orc',
+  skinWeightRepair:'cross-limb-components-v1'
 },'Derived proof is a separate Studio Model Library entry');
 
 const provenance=JSON.parse(fs.readFileSync(new URL(
