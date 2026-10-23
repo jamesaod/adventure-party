@@ -167,13 +167,13 @@ const studioSource=fs.readFileSync(new URL("../js/3d-studio.mjs",import.meta.url
 const studioCaptureSource=fs.readFileSync(new URL("../js/studio-capture.mjs",import.meta.url),"utf8");
 const studioHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
 assert.ok(studioHtml.includes('id="studioAnimationFiles"')&&studioHtml.includes('id="studioLoadAnimationButton"'),
-  'Studio exposes a separate Mixamo FBX animation importer');
-assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C88'")&&studioSource.includes('function loadAnimationFiles('),
-  'Studio uses the bind-space Mixamo retargeter');
-assert.ok(studioSource.includes('retargetMixamoClip(THREE, clip, parsed, state.model, label)'),
+  'Studio exposes a separate humanoid FBX animation importer');
+assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C102'")&&studioSource.includes('function loadAnimationFiles('),
+  'Studio uses the semantic humanoid retargeter');
+assert.ok(studioSource.includes('retargetHumanoidClip(THREE, clip, parsed, state.model, label)'),
   'Studio supplies both source and target rigs when retargeting');
-assert.ok(studioSource.includes("Mixamo_"),
-  'Imported clips receive visible Mixamo names');
+assert.ok(studioSource.includes("Imported_") && studioSource.includes('analyzeHumanoidRig(state.model)'),
+  'Imported clips receive visible names and Studio reports semantic rig analysis');
 assert.ok(studioHtml.includes('id="studioResolution" type="range" min="50" max="500"'),
   'Resolution control reaches 500 percent');
 assert.ok(studioHtml.includes('id="studioAmbientIntensity" type="range" min="0" max="500"'),
