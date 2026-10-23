@@ -120,7 +120,9 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   assert.ok(spine.quaternion.angleTo(spineBefore)>1e-5,'Upper torso participates subtly in the two-handed pose');
   assert.ok(lowerSpine.quaternion.angleTo(lowerSpineBefore)>1e-6,'Lower spine participates subtly in the two-handed pose');
   assert.ok(hips.quaternion.angleTo(hipsBefore)>1e-7,'Pelvis participates subtly in the two-handed pose');
-  assert.ok(result.fingerBonesCurled>=15,'Finger IK adjusts all four fingers and thumb around the hilt');
+  assert.equal(result.fingerGrip.wristOrientation.applied,true,'Wrist is oriented to the hilt before finger IK');
+  assert.ok(Number.isFinite(result.fingerGrip.wristOrientation.angleDegrees),'Wrist orientation reports a finite correction angle');
+  assert.ok(result.fingerBonesCurled>=10,'Finger IK adjusts the hand around the hilt after wrist alignment');
   assert.equal(result.fingerGrip.fingertips.length,5,'Four fingers and thumb report final grip distances');
   assert.ok(result.fingerGrip.fingertips.every(entry=>Number.isFinite(entry.distanceToGrip)),
     'Every left-hand fingertip resolves to a finite hilt distance');
