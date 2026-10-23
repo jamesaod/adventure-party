@@ -3620,7 +3620,7 @@ function getPixelEditorAsset(id){
 }
 
 /* A small registration bridge lets new character folders remain separate from game code. */
-function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
+function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,layout=null}){
   if(!manifest || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.id || "") ||
     !manifest.frame || !manifest.label){
     throw new Error("Invalid studio sprite set metadata.");
@@ -3665,12 +3665,23 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
         throw new Error(`Sprite ${capture}/${facing} is missing or has the wrong dimensions.`);
       }
       const assetId=`sprite-set-${manifest.id}-${capture}-${facing.toLowerCase()}`;
+      const runtimeFile=manifest.battlefield?.poses?.[capture]?.frames?.[facing]||null;
+      const runtimeImage=runtimeFile ? runtimeImages?.[runtimeFile] : image;
+      const runtimeSrc=runtimeFile ? sourceUrls?.[runtimeFile] : src;
+      if(!runtimeImage?.complete||!runtimeImage.naturalWidth){
+        throw new Error(`Runtime sprite ${capture}/${facing} is missing.`);
+      }
       prepareCrispPixelSprite(image);
-      directionalSprites[pose][facing]={image,assetId,src};
+      if(runtimeImage!==image)prepareCrispPixelSprite(runtimeImage);
+      directionalSprites[pose][facing]={image:runtimeImage,assetId,src:runtimeSrc||src};
       additions.push({
         id:assetId,label:`${manifest.label} ${capture} — ${facing}`,
         defaultCategory:"units",gameImage:image,originalSrc:src,spec:{...spec},
-        editCanvas:null,editCtx:null,dirty:false,sourceScale:1,runtimeAnchor:null
+        editCanvas:null,editCtx:null,dirty:false,sourceScale:1,
+        runtimeAnchor:manifest.battlefield ? {
+          x:manifest.battlefield.anchorX/manifest.battlefield.width,
+          y:manifest.battlefield.anchorY/manifest.battlefield.height
+        } : null
       });
     }
   }
@@ -3691,6 +3702,9 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
     targetKind:isStudioPlayerSpriteTarget(mobType) ? "player" : "monster",
     modelScalePercent:manifest.modelScalePercent ?? 100,
     unit:manifest.unit ? { ...manifest.unit, calibration: { ...manifest.unit.calibration } } : null,
+    battlefieldRenderer:manifest.battlefield?.renderer||null,
+    battlefieldSourceWidth:manifest.battlefield?.width||null,
+    battlefieldSourceHeight:manifest.battlefield?.height||null,
     renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
   });
   if(currentScreen==="pixel") renderPixelAssetList();
