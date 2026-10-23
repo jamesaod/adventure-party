@@ -1432,8 +1432,7 @@ function retargetMixamoClip(clip, model, label) {
     const key = normalizedRigName(sourceName);
     const targetName = bones.get(key);
     if (!targetName) { skipped++; continue; }
-    if (property === 'scale') { skipped++; continue; }
-    if (property === 'position' && !/hips$/.test(key)) { skipped++; continue; }
+    if (property !== 'quaternion') { skipped++; continue; }
     const cloned = track.clone();
     cloned.name = `${targetName}.${property}`;
     tracks.push(cloned);
