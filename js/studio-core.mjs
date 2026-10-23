@@ -58,7 +58,7 @@ const saturationFactor = value => Number.isFinite(value) ? Math.max(0, Math.min(
 // Large source frames may need many source pixels to represent a small physical
 // battlefield outline. Uint32 scratch space keeps that conversion safe while
 // final combat widths remain only a few pixels.
-const MAX_OUTLINE = 256;
+const MAX_OUTLINE = 768;
 const OUTLINE_DISTANCE_LIMIT = (MAX_OUTLINE + 1) ** 2;
 let outlineWorkspace;
 
@@ -196,9 +196,11 @@ export function quantizeRgba(source, width, height, target, {
             target[ti] = target[ti + 1] = target[ti + 2] = 0;
             target[ti + 3] = clampByte(255 * coverage);
           } else {
-            target[ti] = clampByte(bg[0] * (1 - coverage));
-            target[ti + 1] = clampByte(bg[1] * (1 - coverage));
-            target[ti + 2] = clampByte(bg[2] * (1 - coverage));
+            const blended = clampByte(bg[0] * (1 - coverage));
+            const edgeRgb = VGA_PALETTE[lookup[(blended >> 3) << 10 | (blended >> 3) << 5 | (blended >> 3)]];
+            target[ti] = edgeRgb[0];
+            target[ti + 1] = edgeRgb[1];
+            target[ti + 2] = edgeRgb[2];
             target[ti + 3] = 255;
           }
         } else {
