@@ -2,6 +2,16 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 99 — Male Orc Fighter repository and Model Library integration
+
+- Preserved the exact user-supplied **Male Orc Fighter** GLB in the repository at `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`.
+- Registered **Male Orc Fighter** in the 3D Studio Model Library as a **Y-up Orc** model, so it can be loaded directly from the candidate build without selecting a local file.
+- Verified source integrity in CI: **1,413,200 bytes**, SHA-256 `a0b63e9ae67c47779baf9e254660918c073ab1684237f528c43bb9f7e9f9c688`, GLB v2, one 65-joint skin, and zero embedded animation clips.
+- Added provenance metadata beside the model. The source reports **Tripo** as its generator; no asset license is asserted beyond the user-supplied project handoff.
+- The Orc is the first repository-backed non-Carl humanoid acceptance model for the Rev 98 semantic rig pipeline. Its Mixamo-style skeleton is eligible for generic external FBX retargeting, right-hand weapons, shields, and the two-handed solver without Orc-specific renderer code.
+- Updated Studio and unit-asset documentation and corrected the launcher build metadata to report Candidate Rev 99.
+
+
 ## Candidate Rev 98 — Stable model scaling, physical outlines, and generic humanoid rigs
 
 - Fixed 3D Studio model scaling so equipping, unequipping, or resetting weapons and shields cannot change a character's calibrated body size. Model fitting and height measurement now use body-only bounds while attached equipment inherits the existing unit transform.
