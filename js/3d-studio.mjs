@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C105';
+import { retargetHumanoidClip, HUMANOID_RETARGET_QA_MODES } from './mixamo-retarget.mjs?v=R238C111';
 import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
@@ -1854,7 +1854,7 @@ async function loadHumanoidAnimationSourceCatalog() {
   return humanoidAnimationSourcesPromise;
 }
 
-async function loadRepositoryAnimationFamilies(targetModel, familyIds = []) {
+async function loadRepositoryAnimationFamilies(targetModel, familyIds = [], retargetMode = 'semantic-joint-bind-relative') {
   const requested = [...new Set(familyIds.filter(id => typeof id === 'string' && id))];
   if (!requested.length) return [];
   const appRoot = new URL('../', import.meta.url);
@@ -1882,7 +1882,7 @@ async function loadRepositoryAnimationFamilies(targetModel, familyIds = []) {
       for (const clipName of family.clips) {
         const sourceClip = sourceClips.find(clip => clip.name === clipName);
         if (!sourceClip) throw new Error(`Animation family ${familyId} is missing ${clipName}.`);
-        const clip = retargetHumanoidClip(THREE, sourceClip, sourceGltf.scene, targetModel, clipName);
+        const clip = retargetHumanoidClip(THREE, sourceClip, sourceGltf.scene, targetModel, clipName, {mode:retargetMode});
         clip.userData = {
           ...clip.userData,
           repositoryAnimationFamily: familyId,
@@ -1931,7 +1931,11 @@ async function loadModelLibrary() {
       if (entry.animationBindRebase && entry.skinWeightRepair) {
         throw new Error('Diagnostic native-bind experiment must use original skin weights.');
       }
-      if (entry.animationFamilies !== undefined &&
+      if (entry.animationRetargetMode !== undefined &&
+           !HUMANOID_RETARGET_QA_MODES.includes(entry.animationRetargetMode)) {
+         throw new Error('Unsupported Model Library retarget QA mode.');
+       }
+       if (entry.animationFamilies !== undefined &&
           (!Array.isArray(entry.animationFamilies) ||
            entry.animationFamilies.some(id => typeof id !== 'string' || !id))) {
         throw new Error('Saved model animationFamilies must be a non-empty string array.');
@@ -2032,7 +2036,8 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
     }
 
     const repositoryClips = await loadRepositoryAnimationFamilies(
-      loaded.model, effectiveModelDefaults?.animationFamilies || []
+      loaded.model, effectiveModelDefaults?.animationFamilies || [],
+      effectiveModelDefaults?.animationRetargetMode || 'semantic-joint-bind-relative'
     );
     if (repositoryClips.length) {
       const existingNames = new Set((loaded.clips || []).map(clip => clip.name));
