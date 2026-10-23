@@ -451,7 +451,7 @@ vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelR
 await vm.runInContext('changeEquipment({ rightHand: "medieval-sword" })', locked);
 for (const gear of [{ loading: true, settings }, { loading: false, attached: false, settings, error: 'Sword unavailable' }]) {
   const capture = vm.createContext({
-    state: { modelReady: true, model: {} },
+    state: { modelReady: true, model: {}, action: {} },
     equipment: { snapshot: () => gear },
     shieldEquipment: { snapshot: () => ({ settings: { leftHandShield: 'none' }, attached: false, error: '' }) }
   });
