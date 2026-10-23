@@ -62,7 +62,7 @@ assert.equal(STUDIO_WEAPONS[2].id,'medieval-two-handed-sword');
 assert.equal(STUDIO_WEAPONS[2].poseProfileId,'two-handed-swing');
 assert.equal(STUDIO_WEAPONS[2].handsRequired,2);
 assert.deepEqual(STUDIO_WEAPONS[2].grip,[0,0.81,0]);
-assert.deepEqual(STUDIO_WEAPONS[2].secondaryGrip,[0,0.89,0]);
+assert.deepEqual(STUDIO_WEAPONS[2].secondaryGrip,[0,0.95,0]);
 assert.deepEqual(STUDIO_WEAPONS[2].primaryAxis,[0,-1,0]);
 assert.deepEqual(STUDIO_WEAPONS[2].rotation,[90,0,0]);
 assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
