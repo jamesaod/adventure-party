@@ -41,7 +41,7 @@ Observed source facts:
 - repository path: `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`
 - Studio library ID: `male-orc-fighter`
 
-The rig maps all 20 current core humanoid roles and therefore qualifies automatically for external humanoid animation retargeting and equipment attachment. The exact uploaded GLB is repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. Its source contains no embedded clips, but Studio now assigns it the shared repository `one-handed-swing` family and retargets `UAL2_Sword_Ready` plus `UAL2_Sword_Regular_A` when the model loads.
+The rig maps all 20 current core humanoid roles and therefore qualifies for equipment attachment and retargeting experiments. The exact uploaded GLB is repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. Its source contains no embedded clips and, importantly, its skin bind stance has lowered arms rather than the true T-pose used by Carl and the UAL2 donor. Automatic runtime retargeting produced torso-clipping arm poses, so the raw Orc is kept animationless. A separate **Male Orc Fighter — UAL2 One-Handed Proof** is generated offline with the proven Carl bake, using Carl's T-pose bind rotations as a same-exporter reference while preserving the Orc's own model data.
 
 ## Current limitations
 
@@ -51,7 +51,7 @@ This is a first pass, not a promise that every humanoid rig will be zero-touch.
 - A skeleton with unusual names that do not match the alias catalog may need a saved model-specific mapping profile.
 - Weapon and shield attachment bones can be found generically, but unusual hand anatomy or asset pivots may still need a small model-specific socket correction.
 - The two-handed solver requires recognizable shoulder/upper-arm/forearm/hand chains. Finger wrapping requires recognizable finger chains.
-- Repository-backed animation families now exist, beginning with `one-handed-swing`. The first carrier is Carl's approved UAL2 proof GLB, so loading this family currently downloads more data than a future lightweight skeleton-only animation asset will require.
-- There is not yet a general animation-family picker in Studio; saved model entries opt into approved families through data, while **Load animation FBX** remains available for ad hoc testing.
+- Repository-backed runtime animation families still exist as an experimental path, but a compatible semantic skeleton is not sufficient by itself: the donor and target reference poses must also be compatible. The raw Orc demonstrated this failure because its bind stance is not the donor T-pose.
+- The current production-style proof path is an offline bake: exact UAL donor + untouched target + known-good same-exporter T-pose reference + preservation tests. **Load animation FBX** remains available for ad hoc experiments.
 
 The target architecture is **model + semantic rig profile + generic animation family + equipment profile**, with model-specific corrections stored as data.
