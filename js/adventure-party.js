@@ -3690,7 +3690,7 @@ function registerStudioSpriteSet({manifest,images,sourceUrls,layout=null}){
     id,label:manifest.label,manifestId:manifest.id,mobType,layoutId:footprint.id,footprintCells:footprint.offsets.length,
     targetKind:isStudioPlayerSpriteTarget(mobType) ? "player" : "monster",
     modelScalePercent:manifest.modelScalePercent ?? 100,
-    unit:manifest.unit ? structuredClone(manifest.unit) : null,
+    unit:manifest.unit ? { ...manifest.unit, calibration: { ...manifest.unit.calibration } } : null,
     renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
   });
   if(currentScreen==="pixel") renderPixelAssetList();
