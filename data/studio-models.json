@@ -27,7 +27,10 @@
       "label": "Male Orc Fighter",
       "file": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
       "upAxis": "Y",
-      "mobType": "orc"
+      "mobType": "orc",
+      "animationFamilies": [
+        "one-handed-swing"
+      ]
     }
   ]
 }
