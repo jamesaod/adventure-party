@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetMixamoClip } from './mixamo-retarget.mjs?v=R238C88';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C102';
+import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
@@ -18,10 +19,10 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C92';
+} from './studio-equipment.mjs?v=R238C102';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C75';
+} from './studio-shield.mjs?v=R238C102';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -677,8 +678,12 @@ function disposeModel(model) {
 function updateModelInfo() {
   let meshes = 0, bones = 0;
   state.model.traverse(object => { if (object.isMesh) meshes++; if (object.isBone) bones++; });
+  const rig = analyzeHumanoidRig(state.model);
+  const rigText = bones
+    ? `${rig.family} rig · ${rig.mappedCoreRoles}/${rig.coreRoleCount} humanoid roles${rig.animationReady ? ' · animation ready' : ''}`
+    : 'no humanoid rig';
   ui.ModelName.textContent = state.modelName;
-  ui.ModelInfo.textContent = `${meshes} mesh${meshes === 1 ? '' : 'es'} · ${bones} bones · ${state.clips.length} animation${state.clips.length === 1 ? '' : 's'}`;
+  ui.ModelInfo.textContent = `${meshes} mesh${meshes === 1 ? '' : 'es'} · ${bones} bones · ${state.clips.length} animation${state.clips.length === 1 ? '' : 's'} · ${rigText}`;
 }
 
 function geometryBodyBounds(root, options = {}) {
@@ -1723,8 +1728,8 @@ async function loadAnimationFiles(fileList) {
       if (!clips.length) throw new Error(`${file.name} contains no usable animation clips.`);
       const base = file.name.replace(/\.fbx$/i, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
       clips.forEach((clip, index) => {
-        const label = clips.length === 1 ? `Mixamo_${base}` : `Mixamo_${base}_${index + 1}`;
-        const retargeted = retargetMixamoClip(THREE, clip, parsed, state.model, label);
+        const label = clips.length === 1 ? `Imported_${base}` : `Imported_${base}_${index + 1}`;
+        const retargeted = retargetHumanoidClip(THREE, clip, parsed, state.model, label);
         state.sourceClips.push(retargeted);
         state.clips.push(retargeted);
         added.push(retargeted);
@@ -1738,7 +1743,8 @@ async function loadAnimationFiles(fileList) {
     fitAllAnimations();
     state.previewReferenceBounds = null;
     poseCapture?.saveWorkspace();
-    status(`Added ${added.length} Mixamo animation${added.length === 1 ? '' : 's'} · Select from Animation`);
+    const rig = analyzeHumanoidRig(state.model);
+    status(`Added ${added.length} humanoid animation${added.length === 1 ? '' : 's'} · ${rig.mappedCoreRoles}/${rig.coreRoleCount} rig roles mapped · Select from Animation`);
     return true;
   } catch (error) {
     showError(friendlyImportError(error));
