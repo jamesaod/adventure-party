@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "sourceZip": "assets/animations/mixamo/lite-sword-shield-pack.zip",
+  "sourceZipSha256": "4adb442f064058d2b35621b3f37cdf5f7ca9ab57c6e8052c5816b8ebe64b0791",
+  "models": [
+    {
+      "id": "new-carl-mixamo-sword-shield-17",
+      "original": "assets/models/dungeon-crawler-carl/new-carl/new-carl.glb",
+      "file": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-all/new-carl-mixamo-sword-shield-17.glb",
+      "sizeBytes": 2799568,
+      "sha256": "65aec8f790b9de9dda10f2efa8561075fc144518b93b15b376f47c5c7e411f08",
+      "provenance": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-all/provenance.json"
+    },
+    {
+      "id": "new-orc-mixamo-sword-shield-17",
+      "original": "assets/models/orcs/new-orc/new-orc.glb",
+      "file": "assets/models/orcs/new-orc/mixamo-sword-shield-all/new-orc-mixamo-sword-shield-17.glb",
+      "sizeBytes": 2753636,
+      "sha256": "3f400dfb12ef9ed0f39fe5ebe473fdec769ccb17f7654bba000772a6b0349f3c",
+      "provenance": "assets/models/orcs/new-orc/mixamo-sword-shield-all/provenance.json"
+    }
+  ],
+  "expectedAnimationCount": 17,
+  "expectedBoneRotationTracks": 65,
+  "note": "Source-preserving offline bake; all 17 motions are present for each model. Visual QA remains pending for new takes."
+}
