@@ -27,10 +27,14 @@
       "label": "Male Orc Fighter",
       "file": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
       "upAxis": "Y",
-      "mobType": "orc",
-      "animationFamilies": [
-        "one-handed-swing"
-      ]
+      "mobType": "orc"
+    },
+    {
+      "id": "male-orc-fighter-ual2-one-handed-proof",
+      "label": "Male Orc Fighter — UAL2 One-Handed Proof",
+      "file": "assets/models/orcs/male-orc-fighter/ual2-one-handed/male-orc-fighter-ual2-one-handed.glb",
+      "upAxis": "Y",
+      "mobType": "orc"
     }
   ]
 }
