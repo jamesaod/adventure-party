@@ -79,9 +79,9 @@ assert.equal(STUDIO_WEAPONS[2].nativeScale,0.78);
   const upper = new THREE.Bone(); upper.name = 'mixamorigLeftArm'; upper.position.set(0.18,0,0);
   const fore = new THREE.Bone(); fore.name = 'mixamorigLeftForeArm'; fore.position.set(0.75,-0.12,0);
   const offHand = new THREE.Bone(); offHand.name = 'mixamorigLeftHand'; offHand.position.set(0.68,-0.08,0);
-  const fingerNames=['Index','Middle','Ring','Pinky'];
-  for(const fingerName of fingerNames){
-    const b1=new THREE.Bone(); b1.name=`mixamorigLeftHand${fingerName}1`; b1.position.set(0.13,0,0);
+  const fingerRoots={Index:[0.13,0.045,0],Middle:[0.14,0.015,0],Ring:[0.135,-0.015,0],Pinky:[0.12,-0.045,0]};
+  for(const fingerName of ['Index','Middle','Ring','Pinky']){
+    const b1=new THREE.Bone(); b1.name=`mixamorigLeftHand${fingerName}1`; b1.position.set(...fingerRoots[fingerName]);
     const b2=new THREE.Bone(); b2.name=`mixamorigLeftHand${fingerName}2`; b2.position.set(0.10,0,0);
     const b3=new THREE.Bone(); b3.name=`mixamorigLeftHand${fingerName}3`; b3.position.set(0.08,0,0);
     b2.add(b3); b1.add(b2); offHand.add(b1);
