@@ -63,6 +63,7 @@ jobs:
           python scripts/bake-ual2-mixamo-humanoid.py \
             --source /tmp/UAL2_Standard.glb \
             --target assets/models/orcs/male-orc-fighter/male-orc-fighter.glb \
+            --reference-target assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb \
             --out /tmp/orc-proof/male-orc-fighter-ual2-one-handed.glb \
             --report /tmp/orc-proof/provenance.json \
             --source-member 'Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb'
