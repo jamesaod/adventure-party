@@ -427,7 +427,9 @@ const mixerEvaluationCount=(studio.match(/state\.mixer\.update\(/g)||[]).length;
 const inlineRestoreCount=(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length;
 assert.equal(mixerEvaluationCount-inlineRestoreCount,1,
   'Only setClip uses a function-level restore instead of the inline restore form');
-const setClipSource=extract('function setClip(index) {','function updateAnimationControls()');
+const setClipStart=studio.indexOf('function setClip(index) {');
+const setClipEnd=studio.indexOf('function updateAnimationControls()',setClipStart);
+const setClipSource=studio.slice(setClipStart,setClipEnd);
 assert.ok(setClipSource.indexOf('equipment.restoreConstraints();')>=0 &&
   setClipSource.indexOf('equipment.restoreConstraints();')<setClipSource.indexOf('state.mixer.update(0);'),
   'setClip restores the pre-IK skeleton before evaluating an authored animation');
