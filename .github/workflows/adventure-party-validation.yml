@@ -43,6 +43,7 @@ jobs:
           node --check js/studio-shield.mjs
           node --check js/studio-skinning.mjs
           node --check js/studio-orc-native-bind.mjs
+          node --check js/studio-qa-pack.mjs
           node --check js/mob-appearance.mjs
           node --check js/mob-appearance-runtime.mjs
           node --check js/combat-pose-recipe.mjs
@@ -65,6 +66,7 @@ jobs:
           node scripts/test-orc-ual2.mjs
           node scripts/test-orc-skinning.mjs
           node scripts/test-orc-native-bind.mjs
+          node scripts/test-studio-qa-pack.mjs
 
       - name: Validate sprite capture packages and asset imports
         run: |
