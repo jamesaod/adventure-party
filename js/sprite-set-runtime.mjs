@@ -91,27 +91,44 @@ function refreshControls() {
   });
 }
 
-async function decodeImages(manifest, sourceUrls) {
-  const names = SPRITE_POSES.flatMap(pose => SPRITE_DIRECTIONS.map(facing => manifest.poses[pose].frames[facing]));
-  const results = await Promise.allSettled(names.map(async name => {
-    const image = new Image();
-    image.decoding = 'async';
-    image.src = sourceUrls[name];
+async function decodeImageMap(names,sourceUrls,width,height){
+  const results=await Promise.allSettled(names.map(async name=>{
+    const image=new Image();
+    image.decoding='async';
+    image.src=sourceUrls[name];
     await image.decode();
-    if (image.naturalWidth !== manifest.frame.width || image.naturalHeight !== manifest.frame.height) {
+    if(image.naturalWidth!==width||image.naturalHeight!==height){
       throw new Error(`${name} does not match the declared frame size.`);
     }
-    return [name, image];
+    return [name,image];
   }));
-  const failure = results.find(result => result.status === 'rejected');
-  if (failure) throw new Error(`The sprite images could not all be loaded. ${failure.reason?.message || failure.reason}`);
-  return Object.fromEntries(results.map(result => result.value));
+  const failure=results.find(result=>result.status==='rejected');
+  if(failure)throw new Error(`The sprite images could not all be loaded. ${failure.reason?.message||failure.reason}`);
+  return Object.fromEntries(results.map(result=>result.value));
+}
+
+async function decodeImages(manifest,sourceUrls){
+  const sourceNames=SPRITE_POSES.flatMap(pose=>SPRITE_DIRECTIONS.map(
+    facing=>manifest.poses[pose].frames[facing]
+  ));
+  const images=await decodeImageMap(sourceNames,sourceUrls,manifest.frame.width,manifest.frame.height);
+  if(!manifest.battlefield)return {images,runtimeImages:null};
+  const runtimeNames=SPRITE_POSES.flatMap(pose=>SPRITE_DIRECTIONS.map(
+    facing=>manifest.battlefield.poses[pose].frames[facing]
+  ));
+  const runtimeImages=await decodeImageMap(
+    runtimeNames,sourceUrls,manifest.battlefield.width,manifest.battlefield.height
+  );
+  return {images,runtimeImages};
 }
 
 async function registerSet(manifest, sourceUrls, objectUrls = []) {
   try {
-    const images = await decodeImages(manifest, sourceUrls);
-    const id = api.register({ manifest, images, sourceUrls, layout: spriteLayout(manifest.layout?.id || 'single') });
+    const {images,runtimeImages}=await decodeImages(manifest,sourceUrls);
+    const id=api.register({
+      manifest,images,runtimeImages,sourceUrls,
+      layout:spriteLayout(manifest.layout?.id||'single')
+    });
     for (const url of assets.get(id) || []) URL.revokeObjectURL(url);
     assets.set(id, objectUrls);
     return id;
@@ -135,12 +152,16 @@ async function loadRepositorySet(entry) {
     throw new Error(`${entry.id}'s default player binding does not match its captured MOB.`);
   }
   const sourceUrls = {};
-  for (const pose of SPRITE_POSES) {
-    for (const facing of SPRITE_DIRECTIONS) {
-      const filename = manifest.poses[pose].frames[facing];
-      const url = new URL(filename, manifestUrl);
-      if (entry.revision) url.searchParams.set('v', String(entry.revision));
-      sourceUrls[filename] = url.href;
+  for(const pose of SPRITE_POSES){
+    for(const facing of SPRITE_DIRECTIONS){
+      for(const filename of [
+        manifest.poses[pose].frames[facing],
+        manifest.battlefield?.poses?.[pose]?.frames?.[facing]
+      ].filter(Boolean)){
+        const url=new URL(filename,manifestUrl);
+        if(entry.revision)url.searchParams.set('v',String(entry.revision));
+        sourceUrls[filename]=url.href;
+      }
     }
   }
   return registerSet(manifest, sourceUrls);
@@ -151,18 +172,22 @@ async function loadDraft() {
   if (!draft) throw new Error('No studio draft is saved for this game. Use Test in combat in 3d studio first.');
   const manifest = validateSpriteSetManifest(draft.manifest);
   const sourceUrls = {}, urls = [];
-  try {
-    for (const pose of SPRITE_POSES) {
-      for (const facing of SPRITE_DIRECTIONS) {
-        const filename = manifest.poses[pose].frames[facing];
-        const file = draft.files?.[filename];
-        if (!(file instanceof Blob) || !file.size) throw new Error(`The saved draft is missing ${filename}.`);
-        const url = URL.createObjectURL(file);
-        urls.push(url);
-        sourceUrls[filename] = url;
+  try{
+    for(const pose of SPRITE_POSES){
+      for(const facing of SPRITE_DIRECTIONS){
+        for(const filename of [
+          manifest.poses[pose].frames[facing],
+          manifest.battlefield?.poses?.[pose]?.frames?.[facing]
+        ].filter(Boolean)){
+          const file=draft.files?.[filename];
+          if(!(file instanceof Blob)||!file.size)throw new Error(`The saved draft is missing ${filename}.`);
+          const url=URL.createObjectURL(file);
+          urls.push(url);
+          sourceUrls[filename]=url;
+        }
       }
     }
-  } catch (error) {
+  }catch(error){
     urls.forEach(url => URL.revokeObjectURL(url));
     throw error;
   }
