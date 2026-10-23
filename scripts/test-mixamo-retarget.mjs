@@ -129,7 +129,7 @@ mixer.stopAllAction();
   const last=track.values.slice(track.values.length-4);
   const mappedEnd=new THREE.Quaternion(...last);
   assert.ok(mappedEnd.angleTo(q(x,-30))<1e-5,
-    'A +X source arm rotation becomes -X on a 180-degree opposite-facing target');
+    `A +X source arm rotation becomes -X on a 180-degree opposite-facing target; got ${mappedEnd.toArray()} axes ${JSON.stringify(mapped.userData.humanoidImport)}`);
 }
 
 // Uploaded Orc acceptance fixture: the actual GLB has these Mixamo bone names.
