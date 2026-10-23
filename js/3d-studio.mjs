@@ -24,6 +24,7 @@ import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C102';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
+import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
@@ -77,7 +78,7 @@ const state = {
   modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
   sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
   libraryModels: [], libraryModelId: '', libraryLoading: false, modelLoading: false,
-  skinRepairReport: null,
+  skinRepairReport: null, nativeBindReport: null,
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outlineInches: DEFAULT_OUTLINE_INCHES,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
@@ -1080,7 +1081,7 @@ function updateAnimationControls() {
   ui.RemoveRangeButton.disabled = !available || !animationRangeContext()?.range;
 }
 
-function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairReport = null }, {
+function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairReport = null, nativeBindReport = null }, {
   restoreSettings = null, sourceFiles = [], isDemo = false, persist = true, modelDefaults = null
 } = {}) {
   // Validate before releasing the previously usable model.
@@ -1141,6 +1142,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   state.model = model;
   state.modelName = name;
   state.skinRepairReport = skinRepairReport;
+  state.nativeBindReport = nativeBindReport;
   state.libraryModelId = restoreSettings?.libraryModelId || modelDefaults?.id || '';
   state.modelLoading = false;
   state.sourceFiles = sourceFiles;
@@ -1229,9 +1231,10 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   const repositoryClipCount = state.clips.filter(clip => clip.userData?.repositoryAnimationFamily).length;
   const skinNote = state.skinRepairReport?.correctedVertices ?
     ` · Skin weights repaired (${state.skinRepairReport.correctedVertices} vertices)` : '';
+  const rebaseNote = state.nativeBindReport ? ' · Native Orc bind animation experiment (original weights)' : '';
   status((restoreSettings ? 'Saved studio restored · Your captures are ready to export or continue' :
     repositoryClipCount ? `Ready · ${repositoryClipCount} repository animation${repositoryClipCount === 1 ? '' : 's'} retargeted · All animations framed` :
-    state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded') + skinNote);
+    state.clips.length ? 'Ready · All animations framed for six synchronized views' : 'Ready · Static model loaded') + skinNote + rebaseNote);
   if (!restoreSettings && persist) poseCapture?.saveWorkspace();
   const requestedEquipment=restoreSettings?.equipment || {};
   const requestedShield=restoreSettings?.shield || (!restoreSettings && nextMobType==='fighter'
@@ -1913,6 +1916,12 @@ async function loadModelLibrary() {
       if (entry.skinWeightRepair !== undefined && entry.skinWeightRepair !== CROSS_LIMB_REPAIR) {
         throw new Error('Unsupported Model Library skin-weight repair profile.');
       }
+      if (entry.animationBindRebase !== undefined && entry.animationBindRebase !== ORC_NATIVE_BIND_REBASE) {
+        throw new Error('Unsupported Model Library native-bind animation profile.');
+      }
+      if (entry.animationBindRebase && entry.skinWeightRepair) {
+        throw new Error('Diagnostic native-bind experiment must use original skin weights.');
+      }
       if (entry.animationFamilies !== undefined &&
           (!Array.isArray(entry.animationFamilies) ||
            entry.animationFamilies.some(id => typeof id !== 'string' || !id))) {
@@ -2001,6 +2010,16 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
     // This runs on the in-memory clone only; the original repository GLB is unchanged.
     if (effectiveModelDefaults?.skinWeightRepair) {
       loaded.skinRepairReport = repairCrossLimbSkinning(loaded.model, effectiveModelDefaults.skinWeightRepair);
+    }
+    if (effectiveModelDefaults?.animationBindRebase) {
+      const referenceUrl = new URL('../data/ual2-carl-reference-bind.json', import.meta.url);
+      const referenceResponse = await fetch(referenceUrl, { cache: 'force-cache' });
+      if (!referenceResponse.ok) throw new Error('Cannot load saved Carl reference-pose data.');
+      const reference = await referenceResponse.json();
+      const rebased = rebaseOrcUal2Clips(THREE, loaded.model, loaded.clips, reference,
+        effectiveModelDefaults.animationBindRebase);
+      loaded.clips = rebased.clips;
+      loaded.nativeBindReport = rebased.report;
     }
 
     const repositoryClips = await loadRepositoryAnimationFamilies(
@@ -2511,6 +2530,7 @@ async function start() {
       model: state.modelName, facing: state.facing,
       libraryModelId: state.libraryModelId,
       skinRepair: state.skinRepairReport ? { ...state.skinRepairReport } : null,
+      nativeBindExperiment: state.nativeBindReport ? { ...state.nativeBindReport } : null,
       directions: HEX_FACINGS.map(item => item.id),
       previewSize: [previews[0].canvas.width, previews[0].canvas.height],
       sourceFrameSize: [state.width, state.height], frame: state.frame,
