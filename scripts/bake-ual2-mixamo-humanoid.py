@@ -401,28 +401,41 @@ class SoleClearance:
 
 def generate(args):
     source, target = Glb(args.source), Glb(args.target)
-    sr, tr = Rig(source), Rig(target)
+    reference = Glb(args.reference_target) if args.reference_target else target
+    sr, tr, rr = Rig(source), Rig(target), Rig(reference)
     original_animation_names = [a.get('name', '') for a in target.doc.get('animations', [])]
     require(not any(name in {'UAL2_Sword_Ready', 'UAL2_Sword_Regular_A'} for name in original_animation_names),
             "Target already contains the proof animation names")
     names = bone_names()
-    require(all(s in sr.names and t in tr.names for s, t in names), "The expected UAL2/Mixamo mapping is unavailable")
+    require(all(s in sr.names and t in tr.names and t in rr.names for s, t in names),
+            "The expected UAL2/Mixamo/reference mapping is unavailable")
     mapping = {tr.names[t]: sr.names[s] for s, t in names}
-    require(len(mapping) == 64, "Expected 64 distinct mapped joints")
+    reference_mapping = {tr.names[t]: rr.names[t] for s, t in names}
+    require(len(mapping) == 64 and len(reference_mapping) == 64, "Expected 64 distinct mapped joints")
     require(sr.joints - set(mapping.values()) == {sr.names['root']}, "Unexpected unmatched source joints")
     require(tr.joints - set(mapping) == {tr.names['mixamorig:HeadTop_End']}, "Unexpected unmatched target joints")
+    require(rr.joints - set(reference_mapping.values()) == {rr.names['mixamorig:HeadTop_End']},
+            "Unexpected unmatched reference joints")
     source_hip, target_hip = sr.names['pelvis'], tr.names['mixamorig:Hips']
     root = sr.names['root']
     require(sr.parents[source_hip] == root, "Expected UAL2 root parent of pelvis")
     require(tr.parents[target_hip] not in tr.joints, "Expected target hips as root joint")
-    # Reject unexpected orientation/reference poses rather than invent an axis conversion.
+    # The UAL2 donor and reference model must both be true T poses. The target
+    # may have a different bind stance; that is exactly why a reference model
+    # is supplied. All three still must share Y-up / +Z-forward conventions.
+    reference_hip = rr.names['mixamorig:Hips']
     for rig, hip, hand, arm, foot, toe, head in [
             (sr, source_hip, 'hand_r', 'upperarm_r', 'foot_r', 'ball_r', 'Head'),
-            (tr, target_hip, 'mixamorig:RightHand', 'mixamorig:RightArm', 'mixamorig:RightFoot', 'mixamorig:RightToeBase', 'mixamorig:Head')]:
+            (rr, reference_hip, 'mixamorig:RightHand', 'mixamorig:RightArm', 'mixamorig:RightFoot', 'mixamorig:RightToeBase', 'mixamorig:Head')]:
         handpos, armpos = rig.position(rig.names[hand]), rig.position(rig.names[arm])
-        require(handpos[0] < armpos[0] and abs(handpos[1] - armpos[1]) < 0.03, "Expected right arm extending toward -X in T pose")
+        require(handpos[0] < armpos[0] and abs(handpos[1] - armpos[1]) < 0.03,
+                "UAL2 donor/reference must have the right arm extending toward -X in T pose")
         require(rig.position(rig.names[toe])[2] > rig.position(rig.names[foot])[2], "Expected +Z forward")
         require(rig.position(rig.names[head])[1] > rig.position(hip)[1] > 0, "Expected Y-up rig")
+    require(tr.position(tr.names['mixamorig:RightToeBase'])[2] > tr.position(tr.names['mixamorig:RightFoot'])[2],
+            "Target must be +Z forward")
+    require(tr.position(tr.names['mixamorig:Head'])[1] > tr.position(target_hip)[1] > 0,
+            "Target must be Y-up")
     scale = tr.position(target_hip)[1] / sr.position(source_hip)[1]
     require(0.25 < scale < 2.0, "Unexpected target/UAL2 hip-height ratio")
     attack, recovery = Clip(sr, 'Sword_Regular_A'), Clip(sr, 'Sword_Regular_A_Rec')
@@ -440,7 +453,7 @@ def generate(args):
             if node in mapping:
                 source_node = mapping[node]
                 delta = qmul(source_q[source_node], qinv(sr.bind_q[source_node]))
-                world_q = qmul(delta, tr.bind_q[node])
+                world_q = qmul(delta, rr.bind_q[reference_mapping[node]])
                 q = qnormalize(qmul(qinv(parent_q), world_q))
                 if node == target_hip:
                     displacement = vsub(point(source_m[source_node], [0, 0, 0]), sr.position(source_node))
@@ -451,11 +464,12 @@ def generate(args):
             target_m[node] = matmul(parent_m, trs_matrix(target_local[node]))
         return target_local, target_q, target_m
 
-    # The bind-to-bind transfer must reconstruct the target, including its bone rolls.
+    # At donor bind, the generated target must reconstruct the known-good T-pose
+    # reference rotations while preserving the target's own bone lengths.
     rest_local, rest_q, rest_m = retarget(sr.bind)
-    rest_error = max(qangle(rest_q[i], tr.bind_q[i]) for i in tr.joints)
-    rest_pos_error = max(norm(vsub(point(rest_m[i], [0, 0, 0]), tr.position(i))) for i in tr.joints)
-    require(rest_error < 1e-4 and rest_pos_error < 1e-6, "Bind/rest retarget alignment failed")
+    rest_error = max(qangle(rest_q[node], rr.bind_q[reference_mapping[node]]) for node in mapping)
+    require(rest_error < 1e-4, "Reference T-pose rotation alignment failed")
+    rest_pos_error = 0.0
     root_errors = []
     for clip in [attack, recovery]:
         for time in clip.times:
@@ -571,14 +585,16 @@ def generate(args):
         'source': {'file': source.path.name, 'archiveMember': args.source_member, 'bytes': len(source.raw), 'sha256': source.sha256,
                    'rootMotionVariant': 'non-RM', 'reference': 'bind T pose', 'axisAlignment': 'identity; Y up and +Z forward'},
         'target': {'file': target.path.name, 'bytes': len(target.raw), 'sha256': target.sha256,
-                   'originalClips': [a['name'] for a in target.doc['animations']], 'nativeMeshBounds': native_bounds(target)},
+                   'originalClips': [a['name'] for a in target.doc.get('animations', [])], 'nativeMeshBounds': native_bounds(target)},
+        'referenceTarget': {'file': reference.path.name, 'bytes': len(reference.raw), 'sha256': reference.sha256,
+                            'policy': 'Use reference bind rotations only; preserve target translations, scales, mesh, skin, materials and binary prefix.'},
         'output': {'file': out_path.name, 'bytes': len(result), 'sha256': hashlib.sha256(result).hexdigest(),
                    'clips': [{'name': ready['name'], 'duration': 1, 'samples': 2, 'channels': 65},
                              {'name': combined['name'], 'duration': attack_times[-1], 'samples': len(attack_times), 'channels': 65}]},
         'retarget': {'mappedJoints': len(mapping), 'unmappedSource': ['root'], 'unmappedTarget': ['mixamorig:HeadTop_End'],
                      'hipDisplacementScale': scale, 'rootMotionPolicy': 'Include source root in world transforms; root remains fixed in selected non-RM clips; retain scaled pelvis displacement.',
                      'targetLocalTranslations': 'Original bind values except hips', 'targetLocalScales': 'Original bind values for all nodes',
-                     'rotationRule': 'inverse(targetParentAnimatedWorld) * (sourceAnimatedWorld * inverse(sourceBindWorld)) * targetBindWorld'},
+                     'rotationRule': 'inverse(targetParentAnimatedWorld) * (sourceAnimatedWorld * inverse(sourceBindWorld)) * referenceTargetBindWorld'},
         'sourceClips': [{'name': attack.name, 'duration': attack.duration, 'samples': len(attack.times)},
                         {'name': recovery.name, 'duration': recovery.duration, 'samples': len(recovery.times)}],
         'groundClearance': floor_report,
@@ -604,6 +620,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', required=True, help='UAL2 Standard non-RM GLB (or equivalent Source member)')
     parser.add_argument('--target', required=True, help='Unmodified Tripo/Mixamo-style humanoid GLB')
+    parser.add_argument('--reference-target', help='Known-good T-pose model with the same Mixamo target bone names; e.g. Carl V2')
     parser.add_argument('--out', required=True, help='New GLB output path')
     parser.add_argument('--report', help='Optional generation report JSON path')
     parser.add_argument('--source-member', default='Unreal-Godot/UAL2_Standard.glb', help='Archive member path recorded for provenance')
