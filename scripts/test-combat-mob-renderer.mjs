@@ -30,7 +30,10 @@ for(const token of [
   "forearmSlideInches",
   "forearmRollDegrees",
   "shieldAppearanceId",
-  "quantizeRgba(raw,frame.width,frame.height,image.data",
+  "quantizeRgba(source,width,height,image.data",
+  "imageSmoothingQuality='high'",
+  "runtimeImages",
+  "renderer:'supersampled-battlefield-v2'",
   "generatedAtRuntime:true"
 ]) assert.ok(renderer.includes(token), `runtime renderer missing ${token}`);
 
@@ -45,9 +48,9 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C72")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C72")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C72",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C97")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C97")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C97",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
@@ -57,7 +60,13 @@ assert.ok(game.includes('queueHumanoidPresentationReconcile'));
 assert.ok(renderer.includes("const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`"));
 assert.ok(game.includes('await pending'));
 assert.ok(game.includes('poseProfile:captured.poseProfile'));
-assert.ok(game.includes('renderSettings:captured.renderSettings'));
+assert.ok(game.includes("renderer:'supersampled-battlefield-v2'"),
+  'Equipment refresh must version and request the supersampled battlefield renderer');
+assert.ok(renderer.includes("battlefieldCanvas=quantizedCanvas(") &&
+  renderer.includes("reducedCtx.imageSmoothingQuality='high'"),
+  'Dynamic equipment renderer must downsample before VGA quantization');
+assert.ok(renderer.includes("runtimeImages[runtimeFile]=await loadImage(runtimeSrc)"),
+  'Dynamic equipment renderer returns dedicated native combat images');
 assert.ok(game.includes('window.adventurePartySpriteSets?.register(result.spriteSet)'));
 assert.ok(game.includes('unit.dynamicAppearanceSpriteSetId=spriteSetId'));
 assert.ok(studio.includes('clipSourceId: animationSourceId'));
