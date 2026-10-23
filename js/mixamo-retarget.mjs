@@ -185,15 +185,16 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
           const sourceBone = source.get(role);
           const sourceAnimatedWorld = sourceBone.getWorldQuaternion(new THREE.Quaternion());
           const sourceBind = sourceBindWorld.get(role);
-          const worldDelta = sourceAnimatedWorld.clone().multiply(sourceBind.clone().invert()).normalize();
-          // Move the source's world-space rotation delta into the target
-          // character's anatomical basis. Without this conjugation a +Z-forward
-          // source drives a -Z-forward target as if left/right were mirrored.
-          const targetDelta = sourceToTargetBasis.clone()
-            .multiply(worldDelta)
-            .multiply(sourceToTargetBasisInverse)
+          // Extract the animation in the source joint's own bind frame,
+          // then apply that relative rotation after the target joint's bind
+          // orientation. This is the key distinction from a world-space delta:
+          // different shoulder/arm rest axes keep their own anatomical frame.
+          const bindRelative = sourceBind.clone().invert()
+            .multiply(sourceAnimatedWorld)
             .normalize();
-          const targetWorld = targetDelta.multiply(targetInfo.bindWorldQuaternion.clone()).normalize();
+          const targetWorld = targetInfo.bindWorldQuaternion.clone()
+            .multiply(bindRelative)
+            .normalize();
           desiredWorld.set(role,targetWorld);
 
           const parentWorld = parentRole && desiredWorld.has(parentRole)
@@ -230,7 +231,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     mappedTracks: tracks.length,
     mappedRoles: [...mappedRoles],
     skippedTracks: Math.max(0,(clip.tracks?.length||0)-tracks.length),
-    retargetMode: 'semantic-anatomical-basis-bind-delta',
+    retargetMode: 'semantic-joint-bind-relative',
     sourceRigFamily: sourceRig.family,
     targetRigFamily: targetRig.family,
     targetCoverage: targetRig.coverage,
