@@ -18,7 +18,7 @@ import {
 } from './studio-geometry.mjs?v=R238C57';
 import {
   STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C91';
+} from './studio-equipment.mjs?v=R238C92';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C75';
@@ -50,6 +50,7 @@ const ui = Object.fromEntries([
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
+  'OffHandGripAlong', 'OffHandGripAlongValue', 'OffHandGripAcross', 'OffHandGripAcrossValue', 'OffHandGripDepth', 'OffHandGripDepthValue',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
   'FootprintPreview', 'FootprintDescription', 'FormatSummary', 'EmptyMessage',
@@ -280,6 +281,14 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
       field.disabled = busy || locked || settings.rightHand === 'none';
     }
   }
+  const offHandOffsets = settings.secondaryGripOffsetInches || [0,0,0];
+  for (const [name,index] of [['Across',0],['Along',1],['Depth',2]]) {
+    const input = ui[`OffHandGrip${name}`], output = ui[`OffHandGrip${name}Value`];
+    const value = Number(offHandOffsets[index]) || 0;
+    input.value = String(value);
+    input.disabled = busy || locked || !twoHandedWeapon;
+    output.textContent = `${value > 0 ? '+' : ''}${value.toFixed(2)} in`;
+  }
   ui.ResetEquipmentButton.disabled = busy || locked || settings.rightHand === 'none';
   ui.EquipmentStatus.classList.toggle('error', !!current.error);
   ui.EquipmentStatus.textContent = current.loading ? 'Loading weapon…' : current.error
@@ -321,7 +330,7 @@ function resetPreviewReferenceToReady() {
   }
 }
 
-async function changeEquipment(value, { fit = false } = {}) {
+async function changeEquipment(value, { fit = false, resetPose = true } = {}) {
   if (!state.modelReady || state.modelLoading || poseCapture?.snapshot().captureCount) {
     updateEquipmentControls();
     return;
@@ -335,7 +344,7 @@ async function changeEquipment(value, { fit = false } = {}) {
   if (state.disposed || state.model !== model) return;
   if (changed) {
     if (fit) fitAllAnimations();
-    resetPreviewReferenceToReady();
+    if (resetPose) resetPreviewReferenceToReady();
   }
   poseCapture?.saveWorkspace();
 }
@@ -1714,6 +1723,13 @@ function bindControls() {
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
   });
+  for (const [name,index] of [['Across',0],['Along',1],['Depth',2]]) {
+    ui[`OffHandGrip${name}`].addEventListener('input', event => {
+      const next = equipment.snapshot().settings;
+      next.secondaryGripOffsetInches[index] = event.target.valueAsNumber;
+      void changeEquipment(next,{resetPose:false});
+    });
+  }
   for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
     for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
       ui[`Weapon${name}${axis}`].addEventListener('change', event => {

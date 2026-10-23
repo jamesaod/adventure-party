@@ -164,4 +164,12 @@ assert.ok(studioSource.includes('retargetMixamoClip(THREE, clip, parsed, state.m
   'Studio supplies both source and target rigs when retargeting');
 assert.ok(studioSource.includes("Mixamo_"),
   'Imported clips receive visible Mixamo names');
+const equipmentUiHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
+for(const id of ['studioOffHandGripAlong','studioOffHandGripAcross','studioOffHandGripDepth']){
+  assert.ok(equipmentUiHtml.includes(`id="${id}"`),`Studio exposes ${id} calibration control`);
+}
+assert.ok(studioSource.includes("secondaryGripOffsetInches[index] = event.target.valueAsNumber"),
+  'Off-hand calibration controls update persistent equipment settings');
+assert.ok(studioSource.includes("changeEquipment(next,{resetPose:false})"),
+  'Fine off-hand calibration does not reset the current animation pose');
 console.log("3D studio: six projected facings, editor palette parity, framebuffer orientation, alpha, 0–10px tiled outlines and color controls passed.");
