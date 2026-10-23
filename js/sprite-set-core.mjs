@@ -71,6 +71,8 @@ export function validateSpriteSetManifest(value) {
     requireValue(object(value.unit), 'unit calibration metadata must be an object.');
     requireValue(typeof value.unit.type === 'string', 'unit type must be an implemented creature ID.');
     spriteMob(value.unit.type);
+    if (value.mobType !== undefined) requireValue(value.unit.type === value.mobType,
+      'unit type must match the sprite-set MOB type.');
     requireValue(value.unit.modelId === null || (typeof value.unit.modelId === 'string' && value.unit.modelId.length <= 160),
       'unit model ID must be text or null.');
     requireValue(value.unit.modelName === null || (typeof value.unit.modelName === 'string' && value.unit.modelName.length <= 160),
