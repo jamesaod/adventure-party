@@ -86,7 +86,10 @@ for(let c=0;c<clips.length;c++) {
       const oldQ=new THREE.Quaternion().fromArray(old.values,k*4);
       const actual=new THREE.Quaternion().fromArray(fresh.values,k*4);
       const expected=oldQ.clone().premultiply(delta).normalize();
-      assert.ok(actual.angleTo(expected)<0.0005,`Bad local motion rebase ${key}`);
+      const difference=Math.min(
+        Math.hypot(actual.x-expected.x,actual.y-expected.y,actual.z-expected.z,actual.w-expected.w),
+        Math.hypot(actual.x+expected.x,actual.y+expected.y,actual.z+expected.z,actual.w+expected.w));
+      assert.ok(difference<2e-5,`Bad local motion rebase ${key}: component difference ${difference}`);
       assert.ok(Math.abs(actual.length()-1)<1e-5,'Every transformed key remains unit-length');
       if(actual.angleTo(oldQ)>0.2) differing++;
     }
