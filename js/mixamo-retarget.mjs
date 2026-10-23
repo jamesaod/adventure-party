@@ -138,7 +138,6 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   const targetBasis=humanoidRigBasis(THREE,targetModel);
   const sourceToTargetBasis=targetBasis.quaternion.clone()
     .multiply(sourceBasis.quaternion.clone().invert()).normalize();
-  const sourceToTargetBasisInverse=sourceToTargetBasis.clone().invert();
   const basisCorrectionDegrees=THREE.MathUtils.radToDeg(
     2*Math.acos(THREE.MathUtils.clamp(Math.abs(sourceToTargetBasis.w),-1,1))
   );
