@@ -131,7 +131,7 @@ assert.deepEqual(SPRITE_LEGACY_LAYOUT_PRESETS.map(layout => layout.id), legacyId
 assert.deepEqual(Object.keys(SPRITE_LEGACY_LAYOUTS), legacyIds);
 assert.ok(Object.isFrozen(SPRITE_LAYOUT_PRESETS) && Object.isFrozen(SPRITE_LAYOUTS));
 assert.ok(Object.isFrozen(SPRITE_LEGACY_LAYOUT_PRESETS) && Object.isFrozen(SPRITE_LEGACY_LAYOUTS));
-assert.deepEqual(SPRITE_RESOLUTION, { min: 50, max: 200, step: 5 });
+assert.deepEqual(SPRITE_RESOLUTION, { min: 50, max: 500, step: 5 });
 assert.deepEqual(SPRITE_MODEL_SCALE, { min: 25, max: 2000, step: 5 });
 assert.equal(validateSpriteModelScale(), 100);
 assert.equal(SPRITE_HEX_SCALE_PERCENT, 109);
@@ -151,13 +151,13 @@ for (const [id, expected] of Object.entries(expectedLayouts)) {
     layout.offsets.reduce((rows, cell) => { (rows[cell.y] ||= []).push(cell); return rows; }, {}))
     .sort(([a], [b]) => Number(a) - Number(b)).map(([, cells]) => cells.length);
   assert.deepEqual(rowCounts, expected.rows, `${id} diagram row arrangement`);
-  for (let percent = 50; percent <= 200; percent += 5) {
+  for (let percent = 50; percent <= 500; percent += 5) {
     const dims = spriteLayoutDimensions(id, percent);
     assert.deepEqual(dims, {
       width: expected.size[0] * percent / 100, height: expected.size[1] * percent / 100,
       renderWidth: expected.size[2], renderHeight: expected.size[3]
     });
-    assert.ok(dims.width <= 1024 && dims.height <= 1024);
+    assert.ok(dims.width <= 4096 && dims.height <= 4096);
     assert.equal(dims.width * expected.size[1], dims.height * expected.size[0]);
     const largerModel = spriteLayoutDimensions(id, percent, 200);
     assert.deepEqual([largerModel.width, largerModel.height], [dims.width, dims.height], 'Model size never changes source resolution');
@@ -189,7 +189,7 @@ expectedEToSE.forEach(([x, y], facing) => {
 });
 assert.deepEqual(spriteLayoutOffsets('wide2', -1), spriteLayoutOffsets('wide2', 5));
 assert.throws(() => spriteLayoutOffsets('wide2', 0.5), /integer hex direction/);
-for (const invalid of [49, 51, 205, NaN, Infinity, '100']) {
+for (const invalid of [49, 51, 505, NaN, Infinity, '100']) {
   assert.throws(() => spriteLayoutDimensions('single', invalid), /resolution/);
 }
 for (const invalid of [0, 24, 26, 201, 2001, 2005, 50.5, NaN, Infinity, '100', null]) {
@@ -257,6 +257,28 @@ const calibratedManifest = createSpriteSetManifest({
 assert.equal(calibratedManifest.frame.renderWidth, 235.44);
 assert.equal(calibratedManifest.frame.renderHeight, 196.2);
 assert.equal(calibratedManifest.hexScalePercent, 109);
+const unitCalibratedManifest = createSpriteSetManifest({
+  id: 'unit-calibrated-character', label: 'Unit calibrated character', captures,
+  frame: { ...spriteLayoutDimensions('single', 500, 125), anchorX: 400, anchorY: 750 },
+  layout: createSpriteLayoutMetadata('single', 500), mobType: 'fighter', modelScalePercent: 125,
+  unit: {
+    type: 'fighter', modelId: 'dungeon-crawler-carl-v2', modelName: 'Dungeon Crawler Carl',
+    calibration: { pose: 'T-Pose', modelScalePercent: 125, measuredHeightInches: 76 }
+  }
+});
+assert.equal(unitCalibratedManifest.frame.width, 800);
+assert.equal(unitCalibratedManifest.frame.height, 1000);
+assert.deepEqual(unitCalibratedManifest.unit.calibration,
+  { pose: 'T-Pose', modelScalePercent: 125, measuredHeightInches: 76 });
+for (const alter of [
+  value => { value.unit.calibration.pose = 'Idle'; },
+  value => { value.unit.calibration.modelScalePercent = 130; },
+  value => { value.unit.calibration.measuredHeightInches = -1; },
+  value => { value.unit.type = 'unknown'; }
+]) {
+  const bad = structuredClone(unitCalibratedManifest); alter(bad);
+  assert.throws(() => validateSpriteSetManifest(bad));
+}
 assert.deepEqual(validateSpriteSetManifest({ ...scaledManifest, hexScalePercent: 100 }).frame, scaledManifest.frame);
 const oldManifestJson = JSON.stringify(scaledManifest);
 validateSpriteSetManifest(scaledManifest);
