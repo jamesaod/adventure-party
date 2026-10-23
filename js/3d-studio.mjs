@@ -1260,10 +1260,10 @@ function configureAtlas() {
   supersampleCanvas.height=height;
   supersampleImage=supersampleContext.createImageData(width,height);
   previews.forEach(preview => {
-    preview.canvas.width=180;
-    preview.canvas.height=150;
-    preview.canvas.style.width='180px';
-    preview.canvas.style.height='150px';
+    preview.canvas.width=200;
+    preview.canvas.height=180;
+    preview.canvas.style.width='200px';
+    preview.canvas.style.height='180px';
     preview.context.imageSmoothingEnabled=false;
   });
   updateCaptureCamera();
@@ -1332,6 +1332,27 @@ function renderBattlefieldAtlas() {
   battlefieldContext.putImageData(battlefieldImage,0,0);
 }
 
+function combatScreenDisplayScale(){
+  const viewportWidth=Math.max(320,Number(window.innerWidth)||1080);
+  const viewportHeight=Math.max(480,Number(window.innerHeight)||720);
+
+  // Mirror adventure-party.css / fitBattleCanvas(): combat screen padding,
+  // fixed side panel, 5px grid gap, fixed header/log/command rows, and 10px
+  // canvas-fit padding. The result is CSS pixels per battlefield canvas pixel.
+  const screenWidth=Math.max(1,viewportWidth-20);
+  const screenHeight=Math.max(1,viewportHeight-18);
+  const compact=viewportWidth<=900;
+  const stacked=viewportWidth<=680;
+  const sideWidth=stacked?0:(compact?230:496);
+  const mainGap=stacked?0:5;
+  const battleWrapWidth=Math.max(1,screenWidth-sideWidth-mainGap);
+  const fixedRows=62+106+48+(5*3);
+  const battleWrapHeight=stacked?Math.max(430,screenHeight-fixedRows):Math.max(1,screenHeight-fixedRows);
+  const availW=Math.max(1,battleWrapWidth-10);
+  const availH=Math.max(1,battleWrapHeight-10);
+  return Math.max(0.25,Math.min(availW/1080,availH/600));
+}
+
 function drawBattlefieldPreview(preview,index){
   const ctx=preview.context;
   ctx.fillStyle='#808080';
@@ -1345,23 +1366,24 @@ function drawBattlefieldPreview(preview,index){
   const hexVertices=[[0,-21],[32,-10.5],[32,10.5],[0,21],[-32,10.5],[-32,-10.5]];
   const centers=footprint.map(({x,y})=>({x:64*(x+y/2),y:31.5*y}));
 
-  // Literal battlefield zoom: 1 canvas/CSS pixel = 1 combat pixel.
-  const scale=1;
+  // Match the CSS enlargement used by the real combat battlefield canvas.
+  const scale=combatScreenDisplayScale();
   const originX=Math.round(preview.canvas.width/2);
   const originY=Math.round(preview.canvas.height/2+10);
 
   for(const center of centers){
     drawGrassPreviewPolygon(ctx,hexVertices.map(([vx,vy])=>({
-      x:originX+(center.x+vx),
-      y:originY+(center.y+vy)
-    })),1);
+      x:originX+(center.x+vx)*scale,
+      y:originY+(center.y+vy)*scale
+    })),scale);
   }
 
   const sx=(index%3)*battlefieldWidth,sy=Math.floor(index/3)*battlefieldHeight;
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(
     battlefieldCanvas,sx,sy,battlefieldWidth,battlefieldHeight,
-    originX-anchorX,originY-anchorY,battlefieldWidth,battlefieldHeight
+    originX-anchorX*scale,originY-anchorY*scale,
+    battlefieldWidth*scale,battlefieldHeight*scale
   );
 }
 
@@ -1626,6 +1648,7 @@ function resizeRenderer() {
     // framing, including the compensation from Model size changes.
     setCameraFrustum(mainCamera, width / height, mainCamera.top - mainCamera.bottom);
     state.mainDirty = true;
+    state.previewsDirty = true;
   }
 }
 

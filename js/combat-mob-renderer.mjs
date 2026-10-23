@@ -1,11 +1,11 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
-import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C57';
-import { studioLightPosition } from './studio-geometry.mjs?v=R238C57';
+import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
+import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C75';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C75';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C97';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C97';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -127,26 +127,70 @@ function configureCamera(recipe,frame){
   camera.updateProjectionMatrix();
   return camera;
 }
-function frameCanvas(renderer,target,scene,camera,turntable,yaw,frame,style){
+function topDownRgba(raw,width,height){
+  const result=new Uint8ClampedArray(raw.length);
+  const stride=width*4;
+  for(let y=0;y<height;y++){
+    const from=(height-1-y)*stride;
+    result.set(raw.subarray(from,from+stride),y*stride);
+  }
+  return result;
+}
+
+function quantizedCanvas(source,width,height,style,{flipY=true}={}){
+  const canvas=document.createElement('canvas');
+  canvas.width=width;
+  canvas.height=height;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const image=ctx.createImageData(width,height);
+  quantizeRgba(source,width,height,image.data,{
+    ...style,transparent:true,tileWidth:width,tileHeight:height,flipY
+  });
+  ctx.putImageData(image,0,0);
+  return canvas;
+}
+
+function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
   renderer.clear(true,true,true);
   renderer.render(scene,camera);
+
   const raw=new Uint8Array(frame.width*frame.height*4);
   renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,raw);
-  // quantizeRgba performs the one required WebGL bottom-up -> canvas top-down
-  // conversion. Pre-flipping here inverted the generated frame a second time.
-  const canvas=document.createElement('canvas');
-  canvas.width=frame.width;
-  canvas.height=frame.height;
-  const ctx=canvas.getContext('2d');
-  const image=ctx.createImageData(frame.width,frame.height);
-  quantizeRgba(raw,frame.width,frame.height,image.data,{
-    ...style,transparent:true,tileWidth:frame.width,tileHeight:frame.height
-  });
-  ctx.putImageData(image,0,0);
-  return canvas;
+
+  // Keep a high-resolution editor/source rendition.
+  const sourceCanvas=quantizedCanvas(raw,frame.width,frame.height,style);
+
+  // Preserve sub-pixel information for combat: downsample the unquantized
+  // WebGL image first, then VGA-quantize and outline at final battlefield size.
+  const nativeWidth=Math.max(1,Math.round(frame.renderWidth));
+  const nativeHeight=Math.max(1,Math.round(frame.renderHeight));
+  const sourceTopDown=topDownRgba(raw,frame.width,frame.height);
+  const supersample=document.createElement('canvas');
+  supersample.width=frame.width;
+  supersample.height=frame.height;
+  const supersampleCtx=supersample.getContext('2d',{willReadFrequently:true});
+  supersampleCtx.putImageData(new ImageData(sourceTopDown,frame.width,frame.height),0,0);
+
+  const reduced=document.createElement('canvas');
+  reduced.width=nativeWidth;
+  reduced.height=nativeHeight;
+  const reducedCtx=reduced.getContext('2d',{willReadFrequently:true});
+  reducedCtx.clearRect(0,0,nativeWidth,nativeHeight);
+  reducedCtx.imageSmoothingEnabled=true;
+  reducedCtx.imageSmoothingQuality='high';
+  reducedCtx.drawImage(
+    supersample,0,0,frame.width,frame.height,
+    0,0,nativeWidth,nativeHeight
+  );
+  const reducedRgba=reducedCtx.getImageData(0,0,nativeWidth,nativeHeight).data;
+  const battlefieldCanvas=quantizedCanvas(
+    reducedRgba,nativeWidth,nativeHeight,style,{flipY:false}
+  );
+
+  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight};
 }
 
 export async function generateCombatSpriteSet(recipe){
@@ -216,7 +260,7 @@ export async function generateCombatSpriteSet(recipe){
   const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
-  const images={},sourceUrls={},poses={};
+  const images={},runtimeImages={},sourceUrls={},poses={};
   try{
     for(const capture of POSES){
       const pose=profile?.poses?.[capture];
@@ -230,12 +274,19 @@ export async function generateCombatSpriteSet(recipe){
       mixer.update(0);
       poses[capture]={clip:clip.name,time:action.time,frames:{}};
       for(const facing of HEX_FACINGS){
-        const canvas=frameCanvas(renderer,target,scene,camera,turntable,facing.yawRadians,frame,style);
+        const rendered=frameCanvases(
+          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style
+        );
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
-        const src=canvas.toDataURL('image/png');
+        const src=rendered.sourceCanvas.toDataURL('image/png');
         images[file]=await loadImage(src);
         sourceUrls[file]=src;
         poses[capture].frames[facing.id]=file;
+
+        const runtimeFile=`${capture}-${facing.id.toLowerCase()}-battlefield.png`;
+        const runtimeSrc=rendered.battlefieldCanvas.toDataURL('image/png');
+        runtimeImages[runtimeFile]=await loadImage(runtimeSrc);
+        sourceUrls[runtimeFile]=runtimeSrc;
       }
     }
   }finally{
@@ -263,8 +314,21 @@ export async function generateCombatSpriteSet(recipe){
       mobType:recipe.mob?.type||null,
       modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
       hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
+      battlefield:{
+        renderer:'supersampled-battlefield-v2',
+        width:Math.max(1,Math.round(frame.renderWidth)),
+        height:Math.max(1,Math.round(frame.renderHeight)),
+        anchorX:frame.anchorX/frame.width*Math.max(1,Math.round(frame.renderWidth)),
+        anchorY:frame.anchorY/frame.height*Math.max(1,Math.round(frame.renderHeight)),
+        poses:Object.fromEntries(POSES.map(capture=>[capture,{
+          frames:Object.fromEntries(FACINGS.map(facing=>[
+            facing,`${capture}-${facing.toLowerCase()}-battlefield.png`
+          ]))
+        }]))
+      },
       render:{
         generatedAtRuntime:true,
+        renderer:'supersampled-battlefield-v2',
         poseSource:recipe.renderSettings?.source||'built-in-profile',
         appearanceKey:appearanceCacheKey(recipe),
         heightInches:recipe.mob.heightInches,
@@ -273,6 +337,7 @@ export async function generateCombatSpriteSet(recipe){
       }
     },
     images,
+    runtimeImages,
     sourceUrls
   };
 }

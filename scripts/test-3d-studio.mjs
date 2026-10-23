@@ -189,13 +189,14 @@ assert.ok(studioSource.includes("supersampleContext.putImageData(supersampleImag
   studioSource.includes("battlefieldContext.imageSmoothingQuality='high'") &&
   studioSource.includes("Downsample each facing independently BEFORE VGA quantization"),
   'Battlefield sprites are supersampled from unquantized WebGL pixels before VGA conversion');
-assert.ok(studioSource.includes('function drawBattlefieldPreview(preview,index)') &&
-  studioSource.includes('const scale=1') &&
-  studioSource.includes('battlefieldCanvas') &&
-  studioSource.includes('spriteLayoutOffsets(state.layoutId,index)'),
-  'Live Pixel Preview uses native combat pixels at literal 1-to-1 battlefield zoom');
-assert.ok(studioHtml.includes('1 preview pixel = 1 battlefield pixel'),
-  'Pixel Preview explains the literal battlefield zoom');
+assert.ok(studioSource.includes('function combatScreenDisplayScale()') &&
+  studioSource.includes('availW/1080') && studioSource.includes('availH/600'),
+  'Studio mirrors the combat battlefield canvas fitting scale for the current viewport');
+assert.ok(studioSource.includes('const scale=combatScreenDisplayScale()') &&
+  studioSource.includes('battlefieldWidth*scale,battlefieldHeight*scale'),
+  'Pixel Preview enlarges sprite and hex together using combat-screen display zoom');
+assert.ok(!studioSource.includes('const scale=1;'),
+  'Pixel Preview no longer assumes internal battlefield pixels equal displayed combat CSS pixels');
 assert.ok(studioSource.includes('battlefieldRaw:battlefieldSource.slice()'),
   'Captured poses retain native unquantized battlefield pixels for later style changes');
 assert.ok(studioSource.includes("['ambientIntensity', 5]"),
