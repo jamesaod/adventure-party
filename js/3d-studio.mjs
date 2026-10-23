@@ -1981,7 +1981,7 @@ async function loadModelLibrary() {
             qa.clips[0] !== 'Mixamo_sword_and_shield_attack' ||
             qaUrl.origin !== appRoot.origin ||
             !qaUrl.pathname.startsWith(appRoot.pathname + 'assets/models/') ||
-            !/\\.glb$/i.test(qaUrl.pathname) ||
+            !/\.glb$/i.test(qaUrl.pathname) ||
             entry.skinWeightRepair || entry.animationBindRebase || entry.animationFamilies?.length) {
           throw new Error('Unsafe model library Orc retarget QA configuration.');
         }
