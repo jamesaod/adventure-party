@@ -2,6 +2,13 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 105 — Restore Orc GLB Studio loading after Rev 104
+
+- Fixed Orc Model Library load regression caused by Three.js `GLTFLoader` sanitizing `mixamorig:LeftUpLeg` to `mixamorigLeftUpLeg`, while the new skin-weight repair expected a colon-delimited bone name.
+- Normalize bone names before classifying arm, leg, and torso skin influences; this preserves the Rev 104 vertex-weight repair without rewriting the Orc source GLB or baked animation proof.
+- Reproduced the error using GLTFLoader-style sanitized names, added a regression test using the exact `THREE.PropertyBinding.sanitizeNodeName` implementation, and bumped both Studio and nested skinning-module cache keys to deliver the fix.
+- The loading bug was overlooked because the original vertex-weight unit test used names from raw GLB JSON instead of names produced by GLTFLoader at runtime.
+
 ## Candidate Rev 104 — Remove Orc thigh-to-hand skin weights during sword swing
 
 - Investigated QA screenshots where an upper-thigh/skirt section followed the Orc's hand during `UAL2_Sword_Regular_A` while ready sword/shield placement looked correct.

@@ -23,7 +23,7 @@ import {
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C102';
-import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C104';
+import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
