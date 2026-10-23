@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { retargetMixamoClip } from './mixamo-retarget.mjs?v=R238C87';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
@@ -1406,47 +1407,6 @@ function tick(timestamp) {
   else state.lastTick = 0;
 }
 
-function normalizedRigName(value) {
-  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function targetRigBones(model) {
-  const bones = new Map();
-  model?.traverse(object => {
-    if (!object.isBone) return;
-    const key = normalizedRigName(object.name);
-    if (key && !bones.has(key)) bones.set(key, THREE.PropertyBinding.sanitizeNodeName(object.name));
-  });
-  return bones;
-}
-
-function retargetMixamoClip(clip, model, label) {
-  const bones = targetRigBones(model);
-  if (!bones.size) throw new Error('The current model has no skeleton to receive animation.');
-  let mapped = 0, skipped = 0;
-  const tracks = [];
-  for (const track of clip.tracks || []) {
-    const match = String(track.name || '').match(/^(.*)\.(position|quaternion|scale)$/);
-    if (!match) { skipped++; continue; }
-    const [, sourceName, property] = match;
-    const key = normalizedRigName(sourceName);
-    const targetName = bones.get(key);
-    if (!targetName) { skipped++; continue; }
-    if (property !== 'quaternion') { skipped++; continue; }
-    const cloned = track.clone();
-    cloned.name = `${targetName}.${property}`;
-    tracks.push(cloned);
-    mapped++;
-  }
-  if (!tracks.length) throw new Error('No compatible Mixamo skeleton tracks matched the current model.');
-  const result = new THREE.AnimationClip(label, clip.duration, tracks);
-  result.userData = {
-    studioAnimationId: `mixamo:${label}`,
-    mixamoImport: { sourceName: clip.name || '', mappedTracks: mapped, skippedTracks: skipped }
-  };
-  return result;
-}
-
 async function loadAnimationFiles(fileList) {
   if (!state.modelReady || !state.model || state.modelLoading || state.disposed) {
     showError(new Error('Load a rigged model before importing animation FBX files.'));
@@ -1473,7 +1433,7 @@ async function loadAnimationFiles(fileList) {
       const base = file.name.replace(/\.fbx$/i, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
       clips.forEach((clip, index) => {
         const label = clips.length === 1 ? `Mixamo_${base}` : `Mixamo_${base}_${index + 1}`;
-        const retargeted = retargetMixamoClip(clip, state.model, label);
+        const retargeted = retargetMixamoClip(THREE, clip, parsed, state.model, label);
         state.sourceClips.push(retargeted);
         state.clips.push(retargeted);
         added.push(retargeted);

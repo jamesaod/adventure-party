@@ -37,6 +37,7 @@ jobs:
           node --check js/studio-capture.mjs
           node --check js/studio-animations.mjs
           node --check js/studio-equipment.mjs
+          node --check js/mixamo-retarget.mjs
           node --check js/item-catalog.mjs
           node --check js/humanoid-animation-catalog.mjs
           node --check js/studio-shield.mjs
@@ -51,6 +52,7 @@ jobs:
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
           node scripts/test-studio-equipment.mjs
+          node scripts/test-mixamo-retarget.mjs
           node scripts/test-item-catalog.mjs
           node scripts/test-humanoid-animation-catalog.mjs
           node scripts/test-mob-appearance.mjs
