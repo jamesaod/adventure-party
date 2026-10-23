@@ -2,6 +2,19 @@
 
 Adventure Party used numbered standalone HTML releases before Git became the primary version history. This repository starts from **R158**.
 
+## Candidate Rev 103 — Orc one-handed proof rebuilt with Carl's offline UAL2 pipeline
+
+- Retired automatic runtime one-handed animation assignment from the raw **Male Orc Fighter** after Rev 100–102 QA showed persistent torso-crossing arm poses.
+- Confirmed the underlying difference: Carl and the UAL2 donor use a true T-pose reference, while the uploaded Orc's 65-joint Mixamo skin bind stance has lowered arms despite coming from the same Tripo/Mixamo-style exporter.
+- Generalized Carl's proven offline `retarget-carl-ual2.py` process into `scripts/bake-ual2-mixamo-humanoid.py`, preserving the same UAL2 donor clips, world-delta rotation rule, hip displacement scaling, ground-clearance pass, clip splice, and original-target preservation checks.
+- Verified the exact Quaternius non-root-motion donor used by Carl before baking: 8,091,444 bytes, SHA-256 `8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8`.
+- Added **Male Orc Fighter — UAL2 One-Handed Proof** as a separate Model Library entry. It embeds `UAL2_Sword_Ready` and `UAL2_Sword_Regular_A` while leaving the original Orc GLB unchanged.
+- Because the raw Orc bind stance is not a T-pose, the bake uses **Dungeon Crawler Carl V2 only as the known-good same-exporter T-pose rotation reference**. The Orc retains its own bone lengths, translations, scales, mesh, skin weights, materials, textures, and original binary prefix.
+- Derived proof SHA-256: `2f88c4062f2fdba6b8738e0296a1e5764cff94f3e716153ea1e374475d7831d0`.
+- Added regression coverage verifying preservation of the original Orc asset and that, in the baked ready pose, the left forearm/hand remain on the anatomical left and the right forearm/hand remain on the anatomical right instead of crossing the torso.
+- If this proof passes visual QA, this offline reference-pose bake will become the default humanoid animation-onboarding workflow.
+
+
 ## Candidate Rev 102 — Joint-bind-relative Orc arm retargeting
 
 - Fixed the remaining Male Orc Fighter ready-pose failure where both arms folded inward and clipped through the torso.
