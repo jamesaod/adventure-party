@@ -1,5 +1,12 @@
 # Changelog
 
+## Candidate Rev 111 — Orc shoulder bind-orientation comparison (visual QA pending)
+
+- Added three separate, non-destructive New Orc Studio model entries, each loading the **pristine Orc** and the **same one-second Carl Mixamo attack**. Compare anatomical world-delta, the existing joint-bind-relative baseline and joint-local bind-delta modes. All existing models retain their previous animation behavior.
+- CI audit of the original Tripo rigs: Carl has **65 skinned joints**, Orc has **66** (the extra joint is `neutral_bone`). The standard 65 Mixamo joint names and the common bone hierarchy match, but local arm bind rotations differ markedly: **148.83° at RightShoulder**, 77.26° at RightForeArm and 61.51° at RightArm. These are measured differences, not yet a visually confirmed root cause.
+- Added a regression test for three transform orders and correct right-arm bone binding, a live GLB rig-name/hierarchy audit, and a durable QA runbook at `docs/ORC_RETARGET_QA.md`. Original Orc and Carl GLB bytes and 17-clip bake assets remain untouched.
+- **Next acceptance:** visual scrutiny of the three single-clip Orc candidates, then promote only a proven solution. Stable main unchanged.
+
 ## Candidate Rev 110 — 17 Mixamo clips each for New Carl and Orc; reduced preview overhead
 
 - Added SHA-verified, independently offline-baked 17-clip sword/shield GLBs for New Carl and New Orc to the Model Library. The original GLBs, older models and one-clip proof are all preserved, with QA labels on the new entries.
