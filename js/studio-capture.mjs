@@ -1,4 +1,4 @@
-import { quantizeRgba } from './studio-core.mjs?v=R238C93';
+import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
@@ -11,6 +11,14 @@ import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScal
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
+const BATTLEFIELD_PIXELS_PER_INCH = 64 / (10 * 12);
+
+function physicalOutlinePixels(renderStyle, targetWidth, battlefieldWidth) {
+  if (Number.isFinite(renderStyle?.outlineInches) && Number.isFinite(battlefieldWidth) && battlefieldWidth > 0) {
+    return Math.max(0, renderStyle.outlineInches) * BATTLEFIELD_PIXELS_PER_INCH * targetWidth / battlefieldWidth;
+  }
+  return Number.isFinite(renderStyle?.outline) ? Math.max(0, renderStyle.outline) : 0;
+}
 
 function frameEdgeDirections({ raw, width, height }) {
   const atlasWidth = width * 3, atlasHeight = height * 2;
@@ -204,8 +212,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function quantizeCapture(capture, renderStyle = style) {
     const { width, height, raw } = capture;
     const rgba = new Uint8ClampedArray(raw.length);
+    const sourceOutline = physicalOutlinePixels(renderStyle, width, capture.battlefieldWidth);
     if (capture.bakedPixels && renderStyle.brightness === 1 && renderStyle.contrast === 1 &&
-        renderStyle.hue === 0 && renderStyle.saturation === 1 && renderStyle.outline === 0) {
+        renderStyle.hue === 0 && renderStyle.saturation === 1 && sourceOutline === 0) {
       // A Rev 46 PNG already has the chosen palette and outline. Re-quantizing
       // a palette color can select a neighboring lookup bucket; copy it exactly.
       const stride = width * 3 * 4;
@@ -217,7 +226,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       return;
     }
     quantizeRgba(raw, width * 3, height * 2, rgba, {
-      ...renderStyle, transparent: true, tileWidth: width, tileHeight: height
+      ...renderStyle, outline: sourceOutline, transparent: true, tileWidth: width, tileHeight: height
     });
     capture.frames = splitSixFacingAtlas(rgba, width, height);
 
@@ -225,7 +234,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       const bw=capture.battlefieldWidth,bh=capture.battlefieldHeight;
       const battlefieldRgba=new Uint8ClampedArray(capture.battlefieldRaw.length);
       quantizeRgba(capture.battlefieldRaw,bw*3,bh*2,battlefieldRgba,{
-        ...renderStyle,transparent:true,tileWidth:bw,tileHeight:bh
+        ...renderStyle,outline:physicalOutlinePixels(renderStyle,bw,bw),transparent:true,tileWidth:bw,tileHeight:bh
       });
       capture.battlefieldFrames=splitSixFacingAtlas(battlefieldRgba,bw,bh);
     }
