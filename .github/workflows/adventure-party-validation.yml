@@ -95,6 +95,9 @@ jobs:
       - name: Validate direct studio return after combat tests
         run: node scripts/test-studio-combat-exit.mjs
 
+      - name: Check Blender pipeline Python syntax
+        run: python -m py_compile scripts/blender_repair_orc_turns.py
+
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
 
