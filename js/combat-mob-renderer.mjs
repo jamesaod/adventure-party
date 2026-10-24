@@ -2,6 +2,7 @@ import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
+import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
@@ -63,7 +64,8 @@ function normalizedStyle(recipe){
     contrast:finite(style.contrast,DEFAULT_STYLE.contrast),
     hue:finite(style.hue,DEFAULT_STYLE.hue),
     saturation:finite(style.saturation,DEFAULT_STYLE.saturation),
-    outline:finite(style.outline,DEFAULT_STYLE.outline)
+    outline:finite(style.outline,DEFAULT_STYLE.outline),
+    outlineInches:Number.isFinite(style.outlineInches)?Math.max(0,style.outlineInches):null
   };
 }
 function configureLights(scene,recipe){
@@ -161,13 +163,17 @@ function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style){
   const raw=new Uint8Array(frame.width*frame.height*4);
   renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,raw);
 
-  // Keep a high-resolution editor/source rendition.
-  const sourceCanvas=quantizedCanvas(raw,frame.width,frame.height,style);
-
-  // Preserve sub-pixel information for combat: downsample the unquantized
-  // WebGL image first, then VGA-quantize and outline at final battlefield size.
+  // Preserve the high-resolution editor image, but convert the physical
+  // outline to this frame's pixel density.
   const nativeWidth=Math.max(1,Math.round(frame.renderWidth));
   const nativeHeight=Math.max(1,Math.round(frame.renderHeight));
+  const sourceCanvas=quantizedCanvas(raw,frame.width,frame.height,{
+    ...style,
+    outline:spriteOutlinePixels(style,frame.width,nativeWidth,frame.width)
+  });
+
+  // Downsample raw WebGL pixels before palette and outline, just like Studio.
+  // Source-frame outline pixels MUST NOT be reused at native combat size.
   const sourceTopDown=topDownRgba(raw,frame.width,frame.height);
   const supersample=document.createElement('canvas');
   supersample.width=frame.width;
@@ -192,7 +198,10 @@ function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style){
   preserveThinSpriteDetails(sourceTopDown,frame.width,frame.height,
     reducedRgba,nativeWidth,nativeHeight,1,1);
   const battlefieldCanvas=quantizedCanvas(
-    reducedRgba,nativeWidth,nativeHeight,style,{flipY:false}
+    reducedRgba,nativeWidth,nativeHeight,{
+      ...style,
+      outline:spriteOutlinePixels(style,nativeWidth,nativeWidth,frame.width)
+    },{flipY:false}
   );
 
   return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight};
