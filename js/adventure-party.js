@@ -1,4 +1,5 @@
 "use strict";
+import { PRIEST_SPELLS } from './priest-spells.mjs?v=R238C129';
 
 // R169 final auto-merge trigger under required validation.
 
@@ -9210,6 +9211,7 @@ function rollDiceExpression(expression){
 const TACTICAL_FEET_PER_HEX=10;
 
 const SPELL_CATALOG={
+  ...PRIEST_SPELLS,
   "armor":{
     id:"armor",
     name:"Armor",
@@ -10649,6 +10651,12 @@ function speakSpellIncantation(caster,spell,durationMs=1800){
 function commitSpellCast(caster,spell,action,durationMs=1800){
   if(!caster?.alive || !spell) return false;
 
+  if(action?.type==='priest-spell'&&!action.spellCommitted){
+    if(!clericConsumePreparedSpell(caster,spell.id)){
+      setCombatMessage(`${spell.name} is not prepared.`);return false;
+    }
+    action.spellCommitted=true;
+  }
   if(action?.type==="memorized-spell" && !action.spellCommitted){
     if(!mageConsumeMemorizedSpell(caster,spell.id)){
       setCombatMessage(`${spell.name} is no longer memorized.`);
@@ -20754,9 +20762,27 @@ function beginMageCombatSpell(spellId){
   return true;
 }
 
+function beginClericCombatSpell(spellId){
+  const caster=activePlayerControlledUnit(),spell=getSpellEntry(spellId);
+  if(!caster||caster.classId!=='cleric'||!spell||!spell.combatImplemented||
+    spell.spellGroup!=='Priest'||!clericCanCastPreparedSpell(caster,spellId)||
+    game?.active!==caster.id||game.over||spellCastInProgress)return false;
+  closeSpellCastOverlay();
+  const action={type:'priest-spell',spellId,casterLevel:caster.level,
+    sourceUnitId:caster.id,spellCommitted:false};
+  if(spell.targetMode==='self'){
+    void castPreparedCombatSpell(action,{x:caster.x,y:caster.y},caster);
+  }else{
+    pendingAimAction=action;enterAimMode();
+    setCombatMessage(`${spell.name}: select a target and cast.`);
+  }
+  return true;
+}
+
 function beginSelectedCombatSpell(spellId){
   const caster=activePlayerControlledUnit();
   if(isMageCharacter(caster)) return beginMageCombatSpell(spellId);
+  if(caster?.classId==='cleric') return beginClericCombatSpell(spellId);
   if(caster?.id==="player") return beginCombatTestSpell(spellId);
   return false;
 }
@@ -23094,10 +23120,82 @@ async function castWebSpell(action,targetHex){
 }
 
 
-async function castPreparedCombatSpell(action,targetHex,targetUnit){
+async async function castPriestCombatSpell(action,hex,target){
+ const caster=spellCasterForAction(action),spell=getSpellEntry(action.spellId);
+ if(!caster?.alive||!spell)return false;
+ const friendly=target?.faction===caster.faction;
+ const self=spell.targetMode==='self';
+ if(!self){
+   if(!target?.alive){setCombatMessage('A living target is required.');return false;}
+   if(unitDistance(caster,target)>6){setCombatMessage('Target is out of range.');return false;}
+   if(lineOfSightBlocked(caster,target)){setCombatMessage('Line of sight is blocked.');return false;}
+   if(spell.targetMode==='touch-creature'&&unitDistance(caster,target)>1){
+     setCombatMessage('Touch spell: move adjacent first.');return false;
+   }
+   if(spell.targetMode==='hostile-creature'&&friendly)return false;
+ }
+ spellCastInProgress=true;
+ if(!commitSpellCast(caster,spell,action)){
+   return await finishFailedSpellCommit(caster,action);
+ }
+ pendingAimAction=null;exitAimMode(false,false);
+ const round=game.round,level=caster.level;
+ const effect=(unit,id,name,kind='buff',duration=level,data={})=>
+   addUnitEffect(unit,{id,name,kind,expiresRound:round+Math.max(1,duration),data});
+ switch(spell.kind){
+   case 'heal':{
+     if(!friendly)break;
+     target.hp=Math.min(target.maxHp,target.hp+d(8));
+     break;
+   }
+   case 'remove-fear':
+     if(friendly){removeUnitEffect(target,'fear');removeUnitEffect(target,'spook');
+       if(target.fleeing)setMoraleFleeing(target,false);}
+     break;
+   case 'remove-paralysis':
+     if(friendly){for(const id of ['hold-person','paralysis','held'])removeUnitEffect(target,id);}
+     break;
+   case 'dispel':
+     for(const e of [...(target.buffs||[]),...(target.debuffs||[])])
+       if(e?.id&&!['unconscious','prone'].includes(e.id))removeUnitEffect(target,e.id);
+     break;
+   case 'command':
+   case 'hold':{
+     if(rollSpellSave(target,caster).success)break;
+     effect(target,spell.id,spell.name,'debuff',spell.kind==='command'?1:Math.max(1,Math.floor(level/2)),
+       {disabledActionsRemaining:1});
+     break;
+   }
+   case 'hammer':{
+     const hit=d(20)>=Math.max(2,Number(target.ac||10));
+     if(hit){target.hp-=d(4)+1;if(target.hp<=0){target.hp=0;target.alive=false;}}
+     break;
+   }
+   case 'light':effect(target,'light','Light', 'buff',10*level);break;
+   case 'silence':effect(target,'silence','Silenced','debuff',2*level);break;
+   case 'aid':{
+     if(!friendly)break;
+     const temp=d(8);target.hp=Math.min(target.maxHp+temp,target.hp+temp);
+     effect(target,'priest-aid','Aid','buff',level,{temporaryHp:temp});break;
+   }
+   case 'buff':{
+     if(!friendly&&!self)break;
+     const units=self?[caster,...(game.allies||[]).filter(u=>u.alive&&u.faction===caster.faction)]:[target];
+     for(const unit of units)effect(unit,spell.id,spell.name,'buff',level);
+     break;
+   }
+ }
+ setCombatMessage(`${caster.name} casts ${spell.name}.`,COMBAT_MESSAGE_MIN_HOLD_MS);
+ await waitForCombatActionPause();
+ finishTestSpellCast(caster,spell.name,action);
+ return true;
+}
+
+function castPreparedCombatSpell(action,targetHex,targetUnit){
   const spell=getSpellEntry(action?.spellId);
   if(!spell) return false;
 
+  if(action?.type==='priest-spell')return castPriestCombatSpell(action,targetHex,targetUnit);
   switch(spell.id){
     case "magic-missile": return await castMagicMissileFromScroll(action,targetUnit);
     case "armor": return await castArmorSpell(action,targetUnit);
@@ -25362,8 +25460,12 @@ function renderSpellCastList(){
   if(caster?.classId==='cleric'){
     if(subtitle)subtitle.textContent=`Cleric ${caster.level} — priest spellcasting and Turn Undead`;
     const canTurn=!caster.turningUsedThisEncounter;
+    const counts=new Map();
+    for(const id of caster.memorizedPriestSpellIds||[])counts.set(id,(counts.get(id)||0)+1);
+    const choices=[...counts.keys()].map(getSpellEntry).filter(spell=>spell?.combatImplemented&&spell.spellGroup==='Priest');
     list.innerHTML=`<button class="spell-cast-choice" data-turn-undead type="button" ${canTurn?'':'disabled'}><b>Turn Undead</b><span>${canTurn?'Use one action; once per encounter':'Already used in this encounter'}</span></button>`+
-      `<div class="sheet-item"><b>Priest spells</b><span>No priest spells are combat-implemented yet. Prepared spells will appear here in the next phase.</span></div>`;
+      (choices.length?choices.map(spell=>`<button class="spell-cast-choice" data-cast-spell="${spell.id}" type="button"><b>${spell.name} ×${counts.get(spell.id)}</b><span>Priest level ${spell.level} — ${spell.damageSummary}</span></button>`).join(''):
+      '<div class="sheet-item"><b>No prepared priest spells.</b></div>');
     return;
   }
   let spells=[];
