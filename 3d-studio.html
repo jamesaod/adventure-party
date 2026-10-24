@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 116</span>
+        <span class="studio-build">Candidate Rev 117</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -124,18 +124,36 @@
             <summary>Adjust grip</summary>
             <fieldset>
               <legend>Position in hand</legend>
-              <div class="studio-equipment-axes">
-                <label class="studio-field" for="studioWeaponPositionX"><span>X</span><input id="studioWeaponPositionX" type="number" min="-1" max="1" step="0.005" value="0.015" disabled></label>
-                <label class="studio-field" for="studioWeaponPositionY"><span>Y</span><input id="studioWeaponPositionY" type="number" min="-1" max="1" step="0.005" value="0.05" disabled></label>
-                <label class="studio-field" for="studioWeaponPositionZ"><span>Z</span><input id="studioWeaponPositionZ" type="number" min="-1" max="1" step="0.005" value="0.005" disabled></label>
+              <div class="studio-equipment-axes studio-grip-slider-axes">
+                <label class="studio-field" for="studioWeaponPositionX">
+                  <span class="studio-label-row">X <output id="studioWeaponPositionXValue" for="studioWeaponPositionX">0.015</output></span>
+                  <input id="studioWeaponPositionX" type="range" min="-1" max="1" step="0.005" value="0.015" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponPositionY">
+                  <span class="studio-label-row">Y <output id="studioWeaponPositionYValue" for="studioWeaponPositionY">0.050</output></span>
+                  <input id="studioWeaponPositionY" type="range" min="-1" max="1" step="0.005" value="0.05" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponPositionZ">
+                  <span class="studio-label-row">Z <output id="studioWeaponPositionZValue" for="studioWeaponPositionZ">0.005</output></span>
+                  <input id="studioWeaponPositionZ" type="range" min="-1" max="1" step="0.005" value="0.005" disabled>
+                </label>
               </div>
             </fieldset>
             <fieldset>
               <legend>Rotation (degrees)</legend>
-              <div class="studio-equipment-axes">
-                <label class="studio-field" for="studioWeaponRotationX"><span>X</span><input id="studioWeaponRotationX" type="number" min="-180" max="180" step="1" value="0" disabled></label>
-                <label class="studio-field" for="studioWeaponRotationY"><span>Y</span><input id="studioWeaponRotationY" type="number" min="-180" max="180" step="1" value="-90" disabled></label>
-                <label class="studio-field" for="studioWeaponRotationZ"><span>Z</span><input id="studioWeaponRotationZ" type="number" min="-180" max="180" step="1" value="0" disabled></label>
+              <div class="studio-equipment-axes studio-grip-slider-axes">
+                <label class="studio-field" for="studioWeaponRotationX">
+                  <span class="studio-label-row">X <output id="studioWeaponRotationXValue" for="studioWeaponRotationX">0°</output></span>
+                  <input id="studioWeaponRotationX" type="range" min="-180" max="180" step="1" value="0" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponRotationY">
+                  <span class="studio-label-row">Y <output id="studioWeaponRotationYValue" for="studioWeaponRotationY">-90°</output></span>
+                  <input id="studioWeaponRotationY" type="range" min="-180" max="180" step="1" value="-90" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponRotationZ">
+                  <span class="studio-label-row">Z <output id="studioWeaponRotationZValue" for="studioWeaponRotationZ">0°</output></span>
+                  <input id="studioWeaponRotationZ" type="range" min="-180" max="180" step="1" value="0" disabled>
+                </label>
               </div>
             </fieldset>
             <fieldset>
@@ -431,7 +449,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C116"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C117"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>
