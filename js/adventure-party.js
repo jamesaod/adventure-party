@@ -8647,6 +8647,21 @@ function clericLevelData(level){
   return CLERIC_LEVELS[lvl-1];
 }
 
+function clericWisdomBonusSlots(wisdom){
+  // PHB Table 5 bonus priest spells: bonuses are per spell level, not per
+  // character level. Apply only when a priest can cast that spell level.
+  const wis=Number(wisdom)||0;
+  const bonus=[0,0,0,0,0,0,0];
+  if(wis>=13) bonus[0]++;
+  if(wis>=14) bonus[0]++;
+  if(wis>=15) bonus[1]++;
+  if(wis>=16) bonus[1]++;
+  if(wis>=17) bonus[2]++;
+  if(wis>=18) bonus[3]++;
+  if(wis>=19){bonus[2]++;bonus[3]++;} // future exceptional Wisdom
+  return bonus;
+}
+
 function clericBaseSpellSlots(clericOrLevel,wisdom=null){
   const level=typeof clericOrLevel==="object"
     ? Number(clericOrLevel?.level)||1
@@ -8660,7 +8675,8 @@ function clericBaseSpellSlots(clericOrLevel,wisdom=null){
      7th-level priest spells require WIS 18. */
   if(wis<17) slots[5]=0;
   if(wis<18) slots[6]=0;
-  return slots;
+  const bonus=clericWisdomBonusSlots(wis);
+  return slots.map((base,index)=>base>0 ? base+bonus[index] : 0);
 }
 
 function clericClassEligibility({race="Human",alignment="true-neutral",stats={},deityAlignments=null}={}){
@@ -8761,7 +8777,118 @@ function makeClericCharacter({
 
   applyClericClassRules(cleric);
   cleric.ac=calculateArmorClass(cleric);
+  cleric.turningUsedThisEncounter=false;
   return cleric;
+}
+
+// PHB clerics are permitted major sphere spells of any available level,
+// and minor Elemental sphere spells only at levels 1-3.
+function clericCanPrepareSpell(cleric,spell){
+  if(!cleric || cleric.classId!=="cleric" || !spell || spell.spellGroup!=="Priest") return false;
+  const level=Number(spell.level);
+  if(!Number.isInteger(level)||level<1||level>7)return false;
+  if(!(cleric.spellSlots?.[level-1]>0))return false;
+  const major=CLERIC_CLASS.majorSpheres;
+  const minor=CLERIC_CLASS.minorSpheres;
+  const spheres=Array.isArray(spell.spheres)?spell.spheres:
+    (spell.sphere?[spell.sphere]:[]);
+  return spheres.some(sphere=>major.includes(sphere)||(level<=3&&minor.includes(sphere)));
+}
+function clericPrepareSpells(cleric,spellIds,catalog=SPELL_CATALOG){
+  if(!cleric||cleric.classId!=="cleric"||!Array.isArray(spellIds))return false;
+  const counts=Array(7).fill(0);
+  for(const id of spellIds){
+    const spell=catalog[id];
+    if(!clericCanPrepareSpell(cleric,spell))return false;
+    if(++counts[spell.level-1]>cleric.spellSlots[spell.level-1])return false;
+  }
+  cleric.memorizedPriestSpellIds=[...spellIds];
+  return true;
+}
+function clericCanCastPreparedSpell(cleric,id){
+  return !!(cleric?.classId==="cleric"&&cleric.memorizedPriestSpellIds?.includes(id));
+}
+function clericConsumePreparedSpell(cleric,id){
+  if(!clericCanCastPreparedSpell(cleric,id))return false;
+  cleric.memorizedPriestSpellIds.splice(cleric.memorizedPriestSpellIds.indexOf(id),1);
+  return true;
+}
+function levelUpCleric(cleric){
+  if(cleric?.classId!=="cleric"||cleric.level>=20)return null;
+  cleric.level++;
+  const hpGain=cleric.level<=9
+    ?Math.max(1,d(8)+nonWarriorConHpAdjustment(cleric.stats?.con||10))
+    :2;
+  cleric.maxHp+=hpGain;
+  cleric.hp=Math.min(cleric.maxHp,cleric.hp+hpGain);
+  applyClericClassRules(cleric);
+  return {level:cleric.level,hpGain,row:clericLevelData(cleric.level)};
+}
+function awardClericXp(cleric,baseXp){
+  if(cleric?.classId!=="cleric"||!Number.isFinite(Number(baseXp))||Number(baseXp)<=0)return null;
+  const base=Math.floor(Number(baseXp)),bonus=cleric.stats?.wis>=16?Math.round(base*.1):0;
+  cleric.xp+=base+bonus;
+  const levels=[];
+  while(cleric.level<20&&cleric.xp>=clericLevelData(cleric.level+1).xp){
+    const result=levelUpCleric(cleric);if(result)levels.push(result);
+  }
+  return {baseXp:base,bonus,total:base+bonus,newXp:cleric.xp,levels};
+}
+
+// PHB Table 61, indexed by the appropriate undead row and priest band.
+// - = cannot turn, T = automatic turn, D = dispel/destroy.
+const CLERIC_TURNING_LEVEL_BANDS=[1,2,3,4,5,6,7,8,9,10,12,14];
+const CLERIC_TURNING_ROWS={
+  skeleton:[10,7,4,'T','T','D','D','D','D','D','D','D'],
+  zombie:[13,10,7,4,'T','T','D','D','D','D','D','D'],
+  ghoul:[16,13,10,7,4,'T','T','D','D','D','D','D'],
+  shadow:[19,16,13,10,7,4,'T','T','D','D','D','D'],
+  wight:[20,19,16,13,10,7,4,'T','T','D','D','D'],
+  ghast:[null,20,19,16,13,10,7,4,'T','T','D','D'],
+  wraith:[null,null,20,19,16,13,10,7,4,'T','T','D'],
+  mummy:[null,null,null,20,19,16,13,10,7,4,'T','T'],
+  spectre:[null,null,null,null,20,19,16,13,10,7,4,'T'],
+  vampire:[null,null,null,null,null,20,19,16,13,10,7,4],
+  ghost:[null,null,null,null,null,null,20,19,16,13,10],
+  lich:[null,null,null,null,null,null,null,20,19,16,13]
+};
+function clericTurningOutcome(level,undeadType,roll){
+  const type=String(undeadType||'').toLowerCase().replace(/[^a-z]/g,'');
+  const row=CLERIC_TURNING_ROWS[type];
+  if(!row)return 'unsupported';
+  const index=CLERIC_TURNING_LEVEL_BANDS.findLastIndex(min=>level>=min);
+  const requirement=row[Math.max(0,index)];
+  if(requirement==null)return 'fail';
+  if(requirement==='D')return 'destroy';
+  if(requirement==='T')return 'turn';
+  return Number(roll)>=requirement?'turn':'fail';
+}
+function clericTurnUndead(cleric,targets=[],{roll=null,affected=null}={}){
+  if(cleric?.classId!=='cleric'||cleric.turningUsedThisEncounter)return null;
+  cleric.turningUsedThisEncounter=true;
+  const turnRoll=roll===null?d(20):roll;
+  const limit=affected===null?d(6)+d(6):affected;
+  const evil=!!cleric.canCommandUndead;
+  const results=[];
+  const ordered=targets.filter(t=>t&&t.alive&&isUndeadUnit(t))
+    .sort((a,b)=>(Number(a.hitDice)||1)-(Number(b.hitDice)||1));
+  for(const target of ordered.slice(0,Math.max(0,limit))){
+    const type=target.undeadType||target.species||String(target.type||'');
+    const outcome=clericTurningOutcome(cleric.level,type,turnRoll);
+    if(outcome==='fail'||outcome==='unsupported')continue;
+    if(evil){
+      target.faction=cleric.faction;
+      target.controller='mob';
+      results.push({id:target.id,result:'command'});
+    }else if(outcome==='destroy'){
+      target.hp=0;target.alive=false;
+      results.push({id:target.id,result:'destroy'});
+    }else{
+      setMoraleFleeing(target,true);
+      results.push({id:target.id,result:'turn'});
+    }
+  }
+  return {roll:turnRoll,affected:limit,results};
 }
 
 function clericCanEquipItem(cleric,item){
@@ -8784,12 +8911,22 @@ window.AdventurePartyClericSystem={
   spellSlots:CLERIC_SPELL_SLOT_ROWS,
   savingThrowBands:PRIEST_SAVING_THROW_BANDS,
   makeClericCharacter,
+  makeTestPartyCleric,
   clericClassEligibility,
   applyClericClassRules,
   clericLevelData,
   clericThaco,
   clericSavingThrows,
   clericBaseSpellSlots,
+  clericWisdomBonusSlots,
+  clericCanPrepareSpell,
+  clericPrepareSpells,
+  clericCanCastPreparedSpell,
+  clericConsumePreparedSpell,
+  clericTurningOutcome,
+  clericTurnUndead,
+  levelUpCleric,
+  awardClericXp,
   clericCanEquipItem
 };
 
@@ -14983,6 +15120,28 @@ function makeFriendlyElvenRanger(){
    Mage system in live combat. R92 makes Baub player-controlled on his
    own initiative turn. It is not a new class rule.
    ============================================================ */
+function makeTestPartyCleric(level=10){
+  const cleric=makeClericCharacter({
+    name:"Party Cleric",race:"Human",alignment:"lawful-good",level,
+    stats:{str:13,dex:12,con:15,int:11,wis:18,cha:13}
+  });
+  cleric.id="party-cleric-01";
+  cleric.controller="player";cleric.faction="player";cleric.sex="Female";
+  cleric.x=1;cleric.y=0;
+  cleric.weapon="Mace";cleric.weaponBaseName="Mace";
+  cleric.weaponCatalogId="mace";cleric.weaponAttackTypes=["B"];
+  cleric.weaponDamageSM="1d6+1";cleric.weaponDamageL="1d6";
+  cleric.meleeRange=1;
+  cleric.weaponInHand="melee";
+  cleric.turnMoves=0;cleric.fullMove=false;cleric.waitedThisRound=false;
+  cleric.attacksThisRound=1;cleric.attacksRemaining=1;
+  cleric.guard=false;
+  cleric.inventory=[{name:"Mace",type:"Weapon",slot:"weapon",
+    equippable:true,equipped:true,qty:1,magical:false,catalogWeaponId:"mace"}];
+  cleric.ac=calculateArmorClass(cleric);
+  return cleric;
+}
+
 function makeTestPartyMage(){
   const knownSpellIds=Object.values(SPELL_CATALOG)
     .filter(spell=>spell?.spellGroup==="Wizard")
@@ -16023,6 +16182,7 @@ function makeStudioTestMob(mobType,index,position){
     case "juvenile-red-dragon": return makeLargeMobTest(position);
     case "ranger": return makeFriendlyElvenRanger();
     case "mage": return makeTestPartyMage();
+    case "cleric": return makeTestPartyCleric();
     default: throw new Error("This sprite set references an unimplemented character type.");
   }
 }
@@ -25199,6 +25359,13 @@ function renderSpellCastList(){
 
   const caster=activePlayerControlledUnit() || game?.player;
   const mageMode=isMageCharacter(caster);
+  if(caster?.classId==='cleric'){
+    if(subtitle)subtitle.textContent=`Cleric ${caster.level} — priest spellcasting and Turn Undead`;
+    const canTurn=!caster.turningUsedThisEncounter;
+    list.innerHTML=`<button class="spell-cast-choice" data-turn-undead type="button" ${canTurn?'':'disabled'}><b>Turn Undead</b><span>${canTurn?'Use one action; once per encounter':'Already used in this encounter'}</span></button>`+
+      `<div class="sheet-item"><b>Priest spells</b><span>No priest spells are combat-implemented yet. Prepared spells will appear here in the next phase.</span></div>`;
+    return;
+  }
   let spells=[];
 
   if(mageMode){
@@ -30342,6 +30509,18 @@ document.getElementById("castButton").addEventListener("click",()=>{
 document.getElementById("closeSpellCastButton").addEventListener("click",closeSpellCastOverlay);
 
 document.getElementById("spellCastList").addEventListener("click",(event)=>{
+  if(event.target.closest('[data-turn-undead]')){
+    const cleric=activePlayerControlledUnit();
+    if(cleric?.classId!=='cleric'||cleric.turningUsedThisEncounter)return;
+    const result=clericTurnUndead(cleric,activeEnemies());
+    closeSpellCastOverlay();
+    if(result){
+      log(`${cleric.name} attempts to turn undead (d20: ${result.roll}); ${result.results.length} affected.`,'system');
+      if(checkCombatVictory()||checkPartyDefeat())return;
+      endTurn();
+    }
+    return;
+  }
   const button=event.target.closest("[data-cast-spell]");
   if(!button) return;
 

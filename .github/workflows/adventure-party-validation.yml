@@ -86,6 +86,7 @@ jobs:
         run: node scripts/test-new-tripo-assets.mjs
           node scripts/test-woman-warrior-assets.mjs
           node scripts/test-warrior-recolor.mjs
+          node scripts/test-cleric-phase-one.mjs
 
       - name: Validate sprite capture packages and asset imports
         run: |
