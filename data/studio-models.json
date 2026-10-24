@@ -58,7 +58,8 @@
       "label": "New Carl — Original Tripo (No Animation)",
       "file": "assets/models/dungeon-crawler-carl/new-carl/new-carl.glb",
       "upAxis": "Y",
-      "mobType": "fighter"
+      "mobType": "fighter",
+      "combatModelId": "new-carl-mixamo-sword-shield-full-17"
     },
     {
       "id": "new-carl-mixamo-baked-proof",

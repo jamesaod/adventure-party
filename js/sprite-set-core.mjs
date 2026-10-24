@@ -91,8 +91,9 @@ export function validateSpriteSetManifest(value) {
   }
   if(value.battlefield !== undefined){
     const battlefield=value.battlefield;
-    requireValue(object(battlefield)&&battlefield.renderer==='native-battlefield-v1',
-      'battlefield rendition must use the native battlefield renderer.');
+    requireValue(object(battlefield)&&
+      ['native-battlefield-v1','supersampled-battlefield-v2'].includes(battlefield.renderer),
+      'battlefield rendition must use a supported native-size renderer.');
     for(const key of ['width','height']){
       requireValue(Number.isInteger(battlefield[key])&&battlefield[key]>0&&battlefield[key]<=4096,
         `battlefield ${key} must be an integer from 1 to 4096.`);

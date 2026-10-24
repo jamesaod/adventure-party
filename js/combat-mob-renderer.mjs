@@ -1,6 +1,7 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
+import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
@@ -186,6 +187,10 @@ function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style){
     0,0,nativeWidth,nativeHeight
   );
   const reducedRgba=reducedCtx.getImageData(0,0,nativeWidth,nativeHeight).data;
+  // Studio's thin-detail protection must also apply to regenerated equipment.
+  // Each runtime facing is its own atlas tile, hence columns=rows=1.
+  preserveThinSpriteDetails(sourceTopDown,frame.width,frame.height,
+    reducedRgba,nativeWidth,nativeHeight,1,1);
   const battlefieldCanvas=quantizedCanvas(
     reducedRgba,nativeWidth,nativeHeight,style,{flipY:false}
   );
@@ -265,8 +270,15 @@ export async function generateCombatSpriteSet(recipe){
     for(const capture of POSES){
       const pose=profile?.poses?.[capture];
       if(!pose) throw new Error(`Combat pose recipe is missing ${capture}.`);
-      const clip=byName.get(pose.animation)||byName.get(pose.sourceId);
-      if(!clip) throw new Error(`Humanoid animation ${pose.animation} is unavailable.`);
+      // Prefer the captured clip from the matching baked model, but a stale
+      // clip name must not disable equipment rendering altogether.
+      const defaultPose=poseProfileForHumanoid('one-handed-swing').poses[capture];
+      const clip=[pose.animation,pose.sourceId,defaultPose?.animation,defaultPose?.sourceId,
+        capture==='ready'?'Mixamo_sword_and_shield_idle':null,
+        capture==='attack'?'Mixamo_sword_and_shield_attack':null,
+        capture==='prone'?'Mixamo_sword_and_shield_death':null]
+        .map(name=>name&&byName.get(name)).find(Boolean)||gltf.animations[0];
+      if(!clip) throw new Error('The selected combat model has no playable animation clips.');
       mixer.stopAllAction();
       const action=mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1).play();
       action.paused=true;
