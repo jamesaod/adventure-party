@@ -6666,8 +6666,8 @@ function drawArchitecturalWallShapeOutline(wallsToOutline=architecturalWalls){
   if(!walls.length) return;
 
   const mask=document.createElement("canvas");
-  mask.width=ctx.BATTLEFIELD_LOGICAL_WIDTH;
-  mask.height=ctx.BATTLEFIELD_LOGICAL_HEIGHT;
+  mask.width=BATTLEFIELD_LOGICAL_WIDTH;
+  mask.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const mctx=mask.getContext("2d");
   mctx.imageSmoothingEnabled=false;
   mctx.lineCap="square";
@@ -6735,8 +6735,8 @@ function drawArchitecturalWallTopOutline(wallsToOutline=architecturalWalls){
     rather than outlining every authored wall segment independently.
   */
   const mask=document.createElement("canvas");
-  mask.width=ctx.BATTLEFIELD_LOGICAL_WIDTH;
-  mask.height=ctx.BATTLEFIELD_LOGICAL_HEIGHT;
+  mask.width=BATTLEFIELD_LOGICAL_WIDTH;
+  mask.height=BATTLEFIELD_LOGICAL_HEIGHT;
 
   const mctx=mask.getContext("2d");
   mctx.imageSmoothingEnabled=false;
@@ -6798,8 +6798,8 @@ function drawArchitecturalWallSegment(wall){
   const solidSegments=wallBlockingSubsegments(wall,"movement");
 
   const layer=document.createElement("canvas");
-  layer.width=ctx.BATTLEFIELD_LOGICAL_WIDTH;
-  layer.height=ctx.BATTLEFIELD_LOGICAL_HEIGHT;
+  layer.width=BATTLEFIELD_LOGICAL_WIDTH;
+  layer.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const lctx=layer.getContext("2d");
   lctx.imageSmoothingEnabled=false;
   lctx.lineCap="square";
@@ -28047,8 +28047,8 @@ function drawDragonBreathFx(){
   };
 
   const bodyCanvas=document.createElement("canvas");
-  bodyCanvas.width=ctx.BATTLEFIELD_LOGICAL_WIDTH;
-  bodyCanvas.height=ctx.BATTLEFIELD_LOGICAL_HEIGHT;
+  bodyCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
+  bodyCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const bodyCtx=bodyCanvas.getContext("2d");
   bodyCtx.imageSmoothingEnabled=false;
 
@@ -28530,8 +28530,8 @@ function drawFireballExplosionFx(){
     one outlined object rather than many separately outlined lobes.
   */
   const bodyCanvas=document.createElement("canvas");
-  bodyCanvas.width=ctx.BATTLEFIELD_LOGICAL_WIDTH;
-  bodyCanvas.height=ctx.BATTLEFIELD_LOGICAL_HEIGHT;
+  bodyCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
+  bodyCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const bodyCtx=bodyCanvas.getContext("2d");
   bodyCtx.imageSmoothingEnabled=false;
 
