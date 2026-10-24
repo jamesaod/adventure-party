@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 125</span>
+        <span class="studio-build">Candidate Rev 126</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -115,6 +115,28 @@
             </label>
             <button id="studioResetShieldButton" class="studio-button studio-wide-button" type="button" disabled>Reset shield settings</button>
             <p class="studio-note studio-help">Scale plus the three position controls are relative to the calibrated wooden-shield base. Positive forearm movement goes toward the elbow; negative goes toward the hand.</p>
+          </details>
+          <details id="studioRecolorPanel" class="studio-equipment-grip" hidden open>
+            <summary>Appearance colors — Woman Warrior (experimental)</summary>
+            <label class="studio-field" for="studioHairColor">
+              Hair
+              <select id="studioHairColor">
+                <option value="default">Original</option><option value="black">Black</option>
+                <option value="brown">Brown</option><option value="auburn">Auburn</option>
+                <option value="blonde">Blonde</option><option value="silver">Silver / gray</option>
+                <option value="white">White</option>
+              </select>
+            </label>
+            <label class="studio-field" for="studioMetalColor">
+              Metal
+              <select id="studioMetalColor">
+                <option value="default">Original</option><option value="steel">Steel</option>
+                <option value="dark">Dark iron</option><option value="silver">Silver</option>
+                <option value="bronze">Bronze</option><option value="brass">Brass</option>
+                <option value="gold">Gold</option>
+              </select>
+            </label>
+            <p id="studioRecolorStatus" class="studio-note">Experimental hair and armor region masks — check for stray tinted areas.</p>
           </details>
           <label class="studio-field" for="studioWeaponSize">
             <span class="studio-label-row">Weapon size <output id="studioWeaponSizeValue" for="studioWeaponSize">100%</output></span>
@@ -449,7 +471,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C124"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C126"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>
