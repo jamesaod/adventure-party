@@ -8854,6 +8854,7 @@ window.AdventurePartyClericSystem={
   spellSlots:CLERIC_SPELL_SLOT_ROWS,
   savingThrowBands:PRIEST_SAVING_THROW_BANDS,
   makeClericCharacter,
+  makeTestPartyCleric,
   clericClassEligibility,
   applyClericClassRules,
   clericLevelData,
@@ -15060,6 +15061,28 @@ function makeFriendlyElvenRanger(){
    Mage system in live combat. R92 makes Baub player-controlled on his
    own initiative turn. It is not a new class rule.
    ============================================================ */
+function makeTestPartyCleric(level=10){
+  const cleric=makeClericCharacter({
+    name:"Party Cleric",race:"Human",alignment:"lawful-good",level,
+    stats:{str:13,dex:12,con:15,int:11,wis:18,cha:13}
+  });
+  cleric.id="party-cleric-01";
+  cleric.controller="player";cleric.faction="player";cleric.sex="Female";
+  cleric.x=1;cleric.y=0;
+  cleric.weapon="Mace";cleric.weaponBaseName="Mace";
+  cleric.weaponCatalogId="mace";cleric.weaponAttackTypes=["B"];
+  cleric.weaponDamageSM="1d6+1";cleric.weaponDamageL="1d6";
+  cleric.meleeRange=1;
+  cleric.weaponInHand="melee";
+  cleric.turnMoves=0;cleric.fullMove=false;cleric.waitedThisRound=false;
+  cleric.attacksThisRound=1;cleric.attacksRemaining=1;
+  cleric.guard=false;
+  cleric.inventory=[{name:"Mace",type:"Weapon",slot:"weapon",
+    equippable:true,equipped:true,qty:1,magical:false,catalogWeaponId:"mace"}];
+  cleric.ac=calculateArmorClass(cleric);
+  return cleric;
+}
+
 function makeTestPartyMage(){
   const knownSpellIds=Object.values(SPELL_CATALOG)
     .filter(spell=>spell?.spellGroup==="Wizard")
@@ -16100,6 +16123,7 @@ function makeStudioTestMob(mobType,index,position){
     case "juvenile-red-dragon": return makeLargeMobTest(position);
     case "ranger": return makeFriendlyElvenRanger();
     case "mage": return makeTestPartyMage();
+    case "cleric": return makeTestPartyCleric();
     default: throw new Error("This sprite set references an unimplemented character type.");
   }
 }
