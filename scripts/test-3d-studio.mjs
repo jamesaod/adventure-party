@@ -188,8 +188,26 @@ assert.ok(studioHtml.includes('id="studioSaturation" type="range" min="0" max="5
   'Saturation reaches 500 percent');
 assert.ok(studioSource.includes("new Option('T-Pose (height calibration)', '-1')"),
   'T-Pose is always exposed as the explicit calibration pose');
-assert.ok(studioSource.includes('object.skeleton.pose()') && studioSource.includes('!isTPoseSelected()'),
-  'T-Pose restores the bind skeleton and model size is gated to that mode');
+assert.ok(studioSource.includes('object.skeleton.pose()') &&
+  studioSource.includes('ui.ModelScale.disabled = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || state.disposed;') &&
+  !studioSource.includes('!isTPoseSelected()'),
+  'T-Pose still calibrates the skeleton, but model size is editable in every animation');
+const scaleControlMatch=studioSource.match(/function updateModelScaleAvailability\(\) \{[\s\S]*?\n\}/);
+assert.ok(scaleControlMatch,'Studio has an independent model size availability rule');
+const scaleState={modelReady:true,modelLoading:false,spriteOnlyFallback:false,disposed:false,action:{name:'attack'}};
+const scaleUi={ModelScale:{disabled:true,title:''}};
+const updateModelScaleAvailability=new Function('state','ui',
+  `${scaleControlMatch[0]}\nreturn updateModelScaleAvailability;`)(scaleState,scaleUi);
+updateModelScaleAvailability();
+assert.equal(scaleUi.ModelScale.disabled,false,'Animation selection must not lock the model size slider');
+scaleState.action=null;
+updateModelScaleAvailability();
+assert.equal(scaleUi.ModelScale.disabled,false,'T-Pose also permits model size');
+scaleState.modelLoading=true;
+updateModelScaleAvailability();
+assert.equal(scaleUi.ModelScale.disabled,true,'A model still loading cannot be scaled');
+assert.ok(studioSource.includes('state.tPoseHeightFeet *= state.modelScalePercent / previousScalePercent'),
+  'Changing size during animation keeps calibrated T-Pose body height in sync');
 assert.ok(studioSource.includes("assets/terrain/grass-outdoors-tiles.png") &&
   studioSource.includes('function drawGrassPreviewPolygon('),
   'Pixel previews use the combat grass tile sheet inside a tactical hex');

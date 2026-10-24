@@ -207,12 +207,10 @@ function isTPoseSelected() {
 }
 
 function updateModelScaleAvailability() {
-  const saved = poseCapture?.snapshot();
-  ui.ModelScale.disabled = !isTPoseSelected() || state.spriteOnlyFallback || state.modelLoading || state.disposed ||
-    saved?.modelScaleAdjustable === false;
-  ui.ModelScale.title = isTPoseSelected()
-    ? 'Calibrate model size in T-Pose. This value is shared by every animation.'
-    : 'Select T-Pose to calibrate model size.';
+  // Model size is shared across all animations, not tied to T-Pose selection.
+  // Edited captures are marked outdated and can be recaptured as usual.
+  ui.ModelScale.disabled = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || state.disposed;
+  ui.ModelScale.title = 'Adjust model size in any pose. The setting is shared by every animation.';
 }
 
 function updateSetupLabels() {
@@ -230,7 +228,7 @@ function updateSetupLabels() {
   ui.ModelScaleValue.textContent = `${state.modelScalePercent}%`;
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);
   const renderWidth = Number(size.renderWidth.toFixed(2)), renderHeight = Number(size.renderHeight.toFixed(2));
-  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px · ${isTPoseSelected() ? 'T-Pose calibration' : 'Model size locked from T-Pose'}`;
+  ui.BattlefieldSize.textContent = `Battlefield frame ${renderWidth} × ${renderHeight} px · Model size adjustable in every pose`;
   ui.ModelScale.setAttribute('aria-valuetext', `${state.modelScalePercent} percent, ${renderWidth} by ${renderHeight} battlefield pixels`);
   renderFootprintPreview();
 }
@@ -2347,13 +2345,18 @@ function bindControls() {
     syncCaptureLock(!!poseCapture?.snapshot().captureCount);
   });
   ui.ModelScale.addEventListener('input', () => {
-    if (!isTPoseSelected() || poseCapture?.snapshot().modelScaleAdjustable === false) {
+    if (!state.modelReady || state.spriteOnlyFallback || state.modelLoading || state.disposed) {
       updateSetupLabels();
       updateModelScaleAvailability();
       return;
     }
     const previousScalePercent = state.modelScalePercent;
     state.modelScalePercent = Math.min(STUDIO_MODEL_SCALE_MAX, validateSpriteModelScale(Number(ui.ModelScale.value)));
+    // Preserve the T-Pose body-height calibration even when scaling in another
+    // animation. The pose itself remains selected and continues playing.
+    if (Number.isFinite(state.tPoseHeightFeet) && previousScalePercent > 0) {
+      state.tPoseHeightFeet *= state.modelScalePercent / previousScalePercent;
+    }
     applyModelSize(previousScalePercent);
     if (state.spriteOnlyFallback) invalidate();
     updateSetupLabels();
