@@ -181,17 +181,17 @@
     "tripo-mixamo-orc-one-hand-sword-upward-v2": {
       "weaponId": "medieval-sword",
       "position": [
-        0.015,
+        -0.01,
         0.05,
         0.005
       ],
       "rotation": [
-        0,
-        -90,
-        90
+        -29,
+        -55,
+        175
       ],
-      "status": "experimental-visual-qa-pending",
-      "description": "Rev 115: correct the reversed Rev 114 sword axis; sword blade now points up and outward from the fist toward the red QA guide at the Studio's SE facing. Keep grip anchor fixed; visual QA pending."
+      "status": "user-calibrated",
+      "description": "Rev 121: approved Orc one-handed sword grip calibrated in Studio: XYZ position [-0.010, 0.050, 0.005], rotation [-29, -55, 175] degrees."
     }
   }
 }
