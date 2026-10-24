@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>3d studio — Adventure Party</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/adventure-party.css?v=R238">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C117">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./assets/vendor/three/three.module.min.js",
+      "three/addons/loaders/FBXLoader.js": "./assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C57",
+      "three/addons/": "./assets/vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body class="studio-page">
+  <div class="studio-app">
+    <header class="studio-header chrome">
+      <div class="studio-brand">
+        <div class="studio-eyebrow">Adventure Party</div>
+        <h1>3d studio</h1>
+      </div>
+      <div class="studio-header-actions">
+        <span class="studio-build">Candidate Rev 128</span>
+        <a class="studio-button studio-return" href="./index.html">Return to title page</a>
+      </div>
+    </header>
+
+    <section class="studio-setup studio-panel chrome" aria-labelledby="studioSetupHeading">
+      <h2 id="studioSetupHeading">Sprite setup</h2>
+      <div class="studio-setup-fields">
+        <label class="studio-field" for="studioMobTarget">
+          <span>MOB / player character</span>
+          <select id="studioMobTarget"><option value="kobold">Kobold</option></select>
+          <span class="studio-note studio-help">Choose the creature or test player whose sprites you are creating.</span>
+        </label>
+        <label class="studio-field" for="studioFootprint">
+          <span>Footprint and sheet format</span>
+          <select id="studioFootprint"><option value="single">Single hex</option></select>
+          <span id="studioLegacyFootprint" class="studio-note" hidden></span>
+          <span class="studio-note studio-help">Larger footprints have their own frame proportions.</span>
+        </label>
+        <label class="studio-field" for="studioResolution">
+          <span class="studio-label-row">Resolution <output id="studioResolutionValue" for="studioResolution">100%</output></span>
+          <input id="studioResolution" type="range" min="50" max="500" step="5" value="100">
+          <span id="studioFormatSummary" class="studio-note studio-help" aria-live="polite">Frame 160 × 200 · Sheet 960 × 600</span>
+        </label>
+        <figure class="studio-footprint-figure">
+          <svg id="studioFootprintPreview" viewBox="0 0 160 90" role="img" aria-label="Single-hex footprint"></svg>
+          <figcaption id="studioFootprintDescription">1 occupied hex · E-facing footprint</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <main class="studio-layout">
+      <aside class="studio-controls" aria-label="Studio controls">
+        <section class="studio-panel chrome" aria-labelledby="studioModelHeading">
+          <h2 id="studioModelHeading">Model</h2>
+          <div id="studioModelName" class="studio-model-name">Studio mannequin</div>
+          <p id="studioModelInfo" class="studio-note studio-model-info">Preparing the model…</p>
+          <label class="studio-field" for="studioModelLibrary">
+            <span>Model library</span>
+            <select id="studioModelLibrary" aria-describedby="studioModelLibraryStatus" disabled><option value="">Loading saved models…</option></select>
+          </label>
+          <button id="studioLoadLibraryButton" class="studio-button studio-primary studio-wide-button" type="button" disabled>Load selected model</button>
+          <p id="studioModelLibraryStatus" class="studio-note studio-help" role="status">Saved models are available without choosing a file from your device.</p>
+          <input id="studioFiles" class="studio-file-input" type="file" multiple accept=".glb,.gltf,.bin,.fbx,.png,.jpg,.jpeg,.webp,.bmp" aria-label="Choose a 3D model and its related files">
+          <button id="studioLoadButton" class="studio-button studio-wide-button" type="button">Load from device</button>
+          <input id="studioAnimationFiles" class="studio-file-input" type="file" multiple accept=".fbx" aria-label="Choose humanoid FBX animation files">
+          <button id="studioLoadAnimationButton" class="studio-button studio-wide-button" type="button">Load animation FBX</button>
+          <button id="studioDemoButton" class="studio-button studio-wide-button" type="button">Use demo model</button>
+          <p class="studio-note studio-help">Choose a model from the library, then select an animation below. Equip and adjust weapons in the Equipment panel.</p>
+          <p class="studio-local-note">Files opened from your device are not uploaded.</p>
+        </section>
+
+        <section class="studio-panel chrome" aria-labelledby="studioEquipmentHeading">
+          <h2 id="studioEquipmentHeading">Equipment</h2>
+          <label class="studio-field" for="studioRightHandWeapon">
+            <span>Right hand</span>
+            <select id="studioRightHandWeapon" aria-describedby="studioEquipmentStatus" disabled>
+              <option value="none">None</option>
+            </select>
+          </label>
+          <label class="studio-field" for="studioLeftHandShield">
+            <span>Left hand</span>
+            <select id="studioLeftHandShield" aria-describedby="studioShieldStatus" disabled>
+              <option value="none">None</option>
+            </select>
+          </label>
+          <p id="studioShieldStatus" class="studio-note studio-help" role="status" aria-live="polite">Load Carl to preview a shield on his left hand.</p>
+          <details class="studio-equipment-grip">
+            <summary>Adjust shield</summary>
+            <label class="studio-field" for="studioShieldScale">
+              <span class="studio-label-row">Shield scale <output id="studioShieldScaleValue" for="studioShieldScale">100%</output></span>
+              <input id="studioShieldScale" type="range" min="25" max="200" step="5" value="100" disabled>
+            </label>
+            <label class="studio-field" for="studioShieldDistance">
+              <span class="studio-label-row">Closer / farther from arm <output id="studioShieldDistanceValue" for="studioShieldDistance">Base</output></span>
+              <input id="studioShieldDistance" type="range" min="-3" max="6" step="0.25" value="0" disabled>
+            </label>
+            <label class="studio-field" for="studioShieldForearmSlide">
+              <span class="studio-label-row">Up / down forearm <output id="studioShieldForearmSlideValue" for="studioShieldForearmSlide">Base</output></span>
+              <input id="studioShieldForearmSlide" type="range" min="-8" max="8" step="0.25" value="0" disabled>
+            </label>
+            <label class="studio-field" for="studioShieldForearmRoll">
+              <span class="studio-label-row">Rotate around forearm <output id="studioShieldForearmRollValue" for="studioShieldForearmRoll">0°</output></span>
+              <input id="studioShieldForearmRoll" type="range" min="-180" max="180" step="1" value="0" disabled>
+            </label>
+            <button id="studioResetShieldButton" class="studio-button studio-wide-button" type="button" disabled>Reset shield settings</button>
+            <p class="studio-note studio-help">Scale plus the three position controls are relative to the calibrated wooden-shield base. Positive forearm movement goes toward the elbow; negative goes toward the hand.</p>
+          </details>
+          <details id="studioRecolorPanel" class="studio-equipment-grip" hidden open>
+            <summary>Appearance colors — Woman Warrior (experimental)</summary>
+            <label class="studio-field" for="studioHairColor">
+              Hair
+              <select id="studioHairColor">
+                <option value="default">Original</option><option value="black">Black</option>
+                <option value="brown">Brown</option><option value="auburn">Auburn</option>
+                <option value="blonde">Blonde</option><option value="silver">Silver / gray</option>
+                <option value="white">White</option>
+              </select>
+            </label>
+            <label class="studio-field" for="studioMetalColor">
+              Metal
+              <select id="studioMetalColor">
+                <option value="default">Original</option><option value="steel">Steel</option>
+                <option value="dark">Dark iron</option><option value="silver">Silver</option>
+                <option value="bronze">Bronze</option><option value="brass">Brass</option>
+                <option value="gold">Gold</option>
+              </select>
+            </label>
+            <label class="studio-field" for="studioRecolorDebug">Show selection on 3D model<select id="studioRecolorDebug"><option value="off">Normal colors</option><option value="hair">Hair mask — magenta</option><option value="metal">Metal mask — cyan</option></select></label>
+            <p id="studioRecolorStatus" class="studio-note">Experimental hair and armor region masks — check for stray tinted areas.</p>
+          </details>
+          <label class="studio-field" for="studioWeaponSize">
+            <span class="studio-label-row">Weapon size <output id="studioWeaponSizeValue" for="studioWeaponSize">100%</output></span>
+            <input id="studioWeaponSize" type="range" min="25" max="200" step="5" value="100" disabled>
+          </label>
+          <details class="studio-equipment-grip">
+            <summary>Adjust grip</summary>
+            <fieldset>
+              <legend>Position in hand</legend>
+              <div class="studio-equipment-axes studio-grip-slider-axes">
+                <label class="studio-field" for="studioWeaponPositionX">
+                  <span class="studio-label-row">X <output id="studioWeaponPositionXValue" for="studioWeaponPositionX">0.015</output></span>
+                  <input id="studioWeaponPositionX" type="range" min="-1" max="1" step="0.005" value="0.015" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponPositionY">
+                  <span class="studio-label-row">Y <output id="studioWeaponPositionYValue" for="studioWeaponPositionY">0.050</output></span>
+                  <input id="studioWeaponPositionY" type="range" min="-1" max="1" step="0.005" value="0.05" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponPositionZ">
+                  <span class="studio-label-row">Z <output id="studioWeaponPositionZValue" for="studioWeaponPositionZ">0.005</output></span>
+                  <input id="studioWeaponPositionZ" type="range" min="-1" max="1" step="0.005" value="0.005" disabled>
+                </label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Rotation (degrees)</legend>
+              <div class="studio-equipment-axes studio-grip-slider-axes">
+                <label class="studio-field" for="studioWeaponRotationX">
+                  <span class="studio-label-row">X <output id="studioWeaponRotationXValue" for="studioWeaponRotationX">0°</output></span>
+                  <input id="studioWeaponRotationX" type="range" min="-180" max="180" step="1" value="0" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponRotationY">
+                  <span class="studio-label-row">Y <output id="studioWeaponRotationYValue" for="studioWeaponRotationY">-90°</output></span>
+                  <input id="studioWeaponRotationY" type="range" min="-180" max="180" step="1" value="-90" disabled>
+                </label>
+                <label class="studio-field" for="studioWeaponRotationZ">
+                  <span class="studio-label-row">Z <output id="studioWeaponRotationZValue" for="studioWeaponRotationZ">0°</output></span>
+                  <input id="studioWeaponRotationZ" type="range" min="-180" max="180" step="1" value="0" disabled>
+                </label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Two-handed off-hand calibration</legend>
+              <label class="studio-field" for="studioOffHandGripAlong">
+                <span class="studio-label-row">Along handle <output id="studioOffHandGripAlongValue" for="studioOffHandGripAlong">0.00 in</output></span>
+                <input id="studioOffHandGripAlong" type="range" min="-5" max="5" step="0.25" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioOffHandGripAcross">
+                <span class="studio-label-row">Across grip <output id="studioOffHandGripAcrossValue" for="studioOffHandGripAcross">0.00 in</output></span>
+                <input id="studioOffHandGripAcross" type="range" min="-5" max="5" step="0.25" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioOffHandGripDepth">
+                <span class="studio-label-row">Palm depth <output id="studioOffHandGripDepthValue" for="studioOffHandGripDepth">0.00 in</output></span>
+                <input id="studioOffHandGripDepth" type="range" min="-5" max="5" step="0.25" value="0" disabled>
+              </label>
+              <p class="studio-note studio-help">Offsets from the calibrated Rev 91 off-hand position. Positive Along moves toward the pommel. Use Across and Palm depth to center the handle inside the grip.</p>
+            </fieldset>
+            <p class="studio-note studio-help">Move and turn the grip relative to the hand. Fit all animations after a large adjustment.</p>
+          </details>
+          <button id="studioResetEquipmentButton" class="studio-button studio-wide-button" type="button" disabled>Reset grip</button>
+          <p id="studioEquipmentStatus" class="studio-note studio-help" role="status" aria-live="polite">Load a compatible MOB model to test a weapon in its right hand.</p>
+          <p id="studioEquipmentLockNote" class="studio-note studio-help">Right-hand weapon and left-hand shield are included in all six previews and new captures.</p>
+        </section>
+
+        <section class="studio-panel chrome" aria-labelledby="studioOrientationHeading">
+          <h2 id="studioOrientationHeading">Model orientation</h2>
+          <label class="studio-field" for="studioHeading">
+            <span class="studio-label-row">Front adjustment <output id="studioHeadingValue" for="studioHeading">0°</output></span>
+            <input id="studioHeading" type="range" min="0" max="360" step="1" value="0">
+          </label>
+          <label class="studio-field" for="studioUpAxis">
+            <span>Model's up direction</span>
+            <select id="studioUpAxis">
+              <option value="Y">Y up</option>
+              <option value="Z" selected>Z up</option>
+            </select>
+          </label>
+          <p class="studio-note studio-help">Adjust the front if a loaded model faces the wrong way.</p>
+          <p id="studioCaptureLockNote" class="studio-note studio-help">Animation clips are fitted together. Set the front and resolution before your first capture.</p>
+        </section>
+      </aside>
+
+      <section class="studio-center" aria-labelledby="studioViewerHeading">
+        <div class="studio-viewer-panel studio-panel chrome">
+          <div class="studio-panel-heading">
+            <h2 id="studioViewerHeading">Model view</h2>
+            <span class="studio-chip studio-chip-subtle">3D</span>
+          </div>
+          <div id="studioViewport" class="studio-viewport">
+            <canvas id="studioCanvas" width="580" height="480" aria-label="Interactive 3D model. Drag to rotate the view and scroll to zoom.">Interactive 3D model view</canvas>
+            <svg id="studioHeightRuler" class="studio-height-ruler" aria-hidden="true" hidden></svg>
+            <div id="studioModelHeight" class="studio-model-height" title="Height of the current pose, including equipment, at the battlefield's 10 feet per hex." hidden>
+              <span>Model height</span>
+              <output id="studioModelHeightValue" aria-label="Current model height in feet">— ft</output>
+              <small>Current silhouette · gear included · 10 ft / hex</small>
+            </div>
+            <div id="studioEmptyMessage" class="studio-empty-message" hidden>Load a model to begin.</div>
+          </div>
+          <div class="studio-view-hint">Drag to turn · Scroll to zoom</div>
+          <div class="studio-directions" role="group" aria-label="View a hex facing">
+            <button class="studio-button" type="button" data-studio-facing="E" aria-pressed="false">E</button>
+            <button class="studio-button" type="button" data-studio-facing="NE" aria-pressed="false">NE</button>
+            <button class="studio-button" type="button" data-studio-facing="NW" aria-pressed="false">NW</button>
+            <button class="studio-button" type="button" data-studio-facing="W" aria-pressed="false">W</button>
+            <button class="studio-button" type="button" data-studio-facing="SW" aria-pressed="false">SW</button>
+            <button class="studio-button" type="button" data-studio-facing="SE" aria-pressed="false">SE</button>
+          </div>
+          <div class="studio-button-row studio-view-actions">
+            <button id="studioFrameButton" class="studio-button" type="button">Fit model</button>
+            <button id="studioFrameAnimationsButton" class="studio-button" type="button">Fit all animations</button>
+            <button id="studioResetViewButton" class="studio-button" type="button">Reset view</button>
+          </div>
+          <label class="studio-field studio-size-control" for="studioModelScale">
+            <span class="studio-label-row">Model size <output id="studioModelScaleValue" for="studioModelScale">100%</output></span>
+            <input id="studioModelScale" type="range" min="25" max="1000" step="5" value="100" disabled>
+            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
+          </label>
+          <p class="studio-note studio-help">Adjust Model size while viewing any animation or T-Pose. One size is shared by every animation and saved with the unit; changing it makes existing captures outdated until recaptured. Models use 109% of the original hex scale.</p>
+        </div>
+
+        <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
+          <div class="studio-panel-heading">
+            <h2 id="studioAnimationHeading">Animation</h2>
+            <output id="studioTime" class="studio-time" for="studioTimeline">0.00 / 0.00 s</output>
+          </div>
+          <div class="studio-animation-fields">
+            <label class="studio-field studio-clip-field" for="studioClip">
+              <span>Animation</span>
+              <select id="studioClip" aria-describedby="studioAnimationSummary studioAnimationWarning" disabled><option value="">Loading animations…</option></select>
+            </label>
+            <label class="studio-field studio-speed-field" for="studioSpeed">
+              <span>Speed</span>
+              <select id="studioSpeed">
+                <option value="0.25">0.25×</option>
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="1.5">1.5×</option>
+                <option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+          <p id="studioAnimationSummary" class="studio-note studio-help" role="status">Looking for embedded animations…</p>
+          <p id="studioAnimationWarning" class="studio-note studio-help" hidden></p>
+          <label class="studio-sr-only" for="studioTimeline">Animation position</label>
+          <input id="studioTimeline" class="studio-timeline" type="range" min="0" max="1" step="0.001" value="0" disabled>
+          <div class="studio-animation-bottom">
+            <div class="studio-button-row">
+              <button id="studioPlayButton" class="studio-button studio-primary" type="button" disabled>Play</button>
+              <button id="studioRestartButton" class="studio-button" type="button" disabled>Restart</button>
+            </div>
+            <span class="studio-note">All six previews stay in step.</span>
+          </div>
+          <details id="studioAnimationRanges" class="studio-animation-ranges">
+            <summary>Create animation from range</summary>
+            <p class="studio-note">If several motions share one timeline, save each section as a named animation. Start and end are seconds in the source animation.</p>
+            <p id="studioRangeSource" class="studio-note">Select an animation first.</p>
+            <label class="studio-field" for="studioRangeName">
+              <span>Animation name</span>
+              <input id="studioRangeName" type="text" maxlength="120" placeholder="For example, Attack" disabled>
+            </label>
+            <div class="studio-range-fields">
+              <label class="studio-field" for="studioRangeStart">
+                <span>Start (seconds)</span>
+                <input id="studioRangeStart" type="number" min="0" step="any" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioRangeEnd">
+                <span>End (seconds)</span>
+                <input id="studioRangeEnd" type="number" min="0" step="any" value="0" disabled>
+              </label>
+              <button id="studioRangeStartButton" class="studio-button" type="button" disabled>Use current time as start</button>
+              <button id="studioRangeEndButton" class="studio-button" type="button" disabled>Use current time as end</button>
+            </div>
+            <div class="studio-button-row studio-range-actions">
+              <button id="studioAddRangeButton" class="studio-button studio-primary" type="button" disabled>Save as animation</button>
+              <button id="studioRemoveRangeButton" class="studio-button" type="button" disabled>Remove selected range</button>
+            </div>
+            <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
+          </details>
+          <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
+            <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled>Capture ready pose</button>
+            <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
+            <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled>Capture prone pose</button>
+          </div>
+          <p class="studio-note studio-help">Pause or drag the timeline to any moment. Each capture freezes that moment and saves all six directions. Capture again to replace a pose.</p>
+        </section>
+      </section>
+
+      <aside class="studio-preview-column" aria-label="Pixel previews and rendering settings">
+        <section class="studio-previews studio-panel chrome" aria-labelledby="studioPreviewsHeading">
+          <div class="studio-panel-heading">
+            <h2 id="studioPreviewsHeading">Pixel previews</h2>
+            <span class="studio-chip">VGA · 256 colors</span>
+          </div>
+          <p class="studio-note">Six native combat views matched to the battlefield's displayed zoom for this screen.</p>
+          <div class="studio-preview-grid">
+            <figure class="studio-preview-card" data-studio-card="NW">
+              <figcaption><span class="studio-direction">NW</span><span>Northwest</span></figcaption>
+              <canvas id="studioPreviewNW" data-studio-preview="NW" width="160" height="200" aria-label="Northwest-facing pixel preview">Northwest-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="NW" aria-label="Save northwest-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="NE">
+              <figcaption><span class="studio-direction">NE</span><span>Northeast</span></figcaption>
+              <canvas id="studioPreviewNE" data-studio-preview="NE" width="160" height="200" aria-label="Northeast-facing pixel preview">Northeast-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="NE" aria-label="Save northeast-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="W">
+              <figcaption><span class="studio-direction">W</span><span>West</span></figcaption>
+              <canvas id="studioPreviewW" data-studio-preview="W" width="160" height="200" aria-label="West-facing pixel preview">West-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="W" aria-label="Save west-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="E">
+              <figcaption><span class="studio-direction">E</span><span>East</span></figcaption>
+              <canvas id="studioPreviewE" data-studio-preview="E" width="160" height="200" aria-label="East-facing pixel preview">East-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="E" aria-label="Save east-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="SW">
+              <figcaption><span class="studio-direction">SW</span><span>Southwest</span></figcaption>
+              <canvas id="studioPreviewSW" data-studio-preview="SW" width="160" height="200" aria-label="Southwest-facing pixel preview">Southwest-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="SW" aria-label="Save southwest-facing preview as PNG">Save PNG</button>
+            </figure>
+            <figure class="studio-preview-card" data-studio-card="SE">
+              <figcaption><span class="studio-direction">SE</span><span>Southeast</span></figcaption>
+              <canvas id="studioPreviewSE" data-studio-preview="SE" width="160" height="200" aria-label="Southeast-facing pixel preview">Southeast-facing pixel preview</canvas>
+              <button class="studio-button studio-export" type="button" data-studio-export="SE" aria-label="Save southeast-facing preview as PNG">Save PNG</button>
+            </figure>
+          </div>
+          <button id="studioExportSheetButton" class="studio-button studio-wide-button" type="button">Save all six as a sheet</button>
+        </section>
+
+        <section class="studio-appearance studio-panel chrome" aria-labelledby="studioAppearanceHeading">
+          <h2 id="studioAppearanceHeading">Pixel rendering &amp; lighting</h2>
+          <fieldset class="studio-pixel-fields">
+            <legend id="studioPixelHeading">Pixel rendering</legend>
+            <label class="studio-field" for="studioBrightness">
+              <span class="studio-label-row">Brightness <output id="studioBrightnessValue" for="studioBrightness">100%</output></span>
+              <input id="studioBrightness" type="range" min="0" max="200" step="1" value="100">
+            </label>
+            <label class="studio-field" for="studioContrast">
+              <span class="studio-label-row">Contrast <output id="studioContrastValue" for="studioContrast">100%</output></span>
+              <input id="studioContrast" type="range" min="0" max="200" step="1" value="100">
+            </label>
+            <label class="studio-field" for="studioHue">
+              <span class="studio-label-row">Hue <output id="studioHueValue" for="studioHue">0°</output></span>
+              <input id="studioHue" type="range" min="-180" max="180" step="1" value="0">
+            </label>
+            <label class="studio-field" for="studioSaturation">
+              <span class="studio-label-row">Saturation <output id="studioSaturationValue" for="studioSaturation">100%</output></span>
+              <input id="studioSaturation" type="range" min="0" max="500" step="1" value="100">
+            </label>
+            <button id="studioResetColorsButton" class="studio-button studio-wide-button" type="button">Reset colors</button>
+            <label class="studio-field" for="studioOutline">
+              <span class="studio-label-row">Outline width <output id="studioOutlineValue" for="studioOutline">1.875 in · 1.00 px</output></span>
+              <input id="studioOutline" type="range" min="0" max="18.75" step="0.125" value="1.875" aria-valuetext="1.875 inches, 1 battlefield pixel">
+            </label>
+            <p class="studio-note studio-help">Black outline · measured in battlefield inches · 1.875 in equals the former 1 px outline · fractional pixel coverage allows thinner outlines · 0 in turns it off.</p>
+            <div class="studio-palette-key" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p class="studio-note studio-help">Color adjustments apply to all six previews and saved PNGs, using one shared 256-color VGA palette.</p>
+          </fieldset>
+          <h3 id="studioLightingHeading" class="studio-settings-heading">Lighting</h3>
+          <div id="studioLightingFields" class="studio-lighting-fields">
+            <fieldset>
+              <legend>Environmental light</legend>
+              <label class="studio-field" for="studioAmbientIntensity">
+                <span class="studio-label-row">Intensity <output id="studioAmbientIntensityValue" for="studioAmbientIntensity">100%</output></span>
+                <input id="studioAmbientIntensity" type="range" min="0" max="500" step="5" value="100" disabled>
+              </label>
+              <label class="studio-field" for="studioAmbientColor">
+                <span>Color</span>
+                <input id="studioAmbientColor" type="color" value="#ffffff" disabled>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Directional light</legend>
+              <label class="studio-field" for="studioKeyIntensity">
+                <span class="studio-label-row">Intensity <output id="studioKeyIntensityValue" for="studioKeyIntensity">230%</output></span>
+                <input id="studioKeyIntensity" type="range" min="0" max="500" step="5" value="230" disabled>
+              </label>
+              <label class="studio-field" for="studioKeyColor">
+                <span>Color</span>
+                <input id="studioKeyColor" type="color" value="#ffffff" disabled>
+              </label>
+              <label class="studio-field" for="studioKeyElevation">
+                <span class="studio-label-row">Elevation <output id="studioKeyElevationValue" for="studioKeyElevation">45°</output></span>
+                <input id="studioKeyElevation" type="range" min="0" max="90" step="1" value="45" disabled>
+              </label>
+              <label class="studio-field" for="studioKeyDirection">
+                <span>Light comes from</span>
+                <select id="studioKeyDirection" disabled><option value="NW">Northwest (NW)</option></select>
+              </label>
+            </fieldset>
+          </div>
+          <p id="studioLightingLockNote" class="studio-note studio-help">Both lights affect the model, six pixel previews and captured sprites.</p>
+        </section>
+      </aside>
+    </main>
+
+    <section class="studio-sheet-panel studio-panel chrome" aria-labelledby="studioSheetHeading">
+      <div class="studio-panel-heading">
+        <h2 id="studioSheetHeading">Captured sprite sheet</h2>
+        <div class="studio-sheet-heading-meta">
+          <span id="studioWorkspaceStatus" class="studio-workspace-status" role="status" aria-live="polite">Preparing saved workspace…</span>
+          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 18 sprites</output>
+        </div>
+      </div>
+      <div class="studio-sheet-intro">
+        <label class="studio-field studio-set-name" for="studioSpriteSetName">
+          <span>Sprite set name</span>
+          <input id="studioSpriteSetName" type="text" maxlength="80" value="Studio mannequin" autocomplete="off">
+        </label>
+        <p class="studio-note">Three poses × six directions. Empty rows fill as you capture. Color and outline changes update every saved pose.</p>
+      </div>
+      <div class="studio-sheet-scroll">
+        <table id="studioPoseSheetPreview" class="studio-pose-sheet" aria-label="Captured ready, attack and prone sprite sheet">
+          <thead><tr><th scope="col">Pose</th><th scope="col">E</th><th scope="col">NE</th><th scope="col">NW</th><th scope="col">W</th><th scope="col">SW</th><th scope="col">SE</th></tr></thead>
+          <tbody id="studioPoseSheetRows"></tbody>
+        </table>
+      </div>
+      <div class="studio-sheet-actions">
+        <button id="studioExportPoseSheetButton" class="studio-button" type="button" disabled>Export 18-sprite sheet</button>
+        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export game assets (ZIP)</button>
+        <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
+        <button id="studioClearPosesButton" class="studio-button" type="button" disabled>Clear sheet</button>
+      </div>
+      <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture ready, attack and prone to export or test the complete set.</p>
+      <p class="studio-note studio-help">Captures save automatically in this browser. Test in combat saves your set and opens combat in this tab; Return to 3d studio restores the set you tested. Export the ZIP to keep a copy with all 18 PNGs, the sheet, MOB and footprint.</p>
+    </section>
+
+    <footer class="studio-footer chrome">
+      <div id="studioStatus" class="studio-status" role="status" aria-live="polite">Loading studio…</div>
+      <span class="studio-footer-label">Six directions · Three poses</span>
+    </footer>
+    <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
+    <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
+  </div>
+  <script type="module" src="js/3d-studio.mjs?v=R238C127"></script>
+  <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+export const ITEM_CATALOG_VERSION=3;
+
+function freezeRecord(value){
+  if(value&&typeof value==='object'){
+    for(const child of Object.values(value))freezeRecord(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+export const ITEM_CATALOG=freezeRecord({
+  'flaming-sword-5':{
+    id:'flaming-sword-5',
+    name:'Flaming Sword +5',
+    category:'weapon',
+    slot:'weapon',
+    rules:{
+      catalogWeaponId:'sword-long',
+      baseName:'Long Sword',
+      damageSM:'1d8',
+      damageL:'1d12',
+      encumbrance:7,
+      cost:'15 gp',
+      magicHitBonus:5,
+      magicDamageBonus:5,
+      bonusDamageExpression:'1d6',
+      bonusDamageType:'fire'
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:null,
+      status:'Physical dimensions not yet authored.'
+    },
+    appearance:{
+      appearanceId:'flaming-sword-5',
+      studioId:'medieval-sword',
+      asset:'assets/models/weapons/swords/medieval-sword.glb',
+      attachment:'right-hand',
+      poseProfileId:'one-handed-swing'
+    }
+  },
+  'battle-axe':{
+    id:'battle-axe',
+    name:'Battle Axe',
+    category:'weapon',
+    slot:'weapon',
+    rules:{
+      catalogWeaponId:'axe-battle',
+      baseName:'Axe, battle',
+      damageSM:'1d8',
+      damageL:'1d8',
+      encumbrance:7,
+      cost:'5 gp'
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:null,
+      status:'Physical dimensions not yet authored.'
+    },
+    appearance:{
+      appearanceId:'battle-axe',
+      studioId:'battle-axe',
+      asset:'assets/models/weapons/battle-axes/battle-axe.glb',
+      attachment:'right-hand',
+      poseProfileId:'one-handed-swing'
+    }
+  },
+  'two-handed-sword':{
+    id:'two-handed-sword',
+    name:'Two-Handed Sword',
+    category:'weapon',
+    slot:'weapon',
+    rules:{
+      catalogWeaponId:'sword-two-handed',
+      baseName:'Two-Handed Sword'
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:60.6,
+      sourceModelBounds:{
+        min:[-0.1240234524011612,0,-0.029155734926462173],
+        max:[0.1240234524011612,1,0.029155734926462173]
+      },
+      status:'Studio-calibrated test length relative to Dungeon Crawler Carl at 76 inches; gameplay dimensions/rules are not yet authored.'
+    },
+    appearance:{
+      appearanceId:'two-handed-sword',
+      studioId:'medieval-two-handed-sword',
+      visualClass:'two-handed-sword',
+      representation:'source-gltf-v1',
+      asset:'assets/models/weapons/two-handed-swords/medieval-two-handed-sword.glb',
+      attachment:'right-hand',
+      secondaryAttachment:'left-hand',
+      handsRequired:2,
+      poseProfileId:'two-handed-swing',
+      primaryAxis:[0,-1,0],
+      grip:[0,0.81,0],
+      secondaryGrip:[0,0.95,0],
+      nativeScale:0.78,
+      defaultSizePercent:100,
+      position:[0.015,0.05,0.005],
+      rotationDegrees:[90,0,0],
+      source:{
+        originalFilename:'medieval+sword+3d+model (1).glb',
+        originalBytes:646456,
+        originalSha256:'85408b9b17fa38a72816d57ac55e63e6409862b5d5a305beb6cf5eee045c948a',
+        vertices:6623,
+        triangles:8333,
+        textureResolution:1024
+      }
+    }
+  },
+  'chain-mail':{
+    id:'chain-mail',
+    name:'Chain Mail',
+    category:'armor',
+    slot:'armor',
+    rules:{
+      catalogArmorId:'chain',
+      baseArmorClass:5,
+      acModifier:-5,
+      encumbrance:30,
+      maxMoveFt:90,
+      cost:'75 gp'
+    },
+    physical:{
+      authoredSize:null,
+      status:'Armor dimensions are not yet modeled.'
+    },
+    appearance:null
+  },
+  'round-wooden-shield':{
+    id:'round-wooden-shield',
+    name:'Round Wooden Shield',
+    category:'shield',
+    slot:'shield',
+    rules:{
+      catalogArmorId:'shield-medium',
+      acBonus:1,
+      encumbrance:8,
+      cost:'12 gp',
+      rearProtection:false,
+      maxProtectedAttacksPerRound:2
+    },
+    physical:{
+      authoredDiameterInches:null,
+      calibratedDiameterInches:35,
+      calibratedThicknessInches:6.13,
+      sourceModelBounds:{
+        min:[-0.4998169541358948,0,-0.12459565699100494],
+        max:[0.4998169541358948,1,0.12459565699100494]
+      },
+      sourceModelExtent:[0.9996339082717896,1,0.2491913139820099],
+      status:'Render-calibrated dimensions relative to Dungeon Crawler Carl at 76 inches; real-world dimensions are not yet author-confirmed.'
+    },
+    appearance:{
+      appearanceId:'round-wooden-shield',
+      studioId:'round-wooden-shield',
+      visualClass:'round-shield',
+      representation:'source-gltf-v1',
+      asset:'assets/models/shields/round-wooden-shield.glb',
+      attachment:'left-hand',
+      nativeScale:0.45,
+      modelOrigin:[0,0.5,0],
+      source:{
+        originalFilename:'round+wooden+shield+3d+model.glb',
+        originalBytes:781832,
+        originalSha256:'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928',
+        vertices:5648,
+        triangles:8478,
+        textureResolution:1024
+      },
+      runtimeAsset:{
+        bytes:781832,
+        sha256:'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928',
+        textureResolution:1024,
+        vertices:5648,
+        triangles:8478,
+        derivation:'Exact user-uploaded GLB used directly as the runtime shield asset.'
+      }
+    }
+  }
+});
+
+export function itemCatalogEntry(id){
+  return id?ITEM_CATALOG[id]||null:null;
+}

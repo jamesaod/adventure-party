@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "dungeon-crawler-carl-v2",
+      "label": "Dungeon Crawler Carl Ver 2",
+      "file": "assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
+    },
+    {
+      "id": "dungeon-crawler-carl-v2-ual2-sword-test",
+      "label": "Dungeon Crawler Carl Ver 2 — UAL2 Sword Test",
+      "file": "assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
+    },
+    {
+      "id": "dungeon-crawler-carl-v2-ual2-two-handed-audition",
+      "label": "Dungeon Crawler Carl — UAL2 Two-Handed Audition",
+      "file": "assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/dungeon-crawler-carl-v2-ual2-two-handed-audition.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
+    },
+    {
+      "id": "male-orc-fighter",
+      "label": "Male Orc Fighter",
+      "file": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "skinWeightRepair": "cross-limb-components-v1"
+    },
+    {
+      "id": "male-orc-fighter-ual2-one-handed-proof",
+      "label": "Male Orc Fighter — UAL2 One-Handed Proof",
+      "file": "assets/models/orcs/male-orc-fighter/ual2-one-handed/male-orc-fighter-ual2-one-handed.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "skinWeightRepair": "cross-limb-components-v1"
+    },
+    {
+      "id": "male-orc-fighter-unmodified-source",
+      "label": "Male Orc Fighter — Original Source (No Animation)",
+      "file": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
+      "upAxis": "Y",
+      "mobType": "orc"
+    },
+    {
+      "id": "male-orc-fighter-ual2-native-bind-experiment",
+      "label": "Male Orc Fighter — Native-Bind Animation Test",
+      "file": "assets/models/orcs/male-orc-fighter/ual2-one-handed/male-orc-fighter-ual2-one-handed.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationBindRebase": "orc-native-bind-v1"
+    },
+    {
+      "id": "new-carl-tripo-source",
+      "label": "New Carl — Original Tripo (No Animation)",
+      "file": "assets/models/dungeon-crawler-carl/new-carl/new-carl.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "combatModelId": "new-carl-mixamo-sword-shield-full-17"
+    },
+    {
+      "id": "new-carl-mixamo-baked-proof",
+      "label": "New Carl — Offline Sword & Shield Attack QA",
+      "file": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-qa/new-carl-sword-shield-attack-inplace-proof.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
+    },
+    {
+      "id": "new-orc-tripo-source",
+      "label": "New Orc — Original Tripo (No Animation)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-carl-mixamo-sword-shield-full-17",
+      "label": "New Carl — All 17 Sword & Shield Animations (QA)",
+      "file": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
+    },
+    {
+      "id": "new-orc-mixamo-sword-shield-full-17",
+      "label": "New Orc — All 17 Sword & Shield Animations (QA)",
+      "file": "assets/models/orcs/new-orc/mixamo-sword-shield-full-17/new-orc-mixamo-sword-shield-full-17.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-orc-retarget-world-delta-qa",
+      "label": "New Orc — Carl Animation / World Delta (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_sword_and_shield_attack"
+        ],
+        "mode": "world-bind-delta"
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-orc-retarget-joint-relative-qa",
+      "label": "New Orc — Carl Animation / Joint Relative (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_sword_and_shield_attack"
+        ],
+        "mode": "joint-bind-relative"
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-orc-retarget-anatomical-aim-qa",
+      "label": "New Orc — Bone Direction + Hip Motion (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_sword_and_shield_attack"
+        ],
+        "mode": "anatomical-aim"
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-orc-retarget-anatomical-full-17-qa",
+      "label": "New Orc — Bone Direction + Hip Motion / All 17 (QA)",
+      "file": "assets/models/orcs/new-orc/new-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "retargetQa": {
+        "carrier": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+        "clips": [
+          "Mixamo_draw_sword_1",
+          "Mixamo_sheath_sword_1",
+          "Mixamo_sword_and_shield_attack_2",
+          "Mixamo_sword_and_shield_attack_3",
+          "Mixamo_sword_and_shield_attack_4",
+          "Mixamo_sword_and_shield_attack",
+          "Mixamo_sword_and_shield_block_2",
+          "Mixamo_sword_and_shield_block_idle",
+          "Mixamo_sword_and_shield_block",
+          "Mixamo_sword_and_shield_death",
+          "Mixamo_sword_and_shield_idle",
+          "Mixamo_sword_and_shield_run_2",
+          "Mixamo_sword_and_shield_run",
+          "Mixamo_sword_and_shield_strafe_2",
+          "Mixamo_sword_and_shield_strafe",
+          "Mixamo_sword_and_shield_turn_2",
+          "Mixamo_sword_and_shield_turn"
+        ],
+        "mode": "anatomical-aim",
+        "initialClip": "Mixamo_sword_and_shield_idle"
+      },
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-orc-blender-corrected-turns-qa",
+      "label": "New Orc — Blender-Corrected Turns (2 Clips QA)",
+      "file": "assets/models/orcs/new-orc/blender-turn-qa/new-orc-turn-corrected-blender-qa.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "woman-warrior-tripo-source",
+      "label": "Woman Warrior — Original Tripo (No Animation)",
+      "file": "assets/models/humans/woman-warrior/woman-warrior.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "combatModelId": "woman-warrior-mixamo-sword-shield-full-17",
+      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1",
+      "appearanceCustomization": {
+        "recolorMaskSetId": "woman-warrior-hair-metal-v2",
+        "supportedChannels": [
+          "hair",
+          "metal"
+        ],
+        "status": "experimental-visual-qa"
+      }
+    },
+    {
+      "id": "woman-warrior-mixamo-sword-shield-full-17",
+      "label": "Woman Warrior — All 17 Sword & Shield Animations (QA)",
+      "file": "assets/models/humans/woman-warrior/mixamo-sword-shield-full-17/woman-warrior-mixamo-sword-shield-full-17.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1",
+      "appearanceCustomization": {
+        "recolorMaskSetId": "woman-warrior-hair-metal-v2",
+        "supportedChannels": [
+          "hair",
+          "metal"
+        ],
+        "status": "experimental-visual-qa"
+      }
+    }
+  ],
+  "weaponAttachmentProfiles": {
+    "tripo-mixamo-orc-one-hand-sword-upward-v2": {
+      "weaponId": "medieval-sword",
+      "position": [
+        -0.01,
+        0.05,
+        0.005
+      ],
+      "rotation": [
+        -29,
+        -55,
+        175
+      ],
+      "status": "user-calibrated",
+      "description": "Rev 121: approved Orc one-handed sword grip calibrated in Studio: XYZ position [-0.010, 0.050, 0.005], rotation [-29, -55, 175] degrees."
+    },
+    "tripo-woman-warrior-one-hand-sword-v1": {
+      "weaponId": "medieval-sword",
+      "position": [
+        -0.01,
+        0.065,
+        0.01
+      ],
+      "rotation": [
+        0,
+        -90,
+        180
+      ],
+      "status": "user-calibrated",
+      "description": "Rev 124: Woman Warrior sword grip calibrated from accepted Studio slider settings. Model-specific Medieval Sword position and rotation, without changing Carl or Orc presets."
+    }
+  }
+}
