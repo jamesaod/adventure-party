@@ -175,8 +175,8 @@ const spanY = bounds => bounds.max.y - bounds.min.y;
 close(spanY(geometryBodyBounds(liveBody)), 2, 'T-Pose body calibration excludes sword and shield');
 close(spanY(geometryBounds(liveBody, { refreshSkinnedBounds:false })), 4, 'Live silhouette includes raised sword');
 heldWeapon.rotation.z=Math.PI/2;
-close(spanY(geometryBounds(liveBody, { refreshSkinnedBounds:false })), 2.5,
-  'Live height responds when the animated weapon swings sideways');
+close(spanY(geometryBounds(liveBody, { refreshSkinnedBounds:false })), 2.575,
+  'Live height responds to the rotated blade, including its slight below-ground extension');
 close(spanY(geometryBodyBounds(liveBody)), 2, 'Body calibration stays unchanged through gear movement');
 assert.ok(studioSource.includes('modelBounds = geometryBounds(state.model, { refreshSkinnedBounds: false })') &&
   studioSource.includes('const bodyBounds = geometryBodyBounds(state.model'),
