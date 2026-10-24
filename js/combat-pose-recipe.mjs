@@ -16,6 +16,28 @@ function completeCaptureWorkspace(workspace) {
   const identity = `${workspace.settings.libraryModelId || ''} ${workspace.settings.modelName || ''} ${workspace.name || ''}`.toLowerCase();
   return workspace.settings.mobType === 'fighter' || identity.includes('carl');
 }
+/** Resolve saved Studio captures to the *same* baked model for combat.
+ * Paths are restricted to versioned assets from the repository model catalog.
+ * A raw source model may identify its animation-baked combat counterpart.
+ */
+export function compatibleStudioCombatModel(settings, catalog, mobType = 'fighter') {
+  const id = settings?.libraryModelId || settings?.unitCalibration?.modelId;
+  if (!id || !Array.isArray(catalog?.models)) return null;
+  const original = catalog.models.find(entry => entry?.id === id && entry.mobType === mobType);
+  if (!original) return null;
+  const resolved = catalog.models.find(entry =>
+    entry?.id === (original.combatModelId || original.id) && entry.mobType === mobType);
+  if (!resolved || typeof resolved.file !== 'string' ||
+      !/^assets\/models\/(?:[a-zA-Z0-9_-]+\/)+[a-zA-Z0-9_.-]+\.glb$/.test(resolved.file)) return null;
+  return {
+    modelId: resolved.id,
+    modelHash: `catalog:${resolved.id}:${resolved.file}`,
+    modelUrl: `../${resolved.file}`,
+    bodyReferenceHeightInches: Number.isFinite(settings?.unitCalibration?.measuredHeightInches)
+      ? settings.unitCalibration.measuredHeightInches : 76
+  };
+}
+
 function fallbackRecipe(reason = 'No complete Carl capture workspace was found.') {
   return {
     source: 'built-in-profile',
@@ -51,6 +73,19 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
 
   const settings = workspace.settings;
   const captures = workspace.captures;
+  if (REQUIRED_POSES.some(pose => captures[pose]?.stale)) {
+    return fallbackRecipe('Studio captures were changed after saving. Recapture the three poses to use them in combat.');
+  }
+  // Saved Mixamo pose names are model-specific. Never apply one character's
+  // capture timestamps to the fixed legacy Carl GLB by accident.
+  let combatModel = null;
+  try {
+    const response = await fetch(new URL('../data/studio-models.json', import.meta.url), { cache: 'no-cache' });
+    if (response.ok) combatModel = compatibleStudioCombatModel(settings, await response.json(), mobType);
+  } catch { /* The built-in profile remains usable when the library is unavailable. */ }
+  if (!combatModel) {
+    return fallbackRecipe('The saved Studio capture has no matching repository combat model.');
+  }
   const first = captures.ready;
   const profile = structuredClone(poseProfileForHumanoid('one-handed-swing'));
   profile.id = 'studio-captured-one-handed-swing-v1';
@@ -81,6 +116,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
     source: 'studio-capture-workspace',
     reason: null,
     poseProfile: profile,
+    model: combatModel,
     renderSettings: {
       source: 'studio-capture-workspace',
       renderer: 'combat-offscreen-v2',
