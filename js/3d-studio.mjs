@@ -755,16 +755,22 @@ function updateHeightGuide(timestamp) {
   if (!state.modelReady || !state.model) return;
   if (!modelBounds || (state.heightDirty &&
       (!state.playing || !state.action || timestamp - state.lastHeightMeasure >= 100))) {
-    // Height is always a body measurement. Held equipment can extend the
-    // silhouette, but must never make the unit itself appear taller or shorter.
-    modelBounds = geometryBodyBounds(state.model, { refreshSkinnedBounds: false });
+    // The visible height follows the currently animated silhouette, including
+    // sword/shield attachments. They remain excluded from the separate T-Pose
+    // body calibration used for physical unit height and framing.
+    modelBounds = geometryBounds(state.model, { refreshSkinnedBounds: false });
     state.heightFeet = studioModelHeightFeet(modelBounds.max.y - modelBounds.min.y, state.layoutId, state.frameHeight);
-    if (isTPoseSelected()) state.tPoseHeightFeet = state.heightFeet;
+    if (isTPoseSelected()) {
+      const bodyBounds = geometryBodyBounds(state.model, { refreshSkinnedBounds: false });
+      state.tPoseHeightFeet = studioModelHeightFeet(bodyBounds.max.y - bodyBounds.min.y, state.layoutId, state.frameHeight);
+    }
     ui.ModelHeightValue.textContent = `${state.heightFeet.toFixed(1)} ft`;
     state.heightDirty = false;
     state.lastHeightMeasure = timestamp;
   }
-  ui.ModelHeight.querySelector('small').textContent = isTPoseSelected() ? 'T-Pose calibration · body only' : 'Current pose · body only · 10 ft / hex';
+  ui.ModelHeight.querySelector('small').textContent = isTPoseSelected()
+    ? 'Current T-Pose silhouette · gear included'
+    : 'Current animated silhouette · gear included · 10 ft / hex';
   const width = ui.Viewport.clientWidth, height = ui.Viewport.clientHeight;
   if (!width || !height) return;
   const screen = point => {
@@ -2040,13 +2046,19 @@ async function loadModelLibrary() {
         const profile = attachmentProfiles[profileId];
         const validVector = (value, min, max) => Array.isArray(value) && value.length === 3 &&
           value.every(item => Number.isFinite(item) && item >= min && item <= max);
-        if (typeof profileId !== 'string' || !profileId || !profile ||
+        const orcProfile = profileId === 'tripo-mixamo-orc-one-hand-sword-upward-v2' &&
+          entry.id.startsWith('new-orc-') &&
+          (entry.file === 'assets/models/orcs/new-orc/new-orc.glb' ||
+           entry.file.startsWith('assets/models/orcs/new-orc/'));
+        const warriorProfile = profileId === 'tripo-woman-warrior-one-hand-sword-v1' &&
+          entry.id.startsWith('woman-warrior-') &&
+          entry.file.startsWith('assets/models/humans/woman-warrior/');
+        if (typeof profileId !== 'string' || !profile ||
             profile.weaponId !== 'medieval-sword' ||
             !validVector(profile.position, -1, 1) ||
             !validVector(profile.rotation, -180, 180) ||
             typeof profile.status !== 'string' ||
-            (entry.file !== 'assets/models/orcs/new-orc/new-orc.glb' &&
-             !entry.file.startsWith('assets/models/orcs/new-orc/'))) {
+            !(orcProfile || warriorProfile)) {
           throw new Error('Invalid model-specific sword attachment profile.');
         }
         weaponAttachmentProfile = {
