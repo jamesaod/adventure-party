@@ -29,12 +29,23 @@ export function compatibleStudioCombatModel(settings, catalog, mobType = 'fighte
     entry?.id === (original.combatModelId || original.id) && entry.mobType === mobType);
   if (!resolved || typeof resolved.file !== 'string' ||
       !/^assets\/models\/(?:[a-zA-Z0-9_-]+\/)+[a-zA-Z0-9_.-]+\.glb$/.test(resolved.file)) return null;
+  const attachmentProfile = resolved.weaponAttachmentProfileId
+    ? catalog.weaponAttachmentProfiles?.[resolved.weaponAttachmentProfileId] : null;
+  const validTriple = value => Array.isArray(value) && value.length === 3 &&
+    value.every(Number.isFinite);
   return {
     modelId: resolved.id,
     modelHash: `catalog:${resolved.id}:${resolved.file}`,
     modelUrl: `../${resolved.file}`,
     bodyReferenceHeightInches: Number.isFinite(settings?.unitCalibration?.measuredHeightInches)
-      ? settings.unitCalibration.measuredHeightInches : 76
+      ? settings.unitCalibration.measuredHeightInches : 76,
+    weaponAttachmentProfile: attachmentProfile?.weaponId &&
+      validTriple(attachmentProfile.position) && validTriple(attachmentProfile.rotation)
+      ? {
+          weaponId: attachmentProfile.weaponId,
+          position: [...attachmentProfile.position],
+          rotation: [...attachmentProfile.rotation]
+        } : null
   };
 }
 
@@ -57,23 +68,34 @@ function fallbackRecipe(reason = 'No complete Carl capture workspace was found.'
  * Captured PNG pixels are deliberately ignored here: combat re-evaluates the
  * model at the recorded animation/time and renders current equipment on demand.
  */
-export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
+export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = false } = {}) {
   let workspace;
   try {
-    workspace = await loadStudioWorkspace();
+    // "Test in combat" atomically saves its exact frames and settings together.
+    // The ordinary Studio workspace may have changed since that snapshot.
+    workspace = await loadStudioWorkspace({ fromCombat });
   } catch (error) {
+    if (fromCombat) throw new Error(`Combat capture workspace could not be read: ${error?.message || error}`);
     return fallbackRecipe(`Studio capture workspace could not be read: ${error?.message || error}`);
   }
-  if (!workspace) return fallbackRecipe();
+  if (!workspace) {
+    if (fromCombat) throw new Error('Combat test capture is missing; keep its existing sprites instead of replacing them with generic Carl art.');
+    return fallbackRecipe();
+  }
   try { workspace = upgradeStudioWorkspaceHexScale(workspace); }
-  catch (error) { return fallbackRecipe(`Studio capture workspace needs repair: ${error?.message || error}`); }
+  catch (error) {
+    if (fromCombat) throw error;
+    return fallbackRecipe(`Studio capture workspace needs repair: ${error?.message || error}`);
+  }
   if (!completeCaptureWorkspace(workspace)) {
+    if (fromCombat) throw new Error('Combat test capture is incomplete; retaining its original sprite resolution and poses.');
     return fallbackRecipe('The saved Studio workspace does not contain Ready, Attack and Prone captures for Carl.');
   }
 
   const settings = workspace.settings;
   const captures = workspace.captures;
   if (REQUIRED_POSES.some(pose => captures[pose]?.stale)) {
+    if (fromCombat) throw new Error('Combat test captures are outdated; keeping the last valid sprites.');
     return fallbackRecipe('Studio captures were changed after saving. Recapture the three poses to use them in combat.');
   }
   // Saved Mixamo pose names are model-specific. Never apply one character's
@@ -84,6 +106,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
     if (response.ok) combatModel = compatibleStudioCombatModel(settings, await response.json(), mobType);
   } catch { /* The built-in profile remains usable when the library is unavailable. */ }
   if (!combatModel) {
+    if (fromCombat) throw new Error('The saved combat capture model is unavailable; keeping its existing sprites.');
     return fallbackRecipe('The saved Studio capture has no matching repository combat model.');
   }
   const first = captures.ready;
@@ -138,6 +161,9 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter' } = {}) {
       },
       lighting: structuredClone(settings.lighting || first.render?.lighting || {}),
       shield: structuredClone(settings.shield || first.render?.shield || null),
+      // Transfer the calibrated right-hand sword grip, not just the animation.
+      equipment: structuredClone(settings.equipment || first.render?.equipment || null),
+      weaponAttachmentProfile: structuredClone(combatModel.weaponAttachmentProfile || null),
       style: structuredClone(workspace.style || {}),
       poses: REQUIRED_POSES,
       facings: ['E','NE','NW','W','SW','SE']
