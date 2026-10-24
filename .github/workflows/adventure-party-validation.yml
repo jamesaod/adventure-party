@@ -69,6 +69,7 @@ jobs:
           node scripts/test-mob-appearance.mjs
           node scripts/test-mob-appearance-runtime.mjs
           node scripts/test-combat-mob-renderer.mjs
+          node scripts/test-combat-equipment-refresh.mjs
           node scripts/test-carl-ual2.mjs
           node scripts/test-carl-ual2-two-handed-audition.mjs
           node scripts/test-orc-ual2.mjs
