@@ -7076,7 +7076,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C97")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C120"))
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C125"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7084,10 +7084,12 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C119",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C125",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
-    const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type});
+    const fromCombat=!!unit.studioSpriteTest &&
+      new URLSearchParams(location.search).get("studioSprite")==="draft";
+    const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const result=await runtime.ensure(unit,{
       ...model,
@@ -16680,10 +16682,11 @@ function newGame(condition=selectedCombatCondition){
   */
   combatOpeningSpeechDone=true;
   combatAwaitingStart=true;
-  // Model-capable MOBs generate their current equipment appearance as soon as
-  // the combat instance is created. The old/static sprite is only a temporary
-  // visual reference until this generated 18-frame set is ready.
-  if(typeof markMobAppearanceDirty==="function"){
+  // Ordinary battles render their equipped appearance at combat start.
+  // A Studio combat test already has an exact 18-frame native battlefield
+  // capture. Keep those approved frames unchanged until an actual gear change
+  // instead of asynchronously replacing them with a lower-detail render.
+  if(!player.studioSpriteTest && typeof markMobAppearanceDirty==="function"){
     markMobAppearanceDirty(player,{reason:"combat-start"});
   }
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
