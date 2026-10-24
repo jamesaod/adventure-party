@@ -3,6 +3,7 @@ import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js'
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
+import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
@@ -222,7 +223,10 @@ export async function generateCombatSpriteSet(recipe){
   configureLights(scene,recipe);
   const camera=configureCamera(recipe,frame);
 
-  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
+  // Match the Studio's source WebGL antialiasing before native-size
+  // downsampling. The battlefield pixels must come from the same capture
+  // resolution and silhouette detail as the saved Studio test.
+  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(1);
   renderer.setSize(frame.width,frame.height,false);
   renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -242,12 +246,13 @@ export async function generateCombatSpriteSet(recipe){
     const hand=findRightHand(model);
     if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
     const weaponGltf=await loadGltf('../'+recipe.equipment.asset);
+    const mount=resolveCombatWeaponMount(recipe.equipment,recipe.renderSettings,preset);
     attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
       rightHand:id,
       presetRevision:preset.presetRevision||0,
-      sizePercent:recipe.equipment.grip?.sizePercent??100,
-      position:recipe.equipment.grip?.position??preset.position,
-      rotation:recipe.equipment.grip?.rotationDegrees??preset.rotation
+      sizePercent:mount.sizePercent,
+      position:mount.position,
+      rotation:mount.rotation
     });
   }
   if(recipe.shield){
