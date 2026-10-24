@@ -23127,7 +23127,7 @@ async function castWebSpell(action,targetHex){
 }
 
 
-async async function castPriestCombatSpell(action,hex,target){
+async function castPriestCombatSpell(action,hex,target){
  const caster=spellCasterForAction(action),spell=getSpellEntry(action.spellId);
  if(!caster?.alive||!spell)return false;
  const friendly=target?.faction===caster.faction;
@@ -23198,7 +23198,7 @@ async async function castPriestCombatSpell(action,hex,target){
  return true;
 }
 
-function castPreparedCombatSpell(action,targetHex,targetUnit){
+async function castPreparedCombatSpell(action,targetHex,targetUnit){
   const spell=getSpellEntry(action?.spellId);
   if(!spell) return false;
 
