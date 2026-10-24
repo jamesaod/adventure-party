@@ -6,7 +6,8 @@ for(const name of ['CLERIC_CLASS','CLERIC_XP_LEVELS','CLERIC_SPELL_SLOT_ROWS',
   'function makeClericCharacter(','function makeTestPartyCleric(',
   'function levelUpCleric(','function awardClericXp(',
   'function clericCanPrepareSpell(','function clericPrepareSpells(',
-  'function clericCanCastPreparedSpell(','function clericConsumePreparedSpell(']){
+  'function clericCanCastPreparedSpell(','function clericConsumePreparedSpell(',
+  'function clericTurningOutcome(','function clericTurnUndead(']){
   assert.ok(src.includes(name),name);
 }
 assert.ok(src.includes('case "cleric": return makeTestPartyCleric()'));
@@ -22,4 +23,7 @@ assert.ok(src.includes('spell.spellGroup!=="Priest"'));
 assert.ok(src.includes('level<=3&&minor.includes(sphere)'));
 assert.ok(src.includes('cleric.memorizedPriestSpellIds.splice('));
 assert.ok(src.includes('cleric.xp>=clericLevelData(cleric.level+1).xp'));
+assert.ok(src.includes('data-turn-undead'));
+assert.ok(src.includes('turningUsedThisEncounter=true'));
+assert.ok(src.includes('setMoraleFleeing(target,true)'));
 console.log('PASS Cleric level 1-20 progression, prayer slots, preparation, studio factory');
