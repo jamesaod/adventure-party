@@ -150,7 +150,14 @@ export async function saveStudioDraft({ manifest, files, workspace }) {
   let bytes = 0;
   const storedFiles = {};
   const names = SPRITE_POSES.flatMap(pose => SPRITE_DIRECTIONS.map(facing => manifest.poses[pose].frames[facing]));
+  // Native battlefield PNGs are distinct from the full-resolution capture PNGs.
+  // Combat Test loads both sets: omitting these 18 files made every new studio
+  // draft with a battlefield rendition fail to register after navigation.
+  if (manifest.battlefield) for (const pose of SPRITE_POSES) for (const facing of SPRITE_DIRECTIONS) {
+    names.push(manifest.battlefield.poses[pose].frames[facing]);
+  }
   if (files?.[manifest.sheet.file] instanceof Blob) names.push(manifest.sheet.file);
+  if (new Set(names).size !== names.length) throw new Error('Sprite draft contains duplicate image paths.');
   for (const name of names) {
     const file = files?.[name];
     if (!(file instanceof Blob) || !file.size) throw new Error(`Missing captured PNG: ${name}.`);
