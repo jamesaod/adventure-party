@@ -174,6 +174,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
       shield: structuredClone(settings.shield || first.render?.shield || null),
       // Transfer the calibrated right-hand sword grip, not just the animation.
       equipment: structuredClone(settings.equipment || first.render?.equipment || null),
+      appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
       weaponAttachmentProfile: structuredClone(combatModel.weaponAttachmentProfile || null),
       style: structuredClone(workspace.style || {}),
       poses: REQUIRED_POSES,
