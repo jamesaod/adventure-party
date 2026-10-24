@@ -6989,6 +6989,37 @@ const camera={
 
 const CAMERA_EDGE_HEXES=4;
 
+// Battlefield presentation zoom: visual only, independent of map/hex rules.
+let battlefieldZoom=1;
+const BATTLEFIELD_ZOOM_MIN=0.6;
+const BATTLEFIELD_ZOOM_MAX=1.8;
+const BATTLEFIELD_ZOOM_STEP=0.1;
+
+function battlefieldZoomAnchor(){
+  return {x:canvas.width*0.47,y:canvas.height*0.57};
+}
+
+function battlefieldViewportBounds(){
+  const a=battlefieldZoomAnchor();
+  return {
+    left:a.x-a.x/battlefieldZoom,
+    top:a.y-a.y/battlefieldZoom,
+    right:a.x+(canvas.width-a.x)/battlefieldZoom,
+    bottom:a.y+(canvas.height-a.y)/battlefieldZoom
+  };
+}
+
+function changeBattlefieldZoom(direction){
+  const next=Math.max(BATTLEFIELD_ZOOM_MIN,Math.min(
+    BATTLEFIELD_ZOOM_MAX,
+    Math.round((battlefieldZoom+direction*BATTLEFIELD_ZOOM_STEP)*10)/10
+  ));
+  if(next===battlefieldZoom) return;
+  battlefieldZoom=next;
+  hoverHex=null;
+  draw();
+}
+
 const ui={
   roundLabel:document.getElementById("roundLabel"),
   initiativeLabel:document.getElementById("initiativeLabel"),
@@ -7447,12 +7478,12 @@ function maybeRecenterCamera(entity){
 
 function isHexOnBattlefieldScreen(x,y,padding=0){
   const c=hexCenter(x,y);
-
+  const viewport=battlefieldViewportBounds();
   return (
-    c.x+HEX_W/2 >= -padding &&
-    c.x-HEX_W/2 <= canvas.width+padding &&
-    c.y+HEX_H/2 >= -padding &&
-    c.y-HEX_H/2 <= canvas.height+padding
+    c.x+HEX_W/2 >= viewport.left-padding &&
+    c.x-HEX_W/2 <= viewport.right+padding &&
+    c.y+HEX_H/2 >= viewport.top-padding &&
+    c.y-HEX_H/2 <= viewport.bottom+padding
   );
 }
 
@@ -26400,11 +26431,12 @@ function visibleHexes(){
         continue;
       }
 
+      const viewport=battlefieldViewportBounds();
       if(
-        c.x < -HEX_W ||
-        c.x > canvas.width+HEX_W ||
-        c.y < -HEX_H ||
-        c.y > canvas.height+HEX_H
+        c.x < viewport.left-HEX_W ||
+        c.x > viewport.right+HEX_W ||
+        c.y < viewport.top-HEX_H ||
+        c.y > viewport.bottom+HEX_H
       ){
         continue;
       }
@@ -29957,7 +29989,18 @@ function draw(){
 
   const tiles=visibleHexes();
 
+  // Clear in physical canvas coordinates before installing the view transform.
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#08080c";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const anchor=battlefieldZoomAnchor();
+  ctx.setTransform(
+    battlefieldZoom,0,0,battlefieldZoom,
+    anchor.x*(1-battlefieldZoom),
+    anchor.y*(1-battlefieldZoom)
+  );
   drawFloor();
   drawWallTestFloorPlan();
   drawArchitecturalWallShadows();
@@ -30139,6 +30182,7 @@ function draw(){
   drawUnitBarks();
   drawActivityDetectedFx();
   drawAimFriendlyFireWarning();
+  ctx.restore();
 }
 
 function flashAttack(attacker,defender,hit){
@@ -30184,6 +30228,18 @@ function handleLauncherKey(event){
 function handleCombatKey(event){
   const code=event.code;
   const keyLower=event.key.toLowerCase();
+
+  // Available before the first round and while aiming; never consume typing.
+  if(
+    (code==="BracketLeft" || code==="BracketRight") &&
+    !event.ctrlKey && !event.metaKey && !event.altKey &&
+    !event.target?.isContentEditable &&
+    !["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)
+  ){
+    event.preventDefault();
+    changeBattlefieldZoom(code==="BracketRight" ? 1 : -1);
+    return;
+  }
 
   const directions={
     "KeyD":{x: 1,y: 0},
@@ -30473,9 +30529,12 @@ document.addEventListener("keydown",(event)=>{
 
 function canvasEventPoint(event){
   const rect=canvas.getBoundingClientRect();
+  const x=(event.clientX-rect.left)*(canvas.width/rect.width);
+  const y=(event.clientY-rect.top)*(canvas.height/rect.height);
+  const anchor=battlefieldZoomAnchor();
   return {
-    x:(event.clientX-rect.left)*(canvas.width/rect.width),
-    y:(event.clientY-rect.top)*(canvas.height/rect.height)
+    x:anchor.x+(x-anchor.x)/battlefieldZoom,
+    y:anchor.y+(y-anchor.y)/battlefieldZoom
   };
 }
 
