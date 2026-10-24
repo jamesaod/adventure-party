@@ -188,8 +188,10 @@ assert.ok(studioHtml.includes('id="studioSaturation" type="range" min="0" max="5
   'Saturation reaches 500 percent');
 assert.ok(studioSource.includes("new Option('T-Pose (height calibration)', '-1')"),
   'T-Pose is always exposed as the explicit calibration pose');
-assert.ok(studioSource.includes('object.skeleton.pose()') && studioSource.includes('!isTPoseSelected()'),
-  'T-Pose restores the bind skeleton and model size is gated to that mode');
+assert.ok(studioSource.includes('object.skeleton.pose()') &&
+  studioSource.includes('ui.ModelScale.disabled = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || state.disposed;') &&
+  !studioSource.includes('!isTPoseSelected()'),
+  'T-Pose still calibrates the skeleton, but model size is editable in every animation');
 assert.ok(studioSource.includes("assets/terrain/grass-outdoors-tiles.png") &&
   studioSource.includes('function drawGrassPreviewPolygon('),
   'Pixel previews use the combat grass tile sheet inside a tactical hex');
