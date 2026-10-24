@@ -183,7 +183,15 @@
       "upAxis": "Y",
       "mobType": "fighter",
       "combatModelId": "woman-warrior-mixamo-sword-shield-full-17",
-      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1"
+      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1",
+      "appearanceCustomization": {
+        "recolorMaskSetId": "woman-warrior-hair-metal-v1",
+        "supportedChannels": [
+          "hair",
+          "metal"
+        ],
+        "status": "experimental-visual-qa"
+      }
     },
     {
       "id": "woman-warrior-mixamo-sword-shield-full-17",
@@ -191,7 +199,15 @@
       "file": "assets/models/humans/woman-warrior/mixamo-sword-shield-full-17/woman-warrior-mixamo-sword-shield-full-17.glb",
       "upAxis": "Y",
       "mobType": "fighter",
-      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1"
+      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1",
+      "appearanceCustomization": {
+        "recolorMaskSetId": "woman-warrior-hair-metal-v1",
+        "supportedChannels": [
+          "hair",
+          "metal"
+        ],
+        "status": "experimental-visual-qa"
+      }
     }
   ],
   "weaponAttachmentProfiles": {
