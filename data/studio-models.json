@@ -185,7 +185,7 @@
       "combatModelId": "woman-warrior-mixamo-sword-shield-full-17",
       "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1",
       "appearanceCustomization": {
-        "recolorMaskSetId": "woman-warrior-hair-metal-v1",
+        "recolorMaskSetId": "woman-warrior-hair-metal-v2",
         "supportedChannels": [
           "hair",
           "metal"
@@ -201,7 +201,7 @@
       "mobType": "fighter",
       "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1",
       "appearanceCustomization": {
-        "recolorMaskSetId": "woman-warrior-hair-metal-v1",
+        "recolorMaskSetId": "woman-warrior-hair-metal-v2",
         "supportedChannels": [
           "hair",
           "metal"

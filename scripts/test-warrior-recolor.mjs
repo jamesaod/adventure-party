@@ -2,12 +2,15 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {HAIR_PRESETS,METAL_PRESETS,isWarriorRecolorModel,normalizeWarriorRecolor,WARRIOR_RECOLOR_ID}
   from '../js/warrior-recolor.mjs';
-assert.equal(WARRIOR_RECOLOR_ID,'woman-warrior-hair-metal-v1');
+assert.equal(WARRIOR_RECOLOR_ID,'woman-warrior-hair-metal-v2');
 assert.ok(isWarriorRecolorModel('woman-warrior-mixamo-sword-shield-full-17'));
 assert.ok(isWarriorRecolorModel('woman-warrior-tripo-source'));
 assert.ok(!isWarriorRecolorModel('new-carl-tripo-source'));
-assert.deepEqual(normalizeWarriorRecolor({hair:'auburn',metal:'gold'}),{hair:'auburn',metal:'gold'});
-assert.deepEqual(normalizeWarriorRecolor({hair:'unknown',metal:'sword'}),{hair:'default',metal:'default'});
+assert.deepEqual(normalizeWarriorRecolor({hair:'auburn',metal:'gold'}),{hair:'auburn',metal:'gold',debug:'off'});
+assert.deepEqual(normalizeWarriorRecolor({hair:'unknown',metal:'sword'}),{hair:'default',metal:'default',debug:'off'});
+assert.equal(normalizeWarriorRecolor({debug:'hair'}).debug,'hair');
+assert.equal(normalizeWarriorRecolor({debug:'metal'}).debug,'metal');
+assert.equal(normalizeWarriorRecolor({debug:'unsafe'}).debug,'off');
 assert.ok(Object.keys(HAIR_PRESETS).length>=6&&Object.keys(METAL_PRESETS).length>=6);
 const catalog=JSON.parse(readFileSync('data/studio-models.json','utf8'));
 for(const entry of catalog.models.filter(m=>m.id.startsWith('woman-warrior-'))){
@@ -19,7 +22,7 @@ const combat=readFileSync('js/combat-mob-renderer.mjs','utf8');
 const recipe=readFileSync('js/combat-pose-recipe.mjs','utf8');
 const capture=readFileSync('js/studio-capture.mjs','utf8');
 const html=readFileSync('3d-studio.html','utf8');
-for(const id of ['studioHairColor','studioMetalColor','studioRecolorPanel'])
+for(const id of ['studioHairColor','studioMetalColor','studioRecolorDebug','studioRecolorPanel'])
  assert.ok(html.includes(id),id+' control missing');
 for(const value of ['auburn','blonde','silver','bronze','steel','gold'])
  assert.ok(html.includes('value="'+value+'"'),value+' preset missing');
