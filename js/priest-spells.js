@@ -1,3 +1,4 @@
+(() => {
 // Initial combat-relevant AD&D 2e standard Cleric repertoire, levels 1–3.
 // Scope: actual priest spell IDs/spheres; no druid-only entries.
 const priest=(id,name,level,spheres,targetMode,kind,detail)=>({
@@ -29,3 +30,5 @@ const PRIEST_SPELLS=Object.freeze({
 });
 
 window.AdventurePartyPriestSpells=PRIEST_SPELLS;
+
+})();
