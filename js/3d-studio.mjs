@@ -9,6 +9,7 @@ import {
 } from './studio-animations.mjs?v=R238C82';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
+import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C126';
 import { createPoseCapture } from './studio-capture.mjs?v=R238C119';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
@@ -57,7 +58,7 @@ const FALLBACK_SPRITES = Object.freeze({
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'AnimationFiles', 'LoadAnimationButton', 'DemoButton', 'ModelName',
-  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
+  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus', 'HairColor', 'MetalColor', 'RecolorPanel', 'RecolorStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
@@ -87,7 +88,7 @@ const state = {
   modelScalePercent: 100, hexScalePercent: SPRITE_HEX_SCALE_PERCENT, lighting: { ...DEFAULT_LIGHTING },
   sourceFiles: [], isDemo: true, demoSourceUpAxis: 'Z', modelReady: false,
   libraryModels: [], libraryModelId: '', libraryLoading: false, modelLoading: false,
-  skinRepairReport: null, nativeBindReport: null,
+  skinRepairReport: null, nativeBindReport: null, appearanceRecolor: {hair:'default',metal:'default'},
   brightness: 1, contrast: 1, hue: 0, saturation: 1, outlineInches: DEFAULT_OUTLINE_INCHES,
   loadingVersion: 0, frame: 0, animationTime: 0, lastPreview: -Infinity,
   mainDirty: true, previewsDirty: true, lastTick: 0, raf: 0, disposed: false,
@@ -171,6 +172,7 @@ function getWorkspaceSettings() {
     },
     equipment: equipment.snapshot().settings,
     shield: shieldEquipment.snapshot().settings,
+    appearanceRecolor: { ...state.appearanceRecolor },
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
     center: state.center.toArray(), framingMode: state.framingMode,
     framingSamplesPerClip: state.framingSamplesPerClip,
@@ -291,6 +293,16 @@ function formatShieldDistance(value){
 function formatShieldSlide(value){
   if(Math.abs(value)<0.001)return 'Base';
   return `${Math.abs(value).toFixed(2)} in ${value>0?'toward elbow':'toward hand'}`;
+}
+
+function refreshRecolorControls(){
+  const enabled=isWarriorRecolorModel(state.libraryModelId)&&state.modelReady;
+  ui.RecolorPanel.hidden=!enabled;
+  ui.HairColor.value=state.appearanceRecolor.hair;
+  ui.MetalColor.value=state.appearanceRecolor.metal;
+  ui.RecolorStatus.textContent=enabled
+    ? 'Experimental selections on the actual 3D model. Default restores the original texture. Check for color spill before approving.'
+    : '';
 }
 
 function updateEquipmentControls(locked = false) {
@@ -438,6 +450,7 @@ async function changeShield(value,{resetPose=true}={}){
 
 function setModelReady(ready) {
   state.modelReady = ready;
+  if(ui.RecolorPanel) refreshRecolorControls();
   state.heightDirty = true;
   if (!ready) { modelBounds = null; state.heightFeet = null; }
   ui.HeightRuler.toggleAttribute('hidden', !ready);
@@ -1179,6 +1192,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   state.skinRepairReport = skinRepairReport;
   state.nativeBindReport = nativeBindReport;
   state.libraryModelId = restoreSettings?.libraryModelId || modelDefaults?.id || '';
+  state.appearanceRecolor = normalizeWarriorRecolor(restoreSettings?.appearanceRecolor);
   state.modelLoading = false;
   state.sourceFiles = sourceFiles;
   state.isDemo = isDemo;
@@ -1264,6 +1278,8 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   }
   updateModelInfo();
   applyModelFrame(framing);
+  if(isWarriorRecolorModel(state.libraryModelId)) applyWarriorRecolor(THREE,model,state.appearanceRecolor);
+  refreshRecolorControls();
   if (!restoreSettings) poseCapture?.reset(name, { persist: false });
   ui.EmptyMessage.hidden = true;
   setModelReady(true);
@@ -2238,6 +2254,18 @@ function exportImage(facing = null) {
 
 function bindControls() {
   ui.ModelLibrary.addEventListener('change', syncModelLibraryControls);
+  for(const [control,channel] of [[ui.HairColor,'hair'],[ui.MetalColor,'metal']]){
+    control.addEventListener('change',()=>{
+      state.appearanceRecolor=normalizeWarriorRecolor({...state.appearanceRecolor,[channel]:control.value});
+      if(state.model&&isWarriorRecolorModel(state.libraryModelId)){
+        try {applyWarriorRecolor(THREE,state.model,state.appearanceRecolor);}
+        catch(error){showError(error);return;}
+        poseCapture?.invalidateCaptures('Appearance color changed');
+        poseCapture?.saveWorkspace();
+        invalidate();
+      }
+    });
+  }
   ui.LoadLibraryButton.addEventListener('click', loadLibraryModel);
   ui.LoadButton.addEventListener('click', () => ui.Files.click());
   ui.Files.addEventListener('change', () => { if (ui.Files.files.length) loadFiles(ui.Files.files); });
@@ -2642,6 +2670,7 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   state.height = Number.isInteger(settings.height) && settings.height > 0 && settings.height <= 4096 ? settings.height : size.height;
   state.modelName = settings.modelName || 'Saved character';
   state.libraryModelId = typeof settings.libraryModelId === 'string' ? settings.libraryModelId : '';
+  state.appearanceRecolor = normalizeWarriorRecolor(settings.appearanceRecolor);
   state.sourceFiles = Array.isArray(settings.sourceFiles) ? settings.sourceFiles : [];
   state.isDemo = settings.isDemo === true;
   // Source orientation is independent of the user's orientation correction.
@@ -2708,6 +2737,7 @@ async function start() {
       lighting: { ...state.lighting },
       equipment: equipment.snapshot(),
       shield: shieldEquipment.snapshot(),
+      appearanceRecolor: { ...state.appearanceRecolor },
       renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent)).slice(2),
       modelDisplayScale: placement?.scale.x || null,
       modelHeightFeet: state.heightFeet,

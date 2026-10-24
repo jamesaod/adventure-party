@@ -345,7 +345,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(battlefield ? { battlefield } : {}),
       captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
-        ...render, brightness: style.brightness, contrast: style.contrast,
+        ...render,
+        appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
+        recolorMaskSetId: String(settings.libraryModelId||'').startsWith('woman-warrior-')
+          ? 'woman-warrior-hair-metal-v1' : null,
+        brightness: style.brightness, contrast: style.contrast,
         hue: style.hue, saturation: style.saturation, outline: style.outline,
         palette: 'Adventure Party VGA 256'
       }

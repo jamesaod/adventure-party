@@ -4,6 +4,7 @@ import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
+import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C126';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
@@ -214,6 +215,9 @@ export async function generateCombatSpriteSet(recipe){
   const gltf=await loadGltf(modelUrl);
   const model=gltf.scene;
   model.traverse(object=>{if(object.isSkinnedMesh)object.frustumCulled=false;});
+  if(isWarriorRecolorModel(recipe?.model?.id)){
+    applyWarriorRecolor(THREE,model,recipe.renderSettings?.appearanceRecolor);
+  }
 
   const frame=normalizedFrame(recipe);
   const style=normalizedStyle(recipe);
