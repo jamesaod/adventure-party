@@ -87,6 +87,8 @@ jobs:
           node scripts/test-woman-warrior-assets.mjs
           node scripts/test-warrior-recolor.mjs
           node scripts/test-cleric-phase-one.mjs
+          node scripts/test-priest-spells-phase-one.mjs
+          node --check js/priest-spells.js
 
       - name: Validate sprite capture packages and asset imports
         run: |
