@@ -8647,6 +8647,21 @@ function clericLevelData(level){
   return CLERIC_LEVELS[lvl-1];
 }
 
+function clericWisdomBonusSlots(wisdom){
+  // PHB Table 5 bonus priest spells: bonuses are per spell level, not per
+  // character level. Apply only when a priest can cast that spell level.
+  const wis=Number(wisdom)||0;
+  const bonus=[0,0,0,0,0,0,0];
+  if(wis>=13) bonus[0]++;
+  if(wis>=14) bonus[0]++;
+  if(wis>=15) bonus[1]++;
+  if(wis>=16) bonus[1]++;
+  if(wis>=17) bonus[2]++;
+  if(wis>=18){bonus[3]++;bonus[0]++;bonus[1]++;}
+  if(wis>=19){bonus[2]++;bonus[3]++;} // future exceptional Wisdom
+  return bonus;
+}
+
 function clericBaseSpellSlots(clericOrLevel,wisdom=null){
   const level=typeof clericOrLevel==="object"
     ? Number(clericOrLevel?.level)||1
@@ -8660,7 +8675,8 @@ function clericBaseSpellSlots(clericOrLevel,wisdom=null){
      7th-level priest spells require WIS 18. */
   if(wis<17) slots[5]=0;
   if(wis<18) slots[6]=0;
-  return slots;
+  const bonus=clericWisdomBonusSlots(wis);
+  return slots.map((base,index)=>base>0 ? base+bonus[index] : 0);
 }
 
 function clericClassEligibility({race="Human",alignment="true-neutral",stats={},deityAlignments=null}={}){
@@ -8764,6 +8780,60 @@ function makeClericCharacter({
   return cleric;
 }
 
+// PHB clerics are permitted major sphere spells of any available level,
+// and minor Elemental sphere spells only at levels 1-3.
+function clericCanPrepareSpell(cleric,spell){
+  if(!cleric || cleric.classId!=="cleric" || !spell || spell.spellGroup!=="Priest") return false;
+  const level=Number(spell.level);
+  if(!Number.isInteger(level)||level<1||level>7)return false;
+  if(!(cleric.spellSlots?.[level-1]>0))return false;
+  const major=CLERIC_CLASS.majorSpheres;
+  const minor=CLERIC_CLASS.minorSpheres;
+  const spheres=Array.isArray(spell.spheres)?spell.spheres:
+    (spell.sphere?[spell.sphere]:[]);
+  return spheres.some(sphere=>major.includes(sphere)||(level<=3&&minor.includes(sphere)));
+}
+function clericPrepareSpells(cleric,spellIds,catalog=SPELL_CATALOG){
+  if(!cleric||cleric.classId!=="cleric"||!Array.isArray(spellIds))return false;
+  const counts=Array(7).fill(0);
+  for(const id of spellIds){
+    const spell=catalog[id];
+    if(!clericCanPrepareSpell(cleric,spell))return false;
+    if(++counts[spell.level-1]>cleric.spellSlots[spell.level-1])return false;
+  }
+  cleric.memorizedPriestSpellIds=[...spellIds];
+  return true;
+}
+function clericCanCastPreparedSpell(cleric,id){
+  return !!(cleric?.classId==="cleric"&&cleric.memorizedPriestSpellIds?.includes(id));
+}
+function clericConsumePreparedSpell(cleric,id){
+  if(!clericCanCastPreparedSpell(cleric,id))return false;
+  cleric.memorizedPriestSpellIds.splice(cleric.memorizedPriestSpellIds.indexOf(id),1);
+  return true;
+}
+function levelUpCleric(cleric){
+  if(cleric?.classId!=="cleric"||cleric.level>=20)return null;
+  cleric.level++;
+  const hpGain=cleric.level<=9
+    ?Math.max(1,d(8)+nonWarriorConHpAdjustment(cleric.stats?.con||10))
+    :2;
+  cleric.maxHp+=hpGain;
+  cleric.hp=Math.min(cleric.maxHp,cleric.hp+hpGain);
+  applyClericClassRules(cleric);
+  return {level:cleric.level,hpGain,row:clericLevelData(cleric.level)};
+}
+function awardClericXp(cleric,baseXp){
+  if(cleric?.classId!=="cleric"||!Number.isFinite(Number(baseXp))||Number(baseXp)<=0)return null;
+  const base=Math.floor(Number(baseXp)),bonus=cleric.stats?.wis>=16?Math.round(base*.1):0;
+  cleric.xp+=base+bonus;
+  const levels=[];
+  while(cleric.level<20&&cleric.xp>=clericLevelData(cleric.level+1).xp){
+    const result=levelUpCleric(cleric);if(result)levels.push(result);
+  }
+  return {baseXp:base,bonus,total:base+bonus,newXp:cleric.xp,levels};
+}
+
 function clericCanEquipItem(cleric,item){
   if(!cleric || !item) return false;
   if(item.slot==="armor" || item.slot==="shield") return true;
@@ -8790,6 +8860,13 @@ window.AdventurePartyClericSystem={
   clericThaco,
   clericSavingThrows,
   clericBaseSpellSlots,
+  clericWisdomBonusSlots,
+  clericCanPrepareSpell,
+  clericPrepareSpells,
+  clericCanCastPreparedSpell,
+  clericConsumePreparedSpell,
+  levelUpCleric,
+  awardClericXp,
   clericCanEquipItem
 };
 
