@@ -39,7 +39,7 @@ for(const token of [
 ]) assert.ok(renderer.includes(token), `runtime renderer missing ${token}`);
 
 for(const token of [
-  "loadStudioWorkspace()",
+  "loadStudioWorkspace({ fromCombat })",
   "workspace.captures",
   "capture.clip",
   "capture.time",
