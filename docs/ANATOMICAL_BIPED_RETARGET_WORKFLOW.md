@@ -11,7 +11,7 @@ This document is the permanent record for the approach developed from Candidate 
 - The older live retargeter discarded the hips translation, so even mathematically correct arm rotations could leave jumping/crouching animations looking dislocated.
 - The tested Rev 112 method transfers **animated physical bone direction** from a source bone to a corresponding target bone, converted through both anatomical rig coordinate bases; it also transfers **scaled vertical hips movement**. These are the key changes, not a generic Left/Right rename.
 
-## Source of truth and code
+## Rev 116: Blender correction for turning clips\n\nHuman QA identified torso stretching on spin/turn actions. Blender inspection confirmed the `anatomical-aim` method suppresses pelvis yaw even though the donor turns about 90–100 degrees. **Do not promote the original 17-clip runtime retarget as production-ready for turning animations.** We preserved a separate Blender-corrected **two-turn QA GLB** and the editable source project in the Model Library, using yaw-neutral aim plus coherent pelvis rotation and limited 39-vertex weight repair. Severe stretch improved but still remains. Detailed reproduction, commands and QA metrics are in [BLENDER_HUMANOID_ASSET_PIPELINE.md](BLENDER_HUMANOID_ASSET_PIPELINE.md). This correction is not automatically applied to the 15 other clips.\n\n## Source of truth and code
 
 - Core function: `retargetHumanoidClip(THREE, clip, sourceModel, targetModel, label, {mode: 'anatomical-aim'})` in `js/mixamo-retarget.mjs`.
 - Library configuration: `data/studio-models.json`; `retargetQa.carrier` identifies the already-baked donor GLB, `retargetQa.clips` lists clips by exact name, and `retargetQa.initialClip` optionally selects the starting test pose.

@@ -166,6 +166,14 @@
         "initialClip": "Mixamo_sword_and_shield_idle"
       },
       "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "new-orc-blender-corrected-turns-qa",
+      "label": "New Orc — Blender-Corrected Turns (2 Clips QA)",
+      "file": "assets/models/orcs/new-orc/blender-turn-qa/new-orc-turn-corrected-blender-qa.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
     }
   ],
   "weaponAttachmentProfiles": {
