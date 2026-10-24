@@ -8777,6 +8777,7 @@ function makeClericCharacter({
 
   applyClericClassRules(cleric);
   cleric.ac=calculateArmorClass(cleric);
+  cleric.turningUsedThisEncounter=false;
   return cleric;
 }
 
@@ -8834,6 +8835,62 @@ function awardClericXp(cleric,baseXp){
   return {baseXp:base,bonus,total:base+bonus,newXp:cleric.xp,levels};
 }
 
+// PHB Table 61, indexed by the appropriate undead row and priest band.
+// - = cannot turn, T = automatic turn, D = dispel/destroy.
+const CLERIC_TURNING_LEVEL_BANDS=[1,2,3,4,5,6,7,8,9,10,12,14];
+const CLERIC_TURNING_ROWS={
+  skeleton:[10,7,4,'T','T','D','D','D','D','D','D','D'],
+  zombie:[13,10,7,4,'T','T','D','D','D','D','D','D'],
+  ghoul:[16,13,10,7,4,'T','T','D','D','D','D','D'],
+  shadow:[19,16,13,10,7,4,'T','T','D','D','D','D'],
+  wight:[20,19,16,13,10,7,4,'T','T','D','D','D'],
+  ghast:[null,20,19,16,13,10,7,4,'T','T','D','D'],
+  wraith:[null,null,20,19,16,13,10,7,4,'T','T','D'],
+  mummy:[null,null,null,20,19,16,13,10,7,4,'T','T'],
+  spectre:[null,null,null,null,20,19,16,13,10,7,4,'T'],
+  vampire:[null,null,null,null,null,20,19,16,13,10,7,4],
+  ghost:[null,null,null,null,null,null,20,19,16,13,10],
+  lich:[null,null,null,null,null,null,null,20,19,16,13]
+};
+function clericTurningOutcome(level,undeadType,roll){
+  const type=String(undeadType||'').toLowerCase().replace(/[^a-z]/g,'');
+  const row=CLERIC_TURNING_ROWS[type];
+  if(!row)return 'unsupported';
+  const index=CLERIC_TURNING_LEVEL_BANDS.findLastIndex(min=>level>=min);
+  const requirement=row[Math.max(0,index)];
+  if(requirement==null)return 'fail';
+  if(requirement==='D')return 'destroy';
+  if(requirement==='T')return 'turn';
+  return Number(roll)>=requirement?'turn':'fail';
+}
+function clericTurnUndead(cleric,targets=[],{roll=null,affected=null}={}){
+  if(cleric?.classId!=='cleric'||cleric.turningUsedThisEncounter)return null;
+  cleric.turningUsedThisEncounter=true;
+  const turnRoll=roll===null?d(20):roll;
+  const limit=affected===null?d(6)+d(6):affected;
+  const evil=!!cleric.canCommandUndead;
+  const results=[];
+  const ordered=targets.filter(t=>t&&t.alive&&isUndeadUnit(t))
+    .sort((a,b)=>(Number(a.hitDice)||1)-(Number(b.hitDice)||1));
+  for(const target of ordered.slice(0,Math.max(0,limit))){
+    const type=target.undeadType||target.species||String(target.type||'');
+    const outcome=clericTurningOutcome(cleric.level,type,turnRoll);
+    if(outcome==='fail'||outcome==='unsupported')continue;
+    if(evil){
+      target.faction=cleric.faction;
+      target.controller='mob';
+      results.push({id:target.id,result:'command'});
+    }else if(outcome==='destroy'){
+      target.hp=0;target.alive=false;
+      results.push({id:target.id,result:'destroy'});
+    }else{
+      setMoraleFleeing(target,true);
+      results.push({id:target.id,result:'turn'});
+    }
+  }
+  return {roll:turnRoll,affected:limit,results};
+}
+
 function clericCanEquipItem(cleric,item){
   if(!cleric || !item) return false;
   if(item.slot==="armor" || item.slot==="shield") return true;
@@ -8866,6 +8923,8 @@ window.AdventurePartyClericSystem={
   clericPrepareSpells,
   clericCanCastPreparedSpell,
   clericConsumePreparedSpell,
+  clericTurningOutcome,
+  clericTurnUndead,
   levelUpCleric,
   awardClericXp,
   clericCanEquipItem
@@ -25300,6 +25359,13 @@ function renderSpellCastList(){
 
   const caster=activePlayerControlledUnit() || game?.player;
   const mageMode=isMageCharacter(caster);
+  if(caster?.classId==='cleric'){
+    if(subtitle)subtitle.textContent=`Cleric ${caster.level} — priest spellcasting and Turn Undead`;
+    const canTurn=!caster.turningUsedThisEncounter;
+    list.innerHTML=`<button class="spell-cast-choice" data-turn-undead type="button" ${canTurn?'':'disabled'}><b>Turn Undead</b><span>${canTurn?'Use one action; once per encounter':'Already used in this encounter'}</span></button>`+
+      `<div class="sheet-item"><b>Priest spells</b><span>No priest spells are combat-implemented yet. Prepared spells will appear here in the next phase.</span></div>`;
+    return;
+  }
   let spells=[];
 
   if(mageMode){
@@ -30443,6 +30509,18 @@ document.getElementById("castButton").addEventListener("click",()=>{
 document.getElementById("closeSpellCastButton").addEventListener("click",closeSpellCastOverlay);
 
 document.getElementById("spellCastList").addEventListener("click",(event)=>{
+  if(event.target.closest('[data-turn-undead]')){
+    const cleric=activePlayerControlledUnit();
+    if(cleric?.classId!=='cleric'||cleric.turningUsedThisEncounter)return;
+    const result=clericTurnUndead(cleric,activeEnemies());
+    closeSpellCastOverlay();
+    if(result){
+      log(`${cleric.name} attempts to turn undead (d20: ${result.roll}); ${result.results.length} affected.`,'system');
+      if(checkCombatVictory()||checkPartyDefeat())return;
+      endTurn();
+    }
+    return;
+  }
   const button=event.target.closest("[data-cast-spell]");
   if(!button) return;
 
