@@ -163,25 +163,42 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function count() { return Object.keys(captures).length * 6; }
-  function modelScaleAdjustable() { return Object.values(captures).every(capture => !!capture.layout && !capture.battlefieldRaw); }
+  function freshCount() { return Object.values(captures).filter(capture => !capture.stale).length * 6; }
+  function modelScaleAdjustable() {
+    return !freshCount() || Object.values(captures).every(capture => !!capture.layout && !capture.battlefieldRaw);
+  }
+
+  // Edits never discard a saved frame silently. The previous thumbnails
+  // remain visible for reference, but cannot be exported or sent to combat
+  // until each affected pose has been recaptured in the new configuration.
+  function invalidateCaptures(reason = 'Studio settings changed') {
+    if (!count()) return;
+    for (const capture of Object.values(captures)) capture.stale = true;
+    refresh();
+    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture Ready, Attack and Prone to test in combat.`;
+    saveWorkspace();
+  }
 
   function refreshControls() {
     const captured = count();
-    const locked = captured > 0;
-    onLockChange(locked);
-    ui.CaptureCount.textContent = `${captured} / 18 sprites`;
-    ui.ClearPosesButton.disabled = busy || !locked;
+    const fresh = freshCount();
+    // No capture-state editor lock: affected captures are marked outdated
+    // when an edit changes the rendered model.
+    onLockChange(false);
+    ui.CaptureCount.textContent = `${fresh} / 18 ready sprites` +
+      (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
+    ui.ClearPosesButton.disabled = busy || !captured;
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
-      button.disabled = busy || captured !== 18;
+      button.disabled = busy || fresh !== 18;
     }
     for (const row of rows.values()) {
       row.button.disabled = busy || !modelReady;
       row.clear.disabled = busy;
     }
-    ui.CaptureLockNote.classList.toggle('locked', locked);
-    ui.CaptureLockNote.textContent = locked
-      ? `Framing, footprint, resolution, lighting and equipment are shared by this set. Clear all captured poses to change them. Colors, outline and target mob remain adjustable.${modelScaleAdjustable() ? ' Model size can also be changed without recapturing.' : ''}`
-      : 'Set the footprint, resolution, model size, lighting, equipment and model front before your first capture. Fit all animations restores room for the full movement.';
+    ui.CaptureLockNote.classList.toggle('locked', captured > fresh);
+    ui.CaptureLockNote.textContent = captured > fresh
+      ? 'Some saved poses are outdated after editing. Controls stay available; recapture affected poses before exporting or testing in combat.'
+      : 'Controls remain editable after capture. Changing equipment, lighting or framing marks previous captures outdated until recaptured.';
   }
 
   function refresh() {
@@ -192,9 +209,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     for (const pose of SPRITE_POSES) {
       const capture = captures[pose], row = rows.get(pose);
       row.tr.classList.toggle('captured', !!capture);
+      row.tr.classList.toggle('outdated', !!capture?.stale);
       row.tr.classList.toggle('touches-edge', !!capture?.edgeDirections.length);
       row.clear.hidden = !capture;
-      row.detail.textContent = capture ? `${capture.clip} · ${capture.time.toFixed(3)} s` : 'Not captured';
+      row.detail.textContent = capture ? `${capture.clip} · ${capture.time.toFixed(3)} s${capture.stale ? ' · OUTDATED — recapture' : ''}` : 'Not captured';
       if (capture?.edgeDirections.length) row.detail.textContent += ` · Touches frame edge: ${capture.edgeDirections.join(', ')}`;
       for (const direction of SPRITE_DIRECTIONS) {
         const canvas = row.canvases[direction];
@@ -244,7 +262,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (busy || !modelReady) return;
     try {
       const captured = readPose();
-      const first = Object.values(captures)[0];
+      const first = Object.values(captures).find(value => !value.stale);
       if (first && (first.width !== captured.width || first.height !== captured.height)) {
         throw new Error('Clear the sheet before changing its sprite resolution.');
       }
@@ -256,11 +274,12 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
       style = getStyle();
       captured.edgeDirections = frameEdgeDirections(captured);
+      captured.stale = false;
       quantizeCapture(captured);
       captures[pose] = captured;
       refresh();
       queueSave();
-      const complete = count() === 18;
+      const complete = freshCount() === 18;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
         ? 'A sprite touches the frame edge. If it is cropped, clear the sheet and choose Fit all animations before capturing again.'
@@ -273,7 +292,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function snapshot() {
     const first = Object.values(captures)[0];
     return {
-      captureCount: count(), captureLocked: count() > 0, modelScaleAdjustable: modelScaleAdjustable(),
+      captureCount: count(), freshCaptureCount: freshCount(),
+      outdatedCaptureCount: count()-freshCount(), captureLocked: false,
+      modelScaleAdjustable: modelScaleAdjustable(),
       modelReady, workspaceRestored: restored,
       workspaceSaved: !saveTimer && savedRevision === saveRevision && !lastSaveError,
       groundAnchor: first ? [first.anchorX, first.anchorY] : null,
@@ -289,7 +310,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function buildExport() {
-    if (count() !== 18) throw new Error('Capture all three poses before exporting or testing the set.');
+    if (freshCount() !== 18) throw new Error('Recapture all three current poses before exporting or testing the set.');
     const { width, height, anchorX, anchorY, render, layout, modelScalePercent, hexScalePercent,
       renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
     const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
@@ -389,7 +410,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {
-    if (busy || count() !== 18) return;
+    if (busy || freshCount() !== 18) return;
     runExport(async exported => {
       ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
       const files = await packageFiles(exported);
@@ -423,6 +444,13 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   function updateModelScale(percent) {
     const nextScale = validateSpriteModelScale(percent);
+    if (count() && !freshCount()) {
+      // Source pixels are retained as outdated references. The newly rendered
+      // replacement pose will capture at the edited size.
+      refresh();
+      saveWorkspace();
+      return;
+    }
     if (!modelScaleAdjustable()) throw new Error('Clear the captured poses before changing Model size so native battlefield sprites can be re-rendered.');
     // Stage every row before committing: a size change must never leave poses
     // with different presentation sizes or alter their original captured pixels.
@@ -590,7 +618,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) queueSave(); });
 
   return Object.freeze({
-    reset, snapshot, saveWorkspace, flushSave, updateModelScale,
+    reset, snapshot, saveWorkspace, flushSave, updateModelScale, invalidateCaptures,
     setModelReady(ready) {
       modelReady = !!ready;
       if (modelReady) savedSettings = null;
