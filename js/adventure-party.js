@@ -1621,6 +1621,14 @@ window.addEventListener("keydown",()=>{
 
 const canvas=document.getElementById("battlefield");
 const ctx=canvas.getContext("2d");
+// Keep tactical geometry in its original 1080x600 coordinate system, while
+// drawing to a denser backing store. Saved sprite images are untouched.
+const BATTLEFIELD_LOGICAL_WIDTH=canvas.width;
+const BATTLEFIELD_LOGICAL_HEIGHT=canvas.height;
+const BATTLEFIELD_RENDER_DENSITY=Math.min(2,Math.max(1.5,window.devicePixelRatio||1));
+canvas.width=Math.round(BATTLEFIELD_LOGICAL_WIDTH*BATTLEFIELD_RENDER_DENSITY);
+canvas.height=Math.round(BATTLEFIELD_LOGICAL_HEIGHT*BATTLEFIELD_RENDER_DENSITY);
+
 
 /* ============================================================
    R170 — BATTLEFIELD WEATHER MANAGER
@@ -2140,8 +2148,8 @@ weatherSeverityButton?.addEventListener("click",cycleWeatherSeverity);
 updateWeatherTestControls();
 
 function drawRainWeather(now,severity){
-  const width=canvas.width;
-  const height=canvas.height;
+  const width=BATTLEFIELD_LOGICAL_WIDTH;
+  const height=BATTLEFIELD_LOGICAL_HEIGHT;
   const counts=[216,396,660];
   const count=counts[weatherState.severityIndex] || counts[0];
   const wind=severity.windStrength*weatherState.windDirection;
@@ -2181,8 +2189,8 @@ function drawRainWeather(now,severity){
 }
 
 function drawSnowWeather(now,severity){
-  const width=canvas.width;
-  const height=canvas.height;
+  const width=BATTLEFIELD_LOGICAL_WIDTH;
+  const height=BATTLEFIELD_LOGICAL_HEIGHT;
   const counts=[162,288,468];
   const count=counts[weatherState.severityIndex] || counts[0];
   const wind=severity.windStrength*weatherState.windDirection;
@@ -2211,8 +2219,8 @@ function drawSnowWeather(now,severity){
 }
 
 function drawWindWeather(now,severity){
-  const width=canvas.width;
-  const height=canvas.height;
+  const width=BATTLEFIELD_LOGICAL_WIDTH;
+  const height=BATTLEFIELD_LOGICAL_HEIGHT;
   /* R177: wind VFX density increased 3x from the R175 field for stronger readability. */
   const counts=[432,756,1224];
   const count=counts[weatherState.severityIndex] || counts[0];
@@ -5513,8 +5521,8 @@ function worldPointForHex(x,y){
 function screenPointForWorld(point,elevation=0){
   const cameraWorld=worldPointForHex(camera.x,camera.y);
   return {
-    x:(canvas.width*0.47)+(point.x-cameraWorld.x),
-    y:(canvas.height*0.57)+(point.y-cameraWorld.y)-elevation
+    x:(BATTLEFIELD_LOGICAL_WIDTH*0.47)+(point.x-cameraWorld.x),
+    y:(BATTLEFIELD_LOGICAL_HEIGHT*0.57)+(point.y-cameraWorld.y)-elevation
   };
 }
 
@@ -6084,7 +6092,7 @@ function drawArchitecturalFloorRegions(){
     ctx.clip();
     ctx.globalAlpha=0.10;
     ctx.fillStyle="#9a9ca2";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
     ctx.restore();
   }
@@ -6658,8 +6666,8 @@ function drawArchitecturalWallShapeOutline(wallsToOutline=architecturalWalls){
   if(!walls.length) return;
 
   const mask=document.createElement("canvas");
-  mask.width=ctx.canvas.width;
-  mask.height=ctx.canvas.height;
+  mask.width=BATTLEFIELD_LOGICAL_WIDTH;
+  mask.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const mctx=mask.getContext("2d");
   mctx.imageSmoothingEnabled=false;
   mctx.lineCap="square";
@@ -6727,8 +6735,8 @@ function drawArchitecturalWallTopOutline(wallsToOutline=architecturalWalls){
     rather than outlining every authored wall segment independently.
   */
   const mask=document.createElement("canvas");
-  mask.width=ctx.canvas.width;
-  mask.height=ctx.canvas.height;
+  mask.width=BATTLEFIELD_LOGICAL_WIDTH;
+  mask.height=BATTLEFIELD_LOGICAL_HEIGHT;
 
   const mctx=mask.getContext("2d");
   mctx.imageSmoothingEnabled=false;
@@ -6790,8 +6798,8 @@ function drawArchitecturalWallSegment(wall){
   const solidSegments=wallBlockingSubsegments(wall,"movement");
 
   const layer=document.createElement("canvas");
-  layer.width=ctx.canvas.width;
-  layer.height=ctx.canvas.height;
+  layer.width=BATTLEFIELD_LOGICAL_WIDTH;
+  layer.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const lctx=layer.getContext("2d");
   lctx.imageSmoothingEnabled=false;
   lctx.lineCap="square";
@@ -6996,7 +7004,7 @@ const BATTLEFIELD_ZOOM_MAX=1.8;
 const BATTLEFIELD_ZOOM_STEP=0.1;
 
 function battlefieldZoomAnchor(){
-  return {x:canvas.width*0.47,y:canvas.height*0.57};
+  return {x:BATTLEFIELD_LOGICAL_WIDTH*0.47,y:BATTLEFIELD_LOGICAL_HEIGHT*0.57};
 }
 
 function battlefieldViewportBounds(){
@@ -7004,8 +7012,8 @@ function battlefieldViewportBounds(){
   return {
     left:a.x-a.x/battlefieldZoom,
     top:a.y-a.y/battlefieldZoom,
-    right:a.x+(canvas.width-a.x)/battlefieldZoom,
-    bottom:a.y+(canvas.height-a.y)/battlefieldZoom
+    right:a.x+(BATTLEFIELD_LOGICAL_WIDTH-a.x)/battlefieldZoom,
+    bottom:a.y+(BATTLEFIELD_LOGICAL_HEIGHT-a.y)/battlefieldZoom
   };
 }
 
@@ -7463,9 +7471,9 @@ function maybeRecenterCamera(entity){
 
   const nearEdge=centers.some(c=>
     c.x<=marginX ||
-    c.x>=canvas.width-marginX ||
+    c.x>=BATTLEFIELD_LOGICAL_WIDTH-marginX ||
     c.y<=marginY ||
-    c.y>=canvas.height-marginY
+    c.y>=BATTLEFIELD_LOGICAL_HEIGHT-marginY
   );
 
   if(nearEdge){
@@ -7550,8 +7558,8 @@ function hexCenter(x,y,elevation=0){
   const dy=y-camera.y;
 
   return {
-    x:(canvas.width*0.47) + dx*HEX_W + dy*(HEX_W/2),
-    y:(canvas.height*0.57) + dy*HEX_ROW - elevation
+    x:(BATTLEFIELD_LOGICAL_WIDTH*0.47) + dx*HEX_W + dy*(HEX_W/2),
+    y:(BATTLEFIELD_LOGICAL_HEIGHT*0.57) + dy*HEX_ROW - elevation
   };
 }
 
@@ -7593,8 +7601,8 @@ function roundAxial(q,r){
 }
 
 function hexAtCanvasPoint(px,py){
-  const relR=(py-(canvas.height*0.57))/HEX_ROW;
-  const relQ=(px-(canvas.width*0.47)-relR*(HEX_W/2))/HEX_W;
+  const relR=(py-(BATTLEFIELD_LOGICAL_HEIGHT*0.57))/HEX_ROW;
+  const relQ=(px-(BATTLEFIELD_LOGICAL_WIDTH*0.47)-relR*(HEX_W/2))/HEX_W;
 
   return roundAxial(
     relQ+camera.x,
@@ -11563,8 +11571,8 @@ function architecturalLightShadowPolygonWorld(sourceWorld,blocker){
     around doors and windows, those openings naturally remain unshadowed.
   */
   const extrusionDistance=Math.max(
-    canvas.width,
-    canvas.height,
+    BATTLEFIELD_LOGICAL_WIDTH,
+    BATTLEFIELD_LOGICAL_HEIGHT,
     HEX_W*VIEW_RADIUS*3
   )*3;
 
@@ -11595,11 +11603,11 @@ function drawTerrainIlluminationLayer(tiles){
     (drawTerrainIlluminationLayer.lightCanvas=document.createElement("canvas"));
 
   if(
-    lightCanvas.width!==canvas.width ||
-    lightCanvas.height!==canvas.height
+    lightCanvas.width!==BATTLEFIELD_LOGICAL_WIDTH ||
+    lightCanvas.height!==BATTLEFIELD_LOGICAL_HEIGHT
   ){
-    lightCanvas.width=canvas.width;
-    lightCanvas.height=canvas.height;
+    lightCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
+    lightCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
   }
 
   const lightCtx=lightCanvas.getContext("2d");
@@ -12016,10 +12024,10 @@ function isHexCenterInsideObserverLosCone(observer,x,y,context=null){
 function visibilityWorldBounds(){
   const cameraWorld=worldPointForHex(camera.x,camera.y);
   const margin=140;
-  const left=cameraWorld.x-(canvas.width*0.47)-margin;
-  const top=cameraWorld.y-(canvas.height*0.57)-margin;
-  const right=left+canvas.width+(margin*2);
-  const bottom=top+canvas.height+(margin*2);
+  const left=cameraWorld.x-(BATTLEFIELD_LOGICAL_WIDTH*0.47)-margin;
+  const top=cameraWorld.y-(BATTLEFIELD_LOGICAL_HEIGHT*0.57)-margin;
+  const right=left+BATTLEFIELD_LOGICAL_WIDTH+(margin*2);
+  const bottom=top+BATTLEFIELD_LOGICAL_HEIGHT+(margin*2);
 
   return {
     left,
@@ -12414,9 +12422,9 @@ function drawWallTestLineOfSightMask(){
   const maskCanvas=drawWallTestLineOfSightMask.maskCanvas ||
     (drawWallTestLineOfSightMask.maskCanvas=document.createElement("canvas"));
 
-  if(maskCanvas.width!==canvas.width || maskCanvas.height!==canvas.height){
-    maskCanvas.width=canvas.width;
-    maskCanvas.height=canvas.height;
+  if(maskCanvas.width!==BATTLEFIELD_LOGICAL_WIDTH || maskCanvas.height!==BATTLEFIELD_LOGICAL_HEIGHT){
+    maskCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
+    maskCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
   }
 
   const maskCtx=maskCanvas.getContext("2d");
@@ -26365,7 +26373,7 @@ function drawFloor(){
   const tileSet=activeCombatTerrainTileSet();
 
   ctx.fillStyle="#08080c";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
   const tiles=visibleHexes();
 
@@ -26458,7 +26466,7 @@ function drawFloor(){
   const tileSet=activeCombatTerrainTileSet();
 
   ctx.fillStyle="#08080c";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
   const tiles=visibleHexes();
 
@@ -26700,7 +26708,13 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   }
 
   ctx.save();
-  ctx.imageSmoothingEnabled=false;
+  // Detailed 3D-generated sprites benefit from filtered downscaling; classic
+  // pixel art keeps nearest-neighbor pixels. Never resample source assets.
+  const sourceWidth=image.naturalWidth || 1;
+  const sourceHeight=image.naturalHeight || 1;
+  const detailedSource=sourceWidth>drawW*1.35 || sourceHeight>drawH*1.35;
+  ctx.imageSmoothingEnabled=!!detailedSource;
+  if(detailedSource) ctx.imageSmoothingQuality="high";
 
   const directionalPoses=unitPoseDefinition(entity)?.directionalSprites;
   const isDirectionalImage=directionalPoses && Object.values(directionalPoses).some(
@@ -26922,10 +26936,10 @@ function drawCombatMessageBox(){
     Full-width combat notification strip, flush with the bottom
     edge of the tactical battlefield.
   */
-  const boxW=canvas.width;
+  const boxW=BATTLEFIELD_LOGICAL_WIDTH;
   const boxH=44;
   const x=0;
-  const y=canvas.height-boxH;
+  const y=BATTLEFIELD_LOGICAL_HEIGHT-boxH;
 
   const flashPhase=
     Math.floor(performance.now()/CRITICAL_FLASH_INTERVAL_MS)%2===0;
@@ -26971,7 +26985,7 @@ function drawCombatMessageBox(){
 
   ctx.fillText(
     combatMessageText,
-    canvas.width/2,
+    BATTLEFIELD_LOGICAL_WIDTH/2,
     y+boxH/2,
     boxW-28
   );
@@ -28033,8 +28047,8 @@ function drawDragonBreathFx(){
   };
 
   const bodyCanvas=document.createElement("canvas");
-  bodyCanvas.width=ctx.canvas.width;
-  bodyCanvas.height=ctx.canvas.height;
+  bodyCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
+  bodyCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const bodyCtx=bodyCanvas.getContext("2d");
   bodyCtx.imageSmoothingEnabled=false;
 
@@ -28516,8 +28530,8 @@ function drawFireballExplosionFx(){
     one outlined object rather than many separately outlined lobes.
   */
   const bodyCanvas=document.createElement("canvas");
-  bodyCanvas.width=ctx.canvas.width;
-  bodyCanvas.height=ctx.canvas.height;
+  bodyCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
+  bodyCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
   const bodyCtx=bodyCanvas.getContext("2d");
   bodyCtx.imageSmoothingEnabled=false;
 
@@ -29996,10 +30010,11 @@ function draw(){
   ctx.fillStyle="#08080c";
   ctx.fillRect(0,0,canvas.width,canvas.height);
   const anchor=battlefieldZoomAnchor();
+  const density=BATTLEFIELD_RENDER_DENSITY;
   ctx.setTransform(
-    battlefieldZoom,0,0,battlefieldZoom,
-    anchor.x*(1-battlefieldZoom),
-    anchor.y*(1-battlefieldZoom)
+    density*battlefieldZoom,0,0,density*battlefieldZoom,
+    density*anchor.x*(1-battlefieldZoom),
+    density*anchor.y*(1-battlefieldZoom)
   );
   drawFloor();
   drawWallTestFloorPlan();
@@ -30529,8 +30544,8 @@ document.addEventListener("keydown",(event)=>{
 
 function canvasEventPoint(event){
   const rect=canvas.getBoundingClientRect();
-  const x=(event.clientX-rect.left)*(canvas.width/rect.width);
-  const y=(event.clientY-rect.top)*(canvas.height/rect.height);
+  const x=(event.clientX-rect.left)*(BATTLEFIELD_LOGICAL_WIDTH/rect.width);
+  const y=(event.clientY-rect.top)*(BATTLEFIELD_LOGICAL_HEIGHT/rect.height);
   const anchor=battlefieldZoomAnchor();
   return {
     x:anchor.x+(x-anchor.x)/battlefieldZoom,
