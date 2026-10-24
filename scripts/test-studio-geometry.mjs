@@ -152,6 +152,36 @@ for (const scale of [2000, 25, 2000, 355, 100]) {
 const boundsSource = studioSource.match(/function geometryBounds\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(boundsSource, 'Extract the production model-bounds helper');
 const geometryBounds = new Function('THREE', `${boundsSource}\nreturn geometryBounds;`)(THREE);
+// The production live-height path includes both attached equipment and
+// animated mesh geometry; only saved physical T-Pose calibration excludes gear.
+const bodyBoundsSource = studioSource.match(/function geometryBodyBounds\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
+assert.ok(bodyBoundsSource, 'Extract body-only calibration bounds');
+const geometryBodyBounds = new Function('geometryBounds',
+  `${bodyBoundsSource}\nreturn geometryBodyBounds;`)(geometryBounds);
+const liveBody = new THREE.Group();
+const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial());
+bodyMesh.position.y=1;liveBody.add(bodyMesh);
+const heldWeapon = new THREE.Group();
+heldWeapon.userData.studioEquipment=true;
+liveBody.add(heldWeapon);
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2, 0.15), new THREE.MeshBasicMaterial());
+blade.position.y=3;heldWeapon.add(blade);
+const shieldMount = new THREE.Group();
+shieldMount.userData.studioShield=true;
+liveBody.add(shieldMount);
+const shieldMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 0.4), new THREE.MeshBasicMaterial());
+shieldMesh.position.set(-1, 2.3, 0);shieldMount.add(shieldMesh);
+const spanY = bounds => bounds.max.y - bounds.min.y;
+close(spanY(geometryBodyBounds(liveBody)), 2, 'T-Pose body calibration excludes sword and shield');
+close(spanY(geometryBounds(liveBody, { refreshSkinnedBounds:false })), 4, 'Live silhouette includes raised sword');
+heldWeapon.rotation.z=Math.PI/2;
+close(spanY(geometryBounds(liveBody, { refreshSkinnedBounds:false })), 2.5,
+  'Live height responds when the animated weapon swings sideways');
+close(spanY(geometryBodyBounds(liveBody)), 2, 'Body calibration stays unchanged through gear movement');
+assert.ok(studioSource.includes('modelBounds = geometryBounds(state.model, { refreshSkinnedBounds: false })') &&
+  studioSource.includes('const bodyBounds = geometryBodyBounds(state.model'),
+  'Height display and T-Pose calibration use separate measured bounds');
+for (const mesh of [bodyMesh,blade,shieldMesh]) {mesh.geometry.dispose();mesh.material.dispose();}
 const mainViewSource = studioSource.match(/function mainViewFrame\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(mainViewSource, 'Extract the production half-window framing');
 const viewModel = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 1), new THREE.MeshBasicMaterial());
