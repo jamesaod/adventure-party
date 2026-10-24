@@ -8,6 +8,9 @@ assert.ok(isWarriorRecolorModel('woman-warrior-tripo-source'));
 assert.ok(!isWarriorRecolorModel('new-carl-tripo-source'));
 assert.deepEqual(normalizeWarriorRecolor({hair:'auburn',metal:'gold'}),{hair:'auburn',metal:'gold',debug:'off'});
 assert.deepEqual(normalizeWarriorRecolor({hair:'unknown',metal:'sword'}),{hair:'default',metal:'default',debug:'off'});
+assert.equal(normalizeWarriorRecolor({debug:'hair'}).debug,'hair');
+assert.equal(normalizeWarriorRecolor({debug:'metal'}).debug,'metal');
+assert.equal(normalizeWarriorRecolor({debug:'unsafe'}).debug,'off');
 assert.ok(Object.keys(HAIR_PRESETS).length>=6&&Object.keys(METAL_PRESETS).length>=6);
 const catalog=JSON.parse(readFileSync('data/studio-models.json','utf8'));
 for(const entry of catalog.models.filter(m=>m.id.startsWith('woman-warrior-'))){
