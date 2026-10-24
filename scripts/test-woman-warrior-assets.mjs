@@ -39,4 +39,22 @@ const catalog=JSON.parse(readFileSync(new URL('data/studio-models.json',root)));
 assert.equal(catalog.models.find(x=>x.id==='woman-warrior-tripo-source')?.file,source);
 assert.equal(catalog.models.find(x=>x.id==='woman-warrior-mixamo-sword-shield-full-17')?.file,animated);
 assert.ok(provenance.bind_quaternion_mismatch_degrees['mixamorig:RightArm']>170,'Preserve right-arm bind mismatch warning for visual QA');
-console.log('PASS Woman Warrior: original bytes, 65 joints, 17 distinct animations, preserved meshes/materials/skin and catalog');
+// Orc and Carl retain their own catalog-scoped grips. Both Warrior variants
+// select the same reusable configuration via the normal sword selector/Reset.
+const warriorProfile='tripo-woman-warrior-one-hand-sword-v1';
+const grip=catalog.weaponAttachmentProfiles[warriorProfile];
+assert.equal(grip.weaponId,'medieval-sword');
+assert.equal(grip.status,'user-calibrated');
+assert.deepEqual(grip.position,[-0.010,0.065,0.010]);
+assert.deepEqual(grip.rotation,[0,-90,180]);
+for (const id of ['woman-warrior-tripo-source','woman-warrior-mixamo-sword-shield-full-17'])
+ assert.equal(catalog.models.find(entry=>entry.id===id).weaponAttachmentProfileId,warriorProfile);
+for (const model of catalog.models.filter(entry=>entry.id.startsWith('new-orc-')))
+ assert.equal(model.weaponAttachmentProfileId,'tripo-mixamo-orc-one-hand-sword-upward-v2');
+for (const model of catalog.models.filter(entry=>/carl/.test(entry.id)))
+ assert.equal(model.weaponAttachmentProfileId,undefined);
+const studio=readFileSync(new URL('js/3d-studio.mjs',root),'utf8');
+assert.ok(studio.includes("profileId === 'tripo-woman-warrior-one-hand-sword-v1'"));
+assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(ui.RightHandWeapon.value))'));
+assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand))'));
+console.log('PASS Woman Warrior: original bytes, 65 joints, 17 animations, retained skins and model-specific sword grip');
