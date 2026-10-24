@@ -8657,7 +8657,7 @@ function clericWisdomBonusSlots(wisdom){
   if(wis>=15) bonus[1]++;
   if(wis>=16) bonus[1]++;
   if(wis>=17) bonus[2]++;
-  if(wis>=18){bonus[3]++;bonus[0]++;bonus[1]++;}
+  if(wis>=18) bonus[3]++;
   if(wis>=19){bonus[2]++;bonus[3]++;} // future exceptional Wisdom
   return bonus;
 }
