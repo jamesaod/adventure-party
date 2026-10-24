@@ -175,6 +175,21 @@
       "upAxis": "Y",
       "mobType": "orc",
       "weaponAttachmentProfileId": "tripo-mixamo-orc-one-hand-sword-upward-v2"
+    },
+    {
+      "id": "woman-warrior-tripo-source",
+      "label": "Woman Warrior — Original Tripo (No Animation)",
+      "file": "assets/models/humans/woman-warrior/woman-warrior.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "combatModelId": "woman-warrior-mixamo-sword-shield-full-17"
+    },
+    {
+      "id": "woman-warrior-mixamo-sword-shield-full-17",
+      "label": "Woman Warrior — All 17 Sword & Shield Animations (QA)",
+      "file": "assets/models/humans/woman-warrior/mixamo-sword-shield-full-17/woman-warrior-mixamo-sword-shield-full-17.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
     }
   ],
   "weaponAttachmentProfiles": {

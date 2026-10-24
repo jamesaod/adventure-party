@@ -1,0 +1,185 @@
+{
+  "method": "carl-17-baked-carrier-world-bind-delta-qa",
+  "original_file": "woman-warrior.glb",
+  "original_sha256": "525ec9bb48ebac5ceadd9f6fddd8e4a22451b74608527392107dbc136ce76d4d",
+  "carrier_glb_sha256": "65aec8f790b9de9dda10f2efa8561075fc144518b93b15b376f47c5c7e411f08",
+  "output_sha256": "2c0064194f6c201dd8c379d915d3195f0178f28d2e8ee35beb7394aeb77adea5",
+  "size_bytes": 3873292,
+  "joint_count": 65,
+  "source_clip_count": 17,
+  "baked_clip_count": 17,
+  "basis_correction_degrees": 0.65106,
+  "hips_height_scale": 1.0722022842491041,
+  "bind_quaternion_mismatch_degrees": {
+    "mixamorig:Head": 10.37,
+    "mixamorig:HeadTop_End": 10.37,
+    "mixamorig:Hips": 0.65,
+    "mixamorig:LeftArm": 5.55,
+    "mixamorig:LeftFoot": 17.96,
+    "mixamorig:LeftForeArm": 6.74,
+    "mixamorig:LeftHand": 14.01,
+    "mixamorig:LeftHandIndex1": 2.9,
+    "mixamorig:LeftHandIndex2": 9.01,
+    "mixamorig:LeftHandIndex3": 9.01,
+    "mixamorig:LeftHandIndex4": 9.01,
+    "mixamorig:LeftHandMiddle1": 2.02,
+    "mixamorig:LeftHandMiddle2": 6.72,
+    "mixamorig:LeftHandMiddle3": 6.72,
+    "mixamorig:LeftHandMiddle4": 6.72,
+    "mixamorig:LeftHandPinky1": 11.85,
+    "mixamorig:LeftHandPinky2": 13.2,
+    "mixamorig:LeftHandPinky3": 13.2,
+    "mixamorig:LeftHandPinky4": 13.2,
+    "mixamorig:LeftHandRing1": 6.72,
+    "mixamorig:LeftHandRing2": 3.41,
+    "mixamorig:LeftHandRing3": 3.41,
+    "mixamorig:LeftHandRing4": 3.41,
+    "mixamorig:LeftHandThumb1": 6.59,
+    "mixamorig:LeftHandThumb2": 18.72,
+    "mixamorig:LeftHandThumb3": 18.72,
+    "mixamorig:LeftHandThumb4": 18.72,
+    "mixamorig:LeftLeg": 7.84,
+    "mixamorig:LeftShoulder": 3.04,
+    "mixamorig:LeftToeBase": 4.32,
+    "mixamorig:LeftToe_End": 4.32,
+    "mixamorig:LeftUpLeg": 6.01,
+    "mixamorig:Neck": 10.37,
+    "mixamorig:RightArm": 179.23,
+    "mixamorig:RightFoot": 20.13,
+    "mixamorig:RightForeArm": 118.9,
+    "mixamorig:RightHand": 149.17,
+    "mixamorig:RightHandIndex1": 100.12,
+    "mixamorig:RightHandIndex2": 53.92,
+    "mixamorig:RightHandIndex3": 53.92,
+    "mixamorig:RightHandIndex4": 53.92,
+    "mixamorig:RightHandMiddle1": 37.5,
+    "mixamorig:RightHandMiddle2": 9.02,
+    "mixamorig:RightHandMiddle3": 9.02,
+    "mixamorig:RightHandMiddle4": 9.02,
+    "mixamorig:RightHandPinky1": 162.09,
+    "mixamorig:RightHandPinky2": 118.52,
+    "mixamorig:RightHandPinky3": 118.52,
+    "mixamorig:RightHandPinky4": 118.52,
+    "mixamorig:RightHandRing1": 119.61,
+    "mixamorig:RightHandRing2": 45.8,
+    "mixamorig:RightHandRing3": 45.8,
+    "mixamorig:RightHandRing4": 45.8,
+    "mixamorig:RightHandThumb1": 19.41,
+    "mixamorig:RightHandThumb2": 16.72,
+    "mixamorig:RightHandThumb3": 16.72,
+    "mixamorig:RightHandThumb4": 16.72,
+    "mixamorig:RightLeg": 7.6,
+    "mixamorig:RightShoulder": 3.04,
+    "mixamorig:RightToeBase": 1.22,
+    "mixamorig:RightToe_End": 1.22,
+    "mixamorig:RightUpLeg": 6.06,
+    "mixamorig:Spine": 7.82,
+    "mixamorig:Spine1": 5.87,
+    "mixamorig:Spine2": 16.27
+  },
+  "clips": [
+    {
+      "name": "Mixamo_draw_sword_1",
+      "seconds": 0.5,
+      "frames": 31,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sheath_sword_1",
+      "seconds": 1.26667,
+      "frames": 77,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack_2",
+      "seconds": 1.3,
+      "frames": 79,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack_3",
+      "seconds": 1.73333,
+      "frames": 106,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack_4",
+      "seconds": 1.0,
+      "frames": 61,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack",
+      "seconds": 2.33333,
+      "frames": 141,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_block_2",
+      "seconds": 0.5,
+      "frames": 31,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_block_idle",
+      "seconds": 1.36667,
+      "frames": 83,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_block",
+      "seconds": 0.56667,
+      "frames": 35,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_death",
+      "seconds": 2.3,
+      "frames": 139,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_idle",
+      "seconds": 2.5,
+      "frames": 151,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_run_2",
+      "seconds": 0.53333,
+      "frames": 33,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_run",
+      "seconds": 0.7,
+      "frames": 43,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_strafe_2",
+      "seconds": 0.7,
+      "frames": 43,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_strafe",
+      "seconds": 0.66667,
+      "frames": 41,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_turn_2",
+      "seconds": 0.93333,
+      "frames": 57,
+      "channels": 66
+    },
+    {
+      "name": "Mixamo_sword_and_shield_turn",
+      "seconds": 0.86667,
+      "frames": 53,
+      "channels": 66
+    }
+  ],
+  "visual_qa": "PENDING: GLB structural validations cannot establish no limb crossing, cloth deformation, or grip correctness"
+}
