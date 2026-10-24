@@ -274,6 +274,11 @@ body.studio-page {
 .studio-equipment-grip legend { padding:0 4px; color:var(--muted); font-size:12px; }
 .studio-equipment-axes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
 .studio-equipment-axes .studio-field { margin:0; gap:4px; font-size:12px; }
+/* Use full-width tracks so 0.005-position steps remain practical to tune. */
+.studio-equipment-axes.studio-grip-slider-axes { grid-template-columns:minmax(0,1fr); gap:10px; }
+.studio-grip-slider-axes .studio-field { gap:5px; }
+.studio-grip-slider-axes .studio-label-row output { color:var(--cyan); font-size:13px; font-variant-numeric:tabular-nums; }
+
 .studio-equipment-axes input[type="number"] { padding:4px; font-size:12px; }
 #studioEquipmentStatus.error { color:#ffb0a8; }
 #studioEquipmentLockNote.locked { color:var(--cyan); }
