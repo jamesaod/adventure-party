@@ -58,7 +58,7 @@ const FALLBACK_SPRITES = Object.freeze({
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'Canvas', 'Viewport', 'Files', 'LoadButton', 'AnimationFiles', 'LoadAnimationButton', 'DemoButton', 'ModelName',
-  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus', 'HairColor', 'MetalColor', 'RecolorPanel', 'RecolorStatus',
+  'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus', 'HairColor', 'MetalColor', 'RecolorDebug', 'RecolorPanel', 'RecolorStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
@@ -300,6 +300,7 @@ function refreshRecolorControls(){
   ui.RecolorPanel.hidden=!enabled;
   ui.HairColor.value=state.appearanceRecolor.hair;
   ui.MetalColor.value=state.appearanceRecolor.metal;
+  ui.RecolorDebug.value=state.appearanceRecolor.debug;
   ui.RecolorStatus.textContent=enabled
     ? 'Experimental selections on the actual 3D model. Default restores the original texture. Check for color spill before approving.'
     : '';
@@ -2254,7 +2255,7 @@ function exportImage(facing = null) {
 
 function bindControls() {
   ui.ModelLibrary.addEventListener('change', syncModelLibraryControls);
-  for(const [control,channel] of [[ui.HairColor,'hair'],[ui.MetalColor,'metal']]){
+  for(const [control,channel] of [[ui.HairColor,'hair'],[ui.MetalColor,'metal'],[ui.RecolorDebug,'debug']]){
     control.addEventListener('change',()=>{
       state.appearanceRecolor=normalizeWarriorRecolor({...state.appearanceRecolor,[channel]:control.value});
       if(state.model&&isWarriorRecolorModel(state.libraryModelId)){
