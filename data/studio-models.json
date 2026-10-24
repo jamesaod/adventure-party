@@ -182,14 +182,16 @@
       "file": "assets/models/humans/woman-warrior/woman-warrior.glb",
       "upAxis": "Y",
       "mobType": "fighter",
-      "combatModelId": "woman-warrior-mixamo-sword-shield-full-17"
+      "combatModelId": "woman-warrior-mixamo-sword-shield-full-17",
+      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1"
     },
     {
       "id": "woman-warrior-mixamo-sword-shield-full-17",
       "label": "Woman Warrior — All 17 Sword & Shield Animations (QA)",
       "file": "assets/models/humans/woman-warrior/mixamo-sword-shield-full-17/woman-warrior-mixamo-sword-shield-full-17.glb",
       "upAxis": "Y",
-      "mobType": "fighter"
+      "mobType": "fighter",
+      "weaponAttachmentProfileId": "tripo-woman-warrior-one-hand-sword-v1"
     }
   ],
   "weaponAttachmentProfiles": {
@@ -207,6 +209,21 @@
       ],
       "status": "user-calibrated",
       "description": "Rev 121: approved Orc one-handed sword grip calibrated in Studio: XYZ position [-0.010, 0.050, 0.005], rotation [-29, -55, 175] degrees."
+    },
+    "tripo-woman-warrior-one-hand-sword-v1": {
+      "weaponId": "medieval-sword",
+      "position": [
+        -0.01,
+        0.065,
+        0.01
+      ],
+      "rotation": [
+        0,
+        -90,
+        180
+      ],
+      "status": "user-calibrated",
+      "description": "Rev 124: Woman Warrior sword grip calibrated from accepted Studio slider settings. Model-specific Medieval Sword position and rotation, without changing Carl or Orc presets."
     }
   }
 }
