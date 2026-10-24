@@ -59,7 +59,10 @@ const ui = Object.fromEntries([
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
-  'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
+  'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
+  'WeaponPositionXValue', 'WeaponPositionYValue', 'WeaponPositionZValue',
+  'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
+  'WeaponRotationXValue', 'WeaponRotationYValue', 'WeaponRotationZValue',
   'OffHandGripAlong', 'OffHandGripAlongValue', 'OffHandGripAcross', 'OffHandGripAcrossValue', 'OffHandGripDepth', 'OffHandGripDepthValue',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
   'UpAxis', 'Resolution', 'ResolutionValue', 'MobTarget', 'Footprint', 'LegacyFootprint',
@@ -321,8 +324,12 @@ function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount
   for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
     for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
       const field = ui[`Weapon${name}${axis}`];
-      field.value = String(settings[key][index]);
+      const value = settings[key][index];
+      field.value = String(value);
       field.disabled = busy || locked || settings.rightHand === 'none';
+      const formatted = name === 'Position' ? value.toFixed(3) : `${Math.round(value)}°`;
+      ui[`Weapon${name}${axis}Value`].textContent = formatted;
+      field.setAttribute('aria-valuetext', formatted);
     }
   }
   const offHandOffsets = settings.secondaryGripOffsetInches || [0,0,0];
@@ -2257,10 +2264,12 @@ function bindControls() {
   }
   for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
     for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
-      ui[`Weapon${name}${axis}`].addEventListener('change', event => {
+      ui[`Weapon${name}${axis}`].addEventListener('input', event => {
         const next = equipment.snapshot().settings;
         next[key][index] = event.target.valueAsNumber;
-        void changeEquipment(next);
+        // Adjust only the held item live. Do not snap the animation to ready
+        // while calibrating a grip in the middle of a sword swing.
+        void changeEquipment(next, { resetPose: false });
       });
     }
   }
