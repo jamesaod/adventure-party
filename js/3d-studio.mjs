@@ -9,7 +9,7 @@ import {
 } from './studio-animations.mjs?v=R238C82';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
-import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C126';
+import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
 import { createPoseCapture } from './studio-capture.mjs?v=R238C119';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
