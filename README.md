@@ -22,6 +22,10 @@ See [docs/THIRD_PARTY_3D_STUDIO.md](docs/THIRD_PARTY_3D_STUDIO.md) for the studi
 
 Open [Candidate 3d studio](https://jamesaod.github.io/adventure-party/candidate/3d-studio.html) and use **Model library → Load selected model** to load **New Carl — Original Tripo**, **New Orc — Original Tripo**, or **New Carl — Offline Sword & Shield Attack QA** directly from the repository. No local ZIP upload is needed. The first two are animationless originals; the last contains a single offline-baked Mixamo attack pending visual QA. See [Rev 109 QA instructions](docs/REV109_NEW_MODELS_PENDING_ASSETS.md) and [the permanent offline bake runbook](docs/TRIPO_MIXAMO_ANIMATION_BAKE.md).
 
+## Candidate Rev 116 Blender two-turn corrective QA
+
+The **New Orc — Blender-Corrected Turns (2 Clips QA)** entry in [Candidate 3D Studio](https://jamesaod.github.io/adventure-party/candidate/3d-studio.html) plays two exported Blender turning actions using a repaired pelvis yaw and limited skin-weight corrections. The raw Orc, all 17 experimental animations, and stable main are preserved. This remains a two-clip QA experiment; residual skin stretch is documented. See [Blender humanoid import/retarget workflow](docs/BLENDER_HUMANOID_ASSET_PIPELINE.md) and [provenance manifest](data/blender-orc-turn-qa.json).
+
 ## Candidate Rev 113 Orc anatomical full animation QA
 
 In the [Candidate 3D Studio](https://jamesaod.github.io/adventure-party/candidate/3d-studio.html), choose **New Orc — Bone Direction + Hip Motion / All 17 (QA)** from Model Library. The viewer starts with quiet `Mixamo_sword_and_shield_idle`; inspect `block_idle`, `block`, and all remaining 14 clips using the Animation menu. The Rev 112 one-animation proof and original uploaded GLBs remain untouched. Reproducible biped procedure: [Anatomical biped retarget workflow](docs/ANATOMICAL_BIPED_RETARGET_WORKFLOW.md). Visual QA of all 17 remains pending.
