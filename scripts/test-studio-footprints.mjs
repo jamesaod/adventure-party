@@ -28,6 +28,7 @@ const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
 const sandbox = {
+  PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
   HEX_DIRS: directions.map((name, index) => ({ name, x: vectors[index][0], y: vectors[index][1] })),
   UNIT_FOOTPRINTS: { single: SPRITE_LAYOUTS.single, hex7: SPRITE_LAYOUTS.hex7 },
   STUDIO_FOOTPRINTS: new Map(allLayoutPresets.map(layout => [layout.id, layout])),
