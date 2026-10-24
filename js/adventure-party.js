@@ -1,5 +1,5 @@
 "use strict";
-import { PRIEST_SPELLS } from './priest-spells.mjs?v=R238C129';
+const PRIEST_SPELLS=window.AdventurePartyPriestSpells||{};
 
 // R169 final auto-merge trigger under required validation.
 
