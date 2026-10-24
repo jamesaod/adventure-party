@@ -8778,6 +8778,13 @@ function makeClericCharacter({
 
   applyClericClassRules(cleric);
   cleric.ac=calculateArmorClass(cleric);
+  // QA loadout: prepared prayers within class spell-slot limits.
+  const prayerIds=[
+    'priest-cure-light-wounds','priest-bless','priest-command',
+    'priest-hold-person','priest-spiritual-hammer',
+    'priest-prayer','priest-remove-paralysis'
+  ];
+  clericPrepareSpells(cleric,prayerIds);
   cleric.turningUsedThisEncounter=false;
   return cleric;
 }
