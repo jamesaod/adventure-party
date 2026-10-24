@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {preserveThinSpriteDetails} from '../js/studio-thin-detail.mjs';
-import {studioDraftImageNames} from '../js/sprite-set-store.mjs';
+// Studio storage is scoped to the current page URL.
+globalThis.location = {href:'https://example.test/candidate/3d-studio.html'};
+const {studioDraftImageNames} = await import('../js/sprite-set-store.mjs');
 
 const faces=['E','NE','NW','W','SW','SE'];
 const poses=['ready','attack','prone'];
