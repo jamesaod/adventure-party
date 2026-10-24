@@ -8,7 +8,8 @@ import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C99';
+import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C118';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -265,7 +266,10 @@ function populateSetupControls() {
   }
 }
 
-function syncCaptureLock(locked) {
+function syncCaptureLock(_locked) {
+  // Saved snapshots stay visible but become outdated after model-changing
+  // edits. No captured pose may freeze the equipment/lighting/framing editor.
+  const locked = false;
   for (const control of [ui.Footprint, ui.Resolution]) control.disabled = locked;
   for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis]) {
     control.disabled = locked || !state.modelReady;
@@ -291,7 +295,7 @@ function formatShieldSlide(value){
   return `${Math.abs(value).toFixed(2)} in ${value>0?'toward elbow':'toward hand'}`;
 }
 
-function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
+function updateEquipmentControls(locked = false) {
   const current = equipment.snapshot(), settings = current.settings;
   const shieldCurrent = shieldEquipment.snapshot(), shieldSettings = shieldCurrent.settings;
   const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || shieldCurrent.loading || state.disposed;
@@ -393,7 +397,7 @@ function defaultEquipmentSettingsForModel(weaponId) {
 }
 
 async function changeEquipment(value, { resetPose = true } = {}) {
-  if (!state.modelReady || state.modelLoading || poseCapture?.snapshot().captureCount) {
+  if (!state.modelReady || state.modelLoading) {
     updateEquipmentControls();
     return;
   }
@@ -408,12 +412,13 @@ async function changeEquipment(value, { resetPose = true } = {}) {
     // Equipment is an attachment, not a scale input. Keep the body calibration
     // and capture framing unchanged when gear is equipped or removed.
     if (resetPose) resetPreviewReferenceToReady();
+    poseCapture?.invalidateCaptures('Weapon or grip changed');
   }
   poseCapture?.saveWorkspace();
 }
 
 async function changeShield(value,{resetPose=true}={}){
-  if(!state.modelReady||state.modelLoading||poseCapture?.snapshot().captureCount){
+  if(!state.modelReady||state.modelLoading){
     updateEquipmentControls();
     return;
   }
@@ -425,6 +430,7 @@ async function changeShield(value,{resetPose=true}={}){
   const changed=await shieldEquipment.select(value);
   if(state.disposed||state.model!==model)return;
   if(changed){
+    poseCapture?.invalidateCaptures('Shield changed');
     // Shields follow the already-calibrated unit transform; they never refit it.
     if(resetPose)resetPreviewReferenceToReady();
   }
@@ -910,19 +916,21 @@ function applyModelFrame(frame) {
 }
 
 function fitModel() {
-  if (!state.model || poseCapture?.snapshot().captureCount) return;
+  if (!state.model) return;
   applyModelFrame(measureModelFrame(state.model, [], { upAxis: state.upAxis }));
+  poseCapture?.invalidateCaptures('Model framing changed');
   poseCapture?.saveWorkspace();
 }
 
 function fitAllAnimations() {
-  if (!state.model || poseCapture?.snapshot().captureCount) return;
+  if (!state.model) return;
   try {
     applyModelFrame(measureModelFrame(state.model, state.clips, {
       upAxis: state.upAxis, mixer: state.mixer, action: state.action
     }));
     updateAnimationControls();
     clearError();
+    poseCapture?.invalidateCaptures('Animation framing changed');
     status(state.clips.length ? 'All animations framed · One scale and ground anchor for every pose' : 'Static model framed');
     poseCapture?.saveWorkspace();
   } catch (error) { showError(error); }
@@ -1188,7 +1196,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   state.mixer = new THREE.AnimationMixer(model);
   state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
   state.upAxis = nextUpAxis;
-  state.playing = restoreSettings ? !!restoreSettings.playing : true;
+  state.playing = restoreSettings ? !!restoreSettings.playing : false;
   state.tPoseHeightFeet = Number.isFinite(restoreSettings?.unitCalibration?.measuredHeightInches)
     ? restoreSettings.unitCalibration.measuredHeightInches / 12 : null;
   ui.Heading.value = String(state.heading);
@@ -1377,6 +1385,10 @@ function renderBattlefieldAtlas() {
   const downsampled=battlefieldContext.getImageData(
     0,0,battlefieldCanvas.width,battlefieldCanvas.height
   ).data;
+  // Anti-aliased diagonal weapons may cover a fraction of a battlefield
+  // pixel. Keep real opaque source detail before the VGA alpha threshold.
+  preserveThinSpriteDetails(supersampleImage.data,state.width,state.height,
+    downsampled,battlefieldWidth,battlefieldHeight);
   const targetWidth=battlefieldCanvas.width,targetHeight=battlefieldCanvas.height;
   const targetStride=targetWidth*4;
   for(let y=0;y<targetHeight;y++){
@@ -1754,10 +1766,6 @@ async function loadAnimationFiles(fileList) {
     showError(new Error('Load a rigged model before importing animation FBX files.'));
     return false;
   }
-  if (poseCapture?.snapshot().captureCount) {
-    showError(new Error('Clear captured poses before changing the animation library.'));
-    return false;
-  }
   const files = [...fileList].filter(file => /\.fbx$/i.test(file.name));
   if (!files.length) {
     showError(new Error('Choose one or more FBX animation files.'));
@@ -1787,6 +1795,7 @@ async function loadAnimationFiles(fileList) {
     setClip(selected);
     updateModelInfo();
     fitAllAnimations();
+    poseCapture?.invalidateCaptures('Animation library changed');
     state.previewReferenceBounds = null;
     poseCapture?.saveWorkspace();
     const rig = analyzeHumanoidRig(state.model);
@@ -2287,6 +2296,7 @@ function bindControls() {
   });
   ui.ExportSheetButton.addEventListener('click', () => exportImage());
   ui.Heading.addEventListener('input', () => {
+    poseCapture?.invalidateCaptures('Model front direction changed');
     state.heading = Number(ui.Heading.value);
     ui.HeadingValue.textContent = `${state.heading}°`;
     if (calibration) calibration.rotation.y = THREE.MathUtils.degToRad(state.heading);
@@ -2298,13 +2308,13 @@ function bindControls() {
     fitAllAnimations();
   });
   ui.Resolution.addEventListener('input', () => {
-    if (poseCapture?.snapshot().captureCount) { updateSetupLabels(); return; }
     state.resolutionPercent = Number(ui.Resolution.value);
+    poseCapture?.invalidateCaptures('Sprite resolution changed');
     changeSpriteFormat();
   });
   ui.Footprint.addEventListener('change', () => {
-    if (poseCapture?.snapshot().captureCount) { updateSetupLabels(); return; }
     state.layoutId = spriteLayout(ui.Footprint.value).id;
+    poseCapture?.invalidateCaptures('Sprite footprint changed');
     changeSpriteFormat({ refit: true });
   });
   ui.MobTarget.addEventListener('change', async () => {
@@ -2331,10 +2341,9 @@ function bindControls() {
       ui.EmptyMessage.hidden = !!state.modelReady;
       invalidate();
     }
-    if (!poseCapture?.snapshot().captureCount) {
-      state.layoutId = mob.defaultLayout;
-      changeSpriteFormat({ refit: !state.spriteOnlyFallback });
-    } else poseCapture.updateMetadata();
+    poseCapture?.invalidateCaptures('Sprite target changed');
+    state.layoutId = mob.defaultLayout;
+    changeSpriteFormat({ refit: !state.spriteOnlyFallback });
     syncCaptureLock(!!poseCapture?.snapshot().captureCount);
   });
   ui.ModelScale.addEventListener('input', () => {
@@ -2348,6 +2357,7 @@ function bindControls() {
     applyModelSize(previousScalePercent);
     if (state.spriteOnlyFallback) invalidate();
     updateSetupLabels();
+    poseCapture?.invalidateCaptures('Model scale changed');
     poseCapture?.updateModelScale(state.modelScalePercent);
     poseCapture?.saveWorkspace();
   });
@@ -2357,8 +2367,8 @@ function bindControls() {
     ['KeyColor', 'keyColor'], ['KeyDirection', 'keyDirection']
   ]) {
     ui[name].addEventListener(name === 'KeyDirection' ? 'change' : 'input', () => {
-      if (poseCapture?.snapshot().captureCount) { updateLighting(); return; }
       state.lighting[key] = divisor ? Number(ui[name].value) / divisor : ui[name].value;
+      poseCapture?.invalidateCaptures('Lighting changed');
       updateLighting();
       poseCapture?.saveWorkspace();
     });
