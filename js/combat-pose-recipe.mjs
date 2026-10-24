@@ -1,4 +1,4 @@
-import { loadStudioWorkspace, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
+import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
@@ -110,6 +110,17 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
     return fallbackRecipe('The saved Studio capture has no matching repository combat model.');
   }
   const first = captures.ready;
+  if (fromCombat) {
+    // Reject a stale or unrelated workspace instead of silently shrinking a
+    // validated battlefield sprite set after an equipment swap.
+    const draft = await loadStudioDraft();
+    const declared = draft?.manifest?.frame;
+    const keys = ['width','height','renderWidth','renderHeight'];
+    if (!declared || keys.some(key => Math.abs((first[key] ?? NaN) - declared[key]) > 0.01 ||
+        !Number.isFinite(first[key]) || !Number.isFinite(declared[key]))) {
+      throw new Error('Saved combat frame dimensions differ from the Studio draft; keeping its original native-resolution sprites.');
+    }
+  }
   const profile = structuredClone(poseProfileForHumanoid('one-handed-swing'));
   profile.id = 'studio-captured-one-handed-swing-v1';
   profile.version = Math.max(2, Number(workspace.savedAt || 0));
