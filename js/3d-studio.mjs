@@ -8,6 +8,7 @@ import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
 } from './studio-animations.mjs?v=R238C82';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
+import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { createPoseCapture } from './studio-capture.mjs?v=R238C99';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
@@ -1188,7 +1189,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   state.mixer = new THREE.AnimationMixer(model);
   state.heading = Number.isFinite(restoreSettings?.heading) ? restoreSettings.heading : 0;
   state.upAxis = nextUpAxis;
-  state.playing = restoreSettings ? !!restoreSettings.playing : true;
+  state.playing = restoreSettings ? !!restoreSettings.playing : false;
   state.tPoseHeightFeet = Number.isFinite(restoreSettings?.unitCalibration?.measuredHeightInches)
     ? restoreSettings.unitCalibration.measuredHeightInches / 12 : null;
   ui.Heading.value = String(state.heading);
@@ -1377,6 +1378,10 @@ function renderBattlefieldAtlas() {
   const downsampled=battlefieldContext.getImageData(
     0,0,battlefieldCanvas.width,battlefieldCanvas.height
   ).data;
+  // Anti-aliased diagonal weapons may cover a fraction of a battlefield
+  // pixel. Keep real opaque source detail before the VGA alpha threshold.
+  preserveThinSpriteDetails(supersampleImage.data,state.width,state.height,
+    downsampled,battlefieldWidth,battlefieldHeight);
   const targetWidth=battlefieldCanvas.width,targetHeight=battlefieldCanvas.height;
   const targetStride=targetWidth*4;
   for(let y=0;y<targetHeight;y++){
