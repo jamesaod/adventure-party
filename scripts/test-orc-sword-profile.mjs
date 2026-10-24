@@ -9,9 +9,9 @@ const id='tripo-mixamo-orc-one-hand-sword-upward-v2';
 const preset=catalog.weaponAttachmentProfiles?.[id];
 assert.ok(preset,'The Orc sword pose must be stored as catalog data');
 assert.equal(preset.weaponId,'medieval-sword');
-assert.equal(preset.status,'experimental-visual-qa-pending');
-assert.deepEqual(preset.position,[0.015,0.05,0.005]);
-assert.deepEqual(preset.rotation,[0,-90,90]);
+assert.equal(preset.status,'user-calibrated');
+assert.deepEqual(preset.position,[-0.010,0.050,0.005]);
+assert.deepEqual(preset.rotation,[-29,-55,175]);
 const orcs=catalog.models.filter(entry=>entry.id.startsWith('new-orc-'));
 assert.ok(orcs.length>=6,'Source, Rev 110 and all Rev 111/112/113 QA Orc models are cataloged');
 for(const entry of orcs)assert.equal(entry.weaponAttachmentProfileId,id,
@@ -36,10 +36,10 @@ const actualGrip=sword.localToWorld(gripPoint.clone());
 const expectedGrip=hand.localToWorld(new THREE.Vector3(...preset.position));
 assert.ok(actualGrip.distanceTo(expectedGrip)<1e-6,
   'Rotate weapon about its calibrated grip so the hilt stays in the fist');
-const bladeWorld=sword.localToWorld(gripPoint.clone().add(new THREE.Vector3(-1,0,0)))
-  .sub(actualGrip).normalize();
-assert.ok(bladeWorld.y < -0.98 && Math.abs(bladeWorld.z) < 0.02,
-  'Corrected sword points along hand-local -Y (opposite the wrong Rev 114 orientation)');
+// User-calibrated rotation must be preserved without imposing the former
+// experimental axis direction on the blade.
+assert.deepEqual(settings.position,preset.position);
+assert.deepEqual(settings.rotation,preset.rotation);
 attachment.detach();
 
 // This profile is applied by the normal weapon selector and by Reset grip,
