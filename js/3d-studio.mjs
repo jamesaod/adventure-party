@@ -295,7 +295,7 @@ function formatShieldSlide(value){
   return `${Math.abs(value).toFixed(2)} in ${value>0?'toward elbow':'toward hand'}`;
 }
 
-function updateEquipmentControls(locked = !!poseCapture?.snapshot().captureCount) {
+function updateEquipmentControls(locked = false) {
   const current = equipment.snapshot(), settings = current.settings;
   const shieldCurrent = shieldEquipment.snapshot(), shieldSettings = shieldCurrent.settings;
   const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || shieldCurrent.loading || state.disposed;
