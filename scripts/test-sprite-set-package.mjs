@@ -404,7 +404,7 @@ const partial = assembleSpriteSheet({ ready: split }, width, height);
 assert.ok(partial.data.subarray(width * 6 * height * 4).every(byte => byte === 0), 'Uncaptured rows stay empty');
 const sheet = assembleSpriteSheet(frames, width, height);
 assert.equal(sheet.width, width * 6);
-assert.equal(sheet.height, height * 3);
+assert.equal(sheet.height, height * SPRITE_POSES.length);
 SPRITE_POSES.forEach((pose, row) => SPRITE_DIRECTIONS.forEach((facing, column) => {
   for (let y = 0; y < height; y++) {
     const start = ((row * height + y) * sheet.width + column * width) * 4;
