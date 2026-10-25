@@ -27,3 +27,6 @@ assert.throws(()=>createActionProfileCatalog([custom,custom]),/Duplicate/);
 assert.throws(()=>defineActionProfile({id:'x',label:'X',poses:{jump:{animation:'J',timeSeconds:0}}}),/Unknown/);
 assert.throws(()=>defineActionProfile({id:'x',label:'X',poses:{attack:{animation:'A',timeSeconds:-1}}}),/nonnegative/);
 console.log('Action profile catalog: 11 defaults, optional poses, shared prone and extensibility PASS');
+
+// Unit Package regression runs as part of existing action-profile validation.
+await import('./test-unit-package.mjs');
