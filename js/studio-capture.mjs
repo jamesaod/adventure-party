@@ -62,13 +62,23 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   ].map(name => [name, byId(name)]));
   const rows = new Map();
   let captures = {}, style = getStyle(), busy = false, modelReady = false;
+  const capturesByProfile=new Map([['one-handed-swing',captures]]);
+  let selectedProfileId='one-handed-swing';
+  function switchActionProfile(nextId){
+    if(!ACTION_PROFILE_CATALOG.has(nextId)||nextId===selectedProfileId)return;
+    capturesByProfile.set(selectedProfileId,captures);
+    selectedProfileId=nextId;
+    captures=capturesByProfile.get(nextId)||{};
+    capturesByProfile.set(nextId,captures);
+    refresh();queueSave();
+  }
   if(ui.ActionProfile){
     for(const profile of ACTION_PROFILE_CATALOG.values()){
       const option=document.createElement('option');option.value=profile.id;option.textContent=profile.label;
       ui.ActionProfile.append(option);
     }
     ui.ActionProfile.value='one-handed-swing';
-    ui.ActionProfile.addEventListener('change',saveWorkspace);
+    ui.ActionProfile.addEventListener('change',()=>switchActionProfile(ui.ActionProfile.value));
   }
   let savedSettings = null, restored = false, saveRevision = 0, savedRevision = 0;
   let saveQueue = Promise.resolve(), lastSaveError = null, saveTimer = 0;
@@ -82,7 +92,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function workspaceSnapshot() {
     const currentSettings = getWorkspaceSettings();
     const settings = { ...(!modelReady && savedSettings ? savedSettings : currentSettings) };
-    if(ui.ActionProfile) settings.actionProfileId=ui.ActionProfile.value;
+    if(ui.ActionProfile) settings.actionProfileId=selectedProfileId;
     if (ui.WindupDuration) settings.windupDurationMs = Number(ui.WindupDuration.value);
     const first = Object.values(captures)[0];
     settings.hexScalePercent = validateSpriteHexScale(first ? first.hexScalePercent : settings.hexScalePercent);
@@ -91,7 +101,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => {
         const { frames, battlefieldFrames, ...saved } = value;
         return [pose, saved];
-      }))
+      })),
+      actionProfiles:Object.fromEntries([...capturesByProfile, [selectedProfileId,captures]].map(([id,group])=>[id,
+        Object.fromEntries(Object.entries(group).map(([pose,value])=>{
+          const {frames,battlefieldFrames,...saved}=value;return [pose,saved];
+        }))]))
     };
   }
 
@@ -360,7 +374,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(unit ? { unit } : {}),
       ...(battlefield ? { battlefield } : {}),
       windupDurationMs: Math.max(0,Math.min(1500,Number(ui.WindupDuration?.value ?? 250))),
-      partialPoses:true, actionProfileId:ui.ActionProfile?.value || 'one-handed-swing',
+      partialPoses:true, actionProfileId:selectedProfileId,
       captures: Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render,
@@ -446,6 +460,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   function reset(name, { persist = true } = {}) {
     captures = {};
+    capturesByProfile.clear();selectedProfileId='one-handed-swing';
+    capturesByProfile.set(selectedProfileId,captures);
+    if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;
     style = getStyle();
     savedSettings = null;
     restored = false;
@@ -587,18 +604,30 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
       const workspace = upgradeStudioWorkspaceHexScale(savedWorkspace);
       const staged = {};
-      for (const [pose, saved] of Object.entries(workspace.captures)) {
+      for (const [pose, saved] of Object.entries(workspace.captures||{})) {
         const captured = { ...saved };
         captured.edgeDirections = frameEdgeDirections(captured);
         quantizeCapture(captured, workspace.style);
         staged[pose] = captured;
       }
       // Only commit once every row has been decoded and re-rendered successfully.
-      captures = staged;
+      capturesByProfile.clear();
+      for(const [id,group] of Object.entries(workspace.actionProfiles||{})){
+        if(!ACTION_PROFILE_CATALOG.has(id))continue;
+        const rows={};
+        for(const [pose,saved] of Object.entries(group)){
+          const captured={...saved};captured.edgeDirections=frameEdgeDirections(captured);
+          quantizeCapture(captured,workspace.style);rows[pose]=captured;
+        }
+        capturesByProfile.set(id,rows);
+      }
+      selectedProfileId=ACTION_PROFILE_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
+      captures=capturesByProfile.get(selectedProfileId)||staged;
+      capturesByProfile.set(selectedProfileId,captures);
       style = { ...workspace.style };
       savedSettings = workspace.settings;
       ui.SpriteSetName.value = workspace.name;
-      if(ui.ActionProfile)ui.ActionProfile.value=ACTION_PROFILE_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
+      if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;
       if (ui.WindupDuration) ui.WindupDuration.value = String(workspace.settings.windupDurationMs ?? 250);
       modelReady = false;
       restored = true;
@@ -634,6 +663,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   ui.ClearPosesButton.addEventListener('click', () => {
     if (busy) return;
     captures = {};
+    capturesByProfile.set(selectedProfileId,captures);
     refresh();
     queueSave();
     ui.SheetStatus.textContent = 'Sheet cleared. Framing, front direction, footprint, resolution and lighting can be changed again.';
