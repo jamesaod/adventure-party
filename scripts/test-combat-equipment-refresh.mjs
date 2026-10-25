@@ -26,7 +26,7 @@ const manifest=readFileSync(new URL('../js/sprite-set-core.mjs',import.meta.url)
 assert.ok(game.includes('...(captured.model || {})'), 'Equipment refresh must select the matching captured model');
 assert.ok(game.includes('markMobAppearanceDirty(fighter)'), 'Gear swap must mark combat sprites dirty');
 assert.ok(game.includes('unit.dynamicAppearanceSpriteSetId=spriteSetId'), 'Newly rendered sprites replace the old set');
-assert.ok(recipe.includes('captures[pose]?.stale'), 'Edited outdated Studio captures cannot drive the combat pose');
+assert.ok(recipe.includes('Object.values(captures).some(pose => pose?.stale)'), 'Edited outdated Studio captures cannot drive the combat pose');
 assert.ok(renderer.includes('preserveThinSpriteDetails(sourceTopDown'), 'The live sprite renderer must save thin swords');
 assert.ok(renderer.includes('defaultPose?.animation'), 'An unavailable captured clip must fall back safely');
 assert.ok(manifest.includes("'supersampled-battlefield-v2'"), 'Generated runtime images must satisfy the sprite schema');
