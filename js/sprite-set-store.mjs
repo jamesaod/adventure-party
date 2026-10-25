@@ -147,9 +147,9 @@ export async function loadStudioWorkspace({ fromCombat = false } = {}) {
 
 // One authoritative draft file list for writing and acceptance tests.
 export function studioDraftImageNames(manifest, includeSheet = false) {
-  const names = posesInSpriteSet(manifest).flatMap(pose => SPRITE_DIRECTIONS.map(facing => manifest.poses[pose].frames[facing]));
+  const names = posesInSpriteSet(manifest).filter(pose=>manifest.poses?.[pose]).flatMap(pose => SPRITE_DIRECTIONS.map(facing => manifest.poses[pose].frames[facing]));
   // Combat uses these separate, native-resolution battlefield sprites.
-  if (manifest.battlefield) for (const pose of posesInSpriteSet(manifest)) for (const facing of SPRITE_DIRECTIONS) {
+  if (manifest.battlefield) for (const pose of posesInSpriteSet(manifest).filter(pose=>manifest.battlefield.poses?.[pose])) for (const facing of SPRITE_DIRECTIONS) {
     names.push(manifest.battlefield.poses[pose].frames[facing]);
   }
   if (includeSheet) names.push(manifest.sheet.file);
