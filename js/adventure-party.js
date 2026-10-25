@@ -17852,7 +17852,7 @@ async function friendlyMageTurn(mage){
 
   if(adjacent.length){
     setUnitActionBanner(mage,"Staff Attack");
-    const result=attack(mage,adjacent[0]);
+    const result=await attack(mage,adjacent[0]);
     if(result?.hit || result?.criticalMiss){
       await waitForCombatActionPause();
     }else{
@@ -18085,7 +18085,7 @@ async function friendlyNpcTurn(npc){
       "system"
     );
 
-    const result=attack(npc,adjacentEnemy);
+    const result=await attack(npc,adjacentEnemy);
     npc.shotsRemaining=0;
 
     if(game.over) return;
@@ -18166,7 +18166,7 @@ async function friendlyNpcTurn(npc){
         "system"
       );
 
-      const result=attack(npc,adjacent);
+      const result=await attack(npc,adjacent);
       npc.shotsRemaining=0;
       shots=0;
 
@@ -18648,7 +18648,7 @@ function missileDamageExpression(attacker,defender){
     : (attacker?.rangedDamageSM || attacker?.rangedDamageL || "1d2");
 }
 
-function attack(attacker,defender,options={}){
+async function attack(attacker,defender,options={}){
   if(game.over || !attacker.alive || !defender.alive){
     return {hit:false,killed:false,damage:0};
   }
@@ -18666,26 +18666,15 @@ function attack(attacker,defender,options={}){
   faceEntityToward(attacker,defender);
   attacker.weaponInHand="melee";
 
-  // Preserve the synchronous melee result contract while sequencing the
-  // preparatory sprite. A superseded, dead, or cancelled action cannot later
-  // overwrite a newer pose.
-  const meleePoseDefinition=unitPoseDefinition(attacker);
-  if(unitPoseSupportsPose(meleePoseDefinition,"windup")){
-    const windupMs=Math.max(0,Math.min(1500,meleePoseDefinition.windupDurationMs ?? 250));
-    if(windupMs>0){
-      const originalGame=game;
-      setTemporaryUnitPose(attacker,"windup",windupMs);
-      const windupToken=attacker.poseUntil;
-      setTimeout(()=>{
-        if(game!==originalGame || !attacker.alive || attacker.poseUntil!==windupToken) return;
-        triggerUnitAttackPose(attacker);
-      },windupMs);
-    }else{
-      triggerUnitAttackPose(attacker);
-    }
-  }else{
-    triggerUnitAttackPose(attacker);
+  // Physical attacks are silent and effect-free until their actual attack frame.
+  // Awaiting here also prevents turn advancement and follow-up attacks from
+  // observing damage that has not yet happened.
+  const beforeWindupGame=game;
+  await prepareUnitAttackWindup(attacker);
+  if(game!==beforeWindupGame || game?.over || !attacker.alive || !defender.alive){
+    return {hit:false,killed:false,damage:0,interrupted:true};
   }
+  triggerUnitAttackPose(attacker);
 
   setUnitActionBanner(
     attacker,
@@ -19298,7 +19287,7 @@ async function performLeavingHexFreeAttacks(mover,destination){
         attacker.faction==="player" ? "good" : "bad"
       );
 
-      const result=attack(
+      const result=await attack(
         attacker,
         mover,
         {
@@ -19364,7 +19353,7 @@ async function tryPlayerMove(dx,dy){
       return;
     }
 
-    const result=attack(p,enemy);
+    const result=await attack(p,enemy);
     if(result?.killed || result?.criticalMiss) await waitForCombatActionPause();
     if(!game.over) finishPlayerAttackAction();
     return;
@@ -19437,7 +19426,7 @@ async function playerAttackKey(){
     return;
   }
 
-  const result=attack(p,target);
+  const result=await attack(p,target);
   if(result?.killed || result?.criticalMiss) await waitForCombatActionPause();
   if(!game.over) finishPlayerAttackAction();
 }
@@ -19585,7 +19574,7 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
           break;
         }
 
-        const result=attack(p,target);
+        const result=await attack(p,target);
 
         if(result?.hit || result?.criticalMiss){
           await waitForCombatActionPause();
@@ -19833,7 +19822,7 @@ async function performSweep(preferredTarget=null){
       const dy=target.y-p.y;
       updateFacingForStep(p,dx,dy);
 
-      const result=attack(p,target);
+      const result=await attack(p,target);
       attacksMade++;
 
       updateUi();
@@ -23445,7 +23434,7 @@ function chooseGuard(){
   endTurn();
 }
 
-function maybeTriggerPlayerGuard(mob){
+async function maybeTriggerPlayerGuard(mob){
   const guarder=livingPartyMembers()
     .filter(unit=>
       isPlayerControlledUnit(unit) &&
@@ -23463,7 +23452,7 @@ function maybeTriggerPlayerGuard(mob){
   guarder.guardBaselineAdjacentIds=[];
   log(`GUARD! ${guarder.name} attacks ${mob.name} as it newly enters an adjacent hex.`,"good");
   setUnitActionBanner(guarder,`Guard Attack with ${unitActionWeapon(guarder)}`);
-  attack(guarder,mob);
+  await attack(guarder,mob);
   updateUi(); draw();
   return true;
 }
@@ -23544,7 +23533,7 @@ async function triggerMobGuardsAgainst(target){
         `Guard Attack with ${unitActionWeapon(mob)}`
       );
 
-      const result=attack(mob,target);
+      const result=await attack(mob,target);
       updateUi();
       draw();
 
@@ -24179,7 +24168,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       return false;
     }
 
-    if(entity.controller==="mob" && maybeTriggerPlayerGuard(entity)){
+    if(entity.controller==="mob" && await maybeTriggerPlayerGuard(entity)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
       if(game.over || !entity.alive){
@@ -24271,7 +24260,7 @@ async function animateMobAlongPath(mob,path,maxSteps){
       return false;
     }
 
-    if(maybeTriggerPlayerGuard(mob)){
+    if(await maybeTriggerPlayerGuard(mob)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
       if(game.over) return false;
@@ -24607,7 +24596,7 @@ async function juvenileRedDragonMeleeRoutine(dragon,target){
     dragon.weaponDamageSM=attackSpec.damage;
     dragon.weaponDamageL=attackSpec.damage;
 
-    lastResult=attack(
+    lastResult=await attack(
       dragon,
       target,
       {actionLabel:attackSpec.name}
@@ -24637,7 +24626,7 @@ async function juvenileRedDragonTurn(dragon,target){
   }
 
   if(canMeleeAttackTarget(dragon,target)){
-    if(maybeTriggerPlayerGuard(dragon)){
+    if(await maybeTriggerPlayerGuard(dragon)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
       if(game.over) return;
       if(!dragon.alive){
@@ -24683,7 +24672,7 @@ async function juvenileRedDragonTurn(dragon,target){
     }
 
     if(canMeleeAttackTarget(dragon,target)){
-      if(maybeTriggerPlayerGuard(dragon)){
+      if(await maybeTriggerPlayerGuard(dragon)){
         await sleep(Math.max(240,combatActionPauseRemaining()));
         if(game.over) return;
         if(!dragon.alive){
@@ -24933,7 +24922,7 @@ async function mobTurn(mob){
 
   /* Already in melee range: attack immediately. */
   if(canMeleeAttackTarget(mob,target)){
-    if(maybeTriggerPlayerGuard(mob)){
+    if(await maybeTriggerPlayerGuard(mob)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
       if(game.over) return;
@@ -24943,7 +24932,7 @@ async function mobTurn(mob){
       }
     }
 
-    const result=attack(mob,target);
+    const result=await attack(mob,target);
 
     if(result?.killed || result?.criticalMiss){
       await waitForCombatActionPause();
@@ -24992,7 +24981,7 @@ async function mobTurn(mob){
     canMeleeAttackTarget(mob,target) &&
     steps<=mob.halfMove
   ){
-    if(maybeTriggerPlayerGuard(mob)){
+    if(await maybeTriggerPlayerGuard(mob)){
       await sleep(Math.max(240,combatActionPauseRemaining()));
 
       if(game.over) return;
@@ -25002,7 +24991,7 @@ async function mobTurn(mob){
       }
     }
 
-    const result=attack(mob,target);
+    const result=await attack(mob,target);
 
     if(result?.killed || result?.criticalMiss){
       await waitForCombatActionPause();
