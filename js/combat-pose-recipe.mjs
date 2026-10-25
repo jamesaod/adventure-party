@@ -13,7 +13,7 @@ function vec3(value, fallback = [0,0,0]) {
 }
 function completeCaptureWorkspace(workspace) {
   if (!workspace?.settings || !workspace?.captures) return false;
-  if (!REQUIRED_POSES.every(pose => workspace.captures[pose])) return false;
+  // Incomplete capture sets are valid; absent poses are intentionally fallback sprites.
   const identity = `${workspace.settings.libraryModelId || ''} ${workspace.settings.modelName || ''} ${workspace.name || ''}`.toLowerCase();
   return workspace.settings.mobType === 'fighter' || identity.includes('carl');
 }
@@ -89,13 +89,13 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
     return fallbackRecipe(`Studio capture workspace needs repair: ${error?.message || error}`);
   }
   if (!completeCaptureWorkspace(workspace)) {
-    if (fromCombat) throw new Error('Combat test capture is incomplete; retaining its original sprite resolution and poses.');
+    if (fromCombat) throw new Error('Combat test workspace metadata is incomplete; keeping saved sprites.');
     return fallbackRecipe('The saved Studio workspace does not contain Ready, Attack and Prone captures for Carl.');
   }
 
   const settings = workspace.settings;
   const captures = workspace.captures;
-  if (REQUIRED_POSES.some(pose => captures[pose]?.stale)) {
+  if (Object.values(captures).some(pose => pose?.stale)) {
     if (fromCombat) throw new Error('Combat test captures are outdated; keeping the last valid sprites.');
     return fallbackRecipe('Studio captures were changed after saving. Recapture the three poses to use them in combat.');
   }
@@ -110,15 +110,15 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
     if (fromCombat) throw new Error('The saved combat capture model is unavailable; keeping its existing sprites.');
     return fallbackRecipe('The saved Studio capture has no matching repository combat model.');
   }
-  const first = captures.ready;
+  const first = Object.values(captures).find(capture=>capture&&!capture.stale) || null;
   if (fromCombat) {
     // Reject a stale or unrelated workspace instead of silently shrinking a
     // validated battlefield sprite set after an equipment swap.
     const draft = await loadStudioDraft();
     const declared = draft?.manifest?.frame;
     const keys = ['width','height','renderWidth','renderHeight'];
-    if (!declared || keys.some(key => Math.abs((first[key] ?? NaN) - declared[key]) > 0.01 ||
-        !Number.isFinite(first[key]) || !Number.isFinite(declared[key]))) {
+    if (!declared || (first && keys.some(key => Math.abs((first[key] ?? NaN) - declared[key]) > 0.01 ||
+        !Number.isFinite(first[key]) || !Number.isFinite(declared[key])))) {
       throw new Error('Saved combat frame dimensions differ from the Studio draft; keeping its original native-resolution sprites.');
     }
   }
@@ -126,7 +126,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
   profile.id = 'studio-captured-one-handed-swing-v1';
   profile.version = Math.max(2, Number(workspace.savedAt || 0));
   profile.label = 'Studio-captured one-handed swinging weapon';
-  const capturePoses=captures.windup ? WINDUP_POSES : REQUIRED_POSES;
+  const capturePoses=Object.keys(captures).filter(name=>WINDUP_POSES.includes(name)&&!captures[name]?.stale);
   profile.poses = Object.fromEntries(capturePoses.map(name => {
     const capture = captures[name];
     return [name, {
@@ -137,16 +137,16 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
     }];
   }));
 
-  const frame = {
-    width: first.width,
-    height: first.height,
-    renderWidth: finite(first.renderWidth, 48),
-    renderHeight: finite(first.renderHeight, 48 * first.height / first.width),
-    anchorX: first.anchorX,
-    anchorY: first.anchorY
-  };
-  const factor = (finite(first.modelScalePercent, finite(settings.modelScalePercent, 100)) / 100) *
-    (finite(first.hexScalePercent, finite(settings.hexScalePercent, 100)) / 100);
+  const draft=await loadStudioDraft();
+  const frame = first ? {
+    width:first.width,height:first.height,
+    renderWidth:finite(first?.renderWidth,48),
+    renderHeight:finite(first?.renderHeight,48*first.height/first.width),
+    anchorX:first.anchorX,anchorY:first.anchorY
+  } : draft?.manifest?.frame;
+  if(!frame){if(fromCombat)throw new Error('Combat sprite frame metadata is unavailable.');return fallbackRecipe();}
+  const factor = (finite(first?.modelScalePercent, finite(settings.modelScalePercent, 100)) / 100) *
+    (finite(first?.hexScalePercent, finite(settings.hexScalePercent, 100)) / 100);
 
   return {
     source: 'studio-capture-workspace',
@@ -158,14 +158,14 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
       renderer: 'combat-offscreen-v2',
       workspaceSavedAt: workspace.savedAt || null,
       frame,
-      layoutId: first.layout?.id || settings.layout?.id || settings.layoutId || 'single',
-      resolutionPercent: first.layout?.resolutionPercent || settings.layout?.resolutionPercent || settings.resolutionPercent || 100,
+      layoutId: first?.layout?.id || settings.layout?.id || settings.layoutId || 'single',
+      resolutionPercent: first?.layout?.resolutionPercent || settings.layout?.resolutionPercent || settings.resolutionPercent || 100,
       modelScalePercent: finite(first.modelScalePercent, finite(settings.modelScalePercent, 100)),
       hexScalePercent: finite(first.hexScalePercent, finite(settings.hexScalePercent, 100)),
       transform: {
         heading: finite(settings.heading, 0),
         upAxis: settings.upAxis === 'Z' ? 'Z' : 'Y',
-        frameHeight: finite(settings.frameHeight, finite(first.render?.frameHeight, 10.58668090609295) / Math.max(factor, 0.0001)),
+        frameHeight: finite(settings.frameHeight, finite(first?.render?.frameHeight, 10.58668090609295) / Math.max(factor, 0.0001)),
         center: vec3(settings.center, [0, 2.0595906310059133 / Math.max(factor, 0.0001), 0]),
         placement: {
           position: vec3(settings.placement?.position, [0,0,0]),
