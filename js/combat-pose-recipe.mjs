@@ -139,10 +139,10 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
 
   const draft=await loadStudioDraft();
   const frame = first ? {
-    width:first.width,height:first.height,
+    width:first?.width,height:first?.height,
     renderWidth:finite(first?.renderWidth,48),
-    renderHeight:finite(first?.renderHeight,48*first.height/first.width),
-    anchorX:first.anchorX,anchorY:first.anchorY
+    renderHeight:finite(first?.renderHeight,48*first?.height/first?.width),
+    anchorX:first?.anchorX,anchorY:first?.anchorY
   } : draft?.manifest?.frame;
   if(!frame){if(fromCombat)throw new Error('Combat sprite frame metadata is unavailable.');return fallbackRecipe();}
   const factor = (finite(first?.modelScalePercent, finite(settings.modelScalePercent, 100)) / 100) *
@@ -160,8 +160,8 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
       frame,
       layoutId: first?.layout?.id || settings.layout?.id || settings.layoutId || 'single',
       resolutionPercent: first?.layout?.resolutionPercent || settings.layout?.resolutionPercent || settings.resolutionPercent || 100,
-      modelScalePercent: finite(first.modelScalePercent, finite(settings.modelScalePercent, 100)),
-      hexScalePercent: finite(first.hexScalePercent, finite(settings.hexScalePercent, 100)),
+      modelScalePercent: finite(first?.modelScalePercent, finite(settings.modelScalePercent, 100)),
+      hexScalePercent: finite(first?.hexScalePercent, finite(settings.hexScalePercent, 100)),
       transform: {
         heading: finite(settings.heading, 0),
         upAxis: settings.upAxis === 'Z' ? 'Z' : 'Y',
@@ -172,10 +172,10 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
           scale: finite(settings.placement?.scale, 1)
         }
       },
-      lighting: structuredClone(settings.lighting || first.render?.lighting || {}),
-      shield: structuredClone(settings.shield || first.render?.shield || null),
+      lighting: structuredClone(settings.lighting || first?.render?.lighting || {}),
+      shield: structuredClone(settings.shield || first?.render?.shield || null),
       // Transfer the calibrated right-hand sword grip, not just the animation.
-      equipment: structuredClone(settings.equipment || first.render?.equipment || null),
+      equipment: structuredClone(settings.equipment || first?.render?.equipment || null),
       appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
       weaponAttachmentProfile: structuredClone(combatModel.weaponAttachmentProfile || null),
       style: structuredClone(workspace.style || {}),
