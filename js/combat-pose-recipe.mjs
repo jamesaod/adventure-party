@@ -2,6 +2,7 @@ import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } 
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
+const WINDUP_POSES = Object.freeze(['ready','windup','attack','prone']);
 
 function finite(value, fallback = null) {
   return Number.isFinite(value) ? value : fallback;
@@ -125,7 +126,8 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
   profile.id = 'studio-captured-one-handed-swing-v1';
   profile.version = Math.max(2, Number(workspace.savedAt || 0));
   profile.label = 'Studio-captured one-handed swinging weapon';
-  profile.poses = Object.fromEntries(REQUIRED_POSES.map(name => {
+  const capturePoses=captures.windup ? WINDUP_POSES : REQUIRED_POSES;
+  profile.poses = Object.fromEntries(capturePoses.map(name => {
     const capture = captures[name];
     return [name, {
       animation: capture.clip,
