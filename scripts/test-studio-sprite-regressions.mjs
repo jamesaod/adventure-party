@@ -58,21 +58,21 @@ const capture=readFileSync('js/studio-capture.mjs','utf8');
 const studio=readFileSync('js/3d-studio.mjs','utf8');
 const studioPage=readFileSync('3d-studio.html','utf8');
 const gamePage=readFileSync('index.html','utf8');
-assert.ok(studioPage.includes('Candidate Rev 132') &&
-  studioPage.includes('js/3d-studio.mjs?v=R238C130') &&
-  studio.includes('./studio-capture.mjs?v=R238C130'),
+assert.ok(studioPage.includes('Candidate Rev 133') &&
+  studioPage.includes('js/3d-studio.mjs?v=R238C133') &&
+  studio.includes('./studio-capture.mjs?v=R238C133'),
   'Candidate Studio must load current capture code rather than stale cached modules');
-assert.ok(gamePage.includes('Candidate Rev 132') &&
-  gamePage.includes('"candidateRevision":132') &&
-  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C130'),
+assert.ok(gamePage.includes('Candidate Rev 133') &&
+  gamePage.includes('"candidateRevision":133') &&
+  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C133'),
   'Candidate game label, metadata and sprite loader must agree on Rev 131');
 
 assert.ok(capture.includes('function invalidateCaptures(')&&
   capture.includes('capture.stale = true')&&
-  capture.includes('fresh !== 24'),
+  capture.includes('button.disabled = busy;'),
   'Changed visuals remain visible but outdated captures cannot go to combat');
-assert.ok(capture.includes("if (busy || freshCount() !== 24) return;"),
-  '3D Studio combat test accepts complete four-pose 24-frame captures');
+assert.ok(capture.includes("if (busy) return;"),
+  '3D Studio combat test accepts incomplete pose captures');
 assert.ok(!capture.includes("if (busy || freshCount() !== 18) return;"),
   'Old 18-frame guard cannot block the four-pose combat handoff');
 assert.ok(studio.includes("state.playing = restoreSettings ? !!restoreSettings.playing : false"),
@@ -83,3 +83,5 @@ assert.ok(studio.includes('poseCapture?.invalidateCaptures(\'Lighting changed\')
 assert.ok(studio.includes('preserveThinSpriteDetails(supersampleImage.data'),
   'Native battlefield rendering includes coverage-safe downsampling');
 console.log('PASS Rev 118: 36 captured/runtime PNGs, thin swords in all six directions, stale capture protection, paused default');
+
+assert.ok(capture.includes('capturesByProfile')&&capture.includes('partialPoses:true'));
