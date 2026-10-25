@@ -58,7 +58,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
-    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'WindupDuration', 'ActionProfile'
+    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'WindupDuration', 'ActionProfile', 'ActionPose', 'CaptureSelectedPoseButton'
   ].map(name => [name, byId(name)]));
   const rows = new Map();
   let captures = {}, style = getStyle(), busy = false, modelReady = false;
@@ -93,6 +93,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     const currentSettings = getWorkspaceSettings();
     const settings = { ...(!modelReady && savedSettings ? savedSettings : currentSettings) };
     if(ui.ActionProfile) settings.actionProfileId=selectedProfileId;
+    if(ui.ActionPose)settings.selectedActionPose=ui.ActionPose.value;
     if (ui.WindupDuration) settings.windupDurationMs = Number(ui.WindupDuration.value);
     const first = Object.values(captures)[0];
     settings.hexScalePercent = validateSpriteHexScale(first ? first.hexScalePercent : settings.hexScalePercent);
@@ -187,6 +188,12 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     rows.set(pose, { tr, detail, clear, canvases, button });
   }
 
+  if(ui.CaptureSelectedPoseButton){
+    ui.CaptureSelectedPoseButton.addEventListener('click',()=>{
+      const pose=ui.ActionPose?.value;
+      if(SPRITE_POSES.includes(pose))capture(pose);
+    });
+  }
   function count() { return Object.keys(captures).length * 6; }
   function freshCount() { return Object.values(captures).filter(capture => !capture.stale).length * 6; }
   function modelScaleAdjustable() {
@@ -213,6 +220,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     ui.CaptureCount.textContent = `${fresh} / 24 ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
+    if(ui.CaptureSelectedPoseButton)ui.CaptureSelectedPoseButton.disabled=busy||!modelReady;
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
       button.disabled = busy;
     }
@@ -397,7 +405,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     };
   }
 
-  async function packageFiles(exported) {
+  async function packageFiles(exported,{includeQaSheet=false}={}) {
     const { manifest, poseFrames, battlefieldPoseFrames, sheet } = exported;
     const { width, height } = manifest.frame;
     const jobs = Object.keys(manifest.poses).flatMap(pose => SPRITE_DIRECTIONS.map(async direction => [
@@ -416,7 +424,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         }
       }
     }
-    jobs.push(pngBlob(sheet.data, sheet.width, sheet.height).then(blob => [manifest.sheet.file, blob]));
+    // The sheet is for Studio visual QA only, never a combat dependency.
+    if(includeQaSheet)jobs.push(pngBlob(sheet.data, sheet.width, sheet.height).then(blob => [manifest.sheet.file, blob]));
     return Object.fromEntries(await Promise.all(jobs));
   }
 
@@ -435,7 +444,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }));
 
   ui.ExportPackageButton.addEventListener('click', () => runExport(async exported => {
-    const files = await packageFiles(exported);
+    const files = await packageFiles(exported,{includeQaSheet:false});
     const { manifest } = exported;
     const entries = await Promise.all(Object.entries(files).map(async ([name, blob]) => [
       `${manifest.id}/${name}`, new Uint8Array(await blob.arrayBuffer())
@@ -449,7 +458,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (busy) return;
     runExport(async exported => {
       ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
-      const files = await packageFiles(exported);
+      const files = await packageFiles(exported,{includeQaSheet:false});
       await flushSave();
       // Finish saving the exact test set and return workspace before leaving
       // this page. A failed save leaves the studio and its captures open.
@@ -628,6 +637,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       savedSettings = workspace.settings;
       ui.SpriteSetName.value = workspace.name;
       if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;
+      if(ui.ActionPose)ui.ActionPose.value=SPRITE_POSES.includes(workspace.settings.selectedActionPose)?workspace.settings.selectedActionPose:'ready';
       if (ui.WindupDuration) ui.WindupDuration.value = String(workspace.settings.windupDurationMs ?? 250);
       modelReady = false;
       restored = true;
@@ -659,6 +669,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   ui.WindupDuration?.addEventListener('change', () => queueSave());
+  ui.ActionPose?.addEventListener('change',saveWorkspace);
 
   ui.ClearPosesButton.addEventListener('click', () => {
     if (busy) return;
