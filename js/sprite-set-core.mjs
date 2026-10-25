@@ -211,7 +211,7 @@ export function assembleSpriteSheet(poseFrames, width, height) {
   requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid sheet frame dimensions.');
   const sheetWidth = width * SPRITE_DIRECTIONS.length;
-  const poses = Object.keys(frames).includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const poses = Object.keys(poseFrames).includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
   const sheetHeight = height * poses.length;
   const data = new Uint8ClampedArray(sheetWidth * sheetHeight * 4);
   poses.forEach((pose, row) => {
