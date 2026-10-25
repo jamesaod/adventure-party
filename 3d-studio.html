@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 133</span>
+        <span class="studio-build">Candidate Rev 134</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -450,6 +450,15 @@
           <input id="studioSpriteSetName" type="text" maxlength="80" value="Studio mannequin" autocomplete="off">
         </label>
         <label class="studio-field" for="studioActionProfile"><span>Action profile</span><select id="studioActionProfile" aria-label="Action profile"></select></label>
+        <label class="studio-field" for="studioActionPose"><span>Action pose to record</span>
+          <select id="studioActionPose" aria-label="Action pose to record">
+            <option value="ready">Ready</option>
+            <option value="windup">Wind Up</option>
+            <option value="attack">Attack</option>
+            <option value="prone">Prone</option>
+          </select>
+        </label>
+        <button id="studioCaptureSelectedPoseButton" class="studio-button studio-primary" type="button" disabled>Capture selected pose</button>
         <p class="studio-note">Each action profile has Ready, Wind Up, Attack and Prone frames. Uncaptured poses use fallback art in combat. Add new profiles in the action catalog.</p>
       </div>
       <div class="studio-sheet-scroll">
@@ -459,13 +468,13 @@
         </table>
       </div>
       <div class="studio-sheet-actions">
-        <button id="studioExportPoseSheetButton" class="studio-button" type="button" disabled>Export 24-sprite sheet</button>
-        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export game assets (ZIP)</button>
+        <button id="studioExportPoseSheetButton" class="studio-button" type="button" disabled>Export QA sprite sheet</button>
+        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export current profile (ZIP)</button>
         <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
         <button id="studioClearPosesButton" class="studio-button" type="button" disabled>Clear sheet</button>
       </div>
       <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture ready, windup, attack and prone to export or test the complete set.</p>
-      <p class="studio-note studio-help">Captures save automatically in this browser. Test in combat saves your set and opens combat in this tab; Return to 3d studio restores the set you tested. Export the ZIP to keep a copy with all 18 PNGs, the sheet, MOB and footprint.</p>
+      <p class="studio-note studio-help">Captures save automatically in this browser. Test in combat saves your set and opens combat in this tab; Return to 3d studio restores the set you tested. The sprite sheet is for visual QA only; Test in combat saves pose references and only the available preview frames, without a sprite-sheet image.</p>
     </section>
 
     <footer class="studio-footer chrome">
@@ -475,7 +484,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C133"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C134"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>

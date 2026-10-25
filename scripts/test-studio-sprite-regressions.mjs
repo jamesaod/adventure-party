@@ -58,13 +58,13 @@ const capture=readFileSync('js/studio-capture.mjs','utf8');
 const studio=readFileSync('js/3d-studio.mjs','utf8');
 const studioPage=readFileSync('3d-studio.html','utf8');
 const gamePage=readFileSync('index.html','utf8');
-assert.ok(studioPage.includes('Candidate Rev 133') &&
-  studioPage.includes('js/3d-studio.mjs?v=R238C133') &&
-  studio.includes('./studio-capture.mjs?v=R238C133'),
+assert.ok(studioPage.includes('Candidate Rev 134') &&
+  studioPage.includes('js/3d-studio.mjs?v=R238C134') &&
+  studio.includes('./studio-capture.mjs?v=R238C134'),
   'Candidate Studio must load current capture code rather than stale cached modules');
-assert.ok(gamePage.includes('Candidate Rev 133') &&
-  gamePage.includes('"candidateRevision":133') &&
-  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C133'),
+assert.ok(gamePage.includes('Candidate Rev 134') &&
+  gamePage.includes('"candidateRevision":134') &&
+  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C134'),
   'Candidate game label, metadata and sprite loader must agree on Rev 131');
 
 assert.ok(capture.includes('function invalidateCaptures(')&&
@@ -85,3 +85,13 @@ assert.ok(studio.includes('preserveThinSpriteDetails(supersampleImage.data'),
 console.log('PASS Rev 118: 36 captured/runtime PNGs, thin swords in all six directions, stale capture protection, paused default');
 
 assert.ok(capture.includes('capturesByProfile')&&capture.includes('partialPoses:true'));
+
+assert.ok(studioPage.includes('id="studioActionPose"') &&
+  studioPage.includes('id="studioCaptureSelectedPoseButton"'),
+  'Studio must expose selectable action poses and a dedicated record button');
+assert.ok(capture.includes("if(includeQaSheet)jobs.push") &&
+  capture.includes("packageFiles(exported,{includeQaSheet:false})"),
+  'Combat and profile export must not package the QA-only sprite sheet');
+assert.ok(capture.includes("capture(pose)") &&
+  capture.includes("settings.selectedActionPose"),
+  'Selected action pose must be captured and persist in workspace metadata');
