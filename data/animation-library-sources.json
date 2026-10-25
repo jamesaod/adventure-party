@@ -92,6 +92,32 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "unverified"
+    },
+    {
+      "id": "sword-and-shield-slash",
+      "label": "Sword And Shield Slash",
+      "file": "assets/animations/one-handed-swing/sword-and-shield-slash.fbx",
+      "bytes": 384416,
+      "sha256": "97fb5eae9d7f356348a9f9907ca35dd82ac94f42f412d79108d364454e3ca8f7",
+      "actionProfiles": [
+        "one-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "sword-and-shield-idle",
+      "label": "Sword And Shield Idle",
+      "file": "assets/animations/one-handed-swing/sword-and-shield-idle.fbx",
+      "bytes": 548240,
+      "sha256": "5008b63f1d6b8e9e6b14bc4eebeedaf52cc460708ad0c6f5a99c883bd278c1b3",
+      "actionProfiles": [
+        "one-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
     }
   ]
 }
