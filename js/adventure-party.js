@@ -27189,9 +27189,15 @@ function drawFriendlyMage(mage){
 
 function drawStudioSpriteMob(unit){
   const frame=directionalUnitPoseFrame(unit);
-  if(!frame?.image?.complete || !frame.image.naturalWidth) return;
+  const fallback=unit.type==='fighter'||['ranger','mage','cleric'].includes(unit.type)?fighterSprite:
+    unit.type?.startsWith('orc')?orcStandSprite:unit.type?.startsWith('kobold')?koboldSprite:
+    unit.type==='juvenile-red-dragon'?juvenileRedDragonStandSprite:fighterSprite;
+  const sprite=frame?.image?.complete&&frame.image.naturalWidth?frame.image:fallback;
+  if(!sprite?.complete||!sprite.naturalWidth)return;
   const center=unitFootprintScreenCenter(unit);
-  const dimensions=spriteRenderDimensions(frame.assetId,frame.image);
+  const dimensions=frame?spriteRenderDimensions(frame.assetId,sprite):
+    {width:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?50:32))),
+     height:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?54:35)))};
   const friendly=unit.faction==="player";
   if(game.active===unit.id) drawActiveHex(unit,friendly ? "player" : "#df6b6b");
   if(unit.alive) drawHpBar(unit,friendly ? "#94e084" : "#df6b6b");
@@ -27208,8 +27214,8 @@ function drawStudioSpriteMob(unit){
     }
     ctx.restore();
   }
-  drawSpriteFacing(frame.image,center,dimensions.width,dimensions.height,
-    unit.facing,"right",unit,runtimeAnchorForAsset(frame.assetId));
+  drawSpriteFacing(sprite,center,dimensions.width,dimensions.height,
+    unit.facing,"right",unit,frame?runtimeAnchorForAsset(frame.assetId):null);
 }
 
 function drawKobold(k){
