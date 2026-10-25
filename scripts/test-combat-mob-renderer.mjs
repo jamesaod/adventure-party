@@ -9,7 +9,7 @@ const index=fs.readFileSync(new URL('../index.html', import.meta.url),'utf8');
 const studioHtml=fs.readFileSync(new URL('../3d-studio.html', import.meta.url),'utf8');
 
 for(const token of [
-  "const WINDUP_POSES=['ready','windup','attack','prone']",
+  "const WINDUP_POSES=['ready','windup','attack','falling','prone']",
   "recipe.renderSettings?.frame",
   "recipe.renderSettings?.transform",
   "placement.position.fromArray",
