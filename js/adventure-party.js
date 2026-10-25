@@ -3750,8 +3750,8 @@ function selectStudioSpriteSet(id,{openSetup=false}={}){
 
 function inspectStudioSpritePose(pose){
   if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
-    !["ready","windup","attack","prone","live"].includes(pose)) return false;
-  const internalPose={ready:"stand",windup:"windup",attack:"attack",prone:"prone",live:null}[pose];
+    !["ready","windup","attack","falling","prone","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",windup:"windup",attack:"attack",falling:"falling",prone:"prone",live:null}[pose];
   for(const unit of studioSpriteTestUnits()) unit.studioPoseInspection=internalPose;
   draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
