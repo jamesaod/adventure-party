@@ -24,7 +24,8 @@ const DEFAULT_LIGHTING=Object.freeze({
 });
 const DEFAULT_STYLE=Object.freeze({brightness:1.22,contrast:.94,hue:0,saturation:1.97,outline:0});
 const FACINGS=['E','NE','NW','W','SW','SE'];
-const POSES=['ready','attack','prone'];
+const LEGACY_POSES=['ready','attack','prone'];
+const WINDUP_POSES=['ready','windup','attack','prone'];
 
 const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
 const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
@@ -283,9 +284,10 @@ export async function generateCombatSpriteSet(recipe){
   const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
+  const poseNames=profile?.poses?.windup ? WINDUP_POSES : LEGACY_POSES;
   const images={},runtimeImages={},sourceUrls={},poses={};
   try{
-    for(const capture of POSES){
+    for(const capture of poseNames){
       const pose=profile?.poses?.[capture];
       if(!pose) throw new Error(`Combat pose recipe is missing ${capture}.`);
       // Prefer the captured clip from the matching baked model, but a stale
@@ -344,13 +346,15 @@ export async function generateCombatSpriteSet(recipe){
       mobType:recipe.mob?.type||null,
       modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
       hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
+      windupDurationMs:profile?.poses?.windup ? Math.max(0,Math.min(1500,Number(recipe.renderSettings?.windupDurationMs ?? 250))) : undefined,
+      sheet:{file:'sheet.png',columns:6,rows:poseNames.length,poses:[...poseNames],facings:FACINGS},
       battlefield:{
         renderer:'supersampled-battlefield-v2',
         width:Math.max(1,Math.round(frame.renderWidth)),
         height:Math.max(1,Math.round(frame.renderHeight)),
         anchorX:frame.anchorX/frame.width*Math.max(1,Math.round(frame.renderWidth)),
         anchorY:frame.anchorY/frame.height*Math.max(1,Math.round(frame.renderHeight)),
-        poses:Object.fromEntries(POSES.map(capture=>[capture,{
+        poses:Object.fromEntries(poseNames.map(capture=>[capture,{
           frames:Object.fromEntries(FACINGS.map(facing=>[
             facing,`${capture}-${facing.toLowerCase()}-battlefield.png`
           ]))
