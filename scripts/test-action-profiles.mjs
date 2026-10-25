@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import {ACTION_POSES,DEFAULT_ACTION_PROFILE_IDS,ACTION_PROFILE_CATALOG,
+  createActionProfileCatalog,defineActionProfile,resolveActionPose}
+  from '../js/action-profile-catalog.mjs';
+
+assert.deepEqual(ACTION_POSES,['ready','windup','attack','prone']);
+assert.equal(DEFAULT_ACTION_PROFILE_IDS.length,11);
+assert.equal(ACTION_PROFILE_CATALOG.size,11);
+for(const id of DEFAULT_ACTION_PROFILE_IDS){
+  const p=ACTION_PROFILE_CATALOG.get(id);
+  assert.ok(p,id);
+  for(const pose of ACTION_POSES){
+    assert.equal(resolveActionPose(p,pose).source,'fallback-sprite');
+  }
+}
+const custom=defineActionProfile({
+  id:'whip',label:'Whip',category:'melee',
+  poses:{windup:{animation:'WhipWindup',timeSeconds:0.2},
+    attack:{animation:'WhipStrike',timeSeconds:0.6}}
+});
+const expanded=createActionProfileCatalog([custom]);
+assert.equal(expanded.size,12);
+assert.equal(resolveActionPose(custom,'windup').pose.timeSeconds,0.2);
+assert.equal(resolveActionPose(custom,'ready').source,'fallback-sprite');
+assert.equal(resolveActionPose(custom,'prone',{animation:'Fall',timeSeconds:1}).source,'shared-prone');
+assert.throws(()=>createActionProfileCatalog([custom,custom]),/Duplicate/);
+assert.throws(()=>defineActionProfile({id:'x',label:'X',poses:{jump:{animation:'J',timeSeconds:0}}}),/Unknown/);
+assert.throws(()=>defineActionProfile({id:'x',label:'X',poses:{attack:{animation:'A',timeSeconds:-1}}}),/nonnegative/);
+console.log('Action profile catalog: 11 defaults, optional poses, shared prone and extensibility PASS');
