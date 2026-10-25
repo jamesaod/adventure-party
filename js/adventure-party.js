@@ -3674,23 +3674,18 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
         throw new Error(`Sprite ${capture}/${facing} is missing or has the wrong dimensions.`);
       }
       const assetId=`sprite-set-${manifest.id}-${capture}-${facing.toLowerCase()}`;
-      const runtimeFile=manifest.battlefield?.poses?.[capture]?.frames?.[facing]||null;
-      const runtimeImage=runtimeFile ? runtimeImages?.[runtimeFile] : image;
-      const runtimeSrc=runtimeFile ? sourceUrls?.[runtimeFile] : src;
-      if(!runtimeImage?.complete||!runtimeImage.naturalWidth){
-        throw new Error(`Runtime sprite ${capture}/${facing} is missing.`);
-      }
-      prepareCrispPixelSprite(image);
-      if(runtimeImage!==image)prepareCrispPixelSprite(runtimeImage);
-      directionalSprites[pose][facing]={image:runtimeImage,assetId,src:runtimeSrc||src};
+      // Use the original full-resolution capture in combat, rather than the
+      // optional battlefield derivative. Its antialiased/transparent pixels
+      // preserve fine weapons, armor and subpixel silhouettes.
+      directionalSprites[pose][facing]={image,assetId,src};
       additions.push({
         id:assetId,label:`${manifest.label} ${capture} — ${facing}`,
         defaultCategory:"units",gameImage:image,originalSrc:src,spec:{...spec},
         editCanvas:null,editCtx:null,dirty:false,sourceScale:1,
-        runtimeAnchor:manifest.battlefield ? {
-          x:manifest.battlefield.anchorX/manifest.battlefield.width,
-          y:manifest.battlefield.anchorY/manifest.battlefield.height
-        } : null
+        runtimeAnchor:{
+          x:frame.anchorX/frame.width,
+          y:frame.anchorY/frame.height
+        }
       });
     }
   }
@@ -26721,7 +26716,9 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     frames=>Object.values(frames).some(frame=>frame?.image===image)
   );
   const shouldFlip=!isDirectionalImage && facing!==nativeFacing;
-  const renderSource=image._crispRenderSource || image;
+  // Studio captures retain their native alpha and full source resolution.
+  // Only legacy pixel-art sprites use the binary-alpha crisp cache.
+  const renderSource=isDirectionalImage ? image : (image._crispRenderSource || image);
   const spriteAnchor=anchor || {x:0.5,y:1};
 
   const enlargeScale=enlargeVisualScale(entity);
