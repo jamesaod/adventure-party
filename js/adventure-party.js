@@ -2781,7 +2781,7 @@ function unitPoseDefinition(unit){
 function unitPoseSupportsPose(definition,poseName){
   if(!definition || !poseName) return false;
   return !!(
-    (definition.partialPoses && ['stand','ready','windup','attack','prone'].includes(poseName)) ||
+    (definition.partialPoses && ['stand','ready','windup','attack','falling','prone'].includes(poseName)) ||
     definition.sprites?.[poseName] ||
     definition.directionalSprites?.[poseName] ||
     (definition.directionalSprites && poseName===definition.actionPose)
@@ -2848,8 +2848,15 @@ function activeUnitPoseName(unit,now=performance.now()){
   const directionalProne=definition.directionalSprites && unit.alive && !unit.fled && (
     getUnitEffect(unit,"sleep") || getUnitEffect(unit,"unconscious") || getUnitEffect(unit,"prone")
   );
-  if((directionalProne || shouldUseKoboldPronePose(unit)) && unitPoseSupportsPose(definition,"prone")){
-    return "prone";
+  const isProne=directionalProne || shouldUseKoboldPronePose(unit);
+  if(isProne){
+    if(unitPoseSupportsPose(definition,"falling")){
+      if(!Number.isFinite(unit.fallingPoseStartedAt))unit.fallingPoseStartedAt=now;
+      if(now-unit.fallingPoseStartedAt<250)return "falling";
+    }
+    if(unitPoseSupportsPose(definition,"prone"))return "prone";
+  }else{
+    unit.fallingPoseStartedAt=null;
   }
 
   if(
@@ -3672,7 +3679,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   };
   const directionalSprites={};
   const additions=[];
-  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
+  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["falling","falling"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
     directionalSprites[pose]={};
     for(const facing of ["E","NE","NW","W","SW","SE"]){
       const file=manifest.poses?.[capture]?.frames?.[facing];
