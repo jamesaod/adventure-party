@@ -210,13 +210,13 @@ for (const pose of SPRITE_POSES) {
 }
 const setId = sandbox.registerStudioSpriteSet({ manifest, images, sourceUrls });
 assert.equal(setId, "sprite-set:test-package");
-assert.equal(registeredAssets.length, 18);
+assert.equal(registeredAssets.length, SPRITE_POSES.length * SPRITE_DIRECTIONS.length);
 assert.equal(sandbox.registeredStudioSpriteSets.get(setId).label, "Package test");
 const registeredDefinition = sandbox.UNIT_POSE_DEFINITIONS[setId];
 const brokenImages = { ...images, "attack-nw.png": { ...images["attack-nw.png"], naturalWidth: 0 } };
 assert.throws(() => sandbox.registerStudioSpriteSet({ manifest, images: brokenImages, sourceUrls }), /dimensions/);
 assert.equal(sandbox.UNIT_POSE_DEFINITIONS[setId], registeredDefinition);
-assert.equal(registeredAssets.length, 18);
+assert.equal(registeredAssets.length, SPRITE_POSES.length * SPRITE_DIRECTIONS.length);
 
 const imported = { type: "kobold", spriteSetId: setId, alive: true, facing: "left", facingHex: 0, studioSpriteTest: true };
 for (let facingIndex = 0; facingIndex < 6; facingIndex++) {
