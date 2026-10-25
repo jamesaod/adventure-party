@@ -66,6 +66,19 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "unverified"
+    },
+    {
+      "id": "stabbing",
+      "label": "Stabbing",
+      "file": "assets/animations/thrusting/stabbing.fbx",
+      "bytes": 431968,
+      "sha256": "7a81af2e9f697bb0f514a9d381ad2c48e11439e6442e4ab5d943ed865b645f46",
+      "actionProfiles": [
+        "one-handed-thrust"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
     }
   ]
 }
