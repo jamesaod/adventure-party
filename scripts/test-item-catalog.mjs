@@ -101,3 +101,6 @@ assert.ok(game.includes('HUMANOID_RUNTIME_MODELS'));
 assert.ok(game.includes('runtime.ensure(unit'));
 assert.ok(game.includes('queueHumanoidPresentationReconcile'));
 console.log('PASS canonical item catalog, Carl 76-inch height and wooden shield GLB');
+
+// Exercise the versioned Unit Package layer as part of standard repository QA.
+await import('./test-unit-package.mjs');
