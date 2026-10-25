@@ -79,6 +79,19 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "unverified"
+    },
+    {
+      "id": "bayonet-stab",
+      "label": "Bayonet Stab",
+      "file": "assets/animations/thrusting/bayonet-stab.fbx",
+      "bytes": 608576,
+      "sha256": "5dd192113915a72a7636c867f3012ca056209fd7e2135479afc133e6ecad4c61",
+      "actionProfiles": [
+        "two-handed-thrust"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
     }
   ]
 }
