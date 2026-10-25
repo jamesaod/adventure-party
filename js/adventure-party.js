@@ -2851,7 +2851,11 @@ function activeUnitPoseName(unit,now=performance.now()){
   const isProne=directionalProne || shouldUseKoboldPronePose(unit);
   if(isProne){
     if(unitPoseSupportsPose(definition,"falling")){
-      if(!Number.isFinite(unit.fallingPoseStartedAt))unit.fallingPoseStartedAt=now;
+      if(!Number.isFinite(unit.fallingPoseStartedAt)){
+        unit.fallingPoseStartedAt=now;
+        // Redraw after the transition even if no input/event causes another frame.
+        setTimeout(()=>{if(game && unit.fallingPoseStartedAt!==null)draw();},255);
+      }
       if(now-unit.fallingPoseStartedAt<250)return "falling";
     }
     if(unitPoseSupportsPose(definition,"prone"))return "prone";
