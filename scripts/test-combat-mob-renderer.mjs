@@ -87,8 +87,8 @@ console.log('PASS captured-pose combat generation, upright runtime frames, weapo
 
 // Wind Up must survive source-capture recipe building, runtime offscreen
 // rendering, and generated manifest registration.
-assert.ok(recipe.includes("captures.windup ? WINDUP_POSES : REQUIRED_POSES"));
-assert.ok(renderer.includes("profile?.poses?.windup ? WINDUP_POSES : LEGACY_POSES"));
+assert.ok(recipe.includes("Object.keys(captures).filter"));
+assert.ok(renderer.includes("WINDUP_POSES.filter(name=>profile?.poses?.[name])"));
 assert.ok(renderer.includes("for(const capture of poseNames)"));
 assert.ok(renderer.includes("poseNames.map(capture=>"));
 assert.ok(renderer.includes("windupDurationMs:profile?.poses?.windup"));
