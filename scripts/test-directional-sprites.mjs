@@ -417,7 +417,7 @@ assert.ok(carlBinding, "Carl needs an explicit repository sprite assignment");
 const carlManifest = validateSpriteSetManifest(JSON.parse(fs.readFileSync(new URL(`../${carlBinding.manifest}`, import.meta.url), "utf8")));
 assert.equal(carlManifest.mobType, "fighter");
 const carlImages = {}, carlUrls = {};
-for (const pose of SPRITE_POSES) for (const facing of SPRITE_DIRECTIONS) {
+for (const pose of carlManifest.sheet.poses) for (const facing of SPRITE_DIRECTIONS) {
   const name = carlManifest.poses[pose].frames[facing];
   carlImages[name] = { complete: true, naturalWidth: carlManifest.frame.width, naturalHeight: carlManifest.frame.height };
   carlUrls[name] = `assets/sprites/${carlManifest.id}/${name}?v=${carlBinding.revision}`;
