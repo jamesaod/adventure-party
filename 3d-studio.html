@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 134</span>
+        <span class="studio-build">Candidate Rev 135</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -321,6 +321,7 @@
             <button id="studioCaptureWindupButton" class="studio-button studio-primary" type="button" disabled>Capture Wind Up pose</button>
             <label class="studio-field" for="studioWindupDuration">Wind Up duration (ms) <input id="studioWindupDuration" type="number" min="0" max="1500" step="25" value="250"></label>
             <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
+            <button id="studioCaptureFallingButton" class="studio-button studio-primary" type="button" disabled>Capture Falling pose</button>
             <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled>Capture prone pose</button>
           </div>
           <p class="studio-note studio-help">Pause or drag the timeline to any moment. Each capture freezes that moment and saves all six directions. Capture again to replace a pose.</p>
@@ -441,7 +442,7 @@
         <h2 id="studioSheetHeading">Captured sprite sheet</h2>
         <div class="studio-sheet-heading-meta">
           <span id="studioWorkspaceStatus" class="studio-workspace-status" role="status" aria-live="polite">Preparing saved workspace…</span>
-          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 24 sprites</output>
+          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 30 sprites</output>
         </div>
       </div>
       <div class="studio-sheet-intro">
@@ -455,14 +456,14 @@
             <option value="ready">Ready</option>
             <option value="windup">Wind Up</option>
             <option value="attack">Attack</option>
-            <option value="prone">Prone</option>
+            <option value="falling">Falling</option><option value="prone">Prone</option>
           </select>
         </label>
         <button id="studioCaptureSelectedPoseButton" class="studio-button studio-primary" type="button" disabled>Capture selected pose</button>
-        <p class="studio-note">Each action profile has Ready, Wind Up, Attack and Prone frames. Uncaptured poses use fallback art in combat. Add new profiles in the action catalog.</p>
+        <p class="studio-note">Each action profile has Ready, Wind Up, Attack, Falling and Prone frames. Uncaptured poses use fallback art in combat. Add new profiles in the action catalog.</p>
       </div>
       <div class="studio-sheet-scroll">
-        <table id="studioPoseSheetPreview" class="studio-pose-sheet" aria-label="Captured ready, windup, attack and prone sprite sheet">
+        <table id="studioPoseSheetPreview" class="studio-pose-sheet" aria-label="Captured ready, windup, attack, falling and prone sprite sheet">
           <thead><tr><th scope="col">Pose</th><th scope="col">E</th><th scope="col">NE</th><th scope="col">NW</th><th scope="col">W</th><th scope="col">SW</th><th scope="col">SE</th></tr></thead>
           <tbody id="studioPoseSheetRows"></tbody>
         </table>
@@ -479,12 +480,12 @@
 
     <footer class="studio-footer chrome">
       <div id="studioStatus" class="studio-status" role="status" aria-live="polite">Loading studio…</div>
-      <span class="studio-footer-label">Six directions · Three poses</span>
+      <span class="studio-footer-label">Six directions · Five poses</span>
     </footer>
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C134"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C135"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C95"></script>
 </body>
 </html>

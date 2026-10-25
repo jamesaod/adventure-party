@@ -25,7 +25,7 @@ const DEFAULT_LIGHTING=Object.freeze({
 const DEFAULT_STYLE=Object.freeze({brightness:1.22,contrast:.94,hue:0,saturation:1.97,outline:0});
 const FACINGS=['E','NE','NW','W','SW','SE'];
 const LEGACY_POSES=['ready','attack','prone'];
-const WINDUP_POSES=['ready','windup','attack','prone'];
+const WINDUP_POSES=['ready','windup','attack','falling','prone'];
 
 const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
 const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
@@ -347,7 +347,7 @@ export async function generateCombatSpriteSet(recipe){
       modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
       hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
       windupDurationMs:profile?.poses?.windup ? Math.max(0,Math.min(1500,Number(recipe.renderSettings?.windupDurationMs ?? 250))) : undefined,
-      sheet:{file:'sheet.png',columns:6,rows:4,poses:[...WINDUP_POSES],facings:FACINGS},
+      sheet:{file:'sheet.png',columns:6,rows:5,poses:[...WINDUP_POSES],facings:FACINGS},
       battlefield:{
         renderer:'supersampled-battlefield-v2',
         width:Math.max(1,Math.round(frame.renderWidth)),

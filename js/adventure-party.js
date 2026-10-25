@@ -2781,7 +2781,7 @@ function unitPoseDefinition(unit){
 function unitPoseSupportsPose(definition,poseName){
   if(!definition || !poseName) return false;
   return !!(
-    (definition.partialPoses && ['stand','ready','windup','attack','prone'].includes(poseName)) ||
+    (definition.partialPoses && ['stand','ready','windup','attack','falling','prone'].includes(poseName)) ||
     definition.sprites?.[poseName] ||
     definition.directionalSprites?.[poseName] ||
     (definition.directionalSprites && poseName===definition.actionPose)
@@ -2848,8 +2848,19 @@ function activeUnitPoseName(unit,now=performance.now()){
   const directionalProne=definition.directionalSprites && unit.alive && !unit.fled && (
     getUnitEffect(unit,"sleep") || getUnitEffect(unit,"unconscious") || getUnitEffect(unit,"prone")
   );
-  if((directionalProne || shouldUseKoboldPronePose(unit)) && unitPoseSupportsPose(definition,"prone")){
-    return "prone";
+  const isProne=directionalProne || shouldUseKoboldPronePose(unit);
+  if(isProne){
+    if(unitPoseSupportsPose(definition,"falling")){
+      if(!Number.isFinite(unit.fallingPoseStartedAt)){
+        unit.fallingPoseStartedAt=now;
+        // Redraw after the transition even if no input/event causes another frame.
+        setTimeout(()=>{if(game && unit.fallingPoseStartedAt!==null)draw();},255);
+      }
+      if(now-unit.fallingPoseStartedAt<250)return "falling";
+    }
+    if(unitPoseSupportsPose(definition,"prone"))return "prone";
+  }else{
+    unit.fallingPoseStartedAt=null;
   }
 
   if(
@@ -3672,7 +3683,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   };
   const directionalSprites={};
   const additions=[];
-  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
+  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["falling","falling"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
     directionalSprites[pose]={};
     for(const facing of ["E","NE","NW","W","SW","SE"]){
       const file=manifest.poses?.[capture]?.frames?.[facing];
@@ -3743,8 +3754,8 @@ function selectStudioSpriteSet(id,{openSetup=false}={}){
 
 function inspectStudioSpritePose(pose){
   if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
-    !["ready","windup","attack","prone","live"].includes(pose)) return false;
-  const internalPose={ready:"stand",windup:"windup",attack:"attack",prone:"prone",live:null}[pose];
+    !["ready","windup","attack","falling","prone","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",windup:"windup",attack:"attack",falling:"falling",prone:"prone",live:null}[pose];
   for(const unit of studioSpriteTestUnits()) unit.studioPoseInspection=internalPose;
   draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));

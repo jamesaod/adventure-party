@@ -2,7 +2,7 @@ import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } 
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
-const WINDUP_POSES = Object.freeze(['ready','windup','attack','prone']);
+const WINDUP_POSES = Object.freeze(['ready','windup','attack','falling','prone']);
 
 function finite(value, fallback = null) {
   return Number.isFinite(value) ? value : fallback;

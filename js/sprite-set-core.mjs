@@ -2,7 +2,8 @@
 import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C93';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
-export const SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'prone']);
+export const SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'falling', 'prone']);
+export const FOUR_SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'prone']);
 export const LEGACY_SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
 export const posesInSpriteSet = manifest => manifest?.sheet?.poses || LEGACY_SPRITE_POSES;
 export const SPRITE_SET_SCHEMA = 'adventure-party.sprite-set';
@@ -32,7 +33,7 @@ export function validateSpriteSetManifest(value) {
     'ID must contain lowercase letters, digits, and single hyphens.');
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 120,
     'give this character a name of 1–120 characters.');
-  const activePoses = value.sheet?.poses?.includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const activePoses = value.sheet?.poses?.includes('falling') ? SPRITE_POSES : value.sheet?.poses?.includes('windup') ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
   const partial = value.partialPoses === true;
   if (value.windupDurationMs !== undefined) requireValue(Number.isFinite(value.windupDurationMs) && value.windupDurationMs >= 0 && value.windupDurationMs <= 1500,
     'windupDurationMs must be 0–1500 milliseconds.');
@@ -156,7 +157,7 @@ export function validateSpriteSetManifest(value) {
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
 export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield, windupDurationMs, partialPoses=false, actionProfileId=null }) {
-  const activePoses = partialPoses ? SPRITE_POSES : captures?.windup ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const activePoses = partialPoses ? SPRITE_POSES : captures?.falling ? SPRITE_POSES : captures?.windup ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
   const poses = Object.fromEntries(activePoses.filter(pose=>!partialPoses || captures?.[pose]).map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -188,7 +189,7 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
     ...(unit === undefined ? {} : { unit: structuredClone(unit) }),
     ...(battlefieldMetadata === undefined ? {} : { battlefield:battlefieldMetadata }),
-    ...(activePoses === SPRITE_POSES ? { windupDurationMs: windupDurationMs ?? 250 } : {})
+    ...(activePoses.includes('windup') ? { windupDurationMs: windupDurationMs ?? 250 } : {})
   });
 }
 
@@ -219,7 +220,7 @@ export function assembleSpriteSheet(poseFrames, width, height) {
   requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid sheet frame dimensions.');
   const sheetWidth = width * SPRITE_DIRECTIONS.length;
-  const poses = Object.keys(poseFrames).includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const poses = Object.keys(poseFrames).includes('falling') ? SPRITE_POSES : Object.keys(poseFrames).includes('windup') ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
   const sheetHeight = height * poses.length;
   const data = new Uint8ClampedArray(sheetWidth * sheetHeight * 4);
   poses.forEach((pose, row) => {

@@ -207,7 +207,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (!count()) return;
     for (const capture of Object.values(captures)) capture.stale = true;
     refresh();
-    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture Ready, Wind Up, Attack and Prone to test in combat.`;
+    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture any affected pose to use it in combat.`;
     saveWorkspace();
   }
 
@@ -217,7 +217,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
-    ui.CaptureCount.textContent = `${fresh} / 24 ready sprites` +
+    ui.CaptureCount.textContent = `${fresh} / 30 ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
     if(ui.CaptureSelectedPoseButton)ui.CaptureSelectedPoseButton.disabled=busy||!modelReady;
@@ -312,11 +312,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captures[pose] = captured;
       refresh();
       queueSave();
-      const complete = freshCount() === 24;
+      const complete = freshCount() === 30;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
         ? 'A sprite touches the frame edge. If it is cropped, clear the sheet and choose Fit all animations before capturing again.'
-        : complete ? 'All 24 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
+        : complete ? 'All 30 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
     } catch (error) { onError(error); }
@@ -439,8 +439,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   ui.ExportPoseSheetButton.addEventListener('click', () => runExport(async ({ manifest, sheet }) => {
-    download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-24-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
-    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), four rows (ready, windup, attack, prone).';
+    download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-30-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
+    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), five rows (ready, windup, attack, falling, prone).';
   }));
 
   ui.ExportPackageButton.addEventListener('click', () => runExport(async exported => {
@@ -477,7 +477,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     restored = false;
     ui.SpriteSetName.value = String(name).replace(/\.[^.]+$/, '');
     refresh();
-    ui.SheetStatus.textContent = 'Capture ready, windup, attack and prone to export or test the complete set.';
+    ui.SheetStatus.textContent = 'Capture whichever poses you need; missing poses use fallback artwork.';
     if (persist) queueSave();
   }
 

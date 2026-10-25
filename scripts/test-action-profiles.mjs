@@ -3,7 +3,7 @@ import {ACTION_POSES,DEFAULT_ACTION_PROFILE_IDS,ACTION_PROFILE_CATALOG,
   createActionProfileCatalog,defineActionProfile,resolveActionPose}
   from '../js/action-profile-catalog.mjs';
 
-assert.deepEqual(ACTION_POSES,['ready','windup','attack','prone']);
+assert.deepEqual(ACTION_POSES,['ready','windup','attack','falling','prone']);
 assert.equal(DEFAULT_ACTION_PROFILE_IDS.length,11);
 assert.equal(ACTION_PROFILE_CATALOG.size,11);
 for(const id of DEFAULT_ACTION_PROFILE_IDS){
