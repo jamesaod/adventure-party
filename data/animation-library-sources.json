@@ -131,6 +131,45 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "unverified"
+    },
+    {
+      "id": "great-sword-idle",
+      "label": "Great Sword Idle",
+      "file": "assets/animations/two-handed-swing/great-sword-idle.fbx",
+      "bytes": 421168,
+      "sha256": "0b637d9d64fae87ac46cfb7cbb6e3dfe3c7fce04e7e2a441dd2498b730e62768",
+      "actionProfiles": [
+        "two-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "great-sword-slash-01",
+      "label": "Great Sword Slash 01",
+      "file": "assets/animations/two-handed-swing/great-sword-slash-01.fbx",
+      "bytes": 369712,
+      "sha256": "236477b3bc5f61980e86c85c20c0bc55193e6f3f779582a5ad0c03242ff8298e",
+      "actionProfiles": [
+        "two-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "great-sword-slash-02",
+      "label": "Great Sword Slash 02",
+      "file": "assets/animations/two-handed-swing/great-sword-slash-02.fbx",
+      "bytes": 420720,
+      "sha256": "822702ae539f50529dd395ebe943da660c1be5863df54e4d55a6d06f6d56d495",
+      "actionProfiles": [
+        "two-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
     }
   ]
 }
