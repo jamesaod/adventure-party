@@ -416,7 +416,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {
-    if (busy || freshCount() !== 18) return;
+    if (busy || freshCount() !== 24) return;
     runExport(async exported => {
       ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
       const files = await packageFiles(exported);
