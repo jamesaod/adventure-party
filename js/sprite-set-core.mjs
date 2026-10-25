@@ -33,6 +33,7 @@ export function validateSpriteSetManifest(value) {
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 120,
     'give this character a name of 1–120 characters.');
   const activePoses = value.sheet?.poses?.includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const partial = value.partialPoses === true;
   if (value.windupDurationMs !== undefined) requireValue(Number.isFinite(value.windupDurationMs) && value.windupDurationMs >= 0 && value.windupDurationMs <= 1500,
     'windupDurationMs must be 0–1500 milliseconds.');
   const frame = value.frame;
@@ -113,6 +114,7 @@ export function validateSpriteSetManifest(value) {
     const battlefieldFiles=new Set();
     for(const pose of activePoses){
       const capture=battlefield.poses[pose];
+      if(partial && !capture)continue;
       requireValue(object(capture)&&object(capture.frames),`battlefield ${pose} frames are missing.`);
       for(const facing of SPRITE_DIRECTIONS){
         const name=capture.frames[facing];
@@ -128,6 +130,7 @@ export function validateSpriteSetManifest(value) {
   const files = new Set();
   for (const pose of activePoses) {
     const capture = value.poses[pose];
+    if(partial && !capture)continue;
     requireValue(own(value.poses, pose) && object(capture), `${pose} has not been captured.`);
     requireValue(typeof capture.clip === 'string' && capture.clip.length <= 512,
       `${pose} has an invalid animation name.`);
@@ -152,9 +155,9 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield, windupDurationMs }) {
-  const activePoses = captures?.windup ? SPRITE_POSES : LEGACY_SPRITE_POSES;
-  const poses = Object.fromEntries(activePoses.map(pose => {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield, windupDurationMs, partialPoses=false, actionProfileId=null }) {
+  const activePoses = partialPoses ? SPRITE_POSES : captures?.windup ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const poses = Object.fromEntries(activePoses.filter(pose=>!partialPoses || captures?.[pose]).map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
     return [pose, {
@@ -166,7 +169,7 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     renderer:'native-battlefield-v1',
     width:battlefield.width,height:battlefield.height,
     anchorX:battlefield.anchorX,anchorY:battlefield.anchorY,
-    poses:Object.fromEntries(activePoses.map(pose=>[pose,{
+    poses:Object.fromEntries(activePoses.filter(pose=>!partialPoses || captures?.[pose]).map(pose=>[pose,{
       frames:Object.fromEntries(SPRITE_DIRECTIONS.map(facing=>[
         facing,`${pose}-${facing.toLowerCase()}-battlefield.png`
       ]))
@@ -175,6 +178,8 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
   return validateSpriteSetManifest({
     schema: SPRITE_SET_SCHEMA, version: 1, id, label, frame: { ...frame },
     facings: [...SPRITE_DIRECTIONS], poses,
+    ...(partialPoses ? {partialPoses:true} : {}),
+    ...(actionProfileId ? {actionProfileId} : {}),
     sheet: { file: 'sheet.png', columns: 6, rows: activePoses.length, poses: [...activePoses], facings: [...SPRITE_DIRECTIONS] },
     ...(render === undefined ? {} : { render }),
     ...(layout === undefined ? {} : { layout: { ...layout } }),

@@ -2781,6 +2781,7 @@ function unitPoseDefinition(unit){
 function unitPoseSupportsPose(definition,poseName){
   if(!definition || !poseName) return false;
   return !!(
+    (definition.partialPoses && ['stand','ready','windup','attack','prone'].includes(poseName)) ||
     definition.sprites?.[poseName] ||
     definition.directionalSprites?.[poseName] ||
     (definition.directionalSprites && poseName===definition.actionPose)
@@ -2799,9 +2800,10 @@ function directionalUnitPoseFrame(unit,poseName=null){
     frame.image.naturalWidth>0 && frame.image.naturalHeight>0;
   const requested=poses[requestedPose]?.[facing];
   const ready=poses[defaultPose]?.[facing];
-  const frame=loaded(requested) ? requested : loaded(ready) ? ready : null;
+  const frame=loaded(requested) ? requested : !definition.partialPoses && loaded(ready) ? ready : null;
 
-  /* Missing action art falls back only to ready art for this exact facing. */
+  /* In partial sets, absent art is resolved by the unit fallback sprite. */
+  if(!frame && definition.partialPoses)return null;
   return {
     image:frame?.image || null,
     assetId:frame?.assetId || null,
@@ -2868,6 +2870,7 @@ function unitPoseSprite(unit,fallbackSprite=null){
 
   const directional=directionalUnitPoseFrame(unit);
   if(directional) return directional.image;
+  if(definition.partialPoses)return fallbackSprite;
 
   const poseName=activeUnitPoseName(unit);
   return definition.sprites?.[poseName] ||
@@ -3700,7 +3703,8 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
     defaultPose:"stand",actionPose:"attack",
     actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
     windupDurationMs:Number.isFinite(manifest.windupDurationMs) ? manifest.windupDurationMs : 250,
-    directionalSprites,spriteLayout:footprint,mobType
+    directionalSprites,spriteLayout:footprint,mobType,
+    partialPoses:manifest.partialPoses===true,actionProfileId:manifest.actionProfileId||null
   };
   STUDIO_FOOTPRINTS.set(footprint.id,footprint);
   for(const addition of additions){
@@ -27185,9 +27189,15 @@ function drawFriendlyMage(mage){
 
 function drawStudioSpriteMob(unit){
   const frame=directionalUnitPoseFrame(unit);
-  if(!frame?.image?.complete || !frame.image.naturalWidth) return;
+  const sprite=frame?.image?.complete&&frame.image.naturalWidth?frame.image:
+    (unit.type==='fighter'||['ranger','mage','cleric'].includes(unit.type)?fighterSprite:
+      unit.type?.startsWith('orc')?orcStandSprite:unit.type?.startsWith('kobold')?koboldSprite:
+      unit.type==='juvenile-red-dragon'?juvenileRedDragonStandSprite:fighterSprite);
+  if(!sprite?.complete||!sprite.naturalWidth)return;
   const center=unitFootprintScreenCenter(unit);
-  const dimensions=spriteRenderDimensions(frame.assetId,frame.image);
+  const dimensions=frame?spriteRenderDimensions(frame.assetId,sprite):
+    {width:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?50:32))),
+     height:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?54:35)))};
   const friendly=unit.faction==="player";
   if(game.active===unit.id) drawActiveHex(unit,friendly ? "player" : "#df6b6b");
   if(unit.alive) drawHpBar(unit,friendly ? "#94e084" : "#df6b6b");
@@ -27204,8 +27214,8 @@ function drawStudioSpriteMob(unit){
     }
     ctx.restore();
   }
-  drawSpriteFacing(frame.image,center,dimensions.width,dimensions.height,
-    unit.facing,"right",unit,runtimeAnchorForAsset(frame.assetId));
+  drawSpriteFacing(sprite,center,dimensions.width,dimensions.height,
+    unit.facing,"right",unit,frame?runtimeAnchorForAsset(frame.assetId):null);
 }
 
 function drawKobold(k){

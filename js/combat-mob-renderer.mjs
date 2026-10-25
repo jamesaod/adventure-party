@@ -284,12 +284,12 @@ export async function generateCombatSpriteSet(recipe){
   const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
-  const poseNames=profile?.poses?.windup ? WINDUP_POSES : LEGACY_POSES;
+  const poseNames=WINDUP_POSES.filter(name=>profile?.poses?.[name]);
   const images={},runtimeImages={},sourceUrls={},poses={};
   try{
     for(const capture of poseNames){
       const pose=profile?.poses?.[capture];
-      if(!pose) throw new Error(`Combat pose recipe is missing ${capture}.`);
+      if(!pose) continue; // Absent pose is represented by fallback art in the combat renderer.
       // Prefer the captured clip from the matching baked model, but a stale
       // clip name must not disable equipment rendering altogether.
       const defaultPose=poseProfileForHumanoid('one-handed-swing').poses[capture];
@@ -341,13 +341,13 @@ export async function generateCombatSpriteSet(recipe){
       label:`${recipe.mob?.name||recipe.mob?.type||'Humanoid'} — ${recipe.equipment?.itemName||'Unarmed'}${recipe.shield?` + ${recipe.shield.itemName}`:''} (generated)`,
       frame:{...frame},
       facings:FACINGS,
-      poses,
+      poses,partialPoses:true,actionProfileId:recipe.animation?.semanticId||profile?.semanticId||'one-handed-swing',
       layout:{id:recipe.renderSettings?.layoutId||'single',resolutionPercent:finite(recipe.renderSettings?.resolutionPercent,200)},
       mobType:recipe.mob?.type||null,
       modelScalePercent:finite(recipe.renderSettings?.modelScalePercent,175),
       hexScalePercent:finite(recipe.renderSettings?.hexScalePercent,109),
       windupDurationMs:profile?.poses?.windup ? Math.max(0,Math.min(1500,Number(recipe.renderSettings?.windupDurationMs ?? 250))) : undefined,
-      sheet:{file:'sheet.png',columns:6,rows:poseNames.length,poses:[...poseNames],facings:FACINGS},
+      sheet:{file:'sheet.png',columns:6,rows:4,poses:[...WINDUP_POSES],facings:FACINGS},
       battlefield:{
         renderer:'supersampled-battlefield-v2',
         width:Math.max(1,Math.round(frame.renderWidth)),
