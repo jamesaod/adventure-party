@@ -5,6 +5,7 @@ export const HUMANOID_ANIMATION_GROUPS=Object.freeze({
     'one-handed-swing',
     'one-handed-thrust',
     'one-handed-shield',
+    'dual-wield',
     'two-handed-swing',
     'two-handed-thrust',
     'polearm',
@@ -94,6 +95,11 @@ export const HUMANOID_ANIMATION_CATALOG=freezeDeep({
     id:'one-handed-shield',category:'weapon',label:'One-handed weapon with shield',
     fallbackId:'one-handed-swing',handedness:'one-handed',attackStyle:'weapon-and-shield',
     sourceCandidates:['UAL2 sword + shield/melee family']
+  }),
+  'dual-wield':entry({
+    id:'dual-wield',category:'weapon',label:'Dual Weapons — one weapon in each hand',
+    fallbackId:'one-handed-swing',handedness:'dual',attackStyle:'swing',
+    sourceCandidates:['Reuse one-handed swing ready / windup / attack while dedicated animations remain optional']
   }),
   'two-handed-swing':entry({
     id:'two-handed-swing',category:'weapon',label:'Two-handed swinging weapon',
@@ -237,6 +243,7 @@ function equipmentSemanticId(unit,explicitId=null){
   const items=equippedItems(unit);
   const weapon=items.find(item=>item?.slot==='weapon')||null;
   const shield=items.find(item=>item?.slot==='shield')||null;
+  const offhand=items.find(item=>['offhand-weapon','off-hand-weapon','left-hand-weapon','offhand'].includes(item?.slot))||null;
   let id=explicitId||
     weapon?.animationProfileId||
     weapon?.poseProfileId||
@@ -244,6 +251,7 @@ function equipmentSemanticId(unit,explicitId=null){
     weapon?.appearance?.poseProfileId||
     'unarmed';
   id=canonicalHumanoidAnimationId(id);
+  if(offhand && weapon && !shield)id='dual-wield';
   if(shield&&['one-handed-swing','one-handed-thrust'].includes(id))id='one-handed-shield';
   return id;
 }
