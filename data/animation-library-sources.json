@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "animations": [
+    {
+      "id": "goalie-throw",
+      "label": "Goalie Throw",
+      "file": "assets/animations/throwing/goalie-throw.fbx",
+      "bytes": 695424,
+      "sha256": "edffcda51dd656cc0151508cea7d190e67f3a9c0868e41670c746918c172baaf",
+      "actionProfiles": [
+        "sling",
+        "throw"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "standing-2h-cast-spell-01",
+      "label": "Standing 2h Cast Spell 01",
+      "file": "assets/animations/spellcasting/standing-2h-cast-spell-01.fbx",
+      "bytes": 509984,
+      "sha256": "44d80b7eac1a84a93dec3dc615a1671e26755d697e735765f211484c5dfe9f77",
+      "actionProfiles": [
+        "spell-casting"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "standing-2h-magic-attack-04",
+      "label": "Standing 2h Magic Attack 04",
+      "file": "assets/animations/spellcasting/standing-2h-magic-attack-04.fbx",
+      "bytes": 629968,
+      "sha256": "ae18d0f67662b98d6914417a3212007cb9281045345efab113f8ed0deecec428",
+      "actionProfiles": [
+        "spell-casting"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "boxing",
+      "label": "Boxing",
+      "file": "assets/animations/unarmed/boxing.fbx",
+      "bytes": 431968,
+      "sha256": "b5c952fbc2cb51f18212927fd53c136d8f1d595eaa2c95d56dc2b334b09ce362",
+      "actionProfiles": [
+        "unarmed"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    },
+    {
+      "id": "rifle-aim-to-down",
+      "label": "Rifle Aim To Down",
+      "file": "assets/animations/direct-fire/rifle-aim-to-down.fbx",
+      "bytes": 429264,
+      "sha256": "c3b5b8e5fb9d17ad47c10c47995e9656f8fde74cee11ffbf2a163c365525bfa4",
+      "actionProfiles": [
+        "direct-fire"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
+    }
+  ]
+}
