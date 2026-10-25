@@ -18666,8 +18666,14 @@ function attack(attacker,defender,options={}){
   faceEntityToward(attacker,defender);
   attacker.weaponInHand="melee";
 
-  await prepareUnitAttackWindup(attacker);
-  triggerUnitAttackPose(attacker);
+  // Melee resolution is synchronous; play a timed preparatory pose without
+  // changing established turn/initiative return contracts.
+  if(unitPoseSupportsPose(unitPoseDefinition(attacker),"windup")){
+    setTemporaryUnitPose(attacker,"windup",250);
+    setTimeout(()=>triggerUnitAttackPose(attacker),250);
+  }else{
+    triggerUnitAttackPose(attacker);
+  }
 
   setUnitActionBanner(
     attacker,
