@@ -2,7 +2,9 @@
 import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C93';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
-export const SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
+export const SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'prone']);
+export const LEGACY_SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
+export const posesInSpriteSet = manifest => manifest?.sheet?.poses || LEGACY_SPRITE_POSES;
 export const SPRITE_SET_SCHEMA = 'adventure-party.sprite-set';
 
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -30,6 +32,7 @@ export function validateSpriteSetManifest(value) {
     'ID must contain lowercase letters, digits, and single hyphens.');
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 120,
     'give this character a name of 1–120 characters.');
+  const activePoses = value.sheet?.poses?.includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
   const frame = value.frame;
   requireValue(object(frame), 'frame metadata is missing.');
   for (const key of ['width', 'height']) {
@@ -106,7 +109,7 @@ export function validateSpriteSetManifest(value) {
       'battlefield anchor must be within the native frame.');
     requireValue(object(battlefield.poses),'battlefield poses are missing.');
     const battlefieldFiles=new Set();
-    for(const pose of SPRITE_POSES){
+    for(const pose of activePoses){
       const capture=battlefield.poses[pose];
       requireValue(object(capture)&&object(capture.frames),`battlefield ${pose} frames are missing.`);
       for(const facing of SPRITE_DIRECTIONS){
@@ -121,7 +124,7 @@ export function validateSpriteSetManifest(value) {
   requireValue(sameOrder(value.facings, SPRITE_DIRECTIONS), 'the six facing directions are missing or out of order.');
   requireValue(object(value.poses), 'pose captures are missing.');
   const files = new Set();
-  for (const pose of SPRITE_POSES) {
+  for (const pose of activePoses) {
     const capture = value.poses[pose];
     requireValue(own(value.poses, pose) && object(capture), `${pose} has not been captured.`);
     requireValue(typeof capture.clip === 'string' && capture.clip.length <= 512,
@@ -137,9 +140,9 @@ export function validateSpriteSetManifest(value) {
     }
   }
   const sheet = value.sheet;
-  requireValue(object(sheet) && sheet.columns === 6 && sheet.rows === 3 &&
-    sameOrder(sheet.poses, SPRITE_POSES) && sameOrder(sheet.facings, SPRITE_DIRECTIONS),
-  'sheet must have six facing columns and ready, attack, prone rows.');
+  requireValue(object(sheet) && sheet.columns === 6 && sheet.rows === activePoses.length &&
+    sameOrder(sheet.poses, activePoses) && sameOrder(sheet.facings, SPRITE_DIRECTIONS),
+  'sheet must have six facing columns and the declared pose rows.');
   requireValue(typeof sheet.file === 'string' && sheet.file.length <= 96 && PNG_PATTERN.test(sheet.file) && !files.has(sheet.file),
     'sheet must have its own PNG filename.');
   if (value.render !== undefined) requireValue(object(value.render), 'render settings must be an object.');
@@ -148,7 +151,8 @@ export function validateSpriteSetManifest(value) {
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
 export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield }) {
-  const poses = Object.fromEntries(SPRITE_POSES.map(pose => {
+  const activePoses = captures?.windup ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const poses = Object.fromEntries(activePoses.map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
     return [pose, {
@@ -160,7 +164,7 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     renderer:'native-battlefield-v1',
     width:battlefield.width,height:battlefield.height,
     anchorX:battlefield.anchorX,anchorY:battlefield.anchorY,
-    poses:Object.fromEntries(SPRITE_POSES.map(pose=>[pose,{
+    poses:Object.fromEntries(activePoses.map(pose=>[pose,{
       frames:Object.fromEntries(SPRITE_DIRECTIONS.map(facing=>[
         facing,`${pose}-${facing.toLowerCase()}-battlefield.png`
       ]))
@@ -169,7 +173,7 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
   return validateSpriteSetManifest({
     schema: SPRITE_SET_SCHEMA, version: 1, id, label, frame: { ...frame },
     facings: [...SPRITE_DIRECTIONS], poses,
-    sheet: { file: 'sheet.png', columns: 6, rows: 3, poses: [...SPRITE_POSES], facings: [...SPRITE_DIRECTIONS] },
+    sheet: { file: 'sheet.png', columns: 6, rows: activePoses.length, poses: [...activePoses], facings: [...SPRITE_DIRECTIONS] },
     ...(render === undefined ? {} : { render }),
     ...(layout === undefined ? {} : { layout: { ...layout } }),
     ...(mobType === undefined ? {} : { mobType }),
@@ -207,9 +211,10 @@ export function assembleSpriteSheet(poseFrames, width, height) {
   requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid sheet frame dimensions.');
   const sheetWidth = width * SPRITE_DIRECTIONS.length;
-  const sheetHeight = height * SPRITE_POSES.length;
+  const poses = Object.keys(frames).includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const sheetHeight = height * poses.length;
   const data = new Uint8ClampedArray(sheetWidth * sheetHeight * 4);
-  SPRITE_POSES.forEach((pose, row) => {
+  poses.forEach((pose, row) => {
     SPRITE_DIRECTIONS.forEach((facing, column) => {
       const source = poseFrames?.[pose]?.[facing];
       if (source == null) return;
