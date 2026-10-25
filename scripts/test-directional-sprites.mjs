@@ -279,13 +279,13 @@ const nativeSetId=sandbox.registerStudioSpriteSet({
 });
 const nativeUnit={type:"kobold",spriteSetId:nativeSetId,alive:true,facing:"right",facingHex:0,x:0,y:0};
 const nativeFrame=sandbox.directionalUnitPoseFrame(nativeUnit);
-assert.equal(nativeFrame.image,nativeRuntimeImages["ready-e-battlefield.png"],
-  "Combat uses the native battlefield rendition instead of the high-resolution editor image");
+assert.equal(nativeFrame.image,nativeImages["ready-e.png"],
+  "Combat uses the full-resolution captured frame rather than the low-resolution battlefield derivative");
 const nativeEditorAsset=registeredAssets.find(asset=>asset.id==="sprite-set-native-runtime-ready-e");
 assert.equal(nativeEditorAsset.gameImage,nativeImages["ready-e.png"],
   "Pixel Editor retains the high-resolution source image");
-assert.equal(sandbox.runtimeAnchorForAsset(nativeEditorAsset.id).y,0.75,
-  "Combat uses the native battlefield anchor");
+assert.equal(sandbox.runtimeAnchorForAsset(nativeEditorAsset.id).y,145/200,
+  "Combat uses the original captured frame anchor");
 
 // A 5% model-size step can produce fractional game dimensions. Registration
 // and Pixel Editor Apply's property read must preserve those exact dimensions;
