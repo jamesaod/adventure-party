@@ -213,6 +213,18 @@ assert.equal(setId, "sprite-set:test-package");
 assert.equal(registeredAssets.length, SPRITE_POSES.length * SPRITE_DIRECTIONS.length);
 assert.equal(sandbox.registeredStudioSpriteSets.get(setId).label, "Package test");
 const registeredDefinition = sandbox.UNIT_POSE_DEFINITIONS[setId];
+assert.ok(registeredDefinition.directionalSprites.windup, "Four-pose sets register windup artwork");
+const windupUnit = { type:"kobold",spriteSetId:setId,alive:true,facing:"right",facingHex:0 };
+for (let facingIndex=0;facingIndex<SPRITE_DIRECTIONS.length;facingIndex++) {
+  windupUnit.facingHex=facingIndex;
+  const facing=SPRITE_DIRECTIONS[facingIndex];
+  assert.equal(
+    sandbox.directionalUnitPoseFrame(windupUnit,"windup").image,
+    images[`windup-${facing.toLowerCase()}.png`],
+    `Wind Up uses its own frame for ${facing}`
+  );
+}
+
 const brokenImages = { ...images, "attack-nw.png": { ...images["attack-nw.png"], naturalWidth: 0 } };
 assert.throws(() => sandbox.registerStudioSpriteSet({ manifest, images: brokenImages, sourceUrls }), /dimensions/);
 assert.equal(sandbox.UNIT_POSE_DEFINITIONS[setId], registeredDefinition);
@@ -423,6 +435,9 @@ for (const pose of carlManifest.sheet.poses) for (const facing of SPRITE_DIRECTI
   carlUrls[name] = `assets/sprites/${carlManifest.id}/${name}?v=${carlBinding.revision}`;
 }
 const publishedCarl = sandbox.registerStudioSpriteSet({ manifest: carlManifest, images: carlImages, sourceUrls: carlUrls });
+assert.equal(sandbox.unitPoseSupportsPose(sandbox.UNIT_POSE_DEFINITIONS[publishedCarl],"windup"),false,
+  "Existing three-pose Carl remains playable without a Wind Up pose");
+
 sandbox.selectedStudioPlayerSpriteSets.delete("fighter");
 sandbox.configureDefaultPlayerSpriteSets(repositoryIndex.sets);
 assert.equal(sandbox.playerSpriteSetForType("fighter").id, publishedCarl, "Published Carl overrides alphabetic optional packages");
