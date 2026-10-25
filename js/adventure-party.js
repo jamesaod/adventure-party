@@ -27189,10 +27189,10 @@ function drawFriendlyMage(mage){
 
 function drawStudioSpriteMob(unit){
   const frame=directionalUnitPoseFrame(unit);
-  const fallback=unit.type==='fighter'||['ranger','mage','cleric'].includes(unit.type)?fighterSprite:
-    unit.type?.startsWith('orc')?orcStandSprite:unit.type?.startsWith('kobold')?koboldSprite:
-    unit.type==='juvenile-red-dragon'?juvenileRedDragonStandSprite:fighterSprite;
-  const sprite=frame?.image?.complete&&frame.image.naturalWidth?frame.image:fallback;
+  const sprite=frame?.image?.complete&&frame.image.naturalWidth?frame.image:
+    (unit.type==='fighter'||['ranger','mage','cleric'].includes(unit.type)?fighterSprite:
+      unit.type?.startsWith('orc')?orcStandSprite:unit.type?.startsWith('kobold')?koboldSprite:
+      unit.type==='juvenile-red-dragon'?juvenileRedDragonStandSprite:fighterSprite);
   if(!sprite?.complete||!sprite.naturalWidth)return;
   const center=unitFootprintScreenCenter(unit);
   const dimensions=frame?spriteRenderDimensions(frame.assetId,sprite):
