@@ -7,12 +7,12 @@ import {
 
 assert.equal(HUMANOID_ANIMATION_CATALOG_VERSION,1);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.weapon,[
-  'one-handed-swing','one-handed-thrust','one-handed-shield',
+  'one-handed-swing','one-handed-thrust','one-handed-shield','dual-wield',
   'two-handed-swing','two-handed-thrust','polearm','staff','bow','unarmed'
 ]);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.casting,['arcane-cast','divine-cast','innate-cast']);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.condition,['prone','sleep','held','stunned','dead']);
-assert.equal(new Set(HUMANOID_ANIMATION_IDS).size,17);
+assert.equal(new Set(HUMANOID_ANIMATION_IDS).size,18);
 
 const fallback=resolveHumanoidAnimationProfile('two-handed-swing');
 assert.equal(fallback.semanticId,'two-handed-swing');
@@ -72,3 +72,10 @@ const dead=resolveHumanoidAnimationState(unit,{action:{type:'cast-spell',spellGr
 assert.equal(dead.semanticId,'dead');
 assert.equal(dead.pose,'state');
 console.log('PASS universal humanoid semantic animation catalog and resolver');
+
+const paired={...unit,alive:true,hp:20,debuffs:[],inventory:[{slot:'weapon',equipped:true,appearanceId:'sword'},
+  {slot:'offhand-weapon',equipped:true,appearanceId:'dagger'}]};
+const pairedState=resolveHumanoidAnimationState(paired,{action:'attack'});
+assert.equal(pairedState.semanticId,'dual-wield');
+assert.equal(pairedState.resolvedId,'one-handed-swing');
+assert.equal(poseProfileForHumanoid('dual-wield').poses.attack.animation,'UAL2_Sword_Regular_A');

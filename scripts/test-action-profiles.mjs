@@ -30,3 +30,13 @@ console.log('Action profile catalog: 11 defaults, optional poses, shared prone a
 
 // Unit Package regression runs as part of existing action-profile validation.
 await import('./test-unit-package.mjs');
+
+const sharedReady={animation:'SwordIdle',timeSeconds:0.2};
+const sharedAttack={animation:'SwordSlash',timeSeconds:0.6};
+const borrowedCatalog=new Map(ACTION_PROFILE_CATALOG);
+borrowedCatalog.set('one-handed-swing',defineActionProfile({id:'one-handed-swing',label:'1H',poses:{ready:sharedReady,attack:sharedAttack}}));
+assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).source,'profile-fallback');
+assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).pose.animation,'SwordSlash');
+assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'falling',null,borrowedCatalog).source,'fallback-sprite');
+borrowedCatalog.set('dual-wield',defineActionProfile({id:'dual-wield',label:'Dual',fallbackId:'one-handed-swing',poses:{attack:{animation:'TwoWeaponSlash',timeSeconds:0.5}}}));
+assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).pose.animation,'TwoWeaponSlash');
