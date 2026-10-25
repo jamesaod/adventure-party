@@ -175,7 +175,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (!count()) return;
     for (const capture of Object.values(captures)) capture.stale = true;
     refresh();
-    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture Ready, Attack and Prone to test in combat.`;
+    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture Ready, Wind Up, Attack and Prone to test in combat.`;
     saveWorkspace();
   }
 
@@ -185,11 +185,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
-    ui.CaptureCount.textContent = `${fresh} / 18 ready sprites` +
+    ui.CaptureCount.textContent = `${fresh} / 24 ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
-      button.disabled = busy || fresh !== 18;
+      button.disabled = busy || fresh !== 24;
     }
     for (const row of rows.values()) {
       row.button.disabled = busy || !modelReady;
@@ -399,7 +399,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   ui.ExportPoseSheetButton.addEventListener('click', () => runExport(async ({ manifest, sheet }) => {
     download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-18-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
-    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), three rows (ready, attack, prone).';
+    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), four rows (ready, windup, attack, prone).';
   }));
 
   ui.ExportPackageButton.addEventListener('click', () => runExport(async exported => {
@@ -433,7 +433,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     restored = false;
     ui.SpriteSetName.value = String(name).replace(/\.[^.]+$/, '');
     refresh();
-    ui.SheetStatus.textContent = 'Capture ready, attack and prone to export or test the complete set.';
+    ui.SheetStatus.textContent = 'Capture ready, windup, attack and prone to export or test the complete set.';
     if (persist) queueSave();
   }
 
