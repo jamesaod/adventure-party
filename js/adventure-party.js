@@ -2913,15 +2913,21 @@ function setTemporaryUnitPose(unit,poseName,durationMs=null){
   return true;
 }
 
+// Start an optional visual wind-up; the attack resolver can await this so
+// damage and hit effects happen after the preparation pose, not during it.
+async function prepareUnitAttackWindup(unit){
+  const definition=unitPoseDefinition(unit);
+  if(!unit || !definition?.directionalSprites?.windup ||
+    !Object.values(definition.directionalSprites.windup).some(frame=>frame?.image)) return;
+  const duration=Math.max(0,Math.min(1500,definition.windupDurationMs ?? 250));
+  if(!setTemporaryUnitPose(unit,"windup",duration)) return;
+  await sleep(duration);
+}
+
 function triggerUnitAttackPose(unit){
   const definition=unitPoseDefinition(unit);
   if(!definition?.actionPose) return false;
-
-  return setTemporaryUnitPose(
-    unit,
-    definition.actionPose,
-    definition.actionDurationMs
-  );
+  return setTemporaryUnitPose(unit,definition.actionPose,definition.actionDurationMs);
 }
 
 
@@ -17292,6 +17298,7 @@ async function longbowAttack(attacker,defender){
     defender.y-attacker.y
   );
 
+  await prepareUnitAttackWindup(attacker);
   triggerUnitAttackPose(attacker);
 
   breakInvisibility(attacker,"making a Longbow attack");
@@ -18375,6 +18382,7 @@ async function slingAttack(attacker,defender){
   attacker.weaponInHand="ranged";
   setUnitActionBanner(attacker,"Firing Sling");
 
+  await prepareUnitAttackWindup(attacker);
   triggerUnitAttackPose(attacker);
   playSlingReleaseSound();
 
@@ -18658,6 +18666,7 @@ function attack(attacker,defender,options={}){
   faceEntityToward(attacker,defender);
   attacker.weaponInHand="melee";
 
+  await prepareUnitAttackWindup(attacker);
   triggerUnitAttackPose(attacker);
 
   setUnitActionBanner(
@@ -24429,6 +24438,7 @@ async function juvenileRedDragonBreathAttack(dragon,plan){
 
   const breath=dragon.breathWeapon;
   faceEntityToward(dragon,plan.target);
+  await prepareUnitAttackWindup(dragon);
   triggerUnitAttackPose(dragon);
   setUnitActionBanner(dragon,"Breathing Fire");
 
