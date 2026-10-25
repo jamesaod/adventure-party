@@ -8,6 +8,7 @@ import {
   upgradeStudioWorkspaceHexScale
 } from './sprite-set-store.mjs?v=R238C130';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
+import { ACTION_PROFILE_CATALOG } from './action-profile-catalog.mjs';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
@@ -57,10 +58,18 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
-    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'WindupDuration'
+    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'WindupDuration', 'ActionProfile'
   ].map(name => [name, byId(name)]));
   const rows = new Map();
   let captures = {}, style = getStyle(), busy = false, modelReady = false;
+  if(ui.ActionProfile){
+    for(const profile of ACTION_PROFILE_CATALOG.values()){
+      const option=document.createElement('option');option.value=profile.id;option.textContent=profile.label;
+      ui.ActionProfile.append(option);
+    }
+    ui.ActionProfile.value='one-handed-swing';
+    ui.ActionProfile.addEventListener('change',saveWorkspace);
+  }
   let savedSettings = null, restored = false, saveRevision = 0, savedRevision = 0;
   let saveQueue = Promise.resolve(), lastSaveError = null, saveTimer = 0;
 
@@ -73,6 +82,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function workspaceSnapshot() {
     const currentSettings = getWorkspaceSettings();
     const settings = { ...(!modelReady && savedSettings ? savedSettings : currentSettings) };
+    if(ui.ActionProfile) settings.actionProfileId=ui.ActionProfile.value;
     if (ui.WindupDuration) settings.windupDurationMs = Number(ui.WindupDuration.value);
     const first = Object.values(captures)[0];
     settings.hexScalePercent = validateSpriteHexScale(first ? first.hexScalePercent : settings.hexScalePercent);
@@ -190,7 +200,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
-      button.disabled = busy || fresh !== 24;
+      button.disabled = busy;
     }
     for (const row of rows.values()) {
       row.button.disabled = busy || !modelReady;
@@ -311,12 +321,17 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function buildExport() {
-    if (freshCount() !== 24) throw new Error('Recapture all four current poses before exporting or testing the set.');
-    const { width, height, anchorX, anchorY, render, layout, modelScalePercent, hexScalePercent,
-      renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
     const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
-    const mobType = settings.mobType || captures.ready.mobType;
-    const calibration = captures.ready.unitCalibration || settings.unitCalibration || null;
+    const first=Object.values(captures).find(capture=>!capture.stale);
+    const base=first || Object.values(captures)[0];
+    const dimensions=base || spriteLayoutDimensions(settings.layoutId || settings.layout?.id || 'single-hex',
+      settings.resolutionPercent || settings.layout?.resolutionPercent || 100,
+      settings.modelScalePercent || 100,settings.hexScalePercent || 100);
+    const {width,height,anchorX=width/2,anchorY=height/2,render={},layout=base?.layout || settings.layout,
+      modelScalePercent=settings.modelScalePercent ?? 100,hexScalePercent=settings.hexScalePercent ?? 100,
+      renderWidth=48,renderHeight=48*height/width}=dimensions;
+    const mobType = settings.mobType || base?.mobType;
+    const calibration = base?.unitCalibration || settings.unitCalibration || null;
     const unit = calibration ? {
       type: mobType,
       modelId: calibration.modelId ?? settings.libraryModelId ?? null,
@@ -329,12 +344,12 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
     } : undefined;
     const label = ui.SpriteSetName.value.trim() || 'Studio character';
-    const battlefield = captures.ready.battlefieldFrames ? {
+    const battlefield = base?.battlefieldFrames ? {
       renderer:'native-battlefield-v1',
-      width:captures.ready.battlefieldWidth,
-      height:captures.ready.battlefieldHeight,
-      anchorX:captures.ready.battlefieldAnchorX,
-      anchorY:captures.ready.battlefieldAnchorY
+      width:base.battlefieldWidth,
+      height:base.battlefieldHeight,
+      anchorX:base.battlefieldAnchorX,
+      anchorY:base.battlefieldAnchorY
     } : undefined;
     const manifest = createSpriteSetManifest({
       id: spriteSetSlug(label), label,
@@ -345,7 +360,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(unit ? { unit } : {}),
       ...(battlefield ? { battlefield } : {}),
       windupDurationMs: Math.max(0,Math.min(1500,Number(ui.WindupDuration?.value ?? 250))),
-      captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
+      partialPoses:true, actionProfileId:ui.ActionProfile?.value || 'one-handed-swing',
+      captures: Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render,
         appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
@@ -356,13 +372,13 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         palette: 'Adventure Party VGA 256'
       }
     });
-    const poseFrames = Object.fromEntries(SPRITE_POSES.map(pose => [pose, captures[pose].frames]));
+    const poseFrames = Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, captures[pose].frames]));
     const battlefieldPoseFrames = battlefield
-      ? Object.fromEntries(SPRITE_POSES.map(pose=>[pose,captures[pose].battlefieldFrames]))
+      ? Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale&&captures[pose].battlefieldFrames).map(pose=>[pose,captures[pose].battlefieldFrames]))
       : null;
     return {
       manifest,poseFrames,battlefieldPoseFrames,
-      sheet:assembleSpriteSheet(poseFrames,width,height),
+      sheet:assembleSpriteSheet({...Object.fromEntries(SPRITE_POSES.map(pose=>[pose,poseFrames[pose] || {}]))},width,height),
       workspace:workspaceSnapshot()
     };
   }
@@ -370,11 +386,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   async function packageFiles(exported) {
     const { manifest, poseFrames, battlefieldPoseFrames, sheet } = exported;
     const { width, height } = manifest.frame;
-    const jobs = SPRITE_POSES.flatMap(pose => SPRITE_DIRECTIONS.map(async direction => [
+    const jobs = Object.keys(manifest.poses).flatMap(pose => SPRITE_DIRECTIONS.map(async direction => [
       manifest.poses[pose].frames[direction], await pngBlob(poseFrames[pose][direction], width, height)
     ]));
     if(manifest.battlefield && battlefieldPoseFrames){
-      for(const pose of SPRITE_POSES){
+      for(const pose of Object.keys(manifest.battlefield.poses)){
         for(const direction of SPRITE_DIRECTIONS){
           jobs.push(Promise.resolve([
             manifest.battlefield.poses[pose].frames[direction],
@@ -416,7 +432,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {
-    if (busy || freshCount() !== 24) return;
+    if (busy) return;
     runExport(async exported => {
       ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
       const files = await packageFiles(exported);
@@ -582,6 +598,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       style = { ...workspace.style };
       savedSettings = workspace.settings;
       ui.SpriteSetName.value = workspace.name;
+      if(ui.ActionProfile)ui.ActionProfile.value=ACTION_PROFILE_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
       if (ui.WindupDuration) ui.WindupDuration.value = String(workspace.settings.windupDurationMs ?? 250);
       modelReady = false;
       restored = true;
