@@ -2,11 +2,11 @@ import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R238C130';
+} from './sprite-set-core.mjs?v=R238C135';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C130';
+} from './sprite-set-store.mjs?v=R238C135';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
 import { ACTION_PROFILE_CATALOG } from './action-profile-catalog.mjs';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';

@@ -7133,7 +7133,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C97")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C131"))
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C135"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7141,7 +7141,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C131",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C135",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const fromCombat=!!unit.studioSpriteTest &&
