@@ -418,6 +418,8 @@ for (const type of ["fighter", "ranger", "mage"]) {
   sandbox.combatAwaitingStart = false;
   assert.equal(sandbox.activeUnitPoseName(character), "stand", "Live combat ignores friendly inspection overrides");
   character.effects = { unconscious: {} };
+  assert.equal(sandbox.activeUnitPoseName(character), "falling");
+  now += 300;
   assert.equal(sandbox.activeUnitPoseName(character), "prone");
   character.effects = {};
   assert.equal(sandbox.triggerUnitAttackPose(character), true);
