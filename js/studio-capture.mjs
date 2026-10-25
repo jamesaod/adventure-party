@@ -279,11 +279,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captures[pose] = captured;
       refresh();
       queueSave();
-      const complete = freshCount() === 18;
+      const complete = freshCount() === 24;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
         ? 'A sprite touches the frame edge. If it is cropped, clear the sheet and choose Fit all animations before capturing again.'
-        : complete ? 'All 18 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
+        : complete ? 'All 24 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
     } catch (error) { onError(error); }
