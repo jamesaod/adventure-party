@@ -108,12 +108,12 @@ async function decodeImageMap(names,sourceUrls,width,height){
 }
 
 async function decodeImages(manifest,sourceUrls){
-  const sourceNames=posesInSpriteSet(manifest).flatMap(pose=>SPRITE_DIRECTIONS.map(
+  const sourceNames=(manifest.sheet?.poses || ['ready','attack','prone']).flatMap(pose=>SPRITE_DIRECTIONS.map(
     facing=>manifest.poses[pose].frames[facing]
   ));
   const images=await decodeImageMap(sourceNames,sourceUrls,manifest.frame.width,manifest.frame.height);
   if(!manifest.battlefield)return {images,runtimeImages:null};
-  const runtimeNames=posesInSpriteSet(manifest).flatMap(pose=>SPRITE_DIRECTIONS.map(
+  const runtimeNames=(manifest.sheet?.poses || ['ready','attack','prone']).flatMap(pose=>SPRITE_DIRECTIONS.map(
     facing=>manifest.battlefield.poses[pose].frames[facing]
   ));
   const runtimeImages=await decodeImageMap(
@@ -152,7 +152,7 @@ async function loadRepositorySet(entry) {
     throw new Error(`${entry.id}'s default player binding does not match its captured MOB.`);
   }
   const sourceUrls = {};
-  for(const pose of posesInSpriteSet(manifest)){
+  for(const pose of (manifest.sheet?.poses || ['ready','attack','prone'])){
     for(const facing of SPRITE_DIRECTIONS){
       for(const filename of [
         manifest.poses[pose].frames[facing],
@@ -173,7 +173,7 @@ async function loadDraft() {
   const manifest = validateSpriteSetManifest(draft.manifest);
   const sourceUrls = {}, urls = [];
   try{
-    for(const pose of posesInSpriteSet(manifest)){
+    for(const pose of (manifest.sheet?.poses || ['ready','attack','prone'])){
       for(const facing of SPRITE_DIRECTIONS){
         for(const filename of [
           manifest.poses[pose].frames[facing],
