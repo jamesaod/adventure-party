@@ -18666,11 +18666,23 @@ function attack(attacker,defender,options={}){
   faceEntityToward(attacker,defender);
   attacker.weaponInHand="melee";
 
-  // Melee resolution is synchronous; play a timed preparatory pose without
-  // changing established turn/initiative return contracts.
-  if(unitPoseSupportsPose(unitPoseDefinition(attacker),"windup")){
-    setTemporaryUnitPose(attacker,"windup",250);
-    setTimeout(()=>triggerUnitAttackPose(attacker),250);
+  // Preserve the synchronous melee result contract while sequencing the
+  // preparatory sprite. A superseded, dead, or cancelled action cannot later
+  // overwrite a newer pose.
+  const meleePoseDefinition=unitPoseDefinition(attacker);
+  if(unitPoseSupportsPose(meleePoseDefinition,"windup")){
+    const windupMs=Math.max(0,Math.min(1500,meleePoseDefinition.windupDurationMs ?? 250));
+    if(windupMs>0){
+      const originalGame=game;
+      setTemporaryUnitPose(attacker,"windup",windupMs);
+      const windupToken=attacker.poseUntil;
+      setTimeout(()=>{
+        if(game!==originalGame || !attacker.alive || attacker.poseUntil!==windupToken) return;
+        triggerUnitAttackPose(attacker);
+      },windupMs);
+    }else{
+      triggerUnitAttackPose(attacker);
+    }
   }else{
     triggerUnitAttackPose(attacker);
   }
