@@ -449,7 +449,7 @@ try {
   await fs.writeFile(zipPath, zip);
   const unpacked = await readSpriteSetPackage(zipPath);
   assert.equal(unpacked.manifest.id, manifest.id);
-  assert.equal(unpacked.files.size, 20);
+  assert.equal(unpacked.files.size, files.size);
   for (const [name, bytes] of files) assert.deepEqual(unpacked.files.get(name), bytes);
 
   const root = path.join(temp, 'repo');
@@ -457,7 +457,7 @@ try {
   const unrelated = { id: 'existing-character', manifest: 'assets/sprites/existing-character/manifest.json', revision: 'existing' };
   await fs.writeFile(path.join(root, 'data/sprite-sets.json'), JSON.stringify({ version: 1, sets: [unrelated] }));
   const imported = await importSpriteSet(zipPath, { repoRoot: root });
-  assert.equal(imported.files, 20);
+  assert.equal(imported.files, files.size);
   assert.match(imported.revision, /^[a-f0-9]{64}$/);
   let index = JSON.parse(await fs.readFile(imported.indexPath, 'utf8'));
   assert.deepEqual(index.sets[0], unrelated);
