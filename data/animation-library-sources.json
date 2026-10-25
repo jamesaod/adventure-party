@@ -118,6 +118,19 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "unverified"
+    },
+    {
+      "id": "standing-aim-recoil",
+      "label": "Standing Aim Recoil",
+      "file": "assets/animations/bow/standing-aim-recoil.fbx",
+      "bytes": 325808,
+      "sha256": "6a6ba3c9e65f01b02f24f1eda2de239236c656b568b592d9e09f6283cc1be0d7",
+      "actionProfiles": [
+        "bow"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
     }
   ]
 }
