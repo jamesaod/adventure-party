@@ -324,10 +324,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
     const first=Object.values(captures).find(capture=>!capture.stale);
     const base=first || Object.values(captures)[0];
-    const dimensions=base || spriteLayoutDimensions(settings.layoutId || settings.layout?.id || 'single-hex',
+    const dimensions=base || spriteLayoutDimensions(settings.layoutId || settings.layout?.id || 'single',
       settings.resolutionPercent || settings.layout?.resolutionPercent || 100,
       settings.modelScalePercent || 100,settings.hexScalePercent || 100);
-    const {width,height,anchorX=width/2,anchorY=height/2,render={},layout=base?.layout || settings.layout,
+    const {width,height,anchorX=width/2,anchorY=height/2,render={},layout=base?.layout || settings.layout || {id:'single',resolutionPercent:100},
       modelScalePercent=settings.modelScalePercent ?? 100,hexScalePercent=settings.hexScalePercent ?? 100,
       renderWidth=48,renderHeight=48*height/width}=dimensions;
     const mobType = settings.mobType || base?.mobType;
