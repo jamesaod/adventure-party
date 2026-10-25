@@ -33,6 +33,8 @@ export function validateSpriteSetManifest(value) {
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 120,
     'give this character a name of 1–120 characters.');
   const activePoses = value.sheet?.poses?.includes('windup') ? SPRITE_POSES : LEGACY_SPRITE_POSES;
+  if (value.windupDurationMs !== undefined) requireValue(Number.isFinite(value.windupDurationMs) && value.windupDurationMs >= 0 && value.windupDurationMs <= 1500,
+    'windupDurationMs must be 0–1500 milliseconds.');
   const frame = value.frame;
   requireValue(object(frame), 'frame metadata is missing.');
   for (const key of ['width', 'height']) {
@@ -150,7 +152,7 @@ export function validateSpriteSetManifest(value) {
 }
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
-export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield }) {
+export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield, windupDurationMs }) {
   const activePoses = captures?.windup ? SPRITE_POSES : LEGACY_SPRITE_POSES;
   const poses = Object.fromEntries(activePoses.map(pose => {
     const capture = captures?.[pose];
@@ -180,7 +182,8 @@ export function createSpriteSetManifest({ id, label, frame, captures, render, la
     ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
     ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
     ...(unit === undefined ? {} : { unit: structuredClone(unit) }),
-    ...(battlefieldMetadata === undefined ? {} : { battlefield:battlefieldMetadata })
+    ...(battlefieldMetadata === undefined ? {} : { battlefield:battlefieldMetadata }),
+    ...(activePoses === SPRITE_POSES ? { windupDurationMs: windupDurationMs ?? 250 } : {})
   });
 }
 
