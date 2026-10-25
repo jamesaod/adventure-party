@@ -47,7 +47,7 @@ function makeControls() {
   heading.style.cssText = 'margin:0 0 8px;font-size:18px;color:var(--gold);';
   const buttons = document.createElement('div');
   buttons.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-  for (const pose of ['ready', 'windup', 'attack', 'prone', 'live']) {
+  for (const pose of ['ready', 'windup', 'attack', 'falling', 'prone', 'live']) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'combat-action';
@@ -85,7 +85,7 @@ function refreshControls() {
     ? 'Inspect one Dungeon Crawler Carl using the selected sprite collection. Kobolds provide opponents. Space begins combat and restores live poses; movement and attacks turn Carl to the matching facing. Completed tests return directly to 3d studio without a loot screen.'
     : 'Preview all six facings before combat. Player targets are friendly characters with their own class rules; Kobolds provide opponents. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
   combatStudioReturn.hidden = snapshot.encounter !== 'studio-kobold';
-  const selected = { stand: 'ready', windup: 'windup', attack: 'attack', prone: 'prone' }[snapshot.inspectionPose] || 'live';
+  const selected = { stand: 'ready', windup: 'windup', attack: 'attack', falling: 'falling', prone: 'prone' }[snapshot.inspectionPose] || 'live';
   inspector.querySelectorAll('[data-sprite-inspect]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.spriteInspect === selected));
   });
