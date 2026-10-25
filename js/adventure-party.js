@@ -2803,7 +2803,7 @@ function directionalUnitPoseFrame(unit,poseName=null){
   const frame=loaded(requested) ? requested : !definition.partialPoses && loaded(ready) ? ready : null;
 
   /* In partial sets, absent art is resolved by the unit fallback sprite. */
-  if(!frame)return null;
+  if(!frame && definition.partialPoses)return null;
   return {
     image:frame?.image || null,
     assetId:frame?.assetId || null,
@@ -2869,7 +2869,7 @@ function unitPoseSprite(unit,fallbackSprite=null){
   if(!definition) return fallbackSprite;
 
   const directional=directionalUnitPoseFrame(unit);
-  if(directional?.image) return directional.image;
+  if(directional) return directional.image;
   if(definition.partialPoses)return fallbackSprite;
 
   const poseName=activeUnitPoseName(unit);
