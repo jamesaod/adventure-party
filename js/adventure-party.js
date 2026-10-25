@@ -3663,7 +3663,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   };
   const directionalSprites={};
   const additions=[];
-  for(const [capture,pose] of [["ready","stand"],["attack","attack"],["prone","prone"]]){
+  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
     directionalSprites[pose]={};
     for(const facing of ["E","NE","NW","W","SW","SE"]){
       const file=manifest.poses?.[capture]?.frames?.[facing];
@@ -3693,6 +3693,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   UNIT_POSE_DEFINITIONS[id]={
     defaultPose:"stand",actionPose:"attack",
     actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
+    windupDurationMs:250,
     directionalSprites,spriteLayout:footprint,mobType
   };
   STUDIO_FOOTPRINTS.set(footprint.id,footprint);
@@ -3732,8 +3733,8 @@ function selectStudioSpriteSet(id,{openSetup=false}={}){
 
 function inspectStudioSpritePose(pose){
   if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
-    !["ready","attack","prone","live"].includes(pose)) return false;
-  const internalPose={ready:"stand",attack:"attack",prone:"prone",live:null}[pose];
+    !["ready","windup","attack","prone","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",windup:"windup",attack:"attack",prone:"prone",live:null}[pose];
   for(const unit of studioSpriteTestUnits()) unit.studioPoseInspection=internalPose;
   draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
