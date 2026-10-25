@@ -58,7 +58,7 @@ const capture=readFileSync('js/studio-capture.mjs','utf8');
 const studio=readFileSync('js/3d-studio.mjs','utf8');
 assert.ok(capture.includes('function invalidateCaptures(')&&
   capture.includes('capture.stale = true')&&
-  capture.includes('freshCount() !== 18'),
+  capture.includes('fresh !== 24'),
   'Changed visuals remain visible but outdated captures cannot go to combat');
 assert.ok(studio.includes("state.playing = restoreSettings ? !!restoreSettings.playing : false"),
   'Newly loaded animations start paused; a restored workspace keeps its own playback state');
