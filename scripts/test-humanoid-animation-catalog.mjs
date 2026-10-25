@@ -73,7 +73,7 @@ assert.equal(dead.semanticId,'dead');
 assert.equal(dead.pose,'state');
 console.log('PASS universal humanoid semantic animation catalog and resolver');
 
-const paired={...unit,inventory:[{slot:'weapon',equipped:true,appearanceId:'sword'},
+const paired={...unit,alive:true,hp:20,debuffs:[],inventory:[{slot:'weapon',equipped:true,appearanceId:'sword'},
   {slot:'offhand-weapon',equipped:true,appearanceId:'dagger'}]};
 const pairedState=resolveHumanoidAnimationState(paired,{action:'attack'});
 assert.equal(pairedState.semanticId,'dual-wield');
