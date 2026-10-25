@@ -3699,7 +3699,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   UNIT_POSE_DEFINITIONS[id]={
     defaultPose:"stand",actionPose:"attack",
     actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
-    windupDurationMs:250,
+    windupDurationMs:Number.isFinite(manifest.windupDurationMs) ? manifest.windupDurationMs : 250,
     directionalSprites,spriteLayout:footprint,mobType
   };
   STUDIO_FOOTPRINTS.set(footprint.id,footprint);
