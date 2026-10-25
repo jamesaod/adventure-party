@@ -236,6 +236,8 @@ for (let facingIndex = 0; facingIndex < 6; facingIndex++) {
   const facing = SPRITE_DIRECTIONS[facingIndex];
   for (const condition of [null, "prone", "sleep", "unconscious"]) {
     imported.effects = condition ? { [condition]: {} } : {};
+    // In this directional-frame test, sample after the Falling transition.
+    imported.fallingPoseStartedAt = condition ? now-300 : null;
     const expectedPose = condition ? "prone" : "ready";
     const selected = sandbox.directionalUnitPoseFrame(imported);
     assert.equal(selected.image, images[`${expectedPose}-${facing.toLowerCase()}.png`]);
@@ -247,6 +249,7 @@ for (let facingIndex = 0; facingIndex < 6; facingIndex++) {
   }
 }
 imported.effects = { prone: {} };
+imported.fallingPoseStartedAt = now-300;
 imported.type = "fighter";
 assert.equal(sandbox.activeUnitPoseName(imported), "prone", "Directional prone status applies to non-Kobold characters too");
 imported.type = "kobold";
@@ -648,3 +651,10 @@ for (const cancel of ["title", "condition", "monster", "keyboard-condition", "pi
 }
 
 console.log("Directional sprites: six facings, pose/render integrity, player target binding, friendly inspection, fractional sizes, mouse/Enter readiness gating, cancellation, error recovery, bounded fallback, and no live rebinding passed.");
+
+// A newly prone five-pose unit must present Falling first, then Prone.
+const fallCheck={type:'kobold',spriteSetId:setId,alive:true,facingHex:0,effects:{prone:{}}};
+assert.equal(sandbox.activeUnitPoseName(fallCheck),'falling');
+assert.equal(sandbox.directionalUnitPoseFrame(fallCheck).image,images['falling-e.png']);
+now+=300;
+assert.equal(sandbox.activeUnitPoseName(fallCheck),'prone');
