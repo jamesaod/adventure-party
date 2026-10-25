@@ -95,6 +95,10 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
 
   const settings = workspace.settings;
   const captures = workspace.captures;
+  // Empty capture sets are supported only for explicit Studio Combat Test.
+  // Never allow an unrelated global Studio workspace to replace valid sprites.
+  if (!fromCombat && !Object.keys(captures).length)
+    return fallbackRecipe('No saved pose frames are available in the ordinary Studio workspace.');
   if (Object.values(captures).some(pose => pose?.stale)) {
     if (fromCombat) throw new Error('Combat test captures are outdated; keeping the last valid sprites.');
     return fallbackRecipe('Studio captures were changed after saving. Recapture the three poses to use them in combat.');
