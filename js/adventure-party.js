@@ -2913,15 +2913,21 @@ function setTemporaryUnitPose(unit,poseName,durationMs=null){
   return true;
 }
 
+// Start an optional visual wind-up; the attack resolver can await this so
+// damage and hit effects happen after the preparation pose, not during it.
+async function prepareUnitAttackWindup(unit){
+  const definition=unitPoseDefinition(unit);
+  if(!unit || !definition?.directionalSprites?.windup ||
+    !Object.values(definition.directionalSprites.windup).some(frame=>frame?.image)) return;
+  const duration=Math.max(0,Math.min(1500,definition.windupDurationMs ?? 250));
+  if(!setTemporaryUnitPose(unit,"windup",duration)) return;
+  await sleep(duration);
+}
+
 function triggerUnitAttackPose(unit){
   const definition=unitPoseDefinition(unit);
   if(!definition?.actionPose) return false;
-
-  return setTemporaryUnitPose(
-    unit,
-    definition.actionPose,
-    definition.actionDurationMs
-  );
+  return setTemporaryUnitPose(unit,definition.actionPose,definition.actionDurationMs);
 }
 
 
@@ -3663,7 +3669,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   };
   const directionalSprites={};
   const additions=[];
-  for(const [capture,pose] of [["ready","stand"],["attack","attack"],["prone","prone"]]){
+  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
     directionalSprites[pose]={};
     for(const facing of ["E","NE","NW","W","SW","SE"]){
       const file=manifest.poses?.[capture]?.frames?.[facing];
@@ -3693,6 +3699,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   UNIT_POSE_DEFINITIONS[id]={
     defaultPose:"stand",actionPose:"attack",
     actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
+    windupDurationMs:Number.isFinite(manifest.windupDurationMs) ? manifest.windupDurationMs : 250,
     directionalSprites,spriteLayout:footprint,mobType
   };
   STUDIO_FOOTPRINTS.set(footprint.id,footprint);
@@ -3732,8 +3739,8 @@ function selectStudioSpriteSet(id,{openSetup=false}={}){
 
 function inspectStudioSpritePose(pose){
   if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
-    !["ready","attack","prone","live"].includes(pose)) return false;
-  const internalPose={ready:"stand",attack:"attack",prone:"prone",live:null}[pose];
+    !["ready","windup","attack","prone","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",windup:"windup",attack:"attack",prone:"prone",live:null}[pose];
   for(const unit of studioSpriteTestUnits()) unit.studioPoseInspection=internalPose;
   draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
@@ -17291,6 +17298,7 @@ async function longbowAttack(attacker,defender){
     defender.y-attacker.y
   );
 
+  await prepareUnitAttackWindup(attacker);
   triggerUnitAttackPose(attacker);
 
   breakInvisibility(attacker,"making a Longbow attack");
@@ -18374,6 +18382,7 @@ async function slingAttack(attacker,defender){
   attacker.weaponInHand="ranged";
   setUnitActionBanner(attacker,"Firing Sling");
 
+  await prepareUnitAttackWindup(attacker);
   triggerUnitAttackPose(attacker);
   playSlingReleaseSound();
 
@@ -18657,7 +18666,26 @@ function attack(attacker,defender,options={}){
   faceEntityToward(attacker,defender);
   attacker.weaponInHand="melee";
 
-  triggerUnitAttackPose(attacker);
+  // Preserve the synchronous melee result contract while sequencing the
+  // preparatory sprite. A superseded, dead, or cancelled action cannot later
+  // overwrite a newer pose.
+  const meleePoseDefinition=unitPoseDefinition(attacker);
+  if(unitPoseSupportsPose(meleePoseDefinition,"windup")){
+    const windupMs=Math.max(0,Math.min(1500,meleePoseDefinition.windupDurationMs ?? 250));
+    if(windupMs>0){
+      const originalGame=game;
+      setTemporaryUnitPose(attacker,"windup",windupMs);
+      const windupToken=attacker.poseUntil;
+      setTimeout(()=>{
+        if(game!==originalGame || !attacker.alive || attacker.poseUntil!==windupToken) return;
+        triggerUnitAttackPose(attacker);
+      },windupMs);
+    }else{
+      triggerUnitAttackPose(attacker);
+    }
+  }else{
+    triggerUnitAttackPose(attacker);
+  }
 
   setUnitActionBanner(
     attacker,
@@ -24428,6 +24456,7 @@ async function juvenileRedDragonBreathAttack(dragon,plan){
 
   const breath=dragon.breathWeapon;
   faceEntityToward(dragon,plan.target);
+  await prepareUnitAttackWindup(dragon);
   triggerUnitAttackPose(dragon);
   setUnitActionBanner(dragon,"Breathing Fire");
 

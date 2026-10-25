@@ -57,7 +57,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
-    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus'
+    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'WindupDuration'
   ].map(name => [name, byId(name)]));
   const rows = new Map();
   let captures = {}, style = getStyle(), busy = false, modelReady = false;
@@ -73,6 +73,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function workspaceSnapshot() {
     const currentSettings = getWorkspaceSettings();
     const settings = { ...(!modelReady && savedSettings ? savedSettings : currentSettings) };
+    if (ui.WindupDuration) settings.windupDurationMs = Number(ui.WindupDuration.value);
     const first = Object.values(captures)[0];
     settings.hexScalePercent = validateSpriteHexScale(first ? first.hexScalePercent : settings.hexScalePercent);
     return {
@@ -157,7 +158,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       canvases[direction] = canvas;
     }
     ui.PoseSheetRows.append(tr);
-    const button = byId(`Capture${poseLabel(pose)}Button`);
+    const button = byId(`Capture${pose === 'windup' ? 'Windup' : poseLabel(pose)}Button`);
     button.addEventListener('click', () => capture(pose));
     rows.set(pose, { tr, detail, clear, canvases, button });
   }
@@ -175,7 +176,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (!count()) return;
     for (const capture of Object.values(captures)) capture.stale = true;
     refresh();
-    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture Ready, Attack and Prone to test in combat.`;
+    ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture Ready, Wind Up, Attack and Prone to test in combat.`;
     saveWorkspace();
   }
 
@@ -185,11 +186,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
-    ui.CaptureCount.textContent = `${fresh} / 18 ready sprites` +
+    ui.CaptureCount.textContent = `${fresh} / 24 ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
-      button.disabled = busy || fresh !== 18;
+      button.disabled = busy || fresh !== 24;
     }
     for (const row of rows.values()) {
       row.button.disabled = busy || !modelReady;
@@ -279,11 +280,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captures[pose] = captured;
       refresh();
       queueSave();
-      const complete = freshCount() === 18;
+      const complete = freshCount() === 24;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
         ? 'A sprite touches the frame edge. If it is cropped, clear the sheet and choose Fit all animations before capturing again.'
-        : complete ? 'All 18 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
+        : complete ? 'All 24 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
     } catch (error) { onError(error); }
@@ -310,7 +311,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function buildExport() {
-    if (freshCount() !== 18) throw new Error('Recapture all three current poses before exporting or testing the set.');
+    if (freshCount() !== 24) throw new Error('Recapture all four current poses before exporting or testing the set.');
     const { width, height, anchorX, anchorY, render, layout, modelScalePercent, hexScalePercent,
       renderWidth = 48, renderHeight = 48 * height / width } = captures.ready;
     const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
@@ -343,6 +344,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
       ...(unit ? { unit } : {}),
       ...(battlefield ? { battlefield } : {}),
+      windupDurationMs: Math.max(0,Math.min(1500,Number(ui.WindupDuration?.value ?? 250))),
       captures: Object.fromEntries(SPRITE_POSES.map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render,
@@ -398,8 +400,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   ui.ExportPoseSheetButton.addEventListener('click', () => runExport(async ({ manifest, sheet }) => {
-    download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-18-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
-    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), three rows (ready, attack, prone).';
+    download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-24-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
+    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), four rows (ready, windup, attack, prone).';
   }));
 
   ui.ExportPackageButton.addEventListener('click', () => runExport(async exported => {
@@ -433,7 +435,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     restored = false;
     ui.SpriteSetName.value = String(name).replace(/\.[^.]+$/, '');
     refresh();
-    ui.SheetStatus.textContent = 'Capture ready, attack and prone to export or test the complete set.';
+    ui.SheetStatus.textContent = 'Capture ready, windup, attack and prone to export or test the complete set.';
     if (persist) queueSave();
   }
 
@@ -580,6 +582,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       style = { ...workspace.style };
       savedSettings = workspace.settings;
       ui.SpriteSetName.value = workspace.name;
+      if (ui.WindupDuration) ui.WindupDuration.value = String(workspace.settings.windupDurationMs ?? 250);
       modelReady = false;
       restored = true;
       refresh();
@@ -608,6 +611,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       refreshControls();
     }
   }
+
+  ui.WindupDuration?.addEventListener('change', () => queueSave());
 
   ui.ClearPosesButton.addEventListener('click', () => {
     if (busy) return;

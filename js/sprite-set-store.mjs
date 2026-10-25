@@ -1,4 +1,4 @@
-import { SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C57';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C57';
 import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 
 // Candidate and stable share an origin, so isolate their drafts by page folder.
@@ -147,9 +147,9 @@ export async function loadStudioWorkspace({ fromCombat = false } = {}) {
 
 // One authoritative draft file list for writing and acceptance tests.
 export function studioDraftImageNames(manifest, includeSheet = false) {
-  const names = SPRITE_POSES.flatMap(pose => SPRITE_DIRECTIONS.map(facing => manifest.poses[pose].frames[facing]));
+  const names = posesInSpriteSet(manifest).flatMap(pose => SPRITE_DIRECTIONS.map(facing => manifest.poses[pose].frames[facing]));
   // Combat uses these separate, native-resolution battlefield sprites.
-  if (manifest.battlefield) for (const pose of SPRITE_POSES) for (const facing of SPRITE_DIRECTIONS) {
+  if (manifest.battlefield) for (const pose of posesInSpriteSet(manifest)) for (const facing of SPRITE_DIRECTIONS) {
     names.push(manifest.battlefield.poses[pose].frames[facing]);
   }
   if (includeSheet) names.push(manifest.sheet.file);
