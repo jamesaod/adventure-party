@@ -60,6 +60,10 @@ assert.ok(capture.includes('function invalidateCaptures(')&&
   capture.includes('capture.stale = true')&&
   capture.includes('fresh !== 24'),
   'Changed visuals remain visible but outdated captures cannot go to combat');
+assert.ok(capture.includes("if (busy || freshCount() !== 24) return;"),
+  '3D Studio combat test accepts complete four-pose 24-frame captures');
+assert.ok(!capture.includes("if (busy || freshCount() !== 18) return;"),
+  'Old 18-frame guard cannot block the four-pose combat handoff');
 assert.ok(studio.includes("state.playing = restoreSettings ? !!restoreSettings.playing : false"),
   'Newly loaded animations start paused; a restored workspace keeps its own playback state');
 assert.ok(studio.includes('poseCapture?.invalidateCaptures(\'Lighting changed\')') &&
