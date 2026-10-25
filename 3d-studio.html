@@ -318,6 +318,7 @@
           </details>
           <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
             <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled>Capture ready pose</button>
+            <button id="studioCaptureWindupButton" class="studio-button studio-primary" type="button" disabled>Capture wind up pose</button>
             <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
             <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled>Capture prone pose</button>
           </div>
@@ -439,7 +440,7 @@
         <h2 id="studioSheetHeading">Captured sprite sheet</h2>
         <div class="studio-sheet-heading-meta">
           <span id="studioWorkspaceStatus" class="studio-workspace-status" role="status" aria-live="polite">Preparing saved workspace…</span>
-          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 18 sprites</output>
+          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 24 sprites</output>
         </div>
       </div>
       <div class="studio-sheet-intro">
@@ -450,7 +451,7 @@
         <p class="studio-note">Three poses × six directions. Empty rows fill as you capture. Color and outline changes update every saved pose.</p>
       </div>
       <div class="studio-sheet-scroll">
-        <table id="studioPoseSheetPreview" class="studio-pose-sheet" aria-label="Captured ready, attack and prone sprite sheet">
+        <table id="studioPoseSheetPreview" class="studio-pose-sheet" aria-label="Captured ready, windup, attack and prone sprite sheet">
           <thead><tr><th scope="col">Pose</th><th scope="col">E</th><th scope="col">NE</th><th scope="col">NW</th><th scope="col">W</th><th scope="col">SW</th><th scope="col">SE</th></tr></thead>
           <tbody id="studioPoseSheetRows"></tbody>
         </table>
@@ -461,7 +462,7 @@
         <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
         <button id="studioClearPosesButton" class="studio-button" type="button" disabled>Clear sheet</button>
       </div>
-      <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture ready, attack and prone to export or test the complete set.</p>
+      <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture ready, windup, attack and prone to export or test the complete set.</p>
       <p class="studio-note studio-help">Captures save automatically in this browser. Test in combat saves your set and opens combat in this tab; Return to 3d studio restores the set you tested. Export the ZIP to keep a copy with all 18 PNGs, the sheet, MOB and footprint.</p>
     </section>
 
