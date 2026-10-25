@@ -31,15 +31,17 @@ function normalizePose(pose){
   return Object.freeze({animation:pose.animation,sourceId:pose.sourceId||pose.animation,
     timeSeconds:pose.timeSeconds,gripCorrection:pose.gripCorrection??null});
 }
-export function defineActionProfile({id,label,category='custom',poses={},sharedProne=true}){
+export function defineActionProfile({id,label,category='custom',poses={},sharedProne=true,fallbackId=null}){
   if(!validId(id)||typeof label!=='string'||!label.trim())throw new Error('Invalid action profile ID or label.');
   if(!poses||typeof poses!=='object'||Object.keys(poses).some(key=>!ACTION_POSES.includes(key)))
     throw new Error('Unknown action-profile pose name.');
-  return Object.freeze({id,label,category,sharedProne,
+  if(fallbackId!==null&&!validId(fallbackId))throw new Error('Invalid fallback profile ID');
+  return Object.freeze({id,label,category,sharedProne,fallbackId,
     poses:Object.freeze(Object.fromEntries(ACTION_POSES.map(pose=>[pose,normalizePose(poses[pose])])))});
 }
 export function createActionProfileCatalog(extraProfiles=[]){
-  const catalog=new Map(DEFINITIONS.map(([id,label,category])=>[id,defineActionProfile({id,label,category})]));
+  const catalog=new Map(DEFINITIONS.map(([id,label,category])=>[id,defineActionProfile({id,label,category,
+    fallbackId:id==='dual-wield'?'one-handed-swing':null})]));
   for(const profile of extraProfiles){
     const normalized=defineActionProfile(profile);
     if(catalog.has(normalized.id))throw new Error('Duplicate action profile: '+normalized.id);
@@ -47,10 +49,20 @@ export function createActionProfileCatalog(extraProfiles=[]){
   }
   return catalog;
 }
-export function resolveActionPose(profile,poseName,sharedProne=null){
+export function resolveActionPose(profile,poseName,sharedProne=null,catalog=ACTION_PROFILE_CATALOG){
   if(!ACTION_POSES.includes(poseName))throw new Error('Unknown pose: '+poseName);
   const defined=profile?.poses?.[poseName]??null;
   if(defined)return {source:'profile',pose:defined};
+  // Reuse existing one-handed captures without copying animation assets.
+  // A dual-wield-specific pose assigned later always takes precedence.
+  const visited=new Set([profile?.id]);
+  let current=profile;
+  while(current?.fallbackId && !visited.has(current.fallbackId)){
+    visited.add(current.fallbackId);
+    current=catalog?.get(current.fallbackId);
+    const borrowed=current?.poses?.[poseName];
+    if(borrowed)return {source:'profile-fallback',profileId:current.id,pose:borrowed};
+  }
   if(poseName==='prone'&&profile?.sharedProne&&sharedProne)
     return {source:'shared-prone',pose:normalizePose(sharedProne)};
   return {source:'fallback-sprite',pose:null};
