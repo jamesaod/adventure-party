@@ -297,7 +297,8 @@ function formatShieldSlide(value){
 
 function refreshRecolorControls(){
   const enabled=isWarriorRecolorModel(state.libraryModelId)&&state.modelReady;
-  ui.RecolorPanel.hidden=!enabled;
+  // Temporarily hide experimental recolor controls; preserve feature data.
+  ui.RecolorPanel.hidden=true;
   ui.HairColor.value=state.appearanceRecolor.hair;
   ui.MetalColor.value=state.appearanceRecolor.metal;
   ui.RecolorDebug.value=state.appearanceRecolor.debug;
