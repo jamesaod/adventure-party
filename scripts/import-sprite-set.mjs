@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { inflateSync } from 'node:zlib';
 import {
-  SPRITE_DIRECTIONS, SPRITE_POSES, validateSpriteSetManifest, assembleSpriteSheet
+  SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest, assembleSpriteSheet
 } from '../js/sprite-set-core.mjs';
 import { spriteMob } from '../js/sprite-layouts.mjs';
 
@@ -195,7 +195,7 @@ export function validateSpritePackage(manifest, files) {
   validateSpriteSetManifest(manifest);
   const expected = new Set(['manifest.json', manifest.sheet.file]);
   const frames = {};
-  for (const pose of SPRITE_POSES) {
+  for (const pose of posesInSpriteSet(manifest)) {
     frames[pose] = {};
     for (const facing of SPRITE_DIRECTIONS) {
       const filename = manifest.poses[pose].frames[facing];
@@ -355,7 +355,7 @@ export async function importSpriteSet(source, { repoRoot = DEFAULT_ROOT } = {}) 
       const oldManifest = validateSpriteSetManifest(JSON.parse(await fs.readFile(oldManifestPath, 'utf8')));
       requireValue(oldManifest.id === manifest.id, 'existing character folder belongs to a different sprite set.');
       const managedNames = new Set(['manifest.json',oldManifest.sheet.file,
-        ...SPRITE_POSES.flatMap(pose=>SPRITE_DIRECTIONS.flatMap(facing=>[
+        ...posesInSpriteSet(oldManifest).flatMap(pose=>SPRITE_DIRECTIONS.flatMap(facing=>[
           oldManifest.poses[pose].frames[facing],
           oldManifest.battlefield?.poses?.[pose]?.frames?.[facing]
         ].filter(Boolean)))]);
