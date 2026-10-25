@@ -9,7 +9,7 @@ const index=fs.readFileSync(new URL('../index.html', import.meta.url),'utf8');
 const studioHtml=fs.readFileSync(new URL('../3d-studio.html', import.meta.url),'utf8');
 
 for(const token of [
-  "const POSES=['ready','attack','prone']",
+  "const WINDUP_POSES=['ready','windup','attack','prone']",
   "recipe.renderSettings?.frame",
   "recipe.renderSettings?.transform",
   "placement.position.fromArray",
@@ -50,8 +50,8 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C97")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C127")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C125",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C131")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C131",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));
@@ -84,3 +84,11 @@ assert.ok(studio.includes("ctx.strokeStyle = '#e3ca79'"));
 assert.ok(index.includes('<script type="importmap">'));
 assert.ok(index.includes('"three": "./assets/vendor/three/three.module.min.js"'));
 console.log('PASS captured-pose combat generation, upright runtime frames, weapon/shield refresh and Studio QA integration');
+
+// Wind Up must survive source-capture recipe building, runtime offscreen
+// rendering, and generated manifest registration.
+assert.ok(recipe.includes("captures.windup ? WINDUP_POSES : REQUIRED_POSES"));
+assert.ok(renderer.includes("profile?.poses?.windup ? WINDUP_POSES : LEGACY_POSES"));
+assert.ok(renderer.includes("for(const capture of poseNames)"));
+assert.ok(renderer.includes("poseNames.map(capture=>"));
+assert.ok(renderer.includes("windupDurationMs:profile?.poses?.windup"));
