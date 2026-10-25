@@ -18371,7 +18371,7 @@ async function slingAttack(attacker,defender){
 
   setUnitActionBanner(attacker,`Preparing Sling — ${position.label}`);
 
-  playSlingWindupSound();
+  // Wind Up remains silent; the release SFX plays on the Attack frame.
   draw();
 
   /* Let the player hear/see the sling wind-up before release. */
@@ -18658,8 +18658,6 @@ async function attack(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0,blockedByWall:true};
   }
 
-  breakInvisibility(attacker,"making a melee attack");
-
   const position=
     attackPositionData(attacker,defender);
 
@@ -18675,6 +18673,7 @@ async function attack(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0,interrupted:true};
   }
   triggerUnitAttackPose(attacker);
+  breakInvisibility(attacker,"making a melee attack");
 
   setUnitActionBanner(
     attacker,
