@@ -85,3 +85,13 @@ assert.ok(studio.includes('preserveThinSpriteDetails(supersampleImage.data'),
 console.log('PASS Rev 118: 36 captured/runtime PNGs, thin swords in all six directions, stale capture protection, paused default');
 
 assert.ok(capture.includes('capturesByProfile')&&capture.includes('partialPoses:true'));
+
+assert.ok(studioPage.includes('id="studioActionPose"') &&
+  studioPage.includes('id="studioCaptureSelectedPoseButton"'),
+  'Studio must expose selectable action poses and a dedicated record button');
+assert.ok(capture.includes("if(includeQaSheet)jobs.push") &&
+  capture.includes("packageFiles(exported,{includeQaSheet:false})"),
+  'Combat and profile export must not package the QA-only sprite sheet');
+assert.ok(capture.includes("capture(pose)") &&
+  capture.includes("settings.selectedActionPose"),
+  'Selected action pose must be captured and persist in workspace metadata');
