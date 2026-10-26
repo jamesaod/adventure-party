@@ -21,8 +21,8 @@ import {
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
 } from './studio-geometry.mjs?v=R238C94';
 import {
-  STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C151';
+  STUDIO_WEAPONS, STUDIO_OFF_HAND_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
+} from './studio-equipment.mjs?v=R238C152';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C146';
@@ -2408,7 +2408,7 @@ function bindControls() {
     void changeEquipment(defaultEquipmentSettingsForModel(weaponId));
 
   });
-  for(const weapon of STUDIO_WEAPONS.filter(weapon=>weapon.handsRequired!==2)){
+  for(const weapon of STUDIO_OFF_HAND_WEAPONS){
     const option=document.createElement('option');option.value=weapon.id;option.textContent=weapon.label;ui.OffHandWeapon.append(option);
   }
   ui.OffHandWeapon.addEventListener('change',()=>void changeOffHand({rightHand:ui.OffHandWeapon.value}));
