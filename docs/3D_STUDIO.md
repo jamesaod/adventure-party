@@ -263,3 +263,11 @@ Equipment now includes **Wooden Staff**, **Short Sword** and **Dagger**, all bel
 ## Candidate Rev 147 - Standing Idle
 
 **Standing Idle** is now the 14th uploaded animation for Carl Ver 3. Choose it in the Animation selector; it uses the recovered Carl recipe and is tagged Bare Handed for organization. Existing animations, equipment transforms, saved captures and default initial motion are preserved. See [Carl animation recipe](CARL_ANIMATION_RECIPE.md#standing-idle---candidate-rev-147) for source hash, import steps and pose validation.
+
+## Candidate Rev 148 — Shield rotation on all three axes
+
+Choose a shield, then open **Equipment → Adjust shield → Shield rotation**. **Rotation X**, **Rotation Y**, and **Rotation Z** each cover −180° to +180° in 1° steps. The controls use the existing hand-local XYZ Euler rotation; **Rotate around forearm** remains an additional roll around the forearm axis.
+
+The sliders edit the existing `shield.rotation` array through `changeShield(..., { resetPose: false })`. They update the 3D view and six pixel previews without changing the selected animation time, mark prior captures outdated, and save through the existing workspace / equipment / Unit Package path. No new attachment renderer, schema, preset revision or migration is needed. Existing calibration and captures remain intact until the user changes a setting. **Reset shield settings** restores the calibrated shield defaults, including all three rotation axes.
+
+Reproduction / QA: equip Round Wooden Shield, pause an animation partway through, adjust each axis and a combined XYZ rotation, reload to confirm values persist, then reset and confirm X/Y/Z return to 0°. Check the six preview facings after large rotations for clipping.

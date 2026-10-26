@@ -62,6 +62,8 @@ const ui = Object.fromEntries([
   'ModelLibrary', 'LoadLibraryButton', 'ModelLibraryStatus', 'HairColor', 'MetalColor', 'RecolorDebug', 'RecolorPanel', 'RecolorStatus',
   'RightHandWeapon', 'LeftHandShield', 'ShieldStatus', 'ShieldScale', 'ShieldScaleValue', 'ShieldDistance', 'ShieldDistanceValue', 'ShieldForearmSlide', 'ShieldForearmSlideValue',
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
+  'ShieldRotationX', 'ShieldRotationY', 'ShieldRotationZ',
+  'ShieldRotationXValue', 'ShieldRotationYValue', 'ShieldRotationZValue',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
   'WeaponPositionXValue', 'WeaponPositionYValue', 'WeaponPositionZValue',
   'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
@@ -336,6 +338,13 @@ function updateEquipmentControls(locked = false) {
   ui.ShieldForearmRollValue.textContent=`${Math.round(shieldSettings.forearmRollDegrees)}°`;
   ui.ShieldForearmRoll.disabled=shieldDisabled;
   ui.ShieldForearmRoll.setAttribute('aria-valuetext',`${Math.round(shieldSettings.forearmRollDegrees)} degrees`);
+  for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
+    const field=ui[`ShieldRotation${axis}`],value=shieldSettings.rotation[index];
+    field.value=String(value);
+    field.disabled=shieldDisabled;
+    ui[`ShieldRotation${axis}Value`].textContent=`${Math.round(value)}°`;
+    field.setAttribute('aria-valuetext',`${Math.round(value)} degrees`);
+  }
   ui.ResetShieldButton.disabled=shieldDisabled;
   ui.WeaponSize.value = String(settings.sizePercent);
   ui.WeaponSizeValue.textContent = `${settings.sizePercent}%`;
@@ -2338,6 +2347,13 @@ function bindControls() {
     control.addEventListener('input',()=>{
       const next=shieldEquipment.snapshot().settings;
       next[key]=control.valueAsNumber;
+      void changeShield(next,{resetPose:false});
+    });
+  }
+  for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
+    ui[`ShieldRotation${axis}`].addEventListener('input',event=>{
+      const next=shieldEquipment.snapshot().settings;
+      next.rotation[index]=event.target.valueAsNumber;
       void changeShield(next,{resetPose:false});
     });
   }
