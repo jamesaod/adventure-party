@@ -234,3 +234,7 @@ Saved Ver 2 workspaces migrate to the Ver 3 catalog identity and uploaded idle m
 Run `node scripts/test-fbx-animations.mjs` to verify the single offered model, exact source-file checksums, all 13 real FBX parses and retargets, finite animation tracks and stable profile metadata. Then run the full repository workflow and check the published selector and animation list. To add a future supplied animation, place it under `assets/animations/`, record its source checksum/profile in the upload catalog, and use the shared loader rather than adding a model variant or renderer.
 
 Combat sprite regeneration for the Ver 3 model ID calls the same uploaded-FBX loader as Studio, so equipment swaps preserve the captured motion names and times instead of falling back to the old GLB clips. Existing models retain their original combat loading paths.
+
+## Candidate Rev 140 — recovered Carl animation recipe
+
+The Rev 139 uploaded-animation path inherited a joint-relative default from an Orc experiment, which distorted Carl. Rev 140 explicitly restores the historical Carl world-bind-delta calculation plus scaled vertical hip motion in the shared Studio/combat loader. The 13 uploaded clips, original model, scale, grip and attachment controls remain. Older Ver 3 captures are retained but marked outdated until recaptured. See [Carl animation recipe](CARL_ANIMATION_RECIPE.md) for the recovered history, exact calculation, independent reference generator and visual QA process.

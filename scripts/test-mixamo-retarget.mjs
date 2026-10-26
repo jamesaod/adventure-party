@@ -264,3 +264,28 @@ for(const clipName of oneHanded.clips){
 }
 
 console.log('PASS semantic humanoid retargeting, Orc integrity, model-library registration, and one-handed animation source catalog');
+
+// Hip-only keys must survive the recovered Carl stationary-motion policy.
+{
+  const source=new THREE.Group(),target=new THREE.Group();
+  const sourceHip=new THREE.Bone(),targetHip=new THREE.Bone();
+  sourceHip.name=targetHip.name='mixamorig:Hips';
+  sourceHip.position.set(0,10,0);targetHip.position.set(.2,1,.3);
+  source.add(sourceHip);target.add(targetHip);
+  const clip=new THREE.AnimationClip('Hip-only displacement',1,[
+    new THREE.QuaternionKeyframeTrack('mixamorigHips.quaternion',[0,1],[0,0,0,1,0,0,0,1]),
+    new THREE.VectorKeyframeTrack('mixamorigHips.position',[0,.25,.75,1],[0,10,0,5,12,8,9,8,4,0,10,0])
+  ]);
+  const result=retargetHumanoidClip(THREE,clip,source,target,'Carl hip policy',
+    {mode:'world-bind-delta',hipTranslation:'scaled-world-y'});
+  const hipTrack=result.tracks.find(track=>track.name.endsWith('.position'));
+  assert.deepEqual([...hipTrack.times],[0,.25,.75,1]);
+  for(let i=0;i<4;i++){
+    assert.ok(Math.abs(hipTrack.values[i*3]-.2)<1e-6);
+    assert.ok(Math.abs(hipTrack.values[i*3+2]-.3)<1e-6);
+    assert.ok(Math.abs(hipTrack.values[i*3+1]-[1,1.2,.8,1][i])<1e-6);
+  }
+  assert.deepEqual(sourceHip.position.toArray(),[0,10,0],'Source pose is restored after sampling');
+  assert.deepEqual(targetHip.position.toArray(),[.2,1,.3],'Target bind position is not mutated');
+  console.log('PASS Carl scaled vertical hips, position-only key times and source/target preservation');
+}
