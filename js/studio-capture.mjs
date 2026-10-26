@@ -8,7 +8,7 @@ import {
   upgradeStudioWorkspaceHexScale
 } from './sprite-set-store.mjs?v=R238C135';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
-import { ACTION_PROFILE_CATALOG } from './action-profile-catalog.mjs';
+import { ACTION_PROFILE_CATALOG } from './action-profile-catalog.mjs?v=R238C145';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);

@@ -41,7 +41,8 @@
         "normal": "textures/LowPoly_DefaultMaterial_Normal.png",
         "roughness": "textures/LowPoly_DefaultMaterial_Roughness.png",
         "metallic": "textures/LowPoly_DefaultMaterial_Metallic.png"
-      }
+      },
+      "runtimeMetallicFactor": 0.25
     },
     {
       "id": "dagger",
@@ -64,7 +65,8 @@
       },
       "sourceDependencies": {
         "scene.bin": "864fad33fc389f931b981277fe141384351694723da2bb0fda85025f755964a5"
-      }
+      },
+      "runtimeMetallicFactor": 0.25
     }
   ]
 }

@@ -7,7 +7,7 @@
 export const ACTION_POSES=Object.freeze(['ready','windup','attack','falling','prone']);
 export const DEFAULT_ACTION_PROFILE_IDS=Object.freeze([
   'one-handed-swing','two-handed-swing','one-handed-thrust','two-handed-thrust',
-  'dual-wield','unarmed','spell-casting','bow','direct-fire','sling','throw'
+  'dual-wield','unarmed','spell-casting','bow','direct-fire','sling','throw','wizard-staff-grip'
 ]);
 const DEFINITIONS=Object.freeze([
   ['one-handed-swing','1H Swing (Slash / Bludgeon)','melee'],
@@ -20,7 +20,8 @@ const DEFINITIONS=Object.freeze([
   ['bow','Bow Weapons','ranged'],
   ['direct-fire','Direct Fire Weapons (Crossbow)','ranged'],
   ['sling','Slings','ranged'],
-  ['throw','Throw','ranged']
+  ['throw','Throw','ranged'],
+  ['wizard-staff-grip','Wizard Staff Grip','melee']
 ]);
 const validId=id=>typeof id==='string'&&/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id);
 function normalizePose(pose){

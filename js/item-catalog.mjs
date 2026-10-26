@@ -196,6 +196,41 @@ export const ITEM_CATALOG=freezeRecord({
       secondaryGrip:[0,0.62,0]
     }
   },
+  "wizard-staff-grip":{
+    id:"wizard-staff-grip",
+    name:"Wizard Staff Grip",
+    category:"weapon",
+    slot:"weapon",
+    rules:{
+      catalogWeaponId:"staff",
+      baseName:"Wizard Staff Grip",
+      handsRequired:1,
+      damageType:"bludgeoning"
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:72,
+      status:"Provisional Studio length; scale and grip remain adjustable."
+    },
+    appearance:{
+      appearanceId:"wizard-staff-grip",
+      studioId:"wizard-staff-grip",
+      visualClass:"wizard-staff",
+      representation:"optimized-gltf-v1",
+      asset:"assets/models/weapons/staves/wooden-staff.glb",
+      attachment:"right-hand",
+      handsRequired:1,
+      poseProfileId:"wizard-staff-grip",
+      primaryAxis:[0,1,0],
+      grip:[0,0.55,0],
+      nativeScale:0.925,
+      defaultSizePercent:100,
+      position:[0.015,0.05,0.005],
+      rotationDegrees:[-69.201659,-33.008024,46.485403],
+      source:{"originalFilename":"wooden+staff+3d+model.zip","sourceSha256":"5dffd2110df27b986f185b3f0456d0c18b3e0ca032c3aedb66db6e9c6112c345"},
+      runtimeAsset:{"bytes":956992,"sha256":"511a254c763dd9c1569dd181f1c72fa1ba83ef3b92bfc2b4f46517e0f773e1ed","triangles":7664,"textureResolution":512}
+    }
+  },
   "short-sword":{
     id:"short-sword",
     name:"Short Sword",
@@ -228,7 +263,7 @@ export const ITEM_CATALOG=freezeRecord({
       position:[0.015,0.05,0.005],
       rotationDegrees:[-90,0,0],
       source:{"originalFilename":"splendid-short-sword.zip","sourceSha256":"6b39abf138611c8e78e3005b6d8fad2bc0e5fc3ec6a1d5e2cfda084e6d5308e1"},
-      runtimeAsset:{"bytes":751768,"sha256":"8daf3818f735fc701116fc46c64e6888accc6b0e4735cca9f837d693c5e8dfdd","triangles":500,"textureResolution":512}
+      runtimeAsset:{"bytes":751792,"sha256":"0ee9dc416fe68ad516dc2ef99aa5b3c5b574a91718474171fcb19fb919f31261","triangles":500,"textureResolution":512}
     }
   },
   "dagger":{
@@ -263,7 +298,7 @@ export const ITEM_CATALOG=freezeRecord({
       position:[0.015,0.05,0.005],
       rotationDegrees:[-90,0,0],
       source:{"originalFilename":"medieval_dagger_3d_model.zip","sourceSha256":"7a934c9eaee89b700a0349a69b71e8ef0e75f0587990df60a0bcb368fd3891ac"},
-      runtimeAsset:{"bytes":674844,"sha256":"973428b17f5d233a06383d3c94338d191ecd837924cdb2fb08dd780bf19ca1e4","triangles":960,"textureResolution":512}
+      runtimeAsset:{"bytes":674868,"sha256":"625b794a045968d3d1643bfdb3bb10c73eb51b582d5f0471f9a3b3661810ae56","triangles":960,"textureResolution":512}
     }
   },
   'chain-mail':{

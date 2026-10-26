@@ -20,5 +20,5 @@ The attribution above is not intended to imply that PamNawi endorses Adventure P
 [Medieval dagger 3d model](https://sketchfab.com/3d-models/medieval-dagger-3d-model-b41c89d1740845d9999e53b7ff8983f1) by [Mordius](https://sketchfab.com/Mordius), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 - **File used:** `assets/models/weapons/daggers/medieval-dagger.glb`
-- **Modifications:** PBR textures reduced to 512 x 512; orientation and length normalized for adjustable equipment attachment; all 960 source triangles retained.
+- **Modifications:** PBR textures reduced to 512 x 512; orientation and length normalized for adjustable equipment attachment; all 960 source triangles retained. Candidate Rev 145 reduces the material metallic factor to 0.25 for clearer appearance under game lighting; embedded texture pixels are unchanged.
 - **Original notice:** `assets/models/weapons/daggers/LICENSE-Mordius.txt`. Author, source and license also remain embedded in the GLB metadata.

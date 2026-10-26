@@ -6,8 +6,8 @@ root=Path(__file__).resolve().parents[1]
 # Independent source-image means catch linear/sRGB darkening and swapped PBR slots.
 expected={
  'wooden-staff':(7664,956992,[118.986546,68.645033,38.896955],[127.842035,127.072093,248.550040],[255,144.780640,12.877977]),
- 'short-sword':(500,751768,[142.488402,136.108681,130.475160],[122.701502,126.011658,245.748488],[255,79.246920,184.487528]),
- 'dagger':(960,674844,[124.007340,122.960238,126.297522],[127.481669,127.495756,254.970578],[255,49.313066,153.727697])
+ 'short-sword':(500,751792,[142.488402,136.108681,130.475160],[122.701502,126.011658,245.748488],[255,79.246920,184.487528]),
+ 'dagger':(960,674868,[124.007340,122.960238,126.297522],[127.481669,127.495756,254.970578],[255,49.313066,153.727697])
 }
 for item in json.loads((root/'data/equipment-imports-144.json').read_text(encoding='utf-8'))['items']:
  path=root/item['file'];data=path.read_bytes();meta=json.loads(path.with_suffix('.json').read_text(encoding='utf-8'))
@@ -48,7 +48,8 @@ for item in json.loads((root/'data/equipment-imports-144.json').read_text(encodi
   decoded=Image.open(io.BytesIO(binary[start:start+view['byteLength']])).convert('RGB');assert decoded.size==(512,512)
   assert all(abs(a-b)<1 for a,b in zip(ImageStat.Stat(decoded).mean,means)),(item['id'],ImageStat.Stat(decoded).mean,means)
  assert pbr.get('baseColorFactor',[1,1,1,1])==[1,1,1,1]
- assert pbr.get('metallicFactor',1)==pbr.get('roughnessFactor',1)==1
+ assert pbr.get('metallicFactor',1)==(.25 if item['id'] in ['short-sword','dagger'] else 1)
+ assert pbr.get('roughnessFactor',1)==1
  if item['id']=='dagger':
   credits=gltf['asset']['extras'];assert 'Mordius' in credits['author'] and 'CC-BY-4.0' in credits['license']
   assert 'modifications' in credits and 'Mordius' in (root/'ATTRIBUTIONS.md').read_text(encoding='utf-8')
