@@ -84,3 +84,5 @@ Studio model offerings are controlled by `studioModelIds` in the model catalog; 
 For Carl animation imports, follow the [recovered Carl recipe](CARL_ANIMATION_RECIPE.md). Do not use the shared retargeter's default as a rig compatibility decision. The restored offline FBX parser and independent pose fixtures make the original method reproducible and guard against the Rev 139 distortion.
 
 For optimized textured assets, inspect decoded color values as well as embedded images, dimensions and hashes. The Rev 141 section of [Spear integration](SPEAR_INTEGRATION.md) documents the Blender sRGB export correction, image regression and checksum-based cache refresh without resetting grip settings.
+
+[Recurve bow preparation](RECURVE_BOW_ASSET.md) documents lossless removal of separate prop objects, preservation of morph targets, and 512px texture resampling with source-color checks. Prepared assets can be published before their equipment mount and animation wiring are registered; record that status explicitly.

@@ -1,0 +1,125 @@
+{
+  "source": "recurve-bow-only.glb",
+  "output": "recurve-bow-512.glb",
+  "beforeBytes": 3832872,
+  "afterBytes": 1237464,
+  "reductionPercent": 67.71,
+  "triangles": 3717,
+  "textureCount": 5,
+  "textureResolution": [
+    512,
+    512
+  ],
+  "textureEncoding": "PNG, original sRGB encoding preserved",
+  "geometryUVsMorphsMaterialsUnchanged": true,
+  "sha256": "3314489c45b1b46ad4dc83724d2027da4e315e2119c36d5242b3192a94d964a9",
+  "textures": [
+    {
+      "image": 0,
+      "beforeBytes": 65678,
+      "afterBytes": 13540,
+      "beforeMeanRGBA": [
+        1.3958234786987305,
+        1.0689201354980469,
+        0.7823476791381836,
+        255.0
+      ],
+      "afterMeanRGBA": [
+        1.4048995971679688,
+        1.0762100219726562,
+        0.7877388000488281,
+        255.0
+      ]
+    },
+    {
+      "image": 1,
+      "beforeBytes": 1106771,
+      "afterBytes": 284249,
+      "beforeMeanRGBA": [
+        123.17474460601807,
+        98.80262088775635,
+        73.71231174468994,
+        255.0
+      ],
+      "afterMeanRGBA": [
+        123.17615509033203,
+        98.80344772338867,
+        73.71406555175781,
+        255.0
+      ]
+    },
+    {
+      "image": 2,
+      "beforeBytes": 1195461,
+      "afterBytes": 265305,
+      "beforeMeanRGBA": [
+        27.57135009765625,
+        24.078598022460938,
+        22.205001831054688,
+        255.0
+      ],
+      "afterMeanRGBA": [
+        27.57119369506836,
+        24.08336639404297,
+        22.206588745117188,
+        255.0
+      ]
+    },
+    {
+      "image": 3,
+      "beforeBytes": 752132,
+      "afterBytes": 174422,
+      "beforeMeanRGBA": [
+        17.57387924194336,
+        15.390673637390137,
+        14.207279205322266,
+        255.0
+      ],
+      "afterMeanRGBA": [
+        17.57183837890625,
+        15.389598846435547,
+        14.206153869628906,
+        255.0
+      ]
+    },
+    {
+      "image": 4,
+      "beforeBytes": 283312,
+      "afterBytes": 70458,
+      "beforeMeanRGBA": [
+        26.74591636657715,
+        26.405037879943848,
+        25.31290626525879,
+        255.0
+      ],
+      "afterMeanRGBA": [
+        26.743473052978516,
+        26.394561767578125,
+        25.310237884521484,
+        255.0
+      ]
+    }
+  ],
+  "sourceArchive": "recurve-bow.zip",
+  "sourceArchiveSha256": "86ce110727595287b4cdfb63a5db1e4677867dbb98d7121fa3afff7ec18ab692",
+  "sourceGlbSha256": "5869d8baf20cf1860b0418cd403a5d7d18346eb6a00f898f0122e60e37abefac",
+  "sourceGlbBytes": 5105876,
+  "removedArrowObjects": [
+    "Circle.002",
+    "Circle.001"
+  ],
+  "excludedPresentationObjects": [
+    "Empty",
+    "Empty.001",
+    "Plane"
+  ],
+  "morphTargets": [
+    "Arms bend",
+    "String pull"
+  ],
+  "geometryBuffersSha256": "4147f1990e1b5dcbc416242ff7829f1e236af34d715747d708b81000450d95b7",
+  "asset": "assets/models/weapons/bows/recurve-bow.glb",
+  "status": "prepared-asset",
+  "blenderVerifiedVersion": "5.1.1",
+  "pillowVersion": "12.3.0"
+}
