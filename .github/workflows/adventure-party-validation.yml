@@ -82,6 +82,7 @@ jobs:
           node scripts/test-orc-native-bind.mjs
           node scripts/test-studio-qa-pack.mjs
           node scripts/test-combat-inventory-ui.mjs
+          node scripts/test-combat-roster-setup.mjs
 
       - name: Require exact repository New Carl / New Orc binary models before release
         run: node scripts/test-new-tripo-assets.mjs
