@@ -2442,7 +2442,7 @@ button, input, select, textarea {
 .inventory-item-action{border:1px solid #908a7b;background:#252539;color:#e9d28f;font:12px monospace;padding:2px 7px;cursor:pointer;}
 .inventory-item-action:disabled{opacity:.4;cursor:default;}
 .inventory-window .sheet-actions{border-top:1px dotted #a89054;margin-top:10px;padding-top:10px;}
-NaN
+
 .combat-mob-roster{display:grid;gap:10px;padding:12px;border-top:1px solid var(--divider)}
 .combat-mob-roster h2{margin:0;color:var(--gold);font-size:22px}
 .combat-mob-rows{display:grid;gap:8px}
