@@ -1,5 +1,5 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C142';
-import { studioShield } from './studio-shield.mjs?v=R238C142';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C143';
+import { studioShield } from './studio-shield.mjs?v=R238C143';
 import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C72';
 export { WEAPON_POSE_PROFILES };
 
@@ -80,6 +80,7 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
   'flaming-sword-5': visibleWeapon('flaming-sword-5', 'Flaming Sword +5', 'medieval-sword'),
   'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe'),
   spear: visibleWeapon('spear', 'Spear', 'spear'),
+  crossbow: visibleWeapon('crossbow', 'Crossbow', 'crossbow'),
   'recurve-bow': visibleWeapon('recurve-bow', 'Recurve Bow', 'recurve-bow'),
   'two-handed-sword': visibleWeapon('two-handed-sword', 'Two-Handed Sword', 'medieval-two-handed-sword')
 });

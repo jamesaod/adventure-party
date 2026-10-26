@@ -44,9 +44,9 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 5, 'Sword, Battle Axe, Two-Handed Sword, Spear and Recurve Bow are registered');
+assert.equal(STUDIO_WEAPONS.length, 6, 'Sword, Battle Axe, Two-Handed Sword, Spear, Recurve Bow and Crossbow are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
-for (const weapon of STUDIO_WEAPONS.filter(weapon=>weapon.visualClass!=='bow')) {
+for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow'].includes(weapon.visualClass))) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
   const rotation = new THREE.Euler(...weapon.rotation.map(value => THREE.MathUtils.degToRad(value)), 'XYZ');
   axis.applyEuler(rotation).normalize();
@@ -595,3 +595,27 @@ vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelR
 await vm.runInContext('changeEquipment({rightHand:"recurve-bow"})',bowSelection);
 assert.equal(selectedBowClip,1,'Selecting bow chooses the uploaded bow animation by its existing action-profile association');
 assert.equal(bowShieldRemovals,1);
+
+// The crossbow shares the right-hand attachment while retaining the authored support-hand pose.
+const crossbow=STUDIO_WEAPONS.find(weapon=>weapon.id==='crossbow');
+assert.equal(crossbow.poseProfileId,'direct-fire');assert.equal(crossbow.handsRequired,2);
+assert.equal(findWeaponHand(bowRig,crossbow),bowRight);
+assert.equal(crossbow.secondaryGrip,undefined,'Ranged aim retains the authored support hand instead of melee body/hand IK');
+const crossbowSettings=normalizeEquipment({rightHand:'crossbow'}),crossbowModel=new THREE.Group();
+const crossbowAttachment=createWeaponAttachment(THREE,bowRight,crossbowModel,crossbowSettings);
+crossbowAttachment.update({...crossbowSettings,sizePercent:120,position:[.03,.04,.05],rotation:[-82,32,4],secondaryGripOffsetInches:[1,-.5,.25]});
+bowRig.updateMatrixWorld(true);
+close(crossbowModel.localToWorld(new THREE.Vector3(...crossbow.grip)),bowRight.localToWorld(new THREE.Vector3(.03,.04,.05)),'Crossbow adjustable pivot stays at the right hand');
+assert.deepEqual(crossbowAttachment.secondaryGripOffsetInches,[1,-.5,.25]);
+assert.equal(solveTwoHandedGrip(THREE,{model:bowRig,attachment:crossbowAttachment}).active,false);
+crossbowAttachment.detach();assert.equal(bowRight.children.length,0);
+selectedBowClip=-1;bowShieldRemovals=0;
+vm.runInContext("state.clips=[{userData:{actionProfiles:['bow']}},{userData:{actionProfiles:['direct-fire']}}]",bowSelection);
+await vm.runInContext('changeEquipment({rightHand:"crossbow"})',bowSelection);
+assert.equal(selectedBowClip,1,'Crossbow selects the uploaded direct-fire clip, not the bow clip');
+assert.equal(bowShieldRemovals,1);
+const crossbowHandQuaternion=bowReference.clips.find(clip=>clip.id==='rifle-aim-to-down').frames[0].worldQuaternions.RightHand;
+const crossbowUp=new THREE.Vector3(0,1,0).applyEuler(new THREE.Euler(...crossbow.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...crossbowHandQuaternion).normalize());
+assert.ok(crossbowUp.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(1),'Crossbow limbs stay level in the recovered rifle aim pose');
+assert.equal(crypto.createHash('sha256').update(glb(crossbow.file).bytes).digest('hex'),crossbow.assetSha256);
+console.log('PASS crossbow: right-hand mounting, tunable scale/grip, level aim, shield clearing and direct-fire animation selection');

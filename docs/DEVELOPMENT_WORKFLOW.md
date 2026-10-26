@@ -86,3 +86,5 @@ For Carl animation imports, follow the [recovered Carl recipe](CARL_ANIMATION_RE
 For optimized textured assets, inspect decoded color values as well as embedded images, dimensions and hashes. The Rev 141 section of [Spear integration](SPEAR_INTEGRATION.md) documents the Blender sRGB export correction, image regression and checksum-based cache refresh without resetting grip settings.
 
 [Recurve bow preparation](RECURVE_BOW_ASSET.md) documents lossless removal of separate prop objects, preservation of morph targets, and 512px texture resampling with source-color checks. It also records the catalog-selected attachment hand, preserved adjustable grip settings, and a shared opaque-material override required for the bow in the six-facing atlas.
+
+[Crossbow integration](CROSSBOW_INTEGRATION.md) records nested-archive extraction, per-part geometry reduction, pre-encoded 512px PBR textures, normalized forward/up axes, and direct-fire profile selection through the existing equipment system. Preserve authored ranged support-arm poses instead of applying melee body IK.
