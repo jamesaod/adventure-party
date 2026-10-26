@@ -481,17 +481,6 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
   });
 });
 
-document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
-  button.addEventListener("click",()=>{
-    cancelPendingCombatStart();
-    selectedMobEncounter=
-      button.dataset.mobEncounter ||
-      "kobolds";
-
-    updateCombatMobSelection();
-  });
-});
-
 document.getElementById("beginBattleButton")?.addEventListener("click",()=>{
   showCombat(selectedCombatCondition);
 });
@@ -16679,6 +16668,41 @@ function checkCombatVictory(){
   return false;
 }
 
+function deployConfiguredCombatMobs(condition,player){
+  const allies=[],enemies=[];
+  const occupied=new Set(occupiedHexes(player).map(cell=>key(cell.x,cell.y)));
+  const roster=readCombatMobRoster();
+  let index=0;
+  // Full battlefield fallback rather than a small preset encounter radius.
+  const positions=axialDisk({x:0,y:0},17)
+    .filter(pos=>inside(pos.x,pos.y)&&!isWall(pos.x,pos.y)&&hexDistance(pos,player)>=3);
+  for(const group of roster){
+    const friendly=group.faction==="friendly";
+    for(let n=0;n<group.count;n++){
+      const mob=makeStudioTestMob(group.type,index,{x:0,y:0});
+      mob.id=`roster-${group.type}-${index+1}`;
+      mob.faction=friendly?"player":"enemy";
+      mob.controller=friendly?"player":"mob";
+      const preferredRadius=friendly?4:9;
+      const candidates=positions.slice().sort((a,b)=>{
+        const da=Math.abs(hexDistance(a,player)-preferredRadius);
+        const db=Math.abs(hexDistance(b,player)-preferredRadius);
+        return da-db || a.y-b.y || a.x-b.x;
+      });
+      const placement=candidates.find(pos=>occupiedHexesAt(mob,pos.x,pos.y,mob.facingHex||0)
+        .every(cell=>inside(cell.x,cell.y)&&!isWall(cell.x,cell.y)&&!occupied.has(key(cell.x,cell.y))));
+      if(!placement)throw new Error("Not enough free battlefield hexes for the configured MOB roster.");
+      mob.x=placement.x;mob.y=placement.y;
+      mob.facingHex=hexDirectionIndexToward(placement,player);
+      mob.facing=placement.x>=player.x?"left":"right";
+      occupiedHexes(mob).forEach(cell=>occupied.add(key(cell.x,cell.y)));
+      (friendly?allies:enemies).push(mob);index++;
+    }
+  }
+  lastMobDeployment={direction:"Custom MOB roster",count:index,condition};
+  return {allies,enemies};
+}
+
 function newGame(condition=selectedCombatCondition){
   if(aiTimer){
     clearTimeout(aiTimer);
@@ -16701,34 +16725,22 @@ function newGame(condition=selectedCombatCondition){
     engine. Carl's sprite test uses this canonical player; Ranger and Mage
     sprite tests retain their six friendly inspection copies.
   */
+  // The deprecated six-facing Kobold preset is only retained internally for
+  // the 3D Studio draft handoff; the normal Combat Conditions roster starts empty.
   const studioUnits=selectedMobEncounter==="studio-kobold"
-    ? makeStudioKoboldEncounter(condition,player)
-    : [];
+    ? makeStudioKoboldEncounter(condition,player) : [];
   const studioPlayers=studioUnits.filter(unit=>unit.faction==="player");
   const studioAllies=studioPlayers.filter(unit=>unit!==player);
-  const kobolds=
-    selectedMobEncounter==="studio-kobold"
-      ? (studioPlayers.length ? makeStudioPlayerOpponents([player,...studioAllies]) : studioUnits)
-      : selectedMobEncounter==="kobolds"
-        ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
-        : [];
-
-  const orcs=
-    selectedMobEncounter==="orcs"
-      ? makeOrcArmy(18,1,1,condition)
-      : [];
-
-  const enemies=
-    selectedMobEncounter==="large-test"
-      ? makeLargeMobTestEncounter(condition)
-      : selectedMobEncounter==="orcs"
-        ? [...orcs]
-        : [...kobolds];
-
-  if(selectedMobEncounter!=="orcs"){
-    lastOrcDeployment=null;
-  }
-  const groupKobolds=kobolds.filter(isKoboldUnit);
+  const studioEnemies=selectedMobEncounter==="studio-kobold"
+    ? (studioPlayers.length?makeStudioPlayerOpponents([player,...studioAllies]):studioUnits)
+    : [];
+  const configured=selectedMobEncounter==="studio-kobold"
+    ? {allies:[],enemies:studioEnemies}
+    : deployConfiguredCombatMobs(condition,player);
+  const allies=[...studioAllies,...configured.allies];
+  const enemies=configured.enemies;
+  const groupKobolds=enemies.filter(isKoboldUnit);
+  lastOrcDeployment=null;
 
   camera.x=player.x;
   camera.y=player.y;
@@ -16740,7 +16752,7 @@ function newGame(condition=selectedCombatCondition){
     studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
-    allies:studioAllies,
+    allies,
     enemies,
     order:[],
     turnIndex:0,
@@ -16769,7 +16781,7 @@ function newGame(condition=selectedCombatCondition){
       : null
   };
 
-  for(const unit of [player,...studioAllies,...enemies]){
+  for(const unit of [player,...allies,...enemies]){
     if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
       unit.heightInches=unit.type==="fighter" ? 76 : null;
     }
