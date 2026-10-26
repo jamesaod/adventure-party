@@ -1,13 +1,14 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C141';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C142';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
 
-// Rigid visible equipment stays beneath the animated right hand. Weapon-specific grip presets remain independently tunable.
+// Rigid visible equipment stays beneath its catalog-selected animated hand. Weapon-specific grip presets remain independently tunable.
 // All one-handed weapon assets expose a local longitudinal axis that must resolve
 // to this hand-local direction. For a sword it is the blade; for an axe it is
 // the shaft. Cutting edges are deliberately not treated as the weapon axis.
 export const HELD_WEAPON_AXIS = Object.freeze([0, 0, -1]);
+const BOW_ITEM=itemCatalogEntry('recurve-bow');
 const SPEAR_ITEM=itemCatalogEntry('spear');
 const TWO_HANDED_SWORD_ITEM=itemCatalogEntry('two-handed-sword');
 if(!TWO_HANDED_SWORD_ITEM?.appearance)throw new Error('Two-Handed Sword catalog appearance is required.');
@@ -58,6 +59,19 @@ export const STUDIO_WEAPONS = Object.freeze([
     rotation:Object.freeze([...SPEAR_ITEM.appearance.rotationDegrees]),
     defaultSizePercent:SPEAR_ITEM.appearance.defaultSizePercent,
     calibratedLengthInches:SPEAR_ITEM.physical.calibratedLengthInches,presetRevision:1
+  }),
+  Object.freeze({
+    id:BOW_ITEM.appearance.studioId,label:BOW_ITEM.name,visualClass:'bow',
+    poseProfileId:BOW_ITEM.appearance.poseProfileId,attachmentHand:'left',
+    materialOverrides:BOW_ITEM.appearance.materialOverrides,
+    file:BOW_ITEM.appearance.asset,assetSha256:BOW_ITEM.appearance.runtimeAsset.sha256,
+    handsRequired:2,grip:Object.freeze([...BOW_ITEM.appearance.grip]),
+    primaryAxis:Object.freeze([...BOW_ITEM.appearance.primaryAxis]),
+    nativeScale:BOW_ITEM.appearance.nativeScale,
+    position:Object.freeze([...BOW_ITEM.appearance.position]),
+    rotation:Object.freeze([...BOW_ITEM.appearance.rotationDegrees]),
+    defaultSizePercent:BOW_ITEM.appearance.defaultSizePercent,
+    calibratedLengthInches:BOW_ITEM.physical.calibratedLengthInches,presetRevision:1
   })
 ]);
 
@@ -98,6 +112,9 @@ export function normalizeEquipment(value = {}) {
 const normalizedBoneName = object => normalizeHumanoidBoneName(object?.name);
 export function findRightHand(model) { return findHumanoidBone(model, 'rightHand'); }
 export function findLeftHand(model) { return findHumanoidBone(model, 'leftHand'); }
+export function findWeaponHand(model, weapon) {
+  return weapon?.attachmentHand === 'left' ? findLeftHand(model) : findRightHand(model);
+}
 export function findLeftForeArm(model) { return findHumanoidBone(model, 'leftForeArm'); }
 export function findLeftArm(model) { return findHumanoidBone(model, 'leftUpperArm'); }
 export function findLeftShoulder(model) { return findHumanoidBone(model, 'leftShoulder'); }
@@ -454,8 +471,20 @@ export function solveTwoHandedGrip(THREE, {
 }
 export function createWeaponAttachment(THREE, hand, model, settings) {
   const value = normalizeEquipment(settings), weapon = studioWeapon(value.rightHand);
-  if (!hand?.isBone || !weapon || !model?.isObject3D) throw new Error('A weapon and a right-hand bone are required.');
-  const socket = new THREE.Group(); socket.name = 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
+  if (!hand?.isBone || !weapon || !model?.isObject3D) throw new Error('A weapon and its attachment hand bone are required.');
+  // The bow's source riser has slight transmission. Its extra render pass
+  // corrupts scissored six-facing atlas tiles; use the authored opaque override
+  // for both Studio and combat without changing source textures or the GLB.
+  if (Number.isFinite(weapon.materialOverrides?.transmission)) model.traverse(object => {
+    if (!object.isMesh) return;
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+      if (material && 'transmission' in material) {
+        material.transmission = weapon.materialOverrides.transmission;
+        material.needsUpdate = true;
+      }
+    }
+  });
+  const socket = new THREE.Group(); socket.name = weapon.attachmentHand === 'left' ? 'StudioLeftHandEquipment' : 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
   const grip = new THREE.Group(); grip.name = 'WeaponGripOrigin'; grip.position.fromArray(weapon.grip).multiplyScalar(-1); grip.add(model); socket.add(grip); hand.add(socket);
   const attachment = { socket, model, weapon, secondaryGripOffsetInches:[0,0,0], update:null, detach: () => socket.removeFromParent() };
   function update(next) {
@@ -488,7 +517,9 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   let constraint = { active: false, solved: false, error: null }, preConstraintPose = null;
   const snapshot = () => ({
     settings: normalizeEquipment(settings), attached: !!attachment, rightHandBone: findRightHand(model)?.name || null,
-    leftHandBone: findLeftHand(model)?.name || null, loading, error,
+    leftHandBone: findLeftHand(model)?.name || null,
+    attachmentHand: studioWeapon(settings.rightHand)?.attachmentHand || 'right',
+    attachmentHandBone: findWeaponHand(model,studioWeapon(settings.rightHand))?.name || null, loading, error,
     rig: model ? analyzeHumanoidRig(model) : null,
     socketWorldPosition: attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray() || null,
     twoHandedConstraint: constraint ? structuredClone(constraint) : null
@@ -501,8 +532,8 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
     if (sameWeapon && attachment && !loading) { attachment.update(settings); error=''; notify(); return true; }
     const version = ++request; detach(); loading=false; error=''; const weapon = studioWeapon(settings.rightHand);
     if (!weapon) { notify(); return true; }
-    const hand = findRightHand(model);
-    if (!hand) { error='This model has no supported right-hand bone. Load a compatible rigged MOB model to test this weapon.'; notify(); return false; }
+    const hand = findWeaponHand(model,weapon);
+    if (!hand) { error=`This model has no supported ${weapon.attachmentHand || 'right'}-hand bone. Load a compatible rigged MOB model to test this weapon.`; notify(); return false; }
     loading=true; notify(); let asset;
     try {
       asset = await loadAsset(weapon);

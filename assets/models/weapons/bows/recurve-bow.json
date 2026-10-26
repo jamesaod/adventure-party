@@ -119,7 +119,7 @@
   ],
   "geometryBuffersSha256": "4147f1990e1b5dcbc416242ff7829f1e236af34d715747d708b81000450d95b7",
   "asset": "assets/models/weapons/bows/recurve-bow.glb",
-  "status": "prepared-asset",
+  "status": "studio-equipment",
   "blenderVerifiedVersion": "5.1.1",
   "pillowVersion": "12.3.0"
 }

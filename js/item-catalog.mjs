@@ -129,6 +129,22 @@ export const ITEM_CATALOG=freezeRecord({
         derivation:'Blender 5.1: 0.8 decimation, unit-length +Y, 512px PBR JPEG maps at quality 90.'}
     }
   },
+  'recurve-bow':{
+    id:'recurve-bow',name:'Recurve Bow',category:'weapon',slot:'weapon',
+    rules:{baseName:'Recurve Bow',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
+    physical:{authoredLengthInches:null,calibratedLengthInches:59,
+      status:'Provisional 59-inch Studio bow; adjust size and grip for the selected rig.'},
+    appearance:{
+      appearanceId:'recurve-bow',studioId:'recurve-bow',visualClass:'bow',
+      representation:'optimized-gltf-v1',asset:'assets/models/weapons/bows/recurve-bow.glb',
+      attachment:'left-hand',handsRequired:2,poseProfileId:'bow',primaryAxis:[0,1,0],
+      materialOverrides:{transmission:0},
+      grip:[-2.91,2.17,0],nativeScale:0.16,defaultSizePercent:100,
+      position:[0,0.05,0],rotationDegrees:[173,12,-97],
+      source:{originalFilename:'recurve-bow.zip',sourceGlbSha256:'5869d8baf20cf1860b0418cd403a5d7d18346eb6a00f898f0122e60e37abefac'},
+      runtimeAsset:{bytes:1237464,sha256:'3314489c45b1b46ad4dc83724d2027da4e315e2119c36d5242b3192a94d964a9',triangles:3717,textureResolution:512}
+    }
+  },
   'chain-mail':{
     id:'chain-mail',
     name:'Chain Mail',

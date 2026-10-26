@@ -85,4 +85,4 @@ For Carl animation imports, follow the [recovered Carl recipe](CARL_ANIMATION_RE
 
 For optimized textured assets, inspect decoded color values as well as embedded images, dimensions and hashes. The Rev 141 section of [Spear integration](SPEAR_INTEGRATION.md) documents the Blender sRGB export correction, image regression and checksum-based cache refresh without resetting grip settings.
 
-[Recurve bow preparation](RECURVE_BOW_ASSET.md) documents lossless removal of separate prop objects, preservation of morph targets, and 512px texture resampling with source-color checks. Prepared assets can be published before their equipment mount and animation wiring are registered; record that status explicitly.
+[Recurve bow preparation](RECURVE_BOW_ASSET.md) documents lossless removal of separate prop objects, preservation of morph targets, and 512px texture resampling with source-color checks. It also records the catalog-selected attachment hand, preserved adjustable grip settings, and a shared opaque-material override required for the bow in the six-facing atlas.

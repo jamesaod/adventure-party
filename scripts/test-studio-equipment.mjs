@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {
-  HELD_WEAPON_AXIS, STUDIO_WEAPONS, weaponAssetUrl, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
+  HELD_WEAPON_AXIS, STUDIO_WEAPONS, weaponAssetUrl, findWeaponHand, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
   findLeftForeArm, findLeftArm, findLeftShoulder, findUpperSpine, findLowerSpine, findHips, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 import {
@@ -44,9 +44,9 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 4, 'Sword, Battle Axe, Two-Handed Sword, and Spear are registered');
+assert.equal(STUDIO_WEAPONS.length, 5, 'Sword, Battle Axe, Two-Handed Sword, Spear and Recurve Bow are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
-for (const weapon of STUDIO_WEAPONS) {
+for (const weapon of STUDIO_WEAPONS.filter(weapon=>weapon.visualClass!=='bow')) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
   const rotation = new THREE.Euler(...weapon.rotation.map(value => THREE.MathUtils.degToRad(value)), 'XYZ');
   axis.applyEuler(rotation).normalize();
@@ -540,3 +540,58 @@ assert.equal(weaponAssetUrl(spear, 'https://example.test/candidate/').searchPara
 assert.equal(weaponAssetUrl(STUDIO_WEAPONS[0], 'https://example.test/candidate/').search, '');
 const savedSpearGrip = {rightHand:'spear',presetRevision:1,sizePercent:125,position:[0.02,0.03,0.04],rotation:[-75,10,5],secondaryGripOffsetInches:[1,-2,0.5]};
 assert.deepEqual(normalizeEquipment(savedSpearGrip), {version:3,...savedSpearGrip});
+
+// Bow selection uses the same manager with a left-hand mount, without applying
+// the melee secondary-grip solver to the archer's draw hand.
+const bow = STUDIO_WEAPONS.find(weapon => weapon.id === 'recurve-bow');
+assert.equal(bow.attachmentHand,'left');
+assert.equal(bow.poseProfileId,'bow');
+assert.equal(bow.handsRequired,2);
+assert.equal(bow.secondaryGrip,undefined);
+const bowRig = new THREE.Group(), bowLeft = new THREE.Bone(), bowRight = new THREE.Bone();
+bowLeft.name='mixamorigLeftHand'; bowRight.name='mixamorigRightHand';
+bowLeft.position.set(0.2,0.7,0.3);bowRight.position.set(-0.2,0.7,0.3);bowRig.add(bowLeft,bowRight);
+assert.equal(findWeaponHand(bowRig,bow),bowLeft);
+assert.equal(findWeaponHand(bowRig,STUDIO_WEAPONS[0]),bowRight);
+const material = new THREE.MeshPhysicalMaterial({transmission:0.0869565,metalness:0.4782609,roughness:1});
+const colorMap = new THREE.Texture();material.map=colorMap;
+const bowModel = new THREE.Group();bowModel.add(new THREE.Mesh(new THREE.BoxGeometry(),material));
+const bowManager=createStudioEquipment({THREE,loadAsset:async()=>bowModel,disposeObject:()=>{}});
+assert.equal(await bowManager.setModel(bowRig,{rightHand:'recurve-bow'}),true);
+assert.equal(bowManager.snapshot().attachmentHandBone,bowLeft.name);
+assert.ok(bowLeft.children.some(object=>object.name==='StudioLeftHandEquipment'));
+assert.equal(bowRight.children.length,0);
+assert.equal(material.transmission,0,'Bow transmission must not corrupt scissored pixel atlas tiles');
+assert.equal(material.map,colorMap,'Opaque compatibility override preserves texture identity');
+assert.equal(material.metalness,0.4782609);
+assert.equal(bowManager.applyConstraints().active,false,'Bow does not apply the melee off-hand IK');
+const bowSettings=bowManager.snapshot().settings;
+await bowManager.select({...bowSettings,sizePercent:125,position:[0.03,0.04,0.05],rotation:[170,15,-90]});
+bowRig.updateWorldMatrix(true,true);
+close(bowModel.localToWorld(new THREE.Vector3(...bow.grip)),bowLeft.localToWorld(new THREE.Vector3(0.03,0.04,0.05)),'Adjusted bow grip stays in the left palm');
+assert.equal(bowManager.snapshot().settings.sizePercent,125);
+bowManager.dispose();assert.equal(bowLeft.children.length,0);
+const bowOnlyLeftRig=new THREE.Group(),onlyLeft=new THREE.Bone();onlyLeft.name='mixamorigLeftHand';bowOnlyLeftRig.add(onlyLeft);
+const leftOnlyManager=createStudioEquipment({THREE,loadAsset:async()=>new THREE.Group(),disposeObject:()=>{}});
+assert.equal(await leftOnlyManager.setModel(bowOnlyLeftRig,{rightHand:'recurve-bow'}),true,'Bow requires the left hand, not an unrelated right-hand bone');
+assert.equal(await leftOnlyManager.select({rightHand:'medieval-sword'}),false);
+assert.match(leftOnlyManager.snapshot().error,/right-hand bone/);leftOnlyManager.dispose();
+const bowReference=JSON.parse(fs.readFileSync(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
+const bowHandQuaternion=bowReference.clips.find(clip=>clip.id==='standing-aim-recoil').frames[0].worldQuaternions.LeftHand;
+const bowAxis=new THREE.Vector3(...bow.primaryAxis).applyEuler(new THREE.Euler(...bow.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...bowHandQuaternion).normalize());
+assert.ok(bowAxis.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(1),'Bow stands upright in the independently recovered aim pose');
+console.log('PASS bow: left-hand mount, adjustable grip, retained textures, opaque atlas compatibility and authored draw-arm pose');
+
+let selectedBowClip=-1,bowShieldRemovals=0;
+const bowSelection=vm.createContext({
+  state:{modelReady:true,modelLoading:false,disposed:false,model:{},clips:[{userData:{}},{userData:{actionProfiles:['bow']}}]},
+  studioWeapon:id=>STUDIO_WEAPONS.find(weapon=>weapon.id===id),
+  equipment:{select:async()=>true},
+  shieldEquipment:{snapshot:()=>({settings:{leftHandShield:'round-wooden-shield'}}),select:async value=>{assert.equal(value,'none');bowShieldRemovals++;}},
+  poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
+  resetPreviewReferenceToReady(){},updateEquipmentControls(){},setClip:index=>{selectedBowClip=index;}
+});
+vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('),bowSelection);
+await vm.runInContext('changeEquipment({rightHand:"recurve-bow"})',bowSelection);
+assert.equal(selectedBowClip,1,'Selecting bow chooses the uploaded bow animation by its existing action-profile association');
+assert.equal(bowShieldRemovals,1);

@@ -238,3 +238,7 @@ Combat sprite regeneration for the Ver 3 model ID calls the same uploaded-FBX lo
 ## Candidate Rev 140 — recovered Carl animation recipe
 
 The Rev 139 uploaded-animation path inherited a joint-relative default from an Orc experiment, which distorted Carl. Rev 140 explicitly restores the historical Carl world-bind-delta calculation plus scaled vertical hip motion in the shared Studio/combat loader. The 13 uploaded clips, original model, scale, grip and attachment controls remain. Older Ver 3 captures are retained but marked outdated until recaptured. See [Carl animation recipe](CARL_ANIMATION_RECIPE.md) for the recovered history, exact calculation, independent reference generator and visual QA process.
+
+## Candidate Rev 142: Recurve Bow equipment
+
+Choose **Equipment -> Weapon -> Recurve Bow** to equip the cleaned 1.24 MB, 512px bow on the left hand. Selection clears the shield and selects Bow Weapons plus Carl's uploaded Standing Aim Recoil clip. Scale and XYZ grip/rotation controls remain adjustable and saved. See [Recurve bow integration](RECURVE_BOW_ASSET.md) for provenance, mounting values, reproduction and the pixel-atlas material override. The source Arms bend and String pull morph targets are preserved; automatic bowstring draw/release is a future animation step.

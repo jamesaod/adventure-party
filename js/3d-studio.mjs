@@ -22,10 +22,10 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C141';
+} from './studio-equipment.mjs?v=R238C142';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C102';
+} from './studio-shield.mjs?v=R238C142';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
@@ -356,7 +356,7 @@ function updateEquipmentControls(locked = false) {
     const input = ui[`OffHandGrip${name}`], output = ui[`OffHandGrip${name}Value`];
     const value = Number(offHandOffsets[index]) || 0;
     input.value = String(value);
-    input.disabled = busy || locked || !twoHandedWeapon;
+    input.disabled = busy || locked || !studioWeapon(settings.rightHand)?.secondaryGrip;
     output.textContent = `${value > 0 ? '+' : ''}${value.toFixed(2)} in`;
   }
   ui.ResetEquipmentButton.disabled = busy || locked || settings.rightHand === 'none';
@@ -364,9 +364,9 @@ function updateEquipmentControls(locked = false) {
   ui.EquipmentStatus.textContent = current.loading ? 'Loading weapon…' : current.error
     ? locked ? `${current.error} Reload the studio to retry without clearing your captures.` : current.error
     : current.twoHandedConstraint?.active ? (current.twoHandedConstraint.solved ? 'Two-handed grip active: right hand drives the weapon and left hand is constrained to the secondary grip.' : 'Two-handed grip is active, but the left hand cannot currently reach the secondary grip.')
-    : current.attached ? 'Equipped weapon follows the right hand in every animation.'
-    : current.rightHandBone ? 'Choose a right-hand weapon to equip this model.'
-    : 'Load a compatible rigged MOB model to use a right-hand attachment.';
+    : current.attached ? `Equipped weapon follows the ${current.attachmentHand} hand in every animation.`
+    : current.rightHandBone ? 'Choose a weapon to equip this model.'
+    : 'Load a compatible rigged MOB model to equip a weapon.';
   ui.ShieldStatus.classList.toggle('error', !!shieldCurrent.error);
   ui.ShieldStatus.textContent = shieldCurrent.loading ? 'Loading wooden shield…' : shieldCurrent.error
     ? shieldCurrent.error
@@ -376,7 +376,7 @@ function updateEquipmentControls(locked = false) {
   ui.EquipmentLockNote.classList.toggle('locked', locked);
   ui.EquipmentLockNote.textContent = locked
     ? 'Equipment and grip are shared by this sheet. Clear all captured poses before changing them.'
-    : 'Right-hand weapon and left-hand shield are included in all six previews and new captures.';
+    : 'Selected equipment is included in all six previews and new captures. Bows use the left hand.';
 }
 
 function readyClipIndex() {
@@ -426,7 +426,13 @@ async function changeEquipment(value, { resetPose = true } = {}) {
   if (changed) {
     // Equipment is an attachment, not a scale input. Keep the body calibration
     // and capture framing unchanged when gear is equipped or removed.
-    if (resetPose) resetPreviewReferenceToReady();
+    if (resetPose) {
+      resetPreviewReferenceToReady();
+      if (selectedWeapon?.poseProfileId === 'bow') {
+        const bowClip = (state.clips || []).findIndex(clip => clip.userData?.actionProfiles?.includes('bow'));
+        if (bowClip >= 0) setClip(bowClip);
+      }
+    }
     poseCapture?.invalidateCaptures('Weapon or grip changed');
   }
   poseCapture?.saveWorkspace();
@@ -2303,9 +2309,9 @@ function bindControls() {
     // previous weapon's transform into the newly selected asset.
     const weaponId = ui.RightHandWeapon.value;
     void changeEquipment(defaultEquipmentSettingsForModel(weaponId));
-    if (weaponId === 'spear') {
+    if (weaponId === 'spear' || weaponId === 'recurve-bow') {
       const actionProfile = $('studioActionProfile');
-      actionProfile.value = studioWeapon('spear').poseProfileId;
+      actionProfile.value = studioWeapon(weaponId).poseProfileId;
       actionProfile.dispatchEvent(new Event('change'));
     }
   });
