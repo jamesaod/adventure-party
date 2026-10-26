@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {
-  HELD_WEAPON_AXIS, STUDIO_WEAPONS, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
+  HELD_WEAPON_AXIS, STUDIO_WEAPONS, weaponAssetUrl, normalizeEquipment, findRightHand, findLeftHand as findEquipmentLeftHand,
   findLeftForeArm, findLeftArm, findLeftShoulder, findUpperSpine, findLowerSpine, findHips, solveTwoHandedGrip, createWeaponAttachment, createStudioEquipment
 } from '../js/studio-equipment.mjs';
 import {
@@ -533,3 +533,10 @@ const spearSelection = vm.createContext({
 vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), spearSelection);
 await vm.runInContext('changeEquipment({rightHand:"spear"})', spearSelection);
 assert.equal(spearShieldRemovals,1,'Normalized spear settings clear the shield through the shared selection path');
+
+// Color-only updates refresh the HTTP cache without resetting approved grips.
+assert.equal(spear.assetSha256, spearMetadata.sha256);
+assert.equal(weaponAssetUrl(spear, 'https://example.test/candidate/').searchParams.get('v'), spearMetadata.sha256);
+assert.equal(weaponAssetUrl(STUDIO_WEAPONS[0], 'https://example.test/candidate/').search, '');
+const savedSpearGrip = {rightHand:'spear',presetRevision:1,sizePercent:125,position:[0.02,0.03,0.04],rotation:[-75,10,5],secondaryGripOffsetInches:[1,-2,0.5]};
+assert.deepEqual(normalizeEquipment(savedSpearGrip), {version:3,...savedSpearGrip});

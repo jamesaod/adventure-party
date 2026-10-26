@@ -21,8 +21,8 @@ import {
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
 } from './studio-geometry.mjs?v=R238C94';
 import {
-  STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C138';
+  STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, createStudioEquipment
+} from './studio-equipment.mjs?v=R238C141';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C102';
@@ -110,7 +110,7 @@ let humanoidAnimationSourcesPromise = null;
 const equipment = createStudioEquipment({
   THREE,
   loadAsset: async weapon => {
-    const url = new URL(weapon.file, new URL('../', import.meta.url));
+    const url = weaponAssetUrl(weapon, new URL('../', import.meta.url));
     const loaded = await new GLTFLoader().loadAsync(url.href);
     return loaded.scene;
   },
@@ -157,6 +157,7 @@ function getWorkspaceSettings() {
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
     libraryModelId: state.libraryModelId,
     animationRecipe: state.sourceClips.find(clip => clip.userData?.animationRecipe)?.userData.animationRecipe || null,
+    equipmentAssetSha256: studioWeapon(equipment.snapshot().settings.rightHand)?.assetSha256 || null,
     demoSourceUpAxis: state.demoSourceUpAxis,
     layoutId: state.layoutId, resolutionPercent: state.resolutionPercent,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
@@ -2211,6 +2212,12 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
         relativePath: source.studioRelativePath || source.webkitRelativePath || '', blob: source
       }))
     });
+    const equipmentAssetSha256 = studioWeapon(equipment.snapshot().settings.rightHand)?.assetSha256;
+    if (restoreSettings && equipmentAssetSha256 &&
+        restoreSettings.equipmentAssetSha256 !== equipmentAssetSha256) {
+      poseCapture?.invalidateCaptures('Weapon texture updated');
+      poseCapture?.saveWorkspace();
+    }
     if (restoreSettings && effectiveModelDefaults?.animationLibrary === 'uploaded-fbx' &&
         restoreSettings.animationRecipe !== CARL_ANIMATION_RECIPE) {
       poseCapture?.invalidateCaptures('Carl animation recipe corrected');

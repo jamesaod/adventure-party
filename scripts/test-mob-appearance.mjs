@@ -62,3 +62,8 @@ const pkg = createWeaponPoseProfilePackage({
 assert.equal(pkg.mob.heightInches, 76);
 assert.equal(pkg.poses.attack.animation, 'UAL2_Sword_Regular_A');
 console.log('PASS mob appearance first pass');
+const spearRecipe=appearanceRecipeForMob({...carl,inventory:[{name:'Spear',slot:'weapon',equipped:true,appearanceId:'spear'}]}, {modelId:'dungeon-crawler-carl-v3'});
+assert.match(spearRecipe.equipment.assetSha256,/^[a-f0-9]{64}$/);
+const oldSpearRecipe=structuredClone(spearRecipe);
+delete oldSpearRecipe.equipment.assetSha256;
+assert.notEqual(appearanceCacheKey(spearRecipe),appearanceCacheKey(oldSpearRecipe),'Corrected spear texture invalidates cached combat sprites');

@@ -1,5 +1,5 @@
 """Blender --background --factory-startup --python scripts/optimize-spear.py -- SOURCE_DIR OUTPUT.glb"""
-import bpy, hashlib, json, sys
+import bpy, hashlib, json, sys, tempfile
 from pathlib import Path
 from mathutils import Vector
 source, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
@@ -36,7 +36,21 @@ def texture(filename, color=False):
     image = bpy.data.images.load(str(texture_dir / filename), check_existing=False)
     image.colorspace_settings.name = 'sRGB' if color else 'Non-Color'
     image.scale(512, 512)
-    image.pack()
+    if color:
+        # Materialize the resized color image before glTF's image-copy fallback.
+        # Blender 5.1 exported this floating-point source as linear JPEG values
+        # through that fallback. glTF base color requires sRGB-encoded bytes.
+        with tempfile.TemporaryDirectory(prefix='spear-color-') as temporary:
+            encoded = Path(temporary) / 'spear-basecolor-srgb.jpg'
+            image.filepath_raw = str(encoded)
+            image.file_format = 'JPEG'
+            image.save(quality=90)
+            bpy.data.images.remove(image)
+            image = bpy.data.images.load(str(encoded), check_existing=False)
+            image.colorspace_settings.name = 'sRGB'
+            image.pack()
+    else:
+        image.pack()
     node = nodes.new('ShaderNodeTexImage')
     node.image = image
     return node.outputs['Color']
@@ -61,5 +75,5 @@ payload = output.read_bytes()
 metadata = dict(sourceFbxSha256=hashlib.sha256((source / 'source/Kopie_tip_1_NEW.fbx').read_bytes()).hexdigest(),
     sourceTriangles=before, triangles=after, textureResolution=512,
     bytes=len(payload), sha256=hashlib.sha256(payload).hexdigest(), decimateRatio=0.8)
-output.with_suffix('.json').write_text(json.dumps(metadata, indent=2) + '\n')
+output.with_suffix('.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8', newline='\n')
 print('SPEAR_OPTIMIZED', json.dumps(metadata))
