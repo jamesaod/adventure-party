@@ -125,7 +125,7 @@ export const ITEM_CATALOG=freezeRecord({
       defaultSizePercent:100,position:[0.015,0.05,0.005],rotationDegrees:[-90,0,0],
       source:{originalFilename:'spear.zip',sourceFbx:'source/Kopie_tip_1_NEW.fbx',
         sourceFbxSha256:'f27c1a6aa0d5f3644c150886683b54b6d751deda68902f000d9ccecf61685c35',triangles:642},
-      runtimeAsset:{bytes:94172,sha256:'cf751f350952b5b7ea4d190932db8b311df812283f4b4a0a09545cd86d29031d',triangles:512,textureResolution:512,
+      runtimeAsset:{bytes:129616,sha256:'9852707d7ce895ed860794a24eaa9cabfb0eb06ffa5b77f2d125e6e5c0c5ca21',triangles:512,textureResolution:512,
         derivation:'Blender 5.1: 0.8 decimation, unit-length +Y, 512px PBR JPEG maps at quality 90.'}
     }
   },

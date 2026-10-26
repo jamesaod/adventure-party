@@ -1,4 +1,4 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C138';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C141';
 import { studioShield } from './studio-shield.mjs?v=R238C72';
 import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C72';
 export { WEAPON_POSE_PROFILES };
@@ -63,6 +63,7 @@ function visibleWeapon(id, itemName, studioId) {
     visualClass: preset.visualClass,
     poseProfileId: preset.poseProfileId,
     asset: preset.file,
+    ...(preset.assetSha256 ? {assetSha256:preset.assetSha256} : {}),
     attachmentBone: 'mixamorig:RightHand',
     handsRequired: preset.handsRequired ?? 1,
     primaryAxis: Object.freeze([...preset.primaryAxis]),

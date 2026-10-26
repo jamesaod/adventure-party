@@ -7151,8 +7151,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C138")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C140"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C141")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C141"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24

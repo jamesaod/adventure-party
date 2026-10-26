@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C138';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C141';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -49,7 +49,7 @@ export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id:SPEAR_ITEM.appearance.studioId,label:SPEAR_ITEM.name,
     visualClass:SPEAR_ITEM.appearance.visualClass,poseProfileId:SPEAR_ITEM.appearance.poseProfileId,
-    file:SPEAR_ITEM.appearance.asset,handsRequired:SPEAR_ITEM.appearance.handsRequired,
+    file:SPEAR_ITEM.appearance.asset,assetSha256:SPEAR_ITEM.appearance.runtimeAsset.sha256,handsRequired:SPEAR_ITEM.appearance.handsRequired,
     grip:Object.freeze([...SPEAR_ITEM.appearance.grip]),
     secondaryGrip:Object.freeze([...SPEAR_ITEM.appearance.secondaryGrip]),
     primaryAxis:Object.freeze([...SPEAR_ITEM.appearance.primaryAxis]),
@@ -69,6 +69,12 @@ export const EQUIPMENT_LIMITS = Object.freeze({
 });
 const bounded = (value, fallback, range) => Number.isFinite(value) ? Math.min(range.max, Math.max(range.min, value)) : fallback;
 export function studioWeapon(id) { return STUDIO_WEAPONS.find(weapon => weapon.id === id) || null; }
+// Content-versioned requests refresh corrected assets without migrating saved grips.
+export function weaponAssetUrl(weapon, baseUrl) {
+  const url = new URL(weapon.file, baseUrl);
+  if (weapon.assetSha256) url.searchParams.set('v', weapon.assetSha256);
+  return url;
+}
 export function normalizeEquipment(value = {}) {
   const weapon = studioWeapon(value?.rightHand), preset = weapon || STUDIO_WEAPONS[0];
   const presetRevision = Number.isFinite(weapon?.presetRevision) ? weapon.presetRevision : 0;

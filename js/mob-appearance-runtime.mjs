@@ -1,4 +1,4 @@
-import { applyMobHeight, appearanceRecipeForMob, appearanceCacheKey, MobAppearanceCache } from './mob-appearance.mjs?v=R238C138';
+import { applyMobHeight, appearanceRecipeForMob, appearanceCacheKey, MobAppearanceCache } from './mob-appearance.mjs?v=R238C141';
 
 /** Coordinates async appearance generation without allowing stale equip requests to win. */
 export class MobAppearanceRuntime {
