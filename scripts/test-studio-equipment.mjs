@@ -436,7 +436,7 @@ assert.ok(setClipSource.indexOf('equipment.restoreConstraints();')>=0 &&
 
 assert.ok(studio.includes("selectedWeapon?.handsRequired === 2")&&studio.includes("shieldEquipment.select('none')"),
   'Selecting a two-handed weapon actively unequips the shield');
-assert.ok(studio.includes("value!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2")&&studio.includes("await equipment.select('none')"),
+assert.ok(studio.includes("normalizeShield(value).leftHandShield!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2")&&studio.includes("await equipment.select('none')"),
   'Equipping a shield actively removes an equipped two-handed weapon');
 assert.ok(studio.includes("requestedWeapon?.handsRequired===2")&&studio.includes("leftHandShield:'none'"),
   'Workspace/model restore normalizes illegal two-handed weapon plus shield states');
@@ -467,6 +467,7 @@ for (const gear of [{ loading: true, settings }, { loading: false, attached: fal
   const capture = vm.createContext({
     state: { modelReady: true, model: {}, action: {} },
     equipment: { snapshot: () => gear },
+    offHandEquipment: { snapshot: () => ({settings:{rightHand:'none'}}) },
     shieldEquipment: { snapshot: () => ({ settings: { leftHandShield: 'none' }, attached: false, error: '' }) }
   });
   vm.runInContext(extract('function readCapturePose(', '\nfunction renderPreviews('), capture);
@@ -525,6 +526,7 @@ const spearSelection = vm.createContext({
   state:{modelReady:true,modelLoading:false,disposed:false,model:{}},
   studioWeapon: id => STUDIO_WEAPONS.find(weapon => weapon.id === id),
   equipment:{select:async () => true},
+  offHandEquipment:{select:async()=>true},
   shieldEquipment:{snapshot:() => ({settings:{leftHandShield:'round-wooden-shield'}}),
     select:async value => {assert.equal(value,'none');spearShieldRemovals++;}},
   poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
@@ -587,6 +589,7 @@ const bowSelection=vm.createContext({
   state:{modelReady:true,modelLoading:false,disposed:false,model:{},clips:[{userData:{}},{userData:{actionProfiles:['bow']}}]},
   studioWeapon:id=>STUDIO_WEAPONS.find(weapon=>weapon.id===id),
   equipment:{select:async()=>true},
+  offHandEquipment:{select:async()=>true},
   shieldEquipment:{snapshot:()=>({settings:{leftHandShield:'round-wooden-shield'}}),select:async value=>{assert.equal(value,'none');bowShieldRemovals++;}},
   poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
   resetPreviewReferenceToReady(){},updateEquipmentControls(){},setClip:index=>{selectedBowClip=index;}

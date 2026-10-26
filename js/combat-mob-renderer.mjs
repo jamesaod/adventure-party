@@ -12,7 +12,7 @@ import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mj
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C146';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C146';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C149';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C146';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
@@ -258,7 +258,7 @@ export async function generateCombatSpriteSet(recipe){
   });
   target.texture.colorSpace=THREE.SRGBColorSpace;
 
-  let attachment=null,shieldAttachment=null;
+  let attachment=null,shieldAttachment=null,offHandAttachment=null;
   if(recipe.equipment){
     const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
     const preset=studioWeapon(id);
@@ -275,6 +275,15 @@ export async function generateCombatSpriteSet(recipe){
       position:mount.position,
       rotation:mount.rotation
     });
+  }
+  const savedOffHand=normalizeOffHandEquipment(recipe.renderSettings?.offHandEquipment||{});
+  const primaryId=recipe.equipment?.studioId||recipe.equipment?.appearanceId||'none';
+  const samePrimary=(recipe.renderSettings?.equipment?.rightHand||'none')===primaryId;
+  if(savedOffHand.rightHand!=='none'&&samePrimary&&!recipe.shield&&studioWeapon(primaryId)?.handsRequired!==2){
+    const preset=studioWeapon(savedOffHand.rightHand),hand=findLeftHand(model);
+    if(!hand)throw new Error('The off-hand weapon needs a left-hand bone.');
+    const loaded=await loadGltf(weaponAssetUrl(preset,new URL('../',import.meta.url)).href);
+    offHandAttachment=createWeaponAttachment(THREE,hand,loaded.scene,savedOffHand,{attachmentHand:'left'});
   }
   if(recipe.shield){
     const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
@@ -339,6 +348,15 @@ export async function generateCombatSpriteSet(recipe){
     }
   }finally{
     attachment?.detach();
+    offHandAttachment?.detach();
+    offHandAttachment?.model?.traverse(object=>{
+      object.geometry?.dispose?.();
+      for(const material of Array.isArray(object.material)?object.material:[object.material]){
+        if(!material)continue;
+        for(const value of Object.values(material))if(value?.isTexture)value.dispose();
+        material.dispose?.();
+      }
+    });
     shieldAttachment?.detach();
     shieldAttachment?.model?.traverse(object=>{
       object.geometry?.dispose?.();

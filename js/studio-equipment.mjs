@@ -496,7 +496,7 @@ export function solveTwoHandedGrip(THREE, {
     bodyPose, fingerBonesCurled: fingerGrip.bonesAdjusted, fingerGrip
   };
 }
-export function createWeaponAttachment(THREE, hand, model, settings) {
+export function createWeaponAttachment(THREE, hand, model, settings, options = {}) {
   const value = normalizeEquipment(settings), weapon = studioWeapon(value.rightHand);
   if (!hand?.isBone || !weapon || !model?.isObject3D) throw new Error('A weapon and its attachment hand bone are required.');
   // The bow's source riser has slight transmission. Its extra render pass
@@ -511,7 +511,7 @@ export function createWeaponAttachment(THREE, hand, model, settings) {
       }
     }
   });
-  const socket = new THREE.Group(); socket.name = weapon.attachmentHand === 'left' ? 'StudioLeftHandEquipment' : 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
+  const socket = new THREE.Group(); socket.name = (options.attachmentHand || weapon.attachmentHand) === 'left' ? 'StudioLeftHandEquipment' : 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
   const grip = new THREE.Group(); grip.name = 'WeaponGripOrigin'; grip.position.fromArray(weapon.grip).multiplyScalar(-1); grip.add(model); socket.add(grip); hand.add(socket);
   const attachment = { socket, model, weapon, secondaryGripOffsetInches:[0,0,0], update:null, detach: () => socket.removeFromParent() };
   function update(next) {
@@ -539,14 +539,24 @@ function restoreBonePose(pose) {
   for (const [bone, quaternion] of pose) bone.quaternion.copy(quaternion);
 }
 
-export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChange = () => {} }) {
-  let model = null, settings = normalizeEquipment(), attachment = null, loading = false, error = '', request = 0, disposed = false;
+// An independent left-hand instance uses the same loader, socket and lifecycle.
+export function normalizeOffHandEquipment(value = {}) {
+  const id=value?.rightHand;
+  return normalizeEquipment(studioWeapon(id)?.handsRequired !== 2
+    ? value : {rightHand:'none'});
+}
+
+export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChange = () => {}, offHand = false }) {
+  const normalize=offHand ? normalizeOffHandEquipment : normalizeEquipment;
+  const attachmentHand=weapon=>offHand ? 'left' : weapon?.attachmentHand || 'right';
+  const handFor=weapon=>offHand ? findLeftHand(model) : findWeaponHand(model,weapon);
+  let model = null, settings = normalize(), attachment = null, loading = false, error = '', request = 0, disposed = false;
   let constraint = { active: false, solved: false, error: null }, preConstraintPose = null;
   const snapshot = () => ({
-    settings: normalizeEquipment(settings), attached: !!attachment, rightHandBone: findRightHand(model)?.name || null,
+    settings: normalize(settings), attached: !!attachment, rightHandBone: findRightHand(model)?.name || null,
     leftHandBone: findLeftHand(model)?.name || null,
-    attachmentHand: studioWeapon(settings.rightHand)?.attachmentHand || 'right',
-    attachmentHandBone: findWeaponHand(model,studioWeapon(settings.rightHand))?.name || null, loading, error,
+    attachmentHand: attachmentHand(studioWeapon(settings.rightHand)),
+    attachmentHandBone: handFor(studioWeapon(settings.rightHand))?.name || null, loading, error,
     rig: model ? analyzeHumanoidRig(model) : null,
     socketWorldPosition: attachment?.socket.getWorldPosition(new THREE.Vector3()).toArray() || null,
     twoHandedConstraint: constraint ? structuredClone(constraint) : null
@@ -555,17 +565,17 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   function detach() { restoreBonePose(preConstraintPose); preConstraintPose=null; if (!attachment) return; attachment.detach(); disposeObject(attachment.model); attachment = null; constraint = { active: false, solved: false, error: null }; }
   async function select(value) {
     if (disposed) return false;
-    const next = normalizeEquipment(value), sameWeapon = next.rightHand === settings.rightHand; settings = next;
+    const next = normalize(value), sameWeapon = next.rightHand === settings.rightHand; settings = next;
     if (sameWeapon && attachment && !loading) { attachment.update(settings); error=''; notify(); return true; }
     const version = ++request; detach(); loading=false; error=''; const weapon = studioWeapon(settings.rightHand);
     if (!weapon) { notify(); return true; }
-    const hand = findWeaponHand(model,weapon);
-    if (!hand) { error=`This model has no supported ${weapon.attachmentHand || 'right'}-hand bone. Load a compatible rigged MOB model to test this weapon.`; notify(); return false; }
+    const hand = handFor(weapon);
+    if (!hand) { error=`This model has no supported ${attachmentHand(weapon)}-hand bone. Load a compatible rigged MOB model to test this weapon.`; notify(); return false; }
     loading=true; notify(); let asset;
     try {
       asset = await loadAsset(weapon);
       if (disposed || request !== version) { disposeObject(asset); return false; }
-      attachment = createWeaponAttachment(THREE, hand, asset, settings); loading=false; notify(); return true;
+      attachment = createWeaponAttachment(THREE, hand, asset, settings, { attachmentHand:attachmentHand(weapon) }); loading=false; notify(); return true;
     } catch (cause) {
       if (asset) disposeObject(asset);
       if (disposed || request !== version) return false;
@@ -580,14 +590,14 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
     return true;
   }
   function applyConstraints() {
-    if (disposed) return constraint;
+    if (disposed || offHand) return constraint;
     // Save the clean authored animation pose. It is restored before the next
     // mixer evaluation so IK/body/finger corrections never accumulate.
     preConstraintPose = captureBonePose(model);
     constraint = solveTwoHandedGrip(THREE, { model, attachment });
     return constraint;
   }
-  function setModel(next, value = {}) { ++request; detach(); model=next; settings=normalizeEquipment(); loading=false; error=''; constraint={active:false,solved:false,error:null}; preConstraintPose=null; return select(value); }
+  function setModel(next, value = {}) { ++request; detach(); model=next; settings=normalize(); loading=false; error=''; constraint={active:false,solved:false,error:null}; preConstraintPose=null; return select(value); }
   function dispose() { restoreBonePose(preConstraintPose); preConstraintPose=null; disposed=true; ++request; detach(); model=null; loading=false; }
   return { snapshot, select, setModel, restoreConstraints, applyConstraints, dispose };
 }

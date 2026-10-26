@@ -6,9 +6,10 @@ import {
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C135';
+} from './sprite-set-store.mjs?v=R238C149';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
 import { ACTION_PROFILE_CATALOG } from './action-profile-catalog.mjs?v=R238C146';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C149';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
@@ -54,23 +55,36 @@ function download(blob, name) {
 
 // Captures retain unquantized pixels, allowing one color/outline adjustment to
 // update every saved pose without re-evaluating animation or moving its camera.
-export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus }) {
+export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus, onProfileChange = async () => {} }) {
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
-    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'WindupDuration', 'ActionProfile', 'ActionPose', 'CaptureSelectedPoseButton'
+    'ExportPoseSheetButton', 'ExportPackageButton', 'TestCombatButton', 'ClearPosesButton', 'WorkspaceStatus', 'CaptureProfileSummary', 'ActionProfile', 'ActionPose', 'CaptureSelectedPoseButton'
   ].map(name => [name, byId(name)]));
   const rows = new Map();
-  let captures = {}, style = getStyle(), busy = false, modelReady = false;
+  let captures = {}, style = getStyle(), busy = false, modelReady = false, equipmentBusy = false;
   const capturesByProfile=new Map([['one-handed-swing',captures]]);
   let selectedProfileId='one-handed-swing';
-  function switchActionProfile(nextId){
-    if(!ACTION_PROFILE_CATALOG.has(nextId)||nextId===selectedProfileId)return;
+  const equipmentByProfile=new Map();
+  let windupDurationMs=250;
+  const currentEquipment=()=>{
+    const settings=getWorkspaceSettings();
+    return structuredClone({equipment:settings.equipment,offHandEquipment:settings.offHandEquipment,shield:settings.shield});
+  };
+  async function switchActionProfile(nextId){
+    if(busy||equipmentBusy||!ACTION_PROFILE_CATALOG.has(nextId)||nextId===selectedProfileId)return;
     capturesByProfile.set(selectedProfileId,captures);
+    if(modelReady)equipmentByProfile.set(selectedProfileId,currentEquipment());
     selectedProfileId=nextId;
     captures=capturesByProfile.get(nextId)||{};
     capturesByProfile.set(nextId,captures);
-    refresh();queueSave();
+    busy=true;refresh();
+    try{
+      const saved=equipmentByProfile.get(nextId)||Object.values(captures)[0]?.render;
+      if(saved)await onProfileChange(saved,captures[ui.ActionPose?.value]||Object.values(captures)[0]);
+    }catch(error){onError(error);}
+    finally{busy=false;refresh();queueSave();}
+
   }
   if(ui.ActionProfile){
     for(const profile of ACTION_PROFILE_CATALOG.values()){
@@ -94,7 +108,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     const settings = { ...(!modelReady && savedSettings ? savedSettings : currentSettings) };
     if(ui.ActionProfile) settings.actionProfileId=selectedProfileId;
     if(ui.ActionPose)settings.selectedActionPose=ui.ActionPose.value;
-    if (ui.WindupDuration) settings.windupDurationMs = Number(ui.WindupDuration.value);
+    settings.windupDurationMs=windupDurationMs;
+    if(modelReady&&!busy)equipmentByProfile.set(selectedProfileId,currentEquipment());
     const first = Object.values(captures)[0];
     settings.hexScalePercent = validateSpriteHexScale(first ? first.hexScalePercent : settings.hexScalePercent);
     return {
@@ -103,6 +118,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         const { frames, battlefieldFrames, ...saved } = value;
         return [pose, saved];
       })),
+      profileEquipment:Object.fromEntries(equipmentByProfile),
       actionProfiles:Object.fromEntries([...capturesByProfile, [selectedProfileId,captures]].map(([id,group])=>[id,
         Object.fromEntries(Object.entries(group).map(([pose,value])=>{
           const {frames,battlefieldFrames,...saved}=value;return [pose,saved];
@@ -203,9 +219,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   // Edits never discard a saved frame silently. The previous thumbnails
   // remain visible for reference, but cannot be exported or sent to combat
   // until each affected pose has been recaptured in the new configuration.
-  function invalidateCaptures(reason = 'Studio settings changed') {
-    if (!count()) return;
-    for (const capture of Object.values(captures)) capture.stale = true;
+  function invalidateCaptures(reason = 'Studio settings changed', {allProfiles=true} = {}) {
+    const groups=allProfiles ? [...capturesByProfile.values()] : [captures];
+    if(!groups.some(group=>Object.keys(group).length))return;
+    for(const group of groups)for (const capture of Object.values(group)) capture.stale = true;
     refresh();
     ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture any affected pose to use it in combat.`;
     saveWorkspace();
@@ -214,18 +231,23 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function refreshControls() {
     const captured = count();
     const fresh = freshCount();
+    if(ui.ActionProfile)ui.ActionProfile.disabled=busy||equipmentBusy;
+    if(ui.CaptureProfileSummary){
+      const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>!pose.stale).length,0);
+      ui.CaptureProfileSummary.textContent=`${ACTION_PROFILE_CATALOG.get(selectedProfileId)?.label}: ${fresh/6}/5 poses · ${total} saved poses across weapon types`;
+    }
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
     ui.CaptureCount.textContent = `${fresh} / 30 ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
-    if(ui.CaptureSelectedPoseButton)ui.CaptureSelectedPoseButton.disabled=busy||!modelReady;
+    if(ui.CaptureSelectedPoseButton)ui.CaptureSelectedPoseButton.disabled=busy||equipmentBusy||!modelReady;
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
       button.disabled = busy;
     }
     for (const row of rows.values()) {
-      row.button.disabled = busy || !modelReady;
+      row.button.disabled = busy || equipmentBusy || !modelReady;
       row.clear.disabled = busy;
     }
     ui.CaptureLockNote.classList.toggle('locked', captured > fresh);
@@ -315,7 +337,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       const complete = freshCount() === 30;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
-        ? 'A sprite touches the frame edge. If it is cropped, clear the sheet and choose Fit all animations before capturing again.'
+        ? 'A sprite touches the frame edge. If it is cropped, adjust the model size or framing before capturing again.'
         : complete ? 'All 30 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
@@ -342,7 +364,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     };
   }
 
-  function buildExport() {
+  function buildExport(group=captures,profileId=selectedProfileId) {
+    const captures=group;
     const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
     const first=Object.values(captures).find(capture=>!capture.stale);
     const base=first || Object.values(captures)[0];
@@ -374,15 +397,15 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       anchorY:base.battlefieldAnchorY
     } : undefined;
     const manifest = createSpriteSetManifest({
-      id: spriteSetSlug(label), label,
+      id: spriteSetSlug(label+'-'+profileId), label,
       frame: { width, height, renderWidth, renderHeight, anchorX, anchorY },
       ...(layout ? { layout } : {}), ...(mobType ? { mobType } : {}),
       ...(modelScalePercent === undefined ? {} : { modelScalePercent }),
       ...(hexScalePercent === undefined ? {} : { hexScalePercent }),
       ...(unit ? { unit } : {}),
       ...(battlefield ? { battlefield } : {}),
-      windupDurationMs: Math.max(0,Math.min(1500,Number(ui.WindupDuration?.value ?? 250))),
-      partialPoses:true, actionProfileId:selectedProfileId,
+      windupDurationMs,
+      partialPoses:true, actionProfileId:profileId,
       captures: Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render,
@@ -394,6 +417,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         palette: 'Adventure Party VGA 256'
       }
     });
+    for(const pose of Object.keys(manifest.poses)){
+      manifest.poses[pose].clipSourceId=captures[pose].clipSourceId||null;
+      manifest.poses[pose].render=structuredClone(captures[pose].render||{});
+    }
     const poseFrames = Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, captures[pose].frames]));
     const battlefieldPoseFrames = battlefield
       ? Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale&&captures[pose].battlefieldFrames).map(pose=>[pose,captures[pose].battlefieldFrames]))
@@ -443,15 +470,24 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), five rows (ready, windup, attack, falling, prone).';
   }));
 
-  ui.ExportPackageButton.addEventListener('click', () => runExport(async exported => {
-    const files = await packageFiles(exported,{includeQaSheet:false});
-    const { manifest } = exported;
-    const entries = await Promise.all(Object.entries(files).map(async ([name, blob]) => [
-      `${manifest.id}/${name}`, new Uint8Array(await blob.arrayBuffer())
-    ]));
-    entries.push([`${manifest.id}/manifest.json`, strToU8(`${JSON.stringify(manifest, null, 2)}\n`)]);
-    download(new Blob([zipSync(Object.fromEntries(entries), { level: 0 })], { type: 'application/zip' }), `${manifest.id}-sprite-set.zip`);
-    ui.SheetStatus.textContent = 'Game assets exported: 18 separate PNGs, sheet.png and manifest.json. Import the ZIP to add this set to the game.';
+  ui.ExportPackageButton.addEventListener('click', () => runExport(async () => {
+    const profiles=[...capturesByProfile].filter(([,group])=>Object.values(group).some(pose=>!pose.stale))
+      .map(([id,group])=>({id,exported:buildExport(group,id)}));
+    if(!profiles.length)throw new Error('Capture at least one pose before exporting weapon sets.');
+    const entries=[];
+    for(const {id,exported} of profiles){
+      const files=await packageFiles(exported,{includeQaSheet:false});
+      for(const [name,blob] of Object.entries(files))entries.push([`profiles/${id}/${name}`,new Uint8Array(await blob.arrayBuffer())]);
+      entries.push([`profiles/${id}/manifest.json`,strToU8(JSON.stringify(exported.manifest,null,2)+'\n')]);
+    }
+    const unit=buildStudioUnitExport({
+      name:ui.SpriteSetName.value.trim()||'Studio character',
+      settings:getWorkspaceSettings(),
+      profiles:profiles.map(({id,exported})=>({id,manifest:exported.manifest}))
+    });
+    entries.push(['unit-package.json',strToU8(JSON.stringify(unit,null,2)+'\n')]);
+    download(new Blob([zipSync(Object.fromEntries(entries),{level:0})],{type:'application/zip'}),`${unit.id}-weapon-sets.zip`);
+    ui.SheetStatus.textContent=`Exported ${profiles.length} weapon sets with six-facing PNGs, pose/equipment references and unit-package.json. Outdated poses are excluded.`;
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {
@@ -469,7 +505,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   function reset(name, { persist = true } = {}) {
     captures = {};
-    capturesByProfile.clear();selectedProfileId='one-handed-swing';
+    capturesByProfile.clear();equipmentByProfile.clear();selectedProfileId='one-handed-swing';
     capturesByProfile.set(selectedProfileId,captures);
     if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;
     style = getStyle();
@@ -635,10 +671,13 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       capturesByProfile.set(selectedProfileId,captures);
       style = { ...workspace.style };
       savedSettings = workspace.settings;
+      equipmentByProfile.clear();
+      for(const [id,value] of Object.entries(workspace.profileEquipment||{}))if(ACTION_PROFILE_CATALOG.has(id))equipmentByProfile.set(id,value);
+      windupDurationMs=workspace.settings.windupDurationMs??250;
       ui.SpriteSetName.value = workspace.name;
       if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;
       if(ui.ActionPose)ui.ActionPose.value=SPRITE_POSES.includes(workspace.settings.selectedActionPose)?workspace.settings.selectedActionPose:'ready';
-      if (ui.WindupDuration) ui.WindupDuration.value = String(workspace.settings.windupDurationMs ?? 250);
+
       modelReady = false;
       restored = true;
       refresh();
@@ -668,7 +707,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     }
   }
 
-  ui.WindupDuration?.addEventListener('change', () => queueSave());
+
   ui.ActionPose?.addEventListener('change',saveWorkspace);
 
   ui.ClearPosesButton.addEventListener('click', () => {
@@ -686,6 +725,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   return Object.freeze({
     reset, snapshot, saveWorkspace, flushSave, updateModelScale, invalidateCaptures,
+    setEquipmentBusy(value){
+      if(equipmentBusy===!!value)return;
+      equipmentBusy=!!value;refreshControls();
+    },
     setModelReady(ready) {
       modelReady = !!ready;
       if (modelReady) savedSettings = null;
@@ -707,7 +750,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     restore,
     updateStyle(nextStyle) {
       style = nextStyle;
-      Object.values(captures).forEach(captured => quantizeCapture(captured));
+      for(const group of capturesByProfile.values())Object.values(group).forEach(captured => quantizeCapture(captured));
       refresh();
       saveWorkspace();
     }

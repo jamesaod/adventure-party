@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/adventure-party.css?v=R238C137">
-  <link rel="stylesheet" href="css/3d-studio.css?v=R238C137">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C149">
   <script type="importmap">
   {
     "imports": {
@@ -28,13 +28,33 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 148</span>
+        <span class="studio-build">Candidate Rev 149</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
 
     <section class="studio-setup studio-panel chrome" aria-labelledby="studioSetupHeading">
       <h2 id="studioSetupHeading">Sprite setup</h2>
+      <div class="studio-setup-content">
+        <section class="studio-setup-model" aria-labelledby="studioModelHeading">
+          <h2 id="studioModelHeading">Model</h2>
+          <div id="studioModelName" class="studio-model-name">Studio mannequin</div>
+          <p id="studioModelInfo" class="studio-note studio-model-info">Preparing the model…</p>
+          <label class="studio-field" for="studioModelLibrary">
+            <span>Model library</span>
+            <select id="studioModelLibrary" aria-describedby="studioModelLibraryStatus" disabled><option value="">Loading saved models…</option></select>
+          </label>
+          <button id="studioLoadLibraryButton" class="studio-button studio-primary studio-wide-button" type="button" disabled>Load selected model</button>
+          <p id="studioModelLibraryStatus" class="studio-note studio-help" role="status">Saved models are available without choosing a file from your device.</p>
+          <input id="studioFiles" class="studio-file-input" type="file" multiple accept=".glb,.gltf,.bin,.fbx,.png,.jpg,.jpeg,.webp,.bmp" aria-label="Choose a 3D model and its related files">
+          <button id="studioLoadButton" class="studio-button studio-wide-button" type="button">Load from device</button>
+          <input id="studioAnimationFiles" class="studio-file-input" type="file" multiple accept=".fbx" aria-label="Choose humanoid FBX animation files">
+          <button id="studioLoadAnimationButton" class="studio-button studio-wide-button" type="button">Load animation FBX</button>
+          <button id="studioDemoButton" hidden class="studio-button studio-wide-button" type="button">Use demo model</button>
+          <p class="studio-note studio-help">Choose a model from the library, then select an animation below. Equip and adjust weapons in the Equipment panel.</p>
+          <p class="studio-local-note">Files opened from your device are not uploaded.</p>
+        </section>
+
       <div class="studio-setup-fields">
         <label class="studio-field" for="studioMobTarget">
           <span>MOB / player character</span>
@@ -57,29 +77,11 @@
           <figcaption id="studioFootprintDescription">1 occupied hex · E-facing footprint</figcaption>
         </figure>
       </div>
+      </div>
     </section>
 
     <main class="studio-layout">
       <aside class="studio-controls" aria-label="Studio controls">
-        <section class="studio-panel chrome" aria-labelledby="studioModelHeading">
-          <h2 id="studioModelHeading">Model</h2>
-          <div id="studioModelName" class="studio-model-name">Studio mannequin</div>
-          <p id="studioModelInfo" class="studio-note studio-model-info">Preparing the model…</p>
-          <label class="studio-field" for="studioModelLibrary">
-            <span>Model library</span>
-            <select id="studioModelLibrary" aria-describedby="studioModelLibraryStatus" disabled><option value="">Loading saved models…</option></select>
-          </label>
-          <button id="studioLoadLibraryButton" class="studio-button studio-primary studio-wide-button" type="button" disabled>Load selected model</button>
-          <p id="studioModelLibraryStatus" class="studio-note studio-help" role="status">Saved models are available without choosing a file from your device.</p>
-          <input id="studioFiles" class="studio-file-input" type="file" multiple accept=".glb,.gltf,.bin,.fbx,.png,.jpg,.jpeg,.webp,.bmp" aria-label="Choose a 3D model and its related files">
-          <button id="studioLoadButton" class="studio-button studio-wide-button" type="button">Load from device</button>
-          <input id="studioAnimationFiles" class="studio-file-input" type="file" multiple accept=".fbx" aria-label="Choose humanoid FBX animation files">
-          <button id="studioLoadAnimationButton" class="studio-button studio-wide-button" type="button">Load animation FBX</button>
-          <button id="studioDemoButton" hidden class="studio-button studio-wide-button" type="button">Use demo model</button>
-          <p class="studio-note studio-help">Choose a model from the library, then select an animation below. Equip and adjust weapons in the Equipment panel.</p>
-          <p class="studio-local-note">Files opened from your device are not uploaded.</p>
-        </section>
-
         <section class="studio-panel chrome" aria-labelledby="studioEquipmentHeading">
           <h2 id="studioEquipmentHeading">Equipment</h2>
           <label class="studio-field" for="studioRightHandWeapon">
@@ -88,6 +90,47 @@
               <option value="none">None</option>
             </select>
           </label>
+          <label class="studio-field" for="studioOffHandWeapon">
+            <span>Off Hand</span>
+            <select id="studioOffHandWeapon" aria-describedby="studioOffHandStatus" disabled><option value="none">None</option></select>
+          </label>
+          <p id="studioOffHandStatus" class="studio-note studio-help" role="status"></p>
+          <details class="studio-equipment-grip">
+            <summary>Adjust off-hand grip</summary>
+            <label class="studio-field" for="studioOffHandSize">
+              <span class="studio-label-row">Off-hand size <output id="studioOffHandSizeValue">100%</output></span>
+              <input id="studioOffHandSize" type="range" min="25" max="200" step="5" value="100" disabled>
+            </label>
+            <fieldset><legend>Off-hand position</legend>
+              <label class="studio-field" for="studioOffHandPositionX">
+                <span class="studio-label-row">X <output id="studioOffHandPositionXValue">0</output></span>
+                <input id="studioOffHandPositionX" aria-label="Off-hand position X" type="range" min="-1" max="1" step="0.005" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioOffHandPositionY">
+                <span class="studio-label-row">Y <output id="studioOffHandPositionYValue">0</output></span>
+                <input id="studioOffHandPositionY" aria-label="Off-hand position Y" type="range" min="-1" max="1" step="0.005" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioOffHandPositionZ">
+                <span class="studio-label-row">Z <output id="studioOffHandPositionZValue">0</output></span>
+                <input id="studioOffHandPositionZ" aria-label="Off-hand position Z" type="range" min="-1" max="1" step="0.005" value="0" disabled>
+              </label>
+            </fieldset>
+            <fieldset><legend>Off-hand rotation</legend>
+              <label class="studio-field" for="studioOffHandRotationX">
+                <span class="studio-label-row">X <output id="studioOffHandRotationXValue">0</output></span>
+                <input id="studioOffHandRotationX" aria-label="Off-hand rotation X" type="range" min="-180" max="180" step="1" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioOffHandRotationY">
+                <span class="studio-label-row">Y <output id="studioOffHandRotationYValue">0</output></span>
+                <input id="studioOffHandRotationY" aria-label="Off-hand rotation Y" type="range" min="-180" max="180" step="1" value="0" disabled>
+              </label>
+              <label class="studio-field" for="studioOffHandRotationZ">
+                <span class="studio-label-row">Z <output id="studioOffHandRotationZValue">0</output></span>
+                <input id="studioOffHandRotationZ" aria-label="Off-hand rotation Z" type="range" min="-180" max="180" step="1" value="0" disabled>
+              </label>
+            </fieldset>
+            <button id="studioResetOffHandButton" class="studio-button studio-wide-button" type="button" disabled>Reset off-hand grip</button>
+          </details>
           <label class="studio-field" for="studioLeftHandShield">
             <span>Shield</span>
             <select id="studioLeftHandShield" aria-describedby="studioShieldStatus" disabled>
@@ -241,6 +284,11 @@
             <h2 id="studioViewerHeading">Model view</h2>
             <span class="studio-chip studio-chip-subtle">3D</span>
           </div>
+          <label class="studio-field studio-size-control" for="studioModelScale">
+            <span class="studio-label-row">Model size <output id="studioModelScaleValue" for="studioModelScale">100%</output></span>
+            <input id="studioModelScale" type="range" min="25" max="1000" step="5" value="100" disabled>
+            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
+          </label>
           <div id="studioViewport" class="studio-viewport">
             <canvas id="studioCanvas" width="580" height="480" aria-label="Interactive 3D model. Drag to rotate the view and scroll to zoom.">Interactive 3D model view</canvas>
             <svg id="studioHeightRuler" class="studio-height-ruler" aria-hidden="true" hidden></svg>
@@ -252,25 +300,8 @@
             <div id="studioEmptyMessage" class="studio-empty-message" hidden>Load a model to begin.</div>
           </div>
           <div class="studio-view-hint">Drag to turn · Scroll to zoom</div>
-          <div class="studio-directions" role="group" aria-label="View a hex facing">
-            <button class="studio-button" type="button" data-studio-facing="E" aria-pressed="false">E</button>
-            <button class="studio-button" type="button" data-studio-facing="NE" aria-pressed="false">NE</button>
-            <button class="studio-button" type="button" data-studio-facing="NW" aria-pressed="false">NW</button>
-            <button class="studio-button" type="button" data-studio-facing="W" aria-pressed="false">W</button>
-            <button class="studio-button" type="button" data-studio-facing="SW" aria-pressed="false">SW</button>
-            <button class="studio-button" type="button" data-studio-facing="SE" aria-pressed="false">SE</button>
-          </div>
-          <div class="studio-button-row studio-view-actions">
-            <button id="studioFrameButton" class="studio-button" type="button">Fit model</button>
-            <button id="studioFrameAnimationsButton" class="studio-button" type="button">Fit all animations</button>
-            <button id="studioResetViewButton" class="studio-button" type="button">Reset view</button>
-          </div>
-          <label class="studio-field studio-size-control" for="studioModelScale">
-            <span class="studio-label-row">Model size <output id="studioModelScaleValue" for="studioModelScale">100%</output></span>
-            <input id="studioModelScale" type="range" min="25" max="1000" step="5" value="100" disabled>
-            <span id="studioBattlefieldSize" class="studio-note studio-help">Battlefield frame 52.32 × 65.4 px</span>
-          </label>
-          <p class="studio-note studio-help">Adjust Model size while viewing any animation or T-Pose. One size is shared by every animation and saved with the unit; changing it makes existing captures outdated until recaptured. Models use 109% of the original hex scale.</p>
+
+
         </div>
 
         <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
@@ -331,13 +362,14 @@
             </div>
             <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
           </details>
+          <label class="studio-field" for="studioActionProfile"><span>Weapon type to capture</span><select id="studioActionProfile" aria-label="Weapon type to capture"></select></label>
+          <p id="studioCaptureProfileSummary" class="studio-note" aria-live="polite"></p>
           <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
-            <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled>Capture ready pose</button>
-            <button id="studioCaptureWindupButton" class="studio-button studio-primary" type="button" disabled>Capture Wind Up pose</button>
-            <label class="studio-field" for="studioWindupDuration">Wind Up duration (ms) <input id="studioWindupDuration" type="number" min="0" max="1500" step="25" value="250"></label>
-            <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled>Capture attack pose</button>
-            <button id="studioCaptureFallingButton" class="studio-button studio-primary" type="button" disabled>Capture Falling pose</button>
-            <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled>Capture prone pose</button>
+            <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Ready pose">Ready</button>
+            <button id="studioCaptureWindupButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Wind Up pose">Wind Up</button>
+            <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Attack pose">Attack</button>
+            <button id="studioCaptureFallingButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Falling pose">Falling</button>
+            <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Prone pose">Prone</button>
           </div>
           <p class="studio-note studio-help">Pause or drag the timeline to any moment. Each capture freezes that moment and saves all six directions. Capture again to replace a pose.</p>
         </section>
@@ -465,7 +497,6 @@
           <span>Sprite set name</span>
           <input id="studioSpriteSetName" type="text" maxlength="80" value="Studio mannequin" autocomplete="off">
         </label>
-        <label class="studio-field" for="studioActionProfile"><span>Action profile</span><select id="studioActionProfile" aria-label="Action profile"></select></label>
         <label class="studio-field" for="studioActionPose"><span>Action pose to record</span>
           <select id="studioActionPose" aria-label="Action pose to record">
             <option value="ready">Ready</option>
@@ -475,7 +506,7 @@
           </select>
         </label>
         <button id="studioCaptureSelectedPoseButton" class="studio-button studio-primary" type="button" disabled>Capture selected pose</button>
-        <p class="studio-note">Each action profile has Ready, Wind Up, Attack, Falling and Prone frames. Uncaptured poses use fallback art in combat. Add new profiles in the action catalog.</p>
+        <p class="studio-note">Each weapon type keeps its own five poses and six facings. Select the type above the capture buttons. Export includes all captured weapon types.</p>
       </div>
       <div class="studio-sheet-scroll">
         <table id="studioPoseSheetPreview" class="studio-pose-sheet" aria-label="Captured ready, windup, attack, falling and prone sprite sheet">
@@ -485,7 +516,7 @@
       </div>
       <div class="studio-sheet-actions">
         <button id="studioExportPoseSheetButton" class="studio-button" type="button" disabled>Export QA sprite sheet</button>
-        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export current profile (ZIP)</button>
+        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export all weapon sets (ZIP)</button>
         <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
         <button id="studioClearPosesButton" class="studio-button" type="button" disabled>Clear sheet</button>
       </div>
@@ -500,7 +531,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C148"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C149"></script>
   <script type="module" src="js/studio-weapon-pose-panel.mjs?v=R238C146"></script>
 </body>
 </html>
