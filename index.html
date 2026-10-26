@@ -20,7 +20,7 @@
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R238","candidateRevision":135,"builtAt":"2026-10-24T10:29:22.772Z"}
+{"architecture":"Multi-File Engine","release":"R238","candidateRevision":136,"builtAt":"2026-10-24T10:29:22.772Z"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -32,7 +32,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 135</div>
+        <div class="candidate-label">Candidate Rev 136</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
       </div>
     </header>
@@ -46,6 +46,7 @@
           <button data-screen="spell-preview">Spell Previewer [DEV]</button>
           <button data-screen="classbook">Class Book</button>
           <button data-screen="character">Character Generation</button>
+          <button data-screen="mob-catalog">MOB Catalog</button>
           <button data-screen="pixel">Pixel Editor</button>
           <button data-screen="3d-studio">3d studio</button>
           <button data-screen="world">Map Maker World</button>
@@ -647,6 +648,7 @@
       <button id="guardButton" class="combat-action" type="button" aria-label="Guard, shortcut G"><span class="shortcut-key">G</span>UARD</button>
       <button id="quickButton" class="combat-action" type="button" aria-label="Quick Command, shortcut Q"><span class="shortcut-key">Q</span>UICK COMMAND</button>
       <button id="castButton" class="combat-action" type="button" title="Combat-test spell harness; does not change Carl's Fighter class.">CAST</button>
+      <button id="inventoryButton" class="combat-action" type="button" aria-label="Inventory, shortcut I"><span class="shortcut-key">I</span>NVENTORY</button>
       <button id="sheetButton" class="combat-action" type="button" aria-label="Character, shortcut C"><span class="shortcut-key">C</span>HARACTER</button>
       <button id="doneButton" class="combat-action" type="button" aria-label="Done, shortcut Space"><span class="shortcut-key">SPACE</span> DONE</button>
       <button id="weatherTypeButton" class="combat-action weather-test-control" type="button" title="Testing control: cycle battlefield weather">WX: CLEAR</button>
@@ -722,11 +724,6 @@
         </section>
 
         <section class="sheet-section">
-          <h3>Inventory</h3>
-          <div id="sheetInventory" class="sheet-list"></div>
-        </section>
-
-        <section class="sheet-section">
           <h3>Magic</h3>
           <div id="sheetMagic" class="sheet-list"></div>
         </section>
@@ -739,6 +736,18 @@
 
       <div class="sheet-actions">
         <button id="closeSheetButton" class="combat-action" type="button">CLOSE [C / ESC]</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="inventoryOverlay" class="sheet-overlay" role="dialog" aria-modal="true" aria-label="Inventory" aria-hidden="true">
+    <section class="character-sheet chrome inventory-window" aria-label="Combat inventory">
+      <h2 id="inventoryTitle">ITEMS</h2>
+      <div class="sub" id="inventorySubtitle">Inventory</div>
+      <div class="inventory-columns" aria-hidden="true"><span>READY</span><span>ITEM</span></div>
+      <div id="inventoryList" class="inventory-list"></div>
+      <div class="sheet-actions">
+        <button id="closeInventoryButton" class="combat-action" type="button">CLOSE [I / ESC]</button>
       </div>
     </section>
   </div>
