@@ -171,6 +171,19 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "unverified"
+    },
+    {
+      "id": "standing-idle",
+      "label": "Standing Idle",
+      "file": "assets/animations/unarmed/standing-idle.fbx",
+      "bytes": 724896,
+      "sha256": "1b987eca58ed91ecd43f9daf8ccffb9f39f077c9c10193cfec6c5c568927a698",
+      "actionProfiles": [
+        "unarmed"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
     }
   ]
 }

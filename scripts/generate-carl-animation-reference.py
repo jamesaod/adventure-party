@@ -38,4 +38,4 @@ for entry in catalog['animations']:
     reference['clips'].append({'id':entry['id'],'sourceSha256':hashlib.sha256(path.read_bytes()).hexdigest(),'duration':end-start,'frames':frames})
 output=root/'scripts/fixtures/carl-uploaded-animation-reference.json'
 output.write_text(json.dumps(reference,indent=2)+'\n',encoding='utf-8',newline='\n')
-print('Wrote',len(reference['clips']),'motions, 65 poses, 22 joints/pose:',output.name)
+print('Wrote',len(reference['clips']),'motions,',sum(len(clip['frames']) for clip in reference['clips']),'poses, 22 joints/pose:',output.name)

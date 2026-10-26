@@ -258,3 +258,8 @@ Equipment now includes **Wooden Staff**, **Short Sword** and **Dagger**, all bel
 ## Candidate Rev 146 - Sling
 
 **Sling** is selectable through Equipment -> Weapon, using the existing **Slings** action profile. On Carl Ver 3, selection pauses **Goalie Throw** at 1.566667 s with the sling hanging from the raised hand. Size and grip controls remain editable. The 9,512-triangle GLB has three 512px maps; it follows the hand as a static shape. See [the reproduction recipe](SLING_INTEGRATION.md) for geometry, color checks, calibration and limitations.
+
+
+## Candidate Rev 147 - Standing Idle
+
+**Standing Idle** is now the 14th uploaded animation for Carl Ver 3. Choose it in the Animation selector; it uses the recovered Carl recipe and is tagged Bare Handed for organization. Existing animations, equipment transforms, saved captures and default initial motion are preserved. See [Carl animation recipe](CARL_ANIMATION_RECIPE.md#standing-idle---candidate-rev-147) for source hash, import steps and pose validation.
