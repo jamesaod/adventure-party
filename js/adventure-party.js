@@ -118,6 +118,9 @@ function showLauncher(){
   stopWeatherAudio();
   classReportOpen=false;
   characterSheetOpen=false;
+  inventoryOpen=false;
+  document.getElementById('inventoryOverlay')?.classList.remove('show');
+  document.getElementById('inventoryOverlay')?.setAttribute('aria-hidden','true');
   spellCastOverlayOpen=false;
   document.getElementById("spellCastOverlay")?.classList.remove("show");
   quickCommandUnitIds.clear();
@@ -406,6 +409,11 @@ async function activateLauncherSelection(){
 
   if(target==="pixel"){
     await showPixelEditor();
+    return;
+  }
+
+  if(target==="mob-catalog"){
+    window.location.assign("./mob-catalog.html");
     return;
   }
 
@@ -7306,6 +7314,7 @@ let persistentStatusFxFrame=null;
 let persistentFighter=null;
 let classReportOpen=false;
 let characterSheetOpen=false;
+let inventoryOpen=false;
 
 function d(sides){
   return 1+Math.floor(Math.random()*sides);
@@ -20081,6 +20090,7 @@ function useInventoryItem(index){
       sourceUnitId:fighter.id
     };
 
+    closeInventory();
     closeCharacterSheet();
     enterAimMode();
 
@@ -25841,9 +25851,6 @@ function renderCharacterSheet(){
       `<div class="sheet-item"><b>Nonproficiency Penalty</b><span>${mage.weaponNonproficiencyPenalty}</span></div>`+
       `<div class="sheet-item"><b>Maximum Spell Level</b><span>${mage.maxSpellLevel}</span><div class="detail">Base slots ${slots || "—"}</div></div>`;
 
-    document.getElementById("sheetInventory").innerHTML=(mage.inventory||[]).map(item=>
-      `<div class="sheet-item"><b>${item.name}</b><span>${item.type}${item.qty>1 ? ` ×${item.qty}` : ""}</span><div class="detail">${item.detail || item.role || ""}</div></div>`
-    ).join("") || `<div class="sheet-item"><b>Empty</b><span>—</span></div>`;
     document.getElementById("sheetMagic").innerHTML=renderMageMagicHtml(mage);
     document.getElementById("sheetStatus").innerHTML=
       `<span>Current Hex</span><span>${mage.x}, ${mage.y}</span>`+
@@ -25897,7 +25904,6 @@ function renderCharacterSheet(){
     `<div class="sheet-item"><b>Weapon Specialization</b><span>${fighter.specializedWeapon || "None selected"}</span></div>`+
     `<div class="sheet-item"><b>Nonweapon Proficiency Slots</b><span>${fighter.nonweaponProficiencySlots}</span></div>`+
     `<div class="sheet-item"><b>Nonproficiency Penalty</b><span>${fighter.weaponNonproficiencyPenalty}</span></div>`;
-  document.getElementById("sheetInventory").innerHTML=renderInventoryHtml(fighter);
   document.getElementById("sheetMagic").innerHTML=renderMagicHtml(fighter);
   document.getElementById("sheetStatus").innerHTML=
     `<span>Current Hex</span><span>${fighter.x}, ${fighter.y}</span>`+`<span>Facing</span><span>${fighter.facing}</span>`+
@@ -25905,11 +25911,63 @@ function renderCharacterSheet(){
     `<span>Full Move</span><span>${fighter.fullMove ? "Yes" : "No"}</span>`+`<span>Alive</span><span>${fighter.alive ? "Yes" : "No"}</span>`;
 }
 
+function renderCombatInventory(){
+  const subject=activePlayerControlledUnit() || game?.player || persistentFighter;
+  const list=document.getElementById("inventoryList");
+  if(!list)return;
+  const name=subject?.name || "Character";
+  document.getElementById("inventoryTitle").textContent=`${name.toUpperCase()}'S ITEMS`;
+  document.getElementById("inventorySubtitle").textContent="READY  ITEM";
+  const items=subject?.inventory || [];
+  list.replaceChildren();
+  if(!items.length){const empty=document.createElement("div");empty.textContent="NO ITEMS";list.append(empty);return;}
+  items.forEach((item,index)=>{
+    const line=document.createElement("div");line.className="inventory-entry";
+    const state=document.createElement("span");state.className="inventory-ready";
+    state.textContent=item.equippable ? (item.equipped ? "YES" : "NO") : "—";
+    const name=document.createElement("span");name.className="inventory-item-name";
+    name.textContent=String(item.name||"Item").toUpperCase()+(item.qty>1 ? ` ×${item.qty}` : "");
+    line.append(state,name);
+    // Keep existing equip/use handlers, but present them as simple list actions.
+    if(subject===game?.player){
+      if(item.equippable){
+        const button=document.createElement("button");button.type="button";button.className="inventory-item-action";
+        button.dataset.equipIndex=String(index);button.textContent=item.equipped?"REMOVE":"READY";
+        line.append(button);
+      }
+      if(item.usable){
+        const button=document.createElement("button");button.type="button";button.className="inventory-item-action";
+        button.dataset.useIndex=String(index);button.textContent=item.useLabel||"USE";
+        button.disabled=game.over||game.round===0||game.active!=="player"||!subject.alive||isCombatActionPauseActive();
+        line.append(button);
+      }
+    }
+    list.append(line);
+  });
+}
+function openInventory(){
+  if(!game?.player)return;
+  exitAimMode(false);
+  closeClassReport();
+  if(characterSheetOpen)closeCharacterSheet();
+  inventoryOpen=true;renderCombatInventory();
+  document.getElementById("inventoryOverlay").classList.add("show");
+  document.getElementById("inventoryOverlay").setAttribute("aria-hidden","false");
+  updateUi();
+}
+function closeInventory(){
+  inventoryOpen=false;
+  document.getElementById("inventoryOverlay").classList.remove("show");
+  document.getElementById("inventoryOverlay").setAttribute("aria-hidden","true");
+  updateUi();
+}
+
 function openCharacterSheet(){
   if(!game?.player) return;
 
   exitAimMode(false);
   closeClassReport();
+  if(inventoryOpen)closeInventory();
 
   characterSheetOpen=true;
   renderCharacterSheet();
@@ -25937,16 +25995,19 @@ function updateUi(){
   const quickButton=document.getElementById("quickButton");
   const castButton=document.getElementById("castButton");
   const sheetButton=document.getElementById("sheetButton");
+  const inventoryButton=document.getElementById("inventoryButton");
   const doneButton=document.getElementById("doneButton");
   const returnButton=document.getElementById("returnButton");
 
   if(sheetButton){
     sheetButton.classList.toggle("active",characterSheetOpen);
   }
+  if(inventoryButton)inventoryButton.classList.toggle("active",inventoryOpen);
 
   if(characterSheetOpen){
     renderCharacterSheet();
   }
+  if(inventoryOpen)renderCombatInventory();
 
   const preCombatLocked=
     game.round===0 &&
@@ -26022,6 +26083,7 @@ function updateUi(){
   if(sheetButton){
     sheetButton.hidden=spellTargeting || aimOnly;
   }
+  if(inventoryButton)inventoryButton.hidden=spellTargeting || aimOnly;
 
   if(doneButton){
     doneButton.hidden=spellTargeting || aimOnly;
@@ -30330,6 +30392,7 @@ function handleCombatKey(event){
       return;
     }
 
+    if(inventoryOpen){closeInventory();return;}
     if(characterSheetOpen){
       closeCharacterSheet();
       return;
@@ -30431,6 +30494,13 @@ function handleCombatKey(event){
     return;
   }
 
+  if(keyLower==="i"){
+    event.preventDefault();
+    if(inventoryOpen)closeInventory();
+    else if(!classReportOpen)openInventory();
+    return;
+  }
+
   /* C is the Character command. */
   if(keyLower==="c"){
     event.preventDefault();
@@ -30448,7 +30518,7 @@ function handleCombatKey(event){
     return;
   }
 
-  if(classReportOpen || characterSheetOpen || spellCastOverlayOpen){
+  if(classReportOpen || characterSheetOpen || inventoryOpen || spellCastOverlayOpen){
     return;
   }
 
@@ -30754,8 +30824,10 @@ document.getElementById("sheetButton").addEventListener("click",()=>{
 });
 
 document.getElementById("closeSheetButton").addEventListener("click",closeCharacterSheet);
+document.getElementById("inventoryButton").addEventListener("click",()=>inventoryOpen?closeInventory():openInventory());
+document.getElementById("closeInventoryButton").addEventListener("click",closeInventory);
 
-document.getElementById("sheetInventory").addEventListener("click",(event)=>{
+document.getElementById("inventoryList").addEventListener("click",(event)=>{
   const useButton=event.target.closest("[data-use-index]");
   if(useButton){
     const index=Number(useButton.dataset.useIndex);

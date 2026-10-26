@@ -29,6 +29,7 @@ function harness(studioTest, spriteSetId = 'studio-kobold') {
     // Routing must follow the battle even when a later setup selection differs.
     selectedMobEncounter: studioTest ? 'orcs' : 'studio-kobold',
     currentScreen: 'combat', combatAwaitingStart: true, aiTimer: 41, deathFx: {},
+    inventoryOpen: false, closeInventory: ()=>{},
     quickCommandUnitIds: new Set(), quickCommandActive: true, quickCommandUnitId: 'player',
     quickCommandGeneration: 1, quickCommandRunning: true,
     FIGHTER_CLASS: { primeRequisiteXpBonusThreshold: 16 },
