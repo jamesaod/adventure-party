@@ -11,7 +11,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C146';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C149';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -21,8 +21,8 @@ import {
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
 } from './studio-geometry.mjs?v=R238C94';
 import {
-  STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C146';
+  STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
+} from './studio-equipment.mjs?v=R238C149';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C146';
@@ -64,6 +64,11 @@ const ui = Object.fromEntries([
   'ShieldForearmRoll', 'ShieldForearmRollValue', 'ResetShieldButton', 'WeaponSize', 'WeaponSizeValue', 'EquipmentStatus', 'EquipmentLockNote', 'ResetEquipmentButton',
   'ShieldRotationX', 'ShieldRotationY', 'ShieldRotationZ',
   'ShieldRotationXValue', 'ShieldRotationYValue', 'ShieldRotationZValue',
+  'OffHandWeapon', 'OffHandStatus', 'OffHandSize', 'OffHandSizeValue', 'ResetOffHandButton',
+  'OffHandPositionX', 'OffHandPositionY', 'OffHandPositionZ',
+  'OffHandPositionXValue', 'OffHandPositionYValue', 'OffHandPositionZValue',
+  'OffHandRotationX', 'OffHandRotationY', 'OffHandRotationZ',
+  'OffHandRotationXValue', 'OffHandRotationYValue', 'OffHandRotationZValue',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
   'WeaponPositionXValue', 'WeaponPositionYValue', 'WeaponPositionZValue',
   'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
@@ -123,6 +128,16 @@ const equipment = createStudioEquipment({
     if (renderer) invalidate();
   }
 });
+const offHandEquipment = createStudioEquipment({
+  THREE, offHand:true,
+  loadAsset: async weapon => (await new GLTFLoader().loadAsync(weaponAssetUrl(weapon,new URL('../',import.meta.url)).href)).scene,
+  disposeObject:disposeModel,
+  onChange:()=>{
+    updateEquipmentControls();
+    if(state.model)updateModelInfo();
+    if(renderer)invalidate();
+  }
+});
 const shieldEquipment = createStudioShield({
   THREE,
   loadAsset: async shield => {
@@ -177,6 +192,7 @@ function getWorkspaceSettings() {
     },
     equipment: equipment.snapshot().settings,
     shield: shieldEquipment.snapshot().settings,
+    offHandEquipment: offHandEquipment.snapshot().settings,
     appearanceRecolor: { ...state.appearanceRecolor },
     heading: state.heading, upAxis: state.upAxis, frameHeight: state.frameHeight,
     center: state.center.toArray(), framingMode: state.framingMode,
@@ -276,7 +292,7 @@ function syncCaptureLock(_locked) {
   // edits. No captured pose may freeze the equipment/lighting/framing editor.
   const locked = false;
   for (const control of [ui.Footprint, ui.Resolution]) control.disabled = locked;
-  for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis]) {
+  for (const control of [ui.FrameButton, ui.FrameAnimationsButton, ui.Heading, ui.UpAxis].filter(Boolean)) {
     control.disabled = locked || !state.modelReady;
   }
   updateModelScaleAvailability();
@@ -315,12 +331,32 @@ function refreshRecolorControls(){
 function updateEquipmentControls(locked = false) {
   const current = equipment.snapshot(), settings = current.settings;
   const shieldCurrent = shieldEquipment.snapshot(), shieldSettings = shieldCurrent.settings;
-  const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || shieldCurrent.loading || state.disposed;
+  const offHandCurrent=offHandEquipment.snapshot(), offHandSettings=offHandCurrent.settings;
+  const busy = !state.modelReady || state.spriteOnlyFallback || state.modelLoading || current.loading || shieldCurrent.loading || offHandCurrent.loading || state.disposed;
+  poseCapture?.setEquipmentBusy(current.loading||shieldCurrent.loading||offHandCurrent.loading);
   ui.RightHandWeapon.value = settings.rightHand;
   ui.RightHandWeapon.disabled = busy || locked;
   ui.LeftHandShield.value = shieldSettings.leftHandShield;
   const twoHandedWeapon = studioWeapon(settings.rightHand)?.handsRequired === 2;
   ui.LeftHandShield.disabled = busy || locked || twoHandedWeapon;
+  ui.OffHandWeapon.value=offHandSettings.rightHand;
+  ui.OffHandWeapon.disabled=busy||locked||twoHandedWeapon;
+  const offHandDisabled=busy||locked||twoHandedWeapon||offHandSettings.rightHand==='none';
+  ui.OffHandSize.value=String(offHandSettings.sizePercent);
+  ui.OffHandSizeValue.textContent=`${offHandSettings.sizePercent}%`;
+  ui.OffHandSize.disabled=offHandDisabled;
+  ui.ResetOffHandButton.disabled=offHandDisabled;
+  ui.OffHandStatus.textContent=offHandCurrent.error || (twoHandedWeapon
+    ? 'Two-handed weapons use both hands.'
+    : offHandCurrent.loading ? 'Loading off-hand weapon…'
+    : 'One-handed weapons only. Selecting one replaces the shield.');
+  for(const [name,key] of [['Position','position'],['Rotation','rotation']]){
+    for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
+      const input=ui[`OffHand${name}${axis}`], value=offHandSettings[key][index];
+      input.value=String(value);input.disabled=offHandDisabled;
+      ui[`OffHand${name}${axis}Value`].textContent=name==='Rotation' ? `${Math.round(value)}°` : value.toFixed(3);
+    }
+  }
   const shieldDisabled=busy||locked||shieldSettings.leftHandShield==='none';
   ui.ShieldScale.value=String(shieldSettings.sizePercent);
   ui.ShieldScaleValue.textContent=`${Math.round(shieldSettings.sizePercent)}%`;
@@ -430,6 +466,7 @@ async function changeEquipment(value, { resetPose = true } = {}) {
   if (selectedWeapon?.handsRequired === 2 && shieldEquipment.snapshot().settings.leftHandShield !== 'none') {
     await shieldEquipment.select('none');
   }
+  if(selectedWeapon?.handsRequired===2)await offHandEquipment.select({});
   const changed = await equipment.select(value);
   if (state.disposed || state.model !== model) return;
   if (changed) {
@@ -453,9 +490,42 @@ async function changeEquipment(value, { resetPose = true } = {}) {
         }
       }
     }
-    poseCapture?.invalidateCaptures('Weapon or grip changed');
+    poseCapture?.invalidateCaptures('Weapon or grip changed',{allProfiles:false});
   }
   poseCapture?.saveWorkspace();
+}
+
+async function changeOffHand(value){
+  if(!state.modelReady||state.modelLoading)return;
+  const model=state.model;
+  const next=studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2
+    ? normalizeOffHandEquipment() : normalizeOffHandEquipment(value);
+  if(next.rightHand!=='none')await shieldEquipment.select({});
+  if(state.disposed||state.model!==model)return;
+  const changed=await offHandEquipment.select(next);
+  if(state.disposed||state.model!==model)return;
+  if(changed)poseCapture?.invalidateCaptures('Off-hand weapon or grip changed',{allProfiles:false});
+  updateEquipmentControls();poseCapture?.saveWorkspace();
+}
+
+async function restoreProfileEquipment(settings,capture){
+  if(!settings||!state.modelReady)return;
+  const model=state.model;
+  const primary=normalizeEquipment(settings.equipment||{});
+  const off=studioWeapon(primary.rightHand)?.handsRequired===2 ? normalizeOffHandEquipment() : normalizeOffHandEquipment(settings.offHandEquipment||{});
+  const shield=normalizeShield(studioWeapon(primary.rightHand)?.handsRequired===2||off.rightHand!=='none' ? {} : settings.shield||{});
+  await Promise.all([equipment.select(primary),offHandEquipment.select(off),shieldEquipment.select(shield)]);
+  if(state.disposed||state.model!==model)return;
+  if(capture){
+    const clipIndex=restoreAnimationIndex(state.clips,{clipSourceId:capture.clipSourceId,clipName:capture.clip,clipIndex:capture.clip==='T-Pose'?-1:undefined});
+    setClip(clipIndex);state.playing=false;
+    if(state.action){
+      state.action.paused=true;state.action.time=Math.max(0,Math.min(capture.time,state.action.getClip().duration));
+      equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
+    }
+    updateAnimationControls();
+  }
+  updateEquipmentControls();invalidate();
 }
 
 async function changeShield(value,{resetPose=true}={}){
@@ -464,14 +534,15 @@ async function changeShield(value,{resetPose=true}={}){
     return;
   }
   const model=state.model;
-  if(value!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
+  if(normalizeShield(value).leftHandShield!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2){
     await equipment.select('none');
     if(state.disposed||state.model!==model)return;
   }
+  if(normalizeShield(value).leftHandShield!=='none')await offHandEquipment.select({});
   const changed=await shieldEquipment.select(value);
   if(state.disposed||state.model!==model)return;
   if(changed){
-    poseCapture?.invalidateCaptures('Shield changed');
+    poseCapture?.invalidateCaptures('Shield changed',{allProfiles:false});
     // Shields follow the already-calibrated unit transform; they never refit it.
     if(resetPose)resetPreviewReferenceToReady();
   }
@@ -489,7 +560,7 @@ function setModelReady(ready) {
   ui.LoadButton.disabled = ui.DemoButton.disabled = !renderer || state.disposed;
   ui.LoadAnimationButton.disabled = !ready || state.spriteOnlyFallback || state.modelLoading || state.disposed;
   syncModelLibraryControls();
-  ui.ResetViewButton.disabled = !ready;
+  if(ui.ResetViewButton)ui.ResetViewButton.disabled = !ready;
   ui.ExportSheetButton.disabled = !ready;
   document.querySelectorAll('[data-studio-export], [data-studio-facing]').forEach(button => { button.disabled = !ready; });
   poseCapture?.setModelReady(ready);
@@ -1216,6 +1287,7 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   // Release equipment before disposing the old character's object tree.
   equipment.setModel(null);
   shieldEquipment.setModel(null);
+  offHandEquipment.setModel(null);
   if (state.model) upAxisGroup.remove(state.model);
   disposeModel(state.model);
   state.model = model;
@@ -1338,10 +1410,12 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
     ? { ...requestedShield, leftHandShield:'none' }
     : requestedShield;
   return equipment.setModel(model,requestedEquipment).then(async weaponResult=>{
+    const requestedOffHand=requestedWeapon?.handsRequired===2||normalizedShield.leftHandShield!=='none' ? {} : restoreSettings?.offHandEquipment||{};
+    const offHandResult=await offHandEquipment.setModel(model,requestedOffHand);
     const shieldResult=await shieldEquipment.setModel(model,normalizedShield);
     if(!restoreSettings&&normalizedShield.leftHandShield!=='none')fitAllAnimations();
     updateEquipmentControls();
-    return [weaponResult,shieldResult];
+    return [weaponResult,shieldResult,offHandResult];
   });
 }
 
@@ -1519,7 +1593,10 @@ function readCapturePose() {
   if (!state.action) throw new Error('T-Pose is for height and model-size calibration only. Select an animation before capturing Ready, Attack, or Prone.');
   const gear = equipment.snapshot();
   const shieldGear = shieldEquipment.snapshot();
-  if (gear.loading) throw new Error('Wait for the weapon to finish loading before capturing a pose.');
+  const offHandGear=offHandEquipment.snapshot();
+  if (gear.loading||offHandGear.loading||shieldGear.loading) throw new Error('Wait for equipment to finish loading before capturing a pose.');
+  if(offHandGear.settings.rightHand!=='none'&&!offHandGear.attached)throw new Error(offHandGear.error||'The off-hand weapon is unavailable.');
+  if(offHandGear.settings.rightHand!=='none'&&(shieldGear.settings.leftHandShield!=='none'||studioWeapon(gear.settings.rightHand)?.handsRequired===2))throw new Error('Off-hand weapons cannot be combined with a shield or two-handed primary weapon.');
   if (gear.settings.rightHand !== 'none' && !gear.attached) {
     throw new Error(gear.error || 'The equipped weapon is unavailable. Reload the studio before capturing another pose.');
   }
@@ -1565,7 +1642,7 @@ function readCapturePose() {
       frameHeight: state.frameHeight * state.modelScalePercent / 100 * state.hexScalePercent / 100,
       center: state.center.clone().multiplyScalar(state.modelScalePercent / 100 * state.hexScalePercent / 100).toArray(),
       framingMode: state.framingMode, modelScalePercent: state.modelScalePercent,
-      lighting: { ...state.lighting }, equipment: gear.settings, shield: shieldGear.settings
+      lighting: { ...state.lighting }, equipment: gear.settings, shield: shieldGear.settings, offHandEquipment:offHandGear.settings
     }
   };
   invalidate(false);
@@ -2329,12 +2406,21 @@ function bindControls() {
     // previous weapon's transform into the newly selected asset.
     const weaponId = ui.RightHandWeapon.value;
     void changeEquipment(defaultEquipmentSettingsForModel(weaponId));
-    if (['spear','recurve-bow','crossbow','wooden-staff','short-sword','dagger','wizard-staff-grip','sling'].includes(weaponId)) {
-      const actionProfile = $('studioActionProfile');
-      actionProfile.value = studioWeapon(weaponId).poseProfileId;
-      actionProfile.dispatchEvent(new Event('change'));
-    }
+
   });
+  for(const weapon of STUDIO_WEAPONS.filter(weapon=>weapon.handsRequired!==2)){
+    const option=document.createElement('option');option.value=weapon.id;option.textContent=weapon.label;ui.OffHandWeapon.append(option);
+  }
+  ui.OffHandWeapon.addEventListener('change',()=>void changeOffHand({rightHand:ui.OffHandWeapon.value}));
+  ui.OffHandSize.addEventListener('input',()=>void changeOffHand({...offHandEquipment.snapshot().settings,sizePercent:ui.OffHandSize.valueAsNumber}));
+  for(const [name,key] of [['Position','position'],['Rotation','rotation']]){
+    for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
+      ui[`OffHand${name}${axis}`].addEventListener('input',event=>{
+        const next=offHandEquipment.snapshot().settings;next[key][index]=event.target.valueAsNumber;void changeOffHand(next);
+      });
+    }
+  }
+  ui.ResetOffHandButton.addEventListener('click',()=>void changeOffHand({rightHand:offHandEquipment.snapshot().settings.rightHand}));
   ui.LeftHandShield.addEventListener('change',()=>{
     void changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}));
   });
@@ -2384,9 +2470,9 @@ function bindControls() {
   ui.ResetEquipmentButton.addEventListener('click', () => {
     void changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand));
   });
-  ui.FrameButton.addEventListener('click', fitModel);
-  ui.FrameAnimationsButton.addEventListener('click', fitAllAnimations);
-  ui.ResetViewButton.addEventListener('click', resetCamera);
+
+
+
   document.querySelectorAll('[data-studio-facing]').forEach(button => {
     button.addEventListener('click', () => { selectFacing(button.dataset.studioFacing); poseCapture?.saveWorkspace(); });
   });
@@ -2618,6 +2704,7 @@ function bindControls() {
     state.mixer?.stopAllAction();
     equipment.dispose();
     shieldEquipment.dispose();
+    offHandEquipment.dispose();
     disposeModel(state.model);
     disposeModel(helpers);
     atlasTarget?.dispose();
@@ -2762,6 +2849,7 @@ async function start() {
     readPose: readCapturePose,
     getStyle: () => pixelRenderOptions(true),
     getWorkspaceSettings,
+    onProfileChange:restoreProfileEquipment,
     onLockChange: syncCaptureLock,
     onError: showError,
     onStatus: status
@@ -2798,6 +2886,7 @@ async function start() {
       lighting: { ...state.lighting },
       equipment: equipment.snapshot(),
       shield: shieldEquipment.snapshot(),
+      offHandEquipment:offHandEquipment.snapshot(),
       appearanceRecolor: { ...state.appearanceRecolor },
       renderSize: Object.values(spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent)).slice(2),
       modelDisplayScale: placement?.scale.x || null,

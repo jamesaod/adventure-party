@@ -58,6 +58,7 @@ jobs:
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
           node scripts/test-studio-equipment.mjs
+          node scripts/test-studio-weapon-sets.mjs
           node scripts/test-studio-sprite-regressions.mjs
           node scripts/test-studio-grip-sliders.mjs
           node scripts/test-orc-sword-profile.mjs

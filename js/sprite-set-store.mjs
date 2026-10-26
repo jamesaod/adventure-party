@@ -30,14 +30,18 @@ export function validateStudioWorkspace(workspace) {
   }
   if (workspace.settings.modelScalePercent !== undefined) validateSpriteModelScale(workspace.settings.modelScalePercent);
   const settingsHexScale = validateSpriteHexScale(workspace.settings.hexScalePercent);
+  const groups=[workspace.captures,...Object.values(workspace.actionProfiles||{})];
+  for(const group of groups){
+  if(!plain(group))invalid('invalid weapon capture group.');
   let dimensions, modelScale, hexScale;
-  for (const [pose, capture] of Object.entries(workspace.captures)) {
+  for (const [pose, capture] of Object.entries(group)) {
     if (!SPRITE_POSES.includes(pose) || !plain(capture)) invalid('invalid pose.');
     const { width, height, raw, anchorX, anchorY, clip, time } = capture;
     if (![width, height].every(value => Number.isInteger(value) && value > 0 && value <= 4096)) invalid('invalid frame size.');
     if (!(raw instanceof Uint8Array || raw instanceof Uint8ClampedArray) || raw.length !== width * height * 6 * 4) invalid('incomplete captured pixels.');
     if (!Number.isFinite(anchorX) || anchorX < 0 || anchorX > width || !Number.isFinite(anchorY) || anchorY < 0 || anchorY > height) invalid('invalid ground anchor.');
     if (typeof clip !== 'string' || clip.length > 512 || !Number.isFinite(time) || time < 0) invalid('invalid animation time.');
+    if (capture.stale) continue;
     if (dimensions && (dimensions[0] !== width || dimensions[1] !== height)) invalid('poses have different frame sizes.');
     dimensions = [width, height];
     const scale = validateSpriteModelScale(capture.modelScalePercent);
@@ -47,8 +51,9 @@ export function validateStudioWorkspace(workspace) {
     const calibration = validateSpriteHexScale(capture.hexScalePercent);
     if (capture.hexScalePercent !== undefined && !plain(capture.layout)) invalid('hex scale needs its captured footprint metadata.');
     if (hexScale !== undefined && hexScale !== calibration) invalid('poses have different hex scales.');
-    if (calibration !== settingsHexScale) invalid('captured hex scale does not match the workspace.');
+    if (group===workspace.captures && calibration !== settingsHexScale) invalid('captured hex scale does not match the workspace.');
     hexScale = calibration;
+  }
   }
   const sources = workspace.settings.sourceFiles;
   if (sources !== undefined && (!Array.isArray(sources) || sources.some(source =>

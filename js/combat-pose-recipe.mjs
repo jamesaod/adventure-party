@@ -1,4 +1,4 @@
-import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
+import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C149';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
@@ -126,10 +126,11 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
       throw new Error('Saved combat frame dimensions differ from the Studio draft; keeping its original native-resolution sprites.');
     }
   }
-  const profile = structuredClone(poseProfileForHumanoid('one-handed-swing'));
-  profile.id = 'studio-captured-one-handed-swing-v1';
+  const profileId=settings.actionProfileId||'one-handed-swing';
+  const profile = structuredClone(poseProfileForHumanoid(profileId));
+  profile.id = 'studio-captured-'+profileId+'-v1';
   profile.version = Math.max(2, Number(workspace.savedAt || 0));
-  profile.label = 'Studio-captured one-handed swinging weapon';
+  profile.label = 'Studio-captured '+profileId;
   const capturePoses=Object.keys(captures).filter(name=>WINDUP_POSES.includes(name)&&!captures[name]?.stale);
   profile.poses = Object.fromEntries(capturePoses.map(name => {
     const capture = captures[name];
@@ -178,6 +179,7 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
       },
       lighting: structuredClone(settings.lighting || first?.render?.lighting || {}),
       shield: structuredClone(settings.shield || first?.render?.shield || null),
+      offHandEquipment: structuredClone(settings.offHandEquipment || first?.render?.offHandEquipment || null),
       // Transfer the calibrated right-hand sword grip, not just the animation.
       equipment: structuredClone(settings.equipment || first?.render?.equipment || null),
       appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
