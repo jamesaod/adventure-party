@@ -254,3 +254,7 @@ Equipment now includes **Wooden Staff**, **Short Sword** and **Dagger**, all bel
 ## Candidate Rev 145 follow-up
 
 [Wizard Staff Grip and blade visibility](WIZARD_STAFF_AND_BLADE_VISIBILITY.md) records the dedicated one-handed staff equipment/action profile and the short sword/dagger material adaptation. Blade texture pixels and geometry remain unchanged; current sizes/hashes and reproducible export settings are in the follow-up. Keep the original two-handed staff behavior and source-color regression checks.
+
+## Candidate Rev 146 - Sling
+
+**Sling** is selectable through Equipment -> Weapon, using the existing **Slings** action profile. On Carl Ver 3, selection pauses **Goalie Throw** at 1.566667 s with the sling hanging from the raised hand. Size and grip controls remain editable. The 9,512-triangle GLB has three 512px maps; it follows the hand as a static shape. See [the reproduction recipe](SLING_INTEGRATION.md) for geometry, color checks, calibration and limitations.

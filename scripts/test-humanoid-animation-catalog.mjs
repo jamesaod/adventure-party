@@ -8,11 +8,11 @@ import {
 assert.equal(HUMANOID_ANIMATION_CATALOG_VERSION,1);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.weapon,[
   'one-handed-swing','one-handed-thrust','one-handed-shield','dual-wield',
-  'two-handed-swing','two-handed-thrust','polearm','staff','wizard-staff-grip','bow','unarmed'
+  'two-handed-swing','two-handed-thrust','polearm','staff','wizard-staff-grip','sling','bow','unarmed'
 ]);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.casting,['arcane-cast','divine-cast','innate-cast']);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.condition,['prone','sleep','held','stunned','dead']);
-assert.equal(new Set(HUMANOID_ANIMATION_IDS).size,19);
+assert.equal(new Set(HUMANOID_ANIMATION_IDS).size,20);
 
 const fallback=resolveHumanoidAnimationProfile('two-handed-swing');
 assert.equal(fallback.semanticId,'two-handed-swing');

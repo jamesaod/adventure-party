@@ -116,6 +116,7 @@ jobs:
           python -m pip install "Pillow>=11,<13"
           python scripts/test-spear-texture.py
           python scripts/test-recurve-bow.py
+          python scripts/test-sling-asset.py
           python scripts/test-crossbow-asset.py
           python scripts/test-equipment-batch-assets.py
 

@@ -94,3 +94,7 @@ For optimized textured assets, inspect decoded color values as well as embedded 
 ## Candidate Rev 145 follow-up
 
 [Wizard Staff Grip and blade visibility](WIZARD_STAFF_AND_BLADE_VISIBILITY.md) records the dedicated one-handed staff equipment/action profile and the short sword/dagger material adaptation. Blade texture pixels and geometry remain unchanged; current sizes/hashes and reproducible export settings are in the follow-up. Keep the original two-handed staff behavior and source-color regression checks.
+
+## Candidate Rev 146 sling
+
+[Sling integration](SLING_INTEGRATION.md) documents the checksum-pinned Grab3D download, deterministic hanging-shape deformation, 512px color-preserving textures and model-specific over-shoulder preview. Reuse the shared equipment system and existing Slings/Goalie Throw association. The static prop follows the hand; it does not simulate or release the rope/stone.

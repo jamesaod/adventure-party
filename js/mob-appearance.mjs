@@ -1,6 +1,6 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C145';
-import { studioShield } from './studio-shield.mjs?v=R238C145';
-import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C145';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C146';
+import { studioShield } from './studio-shield.mjs?v=R238C146';
+import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C146';
 export { WEAPON_POSE_PROFILES };
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
@@ -84,6 +84,7 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
   'wooden-staff': visibleWeapon('wooden-staff', 'Wooden Staff', 'wooden-staff'),
   'short-sword': visibleWeapon('short-sword', 'Short Sword', 'short-sword'),
   'dagger': visibleWeapon('dagger', 'Dagger', 'dagger'),
+  sling: visibleWeapon('sling', 'Sling', 'sling'),
   crossbow: visibleWeapon('crossbow', 'Crossbow', 'crossbow'),
   'recurve-bow': visibleWeapon('recurve-bow', 'Recurve Bow', 'recurve-bow'),
   'two-handed-sword': visibleWeapon('two-handed-sword', 'Two-Handed Sword', 'medieval-two-handed-sword')

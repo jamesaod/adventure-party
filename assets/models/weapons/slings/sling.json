@@ -1,0 +1,77 @@
+{
+  "sourceUrl": "https://grab3d.com/models/weapons/sling/",
+  "downloadUrl": "https://grab3d.com/dl/sling/sling.glb",
+  "license": "CC0-1.0",
+  "sourceSha256": "b71ad36709993a7a5a5787ad6464366862a5ddff3edcf9d516da526a65ffcaa6",
+  "sourceBytes": 625144,
+  "bytes": 557844,
+  "sha256": "ed1f11ef26083a0b998f6bbd71dbc6b47926215f476f026d0baf8e1bd753c861",
+  "triangles": 9512,
+  "vertices": 7384,
+  "textureResolution": 512,
+  "textureCount": 3,
+  "grip": [
+    0,
+    0.889858,
+    0
+  ],
+  "bounds": {
+    "min": [
+      -0.10611317583914857,
+      0.0,
+      -0.08310126056520488
+    ],
+    "max": [
+      0.10613856442625394,
+      1.0,
+      0.08022915209475576
+    ]
+  },
+  "preservedUVSha256": "43bf72dded0a1209a2de798195b848c664bd25ef9499dbc2e67f6f8cff83ae21",
+  "preservedIndexSha256": "1d0c3b940b498b3653c266cb232d1250564e73a302cb16ca1282d72d1126c665",
+  "textures": [
+    {
+      "name": "sling_body_normal",
+      "sourceMeanRGB": [
+        128.0000457763672,
+        127.00004577636719,
+        254.0000457763672
+      ],
+      "outputMeanRGB": [
+        128.0000457763672,
+        127.00004577636719,
+        254.0000457763672
+      ],
+      "sha256": "65f3d9e4f6fe5f31d4b0ac7e922f7d448306a038f6f8b0f5dc60a7abdc735684"
+    },
+    {
+      "name": "sling_body_basecolor",
+      "sourceMeanRGB": [
+        185.75079584121704,
+        126.16444683074951,
+        112.10207605361938
+      ],
+      "outputMeanRGB": [
+        185.7537727355957,
+        126.16475677490234,
+        112.10215759277344
+      ],
+      "sha256": "1ce8be0ecddce3220e8bdff547dddd86f28d68ca2548e68a61e47cfc997cb964"
+    },
+    {
+      "name": "sling_body_metallic-sling_body_roughness",
+      "sourceMeanRGB": [
+        254.7141408920288,
+        191.64121866226196,
+        10.153736591339111
+      ],
+      "outputMeanRGB": [
+        254.71318817138672,
+        191.6384735107422,
+        10.168022155761719
+      ],
+      "sha256": "6bb820206a071479c5333a70ab8e13a4787030e5f0e1ff9c4e58f7f417b3b090"
+    }
+  ],
+  "derivation": "scripts/prepare-sling.py; symmetric smooth cord fold, normalized span, inverse-transpose normals; original UVs/indices; Pillow LANCZOS on stored channels."
+}

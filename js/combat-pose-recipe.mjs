@@ -1,5 +1,5 @@
 import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C57';
-import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C145';
+import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
 const WINDUP_POSES = Object.freeze(['ready','windup','attack','falling','prone']);

@@ -44,9 +44,9 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 10, 'Existing equipment plus one-handed Wizard Staff Grip are registered');
+assert.equal(STUDIO_WEAPONS.length, 11, 'Existing equipment plus Sling are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
-for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow','wizard-staff'].includes(weapon.visualClass))) {
+for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow','wizard-staff','sling'].includes(weapon.visualClass))) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
   const rotation = new THREE.Euler(...weapon.rotation.map(value => THREE.MathUtils.degToRad(value)), 'XYZ');
   axis.applyEuler(rotation).normalize();
@@ -678,3 +678,29 @@ for(const id of ['short-sword','dagger']){
  assert.deepEqual(normalizeEquipment(preserved),preserved,'Material refresh preserves saved grips');
 }
 console.log('PASS wizard staff: shared GLB, one-handed independent profile, upright idle, free off hand, shield compatibility and adjustable grip');
+
+// Sling retains the shared adjustable mount and leaves both arm poses authored.
+const sling=STUDIO_WEAPONS.find(w=>w.id==='sling');
+assert.equal(sling.handsRequired,1);assert.equal(sling.poseProfileId,'sling');assert.equal(sling.secondaryGrip,undefined);
+const slingAsset=glb(sling.file);assert.equal(crypto.createHash('sha256').update(slingAsset.bytes).digest('hex'),sling.assetSha256);
+const slingReference=JSON.parse(fs.readFileSync(new URL('./fixtures/sling-over-shoulder-reference.json',import.meta.url)));
+const slingFrame=slingReference.clips[0].frames[0];assert.equal(sling.previewPose.timeSeconds,slingFrame.timeSeconds);
+const slingDown=new THREE.Vector3(0,-1,0).applyEuler(new THREE.Euler(...sling.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...slingFrame.worldQuaternions.RightHand).normalize());
+assert.ok(slingDown.angleTo(new THREE.Vector3(0,-1,0))<THREE.MathUtils.degToRad(.01),'Pouch hangs vertically in the independently recovered over-shoulder pose');
+const slingRig=wizardRig.clone(),slingModel=new THREE.Group(),slingManager=createStudioEquipment({THREE,loadAsset:async()=>slingModel,disposeObject:()=>{}});
+const armBefore=slingRig.children.map(o=>o.quaternion.clone());
+assert.equal(await slingManager.setModel(slingRig,{rightHand:'sling'}),true);
+assert.equal(slingManager.applyConstraints().active,false);
+assert.ok(slingRig.children.every((o,i)=>o.quaternion.equals(armBefore[i])));
+const slingCustom={...slingManager.snapshot().settings,sizePercent:120,position:[.02,.03,.04],rotation:[95,70,-120]};
+await slingManager.select(slingCustom);slingRig.updateWorldMatrix(true,true);
+close(slingModel.localToWorld(new THREE.Vector3(...sling.grip)),slingRig.children[0].localToWorld(new THREE.Vector3(.02,.03,.04)),'Sling grip remains in palm under custom scale/rotation/offset');
+assert.deepEqual(normalizeEquipment(slingCustom),slingManager.snapshot().settings);slingManager.dispose();
+// Verify catalog preview seeking only runs for the specified model and clip.
+Object.assign(bowSelection,{updateAnimationControls(){},invalidate(){}});
+vm.runInContext(`state.libraryModelId='dungeon-crawler-carl-v3';state.clips=[{userData:{actionProfiles:['sling'],studioAnimationId:'uploaded:goalie-throw:0'}}];state.action={time:0,paused:false,getClip:()=>({duration:3.833333333})};state.mixer={update(){}};equipment.restoreConstraints=()=>{};equipment.applyConstraints=()=>{};`,bowSelection);
+bowShieldRemovals=0;await vm.runInContext("changeEquipment({rightHand:'sling'})",bowSelection);
+assert.equal(selectedBowClip,0);assert.equal(bowShieldRemovals,0);assert.equal(bowSelection.state.action.time,47/30);assert.equal(bowSelection.state.action.paused,true);
+vm.runInContext("state.libraryModelId='other-rig';state.action.time=.4",bowSelection);
+await vm.runInContext("changeEquipment({rightHand:'sling'})",bowSelection);assert.equal(bowSelection.state.action.time,.4);
+console.log('PASS sling: vertical hanging pose, adjustable hand mount, no body IK, correct profile/animation and model-specific preview frame');

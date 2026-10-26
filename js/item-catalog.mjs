@@ -145,6 +145,72 @@ export const ITEM_CATALOG=freezeRecord({
       runtimeAsset:{bytes:1237464,sha256:'3314489c45b1b46ad4dc83724d2027da4e315e2119c36d5242b3192a94d964a9',triangles:3717,textureResolution:512}
     }
   },
+  sling:{
+    "id": "sling",
+    "name": "Sling",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "sling",
+      "baseName": "Sling",
+      "handsRequired": 1,
+      "damageType": "bludgeoning",
+      "attackStyle": "ranged"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 26.5,
+      "status": "Provisional hanging span; adjustable Studio scale and grip."
+    },
+    "appearance": {
+      "appearanceId": "sling",
+      "studioId": "sling",
+      "visualClass": "sling",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/slings/sling.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "sling",
+      "primaryAxis": [
+        0,
+        -1,
+        0
+      ],
+      "grip": [
+        0,
+        0.889858,
+        0
+      ],
+      "nativeScale": 0.34,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        91.25093,
+        79.617197,
+        -125.014997
+      ],
+      "previewPose": {
+        "modelId": "dungeon-crawler-carl-v3",
+        "animationId": "uploaded:goalie-throw:0",
+        "timeSeconds": 1.5666666666666667
+      },
+      "source": {
+        "url": "https://grab3d.com/models/weapons/sling/",
+        "sha256": "b71ad36709993a7a5a5787ad6464366862a5ddff3edcf9d516da526a65ffcaa6",
+        "license": "CC0-1.0"
+      },
+      "runtimeAsset": {
+        "bytes": 557844,
+        "sha256": "ed1f11ef26083a0b998f6bbd71dbc6b47926215f476f026d0baf8e1bd753c861",
+        "triangles": 9512,
+        "textureResolution": 512
+      }
+    }
+  },
   crossbow:{
     id:'crossbow',name:'Crossbow',category:'weapon',slot:'weapon',
     rules:{baseName:'Crossbow',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
