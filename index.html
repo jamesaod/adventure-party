@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/adventure-party.css?v=R238C136">
+<link rel="stylesheet" href="css/adventure-party.css?v=R238C137">
 <script type="importmap">
 {
   "imports": {
@@ -20,7 +20,7 @@
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R238","candidateRevision":136,"builtAt":"2026-10-24T10:29:22.772Z"}
+{"architecture":"Multi-File Engine","release":"R238","candidateRevision":137,"builtAt":"2026-10-24T10:29:22.772Z"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -32,7 +32,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 136</div>
+        <div class="candidate-label">Candidate Rev 137</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
       </div>
     </header>
@@ -528,16 +528,12 @@
           <span class="combat-roster-current">Dungeon Crawler Carl</span>
           <button class="combat-roster-add" type="button" disabled>+ ADD — COMING SOON</button>
         </div>
-        <div class="combat-roster-row combat-mob-roster-row">
-          <span class="combat-setup-label">MOBs</span>
-          <span id="combatMobSetLabel" class="combat-roster-current">6-facing Kobold</span>
-          <div class="combat-mob-options" role="radiogroup" aria-label="MOB encounter">
-            <button class="combat-roster-add combat-roster-test selected" type="button" data-mob-encounter="studio-kobold" aria-pressed="true">6-facing Kobold</button>
-            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="kobolds" aria-pressed="false">Kobolds</button>
-            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="orcs" aria-pressed="false">20 Orcs</button>
-            <button class="combat-roster-add combat-roster-test" type="button" data-mob-encounter="large-test" aria-pressed="false">Red Dragon</button>
-          </div>
-        </div>
+        <section class="combat-mob-roster" aria-label="MOB encounter roster">
+          <h2>MOBs</h2>
+          <div id="combatMobRows" class="combat-mob-rows" aria-live="polite"></div>
+          <button id="addCombatMobButton" class="combat-roster-add combat-roster-test" type="button">+ Add MOB</button>
+          <p class="small" id="combatMobRosterHint">No MOBs selected. Add as many friendly or hostile groups as you need.</p>
+        </section>
       </section>
 
       <div class="combat-condition-actions">
@@ -767,7 +763,7 @@
 </section>
 
 <script src="js/priest-spells.js?v=R238C135"></script>
-  <script src="js/adventure-party.js?v=R238C136"></script>
+  <script src="js/adventure-party.js?v=R238C137"></script>
 <script src="js/los-wall-boundary-fix.js?v=R238"></script>
 <script src="js/obscuring-volume-los.js?v=R238"></script>
 <script src="js/r218-presentation-audio.js?v=R238"></script>
