@@ -160,6 +160,112 @@ export const ITEM_CATALOG=freezeRecord({
       runtimeAsset:{bytes:1030700,sha256:'505c542372cee565a1a267476ec44d63b5ada0dd956d4b393c03c16fa847c6c8',triangles:4678,textureResolution:512}
     }
   },
+  "wooden-staff":{
+    id:"wooden-staff",
+    name:"Wooden Staff",
+    category:"weapon",
+    slot:"weapon",
+    rules:{
+      catalogWeaponId:"staff",
+      baseName:"Wooden Staff",
+      handsRequired:2,
+      damageType:"bludgeoning"
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:72,
+      status:"Provisional Studio length; scale and grip remain adjustable."
+    },
+    appearance:{
+      appearanceId:"wooden-staff",
+      studioId:"wooden-staff",
+      visualClass:"staff",
+      representation:"optimized-gltf-v1",
+      asset:"assets/models/weapons/staves/wooden-staff.glb",
+      attachment:"right-hand",
+      handsRequired:2,
+      poseProfileId:"two-handed-swing",
+      primaryAxis:[0,1,0],
+      grip:[0,0.42,0],
+      nativeScale:0.925,
+      defaultSizePercent:100,
+      position:[0.015,0.05,0.005],
+      rotationDegrees:[-90,0,0],
+      source:{"originalFilename":"wooden+staff+3d+model.zip","sourceSha256":"5dffd2110df27b986f185b3f0456d0c18b3e0ca032c3aedb66db6e9c6112c345"},
+      runtimeAsset:{"bytes":956992,"sha256":"511a254c763dd9c1569dd181f1c72fa1ba83ef3b92bfc2b4f46517e0f773e1ed","triangles":7664,"textureResolution":512},
+      secondaryGrip:[0,0.62,0]
+    }
+  },
+  "short-sword":{
+    id:"short-sword",
+    name:"Short Sword",
+    category:"weapon",
+    slot:"weapon",
+    rules:{
+      catalogWeaponId:"sword-short",
+      baseName:"Short Sword",
+      handsRequired:1,
+      damageType:"piercing"
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:30.3,
+      status:"Provisional Studio length; scale and grip remain adjustable."
+    },
+    appearance:{
+      appearanceId:"short-sword",
+      studioId:"short-sword",
+      visualClass:"sword",
+      representation:"optimized-gltf-v1",
+      asset:"assets/models/weapons/swords/short-sword.glb",
+      attachment:"right-hand",
+      handsRequired:1,
+      poseProfileId:"one-handed-thrust",
+      primaryAxis:[0,1,0],
+      grip:[0,0.14,0],
+      nativeScale:0.39,
+      defaultSizePercent:100,
+      position:[0.015,0.05,0.005],
+      rotationDegrees:[-90,0,0],
+      source:{"originalFilename":"splendid-short-sword.zip","sourceSha256":"6b39abf138611c8e78e3005b6d8fad2bc0e5fc3ec6a1d5e2cfda084e6d5308e1"},
+      runtimeAsset:{"bytes":751768,"sha256":"8daf3818f735fc701116fc46c64e6888accc6b0e4735cca9f837d693c5e8dfdd","triangles":500,"textureResolution":512}
+    }
+  },
+  "dagger":{
+    id:"dagger",
+    name:"Dagger",
+    category:"weapon",
+    slot:"weapon",
+    rules:{
+      catalogWeaponId:"dagger",
+      baseName:"Dagger",
+      handsRequired:1,
+      damageType:"piercing"
+    },
+    physical:{
+      authoredLengthInches:null,
+      calibratedLengthInches:15.9,
+      status:"Provisional Studio length; scale and grip remain adjustable."
+    },
+    appearance:{
+      appearanceId:"dagger",
+      studioId:"dagger",
+      visualClass:"dagger",
+      representation:"optimized-gltf-v1",
+      asset:"assets/models/weapons/daggers/medieval-dagger.glb",
+      attachment:"right-hand",
+      handsRequired:1,
+      poseProfileId:"one-handed-thrust",
+      primaryAxis:[0,1,0],
+      grip:[0,0.18,0],
+      nativeScale:0.205,
+      defaultSizePercent:100,
+      position:[0.015,0.05,0.005],
+      rotationDegrees:[-90,0,0],
+      source:{"originalFilename":"medieval_dagger_3d_model.zip","sourceSha256":"7a934c9eaee89b700a0349a69b71e8ef0e75f0587990df60a0bcb368fd3891ac"},
+      runtimeAsset:{"bytes":674844,"sha256":"973428b17f5d233a06383d3c94338d191ecd837924cdb2fb08dd780bf19ca1e4","triangles":960,"textureResolution":512}
+    }
+  },
   'chain-mail':{
     id:'chain-mail',
     name:'Chain Mail',

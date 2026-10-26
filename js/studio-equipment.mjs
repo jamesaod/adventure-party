@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C143';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C144';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -72,6 +72,19 @@ export const STUDIO_WEAPONS = Object.freeze([
     rotation:Object.freeze([...CROSSBOW_ITEM.appearance.rotationDegrees]),
     defaultSizePercent:CROSSBOW_ITEM.appearance.defaultSizePercent,
     calibratedLengthInches:CROSSBOW_ITEM.physical.calibratedLengthInches,presetRevision:1
+  }),
+  ...['wooden-staff','short-sword','dagger'].map(id => {
+    const item=itemCatalogEntry(id), appearance=item.appearance;
+    return Object.freeze({
+      id:appearance.studioId,label:item.name,visualClass:appearance.visualClass,
+      poseProfileId:appearance.poseProfileId,file:appearance.asset,
+      assetSha256:appearance.runtimeAsset.sha256,handsRequired:appearance.handsRequired,
+      grip:appearance.grip,primaryAxis:appearance.primaryAxis,
+      ...(appearance.secondaryGrip ? {secondaryGrip:appearance.secondaryGrip} : {}),
+      nativeScale:appearance.nativeScale,position:appearance.position,
+      rotation:appearance.rotationDegrees,defaultSizePercent:appearance.defaultSizePercent,
+      calibratedLengthInches:item.physical.calibratedLengthInches,presetRevision:1
+    });
   }),
   Object.freeze({
     id:BOW_ITEM.appearance.studioId,label:BOW_ITEM.name,visualClass:'bow',

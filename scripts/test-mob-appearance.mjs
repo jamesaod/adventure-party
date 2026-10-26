@@ -79,3 +79,12 @@ assert.equal(crossbowRecipe.equipment.poseProfileId,'direct-fire');
 assert.equal(crossbowRecipe.equipment.handsRequired,2);
 assert.match(crossbowRecipe.equipment.assetSha256,/^[a-f0-9]{64}$/);
 assert.notEqual(appearanceCacheKey(crossbowRecipe),appearanceCacheKey(bowRecipe));
+
+for (const [id,profile,hands] of [['wooden-staff','two-handed-swing',2],['short-sword','one-handed-thrust',1],['dagger','one-handed-thrust',1]]) {
+ const recipe=appearanceRecipeForMob({...carl,inventory:[{name:id,slot:'weapon',equipped:true,appearanceId:id}]},{modelId:'dungeon-crawler-carl-v3'});
+ assert.equal(recipe.equipment.attachmentBone,'mixamorig:RightHand');
+ assert.equal(recipe.equipment.poseProfileId,profile);assert.equal(recipe.equipment.handsRequired,hands);
+ assert.match(recipe.equipment.assetSha256,/^[a-f0-9]{64}$/);
+ const stale=structuredClone(recipe);delete stale.equipment.assetSha256;
+ assert.notEqual(appearanceCacheKey(recipe),appearanceCacheKey(stale));
+}

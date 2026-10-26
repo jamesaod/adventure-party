@@ -246,3 +246,7 @@ Choose **Equipment -> Weapon -> Recurve Bow** to equip the cleaned 1.24 MB, 512p
 ## Candidate Rev 143 - crossbow equipment
 
 Choose **Equipment -> Weapon -> Crossbow** to use the optimized 4,678-triangle, 512px asset. Studio selects **Direct Fire Weapons (Crossbow)** and the uploaded **Rifle Aim To Down** clip. The right-hand mount keeps size, position and rotation adjustable; the support hand retains the authored animation. Captures and saved workspaces use the existing equipment flow. See [Crossbow integration](CROSSBOW_INTEGRATION.md) for exact reproduction, mounting defaults, source-color checks and limitations.
+
+## Candidate Rev 144: staff, short sword and dagger
+
+Equipment now includes **Wooden Staff**, **Short Sword** and **Dagger**, all below 10,000 triangles with three embedded 512px PBR textures each. The staff selects 2H Swing / Great Sword Idle and clears shields; the one-handed blades select 1H Stab / Stabbing and permit shields. All uploaded clips remain available. Existing size, grip, orientation, off-hand offsets, captures and workspace persistence remain in use. [Batch reproduction and validation](EQUIPMENT_BATCH_144.md) records precise hashes, importer lessons and dagger attribution.
