@@ -35,3 +35,11 @@ This file is the first stop for any new ChatGPT / development session working on
 - When a GitHub action fails, retry once before embarking on extensive troubleshooting; research established fixes before inventing new systems.
 - Do not assume a file was pushed, PR merged, or candidate published without checking.
 - Keep new handoffs and reproducible integration lessons in the repository so the next session does not have to reverse-engineer prior work.
+
+
+## Recovered historical binary upload evidence (2026-10-26 research)
+- **2026-10-23, Candidate Rev 109:** Previous development chat reports three native GLB Git blobs uploaded, integrity verified, committed, and published. See `docs/REV109_NEW_MODELS_PENDING_ASSETS.md` and `data/new-tripo-qa-assets.json`; original model files are under `assets/models/dungeon-crawler-carl/new-carl/` and `assets/models/orcs/new-orc/`. The documented method was **encode binary data -> connector create_blob -> repository tree/commit**; the recovered chat does **not** document precisely how the local binary bytes entered the connector-call runtime.
+- **2026-10-22, Candidate Rev 58 / PR #139:** Earlier chat reports reconstruction of an exact GLB via approximately 108 KB transfer, checksum verification, and removal of temporary recovery files.
+- **2026-10-22, Candidate Rev 71:** Earlier chat reports successful transfer of an optimized approximately 17.9 KB wooden-shield GLB.
+- **Older alternative:** `pixel-upload-worker.js` and `R158_SETUP.md` document a Cloudflare Worker gateway that accepts Base64 PNG + manifest from Pixel Studio and uses GitHub Contents API to upload to `pixel-inbox`. This is verified for PNG/JSON only, **not** a confirmed GLB upload path.
+- On a new session, **investigate the existing Rev 109 native-blob and Rev 58 temporary-transfer mechanism first**, before declaring binary repo uploads unsupported. Do not confuse evidence that transfers were successful with proof the local-to-connector bridge is currently available.
