@@ -10,10 +10,10 @@ import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C141';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C142';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
-import { studioWeapon, weaponAssetUrl, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C141';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C97';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C142';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C142';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -262,7 +262,7 @@ export async function generateCombatSpriteSet(recipe){
   if(recipe.equipment){
     const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
     const preset=studioWeapon(id);
-    const hand=findRightHand(model);
+    const hand=findWeaponHand(model,preset);
     if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
     const weaponUrl=weaponAssetUrl({file:recipe.equipment.asset,
       assetSha256:recipe.equipment.asset===preset.file ? preset.assetSha256 : null},new URL('../',import.meta.url));

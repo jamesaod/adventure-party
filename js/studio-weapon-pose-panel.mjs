@@ -11,6 +11,7 @@ const APPEARANCE_BY_STUDIO_WEAPON = Object.freeze({
   'medieval-sword': Object.freeze({
     appearanceId: 'flaming-sword-5', itemName: 'Flaming Sword +5', visualClass: 'sword', poseProfileId: 'one-handed-swing'
   }),
+  'recurve-bow': Object.freeze({appearanceId:'recurve-bow',itemName:'Recurve Bow',visualClass:'bow',poseProfileId:'bow'}),
   spear: Object.freeze({
     appearanceId: 'spear', itemName: 'Spear', visualClass: 'spear', poseProfileId: 'two-handed-thrust'
   }),
@@ -97,6 +98,7 @@ function init() {
       if(!profileIdField.value.trim()||profileIdField.value.trim()==='one-handed-swing')profileIdField.value=equipmentDescriptor.poseProfileId;
       if(equipmentDescriptor.poseProfileId==='two-handed-swing'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Two-handed swinging weapon';
       if(equipmentDescriptor.poseProfileId==='two-handed-thrust'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Two-Handed Stab';
+      if(equipmentDescriptor.poseProfileId==='bow'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Bow';
       const rightHand = snap.equipment?.settings?.rightHand;
       for (const pose of POSE_NAMES) {
         if (saved.get(pose)?.studioEquipment?.rightHand !== rightHand) {

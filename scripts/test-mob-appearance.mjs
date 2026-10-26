@@ -67,3 +67,9 @@ assert.match(spearRecipe.equipment.assetSha256,/^[a-f0-9]{64}$/);
 const oldSpearRecipe=structuredClone(spearRecipe);
 delete oldSpearRecipe.equipment.assetSha256;
 assert.notEqual(appearanceCacheKey(spearRecipe),appearanceCacheKey(oldSpearRecipe),'Corrected spear texture invalidates cached combat sprites');
+
+const bowRecipe=appearanceRecipeForMob({...carl,inventory:[{name:'Recurve Bow',slot:'weapon',equipped:true,appearanceId:'recurve-bow'}]}, {modelId:'dungeon-crawler-carl-v3'});
+assert.equal(bowRecipe.equipment.attachmentBone,'mixamorig:LeftHand');
+assert.equal(bowRecipe.equipment.poseProfileId,'bow');
+assert.equal(bowRecipe.equipment.handsRequired,2);
+assert.match(bowRecipe.equipment.assetSha256,/^[a-f0-9]{64}$/);
