@@ -540,20 +540,19 @@ function restoreBonePose(pose) {
 }
 
 // An independent left-hand instance uses the same loader, socket and lifecycle.
-// Rev 151: the assets have different handle axes. Keep the approved sword
-// mount, align melee handles to hand-local +X, and calibrate the staff/sling
-// vertically against Carl's Standing Idle frame 0. Never rotate source meshes.
+// Rev 152: user-approved off-hand presets. The explicit preset list also
+// defines eligible off-hand weapons; staff and sling remain primary-only.
 const OFF_HAND_POSITION = Object.freeze([0.005, 0.065, -0.005]);
 export const OFF_HAND_GRIPS = Object.freeze({
   'medieval-sword': Object.freeze({rotation:Object.freeze([163,-180,0])}),
-  'battle-axe': Object.freeze({rotation:Object.freeze([-17,0,-51])}),
-  'short-sword': Object.freeze({rotation:Object.freeze([73,0,-90])}),
-  'dagger': Object.freeze({rotation:Object.freeze([73,0,-90])}),
-  'wizard-staff-grip': Object.freeze({rotation:Object.freeze([-23,-1,-157]),position:Object.freeze([-0.015,0.02,0.015])}),
-  'sling': Object.freeze({rotation:Object.freeze([-23,-1,-157])})
+  'battle-axe': Object.freeze({rotation:Object.freeze([154,6,-51]),position:Object.freeze([-0.005,0.075,-0.005])}),
+  'short-sword': Object.freeze({rotation:Object.freeze([-22,0,-90])}),
+  'dagger': Object.freeze({rotation:Object.freeze([73,0,-90])})
 });
+export const STUDIO_OFF_HAND_WEAPONS = Object.freeze(STUDIO_WEAPONS.filter(weapon=>
+  weapon.handsRequired!==2 && Object.hasOwn(OFF_HAND_GRIPS,weapon.id)));
 export function normalizeOffHandEquipment(value = {}) {
-  const source=studioWeapon(value?.rightHand)?.handsRequired === 2 ? {rightHand:'none'} : value;
+  const source=STUDIO_OFF_HAND_WEAPONS.some(weapon=>weapon.id===value?.rightHand) ? value : {rightHand:'none'};
   const settings=normalizeEquipment(source);
   const preset=OFF_HAND_GRIPS[settings.rightHand] || OFF_HAND_GRIPS['medieval-sword'];
   return {

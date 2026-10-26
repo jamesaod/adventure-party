@@ -311,3 +311,16 @@ For melee grips, compose `Q_leftSword * inverse(Q_rightSword) * Q_rightWeapon`, 
 QA reproduction: choose no primary weapon, Standing Idle at 0, then select each Off Hand entry and inspect the hand and all six previews. Scrub Stabbing and Sword And Shield Slash to check that the mount follows the wrist; orbit to check the palm from another side. Reset off-hand grip must restore the selected weapon's row above. Change rotation/scale, reload, and confirm custom settings survive. Selecting an off-hand item still excludes shields and two-handed primaries. `test-studio-weapon-sets.mjs` checks all six attachment pivots across 70 independent reference poses from all 14 uploaded clips and six facings, plus melee-axis and upright/hanging reference alignment, persistence and exclusions.
 
 Explicit saved adjustments and historical captures are preserved. For an existing saved mount, use **Reset off-hand grip** or reselect the weapon to apply its corrected default, then recapture affected poses. This avoids silently changing the model pose behind previously exported sprite pixels.
+
+## Candidate Rev 152 — User QA adjustments and off-hand choices
+
+User-provided screenshots supersede the Rev 151 axe/short-sword calibration. Both defaults remain 100% size:
+
+| Off-hand weapon | XYZ position | XYZ rotation (degrees) |
+| --- | --- | --- |
+| Battle Axe | [-0.005, 0.075, -0.005] | [154, 6, -51] |
+| Short Sword | [0.005, 0.065, -0.005] | [-22, 0, -90] |
+
+The Off Hand selector now offers **None, Medieval Sword, Battle Axe, Short Sword and Dagger**. `STUDIO_OFF_HAND_WEAPONS` derives eligibility from the explicit `OFF_HAND_GRIPS` presets and the one-handed requirement. Both the UI and shared normalizer use that list, so Wizard Staff Grip and Sling cannot reappear via a saved off-hand assignment; such assignments resolve to None. Both items remain available in the primary Weapon selector with their existing assets and action profiles. Stored Unit Package and captured-pose records are not deleted.
+
+Selecting or resetting an eligible off-hand weapon applies its current preset. Explicit saved custom grips remain intact; use **Reset off-hand grip** to adopt the revised defaults, then recapture affected poses. Regression checks cover the four eligible choices, excluded saved mounts, unchanged primary availability, user-specified transforms, and palm attachment through all 14 uploaded animation references.

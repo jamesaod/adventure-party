@@ -12,7 +12,7 @@ import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mj
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C146';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C151';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C152';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C146';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createStudioEquipment,normalizeEquipment,normalizeOffHandEquipment,studioWeapon,STUDIO_WEAPONS} from '../js/studio-equipment.mjs';
+import {createStudioEquipment,normalizeEquipment,normalizeOffHandEquipment,studioWeapon,STUDIO_OFF_HAND_WEAPONS} from '../js/studio-equipment.mjs';
 import {normalizeShield} from '../js/studio-shield.mjs';
 import {buildStudioUnitExport} from '../js/studio-unit-export.mjs';
 import {validateUnitPackage} from '../js/unit-package.mjs';
@@ -27,27 +27,30 @@ assert.ok(left.children[0].getWorldPosition(new THREE.Vector3()).distanceTo(left
 assert.equal(off.applyConstraints().active,false);
 await off.setModel(rig,JSON.parse(JSON.stringify(off.snapshot().settings)));
 assert.deepEqual(off.snapshot().settings.rotation,[30,45,-60]);
-for(const id of ['spear','recurve-bow','crossbow','wooden-staff','medieval-two-handed-sword']){
+for(const id of ['spear','recurve-bow','crossbow','wooden-staff','medieval-two-handed-sword','wizard-staff-grip','sling']){
   assert.equal(normalizeOffHandEquipment({rightHand:id}).rightHand,'none');
 }
 await off.select({rightHand:'spear'});assert.equal(left.children.length,0);
-// Independent source-pose references exercise all six mounts as the left hand
+// Independent source-pose references exercise eligible mounts as the left hand
 // changes orientation. Validate the actual shared attachment transform, not
 // just the normalizer's returned Euler values.
 const handReference=JSON.parse(fs.readFileSync(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
-const idleHand=handReference.clips.find(clip=>clip.id==='standing-idle').frames[0].worldQuaternions.LeftHand;
-const offWeapons=STUDIO_WEAPONS.filter(weapon=>weapon.handsRequired!==2);
+const offWeapons=STUDIO_OFF_HAND_WEAPONS;
+assert.deepEqual(offWeapons.map(weapon=>weapon.id),['medieval-sword','battle-axe','short-sword','dagger']);
+for(const id of ['wizard-staff-grip','sling']){
+  assert.equal(normalizeEquipment({rightHand:id}).rightHand,id,'Removed off-hand weapons remain available in the primary hand');
+  await off.select({rightHand:id});assert.equal(left.children.length,0,'Saved/selected excluded off-hand gear cannot attach');
+}
+assert.deepEqual(normalizeOffHandEquipment({rightHand:'battle-axe'}).position,[-.005,.075,-.005]);
+assert.deepEqual(normalizeOffHandEquipment({rightHand:'battle-axe'}).rotation,[154,6,-51]);
+assert.deepEqual(normalizeOffHandEquipment({rightHand:'short-sword'}).rotation,[-22,0,-90]);
 for(const weapon of offWeapons){
   await off.select({rightHand:weapon.id});
   const settings=off.snapshot().settings;
   const socket=left.children[0],asset=socket.children[0].children[0];
   const localAxis=new THREE.Vector3(...weapon.primaryAxis).normalize().applyQuaternion(socket.quaternion);
-  if(['medieval-sword','battle-axe','short-sword','dagger'].includes(weapon.id)){
-    assert.ok(localAxis.angleTo(new THREE.Vector3(1,0,0))<Math.PI/180,`${weapon.id}: handle must align across the approved left palm`);
-  }else{
-    const direction=weapon.id==='sling' ? -1 : 1;
-    assert.ok(localAxis.applyQuaternion(new THREE.Quaternion(...idleHand).normalize()).angleTo(new THREE.Vector3(0,direction,0))<Math.PI/180,`${weapon.id}: upright/hanging in Standing Idle`);
-  }
+  const maxAngle=weapon.id==='battle-axe' ? 7 : 1; // User QA tilts the axe six degrees.
+  assert.ok(localAxis.angleTo(new THREE.Vector3(1,0,0))<maxAngle*Math.PI/180,`${weapon.id}: handle must stay aligned across the approved left palm`);
   for(const clip of handReference.clips)for(const frame of clip.frames){
     left.quaternion.fromArray(frame.worldQuaternions.LeftHand).normalize();
     for(let facing=0;facing<6;facing++){
