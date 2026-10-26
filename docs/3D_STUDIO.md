@@ -292,3 +292,22 @@ Reproduction: capture Ready for Dual Weapons with a primary sword and off-hand d
 ## Candidate Rev 150 — Off-hand placement defaults
 
 The user-calibrated off-hand mount uses size **100%**, XYZ position **[0.005, 0.065, -0.005]** and XYZ rotation **[163, -180, 0] degrees**. The shared off-hand normalizer applies these defaults when selecting a weapon or pressing **Reset off-hand grip**. Explicit saved size, position and rotation remain adjustable and survive reload; captured poses and primary-hand defaults are unchanged. For an existing saved mount, Reset off-hand grip applies the new baseline through the normal capture invalidation and persistence path.
+
+## Candidate Rev 151 — Off-hand weapon alignment QA
+
+Rev 150 reused the Medieval Sword Euler rotation for every asset, even though their handle axes differ. The short sword/dagger use local +Y; the sword uses -X; the axe shaft is diagonal [4,5,0]. Applying one Euler tuple pointed the blades along the forearm and skewed the axe. Keep weapon-specific left-hand presets in `OFF_HAND_GRIPS` in the shared equipment module. Do not change asset geometry, right-hand presets, rigs or animations to correct a mount.
+
+| Off-hand weapon | XYZ rotation (degrees) | XYZ attachment position | Size |
+| --- | --- | --- | --- |
+| Medieval Sword | [163, -180, 0] (user-approved, unchanged) | [0.005, 0.065, -0.005] | 100% |
+| Battle Axe | [-17, 0, -51] | [0.005, 0.065, -0.005] | 100% |
+| Short Sword | [73, 0, -90] | [0.005, 0.065, -0.005] | 100% |
+| Dagger | [73, 0, -90] | [0.005, 0.065, -0.005] | 100% |
+| Wizard Staff Grip | [-23, -1, -157] | [-0.015, 0.02, 0.015] | 100% |
+| Sling | [-23, -1, -157] | [0.005, 0.065, -0.005] | 100% |
+
+For melee grips, compose `Q_leftSword * inverse(Q_rightSword) * Q_rightWeapon`, then store the equivalent XYZ angles. This preserves each asset's authored shaft/edge orientation while matching the approved sword's hand-local +X direction. The source axes after transformation agree within one degree. Staff and sling are separately calibrated to world +Y/-Y in Carl **Standing Idle, 0 seconds**, using the independent uploaded-animation reference's LeftHand quaternion. The staff offset slides its shaft through the palm slightly to keep the lower tip above the ground in that reference pose. Their upright/hanging orientation is pose-specific: these remain rigid props following the animated hand, without gravity, finger posing or ground collision.
+
+QA reproduction: choose no primary weapon, Standing Idle at 0, then select each Off Hand entry and inspect the hand and all six previews. Scrub Stabbing and Sword And Shield Slash to check that the mount follows the wrist; orbit to check the palm from another side. Reset off-hand grip must restore the selected weapon's row above. Change rotation/scale, reload, and confirm custom settings survive. Selecting an off-hand item still excludes shields and two-handed primaries. `test-studio-weapon-sets.mjs` checks all six attachment pivots across 70 independent reference poses from all 14 uploaded clips and six facings, plus melee-axis and upright/hanging reference alignment, persistence and exclusions.
+
+Explicit saved adjustments and historical captures are preserved. For an existing saved mount, use **Reset off-hand grip** or reselect the weapon to apply its corrected default, then recapture affected poses. This avoids silently changing the model pose behind previously exported sprite pixels.
