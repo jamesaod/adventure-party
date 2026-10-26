@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adventure Party — MOB Catalog</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/adventure-party.css?v=R238">
+<style>
+body{background:#080b17;color:#e5d9b2;font-family:"EB Garamond",Georgia,serif;margin:0}
+.mob-wrap{max-width:1050px;margin:30px auto;padding:20px}
+.mob-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mob-header h1{margin:0;color:#f0cd62;font-size:32px}
+.mob-return{border:1px solid #a98e47;background:#1b2137;color:#f4d887;padding:9px 18px;text-decoration:none}
+.mob-description{color:#bdb7ac}
+.mob-controls{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
+.mob-controls input,.mob-controls select{background:#0c1020;border:1px solid #a78d50;color:#f2db99;padding:10px;font:inherit;font-size:18px}
+.mob-controls input{flex:1;min-width:190px}
+.mob-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.mob-card{background:#11172a;border:1px solid #817449;padding:16px}
+.mob-card h2{color:#f0cd62;font-size:22px;margin:0 0 7px}
+.mob-card dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:16px;margin:12px 0 0}
+.mob-card dt{color:#aaaabc}.mob-card dd{margin:0;overflow-wrap:anywhere}
+.mob-card small{color:#82cbb0}
+.mob-notice{border-top:1px solid #5b536b;margin-top:28px;padding-top:15px;color:#b6b2ae}
+</style></head><body>
+<main class="mob-wrap">
+<div class="mob-header"><h1>MOB Catalog</h1><a class="mob-return" href="./index.html">Return to Title</a></div>
+<p class="mob-description">Current MOB types and model registrations. The Unit Package catalog/editor is still being integrated; these records are read-only.</p>
+<div class="mob-controls"><input id="mobSearch" type="search" placeholder="Search MOBs and models" aria-label="Search MOBs"><select id="mobKind" aria-label="Filter unit kind"><option value="all">All MOBs</option><option value="player">Player units</option><option value="monster">Monsters</option></select></div>
+<div id="mobList" class="mob-list" aria-live="polite">Loading current MOBs…</div>
+<p class="mob-notice">MOB definitions currently originate in the combat-engine factories. Asset entries shown here are references to registered models, not automatically generated character sheets.</p>
+</main>
+<script type="module">
+import {SPRITE_MOBS} from './js/sprite-layouts.mjs?v=R238C93';
+const list=document.getElementById('mobList'), search=document.getElementById('mobSearch'), kind=document.getElementById('mobKind');
+let models=[];
+try{
+ const response=await fetch('./data/studio-models.json',{cache:'no-store'});
+ if(response.ok)models=(await response.json()).models||[];
+}catch(error){console.warn('Model catalog unavailable:',error);}
+function render(){
+ const query=search.value.trim().toLowerCase();
+ const mobs=SPRITE_MOBS.filter(mob=>(kind.value==='all'||mob.targetKind===kind.value) &&
+  [mob.id,mob.label,...models.filter(model=>model.mobType===mob.id).map(model=>model.label)].join(' ').toLowerCase().includes(query));
+ list.replaceChildren();
+ for(const mob of mobs){
+  const card=document.createElement('article');card.className='mob-card';
+  const title=document.createElement('h2');title.textContent=mob.label;
+  const subtitle=document.createElement('small');subtitle.textContent=mob.targetKind==='player'?'Player-controlled type':'Monster type';
+  const data=document.createElement('dl');
+  const fields=[['MOB ID',mob.id],['Default footprint',mob.defaultLayout],['Registered models',String(models.filter(model=>model.mobType===mob.id).length)]];
+  for(const [label,value] of fields){const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;data.append(dt,dd);}
+  const matched=models.filter(model=>model.mobType===mob.id);
+  if(matched.length){
+   const names=document.createElement('p');names.textContent=matched.map(m=>m.label).join(' · ');names.style.color='#cfc7aa';card.append(title,subtitle,data,names);
+  }else card.append(title,subtitle,data);
+  list.append(card);
+ }
+ if(!mobs.length)list.textContent='No MOBs match this filter.';
+}
+search.addEventListener('input',render);kind.addEventListener('change',render);render();
+</script></body></html>
