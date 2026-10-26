@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C139';
+import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C113';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
 import { analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 import {
   prepareStudioAnimations, sliceAnimationClip, freezeAnimationClip, animationOptionLabel, animationSourceId, restoreAnimationIndex
@@ -156,6 +156,7 @@ function getWorkspaceSettings() {
   return {
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
     libraryModelId: state.libraryModelId,
+    animationRecipe: state.sourceClips.find(clip => clip.userData?.animationRecipe)?.userData.animationRecipe || null,
     demoSourceUpAxis: state.demoSourceUpAxis,
     layoutId: state.layoutId, resolutionPercent: state.resolutionPercent,
     layout: createSpriteLayoutMetadata(state.layoutId, state.resolutionPercent),
@@ -2210,6 +2211,11 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
         relativePath: source.studioRelativePath || source.webkitRelativePath || '', blob: source
       }))
     });
+    if (restoreSettings && effectiveModelDefaults?.animationLibrary === 'uploaded-fbx' &&
+        restoreSettings.animationRecipe !== CARL_ANIMATION_RECIPE) {
+      poseCapture?.invalidateCaptures('Carl animation recipe corrected');
+      poseCapture?.saveWorkspace();
+    }
     return true;
   } catch (error) {
     if (loaded?.model !== state.model) disposeModel(loaded?.model);

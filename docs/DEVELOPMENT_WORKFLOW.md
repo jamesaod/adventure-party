@@ -80,3 +80,5 @@ The existing R-number validator remains useful for formal release branches named
 Use the canonical item catalog and shared Studio equipment registry; preserve source provenance, runtime checksum, grip, axis, scale and attachment offsets. [Spear integration](SPEAR_INTEGRATION.md) records the Rev 138 FBX reduction / 512px PBR / GLB process and verified local-file-to-GitHub-connector binary transfer. On Windows clone with `core.autocrlf=false` to preserve ASCII FBX and imported-package hashes. Validate the exact published asset after the candidate publisher completes.
 
 Studio model offerings are controlled by `studioModelIds` in the model catalog; keep historical source records needed by combat separate from the selector. The Rev 139 section of [3D Studio](3D_STUDIO.md) documents Carl Ver 3 and its uploaded-FBX-only animation policy.
+
+For Carl animation imports, follow the [recovered Carl recipe](CARL_ANIMATION_RECIPE.md). Do not use the shared retargeter's default as a rig compatibility decision. The restored offline FBX parser and independent pose fixtures make the original method reproducible and guard against the Rev 139 distortion.

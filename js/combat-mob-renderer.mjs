@@ -1,6 +1,6 @@
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js';
-import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C139';
-import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C113';
+import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C140';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
 import { prepareStudioAnimations } from './studio-animations.mjs?v=R238C82';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';

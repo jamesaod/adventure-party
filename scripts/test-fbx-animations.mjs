@@ -171,6 +171,29 @@ Connections:  {
     const targetModel = new THREE.Group();
     for(const index of json.scenes[json.scene || 0].nodes)targetModel.add(nodes[index]);
     targetModel.updateWorldMatrix(true,true);
+    // Exercise actual inverse binds and skinning, not a bones-only substitute.
+    const binary = bytes.subarray(28 + bytes.readUInt32LE(12));
+    const accessor = index => {
+      const a=json.accessors[index],view=json.bufferViews[a.bufferView];
+      const count={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT4:16}[a.type];
+      const readers={5126:['readFloatLE',4],5123:['readUInt16LE',2],5121:['readUInt8',1]};
+      const [read,size]=readers[a.componentType],stride=view.byteStride || count*size;
+      const offset=(view.byteOffset||0)+(a.byteOffset||0);
+      return Array.from({length:a.count*count},(_,i)=>binary[read](offset+Math.floor(i/count)*stride+(i%count)*size));
+    };
+    const skin=json.skins[0], inverse=accessor(skin.inverseBindMatrices);
+    const skeleton=new THREE.Skeleton(skin.joints.map(index=>nodes[index]),
+      skin.joints.map((_,i)=>new THREE.Matrix4().fromArray(inverse,i*16)));
+    const meshIndex=json.nodes.findIndex(node=>node.skin===0);
+    const attributes=json.meshes[json.nodes[meshIndex].mesh].primitives[0].attributes;
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(accessor(attributes.POSITION),3));
+    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(accessor(attributes.JOINTS_0),4));
+    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(accessor(attributes.WEIGHTS_0),4));
+    const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshBasicMaterial());
+    nodes[meshIndex].add(mesh); mesh.bind(skeleton,nodes[meshIndex].matrixWorld);
+    const reference=JSON.parse(await fs.readFile(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url),'utf8'));
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
     assert.equal(catalog.animations.length,13);
@@ -199,7 +222,41 @@ Connections:  {
       assert.ok(clips.every(clip=>clip.tracks.every(track=>Array.from(track.values).every(Number.isFinite))));
       assert.ok(clips.some(clip=>clip.name===carl.initialAnimation));
       assert.equal(clips.find(clip=>clip.name==='Bayonet Stab').userData.actionProfiles[0],'two-handed-thrust');
-      console.log('PASS Carl Ver 3: only offered model, same source rig, all 13 uploaded FBX motions retarget with finite tracks');
+      const mixer=new THREE.AnimationMixer(targetModel);
+      let maxAngularError=0, maxHipError=0;
+      for(const [index,clip] of clips.entries()){
+        const expected=reference.clips[index];
+        assert.equal(expected.id,catalog.animations[index].id);
+        assert.equal(expected.sourceSha256,catalog.animations[index].sha256);
+        assert.equal(clip.userData.animationRecipe,'carl-v2-mixamo-world-v1');
+        assert.equal(clip.userData.humanoidImport.retargetMode,'semantic-world-bind-delta');
+        assert.equal(clip.userData.humanoidImport.hipYTransferred,true);
+        assert.ok(Math.abs(clip.duration-expected.duration)<0.0001);
+        const action=mixer.clipAction(clip).play(); action.paused=true;
+        for(const frame of expected.frames){
+          action.time=frame.timeSeconds; mixer.update(0); targetModel.updateWorldMatrix(true,true);
+          for(const [name,q] of Object.entries(frame.worldQuaternions)){
+            const bone=nodes.find(node=>node.name==='mixamorig:'+name);
+            const error=THREE.MathUtils.radToDeg(bone.getWorldQuaternion(new THREE.Quaternion()).angleTo(new THREE.Quaternion(...q).normalize()));
+            maxAngularError=Math.max(maxAngularError,error);
+            // Independent Euler evaluator versus pinned FBX quaternion sampling.
+            assert.ok(error<1,`${clip.name} ${frame.fraction} ${name}: ${error} degrees from recovered offline recipe`);
+          }
+          const hips=nodes.find(node=>node.name==='mixamorig:Hips');
+          const hipError=hips.getWorldPosition(new THREE.Vector3()).distanceTo(new THREE.Vector3(...frame.hipsWorldPosition));
+          maxHipError=Math.max(maxHipError,hipError);
+          assert.ok(hipError<0.0001,`${clip.name}: scaled hips motion matches the offline recipe`);
+          const bounds=new THREE.Box3(),position=new THREE.Vector3();
+          for(let vertex=0;vertex<geometry.attributes.position.count;vertex++){
+            position.fromBufferAttribute(geometry.attributes.position,vertex);
+            mesh.applyBoneTransform(vertex,position);
+            assert.ok(position.toArray().every(Number.isFinite));bounds.expandByPoint(position);
+          }
+          assert.ok(bounds.getSize(new THREE.Vector3()).length()<2,`${clip.name}: actual skinned body remains bounded`);
+        }
+        mixer.stopAllAction();
+      }
+      console.log(`PASS Carl recipe: 65 real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
     } finally {THREE.TextureLoader.prototype.load=loadTexture;}
   }
   console.log('FBX animations: distinct and duplicate-named stacks, shared curves and connection order, authored ranges, named-take fallback, empty layers/stacks, layered warnings, and returned-root metadata passed.');

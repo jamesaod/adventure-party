@@ -1,4 +1,7 @@
-/** Repository FBX uploads use the same pinned loader and humanoid retargeter as device imports. */
+/** Carl uploads use the recovered Rev 58/108 world-bind recipe, not the Orc default.
+ * See docs/CARL_ANIMATION_RECIPE.md. Keep this shared by Studio and combat.
+ */
+export const CARL_ANIMATION_RECIPE = 'carl-v2-mixamo-world-v1';
 export async function loadUploadedFbxAnimations({
   appRoot, targetModel, FBXLoader, THREE, prepareStudioAnimations, retargetHumanoidClip,
   disposeModel, fetchAsset = fetch, onStatus = () => {}
@@ -28,10 +31,12 @@ export async function loadUploadedFbxAnimations({
       if (!clips.length) throw new Error(`${entry.label} contains no usable animation.`);
       for (const [index, clip] of clips.entries()) {
         const label = clips.length === 1 ? entry.label : `${entry.label} ${index + 1}`;
-        const retargeted = retargetHumanoidClip(THREE, clip, source, targetModel, label);
+        const retargeted = retargetHumanoidClip(THREE, clip, source, targetModel, label, {
+          mode:'world-bind-delta', hipTranslation:'scaled-world-y'
+        });
         retargeted.userData = {...retargeted.userData,
           studioAnimationId:`uploaded:${entry.id}:${index}`,
-          repositoryAnimationSource:entry.file, actionProfiles:[...(entry.actionProfiles || [])]};
+          animationRecipe:CARL_ANIMATION_RECIPE, repositoryAnimationSource:entry.file, actionProfiles:[...(entry.actionProfiles || [])]};
         result.push(retargeted);
       }
     } finally { disposeModel(source); }

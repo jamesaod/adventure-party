@@ -129,13 +129,13 @@ function directionalChildPairs(source, target) {
   return pairs;
 }
 
-function sampleTimes(clip, mappedRoles, resolveRole = semanticRoleForBoneName) {
+function sampleTimes(clip, mappedRoles, resolveRole = semanticRoleForBoneName, includePosition = false) {
   const values = new Set([0, Math.max(0, clip.duration || 0)]);
   for (const track of clip.tracks || []) {
-    const match = String(track.name || '').match(/^(.*)\.(quaternion)$/);
+    const match = String(track.name || '').match(includePosition ? /^(.*)\.(quaternion|position)$/ : /^(.*)\.(quaternion)$/);
     if (!match) continue;
     const role = resolveRole(match[1]);
-    if (!role || !mappedRoles.has(role)) continue;
+    if (!role || !mappedRoles.has(role) || (match[2] === 'position' && role !== 'hips')) continue;
     for (const time of track.times || []) if (Number.isFinite(time)) values.add(Number(time));
   }
   return [...values].sort((a,b)=>a-b);
@@ -196,7 +196,9 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   // Resolve both formats so the saved Carl GLB is a valid test donor.
   const rolesByUUID = new Map([...source].map(([role, bone]) => [bone.uuid, role]));
   const resolveRole = name => rolesByUUID.get(name) || semanticRoleForBoneName(name);
-  const times = sampleTimes(clip, mappedRoles, resolveRole);
+  const worldHipMotion = options.hipTranslation === 'scaled-world-y';
+  if (options.hipTranslation && !worldHipMotion) throw new Error('Unknown hip translation policy.');
+  const times = sampleTimes(clip, mappedRoles, resolveRole, worldHipMotion);
   const valuesByRole = new Map([...mappedRoles].map(role=>[role,[]]));
   const directionPairs = mode === 'anatomical-aim' ? directionalChildPairs(source, target) : new Map();
   if (mode === 'anatomical-aim' && directionPairs.size < 12) {
@@ -204,18 +206,27 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   }
   const sourceHips = source.get('hips');
   const targetHips = target.get('hips')?.bone;
-  const hipsTranslation = mode === 'anatomical-aim' ? (clip.tracks || []).find(track => {
+  const hipsTranslation = (mode === 'anatomical-aim' || worldHipMotion) ? (clip.tracks || []).find(track => {
     const match = String(track.name || '').match(/^(.*)\.position$/);
     return match && resolveRole(match[1]) === 'hips';
   }) : null;
-  if (mode === 'anatomical-aim' && (!sourceHips || !targetHips || !hipsTranslation)) {
-    throw new Error('Anatomical QA requires a source hips position track and mapped target hips.');
+  if ((mode === 'anatomical-aim' || worldHipMotion) && (!sourceHips || !targetHips || !hipsTranslation)) {
+    throw new Error('Hip motion transfer requires a source hips position track and mapped target hips.');
   }
   const sourceHipRestY = sourceHips?.position.y ?? 0;
   const targetHipRestY = targetHips?.position.y ?? 0;
-  const hipHeightScale = sourceHips && targetHips && Math.abs(sourceHipRestY) > 1e-4
+  const sourceHipBindWorld = sourceHips?.getWorldPosition(new THREE.Vector3());
+  const targetHipBindWorld = targetHips?.getWorldPosition(new THREE.Vector3());
+  const targetHipParentInverse = targetHips?.parent?.matrixWorld.clone().invert() || new THREE.Matrix4();
+  const hipHeightScale = worldHipMotion
+    ? Math.abs(targetHipBindWorld.y / sourceHipBindWorld.y)
+    : sourceHips && targetHips && Math.abs(sourceHipRestY) > 1e-4
     ? Math.abs(targetHipRestY / sourceHipRestY) : 1;
-  const hipYValues = [];
+  if (worldHipMotion && (sourceHipBindWorld.y <= 1e-4 || targetHipBindWorld.y <= 1e-4 ||
+      !Number.isFinite(hipHeightScale) || hipHeightScale <= 0)) {
+    throw new Error('Hip motion transfer requires positive bind hip heights.');
+  }
+  const hipYValues = [], hipPositions = [];
   const pose = snapshotLocalPose(sourceModel);
   const quaternionTracks = new Map();
   for (const track of clip.tracks || []) {
@@ -243,10 +254,22 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
       sourceModel.updateWorldMatrix(true,true);
       if (hipInterpolant) {
         const sample = hipInterpolant.evaluate(Math.min(Math.max(time,0),clip.duration));
-        if (sample.length < 3 || !Number.isFinite(sample[1])) {
+        if (sample.length < 3 || !Number.isFinite(sample[1]) ||
+            (worldHipMotion && (!Number.isFinite(sample[0]) || !Number.isFinite(sample[2])))) {
           throw new Error('Source hips translation is invalid.');
         }
-        hipYValues.push(targetHipRestY + (sample[1] - sourceHipRestY) * hipHeightScale);
+        if (worldHipMotion) {
+          // Recovered Carl bake: source world displacement, anatomical basis and
+          // hip-height scale; keep XZ fixed for stationary sprite capture.
+          sourceHips.position.fromArray(sample);
+          sourceModel.updateWorldMatrix(true,true);
+          const delta = sourceHips.getWorldPosition(new THREE.Vector3())
+            .sub(sourceHipBindWorld).applyQuaternion(sourceToTargetBasis).multiplyScalar(hipHeightScale);
+          const position = targetHipBindWorld.clone(); position.y += delta.y;
+          hipPositions.push(...position.applyMatrix4(targetHipParentInverse).toArray());
+        } else {
+          hipYValues.push(targetHipRestY + (sample[1] - sourceHipRestY) * hipHeightScale);
+        }
       }
 
       const desiredWorld = new Map();
@@ -324,7 +347,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
   }
   if (hipsTranslation) {
     tracks.push(new THREE.VectorKeyframeTrack(`${targetHips.uuid}.position`, times,
-      hipYValues.flatMap(y => [targetHips.position.x,y,targetHips.position.z])));
+      worldHipMotion ? hipPositions : hipYValues.flatMap(y => [targetHips.position.x,y,targetHips.position.z])));
   }
   if (!tracks.length) throw new Error('No compatible humanoid rotation tracks matched the current model.');
 
@@ -336,6 +359,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
     retargetMode: mode === 'anatomical-aim' ? 'anatomical-child-direction-with-hip-y' : mode === 'world-bind-delta' ? 'semantic-world-bind-delta' : 'semantic-joint-bind-relative',
     aimedBoneRoles: [...directionPairs.keys()],
     hipYTransferred: !!hipsTranslation,
+    hipTranslationPolicy: worldHipMotion ? 'scaled-world-y' : null,
     hipHeightScale: hipsTranslation ? hipHeightScale : null,
     sourceRigFamily: sourceRig.family,
     targetRigFamily: targetRig.family,
