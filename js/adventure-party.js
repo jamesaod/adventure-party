@@ -175,7 +175,58 @@ function showLauncher(){
 }
 
 let selectedCombatCondition="grass";
-let selectedMobEncounter="studio-kobold";
+let selectedMobEncounter="custom";
+const combatMobRoster=[];
+let combatMobRowSequence=0;
+const COMBAT_MOB_CHOICES=[
+  ["kobold","Kobold"],["kobold-bodyguard","Kobold Body Guard"],
+  ["kobold-slinger","Kobold Slinger"],["orc","Orc"],
+  ["orc-leader","Orc Leader"],["orc-shaman","Orc Shaman"],
+  ["juvenile-red-dragon","Juvenile Red Dragon"]
+];
+function readCombatMobRoster(){
+  return combatMobRoster.map(({type,count,faction})=>({type,count,faction}));
+}
+function updateCombatMobSelection(){
+  const container=document.getElementById("combatMobRows");
+  if(!container)return;
+  container.replaceChildren();
+  for(const entry of combatMobRoster){
+    const line=document.createElement("div");line.className="combat-mob-editor-row";
+    const mob=document.createElement("select");mob.setAttribute("aria-label","MOB type");
+    for(const [id,label] of COMBAT_MOB_CHOICES){
+      const option=document.createElement("option");option.value=id;option.textContent=label;
+      mob.append(option);
+    }
+    mob.value=entry.type;
+    mob.addEventListener("change",()=>{entry.type=mob.value;cancelPendingCombatStart();});
+    const count=document.createElement("input");count.type="number";count.min="1";count.max="30";count.step="1";count.value=String(entry.count);
+    count.setAttribute("aria-label","Number of MOBs");count.addEventListener("change",()=>{
+      entry.count=Math.max(1,Math.min(30,Math.floor(Number(count.value)||1)));
+      count.value=String(entry.count);cancelPendingCombatStart();
+    });
+    const faction=document.createElement("select");faction.setAttribute("aria-label","MOB faction");
+    for(const value of ["hostile","friendly"]){const option=document.createElement("option");
+      option.value=value;option.textContent=value==="hostile"?"Hostile":"Friendly";faction.append(option);}
+    faction.value=entry.faction;
+    faction.addEventListener("change",()=>{entry.faction=faction.value;cancelPendingCombatStart();});
+    const remove=document.createElement("button");remove.type="button";remove.className="combat-roster-add";
+    remove.textContent="Remove";remove.setAttribute("aria-label","Remove MOB row");
+    remove.addEventListener("click",()=>{const at=combatMobRoster.indexOf(entry);
+      if(at>=0)combatMobRoster.splice(at,1);cancelPendingCombatStart();updateCombatMobSelection();});
+    const label=document.createElement("span");label.className="combat-setup-label";
+    label.textContent="MOB "+(combatMobRoster.indexOf(entry)+1);
+    line.append(label,mob,count,faction,remove);container.append(line);
+  }
+  const hint=document.getElementById("combatMobRosterHint");
+  if(hint)hint.textContent=combatMobRoster.length
+    ? combatMobRoster.reduce((total,item)=>total+item.count,0)+" MOBs configured"
+    : "No MOBs selected. Add a friendly or hostile group to begin.";
+}
+document.getElementById("addCombatMobButton")?.addEventListener("click",()=>{
+  combatMobRoster.push({rowId:++combatMobRowSequence,type:"kobold",count:1,faction:"hostile"});
+  selectedMobEncounter="custom";cancelPendingCombatStart();updateCombatMobSelection();
+});
 let selectedStudioSpriteSetId="studio-kobold";
 
 function isStudioTestCombat(combat=game){
@@ -200,35 +251,6 @@ function returnToStudioFromCombat(){
 
 function exitCombat(){
   if(!returnToStudioFromCombat()) showLauncher();
-}
-
-function updateCombatMobSelection(){
-  const label=document.getElementById("combatMobSetLabel");
-
-  const labels={
-    "studio-kobold":"6-facing Kobold",
-    kobolds:"Kobold Encounter",
-    orcs:"Orc Warband — 20",
-    "large-test":"Juvenile Red Dragon"
-  };
-
-  if(label){
-    label.textContent=
-      (selectedMobEncounter==="studio-kobold" &&
-        registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label) ||
-      labels[selectedMobEncounter] || labels.kobolds;
-  }
-
-  document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
-    const selected=
-      button.dataset.mobEncounter===selectedMobEncounter;
-
-    button.classList.toggle("selected",selected);
-    button.setAttribute(
-      "aria-pressed",
-      selected ? "true" : "false"
-    );
-  });
 }
 
 function updateCombatConditionSelection(){
