@@ -385,7 +385,7 @@ const gameSource = fs.readFileSync("js/adventure-party.js", "utf8");
 for (const requiredToken of [
   "function makeOrcLeader(",
   "function makeOrcShaman(",
-  "makeOrcArmy(18,1,1,condition)",
+  "function deployConfiguredCombatMobs(",
   'enemy.species==="orc"',
   '"orc-leader":{',
   '"orc-shaman":{',
@@ -398,14 +398,15 @@ for (const requiredToken of [
 }
 
 for (const requiredToken of [
-  'data-mob-encounter="kobolds"',
-  'data-mob-encounter="orcs"',
-  'data-mob-encounter="large-test"',
-  ">20 Orcs<"
+  'id="combatMobRows"',
+  'id="addCombatMobButton"'
 ]) {
   if (!index.includes(requiredToken)) {
-    fail(`Candidate Rev 40 combat setup is missing ${requiredToken}.`);
+    fail(`Combat roster is missing ${requiredToken}.`);
   }
+}
+if(index.includes('data-mob-encounter="studio-kobold"')){
+  fail("Deprecated six-facing Kobold button must not return.");
 }
 
 if (process.exitCode) {

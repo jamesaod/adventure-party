@@ -175,7 +175,58 @@ function showLauncher(){
 }
 
 let selectedCombatCondition="grass";
-let selectedMobEncounter="studio-kobold";
+let selectedMobEncounter="custom";
+const combatMobRoster=[];
+let combatMobRowSequence=0;
+const COMBAT_MOB_CHOICES=[
+  ["kobold","Kobold"],["kobold-bodyguard","Kobold Body Guard"],
+  ["kobold-slinger","Kobold Slinger"],["orc","Orc"],
+  ["orc-leader","Orc Leader"],["orc-shaman","Orc Shaman"],
+  ["juvenile-red-dragon","Juvenile Red Dragon"]
+];
+function readCombatMobRoster(){
+  return combatMobRoster.map(({type,count,faction})=>({type,count,faction}));
+}
+function updateCombatMobSelection(){
+  const container=document.getElementById("combatMobRows");
+  if(!container)return;
+  container.replaceChildren();
+  for(const entry of combatMobRoster){
+    const line=document.createElement("div");line.className="combat-mob-editor-row";
+    const mob=document.createElement("select");mob.setAttribute("aria-label","MOB type");
+    for(const [id,label] of COMBAT_MOB_CHOICES){
+      const option=document.createElement("option");option.value=id;option.textContent=label;
+      mob.append(option);
+    }
+    mob.value=entry.type;
+    mob.addEventListener("change",()=>{entry.type=mob.value;cancelPendingCombatStart();});
+    const count=document.createElement("input");count.type="number";count.min="1";count.max="30";count.step="1";count.value=String(entry.count);
+    count.setAttribute("aria-label","Number of MOBs");count.addEventListener("change",()=>{
+      entry.count=Math.max(1,Math.min(30,Math.floor(Number(count.value)||1)));
+      count.value=String(entry.count);cancelPendingCombatStart();
+    });
+    const faction=document.createElement("select");faction.setAttribute("aria-label","MOB faction");
+    for(const value of ["hostile","friendly"]){const option=document.createElement("option");
+      option.value=value;option.textContent=value==="hostile"?"Hostile":"Friendly";faction.append(option);}
+    faction.value=entry.faction;
+    faction.addEventListener("change",()=>{entry.faction=faction.value;cancelPendingCombatStart();});
+    const remove=document.createElement("button");remove.type="button";remove.className="combat-roster-add";
+    remove.textContent="Remove";remove.setAttribute("aria-label","Remove MOB row");
+    remove.addEventListener("click",()=>{const at=combatMobRoster.indexOf(entry);
+      if(at>=0)combatMobRoster.splice(at,1);cancelPendingCombatStart();updateCombatMobSelection();});
+    const label=document.createElement("span");label.className="combat-setup-label";
+    label.textContent="MOB "+(combatMobRoster.indexOf(entry)+1);
+    line.append(label,mob,count,faction,remove);container.append(line);
+  }
+  const hint=document.getElementById("combatMobRosterHint");
+  if(hint)hint.textContent=combatMobRoster.length
+    ? combatMobRoster.reduce((total,item)=>total+item.count,0)+" MOBs configured"
+    : "No MOBs selected. Add a friendly or hostile group to begin.";
+}
+document.getElementById("addCombatMobButton")?.addEventListener("click",()=>{
+  combatMobRoster.push({rowId:++combatMobRowSequence,type:"kobold",count:1,faction:"hostile"});
+  selectedMobEncounter="custom";cancelPendingCombatStart();updateCombatMobSelection();
+});
 let selectedStudioSpriteSetId="studio-kobold";
 
 function isStudioTestCombat(combat=game){
@@ -200,35 +251,6 @@ function returnToStudioFromCombat(){
 
 function exitCombat(){
   if(!returnToStudioFromCombat()) showLauncher();
-}
-
-function updateCombatMobSelection(){
-  const label=document.getElementById("combatMobSetLabel");
-
-  const labels={
-    "studio-kobold":"6-facing Kobold",
-    kobolds:"Kobold Encounter",
-    orcs:"Orc Warband — 20",
-    "large-test":"Juvenile Red Dragon"
-  };
-
-  if(label){
-    label.textContent=
-      (selectedMobEncounter==="studio-kobold" &&
-        registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label) ||
-      labels[selectedMobEncounter] || labels.kobolds;
-  }
-
-  document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
-    const selected=
-      button.dataset.mobEncounter===selectedMobEncounter;
-
-    button.classList.toggle("selected",selected);
-    button.setAttribute(
-      "aria-pressed",
-      selected ? "true" : "false"
-    );
-  });
 }
 
 function updateCombatConditionSelection(){
@@ -456,17 +478,6 @@ document.querySelectorAll("[data-combat-condition]").forEach(button=>{
     cancelPendingCombatStart();
     selectedCombatCondition=button.dataset.combatCondition || "grass";
     updateCombatConditionSelection();
-  });
-});
-
-document.querySelectorAll("[data-mob-encounter]").forEach(button=>{
-  button.addEventListener("click",()=>{
-    cancelPendingCombatStart();
-    selectedMobEncounter=
-      button.dataset.mobEncounter ||
-      "kobolds";
-
-    updateCombatMobSelection();
   });
 });
 
@@ -16657,6 +16668,41 @@ function checkCombatVictory(){
   return false;
 }
 
+function deployConfiguredCombatMobs(condition,player){
+  const allies=[],enemies=[];
+  const occupied=new Set(occupiedHexes(player).map(cell=>key(cell.x,cell.y)));
+  const roster=readCombatMobRoster();
+  let index=0;
+  // Full battlefield fallback rather than a small preset encounter radius.
+  const positions=axialDisk({x:0,y:0},17)
+    .filter(pos=>inside(pos.x,pos.y)&&!isWall(pos.x,pos.y)&&hexDistance(pos,player)>=3);
+  for(const group of roster){
+    const friendly=group.faction==="friendly";
+    for(let n=0;n<group.count;n++){
+      const mob=makeStudioTestMob(group.type,index,{x:0,y:0});
+      mob.id=`roster-${group.type}-${index+1}`;
+      mob.faction=friendly?"player":"enemy";
+      mob.controller=friendly?"player":"mob";
+      const preferredRadius=friendly?4:9;
+      const candidates=positions.slice().sort((a,b)=>{
+        const da=Math.abs(hexDistance(a,player)-preferredRadius);
+        const db=Math.abs(hexDistance(b,player)-preferredRadius);
+        return da-db || a.y-b.y || a.x-b.x;
+      });
+      const placement=candidates.find(pos=>occupiedHexesAt(mob,pos.x,pos.y,mob.facingHex||0)
+        .every(cell=>inside(cell.x,cell.y)&&!isWall(cell.x,cell.y)&&!occupied.has(key(cell.x,cell.y))));
+      if(!placement)throw new Error("Not enough free battlefield hexes for the configured MOB roster.");
+      mob.x=placement.x;mob.y=placement.y;
+      mob.facingHex=hexDirectionIndexToward(placement,player);
+      mob.facing=placement.x>=player.x?"left":"right";
+      occupiedHexes(mob).forEach(cell=>occupied.add(key(cell.x,cell.y)));
+      (friendly?allies:enemies).push(mob);index++;
+    }
+  }
+  lastMobDeployment={direction:"Custom MOB roster",count:index,condition};
+  return {allies,enemies};
+}
+
 function newGame(condition=selectedCombatCondition){
   if(aiTimer){
     clearTimeout(aiTimer);
@@ -16679,34 +16725,22 @@ function newGame(condition=selectedCombatCondition){
     engine. Carl's sprite test uses this canonical player; Ranger and Mage
     sprite tests retain their six friendly inspection copies.
   */
+  // The deprecated six-facing Kobold preset is only retained internally for
+  // the 3D Studio draft handoff; the normal Combat Conditions roster starts empty.
   const studioUnits=selectedMobEncounter==="studio-kobold"
-    ? makeStudioKoboldEncounter(condition,player)
-    : [];
+    ? makeStudioKoboldEncounter(condition,player) : [];
   const studioPlayers=studioUnits.filter(unit=>unit.faction==="player");
   const studioAllies=studioPlayers.filter(unit=>unit!==player);
-  const kobolds=
-    selectedMobEncounter==="studio-kobold"
-      ? (studioPlayers.length ? makeStudioPlayerOpponents([player,...studioAllies]) : studioUnits)
-      : selectedMobEncounter==="kobolds"
-        ? (condition==="wall" ? makeWallTestKoboldArmy(10,3,3) : makeKoboldArmy(10,3,3))
-        : [];
-
-  const orcs=
-    selectedMobEncounter==="orcs"
-      ? makeOrcArmy(18,1,1,condition)
-      : [];
-
-  const enemies=
-    selectedMobEncounter==="large-test"
-      ? makeLargeMobTestEncounter(condition)
-      : selectedMobEncounter==="orcs"
-        ? [...orcs]
-        : [...kobolds];
-
-  if(selectedMobEncounter!=="orcs"){
-    lastOrcDeployment=null;
-  }
-  const groupKobolds=kobolds.filter(isKoboldUnit);
+  const studioEnemies=selectedMobEncounter==="studio-kobold"
+    ? (studioPlayers.length?makeStudioPlayerOpponents([player,...studioAllies]):studioUnits)
+    : [];
+  const configured=selectedMobEncounter==="studio-kobold"
+    ? {allies:[],enemies:studioEnemies}
+    : deployConfiguredCombatMobs(condition,player);
+  const allies=[...studioAllies,...configured.allies];
+  const enemies=configured.enemies;
+  const groupKobolds=enemies.filter(isKoboldUnit);
+  lastOrcDeployment=null;
 
   camera.x=player.x;
   camera.y=player.y;
@@ -16718,7 +16752,7 @@ function newGame(condition=selectedCombatCondition){
     studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
-    allies:studioAllies,
+    allies,
     enemies,
     order:[],
     turnIndex:0,
@@ -16747,7 +16781,7 @@ function newGame(condition=selectedCombatCondition){
       : null
   };
 
-  for(const unit of [player,...studioAllies,...enemies]){
+  for(const unit of [player,...allies,...enemies]){
     if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
       unit.heightInches=unit.type==="fighter" ? 76 : null;
     }
@@ -30569,6 +30603,11 @@ function handleCombatKey(event){
 
 
 function handleCombatConditionsKey(event){
+  // Preserve keyboard interaction with MOB type, quantity and faction editors.
+  if(["SELECT","INPUT","TEXTAREA"].includes(event.target?.tagName)){
+    if(event.key==="Escape"){event.target.blur();event.preventDefault();}
+    return;
+  }
   if(event.key==="Escape"){
     event.preventDefault();
     showLauncher();

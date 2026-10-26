@@ -598,14 +598,14 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
   assert.equal(test.newGames.length, 1);
   assert.equal(test.newGames[0].spriteSetId, "sprite-set:draft-fighter", "Draft selection completes before the factory runs");
 }
-for (const cancel of ["title", "condition", "monster", "keyboard-condition", "pixel", "spellbook", "classbook"]) {
+for (const cancel of ["title", "condition", "roster", "keyboard-condition", "pixel", "spellbook", "classbook"]) {
   const test = startupHarness({ draft: true });
   const boot = test.boot();
   test.enter();
   await flushStartup();
   if (cancel === "title") test.context.handleCombatConditionsKey({ key: "Escape", preventDefault() {} });
   if (cancel === "condition") test.conditionButton.handlers.click();
-  if (cancel === "monster") test.mobButton.handlers.click();
+  if (cancel === "roster") test.context.cancelPendingCombatStart();
   if (cancel === "keyboard-condition") test.context.handleCombatConditionsKey({ key: "ArrowRight", preventDefault() {} });
   const otherScreen = ["pixel", "spellbook", "classbook"].includes(cancel);
   if (otherScreen) test.context.currentScreen = cancel;

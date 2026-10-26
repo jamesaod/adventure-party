@@ -89,12 +89,12 @@ button, input, select, textarea {
 .pixel-header h1 {
   margin:0;
   color:var(--gold);
-  font-size:28px;
+  font-size:30px;
 }
 
 .pixel-header .small {
   color:var(--cyan);
-  font-size:12px;
+  font-size:14px;
   letter-spacing:1.2px;
   text-transform:uppercase;
 }
@@ -115,7 +115,7 @@ button, input, select, textarea {
 .pixel-panel h2 {
   margin:0 0 8px;
   color:var(--gold);
-  font-size:18px;
+  font-size:20px;
 }
 
 .pixel-asset-list {
@@ -163,7 +163,7 @@ button, input, select, textarea {
 
 .pixel-control-row label {
   color:var(--muted);
-  font-size:12px;
+  font-size:14px;
 }
 
 .pixel-control-row select {
@@ -194,7 +194,7 @@ button, input, select, textarea {
 }
 
 .pixel-selected-color-label {
-  font-size:11px;
+  font-size:12px;
   color:#efe8c9;
   word-break:break-word;
 }
@@ -209,7 +209,7 @@ button, input, select, textarea {
 }
 
 .pixel-scale-readout {
-  font-size:11px;
+  font-size:12px;
   color:#8fd9e8;
 }
 
@@ -241,7 +241,7 @@ button, input, select, textarea {
   display:grid;
   gap:4px;
   color:#c6c3d0;
-  font-size:10px;
+  font-size:11px;
 }
 
 .pixel-properties-grid input,
@@ -274,7 +274,7 @@ button, input, select, textarea {
 
 .pixel-properties-note {
   color:#8fd9e8;
-  font-size:10px;
+  font-size:11px;
   line-height:1.35;
 }
 
@@ -324,7 +324,7 @@ button, input, select, textarea {
   gap:10px;
   color:var(--cyan);
   margin-bottom:6px;
-  font-size:13px;
+  font-size:15px;
 }
 
 .pixel-canvas-shell {
@@ -369,7 +369,7 @@ button, input, select, textarea {
 .pixel-status {
   min-height:42px;
   color:var(--cyan);
-  font-size:12px;
+  font-size:14px;
   margin:8px 0;
 }
 
@@ -398,7 +398,7 @@ button, input, select, textarea {
 .pixel-submit-grid label {
   display:grid;
   gap:4px;
-  font-size:11px;
+  font-size:12px;
   color:#c6c3d0;
 }
 
@@ -421,14 +421,14 @@ button, input, select, textarea {
 
 .pixel-submit-help {
   color:#8fd9e8;
-  font-size:10px;
+  font-size:11px;
   line-height:1.35;
 }
 
 .pixel-submit-result {
   min-height:30px;
   color:#c6c3d0;
-  font-size:10px;
+  font-size:11px;
   line-height:1.35;
   overflow-wrap:anywhere;
 }
@@ -486,12 +486,12 @@ button, input, select, textarea {
 .kobold-scale-dialog h2 {
   margin:0;
   color:var(--gold);
-  font-size:22px;
+  font-size:24px;
 }
 
 .kobold-scale-dialog .small-note {
   color:var(--cyan);
-  font-size:12px;
+  font-size:14px;
   margin:4px 0 10px;
 }
 
@@ -559,7 +559,7 @@ button, input, select, textarea {
 
 .launcher-brand .eyebrow {
   color:var(--cyan);
-  font-size:13px;
+  font-size:15px;
   letter-spacing:2px;
   margin-bottom:3px;
   text-transform:uppercase;
@@ -574,7 +574,7 @@ button, input, select, textarea {
 
 .working-title {
   color:var(--cyan);
-  font-size:13px;
+  font-size:15px;
   letter-spacing:1.4px;
   margin-top:5px;
   text-transform:uppercase;
@@ -582,7 +582,7 @@ button, input, select, textarea {
 
 .build-label {
   color:var(--green);
-  font-size:13px;
+  font-size:15px;
   text-align:right;
   line-height:1.35;
   text-transform:uppercase;
@@ -600,7 +600,7 @@ button, input, select, textarea {
   border:1px solid var(--cyan);
   background:#12121a;
   padding:3px 8px 4px;
-  font-size:13px;
+  font-size:15px;
   line-height:1;
   letter-spacing:1.6px;
   text-transform:uppercase;
@@ -639,7 +639,7 @@ button, input, select, textarea {
 .launcher-menu-title {
   text-align:center;
   color:var(--cyan);
-  font-size:18px;
+  font-size:20px;
   letter-spacing:1.4px;
   text-transform:uppercase;
   margin:0 0 18px;
@@ -664,7 +664,7 @@ button, input, select, textarea {
   color:var(--cyan);
   padding:9px 14px 10px;
   box-shadow:inset 0 0 0 1px #080810;
-  font-size:18px;
+  font-size:20px;
   text-align:center;
 }
 
@@ -690,7 +690,7 @@ button, input, select, textarea {
   left:28px;
   bottom:20px;
   color:var(--muted);
-  font-size:14px;
+  font-size:16px;
 }
 
 .launcher-help strong { color:var(--green); }
@@ -700,7 +700,7 @@ button, input, select, textarea {
   right:132px;
   bottom:22px;
   color:var(--green);
-  font-size:13px;
+  font-size:15px;
 }
 
 .sound-toggle {
@@ -717,7 +717,7 @@ button, input, select, textarea {
   color:var(--green);
   padding:8px 10px;
   box-shadow:inset 0 0 0 1px #080810;
-  font-size:14px;
+  font-size:16px;
 }
 
 .sound-toggle:hover,
@@ -754,7 +754,7 @@ button, input, select, textarea {
 
 .combat-brand .small {
   color:var(--cyan);
-  font-size:12px;
+  font-size:14px;
   letter-spacing:1.5px;
   text-transform:uppercase;
 }
@@ -762,14 +762,14 @@ button, input, select, textarea {
 .combat-brand h1 {
   margin:2px 0 0;
   color:var(--gold);
-  font-size:29px;
+  font-size:31px;
   line-height:1;
 }
 
 .round-box {
   text-align:right;
   color:var(--green);
-  font-size:12px;
+  font-size:14px;
   line-height:1.15;
 }
 
@@ -815,7 +815,7 @@ button, input, select, textarea {
   border:0;
   color:#74a7ff;
   font-family:var(--ui-font);
-  font-size:29px;
+  font-size:31px;
   line-height:1.22;
   pointer-events:none;
   /* R126: larger blue battlefield banner with black outline only. */
@@ -845,7 +845,7 @@ button, input, select, textarea {
 .panel h2 {
   margin:0 0 5px;
   color:var(--cyan);
-  font-size:15px;
+  font-size:17px;
   border-bottom:1px solid var(--divider);
   padding-bottom:5px;
 }
@@ -862,7 +862,7 @@ button, input, select, textarea {
   color:var(--cyan);
   text-align:left;
   font-family:var(--ui-font);
-  font-size:30px;
+  font-size:32px;
   line-height:1.28;
   margin:2px 0 11px;
   padding-bottom:11px;
@@ -872,7 +872,7 @@ button, input, select, textarea {
 .unit-info-mode {
   color:var(--gold);
   font-family:var(--ui-font);
-  font-size:19px;
+  font-size:21px;
   line-height:1.40;
   text-align:left;
   letter-spacing:.35px;
@@ -884,7 +884,7 @@ button, input, select, textarea {
   grid-template-columns:minmax(138px,0.72fr) minmax(0,1.28fr);
   gap:11px 16px;
   font-family:var(--ui-font);
-  font-size:20px;
+  font-size:22px;
   line-height:1.42;
   align-items:start;
 }
@@ -910,7 +910,7 @@ button, input, select, textarea {
   padding-top:10px;
   border-top:1px solid #302d40;
   font-family:var(--ui-font);
-  font-size:19px;
+  font-size:21px;
   line-height:1.42;
 }
 
@@ -958,7 +958,7 @@ button, input, select, textarea {
   color:var(--cyan);
   padding:5px 9px;
   cursor:pointer;
-  font-size:15px;
+  font-size:17px;
   font-family:var(--ui-font);
 }
 
@@ -992,7 +992,7 @@ button, input, select, textarea {
 
 .weather-test-control {
   padding:4px 6px;
-  font-size:12px;
+  font-size:14px;
   letter-spacing:.2px;
 }
 
@@ -1000,7 +1000,7 @@ button, input, select, textarea {
   display:grid;
   grid-template-columns:1fr auto;
   gap:2px 8px;
-  font-size:14px;
+  font-size:16px;
   line-height:1.2;
 }
 
@@ -1014,7 +1014,7 @@ button, input, select, textarea {
   margin-top:8px;
   padding-top:7px;
   border-top:1px solid #302d40;
-  font-size:13px;
+  font-size:15px;
 }
 
 .ability {
@@ -1027,7 +1027,7 @@ button, input, select, textarea {
 .ability span { color:var(--text); }
 
 .rules {
-  font-size:11px;
+  font-size:12px;
   line-height:1.18;
   overflow:auto;
 }
@@ -1042,7 +1042,7 @@ button, input, select, textarea {
   margin:9px 0 5px;
   padding-top:6px;
   border-top:1px solid var(--divider);
-  font-size:11px;
+  font-size:12px;
   letter-spacing:.8px;
   text-transform:uppercase;
 }
@@ -1074,12 +1074,12 @@ button, input, select, textarea {
 .dice-box h2 {
   margin:0 0 5px;
   color:var(--cyan);
-  font-size:19px;
+  font-size:21px;
 }
 
 #lastRoll {
   color:var(--gold);
-  font-size:18px;
+  font-size:20px;
   line-height:1.28;
 }
 
@@ -1089,7 +1089,7 @@ button, input, select, textarea {
   overflow:auto;
   overscroll-behavior:contain;
   box-sizing:border-box;
-  font-size:14px;
+  font-size:16px;
   line-height:1.2;
   padding:0 5px 10px 0;
   scroll-padding-bottom:10px;
@@ -1118,7 +1118,7 @@ button, input, select, textarea {
 
 .command {
   color:var(--muted);
-  font-size:15px;
+  font-size:17px;
 }
 
 .command strong { color:var(--green); }
@@ -1134,7 +1134,7 @@ button, input, select, textarea {
   color:var(--gold);
   padding:5px 9px;
   cursor:pointer;
-  font-size:14px;
+  font-size:16px;
   font-family:var(--ui-font);
 }
 
@@ -1176,13 +1176,13 @@ button, input, select, textarea {
 .class-report h2 {
   margin:0;
   color:var(--gold);
-  font-size:26px;
+  font-size:28px;
 }
 
 .class-report .sub {
   color:var(--cyan);
   margin:2px 0 10px;
-  font-size:13px;
+  font-size:15px;
 }
 
 .class-summary {
@@ -1193,7 +1193,7 @@ button, input, select, textarea {
   padding:9px 10px;
   border:1px solid var(--divider);
   background:#111019;
-  font-size:13px;
+  font-size:15px;
 }
 
 .class-summary b { color:var(--cyan); }
@@ -1202,7 +1202,7 @@ button, input, select, textarea {
 .class-report table {
   width:100%;
   border-collapse:collapse;
-  font-size:12px;
+  font-size:14px;
 }
 
 .class-report th,
@@ -1260,12 +1260,12 @@ button, input, select, textarea {
 .character-sheet h2 {
   margin:0;
   color:var(--gold);
-  font-size:26px;
+  font-size:28px;
 }
 
 .character-sheet .sub {
   color:var(--cyan);
-  font-size:13px;
+  font-size:15px;
   margin:2px 0 12px;
 }
 
@@ -1284,7 +1284,7 @@ button, input, select, textarea {
 .sheet-section h3 {
   margin:0 0 7px;
   color:var(--gold);
-  font-size:16px;
+  font-size:18px;
   border-bottom:1px solid var(--divider);
   padding-bottom:4px;
 }
@@ -1293,7 +1293,7 @@ button, input, select, textarea {
   display:grid;
   grid-template-columns:1fr auto;
   gap:3px 10px;
-  font-size:13px;
+  font-size:15px;
 }
 
 .sheet-kv span:nth-child(odd) { color:var(--muted); }
@@ -1302,7 +1302,7 @@ button, input, select, textarea {
 .sheet-list {
   display:grid;
   gap:5px;
-  font-size:13px;
+  font-size:15px;
 }
 
 .sheet-item {
@@ -1354,7 +1354,7 @@ button, input, select, textarea {
 .sheet-item .detail {
   grid-column:1 / -1;
   color:var(--muted);
-  font-size:12px;
+  font-size:14px;
 }
 
 .sheet-ability-rows {
@@ -1362,7 +1362,7 @@ button, input, select, textarea {
   grid-template-columns:1fr auto;
   border:1px solid #3d394c;
   background:#171621;
-  font-size:13px;
+  font-size:15px;
 }
 
 .sheet-ability-rows span {
@@ -1415,7 +1415,7 @@ button, input, select, textarea {
 .result-box h2 {
   margin:0 0 8px;
   color:var(--gold);
-  font-size:28px;
+  font-size:30px;
 }
 
 .result-box p {
@@ -1477,7 +1477,7 @@ button, input, select, textarea {
 
 .font-status {
   font-family:var(--ui-font);
-  font-size:10px;
+  font-size:11px;
   letter-spacing:.3px;
   color:var(--muted);
 }
@@ -1501,7 +1501,7 @@ button, input, select, textarea {
 .class-reference-table {
   width:100%;
   border-collapse:collapse;
-  font-size:12px;
+  font-size:14px;
 }
 
 .class-reference-table th,
@@ -1570,7 +1570,7 @@ button, input, select, textarea {
 .spellbook-header h1 {
   margin:2px 0 0;
   color:var(--gold);
-  font-size:28px;
+  font-size:30px;
   line-height:1.1;
 }
 
@@ -1584,7 +1584,7 @@ button, input, select, textarea {
 .spellbook-intro {
   color:var(--muted);
   margin-bottom:12px;
-  font-size:13px;
+  font-size:15px;
 }
 
 .spellbook-tabs {
@@ -1601,7 +1601,7 @@ button, input, select, textarea {
   font-family:var(--ui-font);
   padding:8px 12px;
   cursor:pointer;
-  font-size:12px;
+  font-size:14px;
 }
 
 .spellbook-tab.active {
@@ -1634,12 +1634,12 @@ button, input, select, textarea {
 .spell-card-title h2 {
   margin:0;
   color:var(--gold);
-  font-size:22px;
+  font-size:24px;
 }
 
 .spell-card-title span {
   color:var(--cyan);
-  font-size:11px;
+  font-size:12px;
 }
 
 .spell-card-body {
@@ -1651,7 +1651,7 @@ button, input, select, textarea {
   grid-template-columns:180px minmax(0,1fr);
   gap:6px 12px;
   margin-bottom:12px;
-  font-size:12px;
+  font-size:14px;
 }
 
 .spell-stat-grid span:nth-child(odd) {
@@ -1665,7 +1665,7 @@ button, input, select, textarea {
 .spell-description {
   color:var(--text);
   line-height:1.55;
-  font-size:12px;
+  font-size:14px;
   border-top:1px solid #302d40;
   padding-top:10px;
 }
@@ -1673,7 +1673,7 @@ button, input, select, textarea {
 .spell-source {
   margin-top:10px;
   color:#8c8797;
-  font-size:10px;
+  font-size:11px;
 }
 
 
@@ -1707,14 +1707,14 @@ button, input, select, textarea {
 .spell-cast-choice b {
   display:block;
   color:var(--gold);
-  font-size:14px;
+  font-size:16px;
   margin-bottom:3px;
 }
 
 .spell-cast-choice span {
   display:block;
   color:var(--cyan);
-  font-size:10px;
+  font-size:11px;
   line-height:1.4;
 }
 
@@ -1755,7 +1755,7 @@ button, input, select, textarea {
 .xp-loot-header h1 {
   margin:2px 0 0;
   color:var(--gold);
-  font-size:30px;
+  font-size:32px;
   letter-spacing:1px;
 }
 
@@ -1771,7 +1771,7 @@ button, input, select, textarea {
 .combat-condition-intro,
 .xp-loot-intro {
   color:var(--green);
-  font-size:15px;
+  font-size:17px;
   line-height:1.5;
 }
 
@@ -1792,7 +1792,7 @@ button, input, select, textarea {
 .combat-setup-label {
   flex:0 0 155px;
   color:var(--gold);
-  font-size:14px;
+  font-size:16px;
   text-transform:uppercase;
   letter-spacing:.6px;
 }
@@ -1858,7 +1858,7 @@ button, input, select, textarea {
   color:#6e6a76;
   padding:8px 10px;
   font:inherit;
-  font-size:12px;
+  font-size:14px;
   cursor:not-allowed;
 }
 
@@ -1925,13 +1925,13 @@ button, input, select, textarea {
 
 .xp-loot-card .label {
   color:var(--cyan);
-  font-size:11px;
+  font-size:12px;
   margin-bottom:6px;
 }
 
 .xp-loot-card .value {
   color:var(--gold);
-  font-size:22px;
+  font-size:24px;
 }
 
 .xp-loot-section {
@@ -1942,7 +1942,7 @@ button, input, select, textarea {
 
 .xp-loot-section h2 {
   color:var(--gold);
-  font-size:18px;
+  font-size:20px;
   margin:0 0 12px;
 }
 
@@ -1950,7 +1950,7 @@ button, input, select, textarea {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   gap:7px 14px;
-  font-size:13px;
+  font-size:15px;
 }
 
 .xp-loot-list .qty {
@@ -1965,7 +1965,7 @@ button, input, select, textarea {
 
 .xp-loot-note {
   color:#bcb6a2;
-  font-size:12px;
+  font-size:14px;
   line-height:1.5;
 }
 
@@ -2018,7 +2018,7 @@ button, input, select, textarea {
 
 .spell-preview-header .small {
   color:var(--cyan);
-  font-size:12px;
+  font-size:14px;
   letter-spacing:1.4px;
   text-transform:uppercase;
 }
@@ -2026,7 +2026,7 @@ button, input, select, textarea {
 .spell-preview-header h1 {
   margin:2px 0 0;
   color:var(--gold);
-  font-size:28px;
+  font-size:30px;
   line-height:1;
 }
 
@@ -2041,7 +2041,7 @@ button, input, select, textarea {
   border:1px solid #8d7d45;
   background:#2d2817;
   padding:6px 9px;
-  font-size:12px;
+  font-size:14px;
   letter-spacing:1px;
   text-transform:uppercase;
 }
@@ -2062,7 +2062,7 @@ button, input, select, textarea {
 
 .spell-preview-panel-title {
   color:var(--gold);
-  font-size:16px;
+  font-size:18px;
   letter-spacing:.7px;
   text-transform:uppercase;
   border-bottom:1px solid var(--divider);
@@ -2074,7 +2074,7 @@ button, input, select, textarea {
 .spell-preview-coverage,
 .spell-preview-status {
   color:var(--muted);
-  font-size:12px;
+  font-size:14px;
   line-height:1.4;
 }
 
@@ -2118,7 +2118,7 @@ button, input, select, textarea {
 .spell-preview-spell-button .spell-preview-ready-tag {
   float:right;
   color:var(--green);
-  font-size:10px;
+  font-size:11px;
 }
 
 .spell-preview-spell-button.pending .spell-preview-ready-tag {
@@ -2149,7 +2149,7 @@ button, input, select, textarea {
 
 .spell-preview-arena-placeholder {
   color:#77717f;
-  font-size:13px;
+  font-size:15px;
   text-align:center;
 }
 
@@ -2161,7 +2161,7 @@ button, input, select, textarea {
   background:rgba(4,14,11,.78);
   border:1px solid #355c4e;
   padding:4px 7px;
-  font-size:10px;
+  font-size:11px;
   letter-spacing:1px;
   pointer-events:none;
 }
@@ -2181,12 +2181,12 @@ button, input, select, textarea {
 
 .spell-preview-elapsed {
   color:var(--cyan);
-  font-size:13px;
+  font-size:15px;
 }
 
 .spell-preview-run-state {
   color:var(--green);
-  font-size:12px;
+  font-size:14px;
   border:1px solid #405143;
   padding:4px 7px;
 }
@@ -2239,7 +2239,7 @@ button, input, select, textarea {
   overflow:auto;
   border-top:1px solid #302d40;
   padding-top:6px;
-  font-size:11px;
+  font-size:12px;
   line-height:1.35;
 }
 
@@ -2259,7 +2259,7 @@ button, input, select, textarea {
 
 .spell-preview-spell-name {
   color:var(--cyan);
-  font-size:24px;
+  font-size:26px;
   line-height:1.15;
   margin:5px 0 8px;
 }
@@ -2268,7 +2268,7 @@ button, input, select, textarea {
   display:grid;
   grid-template-columns:88px minmax(0,1fr);
   gap:4px 8px;
-  font-size:12px;
+  font-size:14px;
   margin-bottom:12px;
 }
 
@@ -2285,7 +2285,7 @@ button, input, select, textarea {
   gap:4px;
   margin:10px 0;
   color:var(--muted);
-  font-size:12px;
+  font-size:14px;
 }
 
 .spell-preview-field input,
@@ -2303,7 +2303,7 @@ button, input, select, textarea {
   gap:7px;
   margin:12px 0;
   color:var(--text);
-  font-size:12px;
+  font-size:14px;
 }
 
 .spell-preview-actions {
@@ -2328,7 +2328,7 @@ button, input, select, textarea {
   border-top:1px solid var(--divider);
   padding-top:10px;
   margin-top:12px;
-  font-size:12px;
+  font-size:14px;
 }
 
 .preview-key {
@@ -2433,7 +2433,7 @@ button, input, select, textarea {
 /* Compact Gold Box-style combat inventory, separate from character stats. */
 .inventory-window{width:min(640px,96vw);max-height:min(80vh,680px);overflow:auto;box-sizing:border-box;background:#06050e;color:#e8dc8a;}
 .inventory-window h2{margin:0 0 6px;color:#e7bc4d;text-align:left;font-size:1.3rem;}
-.inventory-columns,.inventory-entry{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px;font-family:monospace;font-size:15px;line-height:1.22;}
+.inventory-columns,.inventory-entry{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px;font-family:monospace;font-size:17px;line-height:1.22;}
 .inventory-columns{border-top:1px dotted #a89054;border-bottom:1px dotted #a89054;color:#d6c99e;margin:6px 0 8px;padding:6px 8px;}
 .inventory-entry{padding:2px 8px;color:#b3ea78;}
 .inventory-entry:focus-within,.inventory-entry:hover{background:#26212c;}
@@ -2442,3 +2442,12 @@ button, input, select, textarea {
 .inventory-item-action{border:1px solid #908a7b;background:#252539;color:#e9d28f;font:12px monospace;padding:2px 7px;cursor:pointer;}
 .inventory-item-action:disabled{opacity:.4;cursor:default;}
 .inventory-window .sheet-actions{border-top:1px dotted #a89054;margin-top:10px;padding-top:10px;}
+
+.combat-mob-roster{display:grid;gap:10px;padding:12px;border-top:1px solid var(--divider)}
+.combat-mob-roster h2{margin:0;color:var(--gold);font-size:22px}
+.combat-mob-rows{display:grid;gap:8px}
+.combat-mob-editor-row{display:grid;grid-template-columns:80px minmax(170px,2fr) 82px minmax(110px,1fr) auto;gap:8px;align-items:center}
+.combat-mob-editor-row select,.combat-mob-editor-row input{min-width:0;width:100%;padding:8px;background:#171523;color:var(--text);border:1px solid var(--silver)}
+.combat-mob-editor-row .combat-roster-add{padding:8px}
+#addCombatMobButton{justify-self:start;min-width:150px}
+@media(max-width:680px){.combat-mob-editor-row{grid-template-columns:1fr 1fr;}.combat-mob-editor-row .combat-setup-label{grid-column:1 / -1}}
