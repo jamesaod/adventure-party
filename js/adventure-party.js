@@ -30603,6 +30603,11 @@ function handleCombatKey(event){
 
 
 function handleCombatConditionsKey(event){
+  // Preserve keyboard interaction with MOB type, quantity and faction editors.
+  if(["SELECT","INPUT","TEXTAREA"].includes(event.target?.tagName)){
+    if(event.key==="Escape"){event.target.blur();event.preventDefault();}
+    return;
+  }
   if(event.key==="Escape"){
     event.preventDefault();
     showLauncher();
