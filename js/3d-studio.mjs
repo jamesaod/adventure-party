@@ -21,7 +21,7 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C102';
+} from './studio-equipment.mjs?v=R238C138';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C102';
@@ -414,7 +414,7 @@ async function changeEquipment(value, { resetPose = true } = {}) {
     return;
   }
   const model = state.model;
-  const selectedWeapon = studioWeapon(value);
+  const selectedWeapon = studioWeapon(value?.rightHand || value);
   if (selectedWeapon?.handsRequired === 2 && shieldEquipment.snapshot().settings.leftHandShield !== 'none') {
     await shieldEquipment.select('none');
   }
@@ -2281,7 +2281,13 @@ function bindControls() {
   ui.RightHandWeapon.addEventListener('change', () => {
     // Each weapon owns its own calibrated socket/grip preset. Do not carry the
     // previous weapon's transform into the newly selected asset.
-    void changeEquipment(defaultEquipmentSettingsForModel(ui.RightHandWeapon.value));
+    const weaponId = ui.RightHandWeapon.value;
+    void changeEquipment(defaultEquipmentSettingsForModel(weaponId));
+    if (weaponId === 'spear') {
+      const actionProfile = $('studioActionProfile');
+      actionProfile.value = studioWeapon('spear').poseProfileId;
+      actionProfile.dispatchEvent(new Event('change'));
+    }
   });
   ui.LeftHandShield.addEventListener('change',()=>{
     void changeShield(normalizeShield({leftHandShield:ui.LeftHandShield.value}));

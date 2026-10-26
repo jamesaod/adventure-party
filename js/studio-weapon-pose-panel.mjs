@@ -11,6 +11,9 @@ const APPEARANCE_BY_STUDIO_WEAPON = Object.freeze({
   'medieval-sword': Object.freeze({
     appearanceId: 'flaming-sword-5', itemName: 'Flaming Sword +5', visualClass: 'sword', poseProfileId: 'one-handed-swing'
   }),
+  spear: Object.freeze({
+    appearanceId: 'spear', itemName: 'Spear', visualClass: 'spear', poseProfileId: 'two-handed-thrust'
+  }),
   'battle-axe': Object.freeze({
     appearanceId: 'battle-axe', itemName: 'Battle Axe', visualClass: 'battle-axe', poseProfileId: 'one-handed-swing'
   }),
@@ -65,7 +68,7 @@ function init() {
     <label class="studio-field">Profile name<input id="studioPoseProfileName" value="One-handed swinging weapon"></label>
     <label class="studio-field">Pose note<textarea id="studioPoseNote" rows="2" placeholder="Optional note about this exact frame"></textarea></label>
     <div class="studio-capture-buttons" id="studioPoseRecordButtons"></div>
-    <div id="studioPoseProfileStatus" class="studio-note" role="status">Equip Sword or Battle Axe, then record Ready, Attack, and Prone.</div>
+    <div id="studioPoseProfileStatus" class="studio-note" role="status">Equip a registered weapon, then record Ready, Attack, and Prone.</div>
     <button id="studioExportPoseProfile" class="studio-button studio-primary studio-wide-button" type="button">Export pose profile JSON</button>`;
   anchor.insertAdjacentElement('afterend', panel);
   const buttons = panel.querySelector('#studioPoseRecordButtons');
@@ -93,6 +96,7 @@ function init() {
       const profileNameField=panel.querySelector('#studioPoseProfileName');
       if(!profileIdField.value.trim()||profileIdField.value.trim()==='one-handed-swing')profileIdField.value=equipmentDescriptor.poseProfileId;
       if(equipmentDescriptor.poseProfileId==='two-handed-swing'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Two-handed swinging weapon';
+      if(equipmentDescriptor.poseProfileId==='two-handed-thrust'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Two-Handed Stab';
       const rightHand = snap.equipment?.settings?.rightHand;
       for (const pose of POSE_NAMES) {
         if (saved.get(pose)?.studioEquipment?.rightHand !== rightHand) {

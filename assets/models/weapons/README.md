@@ -39,3 +39,7 @@ The Battle Axe is preserved byte-for-byte from the uploaded GLB:
 - It uses the `one-handed-swing-v1` profile and starts from a provisional sword-style right-hand calibration. Tune the exact grip in Studio and export the Weapon Pose Profile JSON before treating a calibration as final.
 
 Carl's body model is 18,672 triangles, so the axe intentionally serves as a relatively heavy accessory benchmark for future on-demand equipment rendering.
+
+## Spear (Rev 138)
+
+`./spears/spear.glb` is the optimized uploaded spear: 512 triangles, three embedded 512px PBR maps, 94,172 bytes. Catalog ID `spear` uses the existing **2H Stab (Pierce)** profile and shared adjustable two-hand mount. See [Spear integration](../../../docs/SPEAR_INTEGRATION.md) for source hashes, Blender reproduction, tuning and validation.

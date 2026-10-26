@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C75';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C138';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -8,6 +8,7 @@ import {
 // to this hand-local direction. For a sword it is the blade; for an axe it is
 // the shaft. Cutting edges are deliberately not treated as the weapon axis.
 export const HELD_WEAPON_AXIS = Object.freeze([0, 0, -1]);
+const SPEAR_ITEM=itemCatalogEntry('spear');
 const TWO_HANDED_SWORD_ITEM=itemCatalogEntry('two-handed-sword');
 if(!TWO_HANDED_SWORD_ITEM?.appearance)throw new Error('Two-Handed Sword catalog appearance is required.');
 export const STUDIO_WEAPONS = Object.freeze([
@@ -44,6 +45,19 @@ export const STUDIO_WEAPONS = Object.freeze([
     defaultSizePercent:TWO_HANDED_SWORD_ITEM.appearance.defaultSizePercent,
     calibratedLengthInches:TWO_HANDED_SWORD_ITEM.physical?.calibratedLengthInches || 60.6,
     presetRevision:1
+  }),
+  Object.freeze({
+    id:SPEAR_ITEM.appearance.studioId,label:SPEAR_ITEM.name,
+    visualClass:SPEAR_ITEM.appearance.visualClass,poseProfileId:SPEAR_ITEM.appearance.poseProfileId,
+    file:SPEAR_ITEM.appearance.asset,handsRequired:SPEAR_ITEM.appearance.handsRequired,
+    grip:Object.freeze([...SPEAR_ITEM.appearance.grip]),
+    secondaryGrip:Object.freeze([...SPEAR_ITEM.appearance.secondaryGrip]),
+    primaryAxis:Object.freeze([...SPEAR_ITEM.appearance.primaryAxis]),
+    nativeScale:SPEAR_ITEM.appearance.nativeScale,
+    position:Object.freeze([...SPEAR_ITEM.appearance.position]),
+    rotation:Object.freeze([...SPEAR_ITEM.appearance.rotationDegrees]),
+    defaultSizePercent:SPEAR_ITEM.appearance.defaultSizePercent,
+    calibratedLengthInches:SPEAR_ITEM.physical.calibratedLengthInches,presetRevision:1
   })
 ]);
 

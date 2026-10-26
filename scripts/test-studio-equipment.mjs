@@ -44,7 +44,7 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 3, 'Sword, Battle Axe, and Two-Handed Sword are registered');
+assert.equal(STUDIO_WEAPONS.length, 4, 'Sword, Battle Axe, Two-Handed Sword, and Spear are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
 for (const weapon of STUDIO_WEAPONS) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
@@ -474,3 +474,62 @@ for (const gear of [{ loading: true, settings }, { loading: false, attached: fal
 }
 
 console.log('Studio weapon integrity, animated sword grip (4 clips × 6 facings), workspace settings, capture locks and loading/disposal races passed.');
+
+// Spear integration: real binary, packed 512px PBR maps and shared mount controls.
+const spear = STUDIO_WEAPONS.find(weapon => weapon.id === 'spear');
+assert.equal(spear.handsRequired, 2);
+assert.equal(spear.poseProfileId, 'two-handed-thrust');
+const spearAsset = glb(spear.file);
+const spearMetadata = JSON.parse(fs.readFileSync(new URL('../assets/models/weapons/spears/spear.json', import.meta.url)));
+assert.equal(spearAsset.bytes.length, spearMetadata.bytes);
+assert.equal(crypto.createHash('sha256').update(spearAsset.bytes).digest('hex'), spearMetadata.sha256);
+assert.equal(spearAsset.json.skins?.length || 0, 0);
+assert.equal(spearAsset.json.animations?.length || 0, 0);
+const spearTriangles = spearAsset.json.meshes.flatMap(mesh => mesh.primitives)
+  .reduce((sum, primitive) => sum + spearAsset.json.accessors[primitive.indices].count / 3, 0);
+assert.equal(spearTriangles, 512);
+assert.ok(spearTriangles < spearMetadata.sourceTriangles);
+const spearBinOffset = 28 + spearAsset.bytes.readUInt32LE(12);
+assert.equal(spearAsset.json.images.length, 3);
+for (const image of spearAsset.json.images) {
+  assert.equal(image.mimeType, 'image/jpeg');
+  const view = spearAsset.json.bufferViews[image.bufferView];
+  const jpeg = spearAsset.bytes.subarray(spearBinOffset + (view.byteOffset || 0), spearBinOffset + (view.byteOffset || 0) + view.byteLength);
+  assert.equal(jpeg.readUInt16BE(0), 0xffd8);
+  let dimensions = null;
+  for (let offset = 2; offset < jpeg.length;) {
+    assert.equal(jpeg[offset], 0xff);
+    const marker = jpeg[offset + 1], length = jpeg.readUInt16BE(offset + 2);
+    if ([0xc0, 0xc1, 0xc2].includes(marker)) { dimensions = [jpeg.readUInt16BE(offset + 7), jpeg.readUInt16BE(offset + 5)]; break; }
+    offset += 2 + length;
+  }
+  assert.deepEqual(dimensions, [512, 512]);
+}
+const spearMaterial = spearAsset.json.materials[0];
+assert.ok(spearMaterial.normalTexture && spearMaterial.occlusionTexture);
+assert.ok(spearMaterial.pbrMetallicRoughness.baseColorTexture && spearMaterial.pbrMetallicRoughness.metallicRoughnessTexture);
+const spearHand = new THREE.Bone(), spearModel = new THREE.Group();
+const spearSettings = normalizeEquipment({rightHand:'spear'});
+const spearMount = createWeaponAttachment(THREE, spearHand, spearModel, spearSettings);
+close(spearModel.localToWorld(new THREE.Vector3(...spear.grip)), spearHand.localToWorld(new THREE.Vector3(...spear.position)), 'Spear grip pivot stays in the fist');
+spearMount.update({...spearSettings, sizePercent:125, position:[0.02,0.03,0.04], rotation:[-75,10,5], secondaryGripOffsetInches:[1,-2,0.5]});
+assert.ok(Math.abs(spearMount.socket.scale.x - spear.nativeScale * 1.25) < 1e-10);
+assert.deepEqual(spearMount.secondaryGripOffsetInches, [1,-2,0.5]);
+assert.deepEqual(spearMount.socket.position.toArray(), [0.02,0.03,0.04]);
+assert.equal(normalizeEquipment({...spearSettings,sizePercent:125}).sizePercent,125);
+spearMount.detach();
+console.log('PASS spear: reduced binary, 512px PBR maps, 2H Stab mapping and adjustable shared mount');
+
+let spearShieldRemovals = 0;
+const spearSelection = vm.createContext({
+  state:{modelReady:true,modelLoading:false,disposed:false,model:{}},
+  studioWeapon: id => STUDIO_WEAPONS.find(weapon => weapon.id === id),
+  equipment:{select:async () => true},
+  shieldEquipment:{snapshot:() => ({settings:{leftHandShield:'round-wooden-shield'}}),
+    select:async value => {assert.equal(value,'none');spearShieldRemovals++;}},
+  poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
+  resetPreviewReferenceToReady(){},updateEquipmentControls(){}
+});
+vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), spearSelection);
+await vm.runInContext('changeEquipment({rightHand:"spear"})', spearSelection);
+assert.equal(spearShieldRemovals,1,'Normalized spear settings clear the shield through the shared selection path');

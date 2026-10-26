@@ -17,7 +17,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - For model imports, preserve and consult the existing model/animation workflow documentation in `docs/` before diagnosing rigging issues from scratch.
 
 ## Binary asset transfer — verified facts and recovery procedure (2026-10-26)
-- A local runtime may be unable to resolve `github.com`, while the **GitHub connector remains operational** with repository write access.
+- A local runtime may be unable to resolve `github.com`, while the **GitHub connector remains operational** with repository write access. In the Rev 138 session, granting network access restored Git clone/fetch, but push failed in the credential helper. The verified bridge is `functions.exec` → `mcp__node_repl__js` reading local bytes → capture its text result in the orchestration runtime → GitHub `create_blob` with base64, then tree/commit/ref. See `docs/SPEAR_INTEGRATION.md`; never print the large payload.
 - GitHub connector `create_blob` is confirmed operational for small text probes; it supports `encoding: "base64"` for binary payloads. **This does not establish a working bridge** from local container bytes into connector arguments.
 - Available repository write primitives include `create_blob`, `create_tree`, `create_commit`, `update_ref`, `create_file` and `update_file`. Prefer normal feature-branch/PR workflow and avoid mutating published branches without validation.
 - When importing binary assets: first check direct Git/network and any tool that can natively read local upload bytes into the same execution environment as repository write actions. Then consider GitHub blob/base64 upload. Verify the returned blob/branch content before declaring transfer successful. Never try to paste or truncate large Base64 strings into the conversation.
@@ -25,8 +25,8 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
-- Spear source: uploaded `spear.zip`; optimized version with 512px textures is about 0.76 MiB compressed; mesh is already low-poly, so no decimation needed.
-- **Pending:** transfer optimized spear binary model/textures into appropriate repository asset folder; register it in equipment catalog; expose it in 3D/Pixel Studio; associate **Two-Handed Stab** animation; let user inspect alignment with configurable grip/offset/scale. No spear integration/merge/publish had been verified at the time of this note.
+- Spear source: user-provided `spear.zip` (78,507,239 bytes), containing an FBX with 642 triangles and large external textures. The user explicitly requested polygon reduction: Rev 138 derives a 512-triangle, 94,172-byte GLB with three embedded 512px PBR maps. See `docs/SPEAR_INTEGRATION.md` and `scripts/optimize-spear.py`.
+- Spear is registered as two-handed piercing equipment using the existing `two-handed-thrust` / **2H Stab (Pierce)** action profile. Studio selection, adjustable grip/offset/scale and profile export reuse existing equipment paths. Per-model alignment and captured pose choices remain user-tunable. Do not substitute swing poses for missing stab captures.
 - **Deferred:** friendly Orc encounter selection displaying Dungeon Crawler Carl fallback instead of Orc placeholder sprite. Revisit after Unit Packages.
 - Always check latest repo state: these pending notes can be superseded by later commits.
 

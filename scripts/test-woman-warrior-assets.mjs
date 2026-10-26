@@ -55,6 +55,6 @@ for (const model of catalog.models.filter(entry=>/carl/.test(entry.id)))
  assert.equal(model.weaponAttachmentProfileId,undefined);
 const studio=readFileSync(new URL('js/3d-studio.mjs',root),'utf8');
 assert.ok(studio.includes("profileId === 'tripo-woman-warrior-one-hand-sword-v1'"));
-assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(ui.RightHandWeapon.value))'));
+assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(weaponId))'));
 assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand))'));
 console.log('PASS Woman Warrior: original bytes, 65 joints, 17 animations, retained skins and model-specific sword grip');

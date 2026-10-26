@@ -6,9 +6,9 @@ import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C72';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C138';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C72';
-import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C97';
+import { studioWeapon, findRightHand, createWeaponAttachment } from './studio-equipment.mjs?v=R238C138';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C97';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
