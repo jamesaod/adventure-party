@@ -2,6 +2,15 @@
   "version": 1,
   "models": [
     {
+      "id": "dungeon-crawler-carl-v3",
+      "label": "Dungeon Crawler Carl Ver 3",
+      "file": "assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Sword And Shield Idle"
+    },
+    {
       "id": "dungeon-crawler-carl-v2",
       "label": "Dungeon Crawler Carl Ver 2",
       "file": "assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb",
@@ -241,5 +250,8 @@
       "status": "user-calibrated",
       "description": "Rev 124: Woman Warrior sword grip calibrated from accepted Studio slider settings. Model-specific Medieval Sword position and rotation, without changing Carl or Orc presets."
     }
-  }
+  },
+  "studioModelIds": [
+    "dungeon-crawler-carl-v3"
+  ]
 }

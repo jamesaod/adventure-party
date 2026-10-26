@@ -1,3 +1,7 @@
+import { loadUploadedFbxAnimations } from '../js/repository-fbx-animations.mjs';
+import { retargetHumanoidClip } from '../js/mixamo-retarget.mjs';
+import { prepareStudioAnimations } from '../js/studio-animations.mjs';
+import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -145,6 +149,58 @@ Connections:  {
         console.log(`${path.basename(filename)}: ${JSON.stringify(model.userData.fbxAnimations)}`);
       }
     } finally { THREE.TextureLoader.prototype.load = loadTexture; }
+  }
+  // Ver 3 loads exactly the source-supplied FBX set on the preserved Ver 2 rig.
+  {
+    const THREE = await import(pathToFileURL(path.join(three, 'three.core.min.js')));
+    const modelCatalog = JSON.parse(await fs.readFile(new URL('../data/studio-models.json', import.meta.url), 'utf8'));
+    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3']);
+    const carl = modelCatalog.models.find(model => model.id === modelCatalog.studioModelIds[0]);
+    assert.equal(carl.label, 'Dungeon Crawler Carl Ver 3');
+    assert.equal(carl.animationLibrary, 'uploaded-fbx');
+    assert.equal(carl.file, modelCatalog.models.find(model => model.id === 'dungeon-crawler-carl-v2').file);
+    const bytes = await fs.readFile(new URL('../'+carl.file, import.meta.url));
+    const json = JSON.parse(bytes.subarray(20, 20+bytes.readUInt32LE(12)).toString('utf8'));
+    const nodes = json.nodes.map(node => {
+      const object = new THREE.Bone(); object.name=node.name || '';
+      if(node.matrix) new THREE.Matrix4().fromArray(node.matrix).decompose(object.position,object.quaternion,object.scale);
+      else {object.position.fromArray(node.translation || [0,0,0]);object.quaternion.fromArray(node.rotation || [0,0,0,1]);object.scale.fromArray(node.scale || [1,1,1]);}
+      return object;
+    });
+    json.nodes.forEach((node,index) => (node.children || []).forEach(child => nodes[index].add(nodes[child])));
+    const targetModel = new THREE.Group();
+    for(const index of json.scenes[json.scene || 0].nodes)targetModel.add(nodes[index]);
+    targetModel.updateWorldMatrix(true,true);
+    const appRoot = new URL('https://studio.test/candidate/');
+    const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
+    assert.equal(catalog.animations.length,13);
+    for(const entry of catalog.animations){
+      const source=await fs.readFile(new URL('../'+entry.file,import.meta.url));
+      assert.equal(source.length,entry.bytes);
+      assert.equal(crypto.createHash('sha256').update(source).digest('hex'),entry.sha256);
+    }
+    const fetchAsset = async url => {
+      const relative=url.pathname.slice(appRoot.pathname.length);
+      const content=await fs.readFile(new URL('../'+relative,import.meta.url));
+      return {ok:true,json:async()=>JSON.parse(content.toString('utf8')),
+        arrayBuffer:async()=>content.buffer.slice(content.byteOffset,content.byteOffset+content.byteLength)};
+    };
+    const loadTexture=THREE.TextureLoader.prototype.load;
+    THREE.TextureLoader.prototype.load=function(){return new THREE.Texture();};
+    let disposed=0;
+    try {
+      const clips=await loadUploadedFbxAnimations({appRoot,targetModel,THREE,FBXLoader,
+        prepareStudioAnimations,retargetHumanoidClip,fetchAsset,disposeModel(){disposed++;}});
+      assert.equal(clips.length,13);
+      assert.equal(disposed,13);
+      assert.deepEqual(clips.map(clip=>clip.name),catalog.animations.map(entry=>entry.label));
+      assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=60));
+      assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
+      assert.ok(clips.every(clip=>clip.tracks.every(track=>Array.from(track.values).every(Number.isFinite))));
+      assert.ok(clips.some(clip=>clip.name===carl.initialAnimation));
+      assert.equal(clips.find(clip=>clip.name==='Bayonet Stab').userData.actionProfiles[0],'two-handed-thrust');
+      console.log('PASS Carl Ver 3: only offered model, same source rig, all 13 uploaded FBX motions retarget with finite tracks');
+    } finally {THREE.TextureLoader.prototype.load=loadTexture;}
   }
   console.log('FBX animations: distinct and duplicate-named stacks, shared curves and connection order, authored ranges, named-take fallback, empty layers/stacks, layered warnings, and returned-root metadata passed.');
 } finally {

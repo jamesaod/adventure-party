@@ -78,3 +78,5 @@ The existing R-number validator remains useful for formal release branches named
 ## Reproducible equipment import
 
 Use the canonical item catalog and shared Studio equipment registry; preserve source provenance, runtime checksum, grip, axis, scale and attachment offsets. [Spear integration](SPEAR_INTEGRATION.md) records the Rev 138 FBX reduction / 512px PBR / GLB process and verified local-file-to-GitHub-connector binary transfer. On Windows clone with `core.autocrlf=false` to preserve ASCII FBX and imported-package hashes. Validate the exact published asset after the candidate publisher completes.
+
+Studio model offerings are controlled by `studioModelIds` in the model catalog; keep historical source records needed by combat separate from the selector. The Rev 139 section of [3D Studio](3D_STUDIO.md) documents Carl Ver 3 and its uploaded-FBX-only animation policy.

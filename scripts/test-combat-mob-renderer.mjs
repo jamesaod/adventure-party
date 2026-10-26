@@ -50,7 +50,7 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C138")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C138")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C139")'));
 assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C135",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
@@ -92,3 +92,5 @@ assert.ok(renderer.includes("WINDUP_POSES.filter(name=>profile?.poses?.[name])")
 assert.ok(renderer.includes("for(const capture of poseNames)"));
 assert.ok(renderer.includes("poseNames.map(capture=>"));
 assert.ok(renderer.includes("windupDurationMs:profile?.poses?.windup"));
+
+assert.ok(renderer.includes("recipe?.model?.id==='dungeon-crawler-carl-v3'") && renderer.includes('await loadUploadedFbxAnimations('), 'Carl Ver 3 combat refresh uses the same uploaded motion library as Studio');
