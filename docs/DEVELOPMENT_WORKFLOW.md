@@ -74,3 +74,7 @@ The **Adventure Party Validation** workflow runs for:
 - pushes to `candidate`
 
 The existing R-number validator remains useful for formal release branches named like `r237-...`. Ordinary feature/fix branches are not forced to create a new R-number.
+
+## Reproducible equipment import
+
+Use the canonical item catalog and shared Studio equipment registry; preserve source provenance, runtime checksum, grip, axis, scale and attachment offsets. [Spear integration](SPEAR_INTEGRATION.md) records the Rev 138 FBX reduction / 512px PBR / GLB process and verified local-file-to-GitHub-connector binary transfer. On Windows clone with `core.autocrlf=false` to preserve ASCII FBX and imported-package hashes. Validate the exact published asset after the candidate publisher completes.

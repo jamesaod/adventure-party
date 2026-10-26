@@ -22,7 +22,7 @@ for(const entry of catalog.models.filter(entry=>/carl/i.test(entry.id))) {
 }
 assert.deepEqual(studioWeapon('medieval-sword').rotation,[0,-90,0],
   'Shared sword preset unchanged; Orc adjustment is opt-in only');
-assert.equal(STUDIO_WEAPONS.length,3,'No extra weapon or rendering path introduced');
+assert.equal(STUDIO_WEAPONS.length,4,'Existing three weapons plus catalog spear use the shared attachment path');
 
 const hand=new THREE.Bone(); hand.name='mixamorig:RightHand';
 const root=new THREE.Group();root.add(hand);
@@ -46,7 +46,7 @@ attachment.detach();
 // so a newly equipped sword on the same rig gets the same data-driven result.
 const studio=readFileSync('js/3d-studio.mjs','utf8');
 assert.ok(studio.includes('function defaultEquipmentSettingsForModel(weaponId)'));
-assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(ui.RightHandWeapon.value))'));
+assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(weaponId))'));
 assert.ok(studio.includes('changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand))'));
 assert.ok(studio.includes('profile?.weaponId === weaponId'),
   'Wrong weapon classes do not inherit the one-handed sword orientation');
