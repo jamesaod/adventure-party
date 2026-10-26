@@ -540,19 +540,27 @@ function restoreBonePose(pose) {
 }
 
 // An independent left-hand instance uses the same loader, socket and lifecycle.
-// Rev 150: user-calibrated left-hand defaults; explicit saved adjustments win.
-const OFF_HAND_GRIP = Object.freeze({
-  position: Object.freeze([0.005, 0.065, -0.005]),
-  rotation: Object.freeze([163, -180, 0])
+// Rev 151: the assets have different handle axes. Keep the approved sword
+// mount, align melee handles to hand-local +X, and calibrate the staff/sling
+// vertically against Carl's Standing Idle frame 0. Never rotate source meshes.
+const OFF_HAND_POSITION = Object.freeze([0.005, 0.065, -0.005]);
+export const OFF_HAND_GRIPS = Object.freeze({
+  'medieval-sword': Object.freeze({rotation:Object.freeze([163,-180,0])}),
+  'battle-axe': Object.freeze({rotation:Object.freeze([-17,0,-51])}),
+  'short-sword': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'dagger': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'wizard-staff-grip': Object.freeze({rotation:Object.freeze([-23,-1,-157]),position:Object.freeze([-0.015,0.02,0.015])}),
+  'sling': Object.freeze({rotation:Object.freeze([-23,-1,-157])})
 });
 export function normalizeOffHandEquipment(value = {}) {
   const source=studioWeapon(value?.rightHand)?.handsRequired === 2 ? {rightHand:'none'} : value;
   const settings=normalizeEquipment(source);
+  const preset=OFF_HAND_GRIPS[settings.rightHand] || OFF_HAND_GRIPS['medieval-sword'];
   return {
     ...settings,
     sizePercent:bounded(source?.sizePercent,100,EQUIPMENT_LIMITS.sizePercent),
-    position:OFF_HAND_GRIP.position.map((fallback,axis)=>bounded(source?.position?.[axis],fallback,EQUIPMENT_LIMITS.position)),
-    rotation:OFF_HAND_GRIP.rotation.map((fallback,axis)=>bounded(source?.rotation?.[axis],fallback,EQUIPMENT_LIMITS.rotation))
+    position:(preset.position || OFF_HAND_POSITION).map((fallback,axis)=>bounded(source?.position?.[axis],fallback,EQUIPMENT_LIMITS.position)),
+    rotation:preset.rotation.map((fallback,axis)=>bounded(source?.rotation?.[axis],fallback,EQUIPMENT_LIMITS.rotation))
   };
 }
 
