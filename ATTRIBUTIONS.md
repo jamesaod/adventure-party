@@ -22,3 +22,11 @@ The attribution above is not intended to imply that PamNawi endorses Adventure P
 - **File used:** `assets/models/weapons/daggers/medieval-dagger.glb`
 - **Modifications:** PBR textures reduced to 512 x 512; orientation and length normalized for adjustable equipment attachment; all 960 source triangles retained. Candidate Rev 145 reduces the material metallic factor to 0.25 for clearer appearance under game lighting; embedded texture pixels are unchanged.
 - **Original notice:** `assets/models/weapons/daggers/LICENSE-Mordius.txt`. Author, source and license also remain embedded in the GLB metadata.
+
+## Sling - Candidate Rev 146
+
+[Grab3D Sling](https://grab3d.com/models/weapons/sling/), by Grab3D, [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+
+- File: `assets/models/weapons/slings/sling.glb`.
+- Modifications: folded into a hanging held shape; normalized scale; three PBR maps resized to 512 x 512. All 9,512 triangles and original UVs retained.
+- Source license and provenance: `assets/models/weapons/slings/grab3d-LICENSE.txt` and `grab3d-manifest.json`.

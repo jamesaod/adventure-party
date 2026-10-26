@@ -11,7 +11,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C145';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C146';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -22,10 +22,10 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C145';
+} from './studio-equipment.mjs?v=R238C146';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C145';
+} from './studio-shield.mjs?v=R238C146';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
@@ -428,9 +428,20 @@ async function changeEquipment(value, { resetPose = true } = {}) {
     // and capture framing unchanged when gear is equipped or removed.
     if (resetPose) {
       resetPreviewReferenceToReady();
-      if (['bow','direct-fire'].includes(selectedWeapon?.poseProfileId) || ['wooden-staff','short-sword','dagger','wizard-staff-grip'].includes(selectedWeapon?.id)) {
+      if (['bow','direct-fire'].includes(selectedWeapon?.poseProfileId) || ['wooden-staff','short-sword','dagger','wizard-staff-grip','sling'].includes(selectedWeapon?.id)) {
         const profileClip = (state.clips || []).findIndex(clip => clip.userData?.actionProfiles?.includes(selectedWeapon.poseProfileId));
-        if (profileClip >= 0) setClip(profileClip);
+        if (profileClip >= 0) {
+          setClip(profileClip);
+          const preview = selectedWeapon.previewPose;
+          if (preview && preview.modelId === state.libraryModelId &&
+              preview.animationId === state.clips[profileClip].userData?.studioAnimationId && state.action) {
+            state.playing = false;
+            state.action.paused = true;
+            state.action.time = Math.min(preview.timeSeconds, state.action.getClip().duration);
+            equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
+            updateAnimationControls(); invalidate();
+          }
+        }
       }
     }
     poseCapture?.invalidateCaptures('Weapon or grip changed');
@@ -2309,7 +2320,7 @@ function bindControls() {
     // previous weapon's transform into the newly selected asset.
     const weaponId = ui.RightHandWeapon.value;
     void changeEquipment(defaultEquipmentSettingsForModel(weaponId));
-    if (['spear','recurve-bow','crossbow','wooden-staff','short-sword','dagger','wizard-staff-grip'].includes(weaponId)) {
+    if (['spear','recurve-bow','crossbow','wooden-staff','short-sword','dagger','wizard-staff-grip','sling'].includes(weaponId)) {
       const actionProfile = $('studioActionProfile');
       actionProfile.value = studioWeapon(weaponId).poseProfileId;
       actionProfile.dispatchEvent(new Event('change'));

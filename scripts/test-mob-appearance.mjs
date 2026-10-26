@@ -94,3 +94,5 @@ assert.equal(wizardRecipe.equipment.handsRequired,1);assert.equal(wizardRecipe.e
 assert.equal(wizardRecipe.animation.semanticId,'wizard-staff-grip');
 assert.equal(wizardRecipe.equipment.asset,VISIBLE_WEAPON_ASSETS['wooden-staff'].asset);
 assert.notEqual(appearanceCacheKey(wizardRecipe),appearanceCacheKey(appearanceRecipeForMob({...carl,inventory:[{name:'Wooden Staff',slot:'weapon',equipped:true,appearanceId:'wooden-staff'}]},{modelId:'dungeon-crawler-carl-v3'})));
+const slingRecipe=appearanceRecipeForMob({...carl,inventory:[{name:'Sling',slot:'weapon',equipped:true,appearanceId:'sling'}]},{modelId:'dungeon-crawler-carl-v3'});
+assert.equal(slingRecipe.equipment.handsRequired,1);assert.equal(slingRecipe.animation.semanticId,'sling');assert.equal(slingRecipe.equipment.asset,VISIBLE_WEAPON_ASSETS.sling.asset);

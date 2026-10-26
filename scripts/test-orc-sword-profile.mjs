@@ -22,7 +22,7 @@ for(const entry of catalog.models.filter(entry=>/carl/i.test(entry.id))) {
 }
 assert.deepEqual(studioWeapon('medieval-sword').rotation,[0,-90,0],
   'Shared sword preset unchanged; Orc adjustment is opt-in only');
-assert.equal(STUDIO_WEAPONS.length,10,'Existing weapons plus the three Rev 144 imports use the shared attachment path');
+assert.equal(STUDIO_WEAPONS.length,11,'Existing weapons plus the three Rev 144 imports use the shared attachment path');
 
 const hand=new THREE.Bone(); hand.name='mixamorig:RightHand';
 const root=new THREE.Group();root.add(hand);

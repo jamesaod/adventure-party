@@ -111,3 +111,4 @@ assert.equal(wizardItem.rules.handsRequired,1);assert.equal(ordinaryStaff.rules.
 assert.equal(wizardItem.appearance.asset,ordinaryStaff.appearance.asset);
 assert.deepEqual(wizardItem.appearance.runtimeAsset,ordinaryStaff.appearance.runtimeAsset);
 assert.equal(wizardItem.appearance.poseProfileId,'wizard-staff-grip');
+const slingItem=itemCatalogEntry('sling');assert.equal(slingItem.rules.catalogWeaponId,'sling');assert.equal(slingItem.appearance.poseProfileId,'sling');assert.equal(slingItem.appearance.handsRequired,1);

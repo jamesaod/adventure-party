@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C145';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C146';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -73,13 +73,14 @@ export const STUDIO_WEAPONS = Object.freeze([
     defaultSizePercent:CROSSBOW_ITEM.appearance.defaultSizePercent,
     calibratedLengthInches:CROSSBOW_ITEM.physical.calibratedLengthInches,presetRevision:1
   }),
-  ...['wooden-staff','short-sword','dagger','wizard-staff-grip'].map(id => {
+  ...['wooden-staff','short-sword','dagger','wizard-staff-grip','sling'].map(id => {
     const item=itemCatalogEntry(id), appearance=item.appearance;
     return Object.freeze({
       id:appearance.studioId,label:item.name,visualClass:appearance.visualClass,
       poseProfileId:appearance.poseProfileId,file:appearance.asset,
       assetSha256:appearance.runtimeAsset.sha256,handsRequired:appearance.handsRequired,
       grip:appearance.grip,primaryAxis:appearance.primaryAxis,
+      ...(appearance.previewPose ? {previewPose:appearance.previewPose} : {}),
       ...(appearance.secondaryGrip ? {secondaryGrip:appearance.secondaryGrip} : {}),
       nativeScale:appearance.nativeScale,position:appearance.position,
       rotation:appearance.rotationDegrees,defaultSizePercent:appearance.defaultSizePercent,
