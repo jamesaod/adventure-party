@@ -196,7 +196,7 @@ Connections:  {
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
-    assert.equal(catalog.animations.length,13);
+    assert.equal(catalog.animations.length,14);
     for(const entry of catalog.animations){
       const source=await fs.readFile(new URL('../'+entry.file,import.meta.url));
       assert.equal(source.length,entry.bytes);
@@ -214,14 +214,18 @@ Connections:  {
     try {
       const clips=await loadUploadedFbxAnimations({appRoot,targetModel,THREE,FBXLoader,
         prepareStudioAnimations,retargetHumanoidClip,fetchAsset,disposeModel(){disposed++;}});
-      assert.equal(clips.length,13);
-      assert.equal(disposed,13);
+      assert.equal(clips.length,14);
+      assert.equal(disposed,14);
       assert.deepEqual(clips.map(clip=>clip.name),catalog.animations.map(entry=>entry.label));
       assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=60));
       assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
       assert.ok(clips.every(clip=>clip.tracks.every(track=>Array.from(track.values).every(Number.isFinite))));
       assert.ok(clips.some(clip=>clip.name===carl.initialAnimation));
       assert.equal(clips.find(clip=>clip.name==='Bayonet Stab').userData.actionProfiles[0],'two-handed-thrust');
+      const idle=clips.find(clip=>clip.name==='Standing Idle');
+      assert.equal(idle.userData.studioAnimationId,'uploaded:standing-idle:0');
+      assert.deepEqual(idle.userData.actionProfiles,['unarmed']);
+      assert.equal(catalog.animations.at(-1).id,'standing-idle','Append new clips to preserve existing saved indices');
       const mixer=new THREE.AnimationMixer(targetModel);
       let maxAngularError=0, maxHipError=0;
       for(const [index,clip] of clips.entries()){
@@ -256,7 +260,7 @@ Connections:  {
         }
         mixer.stopAllAction();
       }
-      console.log(`PASS Carl recipe: 65 real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
+      console.log(`PASS Carl recipe: 70 real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
     } finally {THREE.TextureLoader.prototype.load=loadTexture;}
   }
   console.log('FBX animations: distinct and duplicate-named stacks, shared curves and connection order, authored ranges, named-take fallback, empty layers/stacks, layered warnings, and returned-root metadata passed.');
