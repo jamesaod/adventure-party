@@ -2429,3 +2429,16 @@ button, input, select, textarea {
 .electrical-sfx-lab-status[data-state="off"]{
   color:#e7a4a4;
 }
+
+/* Compact Gold Box-style combat inventory, separate from character stats. */
+.inventory-window{width:min(640px,96vw);max-height:min(80vh,680px);overflow:auto;box-sizing:border-box;background:#06050e;color:#e8dc8a;}
+.inventory-window h2{margin:0 0 6px;color:#e7bc4d;text-align:left;font-size:1.3rem;}
+.inventory-columns,.inventory-entry{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px;font-family:monospace;font-size:15px;line-height:1.22;}
+.inventory-columns{border-top:1px dotted #a89054;border-bottom:1px dotted #a89054;color:#d6c99e;margin:6px 0 8px;padding:6px 8px;}
+.inventory-entry{padding:2px 8px;color:#b3ea78;}
+.inventory-entry:focus-within,.inventory-entry:hover{background:#26212c;}
+.inventory-ready{color:#b1ec80;text-align:center;}
+.inventory-item-name{overflow-wrap:anywhere;}
+.inventory-item-action{border:1px solid #908a7b;background:#252539;color:#e9d28f;font:12px monospace;padding:2px 7px;cursor:pointer;}
+.inventory-item-action:disabled{opacity:.4;cursor:default;}
+.inventory-window .sheet-actions{border-top:1px dotted #a89054;margin-top:10px;padding-top:10px;}
