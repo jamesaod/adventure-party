@@ -8,8 +8,8 @@
   "sourceTriangles": 960,
   "triangles": 960,
   "decimateRatio": 1,
-  "bytes": 674844,
-  "sha256": "973428b17f5d233a06383d3c94338d191ecd837924cdb2fb08dd780bf19ca1e4",
+  "bytes": 674868,
+  "sha256": "625b794a045968d3d1643bfdb3bb10c73eb51b582d5f0471f9a3b3661810ae56",
   "textureResolution": 512,
   "primaryAxis": [
     0,
@@ -77,5 +77,10 @@
   },
   "sourceDependencies": {
     "scene.bin": "864fad33fc389f931b981277fe141384351694723da2bb0fda85025f755964a5"
+  },
+  "materialAdjustment": {
+    "revision": 145,
+    "metallicFactor": 0.25,
+    "reason": "Improve blade visibility under Studio and combat lighting; retain source textures and all geometry."
   }
 }

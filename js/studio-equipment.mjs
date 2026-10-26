@@ -1,4 +1,4 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C144';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C145';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -73,7 +73,7 @@ export const STUDIO_WEAPONS = Object.freeze([
     defaultSizePercent:CROSSBOW_ITEM.appearance.defaultSizePercent,
     calibratedLengthInches:CROSSBOW_ITEM.physical.calibratedLengthInches,presetRevision:1
   }),
-  ...['wooden-staff','short-sword','dagger'].map(id => {
+  ...['wooden-staff','short-sword','dagger','wizard-staff-grip'].map(id => {
     const item=itemCatalogEntry(id), appearance=item.appearance;
     return Object.freeze({
       id:appearance.studioId,label:item.name,visualClass:appearance.visualClass,

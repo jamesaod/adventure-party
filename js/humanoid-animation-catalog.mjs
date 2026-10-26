@@ -10,6 +10,7 @@ export const HUMANOID_ANIMATION_GROUPS=Object.freeze({
     'two-handed-thrust',
     'polearm',
     'staff',
+    'wizard-staff-grip',
     'bow',
     'unarmed'
   ]),
@@ -120,6 +121,11 @@ export const HUMANOID_ANIMATION_CATALOG=freezeDeep({
     id:'staff',category:'weapon',label:'Staff',
     fallbackId:'two-handed-swing',handedness:'two-handed',attackStyle:'staff',
     sourceCandidates:['LAB_Staff_Hold']
+  }),
+  'wizard-staff-grip':entry({
+    id:'wizard-staff-grip',category:'weapon',label:'Wizard Staff Grip',
+    fallbackId:'one-handed-swing',handedness:'one-handed',attackStyle:'staff',
+    sourceCandidates:['Sword And Shield Idle']
   }),
   bow:entry({
     id:'bow',category:'weapon',label:'Bow',

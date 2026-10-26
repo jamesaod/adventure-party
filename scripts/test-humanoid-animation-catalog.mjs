@@ -8,11 +8,11 @@ import {
 assert.equal(HUMANOID_ANIMATION_CATALOG_VERSION,1);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.weapon,[
   'one-handed-swing','one-handed-thrust','one-handed-shield','dual-wield',
-  'two-handed-swing','two-handed-thrust','polearm','staff','bow','unarmed'
+  'two-handed-swing','two-handed-thrust','polearm','staff','wizard-staff-grip','bow','unarmed'
 ]);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.casting,['arcane-cast','divine-cast','innate-cast']);
 assert.deepEqual(HUMANOID_ANIMATION_GROUPS.condition,['prone','sleep','held','stunned','dead']);
-assert.equal(new Set(HUMANOID_ANIMATION_IDS).size,18);
+assert.equal(new Set(HUMANOID_ANIMATION_IDS).size,19);
 
 const fallback=resolveHumanoidAnimationProfile('two-handed-swing');
 assert.equal(fallback.semanticId,'two-handed-swing');
@@ -79,3 +79,8 @@ const pairedState=resolveHumanoidAnimationState(paired,{action:'attack'});
 assert.equal(pairedState.semanticId,'dual-wield');
 assert.equal(pairedState.resolvedId,'one-handed-swing');
 assert.equal(poseProfileForHumanoid('dual-wield').poses.attack.animation,'UAL2_Sword_Regular_A');
+
+const wizardSemantic=poseProfileForHumanoid('wizard-staff-grip');
+assert.equal(wizardSemantic.handedness,'one-handed');assert.equal(wizardSemantic.attackStyle,'staff');
+assert.equal(poseProfileForHumanoid('staff').handedness,'two-handed');
+assert.equal(resolveHumanoidAnimationState({...paired,inventory:[]},{equipmentAnimationId:'wizard-staff-grip'}).semanticId,'wizard-staff-grip');

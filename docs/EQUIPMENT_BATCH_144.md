@@ -80,3 +80,7 @@ Run every command in `.github/workflows/adventure-party-validation.yml`, includi
 Local Windows validation passed 70 of 71 Node commands; the existing sprite-package symlink test requires permissions unavailable on this host. Run it unchanged in Linux CI and require the complete workflow to pass before merge. Existing spear, bow and crossbow image regressions also pass.
 
 Use feature branch → PR to `candidate` → passing validation → merge → candidate publisher and Pages deployment. The native blob bridge documented in [Spear integration](SPEAR_INTEGRATION.md) transfers local binary bytes if ordinary Git push credentials fail. Verify blob hashes and complete tree equality before creating the remote commit. After publication, compare live GLBs and changed modules byte-for-byte with the merged candidate, then test all three selections, animation playback, adjustable scale persistence and six-facing capture on the published Studio.
+
+## Candidate Rev 145 follow-up
+
+[Wizard Staff Grip and blade visibility](WIZARD_STAFF_AND_BLADE_VISIBILITY.md) records the dedicated one-handed staff equipment/action profile and the short sword/dagger material adaptation. Blade texture pixels and geometry remain unchanged; current sizes/hashes and reproducible export settings are in the follow-up. Keep the original two-handed staff behavior and source-color regression checks.

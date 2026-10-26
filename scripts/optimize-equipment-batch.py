@@ -52,10 +52,16 @@ for item in json.loads((root/'data/equipment-imports-144.json').read_text(encodi
     mesh.data.materials.clear();mesh.data.materials.append(material)
     path=output/item['file'];path.parent.mkdir(parents=True,exist_ok=True)
     bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,export_animations=False,export_yup=True,export_image_format='AUTO',export_texcoords=True)
-    if credits:
+    material_adjustment=None
+    if not reference and "runtimeMetallicFactor" in item:
+        material_adjustment=dict(revision=145,metallicFactor=item["runtimeMetallicFactor"],reason="Improve blade visibility under Studio and combat lighting; retain source textures and all geometry.")
+    if credits or material_adjustment:
         data=path.read_bytes();size=struct.unpack_from('<I',data,12)[0];gltf=json.loads(data[20:20+size]);binary=data[28+size:]
-        gltf['asset']['extras']={**credits,'modifications':'512px PBR textures; normalized orientation and scale; geometry triangle count preserved.'}
+        if credits:gltf['asset']['extras']={**credits,'modifications':'512px PBR textures; normalized orientation and scale; geometry triangle count preserved.'}
+        if material_adjustment:
+            for material in gltf['materials']:material['pbrMetallicRoughness']['metallicFactor']=material_adjustment['metallicFactor']
         block=json.dumps(gltf,separators=(',',':')).encode();block+=b' '*((-len(block))%4)
         path.write_bytes(struct.pack('<III',0x46546c67,2,28+len(block)+len(binary))+struct.pack('<II',len(block),0x4e4f534a)+block+struct.pack('<II',len(binary),0x004e4942)+binary)
     data=path.read_bytes();meta=dict(id=item['id'],sourceArchive=item['archive'],sourceArchiveSha256=item['archiveSha256'],sourceArchiveBytes=item['archiveBytes'],sourceFile=item['sourceFile'],sourceSha256=item['sourceSha256'],sourceDependencies=item.get('sourceDependencies',{}),sourceTriangles=before,triangles=after,decimateRatio=1 if reference else item['ratio'],bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),textureResolution='source' if reference else 512,primaryAxis=[0,1,0],credits=credits,textureReference=json.loads((textures/item['id']/'texture-reference.json').read_text(encoding='utf-8')))
+    if material_adjustment:meta['materialAdjustment']=material_adjustment
     path.with_suffix('.json').write_text(json.dumps(meta,indent=2)+'\n',encoding='utf-8',newline='\n');print('BATCH_OPTIMIZED',item['id'],before,after,len(data),meta['sha256'],flush=True)

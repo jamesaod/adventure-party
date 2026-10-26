@@ -113,7 +113,8 @@
       "bytes": 548240,
       "sha256": "5008b63f1d6b8e9e6b14bc4eebeedaf52cc460708ad0c6f5a99c883bd278c1b3",
       "actionProfiles": [
-        "one-handed-swing"
+        "one-handed-swing",
+        "wizard-staff-grip"
       ],
       "status": "source-supplied",
       "assignedPoses": {},

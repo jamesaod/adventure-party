@@ -88,3 +88,9 @@ for (const [id,profile,hands] of [['wooden-staff','two-handed-swing',2],['short-
  const stale=structuredClone(recipe);delete stale.equipment.assetSha256;
  assert.notEqual(appearanceCacheKey(recipe),appearanceCacheKey(stale));
 }
+
+const wizardRecipe=appearanceRecipeForMob({...carl,inventory:[{name:'Wizard Staff Grip',slot:'weapon',equipped:true,appearanceId:'wizard-staff-grip'}]},{modelId:'dungeon-crawler-carl-v3'});
+assert.equal(wizardRecipe.equipment.handsRequired,1);assert.equal(wizardRecipe.equipment.secondaryGrip,null);
+assert.equal(wizardRecipe.animation.semanticId,'wizard-staff-grip');
+assert.equal(wizardRecipe.equipment.asset,VISIBLE_WEAPON_ASSETS['wooden-staff'].asset);
+assert.notEqual(appearanceCacheKey(wizardRecipe),appearanceCacheKey(appearanceRecipeForMob({...carl,inventory:[{name:'Wooden Staff',slot:'weapon',equipped:true,appearanceId:'wooden-staff'}]},{modelId:'dungeon-crawler-carl-v3'})));

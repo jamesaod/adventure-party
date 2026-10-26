@@ -11,6 +11,7 @@ const APPEARANCE_BY_STUDIO_WEAPON = Object.freeze({
   'medieval-sword': Object.freeze({
     appearanceId: 'flaming-sword-5', itemName: 'Flaming Sword +5', visualClass: 'sword', poseProfileId: 'one-handed-swing'
   }),
+  'wizard-staff-grip': Object.freeze({appearanceId:'wizard-staff-grip',itemName:'Wizard Staff Grip',visualClass:'wizard-staff',poseProfileId:'wizard-staff-grip'}),
   'wooden-staff': Object.freeze({appearanceId:'wooden-staff',itemName:'Wooden Staff',visualClass:'staff',poseProfileId:'two-handed-swing'}),
   'short-sword': Object.freeze({appearanceId:'short-sword',itemName:'Short Sword',visualClass:'sword',poseProfileId:'one-handed-thrust'}),
   'dagger': Object.freeze({appearanceId:'dagger',itemName:'Dagger',visualClass:'dagger',poseProfileId:'one-handed-thrust'}),
@@ -104,6 +105,7 @@ function init() {
       if(equipmentDescriptor.poseProfileId==='two-handed-thrust'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Two-Handed Stab';
       if(equipmentDescriptor.poseProfileId==='bow'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Bow';
       if(equipmentDescriptor.poseProfileId==='direct-fire'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Direct Fire Weapons (Crossbow)';
+      if(equipmentDescriptor.poseProfileId==='wizard-staff-grip'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Wizard Staff Grip';
       if(equipmentDescriptor.poseProfileId==='one-handed-thrust'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='One-handed stabbing weapon';
       const rightHand = snap.equipment?.settings?.rightHand;
       for (const pose of POSE_NAMES) {

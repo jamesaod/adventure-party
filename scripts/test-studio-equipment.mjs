@@ -44,9 +44,9 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 9, 'Existing six weapons plus staff, short sword and dagger are registered');
+assert.equal(STUDIO_WEAPONS.length, 10, 'Existing equipment plus one-handed Wizard Staff Grip are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
-for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow'].includes(weapon.visualClass))) {
+for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow','wizard-staff'].includes(weapon.visualClass))) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
   const rotation = new THREE.Euler(...weapon.rotation.map(value => THREE.MathUtils.degToRad(value)), 'XYZ');
   axis.applyEuler(rotation).normalize();
@@ -643,3 +643,38 @@ for (const [id,profile,hands] of [['wooden-staff','two-handed-swing',2],['short-
   assert.equal(weaponAssetUrl(weapon,'https://example.test/candidate/').searchParams.get('v'),weapon.assetSha256);
 }
 console.log('PASS equipment batch: shared adjustable mounts, animation selection, shield compatibility and cache hashes');
+
+// Wizard staff is a separate one-handed grip/profile over the exact staff GLB.
+const wizardStaff=STUDIO_WEAPONS.find(weapon=>weapon.id==='wizard-staff-grip');
+const woodenStaff=STUDIO_WEAPONS.find(weapon=>weapon.id==='wooden-staff');
+assert.equal(wizardStaff.file,woodenStaff.file);assert.equal(wizardStaff.assetSha256,woodenStaff.assetSha256);
+assert.equal(wizardStaff.handsRequired,1);assert.equal(wizardStaff.secondaryGrip,undefined);
+assert.equal(wizardStaff.poseProfileId,'wizard-staff-grip');
+const wizardRig=new THREE.Group(),wizardRight=new THREE.Bone(),wizardLeft=new THREE.Bone(),wizardSpine=new THREE.Bone();
+wizardRight.name='mixamorigRightHand';wizardLeft.name='mixamorigLeftHand';wizardSpine.name='mixamorigSpine';
+wizardLeft.rotation.set(.3,.4,.5);wizardSpine.rotation.set(.1,.2,.3);wizardRig.add(wizardRight,wizardLeft,wizardSpine);
+const wizardPoses=[wizardLeft.quaternion.clone(),wizardSpine.quaternion.clone()];
+const wizardModel=new THREE.Group(),wizardManager=createStudioEquipment({THREE,loadAsset:async()=>wizardModel,disposeObject:()=>{}});
+assert.equal(await wizardManager.setModel(wizardRig,{rightHand:'wizard-staff-grip'}),true);
+assert.equal(wizardManager.snapshot().attachmentHandBone,wizardRight.name);
+assert.equal(wizardManager.applyConstraints().active,false,'Wizard grip leaves the off hand and body pose untouched');
+assert.ok(wizardLeft.quaternion.equals(wizardPoses[0])&&wizardSpine.quaternion.equals(wizardPoses[1]));
+const wizardSettings={...wizardManager.snapshot().settings,sizePercent:115,position:[.02,.06,-.01],rotation:[-70,-30,45]};
+await wizardManager.select(wizardSettings);wizardRig.updateWorldMatrix(true,true);
+close(wizardModel.localToWorld(new THREE.Vector3(...wizardStaff.grip)),wizardRight.localToWorld(new THREE.Vector3(.02,.06,-.01)),'Wizard staff keeps its adjustable pivot in the right palm');
+assert.deepEqual(normalizeEquipment(wizardSettings),wizardManager.snapshot().settings);
+wizardManager.dispose();assert.equal(wizardRight.children.length,0);
+selectedBowClip=-1;bowShieldRemovals=0;
+vm.runInContext("state.clips=[{userData:{actionProfiles:['two-handed-swing']}},{userData:{actionProfiles:['one-handed-swing','wizard-staff-grip']}}]",bowSelection);
+await vm.runInContext('changeEquipment({rightHand:"wizard-staff-grip"})',bowSelection);
+assert.equal(selectedBowClip,1);assert.equal(bowShieldRemovals,0,'One-handed wizard grip permits a shield');
+const wizardHandQuaternion=bowReference.clips.find(clip=>clip.id==='sword-and-shield-idle').frames[0].worldQuaternions.RightHand;
+const wizardAxis=new THREE.Vector3(...wizardStaff.primaryAxis).applyEuler(new THREE.Euler(...wizardStaff.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...wizardHandQuaternion).normalize());
+assert.ok(wizardAxis.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(.01),'Wizard staff starts upright in the independently recovered uploaded idle pose');
+for(const id of ['short-sword','dagger']){
+ const weapon=STUDIO_WEAPONS.find(entry=>entry.id===id);
+ assert.equal(glb(weapon.file).json.materials[0].pbrMetallicRoughness.metallicFactor,.25);
+ const preserved={...normalizeEquipment({rightHand:id}),sizePercent:120,position:[.01,.02,.03],rotation:[-75,10,5]};
+ assert.deepEqual(normalizeEquipment(preserved),preserved,'Material refresh preserves saved grips');
+}
+console.log('PASS wizard staff: shared GLB, one-handed independent profile, upright idle, free off hand, shield compatibility and adjustable grip');

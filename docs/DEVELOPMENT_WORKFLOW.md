@@ -90,3 +90,7 @@ For optimized textured assets, inspect decoded color values as well as embedded 
 [Crossbow integration](CROSSBOW_INTEGRATION.md) records nested-archive extraction, per-part geometry reduction, pre-encoded 512px PBR textures, normalized forward/up axes, and direct-fire profile selection through the existing equipment system. Preserve authored ranged support-arm poses instead of applying melee body IK.
 
 [Staff, short sword and dagger batch](EQUIPMENT_BATCH_144.md) records manifest-driven FBX/glTF imports, under-10K triangle checks, color-preserving 512px textures, source attribution, and shared melee equipment registration. Set glTF imports to XYZ rotation mode before assigning Euler normalization; apply transforms so custom normals remain aligned. The Blender 5.1 FBX presentation-light workaround is local to the importer script.
+
+## Candidate Rev 145 follow-up
+
+[Wizard Staff Grip and blade visibility](WIZARD_STAFF_AND_BLADE_VISIBILITY.md) records the dedicated one-handed staff equipment/action profile and the short sword/dagger material adaptation. Blade texture pixels and geometry remain unchanged; current sizes/hashes and reproducible export settings are in the follow-up. Keep the original two-handed staff behavior and source-color regression checks.

@@ -250,3 +250,7 @@ Choose **Equipment -> Weapon -> Crossbow** to use the optimized 4,678-triangle, 
 ## Candidate Rev 144: staff, short sword and dagger
 
 Equipment now includes **Wooden Staff**, **Short Sword** and **Dagger**, all below 10,000 triangles with three embedded 512px PBR textures each. The staff selects 2H Swing / Great Sword Idle and clears shields; the one-handed blades select 1H Stab / Stabbing and permit shields. All uploaded clips remain available. Existing size, grip, orientation, off-hand offsets, captures and workspace persistence remain in use. [Batch reproduction and validation](EQUIPMENT_BATCH_144.md) records precise hashes, importer lessons and dagger attribution.
+
+## Candidate Rev 145 follow-up
+
+[Wizard Staff Grip and blade visibility](WIZARD_STAFF_AND_BLADE_VISIBILITY.md) records the dedicated one-handed staff equipment/action profile and the short sword/dagger material adaptation. Blade texture pixels and geometry remain unchanged; current sizes/hashes and reproducible export settings are in the follow-up. Keep the original two-handed staff behavior and source-color regression checks.

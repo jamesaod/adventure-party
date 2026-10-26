@@ -1,6 +1,6 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C144';
-import { studioShield } from './studio-shield.mjs?v=R238C144';
-import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C72';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C145';
+import { studioShield } from './studio-shield.mjs?v=R238C145';
+import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C145';
 export { WEAPON_POSE_PROFILES };
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
@@ -80,6 +80,7 @@ export const VISIBLE_WEAPON_ASSETS = Object.freeze({
   'flaming-sword-5': visibleWeapon('flaming-sword-5', 'Flaming Sword +5', 'medieval-sword'),
   'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe'),
   spear: visibleWeapon('spear', 'Spear', 'spear'),
+  'wizard-staff-grip': visibleWeapon('wizard-staff-grip', 'Wizard Staff Grip', 'wizard-staff-grip'),
   'wooden-staff': visibleWeapon('wooden-staff', 'Wooden Staff', 'wooden-staff'),
   'short-sword': visibleWeapon('short-sword', 'Short Sword', 'short-sword'),
   'dagger': visibleWeapon('dagger', 'Dagger', 'dagger'),
