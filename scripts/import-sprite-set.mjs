@@ -15,7 +15,7 @@ const MAX_ZIP = 32 * 1024 * 1024;
 const MAX_FILE = 16 * 1024 * 1024;
 const MAX_TOTAL = 64 * 1024 * 1024;
 const MAX_MANIFEST = 64 * 1024;
-const MAX_ENTRIES = 48;
+const MAX_ENTRIES = SPRITE_POSES.length * SPRITE_DIRECTIONS.length * 2 + 2; // Source + native PNGs, manifest and optional sheet.
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const fail = message => { throw new Error(`Sprite import: ${message}`); };
 const requireValue = (condition, message) => { if (!condition) fail(message); };
@@ -40,7 +40,7 @@ function inspectZip(data) {
   const count = data.readUInt16LE(end + 10);
   requireValue(data.readUInt16LE(end + 4) === 0 && data.readUInt16LE(end + 6) === 0 &&
     data.readUInt16LE(end + 8) === count, 'multi-volume ZIP files are not supported.');
-  requireValue(count > 0 && count <= MAX_ENTRIES, 'ZIP must contain one character and no more than 48 entries.');
+  requireValue(count > 0 && count <= MAX_ENTRIES, `ZIP must contain one character and no more than ${MAX_ENTRIES} entries.`);
   const directorySize = data.readUInt32LE(end + 12);
   const directoryStart = data.readUInt32LE(end + 16);
   requireValue(directoryStart + directorySize === end, 'ZIP64 or an invalid ZIP directory is not supported.');

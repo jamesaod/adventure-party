@@ -1,3 +1,4 @@
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
 import * as THREE from 'three';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -11,7 +12,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C149';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C153';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -246,7 +247,7 @@ function updateSetupLabels() {
   ui.Resolution.value = String(state.resolutionPercent);
   ui.ResolutionValue.textContent = `${state.resolutionPercent}%`;
   ui.Resolution.setAttribute('aria-valuetext', `${state.width} by ${state.height} pixels per sprite, ${state.resolutionPercent} percent`);
-  ui.FormatSummary.textContent = `Frame ${state.width} × ${state.height} · Sheet ${state.width * 6} × ${state.height * 3}`;
+  ui.FormatSummary.textContent = `Frame ${state.width} × ${state.height} · Sheet ${state.width * 6} × ${state.height * SPRITE_POSES.length}`;
   ui.ModelScale.value = String(state.modelScalePercent);
   ui.ModelScaleValue.textContent = `${state.modelScalePercent}%`;
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent, state.modelScalePercent, state.hexScalePercent);

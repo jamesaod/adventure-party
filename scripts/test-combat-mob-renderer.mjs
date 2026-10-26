@@ -9,7 +9,7 @@ const index=fs.readFileSync(new URL('../index.html', import.meta.url),'utf8');
 const studioHtml=fs.readFileSync(new URL('../3d-studio.html', import.meta.url),'utf8');
 
 for(const token of [
-  "const WINDUP_POSES=['ready','windup','attack','falling','prone']",
+  "const WINDUP_POSES = SPRITE_POSES;",
   "recipe.renderSettings?.frame",
   "recipe.renderSettings?.transform",
   "placement.position.fromArray",
@@ -50,8 +50,8 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C146")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C152")'));
-assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C149",document.baseURI)'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C153")'));
+assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C153",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
 assert.ok(game.includes('unit.appearanceRefreshPromise=pending'));

@@ -1,5 +1,5 @@
 import { createUnitPackage } from './unit-package.mjs';
-import { spriteSetSlug } from './sprite-set-core.mjs?v=R238C135';
+import { spriteSetSlug } from './sprite-set-core.mjs?v=R238C153';
 import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C146';
 
 // Bundle references to existing assets; each capture retains its own loadout,

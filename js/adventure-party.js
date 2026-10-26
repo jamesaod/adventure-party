@@ -2800,7 +2800,7 @@ function unitPoseDefinition(unit){
 function unitPoseSupportsPose(definition,poseName){
   if(!definition || !poseName) return false;
   return !!(
-    (definition.partialPoses && ['stand','ready','windup','attack','falling','prone'].includes(poseName)) ||
+    (definition.partialPoses && ['stand','ready','windup','attack','falling','prone','casting-windup','cast'].includes(poseName)) ||
     definition.sprites?.[poseName] ||
     definition.directionalSprites?.[poseName] ||
     (definition.directionalSprites && poseName===definition.actionPose)
@@ -3702,7 +3702,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   };
   const directionalSprites={};
   const additions=[];
-  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["falling","falling"],["prone","prone"]].filter(([capture])=>!!manifest.poses?.[capture])){
+  for(const [capture,pose] of [["ready","stand"],["windup","windup"],["attack","attack"],["falling","falling"],["prone","prone"],["casting-windup","casting-windup"],["cast","cast"]].filter(([capture])=>!!manifest.poses?.[capture])){
     directionalSprites[pose]={};
     for(const facing of ["E","NE","NW","W","SW","SE"]){
       const file=manifest.poses?.[capture]?.frames?.[facing];
@@ -3773,8 +3773,8 @@ function selectStudioSpriteSet(id,{openSetup=false}={}){
 
 function inspectStudioSpritePose(pose){
   if(!game || !combatAwaitingStart || selectedMobEncounter!=="studio-kobold" ||
-    !["ready","windup","attack","falling","prone","live"].includes(pose)) return false;
-  const internalPose={ready:"stand",windup:"windup",attack:"attack",falling:"falling",prone:"prone",live:null}[pose];
+    !["ready","windup","attack","falling","prone","casting-windup","cast","live"].includes(pose)) return false;
+  const internalPose={ready:"stand",windup:"windup",attack:"attack",falling:"falling",prone:"prone","casting-windup":"casting-windup",cast:"cast",live:null}[pose];
   for(const unit of studioSpriteTestUnits()) unit.studioPoseInspection=internalPose;
   draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
@@ -7152,7 +7152,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C146")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C152"))
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C153"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7160,7 +7160,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C149",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C153",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const fromCombat=!!unit.studioSpriteTest &&
