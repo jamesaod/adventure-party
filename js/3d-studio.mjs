@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C139';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
@@ -1237,10 +1238,10 @@ function installModel({ model, clips, name, demoSourceUpAxis = null, skinRepairR
   if (!restoredTPose && isTwoHandedAudition && preferredTwoHandedRest >= 0 && (clipIndex < 0 || !state.clips[clipIndex])) {
     clipIndex = preferredTwoHandedRest;
   } else if (!restoreSettings) {
-    const firstQaClip = modelDefaults?.retargetQa?.initialClip;
+    const firstQaClip = modelDefaults?.initialAnimation || modelDefaults?.retargetQa?.initialClip;
     const qaStartIndex = firstQaClip
       ? state.clips.findIndex(clip =>
-        clip.userData?.retargetQa?.sourceClip === firstQaClip ||
+        clip.name === firstQaClip || clip.userData?.retargetQa?.sourceClip === firstQaClip ||
         (clip.name.startsWith('QA Bone Direction + Hip Y — ') &&
          clip.name.endsWith(' — ' + firstQaClip)))
       : -1;
@@ -2090,7 +2091,7 @@ async function loadModelLibrary() {
         ...entry, weaponAttachmentProfile,
         animationFamilies: [...(entry.animationFamilies || [])], url: url.href
       };
-    });
+    }).filter(entry => !catalog.studioModelIds || catalog.studioModelIds.includes(entry.id));
     ui.ModelLibrary.replaceChildren(new Option('Choose a saved model…', ''),
       ...state.libraryModels.map(model => new Option(model.label, model.id)));
     if (state.libraryModels.some(model => model.id === state.libraryModelId)) ui.ModelLibrary.value = state.libraryModelId;
@@ -2166,7 +2167,7 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
     }
     const effectiveModelDefaults = modelDefaults ||
       state.libraryModels.find(model => model.id === restoreSettings?.libraryModelId) || null;
-    loaded.name = restoreSettings?.modelName || effectiveModelDefaults?.label || loaded.name;
+    loaded.name = effectiveModelDefaults?.label || restoreSettings?.modelName || loaded.name;
     // Apply model-specific weight corrections before frame fitting, equipment, or animation.
     // This runs on the in-memory clone only; the original repository GLB is unchanged.
     if (effectiveModelDefaults?.skinWeightRepair) {
@@ -2183,6 +2184,12 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
       loaded.nativeBindReport = rebased.report;
     }
 
+    if (effectiveModelDefaults?.animationLibrary === 'uploaded-fbx') {
+      loaded.clips = await loadUploadedFbxAnimations({
+        appRoot:new URL('../',import.meta.url),targetModel:loaded.model,FBXLoader,THREE,
+        prepareStudioAnimations,retargetHumanoidClip,disposeModel,onStatus:status
+      });
+    }
     const repositoryClips = await loadRepositoryAnimationFamilies(
       loaded.model, effectiveModelDefaults?.animationFamilies || []
     );
@@ -2791,12 +2798,20 @@ async function start() {
     history.replaceState(null, '', url);
   }
   bindControls();
-  void loadModelLibrary();
+  await loadModelLibrary();
+  if (restored?.settings?.libraryModelId === 'dungeon-crawler-carl-v2') {
+    restored.settings = {...restored.settings,libraryModelId:'dungeon-crawler-carl-v3',
+      modelName:'Dungeon Crawler Carl Ver 3',animationRanges:[],clipName:'Sword And Shield Idle',
+      clipSourceId:'uploaded:sword-and-shield-idle:0',clipIndex:8};
+    poseCapture?.invalidateCaptures('Carl Ver 3 uses the newly uploaded animations');
+  }
+  const offeredModel = state.libraryModels.some(model => model.id === restored?.settings?.libraryModelId);
+  if (restored && !offeredModel && !restored.captureCount) restored = null;
   try {
     startViewer();
-    if (restored?.settings?.isDemo) {
+    if (restored?.settings?.isDemo && offeredModel) {
       await installModel(makeDemo({ upAxis: state.demoSourceUpAxis }), { isDemo: true, restoreSettings: restored.settings });
-    } else if (restored && state.sourceFiles.length) {
+    } else if (restored && offeredModel && state.sourceFiles.length) {
       const files = state.sourceFiles.map(source => {
         const file = new File([source.blob], source.name, { type: source.type, lastModified: source.lastModified });
         Object.defineProperty(file, 'studioRelativePath', { value: source.relativePath || '' });
@@ -2809,6 +2824,9 @@ async function start() {
       ui.EmptyMessage.textContent = 'Your captured sprites are restored below and ready to export.';
       ui.ModelInfo.textContent = 'Saved sprite set · Source model is not stored';
       status('Saved captures restored · Export or test the same sprite set');
+    } else if (state.libraryModels.length === 1) {
+      ui.ModelLibrary.value = state.libraryModels[0].id;
+      await loadLibraryModel();
     } else await installModel(makeDemo(), { isDemo: true, restoreSettings: restored?.settings || null, persist: !restoreError });
     useCurrentFormatAfterClear();
     selectFacing(state.facing);

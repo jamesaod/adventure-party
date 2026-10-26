@@ -1,3 +1,7 @@
+import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js';
+import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C139';
+import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C113';
+import { prepareStudioAnimations } from './studio-animations.mjs?v=R238C82';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
@@ -215,6 +219,16 @@ export async function generateCombatSpriteSet(recipe){
   if(!modelUrl)throw new Error(`No humanoid runtime model is registered for ${recipe?.mob?.type||'this MOB'}.`);
   const gltf=await loadGltf(modelUrl);
   const model=gltf.scene;
+  if(recipe?.model?.id==='dungeon-crawler-carl-v3'){
+    gltf.animations=await loadUploadedFbxAnimations({
+      appRoot:new URL('../',import.meta.url),targetModel:model,FBXLoader,THREE,
+      prepareStudioAnimations,retargetHumanoidClip,
+      disposeModel(source){source.traverse(object=>{
+        object.geometry?.dispose?.();
+        for(const material of [object.material].flat().filter(Boolean))material.dispose?.();
+      });}
+    });
+  }
   model.traverse(object=>{if(object.isSkinnedMesh)object.frustumCulled=false;});
   if(isWarriorRecolorModel(recipe?.model?.id)){
     applyWarriorRecolor(THREE,model,recipe.renderSettings?.appearanceRecolor);

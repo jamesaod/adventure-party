@@ -25,6 +25,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
+- Rev 139: Studio offers only `dungeon-crawler-carl-v3` / **Dungeon Crawler Carl Ver 3**, using unchanged Ver 2 geometry and only the 13 newly supplied FBX animations in `data/animation-library-sources.json`. `studioModelIds` limits the selector; historical models remain archived for combat data/integrity checks. See the Rev 139 section in `docs/3D_STUDIO.md`. Do not restore legacy embedded/UAL2 clips to Ver 3 unless requested.
 - Spear source: user-provided `spear.zip` (78,507,239 bytes), containing an FBX with 642 triangles and large external textures. The user explicitly requested polygon reduction: Rev 138 derives a 512-triangle, 94,172-byte GLB with three embedded 512px PBR maps. See `docs/SPEAR_INTEGRATION.md` and `scripts/optimize-spear.py`.
 - Spear is registered as two-handed piercing equipment using the existing `two-handed-thrust` / **2H Stab (Pierce)** action profile. Studio selection, adjustable grip/offset/scale and profile export reuse existing equipment paths. Per-model alignment and captured pose choices remain user-tunable. Do not substitute swing poses for missing stab captures.
 - **Deferred:** friendly Orc encounter selection displaying Dungeon Crawler Carl fallback instead of Orc placeholder sprite. Revisit after Unit Packages.

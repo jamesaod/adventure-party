@@ -114,5 +114,5 @@ assert.equal(modelEntry.animationBindRebase,ORC_NATIVE_BIND_REBASE);
 assert.ok(!modelEntry.skinWeightRepair,'No automatic weight repair on the experimental copy');
 assert.equal(modelEntry.file,'assets/models/orcs/male-orc-fighter/ual2-one-handed/male-orc-fighter-ual2-one-handed.glb');
 assert.deepEqual(catalog.models.filter(item=>item.id.includes('dungeon-crawler-carl'))
-  .map(item=>item.animationBindRebase),[undefined,undefined,undefined]);
+  .map(item=>item.animationBindRebase),[undefined,undefined,undefined,undefined]);
 console.log('PASS Orc Native-Bind experiment: real GLBs, 64 Carl native joints, 128 rebased quaternion tracks, original mesh/weights and source animations unchanged');
