@@ -242,3 +242,7 @@ The Rev 139 uploaded-animation path inherited a joint-relative default from an O
 ## Candidate Rev 142: Recurve Bow equipment
 
 Choose **Equipment -> Weapon -> Recurve Bow** to equip the cleaned 1.24 MB, 512px bow on the left hand. Selection clears the shield and selects Bow Weapons plus Carl's uploaded Standing Aim Recoil clip. Scale and XYZ grip/rotation controls remain adjustable and saved. See [Recurve bow integration](RECURVE_BOW_ASSET.md) for provenance, mounting values, reproduction and the pixel-atlas material override. The source Arms bend and String pull morph targets are preserved; automatic bowstring draw/release is a future animation step.
+
+## Candidate Rev 143 - crossbow equipment
+
+Choose **Equipment -> Weapon -> Crossbow** to use the optimized 4,678-triangle, 512px asset. Studio selects **Direct Fire Weapons (Crossbow)** and the uploaded **Rifle Aim To Down** clip. The right-hand mount keeps size, position and rotation adjustable; the support hand retains the authored animation. Captures and saved workspaces use the existing equipment flow. See [Crossbow integration](CROSSBOW_INTEGRATION.md) for exact reproduction, mounting defaults, source-color checks and limitations.

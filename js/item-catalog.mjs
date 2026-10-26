@@ -145,6 +145,21 @@ export const ITEM_CATALOG=freezeRecord({
       runtimeAsset:{bytes:1237464,sha256:'3314489c45b1b46ad4dc83724d2027da4e315e2119c36d5242b3192a94d964a9',triangles:3717,textureResolution:512}
     }
   },
+  crossbow:{
+    id:'crossbow',name:'Crossbow',category:'weapon',slot:'weapon',
+    rules:{baseName:'Crossbow',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
+    physical:{authoredLengthInches:null,calibratedLengthInches:32.6,
+      status:'Provisional 32.6-inch Studio crossbow; adjust size and grip for the selected rig.'},
+    appearance:{
+      appearanceId:'crossbow',studioId:'crossbow',visualClass:'crossbow',
+      representation:'optimized-gltf-v1',asset:'assets/models/weapons/crossbows/crossbow.glb',
+      attachment:'right-hand',handsRequired:2,poseProfileId:'direct-fire',primaryAxis:[0,0,1],
+      grip:[0,-0.015,0.30],nativeScale:0.42,defaultSizePercent:100,
+      position:[0.015,0.05,0.005],rotationDegrees:[-87,29,0],
+      source:{originalFilename:'crossbow.zip',sourceFbxSha256:'9df0fe0254720f5dfb227f2a8c5f0ca8fec24a0fa966d06368feba086388b4b0'},
+      runtimeAsset:{bytes:1030700,sha256:'505c542372cee565a1a267476ec44d63b5ada0dd956d4b393c03c16fa847c6c8',triangles:4678,textureResolution:512}
+    }
+  },
   'chain-mail':{
     id:'chain-mail',
     name:'Chain Mail',
