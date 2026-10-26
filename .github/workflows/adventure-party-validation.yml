@@ -117,6 +117,7 @@ jobs:
           python scripts/test-spear-texture.py
           python scripts/test-recurve-bow.py
           python scripts/test-crossbow-asset.py
+          python scripts/test-equipment-batch-assets.py
 
       - name: Check Blender pipeline Python syntax
         run: python -m py_compile scripts/blender_repair_orc_turns.py

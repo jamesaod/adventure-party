@@ -44,7 +44,7 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 6, 'Sword, Battle Axe, Two-Handed Sword, Spear, Recurve Bow and Crossbow are registered');
+assert.equal(STUDIO_WEAPONS.length, 9, 'Existing six weapons plus staff, short sword and dagger are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
 for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow'].includes(weapon.visualClass))) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();
@@ -619,3 +619,27 @@ const crossbowUp=new THREE.Vector3(0,1,0).applyEuler(new THREE.Euler(...crossbow
 assert.ok(crossbowUp.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(1),'Crossbow limbs stay level in the recovered rifle aim pose');
 assert.equal(crypto.createHash('sha256').update(glb(crossbow.file).bytes).digest('hex'),crossbow.assetSha256);
 console.log('PASS crossbow: right-hand mounting, tunable scale/grip, level aim, shield clearing and direct-fire animation selection');
+
+// The batch uses the same right-hand mount, pose selection and cache identity.
+for (const [id,profile,hands] of [['wooden-staff','two-handed-swing',2],['short-sword','one-handed-thrust',1],['dagger','one-handed-thrust',1]]) {
+  const weapon=STUDIO_WEAPONS.find(entry=>entry.id===id);
+  assert.equal(weapon.poseProfileId,profile);assert.equal(weapon.handsRequired,hands);
+  assert.equal(findWeaponHand(bowRig,weapon),bowRight);
+  assert.equal(Boolean(weapon.secondaryGrip),hands===2);
+  const settings=normalizeEquipment({rightHand:id}),model=new THREE.Group();
+  const mount=createWeaponAttachment(THREE,bowRight,model,settings);
+  mount.update({...settings,sizePercent:115,position:[.02,.06,-.01],rotation:[-75,8,6],secondaryGripOffsetInches:[1,-.5,.25]});
+  bowRig.updateMatrixWorld(true);
+  close(model.localToWorld(new THREE.Vector3(...weapon.grip)),bowRight.localToWorld(new THREE.Vector3(.02,.06,-.01)),id+' adjusted grip stays in palm');
+  assert.ok(Math.abs(mount.socket.scale.x-weapon.nativeScale*1.15)<1e-10);
+  assert.deepEqual(mount.secondaryGripOffsetInches,[1,-.5,.25]);
+  mount.detach();assert.equal(bowRight.children.length,0);
+  selectedBowClip=-1;bowShieldRemovals=0;
+  vm.runInContext(`state.clips=[{userData:{actionProfiles:['bow']}},{userData:{actionProfiles:['${profile}']}}]`,bowSelection);
+  await vm.runInContext(`changeEquipment({rightHand:'${id}'})`,bowSelection);
+  assert.equal(selectedBowClip,1,id+' selects its uploaded animation profile');
+  assert.equal(bowShieldRemovals,hands===2?1:0,id+' handles shields by hand requirement');
+  assert.equal(crypto.createHash('sha256').update(glb(weapon.file).bytes).digest('hex'),weapon.assetSha256);
+  assert.equal(weaponAssetUrl(weapon,'https://example.test/candidate/').searchParams.get('v'),weapon.assetSha256);
+}
+console.log('PASS equipment batch: shared adjustable mounts, animation selection, shield compatibility and cache hashes');

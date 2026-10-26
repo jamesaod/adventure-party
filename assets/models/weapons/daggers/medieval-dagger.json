@@ -1,0 +1,81 @@
+{
+  "id": "dagger",
+  "sourceArchive": "medieval_dagger_3d_model.zip",
+  "sourceArchiveSha256": "8ec09c31052ed30e1f41e6cd8adf10eeb80c557b1add1865167f98e09925410c",
+  "sourceArchiveBytes": 1705400,
+  "sourceFile": "scene.gltf",
+  "sourceSha256": "7a934c9eaee89b700a0349a69b71e8ef0e75f0587990df60a0bcb368fd3891ac",
+  "sourceTriangles": 960,
+  "triangles": 960,
+  "decimateRatio": 1,
+  "bytes": 674844,
+  "sha256": "973428b17f5d233a06383d3c94338d191ecd837924cdb2fb08dd780bf19ca1e4",
+  "textureResolution": 512,
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "credits": {
+    "author": "Mordius (https://sketchfab.com/Mordius)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/medieval-dagger-3d-model-b41c89d1740845d9999e53b7ff8983f1",
+    "title": "Medieval dagger 3d model"
+  },
+  "textureReference": {
+    "albedo": {
+      "sourceSha256": "8e7fd452ebb9ecf15b0f6f4a89507b1e8645bbb8614835e87d4a624c210a3b67",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        124.00734043121338,
+        122.96023750305176,
+        126.29752159118652
+      ],
+      "resizedMean": [
+        124.00638198852539,
+        122.95889663696289,
+        126.29668045043945
+      ]
+    },
+    "normal": {
+      "sourceSha256": "3b85797bf5cfba209b2992fa574242f9b58fe302f42a7a8c00fcd91c76db96e9",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        127.48166942596436,
+        127.49575614929199,
+        254.97057819366455
+      ],
+      "resizedMean": [
+        127.46386337280273,
+        127.47741317749023,
+        254.96996688842773
+      ]
+    },
+    "metallicRoughness": {
+      "sourceSha256": "5706fd5f44bb0a17e8716ab100155217258a3ecc054a46943935603bef8f356a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        255.0,
+        49.31306552886963,
+        153.72769737243652
+      ],
+      "resizedMean": [
+        255.0,
+        49.31295394897461,
+        153.60882568359375
+      ]
+    }
+  },
+  "sourceDependencies": {
+    "scene.bin": "864fad33fc389f931b981277fe141384351694723da2bb0fda85025f755964a5"
+  }
+}

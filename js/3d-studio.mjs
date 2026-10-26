@@ -22,10 +22,10 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C143';
+} from './studio-equipment.mjs?v=R238C144';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C143';
+} from './studio-shield.mjs?v=R238C144';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
@@ -428,7 +428,7 @@ async function changeEquipment(value, { resetPose = true } = {}) {
     // and capture framing unchanged when gear is equipped or removed.
     if (resetPose) {
       resetPreviewReferenceToReady();
-      if (['bow','direct-fire'].includes(selectedWeapon?.poseProfileId)) {
+      if (['bow','direct-fire'].includes(selectedWeapon?.poseProfileId) || ['wooden-staff','short-sword','dagger'].includes(selectedWeapon?.id)) {
         const profileClip = (state.clips || []).findIndex(clip => clip.userData?.actionProfiles?.includes(selectedWeapon.poseProfileId));
         if (profileClip >= 0) setClip(profileClip);
       }
@@ -2309,7 +2309,7 @@ function bindControls() {
     // previous weapon's transform into the newly selected asset.
     const weaponId = ui.RightHandWeapon.value;
     void changeEquipment(defaultEquipmentSettingsForModel(weaponId));
-    if (['spear','recurve-bow','crossbow'].includes(weaponId)) {
+    if (['spear','recurve-bow','crossbow','wooden-staff','short-sword','dagger'].includes(weaponId)) {
       const actionProfile = $('studioActionProfile');
       actionProfile.value = studioWeapon(weaponId).poseProfileId;
       actionProfile.dispatchEvent(new Event('change'));
