@@ -1,11 +1,17 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
 import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C93';
 
+import { ACTION_POSES } from './action-profile-catalog.mjs?v=R238C153';
+
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
-export const SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'falling', 'prone']);
+export const SPRITE_POSES = ACTION_POSES;
+export const FIVE_SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'falling', 'prone']);
 export const FOUR_SPRITE_POSES = Object.freeze(['ready', 'windup', 'attack', 'prone']);
 export const LEGACY_SPRITE_POSES = Object.freeze(['ready', 'attack', 'prone']);
 export const posesInSpriteSet = manifest => manifest?.sheet?.poses || LEGACY_SPRITE_POSES;
+// Keep historical 3/4/5-row packages valid. New partial exports declare all seven rows.
+const poseRows = names => names.some(pose => pose === 'casting-windup' || pose === 'cast') ? SPRITE_POSES
+  : names.includes('falling') ? FIVE_SPRITE_POSES : names.includes('windup') ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
 export const SPRITE_SET_SCHEMA = 'adventure-party.sprite-set';
 
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -33,7 +39,7 @@ export function validateSpriteSetManifest(value) {
     'ID must contain lowercase letters, digits, and single hyphens.');
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 120,
     'give this character a name of 1–120 characters.');
-  const activePoses = value.sheet?.poses?.includes('falling') ? SPRITE_POSES : value.sheet?.poses?.includes('windup') ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const activePoses = poseRows(Array.isArray(value.sheet?.poses) ? value.sheet.poses : []);
   const partial = value.partialPoses === true;
   if (value.windupDurationMs !== undefined) requireValue(Number.isFinite(value.windupDurationMs) && value.windupDurationMs >= 0 && value.windupDurationMs <= 1500,
     'windupDurationMs must be 0–1500 milliseconds.');
@@ -112,6 +118,7 @@ export function validateSpriteSetManifest(value) {
       Number.isFinite(battlefield.anchorY)&&battlefield.anchorY>=0&&battlefield.anchorY<=battlefield.height,
       'battlefield anchor must be within the native frame.');
     requireValue(object(battlefield.poses),'battlefield poses are missing.');
+    requireValue(Object.keys(battlefield.poses).every(pose => activePoses.includes(pose)), 'unknown or undeclared battlefield pose.');
     const battlefieldFiles=new Set();
     for(const pose of activePoses){
       const capture=battlefield.poses[pose];
@@ -128,6 +135,7 @@ export function validateSpriteSetManifest(value) {
   }
   requireValue(sameOrder(value.facings, SPRITE_DIRECTIONS), 'the six facing directions are missing or out of order.');
   requireValue(object(value.poses), 'pose captures are missing.');
+  requireValue(Object.keys(value.poses).every(pose => activePoses.includes(pose)), 'unknown or undeclared pose capture.');
   const files = new Set();
   for (const pose of activePoses) {
     const capture = value.poses[pose];
@@ -157,7 +165,7 @@ export function validateSpriteSetManifest(value) {
 
 /** Capture metadata is kept separately from PNG bytes so the manifest stays small. */
 export function createSpriteSetManifest({ id, label, frame, captures, render, layout, mobType, modelScalePercent, hexScalePercent, unit, battlefield, windupDurationMs, partialPoses=false, actionProfileId=null }) {
-  const activePoses = partialPoses ? SPRITE_POSES : captures?.falling ? SPRITE_POSES : captures?.windup ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const activePoses = partialPoses ? SPRITE_POSES : poseRows(Object.keys(captures || {}));
   const poses = Object.fromEntries(activePoses.filter(pose=>!partialPoses || captures?.[pose]).map(pose => {
     const capture = captures?.[pose];
     requireValue(object(capture), `${pose} has not been captured.`);
@@ -220,7 +228,7 @@ export function assembleSpriteSheet(poseFrames, width, height) {
   requireValue(Number.isInteger(width) && width > 0 && width <= 4096 && Number.isInteger(height) && height > 0 && height <= 4096,
     'invalid sheet frame dimensions.');
   const sheetWidth = width * SPRITE_DIRECTIONS.length;
-  const poses = Object.keys(poseFrames).includes('falling') ? SPRITE_POSES : Object.keys(poseFrames).includes('windup') ? FOUR_SPRITE_POSES : LEGACY_SPRITE_POSES;
+  const poses = poseRows(Object.keys(poseFrames));
   const sheetHeight = height * poses.length;
   const data = new Uint8ClampedArray(sheetWidth * sheetHeight * 4);
   poses.forEach((pose, row) => {

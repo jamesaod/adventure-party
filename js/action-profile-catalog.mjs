@@ -4,7 +4,8 @@
  * A missing pose is deliberately null. It must be rendered with the unit's
  * fallback sprite, not by substituting another animation/pose.
  */
-export const ACTION_POSES=Object.freeze(['ready','windup','attack','falling','prone']);
+export const ACTION_POSES=Object.freeze(['ready','windup','attack','falling','prone','casting-windup','cast']);
+export const ACTION_POSE_LABELS=Object.freeze({ready:'Ready',windup:'Wind Up',attack:'Attack',falling:'Falling',prone:'Prone','casting-windup':'Casting Wind Up',cast:'Cast'});
 export const DEFAULT_ACTION_PROFILE_IDS=Object.freeze([
   'one-handed-swing','two-handed-swing','one-handed-thrust','two-handed-thrust',
   'dual-wield','unarmed','spell-casting','bow','direct-fire','sling','throw','wizard-staff-grip'

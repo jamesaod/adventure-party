@@ -324,3 +324,20 @@ User-provided screenshots supersede the Rev 151 axe/short-sword calibration. Bot
 The Off Hand selector now offers **None, Medieval Sword, Battle Axe, Short Sword and Dagger**. `STUDIO_OFF_HAND_WEAPONS` derives eligibility from the explicit `OFF_HAND_GRIPS` presets and the one-handed requirement. Both the UI and shared normalizer use that list, so Wizard Staff Grip and Sling cannot reappear via a saved off-hand assignment; such assignments resolve to None. Both items remain available in the primary Weapon selector with their existing assets and action profiles. Stored Unit Package and captured-pose records are not deleted.
 
 Selecting or resetting an eligible off-hand weapon applies its current preset. Explicit saved custom grips remain intact; use **Reset off-hand grip** to adopt the revised defaults, then recapture affected poses. Regression checks cover the four eligible choices, excluded saved mounts, unchanged primary availability, user-specified transforms, and palm attachment through all 14 uploaded animation references.
+
+
+## Candidate Rev 153 — casting captures in every weapon set
+
+Every capture type now has seven independent slots: Ready, Wind Up, Attack, Falling, Prone, **Casting Wind Up** (`casting-windup`) and **Cast** (`cast`). Each slot saves six facings; a full set is 42 sprites. Casting slots are available while carrying any supported loadout, including within the existing Spell Casting profile. They do not replace weapon Wind Up/Attack or change combat timing/damage rules.
+
+To reproduce a dataset:
+
+1. Select **Weapon type to capture**, then equip and adjust the intended loadout.
+2. Select an uploaded casting animation, pause/scrub to the desired anticipation frame, and press **Casting Wind Up**. Pick the release frame (in the same or another animation) and press **Cast**. The Action pose to record selector also offers both slots.
+3. Confirm the two rows in the captured sheet. Switching weapon types or reloading restores each group's separate captures. Changing visual settings marks affected captures outdated as before.
+4. **Export all weapon sets (ZIP)** writes fresh rows to each `profiles/<id>/manifest.json`, source/native six-facing PNGs, and `unit-package.json`. Each pose retains its stable `clipSourceId`, exact time and captured primary/off-hand/shield adjustments. Missing slots remain absent; they are not silently replaced with melee poses. Export may contain incomplete sets.
+5. **Test in combat** preserves these rows. Before starting combat, the existing sprite inspector offers Casting Wind Up and Cast. This is pose-data QA, not a new spell resolver or casting duration control.
+
+The shared action/sprite pose list appends the casting slots after the original five rows, preserving existing row positions. New partial manifests declare seven rows; historical three-, four- and five-row manifests and saved browser workspaces remain supported without rewriting captures. Legacy PNG draft restoration now iterates only present rows. Standalone sprite-package import allows up to 86 files (42 source + 42 native PNGs + manifest + optional sheet), retaining existing byte/path checks. The all-weapon ZIP remains the Unit Package export format, not the single-character CLI importer format.
+
+Validation: `node scripts/test-studio-casting-captures.mjs` covers distinct attack/casting times, six-facing row placement, legacy manifests, workspace groups, stable IDs and loadout snapshots. Existing directional tests exercise both new poses for all six facings, and combat capture parity checks preserve both source IDs/times. Run the full Adventure Party Validation workflow. Browser QA used Standing 2h Cast Spell 01 at 0.650 s and Standing 2h Magic Attack 04 at 1.667 s in both unarmed Spell Casting and Short Sword / 1H Stab sets, verified reload and exported PNG/reference data. These are test frames, not prescribed defaults or engine timing.

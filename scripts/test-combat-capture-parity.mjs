@@ -51,7 +51,9 @@ const matching = {
   captures:{
     ready:capture('Mixamo_sword_and_shield_idle'),
     attack:capture('Mixamo_sword_and_shield_attack'),
-    prone:capture('Mixamo_sword_and_shield_death')
+    prone:capture('Mixamo_sword_and_shield_death'),
+    'casting-windup':{...capture('Spell Wind Up'),clipSourceId:'uploaded:cast-spell:0',time:0.65},
+    cast:{...capture('Magic Attack'),clipSourceId:'uploaded:magic-attack:0',time:1.667}
   }
 };
 const incorrect = {version:1,name:'Another model',style:matching.style,
@@ -84,6 +86,9 @@ assert.equal(result.renderSettings.frame.renderWidth,10);
 assert.deepEqual(result.renderSettings.equipment,saved);
 assert.deepEqual(result.renderSettings.weaponAttachmentProfile.position,warrior.position);
 assert.equal(result.poseProfile.poses.attack.animation,'Mixamo_sword_and_shield_attack');
+assert.equal(result.poseProfile.poses['casting-windup'].timeSeconds,0.65);
+assert.equal(result.poseProfile.poses.cast.sourceId,'uploaded:magic-attack:0');
+assert.equal(result.poseProfile.poses.attack.animation,'Mixamo_sword_and_shield_attack','Casting must not overwrite a weapon attack');
 const other=await loadCombatPoseRecipe({mobType:'fighter',fromCombat:false});
 assert.equal(other.source,'built-in-profile','Unrelated global workspace must not replace the Studio combat draft');
 draft.manifest.frame.renderWidth=5;

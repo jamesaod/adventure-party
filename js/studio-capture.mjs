@@ -2,17 +2,18 @@ import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R238C135';
+} from './sprite-set-core.mjs?v=R238C153';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C149';
+} from './sprite-set-store.mjs?v=R238C153';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
-import { ACTION_PROFILE_CATALOG } from './action-profile-catalog.mjs?v=R238C146';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C149';
+import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C153';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C153';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
-const poseLabel = pose => pose[0].toUpperCase() + pose.slice(1);
+const poseLabel = pose => ACTION_POSE_LABELS[pose];
+const spriteCount = SPRITE_POSES.length * SPRITE_DIRECTIONS.length;
 const BATTLEFIELD_PIXELS_PER_INCH = 64 / (10 * 12);
 
 function physicalOutlinePixels(renderStyle, targetWidth, battlefieldWidth) {
@@ -199,7 +200,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       canvases[direction] = canvas;
     }
     ui.PoseSheetRows.append(tr);
-    const button = byId(`Capture${pose === 'windup' ? 'Windup' : poseLabel(pose)}Button`);
+    const button = byId(`Capture${pose.split('-').map(word => word[0].toUpperCase() + word.slice(1)).join('')}Button`);
     button.addEventListener('click', () => capture(pose));
     rows.set(pose, { tr, detail, clear, canvases, button });
   }
@@ -234,12 +235,12 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if(ui.ActionProfile)ui.ActionProfile.disabled=busy||equipmentBusy;
     if(ui.CaptureProfileSummary){
       const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>!pose.stale).length,0);
-      ui.CaptureProfileSummary.textContent=`${ACTION_PROFILE_CATALOG.get(selectedProfileId)?.label}: ${fresh/6}/5 poses · ${total} saved poses across weapon types`;
+      ui.CaptureProfileSummary.textContent=`${ACTION_PROFILE_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${SPRITE_POSES.length} poses · ${total} saved poses across weapon types`;
     }
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
-    ui.CaptureCount.textContent = `${fresh} / 30 ready sprites` +
+    ui.CaptureCount.textContent = `${fresh} / ${spriteCount} ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
     if(ui.CaptureSelectedPoseButton)ui.CaptureSelectedPoseButton.disabled=busy||equipmentBusy||!modelReady;
@@ -334,11 +335,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captures[pose] = captured;
       refresh();
       queueSave();
-      const complete = freshCount() === 30;
+      const complete = freshCount() === spriteCount;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
         ? 'A sprite touches the frame edge. If it is cropped, adjust the model size or framing before capturing again.'
-        : complete ? 'All 30 sprites are ready to export or test.' : 'Capture the remaining poses to complete the set.';
+        : complete ? `All ${spriteCount} sprites are ready to export or test.` : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
     } catch (error) { onError(error); }
@@ -466,8 +467,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   ui.ExportPoseSheetButton.addEventListener('click', () => runExport(async ({ manifest, sheet }) => {
-    download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-30-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
-    ui.SheetStatus.textContent = 'Sheet exported: six columns (E, NE, NW, W, SW, SE), five rows (ready, windup, attack, falling, prone).';
+    download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-${spriteCount}-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
+    ui.SheetStatus.textContent = `Sheet exported: six facing columns and ${SPRITE_POSES.length} rows (${SPRITE_POSES.map(poseLabel).join(', ')}).`;
   }));
 
   ui.ExportPackageButton.addEventListener('click', () => runExport(async () => {
@@ -578,7 +579,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     canvas.height = height;
     const context = canvas.getContext('2d');
     context.imageSmoothingEnabled = false;
-    for (const pose of SPRITE_POSES) {
+    for (const pose of SPRITE_POSES.filter(pose => manifest.poses[pose])) {
       const raw = new Uint8Array(width * height * 6 * 4);
       for (let index = 0; index < SPRITE_DIRECTIONS.length; index++) {
         const facing = SPRITE_DIRECTIONS[index];

@@ -102,3 +102,7 @@ For optimized textured assets, inspect decoded color values as well as embedded 
 ## Multi-weapon Studio captures (Candidate Rev 149)
 
 Use the existing action-profile capture map and shared equipment attachment manager for multi-weapon work. Preserve stable animation IDs and each captured pose's full loadout, including off-hand adjustments. Export all fresh profile groups under distinct ZIP directories and reference them through the existing Unit Package schema. Do not flatten all profiles into the currently selected weapon or introduce a separate renderer. [3D Studio](3D_STUDIO.md#candidate-rev-149--compact-setup-weapon-capture-sets-and-off-hand-gear) documents selection, exclusions, persistence, export structure and verification.
+
+## Casting capture datasets (Candidate Rev 153)
+
+Use the same per-weapon capture maps and Unit Package export for `casting-windup` and `cast`. Preserve existing physical attack rows and older manifest layouts. [3D Studio](3D_STUDIO.md#candidate-rev-153--casting-captures-in-every-weapon-set) documents the seven-slot workflow, export keys, compatibility and QA checks. Casting frame selection remains in Studio; spell timing and mechanics remain in Engine QA.
