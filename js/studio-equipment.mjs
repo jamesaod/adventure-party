@@ -540,10 +540,20 @@ function restoreBonePose(pose) {
 }
 
 // An independent left-hand instance uses the same loader, socket and lifecycle.
+// Rev 150: user-calibrated left-hand defaults; explicit saved adjustments win.
+const OFF_HAND_GRIP = Object.freeze({
+  position: Object.freeze([0.005, 0.065, -0.005]),
+  rotation: Object.freeze([163, -180, 0])
+});
 export function normalizeOffHandEquipment(value = {}) {
-  const id=value?.rightHand;
-  return normalizeEquipment(studioWeapon(id)?.handsRequired !== 2
-    ? value : {rightHand:'none'});
+  const source=studioWeapon(value?.rightHand)?.handsRequired === 2 ? {rightHand:'none'} : value;
+  const settings=normalizeEquipment(source);
+  return {
+    ...settings,
+    sizePercent:bounded(source?.sizePercent,100,EQUIPMENT_LIMITS.sizePercent),
+    position:OFF_HAND_GRIP.position.map((fallback,axis)=>bounded(source?.position?.[axis],fallback,EQUIPMENT_LIMITS.position)),
+    rotation:OFF_HAND_GRIP.rotation.map((fallback,axis)=>bounded(source?.rotation?.[axis],fallback,EQUIPMENT_LIMITS.rotation))
+  };
 }
 
 export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChange = () => {}, offHand = false }) {
