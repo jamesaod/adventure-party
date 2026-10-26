@@ -62,8 +62,8 @@ assert.ok(studioPage.includes('Candidate Rev 135') &&
   studioPage.includes('js/3d-studio.mjs?v=R238C135') &&
   studio.includes('./studio-capture.mjs?v=R238C135'),
   'Candidate Studio must load current capture code rather than stale cached modules');
-assert.ok(gamePage.includes('Candidate Rev 135') &&
-  gamePage.includes('"candidateRevision":135') &&
+assert.ok(gamePage.includes('Candidate Rev 136') &&
+  gamePage.includes('"candidateRevision":136') &&
   gamePage.includes('js/sprite-set-runtime.mjs?v=R238C135'),
   'Candidate game label, metadata and sprite loader must agree on Rev 131');
 
