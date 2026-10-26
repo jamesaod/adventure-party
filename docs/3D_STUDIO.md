@@ -288,3 +288,7 @@ Select **Weapon type to capture** immediately above the capture buttons. Each ac
 - For the existing single-set CLI importer, extract the ZIP and import a profile directory. The root Unit Package retains the complete cross-weapon references for subsequent combat weapon-switch integration; this pass does not add a new combat switching interface.
 
 Reproduction: capture Ready for Dual Weapons with a primary sword and off-hand dagger; capture another type with different equipment; switch back, reload, and confirm both groups and mounts remain. Export the ZIP, validate each manifest and PNG path, and check `references.spriteSets` in `unit-package.json`. Exercise shield ↔ off-hand swaps and a two-handed primary; the left hand must never carry both. `scripts/test-studio-weapon-sets.mjs` covers the shared attachment, saved adjustments, exclusion rules and multi-profile package references.
+
+## Candidate Rev 150 — Off-hand placement defaults
+
+The user-calibrated off-hand mount uses size **100%**, XYZ position **[0.005, 0.065, -0.005]** and XYZ rotation **[163, -180, 0] degrees**. The shared off-hand normalizer applies these defaults when selecting a weapon or pressing **Reset off-hand grip**. Explicit saved size, position and rotation remain adjustable and survive reload; captured poses and primary-hand defaults are unchanged. For an existing saved mount, Reset off-hand grip applies the new baseline through the normal capture invalidation and persistence path.

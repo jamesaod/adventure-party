@@ -22,7 +22,7 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C149';
+} from './studio-equipment.mjs?v=R238C150';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C146';
