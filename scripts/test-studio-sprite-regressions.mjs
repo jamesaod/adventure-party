@@ -58,14 +58,14 @@ const capture=readFileSync('js/studio-capture.mjs','utf8');
 const studio=readFileSync('js/3d-studio.mjs','utf8');
 const studioPage=readFileSync('3d-studio.html','utf8');
 const gamePage=readFileSync('index.html','utf8');
-assert.ok(studioPage.includes('Candidate Rev 147') &&
-  studioPage.includes('js/3d-studio.mjs?v=R238C146') &&
+assert.ok(studioPage.includes('Candidate Rev 148') &&
+  studioPage.includes('js/3d-studio.mjs?v=R238C148') &&
   studio.includes('./studio-capture.mjs?v=R238C146'),
   'Candidate Studio must load current capture code rather than stale cached modules');
-assert.ok(gamePage.includes('Candidate Rev 147') &&
-  gamePage.includes('"candidateRevision":147') &&
+assert.ok(gamePage.includes('Candidate Rev 148') &&
+  gamePage.includes('"candidateRevision":148') &&
   gamePage.includes('js/sprite-set-runtime.mjs?v=R238C135'),
-  'Candidate game label, metadata and sprite loader must agree on Rev 147');
+  'Candidate game label, metadata and sprite loader must agree on Rev 148');
 
 assert.ok(capture.includes('function invalidateCaptures(')&&
   capture.includes('capture.stale = true')&&
