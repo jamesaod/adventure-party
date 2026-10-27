@@ -46,7 +46,7 @@ function makeControls() {
   inspector.hidden = true;
   const heading = document.createElement('h2');
   heading.textContent = 'Inspect sprite poses';
-  heading.style.cssText = 'margin:0 0 8px;font-size:18px;color:var(--gold);';
+  heading.style.cssText = 'margin:0 0 8px;font-size:calc(18px * var(--combat-font-scale, 1));color:var(--gold);';
   const buttons = document.createElement('div');
   buttons.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
   for (const pose of [...SPRITE_POSES, 'live']) {

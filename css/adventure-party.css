@@ -733,6 +733,8 @@ button, input, select, textarea {
 /* ==================== COMBAT ==================== */
 
 #combatScreen {
+  --combat-font-scale:1;
+  font-size:calc(16px * var(--combat-font-scale, 1));
   padding:8px 10px 10px;
 }
 
@@ -740,7 +742,7 @@ button, input, select, textarea {
   width:100%;
   height:100%;
   display:grid;
-  grid-template-rows:62px minmax(0,1fr) 106px 48px;
+  grid-template-rows:minmax(62px,auto) minmax(0,1fr) calc(106px * var(--combat-font-scale, 1)) minmax(48px,auto);
   gap:5px;
 }
 
@@ -754,7 +756,7 @@ button, input, select, textarea {
 
 .combat-brand .small {
   color:var(--cyan);
-  font-size:14px;
+  font-size:calc(14px * var(--combat-font-scale, 1));
   letter-spacing:1.5px;
   text-transform:uppercase;
 }
@@ -762,14 +764,14 @@ button, input, select, textarea {
 .combat-brand h1 {
   margin:2px 0 0;
   color:var(--gold);
-  font-size:31px;
+  font-size:calc(31px * var(--combat-font-scale, 1));
   line-height:1;
 }
 
 .round-box {
   text-align:right;
   color:var(--green);
-  font-size:14px;
+  font-size:calc(14px * var(--combat-font-scale, 1));
   line-height:1.15;
 }
 
@@ -815,7 +817,7 @@ button, input, select, textarea {
   border:0;
   color:#74a7ff;
   font-family:var(--ui-font);
-  font-size:31px;
+  font-size:calc(31px * var(--combat-font-scale, 1));
   line-height:1.22;
   pointer-events:none;
   /* R126: larger blue battlefield banner with black outline only. */
@@ -837,6 +839,13 @@ button, input, select, textarea {
   gap:0;
 }
 
+.side:has(#combatSpriteInspector:not([hidden])) {
+  grid-template-rows:minmax(0,1fr) minmax(0,1fr);
+  gap:5px;
+}
+
+#combatSpriteInspector { overflow:auto; }
+
 .panel {
   padding:7px 9px;
   overflow:hidden;
@@ -845,7 +854,7 @@ button, input, select, textarea {
 .panel h2 {
   margin:0 0 5px;
   color:var(--cyan);
-  font-size:17px;
+  font-size:calc(17px * var(--combat-font-scale, 1));
   border-bottom:1px solid var(--divider);
   padding-bottom:5px;
 }
@@ -862,7 +871,7 @@ button, input, select, textarea {
   color:var(--cyan);
   text-align:left;
   font-family:var(--ui-font);
-  font-size:32px;
+  font-size:calc(32px * var(--combat-font-scale, 1));
   line-height:1.28;
   margin:2px 0 11px;
   padding-bottom:11px;
@@ -872,7 +881,7 @@ button, input, select, textarea {
 .unit-info-mode {
   color:var(--gold);
   font-family:var(--ui-font);
-  font-size:21px;
+  font-size:calc(21px * var(--combat-font-scale, 1));
   line-height:1.40;
   text-align:left;
   letter-spacing:.35px;
@@ -884,7 +893,7 @@ button, input, select, textarea {
   grid-template-columns:minmax(138px,0.72fr) minmax(0,1.28fr);
   gap:11px 16px;
   font-family:var(--ui-font);
-  font-size:22px;
+  font-size:calc(22px * var(--combat-font-scale, 1));
   line-height:1.42;
   align-items:start;
 }
@@ -910,7 +919,7 @@ button, input, select, textarea {
   padding-top:10px;
   border-top:1px solid #302d40;
   font-family:var(--ui-font);
-  font-size:21px;
+  font-size:calc(21px * var(--combat-font-scale, 1));
   line-height:1.42;
 }
 
@@ -958,7 +967,7 @@ button, input, select, textarea {
   color:var(--cyan);
   padding:5px 9px;
   cursor:pointer;
-  font-size:17px;
+  font-size:calc(17px * var(--combat-font-scale, 1));
   font-family:var(--ui-font);
 }
 
@@ -992,7 +1001,7 @@ button, input, select, textarea {
 
 .weather-test-control {
   padding:4px 6px;
-  font-size:14px;
+  font-size:calc(14px * var(--combat-font-scale, 1));
   letter-spacing:.2px;
 }
 
@@ -1000,7 +1009,7 @@ button, input, select, textarea {
   display:grid;
   grid-template-columns:1fr auto;
   gap:2px 8px;
-  font-size:16px;
+  font-size:calc(16px * var(--combat-font-scale, 1));
   line-height:1.2;
 }
 
@@ -1014,7 +1023,7 @@ button, input, select, textarea {
   margin-top:8px;
   padding-top:7px;
   border-top:1px solid #302d40;
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
 }
 
 .ability {
@@ -1027,7 +1036,7 @@ button, input, select, textarea {
 .ability span { color:var(--text); }
 
 .rules {
-  font-size:12px;
+  font-size:calc(12px * var(--combat-font-scale, 1));
   line-height:1.18;
   overflow:auto;
 }
@@ -1042,7 +1051,7 @@ button, input, select, textarea {
   margin:9px 0 5px;
   padding-top:6px;
   border-top:1px solid var(--divider);
-  font-size:12px;
+  font-size:calc(12px * var(--combat-font-scale, 1));
   letter-spacing:.8px;
   text-transform:uppercase;
 }
@@ -1067,6 +1076,8 @@ button, input, select, textarea {
 }
 
 .dice-box {
+  min-height:0;
+  overflow:auto;
   border-right:1px solid var(--divider);
   padding-right:12px;
 }
@@ -1074,12 +1085,12 @@ button, input, select, textarea {
 .dice-box h2 {
   margin:0 0 5px;
   color:var(--cyan);
-  font-size:21px;
+  font-size:calc(21px * var(--combat-font-scale, 1));
 }
 
 #lastRoll {
   color:var(--gold);
-  font-size:20px;
+  font-size:calc(20px * var(--combat-font-scale, 1));
   line-height:1.28;
 }
 
@@ -1089,7 +1100,7 @@ button, input, select, textarea {
   overflow:auto;
   overscroll-behavior:contain;
   box-sizing:border-box;
-  font-size:16px;
+  font-size:calc(16px * var(--combat-font-scale, 1));
   line-height:1.2;
   padding:0 5px 10px 0;
   scroll-padding-bottom:10px;
@@ -1113,12 +1124,17 @@ button, input, select, textarea {
   gap:8px;
   padding:0 10px;
   white-space:nowrap;
-  overflow:hidden;
+  overflow:auto;
+  min-width:0;
+  padding-top:4px;
+  padding-bottom:4px;
 }
+
+.commands > * { flex-shrink:0; }
 
 .command {
   color:var(--muted);
-  font-size:17px;
+  font-size:calc(17px * var(--combat-font-scale, 1));
 }
 
 .command strong { color:var(--green); }
@@ -1134,7 +1150,7 @@ button, input, select, textarea {
   color:var(--gold);
   padding:5px 9px;
   cursor:pointer;
-  font-size:16px;
+  font-size:calc(16px * var(--combat-font-scale, 1));
   font-family:var(--ui-font);
 }
 
@@ -1176,13 +1192,13 @@ button, input, select, textarea {
 .class-report h2 {
   margin:0;
   color:var(--gold);
-  font-size:28px;
+  font-size:calc(28px * var(--combat-font-scale, 1));
 }
 
 .class-report .sub {
   color:var(--cyan);
   margin:2px 0 10px;
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
 }
 
 .class-summary {
@@ -1193,7 +1209,7 @@ button, input, select, textarea {
   padding:9px 10px;
   border:1px solid var(--divider);
   background:#111019;
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
 }
 
 .class-summary b { color:var(--cyan); }
@@ -1202,7 +1218,7 @@ button, input, select, textarea {
 .class-report table {
   width:100%;
   border-collapse:collapse;
-  font-size:14px;
+  font-size:calc(14px * var(--combat-font-scale, 1));
 }
 
 .class-report th,
@@ -1260,12 +1276,12 @@ button, input, select, textarea {
 .character-sheet h2 {
   margin:0;
   color:var(--gold);
-  font-size:28px;
+  font-size:calc(28px * var(--combat-font-scale, 1));
 }
 
 .character-sheet .sub {
   color:var(--cyan);
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
   margin:2px 0 12px;
 }
 
@@ -1284,7 +1300,7 @@ button, input, select, textarea {
 .sheet-section h3 {
   margin:0 0 7px;
   color:var(--gold);
-  font-size:18px;
+  font-size:calc(18px * var(--combat-font-scale, 1));
   border-bottom:1px solid var(--divider);
   padding-bottom:4px;
 }
@@ -1293,7 +1309,7 @@ button, input, select, textarea {
   display:grid;
   grid-template-columns:1fr auto;
   gap:3px 10px;
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
 }
 
 .sheet-kv span:nth-child(odd) { color:var(--muted); }
@@ -1302,7 +1318,7 @@ button, input, select, textarea {
 .sheet-list {
   display:grid;
   gap:5px;
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
 }
 
 .sheet-item {
@@ -1354,7 +1370,7 @@ button, input, select, textarea {
 .sheet-item .detail {
   grid-column:1 / -1;
   color:var(--muted);
-  font-size:14px;
+  font-size:calc(14px * var(--combat-font-scale, 1));
 }
 
 .sheet-ability-rows {
@@ -1362,7 +1378,7 @@ button, input, select, textarea {
   grid-template-columns:1fr auto;
   border:1px solid #3d394c;
   background:#171621;
-  font-size:15px;
+  font-size:calc(15px * var(--combat-font-scale, 1));
 }
 
 .sheet-ability-rows span {
@@ -1415,7 +1431,7 @@ button, input, select, textarea {
 .result-box h2 {
   margin:0 0 8px;
   color:var(--gold);
-  font-size:30px;
+  font-size:calc(30px * var(--combat-font-scale, 1));
 }
 
 .result-box p {
@@ -2432,14 +2448,14 @@ button, input, select, textarea {
 
 /* Compact Gold Box-style combat inventory, separate from character stats. */
 .inventory-window{width:min(640px,96vw);max-height:min(80vh,680px);overflow:auto;box-sizing:border-box;background:#06050e;color:#e8dc8a;}
-.inventory-window h2{margin:0 0 6px;color:#e7bc4d;text-align:left;font-size:1.3rem;}
-.inventory-columns,.inventory-entry{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px;font-family:monospace;font-size:17px;line-height:1.22;}
+.inventory-window h2{margin:0 0 6px;color:#e7bc4d;text-align:left;font-size:calc(1.3rem * var(--combat-font-scale, 1));}
+.inventory-columns,.inventory-entry{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px;font-family:monospace;font-size:calc(17px * var(--combat-font-scale, 1));line-height:1.22;}
 .inventory-columns{border-top:1px dotted #a89054;border-bottom:1px dotted #a89054;color:#d6c99e;margin:6px 0 8px;padding:6px 8px;}
 .inventory-entry{padding:2px 8px;color:#b3ea78;}
 .inventory-entry:focus-within,.inventory-entry:hover{background:#26212c;}
 .inventory-ready{color:#b1ec80;text-align:center;}
 .inventory-item-name{overflow-wrap:anywhere;}
-.inventory-item-action{border:1px solid #908a7b;background:#252539;color:#e9d28f;font:12px monospace;padding:2px 7px;cursor:pointer;}
+.inventory-item-action{border:1px solid #908a7b;background:#252539;color:#e9d28f;font:calc(12px * var(--combat-font-scale, 1)) monospace;padding:2px 7px;cursor:pointer;}
 .inventory-item-action:disabled{opacity:.4;cursor:default;}
 .inventory-window .sheet-actions{border-top:1px dotted #a89054;margin-top:10px;padding-top:10px;}
 
