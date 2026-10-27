@@ -26796,7 +26796,8 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   if(globalThis.adventurePartySun?.drawingGround){
     const hidden=!!getUnitEffect(entity,"invisibility");
     if(!hidden)globalThis.adventurePartySun.draw(ctx,renderSource,{x:c.x,y:c.y,width:visualDrawW,height:visualDrawH,
-      anchorX:spriteAnchor.x,anchorY:spriteAnchor.y,flip:shouldFlip});
+      anchorX:Math.round(visualDrawW*spriteAnchor.x)/visualDrawW,
+      anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip});
     ctx.restore();return;
   }
   ctx.translate(c.x,c.y);
