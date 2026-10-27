@@ -1,3 +1,4 @@
+import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C166';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
 import * as THREE from 'three';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
@@ -12,7 +13,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C165';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C166';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -118,6 +119,7 @@ const state = {
 let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
 let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbientLight, keyLight, modelFrame;
 let atlasTarget, atlasSource, atlasImage;
+let sunShadowMesh, sunShadowTexture;
 let battlefieldSource,battlefieldImage,battlefieldWidth=1,battlefieldHeight=1;
 let supersampleImage;
 let resizeObserver, visibilityObserver, poseCapture, poseLibraryPanel;
@@ -180,6 +182,7 @@ const previews = HEX_FACINGS.map(facing => ({
 
 function getWorkspaceSettings() {
   return {
+    sunHour:unitSun.hour,
     unitPackage:state.unitPackage,poseLibrary:state.poseLibrary,poseLibrarySignature:state.poseLibrarySignature,
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
     libraryModelId: state.libraryModelId,
@@ -1592,12 +1595,38 @@ function drawBattlefieldPreview(preview,index){
   }
 
   const sx=(index%3)*battlefieldWidth,sy=Math.floor(index/3)*battlefieldHeight;
+  unitSun.draw(ctx,battlefieldCanvas,{x:originX,y:originY,width:battlefieldWidth*scale,height:battlefieldHeight*scale,
+    anchorX:anchorX/battlefieldWidth,anchorY:anchorY/battlefieldHeight,sx,sy,sw:battlefieldWidth,sh:battlefieldHeight,revision:state.frame});
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(
     battlefieldCanvas,sx,sy,battlefieldWidth,battlefieldHeight,
     originX-anchorX*scale,originY-anchorY*scale,
     battlefieldWidth*scale,battlefieldHeight*scale
   );
+}
+
+function updateSunShadowView(){
+  const sun=sunPosition(unitSun.hour);
+  sunShadowMesh.visible=sun.opacity>0&&state.modelReady&&!state.spriteOnlyFallback;
+  if(!sunShadowMesh.visible)return;
+  const index=HEX_FACINGS.findIndex(facing=>facing.id===state.facing);
+  const mask=shadowMask(battlefieldCanvas,{sx:(index%3)*battlefieldWidth,sy:Math.floor(index/3)*battlefieldHeight,
+    sw:battlefieldWidth,sh:battlefieldHeight,revision:state.frame-1});
+  if(!mask){sunShadowMesh.visible=false;return;}
+  if(!sunShadowTexture){
+    sunShadowTexture=new THREE.CanvasTexture(mask);
+    sunShadowTexture.magFilter=THREE.NearestFilter;sunShadowTexture.minFilter=THREE.NearestFilter;
+    sunShadowMesh.material.map=sunShadowTexture;sunShadowMesh.material.needsUpdate=true;
+  }else if(sunShadowTexture.image!==mask){sunShadowTexture.image=mask;sunShadowTexture.needsUpdate=true;}
+  const ground=new THREE.Vector3(0,0,0).project(pixelCamera);
+  const anchorX=(ground.x+1)*battlefieldWidth/2,anchorY=(1-ground.y)*battlefieldHeight/2;
+  const units=(pixelCamera.top-pixelCamera.bottom)/battlefieldHeight;
+  const points=sunShadowMesh.geometry.attributes.position;
+  [[0,0],[battlefieldWidth,0],[0,battlefieldHeight],[battlefieldWidth,battlefieldHeight]].forEach(([px,py],i)=>{
+    const height=(anchorY-py)*units/Math.cos(CAMERA_ELEVATION);
+    points.setXYZ(i,(px-anchorX)*units+sun.groundX*height,0.004,sun.groundZ*height);
+  });
+  points.needsUpdate=true;sunShadowMesh.material.opacity=sun.opacity;
 }
 
 function readCapturePose() {
@@ -1773,6 +1802,7 @@ function renderFallbackPreviews(timestamp) {
       const targetW = Math.max(1, Math.round(image.naturalWidth * targetH / image.naturalHeight));
       const groundY = Math.round(cy + halfH * 0.1);
       ctx.imageSmoothingEnabled = false;
+      unitSun.draw(ctx,image,{x:preview.canvas.width/2,y:groundY,width:targetW,height:targetH});
       ctx.drawImage(image,
         Math.round((preview.canvas.width-targetW)/2),
         groundY-targetH,
@@ -1793,6 +1823,7 @@ function renderPreviews(timestamp) {
   const background = scene.background;
   scene.background = null;
   helpers.visible = false;
+  if(sunShadowMesh)sunShadowMesh.visible=false;
   renderer.setClearColor(0x000000, 0);
   renderer.setRenderTarget(atlasTarget);
   renderer.setScissorTest(false);
@@ -1892,6 +1923,7 @@ function tick(timestamp) {
     renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
     renderer.clear(true, true, true);
     if (!state.spriteOnlyFallback) {
+      updateSunShadowView();
       renderer.render(scene, mainCamera);
       updateHeightGuide(timestamp);
     }
@@ -2582,6 +2614,9 @@ function bindControls() {
     poseCapture?.updateModelScale(state.modelScalePercent);
     poseCapture?.saveWorkspace();
   });
+  unitSun.bind($('studioSunHour'),$('studioSunHourValue'),()=>{
+    invalidate();poseCapture?.saveWorkspace();
+  });
   for (const [name, key, divisor] of [
     ['AmbientIntensity', 'ambientIntensity', 100], ['KeyIntensity', 'keyIntensity', 100],
     ['KeyElevation', 'keyElevation', 1], ['AmbientColor', 'ambientColor'],
@@ -2738,6 +2773,8 @@ function bindControls() {
     offHandEquipment.dispose();
     disposeModel(state.model);
     disposeModel(helpers);
+    sunShadowTexture?.dispose();
+    if(sunShadowMesh){sunShadowMesh.geometry.dispose();sunShadowMesh.material.dispose();}
     atlasTarget?.dispose();
     renderer?.dispose();
   });
@@ -2799,6 +2836,9 @@ function startViewer() {
   scene.add(turntable);
   helpers = new THREE.Group();
   scene.add(helpers);
+  sunShadowMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+  sunShadowMesh.frustumCulled=false;sunShadowMesh.visible=false;
+  scene.add(sunShadowMesh);
   rebuildFootprintGuide();
   mainCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.01, 100);
   pixelCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.01, 100);
@@ -2845,6 +2885,7 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   try { state.modelScalePercent = validateSpriteModelScale(settings.modelScalePercent ?? 100); }
   catch { state.modelScalePercent = 100; }
   state.hexScalePercent = validateSpriteHexScale(settings.hexScalePercent);
+  if(!authoringQuery.has('sunHour')&&Number.isFinite(settings.sunHour))unitSun.setHour(settings.sunHour);
   state.lighting = normalizedLighting(settings.lighting);
   if (!settings.lighting && captureCount) state.lighting.legacyRig = 'rev47';
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);

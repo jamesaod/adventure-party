@@ -141,5 +141,10 @@ jobs:
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
 
+      - name: Validate unit sun shadows
+        run: |
+          node --check js/unit-sun-shadow.mjs
+          node scripts/test-unit-sun-shadow.mjs
+
       - name: Validate repository structure and assets
         run: node scripts/validate-repo.mjs

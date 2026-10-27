@@ -1,3 +1,4 @@
+import { unitSun } from './unit-sun-shadow.mjs?v=R238C166';
 import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
@@ -506,6 +507,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       target.search=window.location.search;
       target.searchParams.delete('studioRestore');target.searchParams.delete('restore');
       target.searchParams.set('studioSprite','draft');
+      target.searchParams.set('sunHour',String(unitSun.hour));
       window.location.assign(target.href);
     });
   });

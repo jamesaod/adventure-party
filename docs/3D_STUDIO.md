@@ -367,3 +367,8 @@ The imported Orc is now labeled **Orc, Male, Uniformed**. Its primary one-handed
 ## Candidate Rev 164 — Leader uses Carl equipment defaults
 
 For the user's placement comparison, **Orc Leader, Male, Uniformed** uses Dungeon Crawler Carl's global per-weapon defaults. The regular Orc retains its approved model-specific profiles. Reload Studio and choose a weapon or Reset grip to replace saved Leader offsets; custom workspaces and existing captures are not silently rewritten.
+
+
+## Candidate Rev 166 — dynamic ground shadows
+
+[Unit sun shadows](UNIT_SUN_SHADOWS.md) documents the Time of day controls, shared sun projection, separate ground pass, persistence and QA. Shadow direction/length change dynamically without changing material lighting or invalidating captured poses. Keep exported character artwork shadow-free so it can be reused at every hour.
