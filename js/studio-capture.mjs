@@ -59,7 +59,7 @@ function download(blob, name) {
 
 // Captures retain unquantized pixels, allowing one color/outline adjustment to
 // update every saved pose without re-evaluating animation or moving its camera.
-export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus, onProfileChange = async () => {} }) {
+export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus, onProfileChange = async () => {}, onCapture = () => {} }) {
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
@@ -230,9 +230,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       canvases[direction] = canvas;
     }
     ui.PoseSheetRows.append(tr);
-    const button = byId(`Capture${pose.split('-').map(word => word[0].toUpperCase() + word.slice(1)).join('')}Button`);
-    button.addEventListener('click', () => capture(pose));
-    rows.set(pose, { tr, detail, clear, canvases, button });
+    rows.set(pose, { tr, detail, clear, canvases });
   }
 
   if(ui.CaptureSelectedPoseButton){
@@ -279,6 +277,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       const outdated=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>pose.stale).length,0);
       ui.CaptureProfileSummary.textContent=`${CAPTURE_GROUP_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${groupPoses().length} poses · ${total} captured poses across all groups${outdated?` · ${outdated} outdated snapshots preserved`:""}`;
     }
+    const coverage=byId('PoseCoverage');
+    if(coverage)coverage.textContent=groupPoses().map(pose=>`${poseLabel(pose)}: ${!captures[pose]?'missing':captures[pose].stale?'outdated (kept in export)':'captured'}`).join(' · ');
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
@@ -291,9 +291,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     }
     if(getWorkspaceSettings().unitPackage?.mob?.authoringVersion)ui.TestCombatButton.disabled=true;
     for (const [pose,row] of rows) {
-      row.button.hidden=!groupPoses().includes(pose);
       row.tr.hidden=!groupPoses().includes(pose);
-      row.button.disabled = busy || equipmentBusy || !modelReady;
       row.clear.disabled = busy;
     }
     ui.CaptureLockNote.classList.toggle('locked', captured > fresh);
@@ -313,7 +311,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       row.tr.classList.toggle('outdated', !!capture?.stale);
       row.tr.classList.toggle('touches-edge', !!capture?.edgeDirections.length);
       row.clear.hidden = !capture;
-      row.detail.textContent = capture ? `${capture.clip} · ${capture.time.toFixed(3)} s${capture.stale ? ' · OUTDATED — recapture' : ''}` : 'Not captured';
+      row.detail.textContent = capture ? `${capture.clip} · ${capture.time.toFixed(3)} s${capture.stale ? ' · OUTDATED — preserved in export' : ''}` : 'Not captured';
       if (capture?.edgeDirections.length) row.detail.textContent += ` · Touches frame edge: ${capture.edgeDirections.join(', ')}`;
       for (const direction of SPRITE_DIRECTIONS) {
         const canvas = row.canvases[direction];
@@ -378,6 +376,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captured.edgeDirections = frameEdgeDirections(captured);
       captured.stale = false;
       quantizeCapture(captured);
+      onCapture(selectedProfileId,pose,captured);
       captures[pose] = captured;
       refresh();
       queueSave();
@@ -388,6 +387,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         : complete ? `All ${groupPoses().length*6} sprites are ready to export or test.` : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
+      document.dispatchEvent(new CustomEvent('studio-captures-changed'));
     } catch (error) { onError(error); }
   }
 
@@ -543,9 +543,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       schema:'adventure-party.capture-recovery',version:1,modelId:unit.modelId,
       records:recovered.map(recoveryPoseReference)
     },null,2)+'\n')]);
+    if(unit.references.poseLibrary)entries.push(['pose-library.json',strToU8(JSON.stringify(unit.references.poseLibrary,null,2)+'\n')]);
     entries.push(['unit-package.json',strToU8(JSON.stringify(unit,null,2)+'\n')]);
     download(new Blob([zipSync(Object.fromEntries(entries),{level:0})],{type:'application/zip'}),`${unit.id}-weapon-sets.zip`);
-    ui.SheetStatus.textContent=`Exported all ${plan.poseCount} captured poses: ${plan.poseCount-recovery.length} current and ${recovery.length} earlier snapshots in recovery. Animation references, grips and six-facing PNGs are preserved.`;
+    ui.SheetStatus.textContent=`Exported all ${plan.poseCount} captured poses: ${plan.poseCount-recovery.length} current and ${recovery.length} earlier snapshots in recovery. Pose library, animation references, grips and six-facing PNGs are preserved.`;
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {

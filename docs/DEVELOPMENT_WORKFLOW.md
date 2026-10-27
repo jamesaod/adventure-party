@@ -171,3 +171,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 173 — lossless capture handoff
 
 Each pose owns its captured equipment settings. Preserve those snapshots when adjusting another pose. ZIPs include outdated pixels and source references under recovery/ instead of silently filtering them. Check both current manifests and references.captureRecovery during an asset handoff. See [Shared action captures](SHARED_ACTION_CAPTURES.md#rev-173--preserve-pose-snapshots-and-recover-excluded-exports).
+
+
+## Candidate Rev 174 — unified action capture
+
+Use the single Action Pose Capture panel for sprite and reusable-frame authoring. Capture automatically saves both; one action ZIP contains pose-library.json plus Unit Package/current/recovery data. Preserve the portable source-frame conversion and separate model-specific grip snapshots. See [Shared action captures](SHARED_ACTION_CAPTURES.md#rev-174--one-action-pose-capture-workflow).

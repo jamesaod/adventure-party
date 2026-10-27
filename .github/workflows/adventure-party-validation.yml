@@ -145,6 +145,8 @@ jobs:
           node scripts/test-studio-workspace-codec.mjs
           node --check js/studio-capture-export.mjs
           node scripts/test-studio-capture-export.mjs
+          node --check js/studio-pose-library.mjs
+          node scripts/test-studio-unified-capture.mjs
 
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
