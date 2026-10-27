@@ -26,3 +26,7 @@ The old `studio-kobold` mode always created Carl as the main player and placed s
 Use `3d-studio.html?model=orc-leader-male-uniformed&poseLibrary=humanoid-medium`, capture a Ready pose, then Test in combat. Verify the same query scope reaches the battlefield and return link. Add two hostile Kobolds through the number stepper. Verify one named Orc player, two opponents and three initiative slots; open Character and confirm Orc AC/THAC0/weapon remain unchanged. Return and check the six Ready captures survive. Repeat with an empty roster and ordinary non-Studio combat.
 
 `test-studio-footprints.mjs` covers all existing archetypes/footprints, one player, selected sprite/scale metadata, configured allies/opponents, occupancy, character-sheet isolation, empty-test behavior and ordinary Carl regression. `test-combat-roster-setup.mjs` exercises adding rows without leaving Studio. `test-studio-combat-exit.mjs` covers scoped manual/victory/defeat returns; directional and capture tests preserve pose/facing selection. Run Adventure Party Validation and verify the published candidate bytes after merging.
+
+## Time of day (Rev 166)
+
+The selected hour follows Test in combat and Return to Studio. Setup and battlefield sliders are synchronized; they change only the dynamic ground shadow and never spend a turn or invalidate captures. See [Unit sun shadows](UNIT_SUN_SHADOWS.md).

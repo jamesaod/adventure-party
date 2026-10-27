@@ -2477,3 +2477,7 @@ button, input, select, textarea {
 .combat-mob-editor-row .combat-roster-add{padding:8px}
 #addCombatMobButton{justify-self:start;min-width:150px}
 @media(max-width:680px){.combat-mob-editor-row{grid-template-columns:1fr 1fr;}.combat-mob-editor-row .combat-setup-label{grid-column:1 / -1}}
+
+.combat-sun-time{margin-top:10px;display:grid;gap:4px;font-size:14px}
+.combat-sun-time input{width:100%;accent-color:#79e7e7}
+.combat-sun-time output{font-size:12px;color:#b9b7cf}

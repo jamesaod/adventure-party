@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/adventure-party.css?v=R238C156">
+<link rel="stylesheet" href="css/adventure-party.css?v=R238C166">
 <script type="importmap">
 {
   "imports": {
@@ -20,7 +20,7 @@
 
 <body>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R238","candidateRevision":165,"builtAt":"2026-10-27T15:02:04Z"}
+{"architecture":"Multi-File Engine","release":"R238","candidateRevision":166,"builtAt":"2026-10-27T15:29:56Z"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -32,7 +32,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 165</div>
+        <div class="candidate-label">Candidate Rev 166</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
         <a href="ATTRIBUTIONS.md" target="_blank" rel="noopener">Asset credits</a>
       </div>
@@ -524,6 +524,13 @@
         </button>
       </div>
 
+      <section class="combat-roster-placeholder" aria-label="Sun position">
+        <label for="combatSetupSunHour">Time of day</label>
+        <input id="combatSetupSunHour" type="range" min="0" max="23.75" step="0.25" value="12" aria-label="Time of day">
+        <output id="combatSetupSunHourValue" for="combatSetupSunHour">12:00</output>
+        <p class="small">Ground shadows only · sunrise 06:00 · sunset 18:00.</p>
+      </section>
+
       <section class="combat-roster-placeholder" aria-label="Future combat roster setup">
         <div class="combat-roster-row">
           <span class="combat-setup-label">Player Characters</span>
@@ -627,6 +634,11 @@
           <div id="unitInfoRows" class="kv"></div>
           <div id="unitInfoEffects" class="unit-effects" hidden></div>
           <div id="unitInfoAbilities" class="abilities" hidden aria-hidden="true"></div>
+          <div class="combat-sun-time">
+            <label for="combatSunHour">Time of day</label>
+            <input id="combatSunHour" type="range" min="0" max="23.75" step="0.25" value="12" aria-label="Time of day">
+            <output id="combatSunHourValue" for="combatSunHour">12:00</output>
+          </div>
         </section></aside>
 
     </section>
@@ -766,7 +778,7 @@
 </section>
 
 <script src="js/priest-spells.js?v=R238C135"></script>
-  <script src="js/adventure-party.js?v=R238C165"></script>
+  <script src="js/adventure-party.js?v=R238C166"></script>
 <script src="js/los-wall-boundary-fix.js?v=R238"></script>
 <script src="js/obscuring-volume-los.js?v=R238"></script>
 <script src="js/r218-presentation-audio.js?v=R238"></script>
@@ -823,6 +835,6 @@
 <script src="js/candidate-rev15-lightning-review-fixes.js?v=R238"></script>
 <script src="js/candidate-rev16-elemental-damage-presentation.js?v=R238"></script>
 \n<script src="js/candidate-rev31-shocking-grasp-fx.js?v=R238"></script>
-<script src="js/candidate-rev36-magic-missile-volley.js?v=R238"></script>\n<script src="js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js?v=R238"></script>\n<script src="js/candidate-rev39-replace-default-spell-sfx.js?v=R238"></script>\n<script type="module" src="js/sprite-set-runtime.mjs?v=R238C165"></script>
+<script src="js/candidate-rev36-magic-missile-volley.js?v=R238"></script>\n<script src="js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js?v=R238"></script>\n<script src="js/candidate-rev39-replace-default-spell-sfx.js?v=R238"></script>\n<script type="module" src="js/sprite-set-runtime.mjs?v=R238C166"></script>
 </body>
 </html>

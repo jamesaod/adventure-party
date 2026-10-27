@@ -244,6 +244,7 @@ function studioReturnUrl(){
   for(const key of ["model","mob","poseLibrary","preview"]){
     if(source.has(key))query.set(key,source.get(key));
   }
+  if(globalThis.adventurePartySun)query.set("sunHour",String(globalThis.adventurePartySun.hour));
   return "./3d-studio.html?"+query.toString();
 }
 
@@ -3802,6 +3803,7 @@ window.adventurePartySpriteSets=Object.freeze({
   select:selectStudioSpriteSet,
   inspect:inspectStudioSpritePose,
   openSetup:showCombatConditions,
+  redraw:draw,
   returnUrl:studioReturnUrl,
   loadingState:()=>studioSpriteLoading.state,
   finishLoading:()=>studioSpriteLoading.finish(),
@@ -26582,6 +26584,7 @@ function drawFloor(){
 }
 
 function drawActiveHex(entity,color){
+  if(globalThis.adventurePartySun?.drawingGround)return;
   for(const cell of occupiedHexes(entity)){
     const top=hexScreenVertices(cell.x,cell.y);
 
@@ -26598,6 +26601,7 @@ function drawActiveHex(entity,color){
 }
 
 function drawHpBar(entity,color){
+  if(globalThis.adventurePartySun?.drawingGround)return;
   if(
     !entity ||
     !entity.maxHp ||
@@ -26789,6 +26793,12 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   const visualDrawW=Math.max(1,drawW*enlargeScale);
   const visualDrawH=Math.max(1,drawH*enlargeScale);
 
+  if(globalThis.adventurePartySun?.drawingGround){
+    const hidden=!!getUnitEffect(entity,"invisibility");
+    if(!hidden)globalThis.adventurePartySun.draw(ctx,renderSource,{x:c.x,y:c.y,width:visualDrawW,height:visualDrawH,
+      anchorX:spriteAnchor.x,anchorY:spriteAnchor.y,flip:shouldFlip});
+    ctx.restore();return;
+  }
   ctx.translate(c.x,c.y);
 
   if(shouldFlip){
@@ -27110,15 +27120,6 @@ function drawFighter(p){
   const drawW=fighterDims.width;
   const drawH=fighterDims.height;
 
-  ctx.save();
-  ctx.translate(c.x,c.y+2);
-  /* R38: combat unit shadows expanded by exactly 50%. */
-  ctx.scale(0.93,0.33);
-  ctx.fillStyle="rgba(0,0,0,0.46)";
-  ctx.beginPath();
-  ctx.arc(0,0,12,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
 
   drawSpriteFacing(
     sprite,
@@ -27156,14 +27157,6 @@ function drawFriendlyArcher(npc){
   const drawW=dims.width;
   const drawH=dims.height;
 
-  ctx.save();
-  ctx.translate(c.x,c.y+2);
-  ctx.scale(0.90,0.31);
-  ctx.fillStyle="rgba(0,0,0,0.44)";
-  ctx.beginPath();
-  ctx.arc(0,0,11,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
 
   drawSpriteFacing(
     sprite,
@@ -27205,14 +27198,6 @@ function drawFriendlyMage(mage){
   const drawW=dims.width;
   const drawH=dims.height;
 
-  ctx.save();
-  ctx.translate(c.x,c.y+2);
-  ctx.scale(0.90,0.31);
-  ctx.fillStyle="rgba(0,0,0,0.44)";
-  ctx.beginPath();
-  ctx.arc(0,0,11,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
 
   drawSpriteFacing(
     sprite,
@@ -27244,7 +27229,7 @@ function drawStudioSpriteMob(unit){
   const friendly=unit.faction==="player";
   if(game.active===unit.id) drawActiveHex(unit,friendly ? "player" : "#df6b6b");
   if(unit.alive) drawHpBar(unit,friendly ? "#94e084" : "#df6b6b");
-  if(unitFootprintCellCount(unit)>1){
+  if(!globalThis.adventurePartySun?.drawingGround&&unitFootprintCellCount(unit)>1){
     ctx.save();
     for(const cell of occupiedHexes(unit)){
       if(game?.condition==="wall" && !isHexVisibleToFriendlyParty(cell.x,cell.y)) continue;
@@ -27302,32 +27287,6 @@ function drawKobold(k){
     y:activePoseName==="prone" ? c.y+10 : c.y+3
   };
 
-  /* Keep the separately rendered battlefield/contact shadow. */
-  if(activePoseName==="prone"){
-    /*
-      R118: use the chosen Option 5 prone size (18 px) and give prone kobolds a
-      contact shadow that touches the sprite and tracks its rendered width.
-    */
-    const proneShadowW=Math.max(10,Math.round(drawW*0.46));
-    const proneShadowH=Math.max(2,Math.round(drawH*0.12));
-    ctx.save();
-    ctx.translate(c.x,spriteAnchor.y);
-    ctx.fillStyle="rgba(0,0,0,0.46)";
-    ctx.beginPath();
-    ctx.ellipse(0,-1,proneShadowW,proneShadowH,0,0,Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.translate(c.x,c.y+3);
-    ctx.scale(0.87,0.30);
-    ctx.fillStyle="rgba(0,0,0,0.46)";
-    ctx.beginPath();
-    ctx.arc(0,0,11,0,Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  }
-
   drawSpriteFacing(
     sprite,
     spriteAnchor,
@@ -27372,15 +27331,6 @@ function drawOrc(orc){
     y:c.y+4
   };
 
-  /* Keep the separately rendered battlefield/contact shadow. */
-  ctx.save();
-  ctx.translate(c.x,c.y+4);
-  ctx.scale(1.00,0.34);
-  ctx.fillStyle="rgba(0,0,0,0.48)";
-  ctx.beginPath();
-  ctx.arc(0,0,12,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
 
   drawSpriteFacing(
     sprite,
@@ -27445,8 +27395,9 @@ function drawLargeTestMob(mob){
 
   /*
     Keep a very faint footprint wash while the multi-hex system is under test.
-    The dragon itself has no baked or separately rendered ground shadow.
+    Solar shadows are drawn separately before the actor depth queue.
   */
+  if(!globalThis.adventurePartySun?.drawingGround){
   ctx.save();
   for(const cell of footprint){
     if(
@@ -27465,6 +27416,7 @@ function drawLargeTestMob(mob){
     ctx.stroke();
   }
   ctx.restore();
+  }
 
   const poseName=activeUnitPoseName(mob) || "stand";
   const sprite=unitPoseSprite(mob,juvenileRedDragonStandSprite);
@@ -30167,6 +30119,7 @@ function draw(){
     actors.push({
       sortY:c.y,
       sortX:c.x,
+      unit:true,
       fn:()=>drawFighter(game.player)
     });
   }
@@ -30179,6 +30132,7 @@ function draw(){
     actors.push({
       sortY:c.y,
       sortX:c.x,
+      unit:true,
       fn:()=>
         ally.type==="mage"
           ? drawFriendlyMage(ally)
@@ -30195,6 +30149,7 @@ function draw(){
     actors.push({
       sortY:depth.y,
       sortX:depth.x,
+      unit:true,
       fn:()=>
         unitPoseDefinition(enemy)?.spriteLayout
           ? drawStudioSpriteMob(enemy)
@@ -30204,6 +30159,14 @@ function draw(){
             ? drawLargeTestMob(enemy)
             : drawKobold(enemy)
     });
+  }
+
+  // Project all visible unit shadows onto terrain before walls, trees, units
+  // and fog. Long evening shadows must never paint over another character.
+  if(globalThis.adventurePartySun){
+    globalThis.adventurePartySun.drawingGround=true;
+    try{for(const actor of actors)if(actor.unit)actor.fn();}
+    finally{globalThis.adventurePartySun.drawingGround=false;}
   }
 
   actors.sort(
@@ -30308,6 +30271,8 @@ function handleLauncherKey(event){
 }
 
 function handleCombatKey(event){
+  // Let the sun slider handle its own arrows without issuing unit commands.
+  if(event.target?.id==="combatSunHour"&&event.key!=="Escape")return;
   const code=event.code;
   const keyLower=event.key.toLowerCase();
 

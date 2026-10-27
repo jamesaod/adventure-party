@@ -133,3 +133,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 165 — selected-model combat testing
 
 [Studio combat test](STUDIO_COMBAT_TEST.md) records the single controlled model handoff, configurable opponent roster and exact workspace round trip. Reuse existing MOB factories, player turn handling, footprint deployment and sprite manifests. Keep model identity independent of allegiance, preserve scoped IndexedDB keys, and guard Fighter-only equipment/class logic when a monster is the test player.
+
+
+## Candidate Rev 166 — time-of-day shadows
+
+[Unit sun shadows](UNIT_SUN_SHADOWS.md) documents the Time of day controls, shared sun projection, separate ground pass, persistence and QA. Shadow direction/length change dynamically without changing material lighting or invalidating captured poses. Keep exported character artwork shadow-free so it can be reused at every hour.
