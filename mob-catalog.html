@@ -22,13 +22,18 @@ body{background:#080b17;color:#e5d9b2;font-family:"EB Garamond",Georgia,serif;ma
 .mob-notice{border-top:1px solid #5b536b;margin-top:28px;padding-top:15px;color:#b6b2ae}
 </style></head><body>
 <main class="mob-wrap">
-<div class="mob-header"><h1>MOB Catalog</h1><a class="mob-return" href="./index.html">Return to Title</a></div>
-<p class="mob-description">Current MOB types and model registrations. The Unit Package catalog/editor is still being integrated; these records are read-only.</p>
+<div class="mob-header"><h1>MOB Catalog</h1><a class="mob-return" href="./mob-creator.html">Create a MOB</a><a class="mob-return" href="./index.html">Return to Title</a></div>
+<p class="mob-description">Registered combat MOBs appear below. Create, edit and export browser drafts in MOB Creator.</p>
 <div class="mob-controls"><input id="mobSearch" type="search" placeholder="Search MOBs and models" aria-label="Search MOBs"><select id="mobKind" aria-label="Filter unit kind"><option value="all">All MOBs</option><option value="player">Player units</option><option value="monster">Monsters</option></select></div>
 <div id="mobList" class="mob-list" aria-live="polite">Loading current MOBs…</div>
 <p class="mob-notice">MOB definitions currently originate in the combat-engine factories. Asset entries shown here are references to registered models, not automatically generated character sheets.</p>
 </main>
+<section id="authoringDrafts" class="mob-notice"><h2>Your MOB drafts</h2><div id="draftList" class="mob-list"></div></section>
 <script type="module">
+import {browserAuthoringStore} from './js/authoring-store.mjs?v=R238C160';
+const draftList=document.getElementById('draftList');
+try{for(const mob of browserAuthoringStore().mobs()){const card=document.createElement('article');card.className='mob-card';const link=document.createElement('a');link.className='mob-return';link.href='./mob-creator.html?mob='+encodeURIComponent(mob.id);link.textContent=mob.name;const detail=document.createElement('p');detail.textContent=mob.modelId+' · '+mob.references.poseLibrary.name+' · draft r'+mob.mob.revision;card.append(link,detail);draftList.append(card);}if(!draftList.children.length)draftList.textContent='No browser drafts yet. Use Create a MOB to begin.';}catch(error){draftList.textContent=error.message;}
+
 import {SPRITE_MOBS} from './js/sprite-layouts.mjs?v=R238C93';
 const list=document.getElementById('mobList'), search=document.getElementById('mobSearch'), kind=document.getElementById('mobKind');
 let models=[];

@@ -130,6 +130,12 @@ jobs:
       - name: Check Blender pipeline Python syntax
         run: python -m py_compile scripts/blender_repair_orc_turns.py
 
+      - name: Validate reusable pose libraries and MOB authoring
+        run: |
+          node --check js/mob-creator.mjs
+          node --check js/studio-pose-library.mjs
+          node scripts/test-mob-authoring.mjs
+
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
 

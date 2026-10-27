@@ -1,0 +1,80 @@
+import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C153';
+export const POSE_LIBRARY_SCHEMA='adventure-party.pose-library';
+export const POSE_LIBRARY_VERSION=1;
+export const HUMANOID_SIZES=Object.freeze(['small','medium','large']);
+export const validAuthoringId=id=>typeof id==='string'&&id.length<=100&&/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id);
+const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+const text=(value,label,max=160)=>{if(typeof value!=='string'||!value.trim()||value.length>max)throw Error(`Invalid ${label}.`);return value.trim();};
+export function normalizePoseSample(value){
+  if(value==null)return null;
+  if(!object(value)||!Number.isFinite(value.timeSeconds)||value.timeSeconds<0||value.timeSeconds>86400)throw Error('Pose needs a valid animation time.');
+  if(Object.keys(value).some(key=>!['animation','sourceId','timeSeconds'].includes(key)))throw Error('Shared poses contain animation references only; keep model, pixels and grip settings with the MOB.');
+  return {animation:text(value.animation,'animation name'),sourceId:text(value.sourceId,'animation source ID',250),timeSeconds:value.timeSeconds};
+}
+export function normalizePoseLibrary(value){
+  if(!object(value)||value.schema!==POSE_LIBRARY_SCHEMA||value.version!==POSE_LIBRARY_VERSION)throw Error('Unsupported pose library.');
+  if(!validAuthoringId(value.id))throw Error('Pose library ID must use lowercase words separated by hyphens.');
+  if(value.bodyFamily!=='humanoid'||!HUMANOID_SIZES.includes(value.size))throw Error('Choose a humanoid Small, Medium or Large pose library.');
+  if(!Number.isInteger(value.revision)||value.revision<0)throw Error('Invalid pose library revision.');
+  if(!object(value.profiles)||Object.keys(value.profiles).some(id=>!ACTION_PROFILE_CATALOG.has(id)))throw Error('Unknown weapon type in pose library.');
+  if(Object.keys(value).some(key=>!['schema','version','id','name','bodyFamily','size','revision','profiles'].includes(key)))throw Error('Pose libraries must not contain model-specific settings.');
+  const profiles={};
+  for(const id of DEFAULT_ACTION_PROFILE_IDS){
+    const poses=value.profiles[id]||{};
+    if(!object(poses)||Object.keys(poses).some(pose=>!ACTION_POSES.includes(pose)))throw Error('Unknown action pose.');
+    profiles[id]=Object.fromEntries(ACTION_POSES.map(pose=>[pose,normalizePoseSample(poses[pose])]));
+  }
+  return {schema:POSE_LIBRARY_SCHEMA,version:1,id:value.id,name:text(value.name,'library name'),bodyFamily:'humanoid',size:value.size,revision:value.revision,profiles};
+}
+export function createPoseLibrary({id,name,size='medium',profiles={}}){return normalizePoseLibrary({schema:POSE_LIBRARY_SCHEMA,version:1,id,name,bodyFamily:'humanoid',size,revision:0,profiles});}
+export function poseLibrarySignature(library){const {revision,...content}=normalizePoseLibrary(library);return JSON.stringify(content);}
+export function recordLibraryPose(library,profileId,pose,sample){
+  const next=normalizePoseLibrary(library);
+  if(!ACTION_PROFILE_CATALOG.has(profileId)||!ACTION_POSES.includes(pose))throw Error('Choose a weapon type and action pose.');
+  next.profiles[profileId][pose]=normalizePoseSample(sample);return next;
+}
+export function addCaptureRecipes(library,groups){
+  let next=normalizePoseLibrary(library);
+  for(const [profile,poses] of Object.entries(groups||{}))for(const [pose,capture] of Object.entries(poses||{})){
+    if(!capture?.clipSourceId||capture.clipSourceId==='t-pose')continue;
+    next=recordLibraryPose(next,profile,pose,{animation:capture.clip,sourceId:capture.clipSourceId,timeSeconds:capture.time});
+  }
+  return next;
+}
+export function resolveLibraryPose(library,profile,pose,clips){
+  const sample=normalizePoseLibrary(library).profiles[profile]?.[pose];
+  if(!sample)throw Error('This weapon type has no assigned '+pose+' pose.');
+  const index=clips.findIndex(clip=>(clip.sourceId||clip.userData?.studioAnimationId)===sample.sourceId);
+  if(index<0)throw Error(`Animation unavailable on this model: ${sample.animation}. Load its source animation first.`);
+  if(sample.timeSeconds>clips[index].duration+0.0001)throw Error(`Pose time exceeds ${sample.animation}'s duration.`);
+  return {index,sample};
+}
+export function poseLibraryCoverage(library,profileIds,{casting=false}={}){
+  const normalized=normalizePoseLibrary(library),required=ACTION_POSES.filter(pose=>casting||!['casting-windup','cast'].includes(pose));
+  const missing=[];let present=0;
+  for(const id of profileIds){if(!ACTION_PROFILE_CATALOG.has(id))throw Error('Unknown weapon type.');for(const pose of required){if(normalized.profiles[id][pose])present++;else missing.push({profileId:id,pose});}}
+  return {present,total:profileIds.length*required.length,missing};
+}
+// Scope each MOB/model workspace separately. Plain Studio keeps its original key.
+export function authoringWorkspaceSuffix(search=''){
+  const query=new URLSearchParams(search),mob=query.get('mob'),model=query.get('model'),library=query.get('poseLibrary');
+  if(!validAuthoringId(model))return '';
+  const prefix=query.get('preview')==='1'?'preview:':'';
+  if(validAuthoringId(mob))return `:${prefix}mob:${mob}:${model}`;
+  if(validAuthoringId(library))return `:${prefix}pose-library:${library}:${model}`;
+  return '';
+}
+
+// Flatten local slices/frozen clips back onto their portable source timeline.
+export function portablePoseSample(clip,timeSeconds,sources,ranges=[]){
+  if(!clip||!Number.isFinite(timeSeconds)||timeSeconds<0||timeSeconds>clip.duration+0.0001)throw Error('Select a valid animation frame.');
+  const sourceId=clip.userData?.studioAnimationId;
+  const frozen=clip.userData?.frozenPose,range=ranges.find(item=>item.id===sourceId);
+  if(frozen||range){
+    const id=frozen?.sourceId||range.sourceId,source=sources.find(item=>item.userData?.studioAnimationId===id);
+    if(!source||source===clip)throw Error('The original source animation is missing.');
+    return portablePoseSample(source,frozen?frozen.timeSeconds:range.start+timeSeconds,sources,ranges.filter(item=>item.id!==sourceId));
+  }
+  if(!sourceId||sourceId.startsWith('source:'))throw Error('Choose a shared animation with a stable source ID before recording a reusable pose.');
+  return normalizePoseSample({animation:clip.name,sourceId,timeSeconds});
+}

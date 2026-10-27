@@ -5,7 +5,7 @@ const html = readFileSync('3d-studio.html','utf8');
 const studio = readFileSync('js/3d-studio.mjs','utf8');
 const css = readFileSync('css/3d-studio.css','utf8');
 assert.match(html, /Candidate Rev (11[7-9]|1[2-9][0-9])/);
-assert.match(html, /css\/3d-studio\.css\?v=R238C149/);
+assert.match(html, /css\/3d-studio\.css\?v=R238C160/);
 
 for (const [name, min, max, step] of [
   ['Position','-1','1','0.005'],

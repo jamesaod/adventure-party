@@ -110,3 +110,8 @@ Use the same per-weapon capture maps and Unit Package export for `casting-windup
 ## Battlefield text controls (Candidate Rev 154)
 
 [Battlefield controls](BATTLEFIELD_CONTROLS.md) records font shortcut behavior, scoped persistence, layout handling and validation. Keep presentation scaling independent of map zoom, input editing and combat turn state.
+
+
+## Candidate Rev 160 — reusable pose libraries and MOB Creator
+
+See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/library selection, all-weapon action recipes, pinned library revisions, isolated Studio workspaces, and the JSON/ZIP integration workflow. Reuse the existing renderer, retargeter, captures and Unit Package schema. Browser drafts are authoring data; live combat registration remains a repository integration step.

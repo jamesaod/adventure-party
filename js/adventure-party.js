@@ -434,6 +434,7 @@ async function activateLauncherSelection(){
     return;
   }
 
+  if(target==="mob-creator"){window.location.assign("./mob-creator.html");return;}
   if(target==="mob-catalog"){
     window.location.assign("./mob-catalog.html");
     return;

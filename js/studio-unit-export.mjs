@@ -5,7 +5,7 @@ import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C146';
 // Bundle references to existing assets; each capture retains its own loadout,
 // stable animation source ID and time instead of borrowing the last UI state.
 export function buildStudioUnitExport({name,settings,profiles}){
-  const spriteSets={},equipment=new Map();
+  const spriteSets={},equipment=new Map((settings.unitPackage?.equipment||[]).map(item=>[(item.slot||'primary')+':'+item.itemId,structuredClone(item)]));
   for(const {id,manifest} of profiles){
     const poses=structuredClone(manifest.poses);
     for(const pose of Object.values(poses)){
@@ -20,11 +20,12 @@ export function buildStudioUnitExport({name,settings,profiles}){
     spriteSets[id]={manifest:`profiles/${id}/manifest.json`,poses};
   }
   return createUnitPackage({
-    id:spriteSetSlug(name),name,
+    id:settings.unitPackage?.id||spriteSetSlug(name),name:settings.unitPackage?.name||name,
     modelId:settings.libraryModelId||spriteSetSlug(settings.modelName||name),
     character:settings.unitPackage?.character||{},
-    actionProfiles:Object.keys(spriteSets),equipment:[...equipment.values()],
+    attachments:settings.unitPackage?.attachments||null,
+    actionProfiles:[...new Set([...(settings.unitPackage?.actionProfiles||[]),...Object.keys(spriteSets)])],equipment:[...equipment.values()],
     mob:{...(settings.unitPackage?.mob||{}),type:settings.mobType||null},
-    references:{...(settings.unitPackage?.references||{}),spriteSets}
+    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:settings.poseLibrary}:{}),spriteSets}
   });
 }

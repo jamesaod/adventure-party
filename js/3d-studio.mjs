@@ -12,7 +12,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C153';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C160';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -29,6 +29,13 @@ import {
 } from './studio-shield.mjs?v=R238C146';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
+
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C160';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C160';
+import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C160';
+const authoringQuery=new URLSearchParams(location.search);
+const authoringScoped=!!authoringWorkspaceSuffix(location.search);
+if(authoringScoped&&authoringQuery.get('preview')==='1')document.documentElement.classList.add('studio-embedded');
 
 // The six previews share one WebGL atlas; throttling its costly GPU readback
 // and CPU palette pipeline leaves the main 3D viewport at browser refresh.
@@ -91,6 +98,7 @@ const ui = Object.fromEntries([
 ].map(name => [name, $(`studio${name}`)]));
 
 const state = {
+  unitPackage:null, poseLibrary:null, poseLibrarySignature:null,
   model: null, modelName: 'Studio mannequin', clips: [], sourceClips: [], animationRanges: [], mixer: null,
   action: null, playing: true, facing: 'SE', heading: 0, upAxis: 'Z',
   width: 160, height: 200, layoutId: 'single', resolutionPercent: 100, mobType: 'kobold',
@@ -112,7 +120,7 @@ let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbient
 let atlasTarget, atlasSource, atlasImage;
 let battlefieldSource,battlefieldImage,battlefieldWidth=1,battlefieldHeight=1;
 let supersampleImage;
-let resizeObserver, visibilityObserver, poseCapture;
+let resizeObserver, visibilityObserver, poseCapture, poseLibraryPanel;
 let modelBounds = null, heightRulerLine;
 let humanoidAnimationSourcesPromise = null;
 const equipment = createStudioEquipment({
@@ -172,6 +180,7 @@ const previews = HEX_FACINGS.map(facing => ({
 
 function getWorkspaceSettings() {
   return {
+    unitPackage:state.unitPackage,poseLibrary:state.poseLibrary,poseLibrarySignature:state.poseLibrarySignature,
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
     libraryModelId: state.libraryModelId,
     animationRecipe: state.sourceClips.find(clip => clip.userData?.animationRecipe)?.userData.animationRecipe || null,
@@ -693,7 +702,7 @@ function invalidate(previewsToo = true) {
   requestFrame();
 }
 function requestFrame() {
-  if (!state.raf && !state.disposed && !document.hidden && state.viewVisible) {
+  if (renderer && orbit && !state.raf && !state.disposed && !document.hidden && state.viewVisible) {
     state.raf = requestAnimationFrame(tick);
   }
 }
@@ -2213,6 +2222,7 @@ async function loadModelLibrary() {
 
 async function loadLibraryModel() {
   const entry = state.libraryModels.find(model => model.id === ui.ModelLibrary.value);
+  if(authoringScoped&&entry?.id!==authoringQuery.get('model')){showError(new Error('Choose the model in MOB Creator, then reopen its Studio workspace.'));return;}
   if (!entry || !renderer || state.disposed || state.libraryLoading || state.modelLoading) return;
   const version = ++state.loadingVersion;
   state.libraryLoading = true;
@@ -2802,6 +2812,9 @@ function startViewer() {
 }
 
 function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 }) {
+  state.unitPackage=settings.unitPackage||null;
+  state.poseLibrary=settings.poseLibrary?normalizePoseLibrary(settings.poseLibrary):null;
+  state.poseLibrarySignature=settings.poseLibrarySignature||null;
   try {
     state.layoutId = spriteLayout(settings.layout?.id || settings.layoutId || 'single').id;
     state.resolutionPercent = createSpriteLayoutMetadata(state.layoutId,
@@ -2935,6 +2948,23 @@ async function start() {
   }
   bindControls();
   await loadModelLibrary();
+  let linkedLibrary=null;
+  if(authoringScoped){
+    const store=browserAuthoringStore(),mob=store.mob(query.get('mob'));
+    if(query.has('mob')&&!mob)throw Error('MOB draft not found. Save it in MOB Creator before opening Studio.');
+    if(mob&&mob.modelId!==query.get('model'))throw Error('MOB model changed. Reopen Studio from MOB Creator.');
+    state.unitPackage=mob;
+    linkedLibrary=mob?.references.poseLibrary||store.library(query.get('poseLibrary'));
+    if(!state.libraryModels.some(model=>model.id===query.get('model')))throw Error('The requested model is not in the Studio catalog.');
+    if(mob){
+      const back=document.createElement('a');back.href='./mob-creator.html?mob='+encodeURIComponent(mob.id);back.textContent='Return to MOB Creator';back.className='studio-button';document.querySelector('.studio-header').append(back);
+      const test=document.getElementById('studioTestCombatButton');test.title='Export this MOB package for repository combat integration.';
+      ui.MobTarget.closest('.studio-field').hidden=true;ui.Footprint.closest('.studio-field').hidden=true;
+      ui.LoadButton.hidden=true;ui.Files.hidden=true;
+      document.getElementById('studioWorkspaceStatus').textContent='This MOB has its own model workspace. Export its ZIP for repository integration.';
+      if(!restored){state.layoutId=mob.mob.footprint;updateSetupLabels();}
+    }
+  }
   if (restored?.settings?.libraryModelId === 'dungeon-crawler-carl-v2') {
     restored.settings = {...restored.settings,libraryModelId:'dungeon-crawler-carl-v3',
       modelName:'Dungeon Crawler Carl Ver 3',animationRanges:[],clipName:'Sword And Shield Idle',
@@ -2960,12 +2990,35 @@ async function start() {
       ui.EmptyMessage.textContent = 'Your captured sprites are restored below and ready to export.';
       ui.ModelInfo.textContent = 'Saved sprite set · Source model is not stored';
       status('Saved captures restored · Export or test the same sprite set');
+    } else if (authoringScoped) {
+      ui.ModelLibrary.value=query.get('model');
+      await loadLibraryModel();
     } else if (state.libraryModels.length === 1) {
       ui.ModelLibrary.value = state.libraryModels[0].id;
       await loadLibraryModel();
     } else await installModel(makeDemo(), { isDemo: true, restoreSettings: restored?.settings || null, persist: !restoreError });
+    if(state.unitPackage&&state.layoutId!==state.unitPackage.mob.footprint){state.layoutId=state.unitPackage.mob.footprint;poseCapture.invalidateCaptures('MOB footprint changed');changeSpriteFormat({refit:true});}
     useCurrentFormatAfterClear();
     selectFacing(state.facing);
+    poseLibraryPanel=createStudioPoseLibrary({
+      initialLibrary:linkedLibrary||state.poseLibrary,
+      getSample:()=>{if(!state.action||!state.modelReady)throw Error('Load a model and select an animation first.');return portablePoseSample(state.action.getClip(),state.action.time,state.sourceClips,state.animationRanges);},
+      getClips:()=>state.clips.map(clip=>({sourceId:animationSourceId(clip),duration:clip.duration})),
+      selectProfile:id=>poseCapture.switchActionProfile(id),
+      preview:async({index,sample})=>{if(!state.modelReady||state.modelLoading)throw Error('Wait for the model to load.');state.playing=false;setClip(index);state.action.paused=true;state.action.time=sample.timeSeconds;equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();updateAnimationControls();invalidate();poseCapture.saveWorkspace();},
+      getCaptureRecipes:()=>{const groups=poseCapture.recipeProfiles();for(const poses of Object.values(groups))for(const capture of Object.values(poses)){if(!capture.clipSourceId||capture.clipSourceId==='t-pose')continue;const clip=state.clips.find(item=>animationSourceId(item)===capture.clipSourceId);if(!clip)throw Error('Load the source animation before copying capture references: '+capture.clip);const sample=portablePoseSample(clip,capture.time,state.sourceClips,state.animationRanges);capture.clip=sample.animation;capture.clipSourceId=sample.sourceId;capture.time=sample.timeSeconds;}return groups;},
+      invalidateCaptures:reason=>poseCapture.invalidateCaptures(reason),
+      getSignature:()=>state.poseLibrarySignature,
+      setLink:(library,signature)=>{state.poseLibrary=structuredClone(library);state.poseLibrarySignature=signature;poseCapture.saveWorkspace();}
+    });
+    if(authoringScoped&&query.get('preview')==='1'){
+      window.addEventListener('message',async event=>{
+        if(event.origin!==location.origin||event.source!==parent||event.data?.type!=='mob-preview-pose')return;
+        try{await poseLibraryPanel.previewPose(event.data.profile,event.data.pose);parent.postMessage({type:'mob-preview-result',message:'Pose displayed on '+state.modelName},location.origin);}
+        catch(error){parent.postMessage({type:'mob-preview-result',message:error.message},location.origin);}
+      });
+      parent.postMessage({type:'mob-preview-ready'},location.origin);
+    }
     if (restoreError) {
       showError(restoreError);
       status('Studio ready · Automatic saving is unavailable');

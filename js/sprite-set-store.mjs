@@ -1,9 +1,13 @@
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C153';
 import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 
+import {authoringWorkspaceSuffix} from './pose-library.mjs?v=R238C160';
+
 // Candidate and stable share an origin, so isolate their drafts by page folder.
 const scope = new URL('.', location.href).pathname;
-const databaseName = `adventure-party-studio:${scope}`;
+const databaseName = `adventure-party-studio:${scope}${authoringWorkspaceSuffix(location.search)}`;
+const previewWorkspace=authoringWorkspaceSuffix(location.search).startsWith(':preview:');
+const sourceDatabaseName=previewWorkspace?databaseName.replace(':preview:',':'):databaseName;
 const storeName = 'sprite-drafts';
 const WORKSPACE_VERSION = 1;
 const MAX_WORKSPACE_BYTES = 512 * 1024 * 1024;
@@ -95,14 +99,14 @@ export function upgradeStudioWorkspaceHexScale(workspace) {
     settings: { ...workspace.settings, hexScalePercent: target } });
 }
 
-function openDatabase() {
+function openDatabase(name=databaseName) {
   return new Promise((resolve, reject) => {
     if (!globalThis.indexedDB) {
       reject(new Error('This browser cannot save the studio workspace. Export the asset ZIP to keep your sprites.'));
       return;
     }
     let blocked = false;
-    const request = indexedDB.open(databaseName, 1);
+    const request = indexedDB.open(name, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(storeName);
     request.onsuccess = () => blocked ? request.result.close() : resolve(request.result);
     request.onerror = () => reject(new Error('The browser could not open the studio draft storage. Export the asset ZIP instead.'));
@@ -128,8 +132,8 @@ async function writeRecords(records) {
   } finally { db.close(); }
 }
 
-async function readRecord(key) {
-  const db = await openDatabase();
+async function readRecord(key,name=databaseName) {
+  const db = await openDatabase(name);
   try {
     return await new Promise((resolve, reject) => {
       const transaction = db.transaction(storeName, 'readonly');
@@ -142,11 +146,12 @@ async function readRecord(key) {
 
 export async function saveStudioWorkspace(workspace) {
   validateStudioWorkspace(workspace);
+  if(previewWorkspace)return; // Embedded preview reads the model draft but never writes it.
   await writeRecords([['workspace', { ...workspace, savedAt: Date.now() }]]);
 }
 
 export async function loadStudioWorkspace({ fromCombat = false } = {}) {
-  const workspace = await readRecord(fromCombat ? 'combat-workspace' : 'workspace');
+  const workspace = await readRecord(fromCombat ? 'combat-workspace' : 'workspace',sourceDatabaseName);
   return workspace ? validateStudioWorkspace(workspace) : null;
 }
 
