@@ -115,3 +115,8 @@ Use the same per-weapon capture maps and Unit Package export for `casting-windup
 ## Candidate Rev 160 — reusable pose libraries and MOB Creator
 
 See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/library selection, all-weapon action recipes, pinned library revisions, isolated Studio workspaces, and the JSON/ZIP integration workflow. Reuse the existing renderer, retargeter, captures and Unit Package schema. Browser drafts are authoring data; live combat registration remains a repository integration step.
+
+
+## Candidate Rev 161 — Male Orc import
+
+[Male Orc model](MALE_ORC_MODEL.md) records the source hashes, preserved texture/topology, armature-scale normalization and independent animation acceptance. Add new model identities to the shared Studio catalog and selector without replacing archived models or changing their combat fallback order. MOB Creator automatically uses the same offerings.

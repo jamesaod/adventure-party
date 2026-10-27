@@ -154,7 +154,7 @@ Connections:  {
   {
     const THREE = await import(pathToFileURL(path.join(three, 'three.core.min.js')));
     const modelCatalog = JSON.parse(await fs.readFile(new URL('../data/studio-models.json', import.meta.url), 'utf8'));
-    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman']);
+    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc']);
     for(const modelId of modelCatalog.studioModelIds){
     const modelEntry = modelCatalog.models.find(model => model.id === modelId);
     if(modelId==='dungeon-crawler-carl-v3')assert.equal(modelEntry.label, 'Dungeon Crawler Carl Ver 3');
@@ -193,7 +193,7 @@ Connections:  {
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(accessor(attributes.WEIGHTS_0),4));
     const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshBasicMaterial());
     nodes[meshIndex].add(mesh); mesh.bind(skeleton,new THREE.Matrix4()); // Match GLTFLoader, including scaled Armature parents.
-    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${modelId==='dungeon-crawler-carl-v3'?'carl':'blond-scale-mail'}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
+    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${({'dungeon-crawler-carl-v3':'carl','blond-scale-mail-woman':'blond-scale-mail','male-orc':'male-orc'})[modelId]}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
