@@ -1,3 +1,4 @@
+import {recoveryPoseReference} from './studio-capture-export.mjs?v=R238C173';
 import {captureGroupPath,isSharedCaptureGroup} from './action-capture-groups.mjs?v=R238C172';
 import {normalizePoseLibrary} from './pose-library.mjs?v=R238C172';
 import { createUnitPackage } from './unit-package.mjs';
@@ -6,9 +7,9 @@ import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C146';
 
 // Bundle references to existing assets; each capture retains its own loadout,
 // stable animation source ID and time instead of borrowing the last UI state.
-export function buildStudioUnitExport({name,settings,profiles}){
+export function buildStudioUnitExport({name,settings,profiles,recovery=[]}){
   const spriteSets={},sharedActionGroups={},equipment=new Map((settings.unitPackage?.equipment||[]).map(item=>[(item.slot||'primary')+':'+item.itemId,structuredClone(item)]));
-  for(const {id,manifest} of profiles){
+  for(const {id,manifest} of [...profiles,...recovery]){
     const poses=structuredClone(manifest.poses);
     for(const pose of Object.values(poses)){
       const render=pose.render||manifest.render||{};
@@ -19,7 +20,7 @@ export function buildStudioUnitExport({name,settings,profiles}){
         if(item)equipment.set(slot+':'+item.id,{itemId:item.id,slot});
       }
     }
-    (isSharedCaptureGroup(id)?sharedActionGroups:spriteSets)[id]={manifest:`${captureGroupPath(id)}/manifest.json`,poses};
+    if(profiles.some(profile=>profile.manifest===manifest))(isSharedCaptureGroup(id)?sharedActionGroups:spriteSets)[id]={manifest:`${captureGroupPath(id)}/manifest.json`,poses};
   }
   for(const value of Object.values(spriteSets))value.sharedActionGroups=Object.keys(sharedActionGroups);
   return createUnitPackage({
@@ -27,8 +28,9 @@ export function buildStudioUnitExport({name,settings,profiles}){
     modelId:settings.libraryModelId||spriteSetSlug(settings.modelName||name),
     character:settings.unitPackage?.character||{},
     attachments:settings.unitPackage?.attachments||null,
-    actionProfiles:[...new Set([...(settings.unitPackage?.actionProfiles||[]),...Object.keys(spriteSets)])],equipment:[...equipment.values()],
+    actionProfiles:[...new Set([...(settings.unitPackage?.actionProfiles||[]),...Object.keys(spriteSets),...recovery.filter(record=>!isSharedCaptureGroup(record.id)).map(record=>record.id)])],equipment:[...equipment.values()],
     mob:{...(settings.unitPackage?.mob||{}),type:settings.mobType||null},
-    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:normalizePoseLibrary(settings.poseLibrary)}:{}),captureFormatVersion:2,spriteSets,sharedActionGroups}
+    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:normalizePoseLibrary(settings.poseLibrary)}:{}),captureFormatVersion:2,spriteSets,sharedActionGroups,
+      captureRecovery:recovery.map(recoveryPoseReference)}
   });
 }

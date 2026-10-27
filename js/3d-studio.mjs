@@ -14,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C172';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C173';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -506,7 +506,7 @@ async function changeEquipment(value, { resetPose = true } = {}) {
         }
       }
     }
-    poseCapture?.invalidateCaptures('Weapon or grip changed',{allProfiles:false});
+    // Existing poses retain their captured loadouts; this edit affects the next capture.
   }
   poseCapture?.saveWorkspace();
 }
@@ -518,9 +518,9 @@ async function changeOffHand(value){
     ? normalizeOffHandEquipment() : normalizeOffHandEquipment(value);
   if(next.rightHand!=='none')await shieldEquipment.select({});
   if(state.disposed||state.model!==model)return;
-  const changed=await offHandEquipment.select(next);
+  await offHandEquipment.select(next);
   if(state.disposed||state.model!==model)return;
-  if(changed)poseCapture?.invalidateCaptures('Off-hand weapon or grip changed',{allProfiles:false});
+  // Keep each saved pose's independent off-hand transform.
   updateEquipmentControls();poseCapture?.saveWorkspace();
 }
 
@@ -558,7 +558,7 @@ async function changeShield(value,{resetPose=true}={}){
   const changed=await shieldEquipment.select(value);
   if(state.disposed||state.model!==model)return;
   if(changed){
-    poseCapture?.invalidateCaptures('Shield changed',{allProfiles:false});
+    // Keep the shield transform already stored with each captured pose.
     // Shields follow the already-calibrated unit transform; they never refit it.
     if(resetPose)resetPreviewReferenceToReady();
   }

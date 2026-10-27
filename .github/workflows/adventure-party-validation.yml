@@ -141,6 +141,10 @@ jobs:
           node scripts/test-mob-authoring.mjs
           node --check js/action-capture-groups.mjs
           node scripts/test-shared-action-captures.mjs
+          node --check js/studio-workspace-codec.mjs
+          node scripts/test-studio-workspace-codec.mjs
+          node --check js/studio-capture-export.mjs
+          node scripts/test-studio-capture-export.mjs
 
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs

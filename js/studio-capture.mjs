@@ -1,3 +1,4 @@
+import {planCaptureExport,recoveryPoseReference} from './studio-capture-export.mjs?v=R238C173';
 import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
@@ -6,10 +7,10 @@ import {
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C172';
+} from './sprite-set-store.mjs?v=R238C173';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
 import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C172';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C172';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C173';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C172';
@@ -186,6 +187,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     else await saveQueue;
   }
 
+  window.addEventListener('beforeunload',event=>{
+    if(savedRevision!==saveRevision||saveTimer||lastSaveError){event.preventDefault();event.returnValue='';}
+  });
+
   for (const pose of SPRITE_POSES) {
     const tr = document.createElement('tr');
     tr.dataset.studioSavedPose = pose;
@@ -244,15 +249,15 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   // Edits never discard a saved frame silently. The previous thumbnails
-  // remain visible for reference, but cannot be exported or sent to combat
-  // until each affected pose has been recaptured in the new configuration.
+  // remain visible and export in recovery/ with their exact references/pixels.
+  // Combat only uses current captures until outdated poses are recaptured.
   function invalidateCaptures(reason = 'Studio settings changed', {allProfiles=true,changedPoses=null} = {}) {
     const targets=changedPoses ? changedPoses.flatMap(({groupId,pose,sample})=>{
       const capture=capturesByProfile.get(groupId)?.[pose];
       return capture&&(!sample||capture.clipSourceId!==sample.sourceId||Math.abs(capture.time-sample.timeSeconds)>0.0001)?[capture]:[];
     }) : (allProfiles ? [...capturesByProfile.values()] : [captures]).flatMap(group=>Object.values(group));
     if(!targets.length)return;
-    for(const capture of targets) capture.stale = true;
+    for(const capture of targets) { capture.stale = true; capture.staleReason=reason; }
     if(allProfiles&&!changedPoses)for(const group of Object.values(legacySharedCaptures))for(const capture of Object.values(group))capture.stale=true;
     refresh();
     ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture any affected pose to use it in combat.`;
@@ -270,8 +275,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     const fresh = freshCount();
     if(ui.ActionProfile)ui.ActionProfile.disabled=busy||equipmentBusy;
     if(ui.CaptureProfileSummary){
-      const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>!pose.stale).length,0);
-      ui.CaptureProfileSummary.textContent=`${CAPTURE_GROUP_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${groupPoses().length} poses · ${total} saved poses across weapon and shared groups`;
+      const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.keys(group).length,0);
+      const outdated=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>pose.stale).length,0);
+      ui.CaptureProfileSummary.textContent=`${CAPTURE_GROUP_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${groupPoses().length} poses · ${total} captured poses across all groups${outdated?` · ${outdated} outdated snapshots preserved`:""}`;
     }
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
@@ -292,8 +298,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     }
     ui.CaptureLockNote.classList.toggle('locked', captured > fresh);
     ui.CaptureLockNote.textContent = captured > fresh
-      ? 'Some saved poses are outdated after editing. Controls stay available; recapture affected poses before exporting or testing in combat.'
-      : 'Controls remain editable after capture. Changing equipment, lighting or framing marks previous captures outdated until recaptured.';
+      ? 'Some saved poses are outdated after editing. Controls stay available; ZIP export preserves them in recovery; recapture them before combat.'
+      : 'Each pose keeps its captured equipment and grip. Lighting or framing changes mark captures outdated; ZIP export preserves those snapshots for recovery.';
   }
 
   function refresh() {
@@ -405,8 +411,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     };
   }
 
-  function buildExport(group=captures,profileId=selectedProfileId) {
+  function buildExport(group=captures,profileId=selectedProfileId,{includeOutdated=false,includeQaSheet=false}={}) {
     const captures=group;
+    const included=pose=>captures[pose]&&(includeOutdated||!captures[pose].stale);
     const settings = !modelReady && savedSettings ? savedSettings : getWorkspaceSettings();
     const first=Object.values(captures).find(capture=>!capture.stale);
     const base=first || Object.values(captures)[0];
@@ -447,7 +454,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ...(battlefield ? { battlefield } : {}),
       windupDurationMs,
       partialPoses:true, actionProfileId:profileId,
-      captures: Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
+      captures: Object.fromEntries(SPRITE_POSES.filter(included).map(pose => [pose, { clip: captures[pose].clip, time: captures[pose].time }])),
       render: {
         ...render,
         appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
@@ -462,16 +469,17 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if(isSharedCaptureGroup(profileId)){delete manifest.actionProfileId;manifest.sharedActionGroupId=profileId;}
     for(const pose of Object.keys(manifest.poses)){
       manifest.poses[pose].clipSourceId=captures[pose].clipSourceId||null;
+      if(captures[pose].stale){manifest.poses[pose].outdated=true;manifest.poses[pose].outdatedReason=captures[pose].staleReason||'Earlier Studio settings changed; review this saved snapshot.';}
       manifest.poses[pose].render=structuredClone(captures[pose].render||{});
     }
-    const poseFrames = Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale).map(pose => [pose, captures[pose].frames]));
+    const poseFrames = Object.fromEntries(SPRITE_POSES.filter(included).map(pose => [pose, captures[pose].frames]));
     const battlefieldPoseFrames = battlefield
-      ? Object.fromEntries(SPRITE_POSES.filter(pose=>captures[pose]&&!captures[pose].stale&&captures[pose].battlefieldFrames).map(pose=>[pose,captures[pose].battlefieldFrames]))
+      ? Object.fromEntries(SPRITE_POSES.filter(pose=>included(pose)&&captures[pose].battlefieldFrames).map(pose=>[pose,captures[pose].battlefieldFrames]))
       : null;
     return {
       manifest,poseFrames,battlefieldPoseFrames,
       shadowFrames:Object.fromEntries(Object.entries(captures).filter(([,c])=>!c.stale&&c.shadowFrames).map(([pose,c])=>[pose,c.shadowFrames])),
-      sheet:assembleSpriteSheet({...Object.fromEntries(SPRITE_POSES.map(pose=>[pose,poseFrames[pose] || {}]))},width,height),
+      sheet:includeQaSheet?assembleSpriteSheet({...Object.fromEntries(SPRITE_POSES.map(pose=>[pose,poseFrames[pose] || {}]))},width,height):null,
       workspace:workspaceSnapshot()
     };
   }
@@ -504,34 +512,40 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (busy) return;
     busy = true;
     refreshControls();
-    try { await task(buildExport()); }
+    try { await task(); }
     catch (error) { onError(error); ui.SheetStatus.textContent = 'Export did not finish. Your captured poses are still here.'; }
     finally { busy = false; refreshControls(); }
   }
 
-  ui.ExportPoseSheetButton.addEventListener('click', () => runExport(async ({ manifest, sheet }) => {
+  ui.ExportPoseSheetButton.addEventListener('click', () => runExport(async () => {
+    const {manifest,sheet}=buildExport(captures,selectedProfileId,{includeQaSheet:true});
     download(await pngBlob(sheet.data, sheet.width, sheet.height), `${manifest.id}-${spriteCount}-sprites-${manifest.frame.width}x${manifest.frame.height}.png`);
     ui.SheetStatus.textContent = `Sheet exported: six facing columns and ${SPRITE_POSES.length} rows (${SPRITE_POSES.map(poseLabel).join(', ')}).`;
   }));
 
   ui.ExportPackageButton.addEventListener('click', () => runExport(async () => {
-    const profiles=[...capturesByProfile].filter(([,group])=>Object.values(group).some(pose=>!pose.stale))
-      .map(([id,group])=>({id,exported:buildExport(group,id)}));
-    if(!profiles.length)throw new Error('Capture at least one pose before exporting weapon sets.');
+    const plan=planCaptureExport(Object.fromEntries(capturesByProfile));
+    if(!plan.poseCount)throw new Error('Capture at least one pose before exporting action groups.');
+    const profiles=plan.current.map(({id,captures,path})=>({id,path,exported:buildExport(captures,id)}));
+    const recovery=plan.recovery.map(({id,pose,capture,path})=>({id,pose,path,exported:buildExport({[pose]:capture},id,{includeOutdated:true})}));
     const entries=[];
-    for(const {id,exported} of profiles){
+    for(const {path,exported} of [...profiles,...recovery]){
       const files=await packageFiles(exported,{includeQaSheet:false});
-      for(const [name,blob] of Object.entries(files))entries.push([`${captureGroupPath(id)}/${name}`,new Uint8Array(await blob.arrayBuffer())]);
-      entries.push([`${captureGroupPath(id)}/manifest.json`,strToU8(JSON.stringify(exported.manifest,null,2)+'\n')]);
+      for(const [name,blob] of Object.entries(files))entries.push([`${path}/${name}`,new Uint8Array(await blob.arrayBuffer())]);
+      entries.push([`${path}/manifest.json`,strToU8(JSON.stringify(exported.manifest,null,2)+'\n')]);
     }
+    const recovered=recovery.map(({id,pose,path,exported})=>({id,pose,path,manifest:exported.manifest}));
     const unit=buildStudioUnitExport({
-      name:ui.SpriteSetName.value.trim()||'Studio character',
-      settings:getWorkspaceSettings(),
-      profiles:profiles.map(({id,exported})=>({id,manifest:exported.manifest}))
+      name:ui.SpriteSetName.value.trim()||'Studio character',settings:!modelReady&&savedSettings?savedSettings:getWorkspaceSettings(),
+      profiles:profiles.map(({id,exported})=>({id,manifest:exported.manifest})),recovery:recovered
     });
+    if(recovery.length)entries.push(['capture-recovery.json',strToU8(JSON.stringify({
+      schema:'adventure-party.capture-recovery',version:1,modelId:unit.modelId,
+      records:recovered.map(recoveryPoseReference)
+    },null,2)+'\n')]);
     entries.push(['unit-package.json',strToU8(JSON.stringify(unit,null,2)+'\n')]);
     download(new Blob([zipSync(Object.fromEntries(entries),{level:0})],{type:'application/zip'}),`${unit.id}-weapon-sets.zip`);
-    ui.SheetStatus.textContent=`Exported ${profiles.length} weapon/shared action groups with six-facing PNGs, pose/equipment references and unit-package.json. Outdated poses are excluded.`;
+    ui.SheetStatus.textContent=`Exported all ${plan.poseCount} captured poses: ${plan.poseCount-recovery.length} current and ${recovery.length} earlier snapshots in recovery. Animation references, grips and six-facing PNGs are preserved.`;
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {
