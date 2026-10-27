@@ -345,3 +345,8 @@ Validation: `node scripts/test-studio-casting-captures.mjs` covers distinct atta
 ## Candidate Rev 157 — Blond Haired Woman in Scale Mail
 
 The Model library now offers **Blond Haired Woman in Scale Mail** alongside Carl Ver 3. Load her to preview the same 14 uploaded FBX motions, select primary/off-hand weapons or a shield, and adjust the existing scale, grip, XYZ rotation and attachment controls. This is a model choice, not a new character class or MOB template. [Import recipe and QA](BLOND_SCALE_MAIL_MODEL.md) documents source preservation, normalized FBX armature units and animation verification.
+
+
+## Candidate Rev 160 — reusable pose libraries and MOB Creator
+
+See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/library selection, all-weapon action recipes, pinned library revisions, isolated Studio workspaces, and the JSON/ZIP integration workflow. Reuse the existing renderer, retargeter, captures and Unit Package schema. Browser drafts are authoring data; live combat registration remains a repository integration step.

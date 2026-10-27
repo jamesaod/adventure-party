@@ -377,3 +377,19 @@ body.studio-page {
 .studio-setup-model .studio-local-note { display:none; }
 .studio-setup-fields { align-content:start; }
 .studio-setup-model .studio-model-info { font-size:12px; }
+
+/* Shared pose recipes reuse the existing animation and capture controls. */
+.studio-recipe-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.studio-recipe-fields input{min-width:0;width:100%;box-sizing:border-box;background:#171521;color:#75e7e7;border:1px solid #7a748d;padding:8px;font:inherit}
+.studio-pose-library{margin-top:16px}
+.studio-embedded .studio-header,.studio-embedded .studio-setup,.studio-embedded .studio-controls,.studio-embedded .studio-settings,.studio-embedded .studio-animation,.studio-embedded .studio-pose-library,.studio-embedded .studio-previews,.studio-embedded .studio-sheet-panel,.studio-embedded .studio-preview-column{display:none!important}
+.studio-embedded .studio-app{padding:0;margin:0;max-width:none}
+.studio-embedded .studio-layout{display:block;margin:0}
+.studio-embedded .studio-center{width:100%}
+.studio-embedded .studio-viewport{height:350px;min-height:250px}
+.studio-embedded .studio-viewer-panel{margin:0}
+@media(max-width:700px){.studio-recipe-fields{grid-template-columns:1fr}}
+
+.studio-embedded .studio-size-control,.studio-embedded .studio-footer .studio-note{display:none}
+.studio-embedded .studio-footer{padding:8px;margin:4px 0 0;font-size:14px}
+.studio-embedded .studio-model-height{font-size:12px}

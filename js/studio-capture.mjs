@@ -6,10 +6,10 @@ import {
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C153';
+} from './sprite-set-store.mjs?v=R238C160';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
 import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C153';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C153';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C160';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 const poseLabel = pose => ACTION_POSE_LABELS[pose];
@@ -77,6 +77,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     capturesByProfile.set(selectedProfileId,captures);
     if(modelReady)equipmentByProfile.set(selectedProfileId,currentEquipment());
     selectedProfileId=nextId;
+    if(ui.ActionProfile)ui.ActionProfile.value=nextId;
     captures=capturesByProfile.get(nextId)||{};
     capturesByProfile.set(nextId,captures);
     busy=true;refresh();
@@ -247,6 +248,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     for (const button of [ui.ExportPoseSheetButton, ui.ExportPackageButton, ui.TestCombatButton]) {
       button.disabled = busy;
     }
+    if(getWorkspaceSettings().unitPackage?.mob?.authoringVersion)ui.TestCombatButton.disabled=true;
     for (const row of rows.values()) {
       row.button.disabled = busy || equipmentBusy || !modelReady;
       row.clear.disabled = busy;
@@ -726,6 +728,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   return Object.freeze({
     reset, snapshot, saveWorkspace, flushSave, updateModelScale, invalidateCaptures,
+    switchActionProfile,
+    recipeProfiles:()=>Object.fromEntries([...capturesByProfile].map(([id,poses])=>[id,Object.fromEntries(Object.entries(poses).map(([pose,capture])=>[pose,{clip:capture.clip,clipSourceId:capture.clipSourceId,time:capture.time}]))])),
     setEquipmentBusy(value){
       if(equipmentBusy===!!value)return;
       equipmentBusy=!!value;refreshControls();
