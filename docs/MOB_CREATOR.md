@@ -35,3 +35,8 @@ This first creator saves browser drafts and produces integration packages. It do
 `node scripts/test-mob-authoring.mjs` checks the 12×7 matrix, exact source/time lookup, missing-source failures, sliced/frozen source mapping, six scores, independent linked snapshots, revision conflicts, candidate/stable/MOB/model/preview namespaces, portable JSON round trips and preservation of grip data in existing Unit Package exports. Run the repository validation workflow as usual. UI QA covers save/reopen, library recording and reuse across Carl and the Scale Mail Woman; retain source animation/model bytes unchanged.
 
 Rev 160 browser verification: saved/reopened all six distinct ability scores; recorded Sword And Shield Idle at source time 0; saved and replayed the same library on Carl and the Scale Mail Woman; captured six facings; independently reopened the actual downloaded MOB JSON and 14-entry Studio ZIP to verify stats, identity, model, library and animation references. The Creator preview also inherited saved sword/shield equipment from the editable model workspace. Existing model/animation asset bytes are unchanged.
+
+
+## Rev 172 shared action groups
+
+Pose library version 2 separates three physical poses per weapon from shared Magic and Death/Prone groups. Creator preview offers both groups, and readiness counts death/prone once and magic once for spellcasters. Existing version 1 libraries and pinned MOB snapshots migrate on read; no live combat registration is created. See [Shared action captures](SHARED_ACTION_CAPTURES.md).

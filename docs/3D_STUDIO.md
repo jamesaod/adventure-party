@@ -380,3 +380,8 @@ Studio and combat now use noon with no time slider. Saved old hours are ignored.
 ## Candidate Rev 169 — grounded death shadows
 
 Model previews now project the posed 3D geometry onto the floor, so death/prone bodies keep their ground depth rather than casting from an inferred standing-foot line. New captures carry separate presentation shadows through Test in combat and Return to Studio. Character PNG/QA sheet/Unit Package artwork remains unchanged and shadow-free. Existing captures are retained; recapture an older pose to give its combat test the precise geometry shadow. Old prone PNGs use a close contact fallback. See [Unit sun shadows](UNIT_SUN_SHADOWS.md).
+
+
+## Candidate Rev 172 — weapon-independent Magic and Death/Prone
+
+The capture selector now offers Magic and Death/Prone animation. Weapons contain Ready, Wind Up and Attack; capture the remaining four poses once per model workspace or reusable library. See [Shared action captures](SHARED_ACTION_CAPTURES.md) for version 2 JSON, ZIP paths, legacy recovery and combat test composition. This supersedes the seven-poses-per-weapon instructions above.

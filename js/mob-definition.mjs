@@ -1,6 +1,6 @@
 import {createUnitPackage,validateUnitPackage} from './unit-package.mjs';
-import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C160';
-import {DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C153';
+import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C172';
+import {DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C172';
 export const ABILITY_SCORES=Object.freeze(['str','dex','con','int','wis','cha']);
 export const MOB_ABILITIES=Object.freeze([{id:'bright-light-penalty',label:'Bright-light attack penalty (−1)'},{id:'spellcasting',label:'Spellcasting'}]);
 const number=(v,label,min,max,integer=false)=>{if(!Number.isFinite(v)||v<min||v>max||(integer&&!Number.isInteger(v)))throw Error(`${label} must be ${integer?'a whole number ':''}between ${min} and ${max}.`);return v;};

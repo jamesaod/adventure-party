@@ -1,6 +1,7 @@
-import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C153';
+import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C172';
+import {CAPTURE_GROUP_CATALOG,WEAPON_CAPTURE_POSES,SHARED_CAPTURE_GROUPS,captureGroupForPose,isSharedCaptureGroup,splitCaptureGroups} from './action-capture-groups.mjs?v=R238C172';
 export const POSE_LIBRARY_SCHEMA='adventure-party.pose-library';
-export const POSE_LIBRARY_VERSION=1;
+export const POSE_LIBRARY_VERSION=2;
 export const HUMANOID_SIZES=Object.freeze(['small','medium','large']);
 export const validAuthoringId=id=>typeof id==='string'&&id.length<=100&&/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id);
 const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
@@ -12,48 +13,70 @@ export function normalizePoseSample(value){
   return {animation:text(value.animation,'animation name'),sourceId:text(value.sourceId,'animation source ID',250),timeSeconds:value.timeSeconds};
 }
 export function normalizePoseLibrary(value){
-  if(!object(value)||value.schema!==POSE_LIBRARY_SCHEMA||value.version!==POSE_LIBRARY_VERSION)throw Error('Unsupported pose library.');
+  if(!object(value)||value.schema!==POSE_LIBRARY_SCHEMA||![1,2].includes(value.version))throw Error('Unsupported pose library.');
   if(!validAuthoringId(value.id))throw Error('Pose library ID must use lowercase words separated by hyphens.');
   if(value.bodyFamily!=='humanoid'||!HUMANOID_SIZES.includes(value.size))throw Error('Choose a humanoid Small, Medium or Large pose library.');
   if(!Number.isInteger(value.revision)||value.revision<0)throw Error('Invalid pose library revision.');
   if(!object(value.profiles)||Object.keys(value.profiles).some(id=>!ACTION_PROFILE_CATALOG.has(id)))throw Error('Unknown weapon type in pose library.');
-  if(Object.keys(value).some(key=>!['schema','version','id','name','bodyFamily','size','revision','profiles'].includes(key)))throw Error('Pose libraries must not contain model-specific settings.');
-  const profiles={};
-  for(const id of DEFAULT_ACTION_PROFILE_IDS){
-    const poses=value.profiles[id]||{};
-    if(!object(poses)||Object.keys(poses).some(pose=>!ACTION_POSES.includes(pose)))throw Error('Unknown action pose.');
-    profiles[id]=Object.fromEntries(ACTION_POSES.map(pose=>[pose,normalizePoseSample(poses[pose])]));
+  if(Object.keys(value).some(key=>!['schema','version','id','name','bodyFamily','size','revision','profiles','sharedActionGroups','legacySharedPoses'].includes(key)))throw Error('Pose libraries must not contain model-specific settings.');
+  const normalizeGroup=(poses,allowed)=>{
+    if(!object(poses)||Object.keys(poses).some(pose=>!allowed.includes(pose)))throw Error('Unknown action pose.');
+    return Object.fromEntries(allowed.map(pose=>[pose,normalizePoseSample(poses[pose])]));
+  };
+  const legacy={};
+  if(value.legacySharedPoses!==undefined&&!object(value.legacySharedPoses))throw Error('Invalid legacy shared poses.');
+  for(const [id,poses] of Object.entries(value.legacySharedPoses||{})){
+    if(!ACTION_PROFILE_CATALOG.has(id))throw Error('Unknown legacy weapon type.');
+    legacy[id]=normalizeGroup(poses,ACTION_POSES.filter(p=>!WEAPON_CAPTURE_POSES.includes(p)));
   }
-  return {schema:POSE_LIBRARY_SCHEMA,version:1,id:value.id,name:text(value.name,'library name'),bodyFamily:'humanoid',size:value.size,revision:value.revision,profiles};
+  const profiles=Object.fromEntries(DEFAULT_ACTION_PROFILE_IDS.map(id=>[id,normalizeGroup(value.profiles[id]||{},value.version===1?ACTION_POSES:WEAPON_CAPTURE_POSES)]));
+  if(value.sharedActionGroups!==undefined&&(!object(value.sharedActionGroups)||Object.keys(value.sharedActionGroups).some(id=>!isSharedCaptureGroup(id))))throw Error('Unknown shared action group.');
+  const shared=value.version===2?Object.fromEntries(Object.values(SHARED_CAPTURE_GROUPS).map(group=>[group.id,normalizeGroup(value.sharedActionGroups?.[group.id]||{},group.poses)])):{};
+  const split=splitCaptureGroups(profiles,shared,'one-handed-swing',legacy);
+  return {schema:POSE_LIBRARY_SCHEMA,version:2,id:value.id,name:text(value.name,'library name'),bodyFamily:'humanoid',size:value.size,revision:value.revision,
+    profiles:Object.fromEntries(DEFAULT_ACTION_PROFILE_IDS.map(id=>[id,normalizeGroup(split.profiles[id],WEAPON_CAPTURE_POSES)])),
+    sharedActionGroups:Object.fromEntries(Object.values(SHARED_CAPTURE_GROUPS).map(group=>[group.id,normalizeGroup(split.sharedActionGroups[group.id],group.poses)])),
+    ...(Object.keys(split.legacySharedPoses).length?{legacySharedPoses:Object.fromEntries(Object.entries(split.legacySharedPoses).map(([id,poses])=>[id,normalizeGroup(poses,ACTION_POSES.filter(p=>!WEAPON_CAPTURE_POSES.includes(p)))]))}:{})};
 }
-export function createPoseLibrary({id,name,size='medium',profiles={}}){return normalizePoseLibrary({schema:POSE_LIBRARY_SCHEMA,version:1,id,name,bodyFamily:'humanoid',size,revision:0,profiles});}
-export function poseLibrarySignature(library){const {revision,...content}=normalizePoseLibrary(library);return JSON.stringify(content);}
+export function createPoseLibrary({id,name,size='medium',profiles={},sharedActionGroups={}}){return normalizePoseLibrary({schema:POSE_LIBRARY_SCHEMA,version:2,id,name,bodyFamily:'humanoid',size,revision:0,profiles,sharedActionGroups});}
+export function poseLibrarySignature(library){const {revision,legacySharedPoses,...content}=normalizePoseLibrary(library);return JSON.stringify(content);}
+export function libraryPoseGroup(library,group){return isSharedCaptureGroup(group)?library.sharedActionGroups[group]:library.profiles[group];}
+export function changedLibraryPoses(previous,next){
+  const before=normalizePoseLibrary(previous),after=normalizePoseLibrary(next),changes=[];
+  for(const [id,group] of CAPTURE_GROUP_CATALOG)for(const pose of group.poses){
+    const sample=libraryPoseGroup(after,id)[pose];
+    if(JSON.stringify(libraryPoseGroup(before,id)[pose])!==JSON.stringify(sample))changes.push({groupId:id,pose,sample});
+  }
+  return changes;
+}
 export function recordLibraryPose(library,profileId,pose,sample){
-  const next=normalizePoseLibrary(library);
-  if(!ACTION_PROFILE_CATALOG.has(profileId)||!ACTION_POSES.includes(pose))throw Error('Choose a weapon type and action pose.');
-  next.profiles[profileId][pose]=normalizePoseSample(sample);return next;
+  const next=normalizePoseLibrary(library),group=captureGroupForPose(profileId,pose);
+  libraryPoseGroup(next,group)[pose]=normalizePoseSample(sample);return next;
 }
 export function addCaptureRecipes(library,groups){
   let next=normalizePoseLibrary(library);
-  for(const [profile,poses] of Object.entries(groups||{}))for(const [pose,capture] of Object.entries(poses||{})){
+  const split=splitCaptureGroups(groups,{magic:groups?.magic||{},'death-prone':groups?.['death-prone']||{}});
+  for(const [profile,poses] of Object.entries({...split.profiles,...split.sharedActionGroups}))for(const [pose,capture] of Object.entries(poses||{})){
     if(!capture?.clipSourceId||capture.clipSourceId==='t-pose')continue;
     next=recordLibraryPose(next,profile,pose,{animation:capture.clip,sourceId:capture.clipSourceId,timeSeconds:capture.time});
   }
   return next;
 }
 export function resolveLibraryPose(library,profile,pose,clips){
-  const sample=normalizePoseLibrary(library).profiles[profile]?.[pose];
-  if(!sample)throw Error('This weapon type has no assigned '+pose+' pose.');
+  const sample=libraryPoseGroup(normalizePoseLibrary(library),captureGroupForPose(profile,pose))?.[pose];
+  if(!sample)throw Error('This action group has no assigned '+pose+' pose.');
   const index=clips.findIndex(clip=>(clip.sourceId||clip.userData?.studioAnimationId)===sample.sourceId);
   if(index<0)throw Error(`Animation unavailable on this model: ${sample.animation}. Load its source animation first.`);
   if(sample.timeSeconds>clips[index].duration+0.0001)throw Error(`Pose time exceeds ${sample.animation}'s duration.`);
   return {index,sample};
 }
 export function poseLibraryCoverage(library,profileIds,{casting=false}={}){
-  const normalized=normalizePoseLibrary(library),required=ACTION_POSES.filter(pose=>casting||!['casting-windup','cast'].includes(pose));
-  const missing=[];let present=0;
-  for(const id of profileIds){if(!ACTION_PROFILE_CATALOG.has(id))throw Error('Unknown weapon type.');for(const pose of required){if(normalized.profiles[id][pose])present++;else missing.push({profileId:id,pose});}}
-  return {present,total:profileIds.length*required.length,missing};
+  const normalized=normalizePoseLibrary(library),ids=[...new Set(profileIds)];
+  if(ids.some(id=>!ACTION_PROFILE_CATALOG.has(id)))throw Error('Unknown weapon type.');
+  const groups=[...ids,...(ids.length?['death-prone']:[]),...(casting?['magic']:[])];
+  const missing=[];let present=0,total=0;
+  for(const id of groups)for(const pose of CAPTURE_GROUP_CATALOG.get(id).poses){total++;if(libraryPoseGroup(normalized,id)[pose])present++;else missing.push({profileId:id,pose});}
+  return {present,total,missing};
 }
 // Scope each MOB/model workspace separately. Plain Studio keeps its original key.
 export function authoringWorkspaceSuffix(search=''){

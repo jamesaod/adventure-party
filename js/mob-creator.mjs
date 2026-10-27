@@ -1,8 +1,9 @@
-import {ACTION_POSES,ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C153';
+import {CAPTURE_GROUP_CATALOG,capturePosesForGroup} from './action-capture-groups.mjs?v=R238C172';
+import {ACTION_POSES,ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C172';
 import {SPRITE_LAYOUT_PRESETS} from './sprite-layouts.mjs?v=R238C95';
-import {ABILITY_SCORES,MOB_ABILITIES,createMobDefinition,normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C160';
-import {normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C160';
-import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C160';
+import {ABILITY_SCORES,MOB_ABILITIES,createMobDefinition,normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C172';
+import {normalizePoseLibrary,poseLibrarySignature,libraryPoseGroup,poseLibraryCoverage} from './pose-library.mjs?v=R238C172';
+import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C172';
 const $=id=>document.getElementById(id),store=browserAuthoringStore();
 let loaded=null,library=null,models=[],dirty=false,previewReady=false;
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
@@ -17,7 +18,7 @@ function read(){
  if(!$('mobForm').reportValidity())throw Error('Check the highlighted fields.');
  const sameModel=loaded?.modelId===$('modelId').value;
  const references=sameModel?structuredClone(loaded.references):{};
- if(!sameModel||poseLibrarySignature(library)!==poseLibrarySignature(loaded.references.poseLibrary))delete references.spriteSets;
+ if(!sameModel||poseLibrarySignature(library)!==poseLibrarySignature(loaded.references.poseLibrary)){delete references.spriteSets;delete references.sharedActionGroups;delete references.captureFormatVersion;}
  return createMobDefinition({id:$('mobId').value.trim(),name:$('mobName').value.trim(),modelId:$('modelId').value,library,
  abilities:Object.fromEntries(ABILITY_SCORES.map(id=>[id,Number($(id).value)])),rules:Object.fromEntries(['hpMode','hitDice','maxHp','ac','thaco','move','attacksPerRound','morale','xpValue'].map(id=>[id,['hpMode','hitDice'].includes(id)?$(id).value:Number($(id).value)])),
  weaponTypes:checked('weaponType'),species:$('species').value,size:$('size').value,footprint:$('footprint').value,specialAbilities:checked('specialAbility'),spellcasting:{classId:$('casterClass').value,level:Number($('casterLevel').value),spellIds:$('spellIds').value.split(',').map(id=>id.trim()).filter(Boolean)},notes:$('notes').value,
@@ -26,10 +27,12 @@ function read(){
 function renderPoses(){
  $('castingFields').hidden=!checked('specialAbility').includes('spellcasting');
  $('libraryInfo').textContent=`Linked: ${library.name} · revision ${library.revision} · Humanoid ${library.size}. Updates are applied only when you choose them.`;
- const poses=library.profiles[$('poseWeapon').value];$('poseRows').replaceChildren();
- for(const id of ACTION_POSES){const tr=document.createElement('tr'),name=document.createElement('td'),value=document.createElement('td');name.textContent=ACTION_POSE_LABELS[id];const pose=poses[id];value.textContent=pose?`${pose.animation} · ${pose.timeSeconds.toFixed(3)} s`:'Not assigned';if(!pose)value.className='missing';tr.append(name,value);$('poseRows').append(tr);}
- const types=checked('weaponType');let total=0,present=0;const required=ACTION_POSES.filter(id=>checked('specialAbility').includes('spellcasting')||!['cast','casting-windup'].includes(id));for(const id of types)for(const pose of required){total++;if(library.profiles[id][pose])present++;}
- $('coverage').textContent=`${present} / ${total} required poses assigned for ${types.length} selected weapon types.${present<total?' Missing poses remain explicit; no other animation is substituted.':''}`;
+ const group=$('poseWeapon').value,allowed=capturePosesForGroup(group),previous=$('poseAction').value;
+ $('poseAction').replaceChildren(...allowed.map(id=>new Option(ACTION_POSE_LABELS[id],id)));$('poseAction').value=allowed.includes(previous)?previous:allowed[0];
+ const poses=libraryPoseGroup(library,group);$('poseRows').replaceChildren();
+ for(const id of allowed){const tr=document.createElement('tr'),name=document.createElement('td'),value=document.createElement('td');name.textContent=ACTION_POSE_LABELS[id];const pose=poses[id];value.textContent=pose?`${pose.animation} · ${pose.timeSeconds.toFixed(3)} s`:'Not assigned';if(!pose)value.className='missing';tr.append(name,value);$('poseRows').append(tr);}
+ const types=checked('weaponType'),{total,present}=poseLibraryCoverage(library,types,{casting:checked('specialAbility').includes('spellcasting')});
+ $('coverage').textContent=`${present} / ${total} required poses assigned for ${types.length} selected weapon types and shared actions.${present<total?' Missing poses remain explicit; no other animation is substituted.':''}`;
  $('openStudio').href=studioUrl();
 }
 function fill(mob){
@@ -48,7 +51,7 @@ async function start(){
  $('modelId').replaceChildren(...models.map(model=>new Option(model.label,model.id)));$('footprint').replaceChildren(...SPRITE_LAYOUT_PRESETS.map(item=>new Option(item.label,item.id)));
  for(const id of ABILITY_SCORES){const label=document.createElement('label'),input=document.createElement('input');label.textContent=id.toUpperCase();Object.assign(input,{id,type:'number',min:'1',max:'25',value:'10',required:true});label.append(input);$('scores').append(label);}
  checkboxes('weaponTypes',[...ACTION_PROFILE_CATALOG.values()],'weaponType');checkboxes('specialAbilities',MOB_ABILITIES,'specialAbility');
- $('poseWeapon').replaceChildren(...[...ACTION_PROFILE_CATALOG.values()].map(item=>new Option(item.label,item.id)));$('poseAction').replaceChildren(...ACTION_POSES.map(id=>new Option(ACTION_POSE_LABELS[id],id)));
+ $('poseWeapon').replaceChildren(...[...CAPTURE_GROUP_CATALOG.values()].map(item=>new Option(item.label,item.id)));$('poseAction').replaceChildren(...ACTION_POSES.map(id=>new Option(ACTION_POSE_LABELS[id],id)));
  const requested=new URLSearchParams(location.search).get('mob'),mob=requested?store.mob(requested):null;
  if(mob){fill(mob);status(`Opened ${mob.name}. Its pose library is pinned at revision ${library.revision}.`);}else{fresh();if(requested)status('Requested draft was not found in this browser. Import its exported MOB JSON.',true);}
  $('mobForm').addEventListener('submit',event=>event.preventDefault());

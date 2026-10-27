@@ -5,7 +5,7 @@ import {createAuthoringStore} from '../js/authoring-store.mjs';
 import {buildStudioUnitExport} from '../js/studio-unit-export.mjs';
 const library=createPoseLibrary({id:'humanoid-medium',name:'Humanoid Medium'}),sample={animation:'Standing Idle',sourceId:'uploaded:standing-idle:0',timeSeconds:.25};
 assert.equal(Object.keys(library.profiles).length,12);
-for(const poses of Object.values(library.profiles)){assert.equal(Object.keys(poses).length,7);assert.ok(Object.values(poses).every(p=>p===null));}
+for(const poses of Object.values(library.profiles)){assert.equal(Object.keys(poses).length,3);assert.ok(Object.values(poses).every(p=>p===null));}
 const assigned=recordLibraryPose(library,'one-handed-swing','ready',sample);
 assert.equal(library.profiles['one-handed-swing'].ready,null,'Editing cannot mutate a linked snapshot');
 const migrated=addCaptureRecipes(library,{'one-handed-swing':{ready:{clip:sample.animation,clipSourceId:sample.sourceId,time:.25,raw:new Uint8Array(400),render:{equipment:{scale:3}}}}});
@@ -44,7 +44,7 @@ const result=buildStudioUnitExport({name:'QA name',settings:{unitPackage:unit,li
 assert.equal(result.id,unit.id);assert.deepEqual(result.character.abilities,abilities);assert.deepEqual(result.references.poseLibrary,assigned);assert.deepEqual(result.actionProfiles,['one-handed-swing','bow']);
 assert.deepEqual(result.references.spriteSets['one-handed-swing'].poses.ready.render.equipment.position,[.1,.2,.3]);
 assert.throws(()=>createAuthoringStore({getItem:()=>null,setItem:()=>{throw Error('Quota');}},'/').saveMob(unit),/Export JSON/);
-console.log('PASS: reusable 12×7 pose libraries, exact source frames, sliced/frozen frame portability, model/preview isolation, six stats, pinned revisions, conflict guards and Unit Package export');
+console.log('PASS: reusable 12×3 weapon poses plus shared action groups, exact source frames, sliced/frozen frame portability, model/preview isolation, six stats, pinned revisions, conflict guards and Unit Package export');
 
 // Embedded previews read the editable model workspace, with no persistence writes.
 globalThis.location={href:'https://example.test/candidate/3d-studio.html?mob=test-mob&model=carl&preview=1',search:'?mob=test-mob&model=carl&preview=1'};
