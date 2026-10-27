@@ -363,3 +363,7 @@ The imported Orc is now labeled **Orc, Male, Uniformed**. Its primary one-handed
 ## Candidate Rev 163 — uniformed Orc Leader and spear calibration
 
 **Orc Leader, Male, Uniformed** joins the model selector and MOB Creator with the same uploaded-animation library and one-handed / two-handed sword presets as **Orc, Male, Uniformed**. Both now use the approved Spear position [-0.010, 0.030, -0.060], XYZ rotation [100, 77, -43] degrees and 100% weapon size. Selection or Reset grip applies these defaults; existing custom saved adjustments and captures remain intact. See [Orc Leader model](ORC_LEADER_MODEL.md) for source hashes, import steps and animation checks.
+
+## Candidate Rev 164 — Leader uses Carl equipment defaults
+
+For the user's placement comparison, **Orc Leader, Male, Uniformed** uses Dungeon Crawler Carl's global per-weapon defaults. The regular Orc retains its approved model-specific profiles. Reload Studio and choose a weapon or Reset grip to replace saved Leader offsets; custom workspaces and existing captures are not silently rewritten.

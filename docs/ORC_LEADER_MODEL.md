@@ -1,4 +1,4 @@
-# Orc Leader, Male, Uniformed — Candidate Rev 163
+# Orc Leader, Male, Uniformed — Candidate Rev 164
 
 `orc-leader-male-uniformed` is a new selectable model in 3D Studio / Pixel Studio and MOB Creator. It reuses the Male Orc import recipe, shared renderer, 22 uploaded FBX clips, editable equipment mounts and existing Unit Package export. The stable `male-orc` and archived Orc identities remain intact. This is a model catalog addition; existing combat MOB definitions and pose libraries are unchanged.
 
@@ -26,9 +26,9 @@ node scripts/test-fbx-animations.mjs
 
 The reference generator requires numpy/scipy. When using task-local Python packages, set `PYTHONPATH` to their directory and `PYTHONPYCACHEPREFIX` to a scratch directory. Pin source hashes in the importer; verify original PNG bytes after GLB export. Append the model to `models` and `studioModelIds` in `data/studio-models.json` so archived combat fallback ordering stays stable. `animationLibrary: uploaded-fbx` and `initialAnimation: Sword And Shield Idle` reuse existing code. MOB Creator consumes the same filtered catalog.
 
-## Shared Orc equipment calibrations
+## Original Rev 163 Orc equipment calibrations
 
-Both `male-orc` and `orc-leader-male-uniformed` reference the same three `weaponAttachmentProfileIds`. Off-hand and shield controls keep their existing settings.
+Rev 163 assigned both models the same three `weaponAttachmentProfileIds`. **Rev 164 removes these opt-ins from the Leader for comparison with Carl.** The regular `male-orc` retains the calibration below. Off-hand and shield controls keep their existing settings.
 
 | Primary equipment | Position XYZ | Rotation XYZ (degrees) |
 | --- | --- | --- |
@@ -43,3 +43,9 @@ Choose the weapon or press **Reset grip** to apply the model profile. Older cust
 All **110 skinned reference poses** for the Leader's 22 clips pass with maximum joint error **0.6434 degrees** and hip error **3.33e-8** native units. Carl, Scale Mail Woman and the first uniformed Orc references remain valid. Integrity tests verify source/GLB texture hashes, triangle count, unit-scale joints, selector membership and shared grip IDs. The existing profile resolver test exercises exact spear values on both Orc models and preserves other model/weapon defaults and custom grips.
 
 A brief local browser check loaded the Leader with **20/20 humanoid roles**, all 22 animations, exact spear slider values and six rendered facing previews. Bayonet Stab at **0.98 seconds** rendered without browser errors. The 155% model scale used for inspection is a local QA preference, not a new global default. Use `3d-studio.html?model=orc-leader-male-uniformed&poseLibrary=humanoid-medium` for an isolated workspace. Detailed pose/placement QA remains with the user. Require candidate CI before merge and verify the published GLB and changed text files byte-for-byte after Pages deployment.
+
+## Rev 164 — Carl equipment defaults for Leader QA
+
+The Leader now uses the same global per-weapon mount defaults as Dungeon Crawler Carl Ver 3. Remove only the Leader's `weaponAttachmentProfileIds` from `data/studio-models.json`; do not copy its custom Orc values into the global equipment catalog. The regular Orc keeps all three approved profiles. This is a catalog-only change: assets, rigs, animations, pose libraries and runtime code remain unchanged.
+
+Reload Studio, select Orc Leader, then choose the weapon or press **Reset grip** to apply Carl's defaults. Previously saved custom grips remain intact until explicitly reset; recapture any poses whose equipment changes. Off-hand and shield defaults already use the same shared equipment paths as Carl. Existing resolver checks verify both Carl and Leader against every global weapon preset, while retaining the regular Orc's exact calibrated values.

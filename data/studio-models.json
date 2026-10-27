@@ -248,12 +248,7 @@
       "upAxis": "Y",
       "mobType": "orc",
       "animationLibrary": "uploaded-fbx",
-      "initialAnimation": "Sword And Shield Idle",
-      "weaponAttachmentProfileIds": [
-        "uniformed-orc-one-handed-v1",
-        "uniformed-orc-two-handed-sword-v1",
-        "uniformed-orc-two-handed-spear-v1"
-      ]
+      "initialAnimation": "Sword And Shield Idle"
     }
   ],
   "weaponAttachmentProfiles": {

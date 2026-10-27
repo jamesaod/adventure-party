@@ -28,4 +28,6 @@ assert.equal(meta.sourceArchiveSha256,'bbe4360c4070fcaeb0462d8db20694c8df047f063
 assert.equal(catalog.models.find(model=>model.mobType==='orc').id,'male-orc-fighter','Existing Orc combat fallback ordering is preserved');
 
 assert.equal(entry.label,'Orc Leader, Male, Uniformed');
-assert.deepEqual(entry.weaponAttachmentProfileIds,catalog.models.find(m=>m.id==='male-orc').weaponAttachmentProfileIds);
+const carl=catalog.models.find(m=>m.id==='dungeon-crawler-carl-v3');
+assert.equal(entry.weaponAttachmentProfileId,carl.weaponAttachmentProfileId);
+assert.deepEqual(entry.weaponAttachmentProfileIds,carl.weaponAttachmentProfileIds,'Leader uses Carl global equipment defaults');

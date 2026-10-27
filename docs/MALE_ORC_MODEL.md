@@ -57,3 +57,5 @@ Select this model, then select the weapon or press **Reset grip** to apply its p
 Saved custom grips and captured poses are not silently rewritten. If a restored workspace shows older offsets, use Reset grip (clear captured poses first if equipment is locked), then recapture affected poses. New captures and Unit Package exports carry the actual adjusted equipment snapshot through the existing path. Shared pose libraries and animation retargeting are unchanged. Visual grip QA for this revision belongs to the user.
 
 Rev 163 adds the user-approved spear profile to both uniformed Orc models. [Orc Leader import](ORC_LEADER_MODEL.md) records the new source and conversion. Keep the same profile IDs on both models so future approved Orc grip changes remain shared.
+
+Rev 164 changes only the Leader back to Carl's global weapon defaults for a comparison test. The regular `male-orc` keeps all three calibration profiles above.
