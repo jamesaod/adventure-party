@@ -25430,14 +25430,14 @@ function updateUnitInfoPanel(){
   const rows=[
     ["HITPOINTS",unitHpDisplay(inspected)],
     ["AC",String(inspected.ac ?? "—")],
-    ["WIELDED",unitWieldedEquipmentLabel(inspected)]
+    ["",unitWieldedEquipmentLabel(inspected)]
   ];
-  const cells=rows.flatMap(([label,text])=>{
-    const heading=document.createElement("span"),value=document.createElement("span");
-    heading.textContent=label;
-    if(label==="HITPOINTS")value.innerHTML=text; // Numeric HP with the existing damaged-HP highlight.
-    else value.textContent=text;
-    return [heading,value];
+  const cells=rows.map(([label,text])=>{
+    const value=document.createElement("span");
+    value.className="unit-info-summary-line";
+    if(label==="HITPOINTS")value.innerHTML=`${label} ${text}`; // Numeric HP with the existing damaged-HP highlight.
+    else value.textContent=label ? `${label} ${text}` : text;
+    return value;
   });
   ui.unitInfoRows.replaceChildren(...cells);
   renderUnitStatusEffects(inspected);

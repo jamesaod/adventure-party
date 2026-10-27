@@ -913,6 +913,11 @@ button, input, select, textarea {
   overflow-wrap:anywhere;
 }
 
+.unit-info-panel .kv > span.unit-info-summary-line {
+  grid-column:1 / -1;
+  color:var(--green);
+}
+
 .unit-info-panel .kv .hp-current-damaged {
   color:#ffd85a;
 }
