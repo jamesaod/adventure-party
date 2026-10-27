@@ -1,5 +1,5 @@
-import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C160';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C160';
+import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C172';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C172';
 export function createAuthoringStore(storage,scope){
   const key=`adventure-party-authoring:${scope}`;
   function read(){

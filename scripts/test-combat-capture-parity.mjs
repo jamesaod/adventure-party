@@ -96,6 +96,23 @@ await assert.rejects(loadCombatPoseRecipe({mobType:'fighter',fromCombat:true}),/
   'Never silently downgrade to a lower-resolution replacement');
 draft.manifest.frame.renderWidth=10;
 
+// The paired v2 workspace may return to Magic while combat still uses the
+// last selected physical group, plus exactly one shared copy of each pose.
+const {upgradeCaptureWorkspace}=await import('../js/action-capture-groups.mjs');
+const sharedWorkspace=upgradeCaptureWorkspace({...matching,settings:{...matching.settings,actionProfileId:'one-handed-swing'}});
+sharedWorkspace.settings.actionProfileId='magic';
+sharedWorkspace.settings.equipment={rightHand:'none'};
+sharedWorkspace.profileEquipment={'one-handed-swing':{equipment:saved}};
+sharedWorkspace.captures=sharedWorkspace.sharedActionGroups.magic;
+records['combat-workspace']=sharedWorkspace;
+const sharedRecipe=await loadCombatPoseRecipe({mobType:'fighter',fromCombat:true});
+assert.deepEqual(sharedRecipe.renderSettings.equipment,saved,'Magic selection must not replace the physical group grip');
+assert.equal(sharedRecipe.poseProfile.id,'studio-captured-one-handed-swing-v1');
+assert.equal(sharedRecipe.poseProfile.poses.attack.animation,'Mixamo_sword_and_shield_attack');
+assert.equal(sharedRecipe.poseProfile.poses.cast.timeSeconds,1.667);
+assert.equal(sharedRecipe.poseProfile.poses.prone.animation,'Mixamo_sword_and_shield_death');
+records['combat-workspace']=matching;
+
 // Every current source-only humanoid must carry the same uploaded animation
 // policy through the paired workspace into the equipment render recipe.
 const {appearanceRecipeForMob,appearanceCacheKey}=await import('../js/mob-appearance.mjs');

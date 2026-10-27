@@ -1,6 +1,8 @@
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
-import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C169';
+import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C172';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
+
+import {combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C172';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
 const WINDUP_POSES = SPRITE_POSES;
@@ -96,7 +98,9 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
   }
 
   const settings = workspace.settings;
-  const captures = workspace.captures;
+  const profileId=settings.weaponActionProfileId||settings.actionProfileId||'one-handed-swing';
+  const weaponSettings=workspace.captureFormatVersion===2 ? (workspace.profileEquipment?.[profileId]||Object.values(workspace.actionProfiles?.[profileId]||{})[0]?.render||settings) : settings;
+  const captures = workspace.captureFormatVersion===2 ? assertCompatibleCaptureFrames(combinedCaptureGroup(workspace)) : workspace.captures;
   // Empty capture sets are supported only for explicit Studio Combat Test.
   // Never allow an unrelated global Studio workspace to replace valid sprites.
   if (!fromCombat && !Object.keys(captures).length)
@@ -128,7 +132,6 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
       throw new Error('Saved combat frame dimensions differ from the Studio draft; keeping its original native-resolution sprites.');
     }
   }
-  const profileId=settings.actionProfileId||'one-handed-swing';
   const profile = structuredClone(poseProfileForHumanoid(profileId));
   profile.id = 'studio-captured-'+profileId+'-v1';
   profile.version = Math.max(2, Number(workspace.savedAt || 0));
@@ -180,10 +183,10 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
         }
       },
       lighting: structuredClone(settings.lighting || first?.render?.lighting || {}),
-      shield: structuredClone(settings.shield || first?.render?.shield || null),
-      offHandEquipment: structuredClone(settings.offHandEquipment || first?.render?.offHandEquipment || null),
+      shield: structuredClone(weaponSettings.shield || settings.shield || first?.render?.shield || null),
+      offHandEquipment: structuredClone(weaponSettings.offHandEquipment || settings.offHandEquipment || first?.render?.offHandEquipment || null),
       // Transfer the calibrated right-hand sword grip, not just the animation.
-      equipment: structuredClone(settings.equipment || first?.render?.equipment || null),
+      equipment: structuredClone(weaponSettings.equipment || settings.equipment || first?.render?.equipment || null),
       appearanceRecolor: structuredClone(settings.appearanceRecolor || {hair:'default',metal:'default'}),
       weaponAttachmentProfile: structuredClone(combatModel.weaponAttachmentProfile || null),
       style: structuredClone(workspace.style || {}),

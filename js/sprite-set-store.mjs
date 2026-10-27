@@ -1,7 +1,7 @@
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C153';
 import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 
-import {authoringWorkspaceSuffix} from './pose-library.mjs?v=R238C160';
+import {authoringWorkspaceSuffix} from './pose-library.mjs?v=R238C172';
 
 // Candidate and stable share an origin, so isolate their drafts by page folder.
 const scope = new URL('.', location.href).pathname;
@@ -27,6 +27,7 @@ function storedBytes(value, seen = new WeakSet()) {
 export function validateStudioWorkspace(workspace) {
   const invalid = message => { throw new Error(`Saved studio workspace: ${message}`); };
   if (!plain(workspace) || workspace.version !== WORKSPACE_VERSION) invalid('unsupported format.');
+  if(workspace.captureFormatVersion!==undefined&&workspace.captureFormatVersion!==2)invalid('unsupported capture format.');
   if (typeof workspace.name !== 'string' || workspace.name.length > 120) invalid('invalid character name.');
   if (!plain(workspace.style) || !plain(workspace.settings) || !plain(workspace.captures)) invalid('settings are missing.');
   for (const key of ['brightness', 'contrast', 'hue', 'saturation', 'outline']) {
@@ -34,7 +35,7 @@ export function validateStudioWorkspace(workspace) {
   }
   if (workspace.settings.modelScalePercent !== undefined) validateSpriteModelScale(workspace.settings.modelScalePercent);
   const settingsHexScale = validateSpriteHexScale(workspace.settings.hexScalePercent);
-  const groups=[workspace.captures,...Object.values(workspace.actionProfiles||{})];
+  const groups=[workspace.captures,...Object.values(workspace.actionProfiles||{}),...Object.values(workspace.sharedActionGroups||{}),...Object.values(workspace.legacySharedCaptures||{})];
   for(const group of groups){
   if(!plain(group))invalid('invalid weapon capture group.');
   let dimensions, modelScale, hexScale;

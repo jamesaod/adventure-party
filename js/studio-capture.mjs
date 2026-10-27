@@ -6,11 +6,13 @@ import {
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C169';
+} from './sprite-set-store.mjs?v=R238C172';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
-import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C153';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C160';
+import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C172';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C172';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
+
+import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C172';
 
 const poseLabel = pose => ACTION_POSE_LABELS[pose];
 const spriteCount = SPRITE_POSES.length * SPRITE_DIRECTIONS.length;
@@ -65,7 +67,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   const rows = new Map();
   let captures = {}, style = getStyle(), busy = false, modelReady = false, equipmentBusy = false;
   const capturesByProfile=new Map([['one-handed-swing',captures]]);
-  let selectedProfileId='one-handed-swing';
+  let selectedProfileId='one-handed-swing',weaponProfileId='one-handed-swing',legacySharedCaptures={};
   const equipmentByProfile=new Map();
   let windupDurationMs=250;
   const currentEquipment=()=>{
@@ -73,10 +75,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     return structuredClone({equipment:settings.equipment,offHandEquipment:settings.offHandEquipment,shield:settings.shield});
   };
   async function switchActionProfile(nextId){
-    if(busy||equipmentBusy||!ACTION_PROFILE_CATALOG.has(nextId)||nextId===selectedProfileId)return;
+    if(busy||equipmentBusy||!CAPTURE_GROUP_CATALOG.has(nextId)||nextId===selectedProfileId)return;
     capturesByProfile.set(selectedProfileId,captures);
     if(modelReady)equipmentByProfile.set(selectedProfileId,currentEquipment());
     selectedProfileId=nextId;
+    if(!isSharedCaptureGroup(nextId))weaponProfileId=nextId;
     if(ui.ActionProfile)ui.ActionProfile.value=nextId;
     captures=capturesByProfile.get(nextId)||{};
     capturesByProfile.set(nextId,captures);
@@ -89,13 +92,32 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   }
   if(ui.ActionProfile){
-    for(const profile of ACTION_PROFILE_CATALOG.values()){
+    for(const profile of CAPTURE_GROUP_CATALOG.values()){
       const option=document.createElement('option');option.value=profile.id;option.textContent=profile.label;
       ui.ActionProfile.append(option);
     }
     ui.ActionProfile.value='one-handed-swing';
     ui.ActionProfile.addEventListener('change',()=>switchActionProfile(ui.ActionProfile.value));
   }
+  const legacyPanel=document.createElement('div');legacyPanel.className='studio-sheet-actions';legacyPanel.hidden=true;
+  const legacyChoice=document.createElement('select');legacyChoice.setAttribute('aria-label','Earlier per-weapon shared captures');
+  const legacyButton=document.createElement('button');legacyButton.type='button';legacyButton.className='studio-button';legacyButton.textContent='Restore earlier capture';
+  legacyPanel.append(legacyChoice,legacyButton);ui.CaptureProfileSummary?.after(legacyPanel);
+  function refreshLegacyChoices(){
+    const previous=legacyChoice.value;
+    const entries=Object.entries(legacySharedCaptures).flatMap(([id,poses])=>Object.keys(poses).filter(p=>groupPoses().includes(p)).map(p=>[id,p]));
+    legacyPanel.hidden=!isSharedCaptureGroup(selectedProfileId)||!entries.length;
+    legacyChoice.replaceChildren(...entries.map(([id,pose])=>new Option(`${ACTION_PROFILE_CATALOG.get(id)?.label}: ${poseLabel(pose)}`,id+':'+pose)));
+    if(entries.some(([id,pose])=>id+':'+pose===previous))legacyChoice.value=previous;
+    legacyButton.disabled=busy||equipmentBusy;
+  }
+  legacyButton.addEventListener('click',()=>{
+    if(busy||equipmentBusy)return;
+    const [id,pose]=legacyChoice.value.split(':'),saved=legacySharedCaptures[id]?.[pose];
+    if(!saved||!groupPoses().includes(pose))return;
+    const restored=structuredClone(saved);restored.edgeDirections=frameEdgeDirections(restored);quantizeCapture(restored);
+    captures[pose]=restored;refresh();queueSave();ui.SheetStatus.textContent=`Restored earlier ${poseLabel(pose)}. Check its framing before exporting.`;
+  });
   let savedSettings = null, restored = false, saveRevision = 0, savedRevision = 0;
   let saveQueue = Promise.resolve(), lastSaveError = null, saveTimer = 0;
 
@@ -109,22 +131,24 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     const currentSettings = getWorkspaceSettings();
     const settings = { ...(!modelReady && savedSettings ? savedSettings : currentSettings) };
     if(ui.ActionProfile) settings.actionProfileId=selectedProfileId;
+    settings.weaponActionProfileId=weaponProfileId;
     if(ui.ActionPose)settings.selectedActionPose=ui.ActionPose.value;
     settings.windupDurationMs=windupDurationMs;
     if(modelReady&&!busy)equipmentByProfile.set(selectedProfileId,currentEquipment());
     const first = Object.values(captures)[0];
     settings.hexScalePercent = validateSpriteHexScale(first ? first.hexScalePercent : settings.hexScalePercent);
     return {
-      version: 1, name: ui.SpriteSetName.value.slice(0, 120), style: { ...style }, settings,
+      version: 1, captureFormatVersion:CAPTURE_FORMAT_VERSION, legacySharedCaptures, name: ui.SpriteSetName.value.slice(0, 120), style: { ...style }, settings,
       captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => {
         const { frames, battlefieldFrames, shadowFrames, ...saved } = value;
         return [pose, saved];
       })),
       profileEquipment:Object.fromEntries(equipmentByProfile),
-      actionProfiles:Object.fromEntries([...capturesByProfile, [selectedProfileId,captures]].map(([id,group])=>[id,
-        Object.fromEntries(Object.entries(group).map(([pose,value])=>{
-          const {frames,battlefieldFrames,shadowFrames,...saved}=value;return [pose,saved];
-        }))]))
+      ...Object.fromEntries(['actionProfiles','sharedActionGroups'].map(key=>[key,Object.fromEntries(
+        [...capturesByProfile].filter(([id])=>isSharedCaptureGroup(id)===(key==='sharedActionGroups')).map(([id,group])=>[id,
+          Object.fromEntries(Object.entries(group).map(([pose,value])=>{
+            const {frames,battlefieldFrames,shadowFrames,...saved}=value;return [pose,saved];
+          }))]))]))
     };
   }
 
@@ -212,6 +236,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       if(SPRITE_POSES.includes(pose))capture(pose);
     });
   }
+  const groupPoses=()=>capturePosesForGroup(selectedProfileId);
   function count() { return Object.keys(captures).length * 6; }
   function freshCount() { return Object.values(captures).filter(capture => !capture.stale).length * 6; }
   function modelScaleAdjustable() {
@@ -221,27 +246,37 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   // Edits never discard a saved frame silently. The previous thumbnails
   // remain visible for reference, but cannot be exported or sent to combat
   // until each affected pose has been recaptured in the new configuration.
-  function invalidateCaptures(reason = 'Studio settings changed', {allProfiles=true} = {}) {
-    const groups=allProfiles ? [...capturesByProfile.values()] : [captures];
-    if(!groups.some(group=>Object.keys(group).length))return;
-    for(const group of groups)for (const capture of Object.values(group)) capture.stale = true;
+  function invalidateCaptures(reason = 'Studio settings changed', {allProfiles=true,changedPoses=null} = {}) {
+    const targets=changedPoses ? changedPoses.flatMap(({groupId,pose,sample})=>{
+      const capture=capturesByProfile.get(groupId)?.[pose];
+      return capture&&(!sample||capture.clipSourceId!==sample.sourceId||Math.abs(capture.time-sample.timeSeconds)>0.0001)?[capture]:[];
+    }) : (allProfiles ? [...capturesByProfile.values()] : [captures]).flatMap(group=>Object.values(group));
+    if(!targets.length)return;
+    for(const capture of targets) capture.stale = true;
+    if(allProfiles&&!changedPoses)for(const group of Object.values(legacySharedCaptures))for(const capture of Object.values(group))capture.stale=true;
     refresh();
     ui.SheetStatus.textContent = `${reason}. Saved sprites are outdated; recapture any affected pose to use it in combat.`;
     saveWorkspace();
   }
 
   function refreshControls() {
+    const available=groupPoses(),previous=ui.ActionPose?.value;
+    if(ui.ActionPose){
+      for(const option of ui.ActionPose.options){option.hidden=!available.includes(option.value);option.disabled=option.hidden;}
+      if(!available.includes(previous))ui.ActionPose.value=available[0];
+    }
+    refreshLegacyChoices();
     const captured = count();
     const fresh = freshCount();
     if(ui.ActionProfile)ui.ActionProfile.disabled=busy||equipmentBusy;
     if(ui.CaptureProfileSummary){
       const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>!pose.stale).length,0);
-      ui.CaptureProfileSummary.textContent=`${ACTION_PROFILE_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${SPRITE_POSES.length} poses · ${total} saved poses across weapon types`;
+      ui.CaptureProfileSummary.textContent=`${CAPTURE_GROUP_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${groupPoses().length} poses · ${total} saved poses across weapon and shared groups`;
     }
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
-    ui.CaptureCount.textContent = `${fresh} / ${spriteCount} ready sprites` +
+    ui.CaptureCount.textContent = `${fresh} / ${groupPoses().length*6} ready sprites` +
       (captured > fresh ? ` · ${captured - fresh} need recapture` : '');
     ui.ClearPosesButton.disabled = busy || !captured;
     if(ui.CaptureSelectedPoseButton)ui.CaptureSelectedPoseButton.disabled=busy||equipmentBusy||!modelReady;
@@ -249,7 +284,9 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       button.disabled = busy;
     }
     if(getWorkspaceSettings().unitPackage?.mob?.authoringVersion)ui.TestCombatButton.disabled=true;
-    for (const row of rows.values()) {
+    for (const [pose,row] of rows) {
+      row.button.hidden=!groupPoses().includes(pose);
+      row.tr.hidden=!groupPoses().includes(pose);
       row.button.disabled = busy || equipmentBusy || !modelReady;
       row.clear.disabled = busy;
     }
@@ -318,7 +355,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
 
   function capture(pose) {
-    if (busy || !modelReady) return;
+    if (busy || !modelReady || !groupPoses().includes(pose)) return;
     try {
       const captured = readPose();
       const first = Object.values(captures).find(value => !value.stale);
@@ -338,11 +375,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       captures[pose] = captured;
       refresh();
       queueSave();
-      const complete = freshCount() === spriteCount;
+      const complete = freshCount() === groupPoses().length*6;
       const note = `${poseLabel(pose)} captured at ${captured.time.toFixed(3)} s · six facings saved.`;
       const edgeNote = captured.edgeDirections.length
         ? 'A sprite touches the frame edge. If it is cropped, adjust the model size or framing before capturing again.'
-        : complete ? `All ${spriteCount} sprites are ready to export or test.` : 'Capture the remaining poses to complete the set.';
+        : complete ? `All ${groupPoses().length*6} sprites are ready to export or test.` : 'Capture the remaining poses to complete the set.';
       ui.SheetStatus.textContent = `${note} ${edgeNote}`;
       onStatus(note);
     } catch (error) { onError(error); }
@@ -421,6 +458,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         palette: 'Adventure Party VGA 256'
       }
     });
+    manifest.captureFormatVersion=CAPTURE_FORMAT_VERSION;
+    if(isSharedCaptureGroup(profileId)){delete manifest.actionProfileId;manifest.sharedActionGroupId=profileId;}
     for(const pose of Object.keys(manifest.poses)){
       manifest.poses[pose].clipSourceId=captures[pose].clipSourceId||null;
       manifest.poses[pose].render=structuredClone(captures[pose].render||{});
@@ -482,8 +521,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     const entries=[];
     for(const {id,exported} of profiles){
       const files=await packageFiles(exported,{includeQaSheet:false});
-      for(const [name,blob] of Object.entries(files))entries.push([`profiles/${id}/${name}`,new Uint8Array(await blob.arrayBuffer())]);
-      entries.push([`profiles/${id}/manifest.json`,strToU8(JSON.stringify(exported.manifest,null,2)+'\n')]);
+      for(const [name,blob] of Object.entries(files))entries.push([`${captureGroupPath(id)}/${name}`,new Uint8Array(await blob.arrayBuffer())]);
+      entries.push([`${captureGroupPath(id)}/manifest.json`,strToU8(JSON.stringify(exported.manifest,null,2)+'\n')]);
     }
     const unit=buildStudioUnitExport({
       name:ui.SpriteSetName.value.trim()||'Studio character',
@@ -492,12 +531,15 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     });
     entries.push(['unit-package.json',strToU8(JSON.stringify(unit,null,2)+'\n')]);
     download(new Blob([zipSync(Object.fromEntries(entries),{level:0})],{type:'application/zip'}),`${unit.id}-weapon-sets.zip`);
-    ui.SheetStatus.textContent=`Exported ${profiles.length} weapon sets with six-facing PNGs, pose/equipment references and unit-package.json. Outdated poses are excluded.`;
+    ui.SheetStatus.textContent=`Exported ${profiles.length} weapon/shared action groups with six-facing PNGs, pose/equipment references and unit-package.json. Outdated poses are excluded.`;
   }));
 
   ui.TestCombatButton.addEventListener('click', () => {
     if (busy) return;
-    runExport(async exported => {
+    runExport(async () => {
+      const groups=Object.fromEntries(capturesByProfile);
+      const group=assertCompatibleCaptureFrames(combinedCaptureGroup({captureFormatVersion:2,settings:{},actionProfiles:groups,sharedActionGroups:groups},weaponProfileId));
+      const exported=buildExport(group,weaponProfileId);
       ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
       const files = await packageFiles(exported,{includeQaSheet:false});
       await flushSave();
@@ -520,7 +562,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
 
   function reset(name, { persist = true } = {}) {
     captures = {};
-    capturesByProfile.clear();equipmentByProfile.clear();selectedProfileId='one-handed-swing';
+    capturesByProfile.clear();equipmentByProfile.clear();selectedProfileId=weaponProfileId='one-handed-swing';legacySharedCaptures={};
     capturesByProfile.set(selectedProfileId,captures);
     if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;
     style = getStyle();
@@ -662,7 +704,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         workspaceStatus('Captures and studio settings save automatically in this browser.');
         return null;
       }
-      const workspace = upgradeStudioWorkspaceHexScale(savedWorkspace);
+      const workspace = upgradeCaptureWorkspace(upgradeStudioWorkspaceHexScale(savedWorkspace));
+      legacySharedCaptures=workspace.legacySharedCaptures||{};
       const staged = {};
       for (const [pose, saved] of Object.entries(workspace.captures||{})) {
         const captured = { ...saved };
@@ -672,8 +715,8 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
       // Only commit once every row has been decoded and re-rendered successfully.
       capturesByProfile.clear();
-      for(const [id,group] of Object.entries(workspace.actionProfiles||{})){
-        if(!ACTION_PROFILE_CATALOG.has(id))continue;
+      for(const [id,group] of Object.entries({...workspace.actionProfiles,...workspace.sharedActionGroups})){
+        if(!CAPTURE_GROUP_CATALOG.has(id))continue;
         const rows={};
         for(const [pose,saved] of Object.entries(group)){
           const captured={...saved};captured.edgeDirections=frameEdgeDirections(captured);
@@ -681,13 +724,14 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         }
         capturesByProfile.set(id,rows);
       }
-      selectedProfileId=ACTION_PROFILE_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
+      selectedProfileId=CAPTURE_GROUP_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
+      weaponProfileId=ACTION_PROFILE_CATALOG.has(workspace.settings.weaponActionProfileId)?workspace.settings.weaponActionProfileId:(isSharedCaptureGroup(selectedProfileId)?'one-handed-swing':selectedProfileId);
       captures=capturesByProfile.get(selectedProfileId)||staged;
       capturesByProfile.set(selectedProfileId,captures);
       style = { ...workspace.style };
       savedSettings = workspace.settings;
       equipmentByProfile.clear();
-      for(const [id,value] of Object.entries(workspace.profileEquipment||{}))if(ACTION_PROFILE_CATALOG.has(id))equipmentByProfile.set(id,value);
+      for(const [id,value] of Object.entries(workspace.profileEquipment||{}))if(CAPTURE_GROUP_CATALOG.has(id))equipmentByProfile.set(id,value);
       windupDurationMs=workspace.settings.windupDurationMs??250;
       ui.SpriteSetName.value = workspace.name;
       if(ui.ActionProfile)ui.ActionProfile.value=selectedProfileId;

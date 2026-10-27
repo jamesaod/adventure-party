@@ -139,6 +139,8 @@ jobs:
           node --check js/mob-creator.mjs
           node --check js/studio-pose-library.mjs
           node scripts/test-mob-authoring.mjs
+          node --check js/action-capture-groups.mjs
+          node scripts/test-shared-action-captures.mjs
 
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs
