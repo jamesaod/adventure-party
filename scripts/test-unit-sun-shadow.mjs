@@ -34,12 +34,16 @@ const tile={sx:80,sy:100,sw:80,sh:100,revision:1};
 assert.equal(shadowMask(atlas,tile),shadowMask(atlas,tile));
 assert.notEqual(shadowMask(atlas,tile),shadowMask(atlas,{...tile,revision:2}),'New poses invalidate alpha masks');
 let transforms=[],draws=[];
-const ctx={globalAlpha:1,save(){},restore(){this.globalAlpha=1;},transform(...v){transforms.push(v);},drawImage(...v){draws.push(v);}};
+const ctx={globalAlpha:1,translate(){},scale(){},save(){},restore(){this.globalAlpha=1;},transform(...v){transforms.push(v);},drawImage(...v){draws.push(v);}};
 for(const flip of [false,true])drawUnitShadow(ctx,source,{x:20,y:30,width:80,height:100,anchorX:0.4,anchorY:0.65,flip,hour:9});
 assert.equal(draws.length,2);assert.deepEqual(transforms[0].slice(2),transforms[1].slice(2),'Flipping the unit cannot rotate the sun');
 assert.equal(transforms[0][0],1);assert.equal(transforms[1][0],-1);
 assert.deepEqual(draws[0].slice(1),[-32,-65,80,100],'Uses the exact sprite anchor and dimensions');
 drawUnitShadow(ctx,source,{x:20,y:30,width:80,height:100,hour:0});assert.equal(draws.length,2,'No solar shadow at night');
+drawUnitShadow(ctx,source,{x:20,y:30,width:80,height:100,anchorX:.4,anchorY:.65,pose:'prone'});
+assert.equal(transforms.length,2,'Old prone artwork must not be sheared as an upright body');
+assert.deepEqual(draws.at(-1).slice(1),[-32,-64.5,80,100],'Old prone contact stays within one source pixel of the body');
+
 
 // Wide stance: the back foot is well above the front foot in the source frame.
 // The shared transform must leave BOTH contact pixels at their sprite locations.
@@ -97,7 +101,7 @@ const calls=[];
 const sandbox={ctx:{save(){},restore(){},translate(){},scale(){},drawImage(){calls.push('body');}},
  adventurePartySun:{drawingGround:true,draw(_ctx,image,options){calls.push({image,options});}},
  unitPoseDefinition:()=>null,enlargeVisualScale:()=>2,getUnitEffect:()=>null,
- activeEnlargeTransitionFx:()=>null,activeCastingGlowFx:()=>null,console};
+ activeUnitPoseName:()=>'prone',activeEnlargeTransitionFx:()=>null,activeCastingGlowFx:()=>null,console};
 vm.runInNewContext(engine.slice(a,b),sandbox);
 const image={complete:true,naturalWidth:160,naturalHeight:200};
 sandbox.drawSpriteFacing(image,{x:50,y:60},80,100,'left','right',{}, {x:0.4,y:0.65});

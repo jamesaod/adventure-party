@@ -30,3 +30,7 @@ Use `3d-studio.html?model=orc-leader-male-uniformed&poseLibrary=humanoid-medium`
 ## Noon shadows (Rev 168)
 
 Studio, setup and battlefield now use fixed noon with no time sliders. Legacy `sunHour` values in URLs, preferences and restored workspace settings are ignored; outbound Test in combat removes the old parameter. Model scope and capture restoration are unchanged. See [Unit sun shadows](UNIT_SUN_SHADOWS.md).
+
+## Grounded death shadows (Rev 169)
+
+New captures save optional shadow PNGs in a separate `shadows` map beside the ordinary draft files, in the same atomic transaction as the return workspace. The map is keyed by the full-resolution character filename because combat draws that image. Shadow pixels have native battlefield dimensions and use the same normalized anchor. Older drafts remain valid; old prone PNGs use a conservative contact shadow. Recapture old poses for exact model-based shadows. Equipment-regenerated combat poses use the same projection directly.

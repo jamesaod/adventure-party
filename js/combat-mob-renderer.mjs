@@ -1,3 +1,5 @@
+import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
+import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js';
 import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C140';
@@ -161,7 +163,7 @@ function quantizedCanvas(source,width,height,style,{flipY=true}={}){
   return canvas;
 }
 
-function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style){
+function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,shadowMaterial){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
@@ -212,7 +214,12 @@ function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style){
     },{flipY:false}
   );
 
-  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight};
+  renderer.clear(true,true,true);
+  renderGroundShadow(renderer,scene,camera,shadowMaterial);
+  const shadowRaw=new Uint8Array(raw.length);
+  renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,shadowRaw);
+  const groundShadow=shadowPixelsCanvas(shadowRaw,frame.width,frame.height);
+  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight,groundShadow};
 }
 
 export async function generateCombatSpriteSet(recipe){
@@ -312,6 +319,7 @@ export async function generateCombatSpriteSet(recipe){
   const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
   const poseNames=WINDUP_POSES.filter(name=>profile?.poses?.[name]);
   const images={},runtimeImages={},sourceUrls={},poses={};
+  const shadowMaterial=createGroundShadowMaterial();
   try{
     for(const capture of poseNames){
       const pose=profile?.poses?.[capture];
@@ -333,17 +341,19 @@ export async function generateCombatSpriteSet(recipe){
       poses[capture]={clip:clip.name,time:action.time,frames:{}};
       for(const facing of HEX_FACINGS){
         const rendered=frameCanvases(
-          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style
+          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,shadowMaterial
         );
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
         const src=rendered.sourceCanvas.toDataURL('image/png');
         images[file]=await loadImage(src);
+        setGroundShadow(images[file],rendered.groundShadow);
         sourceUrls[file]=src;
         poses[capture].frames[facing.id]=file;
 
         const runtimeFile=`${capture}-${facing.id.toLowerCase()}-battlefield.png`;
         const runtimeSrc=rendered.battlefieldCanvas.toDataURL('image/png');
         runtimeImages[runtimeFile]=await loadImage(runtimeSrc);
+        setGroundShadow(runtimeImages[runtimeFile],rendered.groundShadow);
         sourceUrls[runtimeFile]=runtimeSrc;
       }
     }
@@ -366,6 +376,7 @@ export async function generateCombatSpriteSet(recipe){
       else material?.dispose?.();
     });
     mixer.stopAllAction();
+    shadowMaterial.dispose();
     target.dispose();
     renderer.dispose();
   }

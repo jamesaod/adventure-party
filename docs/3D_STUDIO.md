@@ -376,3 +376,7 @@ For the user's placement comparison, **Orc Leader, Male, Uniformed** uses Dungeo
 ## Candidate Rev 168 — noon shadows
 
 Studio and combat now use noon with no time slider. Saved old hours are ignored. The shared contact detector separates bent legs below the original silhouette cut so both boots anchor the shadow in wide stances. See [Unit sun shadows](UNIT_SUN_SHADOWS.md); no recapture is needed.
+
+## Candidate Rev 169 — grounded death shadows
+
+Model previews now project the posed 3D geometry onto the floor, so death/prone bodies keep their ground depth rather than casting from an inferred standing-foot line. New captures carry separate presentation shadows through Test in combat and Return to Studio. Character PNG/QA sheet/Unit Package artwork remains unchanged and shadow-free. Existing captures are retained; recapture an older pose to give its combat test the precise geometry shadow. Old prone PNGs use a close contact fallback. See [Unit sun shadows](UNIT_SUN_SHADOWS.md).

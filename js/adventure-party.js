@@ -7204,7 +7204,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C146")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C153"))
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C169"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -26796,7 +26796,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     const hidden=!!getUnitEffect(entity,"invisibility");
     if(!hidden)globalThis.adventurePartySun.draw(ctx,renderSource,{x:c.x,y:c.y,width:visualDrawW,height:visualDrawH,
       anchorX:Math.round(visualDrawW*spriteAnchor.x)/visualDrawW,
-      anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip});
+      anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip,pose:activeUnitPoseName(entity)});
     ctx.restore();return;
   }
   ctx.translate(c.x,c.y);

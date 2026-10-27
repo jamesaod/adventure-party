@@ -1,4 +1,5 @@
-import { unitSun, sunPosition, shadowMask, shadowFootLine } from './unit-sun-shadow.mjs?v=R238C168';
+import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C169';
+import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
 import * as THREE from 'three';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
@@ -13,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C168';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C169';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -119,7 +120,8 @@ const state = {
 let renderer, scene, mainCamera, pixelCamera, orbit, turntable, calibration;
 let placement, upAxisGroup, helpers, footprintGuide, ambientLight, legacyAmbientLight, keyLight, modelFrame;
 let atlasTarget, atlasSource, atlasImage;
-let sunShadowMesh, sunShadowTexture;
+let sunShadowMesh, sunShadowTexture, groundShadowMaterial;
+const groundShadowCanvas=document.createElement('canvas');
 let battlefieldSource,battlefieldImage,battlefieldWidth=1,battlefieldHeight=1;
 let supersampleImage;
 let resizeObserver, visibilityObserver, poseCapture, poseLibraryPanel;
@@ -1595,7 +1597,7 @@ function drawBattlefieldPreview(preview,index){
 
   const sx=(index%3)*battlefieldWidth,sy=Math.floor(index/3)*battlefieldHeight;
   unitSun.draw(ctx,battlefieldCanvas,{x:originX,y:originY,width:battlefieldWidth*scale,height:battlefieldHeight*scale,
-    anchorX:anchorX/battlefieldWidth,anchorY:anchorY/battlefieldHeight,sx,sy,sw:battlefieldWidth,sh:battlefieldHeight,revision:state.frame});
+    groundShadow:groundShadowCanvas,anchorX:anchorX/battlefieldWidth,anchorY:anchorY/battlefieldHeight,sx,sy,sw:battlefieldWidth,sh:battlefieldHeight,revision:state.frame});
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(
     battlefieldCanvas,sx,sy,battlefieldWidth,battlefieldHeight,
@@ -1609,7 +1611,7 @@ function updateSunShadowView(){
   sunShadowMesh.visible=sun.opacity>0&&state.modelReady&&!state.spriteOnlyFallback;
   if(!sunShadowMesh.visible)return;
   const index=HEX_FACINGS.findIndex(facing=>facing.id===state.facing);
-  const mask=shadowMask(battlefieldCanvas,{sx:(index%3)*battlefieldWidth,sy:Math.floor(index/3)*battlefieldHeight,
+  const mask=shadowMask(groundShadowCanvas,{sx:(index%3)*battlefieldWidth,sy:Math.floor(index/3)*battlefieldHeight,
     sw:battlefieldWidth,sh:battlefieldHeight,revision:state.frame-1});
   if(!mask){sunShadowMesh.visible=false;return;}
   if(!sunShadowTexture){
@@ -1621,12 +1623,8 @@ function updateSunShadowView(){
   const anchorX=(ground.x+1)*battlefieldWidth/2,anchorY=(1-ground.y)*battlefieldHeight/2;
   const units=(pixelCamera.top-pixelCamera.bottom)/battlefieldHeight;
   const points=sunShadowMesh.geometry.attributes.position;
-  const feet=shadowFootLine(mask);
   [[0,0],[battlefieldWidth,0],[0,battlefieldHeight],[battlefieldWidth,battlefieldHeight]].forEach(([px,py],i)=>{
-    const baseline=feet.slope*px+feet.intercept;
-    const height=(baseline-py)*units/Math.cos(CAMERA_ELEVATION);
-    const floorZ=(baseline-anchorY)*units/Math.sin(CAMERA_ELEVATION);
-    points.setXYZ(i,(px-anchorX)*units+sun.groundX*height,0.004,floorZ+sun.groundZ*height);
+    points.setXYZ(i,(px-anchorX)*units,0.004,(py-anchorY)*units/Math.sin(CAMERA_ELEVATION));
   });
   points.needsUpdate=true;sunShadowMesh.material.opacity=sun.opacity;
 }
@@ -1661,6 +1659,7 @@ function readCapturePose() {
   const result = {
     raw: atlasSource.slice(), width: state.width, height: state.height,
     battlefieldRaw:battlefieldSource.slice(),
+    groundShadowRgba:groundShadowCanvas.getContext('2d').getImageData(0,0,groundShadowCanvas.width,groundShadowCanvas.height).data,
     battlefieldWidth,battlefieldHeight,
     battlefieldAnchorX:(ground.x+1)*battlefieldWidth/2,
     battlefieldAnchorY:(1-ground.y)*battlefieldHeight/2,
@@ -1841,6 +1840,25 @@ function renderPreviews(timestamp) {
   }
   renderer.setScissorTest(false);
   renderer.readRenderTargetPixels(atlasTarget, 0, 0, atlasTarget.width, atlasTarget.height, atlasSource);
+  // Reuse the same renderer/target after saving the untouched character atlas.
+  renderer.clear(true,true,true);renderer.setScissorTest(true);
+  for(let index=0;index<HEX_FACINGS.length;index++){
+    const x=(index%3)*state.width,y=(1-Math.floor(index/3))*state.height;
+    turntable.rotation.y=HEX_FACINGS[index].yawRadians;
+    renderer.setViewport(x,y,state.width,state.height);renderer.setScissor(x,y,state.width,state.height);
+    renderGroundShadow(renderer,scene,pixelCamera,groundShadowMaterial);
+  }
+  renderer.setScissorTest(false);
+  const shadowRaw=new Uint8Array(atlasSource.length);
+  renderer.readRenderTargetPixels(atlasTarget,0,0,atlasTarget.width,atlasTarget.height,shadowRaw);
+  const shadowSource=shadowPixelsCanvas(shadowRaw,atlasTarget.width,atlasTarget.height);
+  groundShadowCanvas.width=battlefieldWidth*3;groundShadowCanvas.height=battlefieldHeight*2;
+  const shadowContext=groundShadowCanvas.getContext('2d');
+  for(let index=0;index<HEX_FACINGS.length;index++){
+    const col=index%3,row=Math.floor(index/3);
+    shadowContext.drawImage(shadowSource,col*state.width,row*state.height,state.width,state.height,
+      col*battlefieldWidth,row*battlefieldHeight,battlefieldWidth,battlefieldHeight);
+  }
   renderer.setRenderTarget(null);
   scene.background = background;
   helpers.visible = true;
@@ -2773,6 +2791,7 @@ function bindControls() {
     disposeModel(state.model);
     disposeModel(helpers);
     sunShadowTexture?.dispose();
+    groundShadowMaterial?.dispose();
     if(sunShadowMesh){sunShadowMesh.geometry.dispose();sunShadowMesh.material.dispose();}
     atlasTarget?.dispose();
     renderer?.dispose();
@@ -2835,6 +2854,7 @@ function startViewer() {
   scene.add(turntable);
   helpers = new THREE.Group();
   scene.add(helpers);
+  groundShadowMaterial=createGroundShadowMaterial();
   sunShadowMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
   sunShadowMesh.frustumCulled=false;sunShadowMesh.visible=false;
   scene.add(sunShadowMesh);

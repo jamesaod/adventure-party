@@ -45,6 +45,12 @@ export function validateStudioWorkspace(workspace) {
     if (!(raw instanceof Uint8Array || raw instanceof Uint8ClampedArray) || raw.length !== width * height * 6 * 4) invalid('incomplete captured pixels.');
     if (!Number.isFinite(anchorX) || anchorX < 0 || anchorX > width || !Number.isFinite(anchorY) || anchorY < 0 || anchorY > height) invalid('invalid ground anchor.');
     if (typeof clip !== 'string' || clip.length > 512 || !Number.isFinite(time) || time < 0) invalid('invalid animation time.');
+    if(capture.groundShadowRgba!==undefined){
+      const shadow=capture.groundShadowRgba,bw=capture.battlefieldWidth,bh=capture.battlefieldHeight;
+      if(!Number.isInteger(bw)||!Number.isInteger(bh)||bw<=0||bh<=0||
+        !(shadow instanceof Uint8Array||shadow instanceof Uint8ClampedArray)||shadow.length!==bw*bh*6*4)
+        invalid('invalid ground-shadow pixels.');
+    }
     if (capture.stale) continue;
     if (dimensions && (dimensions[0] !== width || dimensions[1] !== height)) invalid('poses have different frame sizes.');
     dimensions = [width, height];
@@ -167,7 +173,7 @@ export function studioDraftImageNames(manifest, includeSheet = false) {
   return names;
 }
 
-export async function saveStudioDraft({ manifest, files, workspace }) {
+export async function saveStudioDraft({ manifest, files, shadows = {}, workspace }) {
   validateSpriteSetManifest(manifest);
   let bytes = 0;
   const storedFiles = {};
@@ -178,8 +184,13 @@ export async function saveStudioDraft({ manifest, files, workspace }) {
     bytes += file.size;
     storedFiles[name] = file;
   }
+  const storedShadows={};
+  for(const [name,file] of Object.entries(shadows)){
+    if(!names.includes(name)||!(file instanceof Blob)||!file.size)throw new Error('Invalid ground-shadow sidecar.');
+    bytes+=file.size;storedShadows[name]=file;
+  }
   if (bytes > 64 * 1024 * 1024) throw new Error('This sprite draft is too large for a quick combat test. Export the asset ZIP instead.');
-  const records = [['current', { manifest, files: storedFiles, savedAt: Date.now() }]];
+  const records = [['current', { manifest, files: storedFiles, shadows:storedShadows, savedAt: Date.now() }]];
   if (workspace) {
     validateStudioWorkspace(workspace);
     records.push(['combat-workspace', { ...workspace, savedAt: Date.now() }]);

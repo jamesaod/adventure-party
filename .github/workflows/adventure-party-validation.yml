@@ -144,6 +144,8 @@ jobs:
       - name: Validate unit sun shadows
         run: |
           node --check js/unit-sun-shadow.mjs
+          node --check js/ground-shadow-geometry.mjs
+          node scripts/test-ground-shadow-geometry.mjs
           node scripts/test-unit-sun-shadow.mjs
 
       - name: Validate repository structure and assets

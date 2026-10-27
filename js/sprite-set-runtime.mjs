@@ -1,6 +1,6 @@
-import { unitSun } from './unit-sun-shadow.mjs?v=R238C168';
+import { unitSun } from './unit-sun-shadow.mjs?v=R238C169';
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C153';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C153';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C169';
 import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C93';
 
 import { ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C153';
@@ -129,9 +129,17 @@ async function decodeImages(manifest,sourceUrls){
   return {images,runtimeImages};
 }
 
-async function registerSet(manifest, sourceUrls, objectUrls = []) {
+async function registerSet(manifest, sourceUrls, objectUrls = [], shadows = {}) {
   try {
     const {images,runtimeImages}=await decodeImages(manifest,sourceUrls);
+    for(const [filename,blob] of Object.entries(shadows)){
+      const source=images[filename];
+      if(!source||!(blob instanceof Blob))continue;
+      let shadow;
+      try{shadow=await createImageBitmap(blob);}catch{continue;} // A bad optional shadow must not hide valid character art.
+      if(shadow.width!==(manifest.battlefield?.width||source.naturalWidth)||shadow.height!==(manifest.battlefield?.height||source.naturalHeight)){shadow.close();continue;}
+      unitSun.setGroundShadow(source,shadow);
+    }
     const id=api.register({
       manifest,images,runtimeImages,sourceUrls,
       layout:spriteLayout(manifest.layout?.id||'single')
@@ -198,7 +206,7 @@ async function loadDraft() {
     urls.forEach(url => URL.revokeObjectURL(url));
     throw error;
   }
-  const id = await registerSet(manifest, sourceUrls, urls);
+  const id = await registerSet(manifest, sourceUrls, urls, draft.shadows);
   if (api.loadingState?.() === 'timed-out' || api.canAutoSelectDraft?.() === false) {
     message(`${manifest.label} is now available in the sprite test selector. Choose it when you are ready to begin another test.`);
     return;
