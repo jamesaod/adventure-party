@@ -156,3 +156,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 170 — equipment refresh and animation library parity
 
 [Studio combat testing](STUDIO_COMBAT_TEST.md#equipment-refresh-across-uploaded-humanoids-rev-170) records the source-only GLB failure and its regression coverage. Equipment regeneration must honor the catalog's `animationLibrary` through the appearance recipe, using the same shared FBX retargeter as Studio for every opted-in humanoid. Preserve paired workspace scope, captured poses/frames, footprint and asynchronous stale-render guards.
+
+
+## Candidate Rev 171 — required script startup
+
+[Game startup](GAME_STARTUP.md) documents ordered script loading, safe download retries and the missing-radius-invisibility regression. Add engine files to the existing inert manifest in dependency order; the shared loader executes each once and keeps combat unavailable on a failed prerequisite. Preserve the normal shared classic scope, module-last handoff and delayed Studio draft timeout.

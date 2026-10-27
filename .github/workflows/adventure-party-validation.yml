@@ -29,6 +29,8 @@ jobs:
       - name: Check game JavaScript syntax
         run: |
           node --check js/adventure-party.js
+          node --check js/game-script-loader.mjs
+          node scripts/test-game-script-loader.mjs
           node scripts/test-battlefield-font.mjs
           node scripts/test-combat-info-panel.mjs
           node scripts/test-quick-command.mjs
