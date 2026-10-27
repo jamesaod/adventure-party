@@ -271,7 +271,14 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     refreshLegacyChoices();
     const captured = count();
     const fresh = freshCount();
-    if(ui.ActionProfile)ui.ActionProfile.disabled=busy||equipmentBusy;
+    if(ui.ActionProfile){
+      ui.ActionProfile.disabled=busy||equipmentBusy;
+      for(const option of ui.ActionProfile.options){
+        const group=CAPTURE_GROUP_CATALOG.get(option.value),saved=capturesByProfile.get(option.value)||{};
+        const complete=group.poses.every(pose=>saved[pose]&&!saved[pose].stale);
+        option.textContent=(complete?'✅ ':'')+group.label;
+      }
+    }
     if(ui.CaptureProfileSummary){
       const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.keys(group).length,0);
       const outdated=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>pose.stale).length,0);
