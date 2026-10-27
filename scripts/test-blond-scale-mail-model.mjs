@@ -18,7 +18,7 @@ const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),2048);assert.equal(png.readUInt32BE(20),2048);
 const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
-assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman']);
+assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'blond-scale-mail-woman.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');
 console.log('PASS Scale Mail Woman: source texture preserved, 10,717 triangles, 65 unit-scale joints, shared animation catalog');

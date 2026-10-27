@@ -226,6 +226,15 @@
         ],
         "status": "experimental-visual-qa"
       }
+    },
+    {
+      "id": "male-orc",
+      "label": "Male Orc",
+      "file": "assets/models/orcs/male-orc/male-orc.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Sword And Shield Idle"
     }
   ],
   "weaponAttachmentProfiles": {
@@ -262,6 +271,7 @@
   },
   "studioModelIds": [
     "dungeon-crawler-carl-v3",
-    "blond-scale-mail-woman"
+    "blond-scale-mail-woman",
+    "male-orc"
   ]
 }
