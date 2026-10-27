@@ -25,6 +25,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
+- Rev 167: Shared sun shadows anchor to visible foot contacts instead of the unit pivot; daylight opacity is 45%. Preserve the contact-line invariant through mirrors, render scales and Studio ground depth, and keep source captures untouched. See docs/UNIT_SUN_SHADOWS.md.
 - Rev 166: Time of day drives shared, dynamic unit silhouette shadows in Studio and combat. Preserve the fixed sun path, world direction, per-site environment preference and shadow-free capture/export data. Reuse js/unit-sun-shadow.mjs; see docs/UNIT_SUN_SHADOWS.md for projection, caching and QA boundaries.
 - Rev 165: Studio combat tests create one player-controlled selected model/archetype, with opponents/allies chosen through the existing + Add MOB roster. No automatic Carl or six model copies. Preserve model/pose-library workspace query parameters in both directions; do not collapse scoped drafts into the global workspace. See docs/STUDIO_COMBAT_TEST.md for reproduction and regression boundaries.
 - Rev 164: Orc Leader now uses the same global per-weapon equipment defaults as Dungeon Crawler Carl for user QA. Its three Orc attachment-profile opt-ins are removed; regular `male-orc` retains them. Reload and Reset grip to replace previously saved Leader adjustments. Assets, animations and off-hand/shield behavior are unchanged.

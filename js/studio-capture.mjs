@@ -1,4 +1,4 @@
-import { unitSun } from './unit-sun-shadow.mjs?v=R238C166';
+import { unitSun } from './unit-sun-shadow.mjs?v=R238C167';
 import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,

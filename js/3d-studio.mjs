@@ -1,4 +1,4 @@
-import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C166';
+import { unitSun, sunPosition, shadowMask, shadowFootLine } from './unit-sun-shadow.mjs?v=R238C167';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
 import * as THREE from 'three';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
@@ -13,7 +13,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C166';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C167';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -1622,9 +1622,12 @@ function updateSunShadowView(){
   const anchorX=(ground.x+1)*battlefieldWidth/2,anchorY=(1-ground.y)*battlefieldHeight/2;
   const units=(pixelCamera.top-pixelCamera.bottom)/battlefieldHeight;
   const points=sunShadowMesh.geometry.attributes.position;
+  const feet=shadowFootLine(mask);
   [[0,0],[battlefieldWidth,0],[0,battlefieldHeight],[battlefieldWidth,battlefieldHeight]].forEach(([px,py],i)=>{
-    const height=(anchorY-py)*units/Math.cos(CAMERA_ELEVATION);
-    points.setXYZ(i,(px-anchorX)*units+sun.groundX*height,0.004,sun.groundZ*height);
+    const baseline=feet.slope*px+feet.intercept;
+    const height=(baseline-py)*units/Math.cos(CAMERA_ELEVATION);
+    const floorZ=(baseline-anchorY)*units/Math.sin(CAMERA_ELEVATION);
+    points.setXYZ(i,(px-anchorX)*units+sun.groundX*height,0.004,floorZ+sun.groundZ*height);
   });
   points.needsUpdate=true;sunShadowMesh.material.opacity=sun.opacity;
 }

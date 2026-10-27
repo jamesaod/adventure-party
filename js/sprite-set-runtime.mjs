@@ -1,4 +1,4 @@
-import { unitSun } from './unit-sun-shadow.mjs?v=R238C166';
+import { unitSun } from './unit-sun-shadow.mjs?v=R238C167';
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C153';
 import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C153';
 import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C93';

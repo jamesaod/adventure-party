@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {sunPosition,shadowProjection,normalizeSunHour,sunDescription,shadowMask,drawUnitShadow,unitSun} from '../js/unit-sun-shadow.mjs';
+import {sunPosition,shadowProjection,normalizeSunHour,sunDescription,shadowMask,drawUnitShadow,unitSun,findShadowFootLine,shadowFootLine} from '../js/unit-sun-shadow.mjs';
 import {CAMERA_ELEVATION} from '../js/studio-core.mjs';
 
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} ≈ ${b}`);
@@ -15,7 +15,7 @@ assert.ok(Math.hypot(sunPosition(7).groundX,sunPosition(7).groundZ)>Math.hypot(s
 for(let hour=0;hour<24;hour+=0.03125){
  const sun=shadowProjection(hour);assert.ok(Object.values(sun).every(v=>typeof v!=='number'||Number.isFinite(v)));
  assert.ok(Math.hypot(sun.groundX,sun.groundZ)<=6+1e-9);
- assert.ok(sun.opacity>=0&&sun.opacity<=0.3);
+ assert.ok(sun.opacity>=0&&sun.opacity<=0.45);
  // A point one world unit above its foot projects by -sun.x/y and -sun.z/y.
  if(sun.daylight){close(-Math.cos(CAMERA_ELEVATION)*sun.shearX,sun.groundX);close(-Math.cos(CAMERA_ELEVATION)*sun.shearY,sun.groundZ*Math.sin(CAMERA_ELEVATION));}
 }
@@ -23,7 +23,7 @@ assert.match(sunDescription(9),/^09:00/);assert.match(sunDescription(23.75),/23:
 
 const canvases=[];
 globalThis.document={createElement(tag){assert.equal(tag,'canvas');const operations=[];
- const ctx={drawImage(...args){operations.push(['image',...args]);},fillRect(...args){operations.push(['fill',...args]);}};
+ const ctx={getImageData:()=>({data:canvas.rgba||new Uint8ClampedArray(canvas.width*canvas.height*4)}),drawImage(...args){operations.push(['image',...args]);},fillRect(...args){operations.push(['fill',...args]);}};
  const canvas={width:0,height:0,operations,getContext(){return ctx;},ctx};canvases.push(canvas);return canvas;}};
 const source=Object.freeze({naturalWidth:160,naturalHeight:200});
 const mask=shadowMask(source);assert.equal(mask.width,160);assert.equal(mask.height,200);
@@ -40,6 +40,26 @@ assert.equal(draws.length,2);assert.deepEqual(transforms[0].slice(2),transforms[
 assert.equal(transforms[0][0],1);assert.equal(transforms[1][0],-1);
 assert.deepEqual(draws[0].slice(1),[-32,-65,80,100],'Uses the exact sprite anchor and dimensions');
 drawUnitShadow(ctx,source,{x:20,y:30,width:80,height:100,hour:0});assert.equal(draws.length,2,'No solar shadow at night');
+
+// Wide stance: the back foot is well above the front foot in the source frame.
+// The shared transform must leave BOTH contact pixels at their sprite locations.
+const w=40,h=50,rgba=new Uint8ClampedArray(w*h*4);
+function rect(x0,y0,x1,y1){for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)rgba[(y*w+x)*4+3]=255;}
+rect(13,5,27,27);rect(6,25,12,36);rect(27,25,33,44);
+const feet=findShadowFootLine(rgba,w,h);
+assert.equal(feet.contacts.length,2);close(feet.contacts[0].y,35.5);close(feet.contacts[1].y,43.5);
+const stance=Object.freeze({width:w,height:h});shadowMask(stance).rgba=rgba;
+assert.deepEqual(shadowFootLine(shadowMask(stance)),feet);
+for(const hour of [7,9,12,15,17])for(const flip of [false,true])for(const scale of [0.5,1,2.4]){
+ transforms=[];draws=[];
+ drawUnitShadow(ctx,stance,{x:80,y:120,width:w*scale,height:h*scale,anchorX:0.43,anchorY:0.62,hour,flip});
+ const [a,b,c,d,e,f]=transforms[0];
+ for(const contact of feet.contacts){
+  const u=(contact.x-w*0.43)*scale,v=(contact.y-h*0.62)*scale;
+  close(a*u+c*v+e,80+(flip?-u:u));close(b*u+d*v+f,120+v);
+ }
+}
+close(sunPosition(12).opacity,0.45);
 
 const inputs=[{},{}],outputs=[{},{}],callbacks=[];
 for(const input of inputs)input.addEventListener=(_name,callback)=>{callbacks.push(callback);};

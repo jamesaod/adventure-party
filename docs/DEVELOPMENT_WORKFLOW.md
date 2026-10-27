@@ -138,3 +138,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 166 — time-of-day shadows
 
 [Unit sun shadows](UNIT_SUN_SHADOWS.md) documents the Time of day controls, shared sun projection, separate ground pass, persistence and QA. Shadow direction/length change dynamically without changing material lighting or invalidating captured poses. Keep exported character artwork shadow-free so it can be reused at every hour.
+
+
+## Candidate Rev 167 — shadow foot contact
+
+[Unit sun shadows](UNIT_SUN_SHADOWS.md#foot-contact-correction-rev-167) records alpha-based foot-contact fitting, the shared Studio/combat projection and 45% daytime opacity. Fix presentation contact without moving the unit pivot or rewriting captured PNGs.
