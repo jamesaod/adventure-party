@@ -60,6 +60,7 @@ jobs:
           node scripts/test-studio-geometry.mjs
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
+          node scripts/test-blond-scale-mail-model.mjs
           node scripts/test-studio-equipment.mjs
           node scripts/test-studio-weapon-sets.mjs
           node scripts/test-studio-casting-captures.mjs

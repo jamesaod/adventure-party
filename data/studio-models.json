@@ -11,6 +11,15 @@
       "initialAnimation": "Sword And Shield Idle"
     },
     {
+      "id": "blond-scale-mail-woman",
+      "label": "Blond Haired Woman in Scale Mail",
+      "file": "assets/models/humans/blond-scale-mail-woman/blond-scale-mail-woman.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Sword And Shield Idle"
+    },
+    {
       "id": "dungeon-crawler-carl-v2",
       "label": "Dungeon Crawler Carl Ver 2",
       "file": "assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb",
@@ -252,6 +261,7 @@
     }
   },
   "studioModelIds": [
-    "dungeon-crawler-carl-v3"
+    "dungeon-crawler-carl-v3",
+    "blond-scale-mail-woman"
   ]
 }

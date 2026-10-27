@@ -3,16 +3,39 @@ Run: python scripts/generate-carl-animation-reference.py
 Requires numpy/scipy; never writes character or animation source assets.
 """
 from pathlib import Path
-import json, hashlib
+from scipy.spatial.transform import Rotation as R
+import json, hashlib, argparse
 import numpy as np
 from tripo_mixamo_bake_core import read_glb, gltf_skeleton, fbx_skeleton
 from bake_mixamo_pack_v2 import rig_basis
 
 root=Path(__file__).resolve().parent.parent
 catalog=json.loads((root/'data/animation-library-sources.json').read_text())
-target=root/'assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb'
+parser=argparse.ArgumentParser()
+parser.add_argument('--target',default='assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb')
+parser.add_argument('--output',default='scripts/fixtures/carl-uploaded-animation-reference.json')
+args=parser.parse_args()
+target=root/args.target
 doc,_,raw=read_glb(target)
 target_world,parents,names=gltf_skeleton(doc)
+# FBX-to-GLB imports can retain a scaled Armature parent. The historical
+# evaluator assumes unit scale; compose full glTF matrices for these targets.
+if any('matrix' in n or n.get('scale',[1,1,1]) != [1,1,1] for n in doc['nodes']):
+    matrices={}
+    def world_matrix(index):
+        if index in matrices:return matrices[index]
+        node=doc['nodes'][index]
+        if 'matrix' in node:local=np.array(node['matrix']).reshape((4,4),order='F')
+        else:
+            local=np.eye(4)
+            local[:3,:3]=R.from_quat(node.get('rotation',[0,0,0,1])).as_matrix()@np.diag(node.get('scale',[1,1,1]))
+            local[:3,3]=node.get('translation',[0,0,0])
+        world=world_matrix(parents[index])@local if index in parents else local
+        matrices[index]=world
+        return world
+    for index in range(len(doc['nodes'])):
+        world=world_matrix(index);rotation=world[:3,:3]/np.linalg.norm(world[:3,:3],axis=0)
+        target_world[index]=(R.from_matrix(rotation),world[:3,3].copy())
 lookup=lambda name:names['mixamorig:'+name]
 target_basis=rig_basis(target_world,lookup)
 roles=['Hips','Spine','Spine1','Spine2','Neck','Head','LeftShoulder','LeftArm','LeftForeArm','LeftHand','RightShoulder','RightArm','RightForeArm','RightHand','LeftUpLeg','LeftLeg','LeftFoot','LeftToeBase','RightUpLeg','RightLeg','RightFoot','RightToeBase']
@@ -36,6 +59,6 @@ for entry in catalog['animations']:
         hip[1]+=(basis.apply(pose['Hips'][1]-bind['Hips'][1])*scale)[1]
         frames.append({'fraction':fraction,'timeSeconds':sample-start,'worldQuaternions':worlds,'hipsWorldPosition':hip.round(8).tolist()})
     reference['clips'].append({'id':entry['id'],'sourceSha256':hashlib.sha256(path.read_bytes()).hexdigest(),'duration':end-start,'frames':frames})
-output=root/'scripts/fixtures/carl-uploaded-animation-reference.json'
+output=root/args.output
 output.write_text(json.dumps(reference,indent=2)+'\n',encoding='utf-8',newline='\n')
 print('Wrote',len(reference['clips']),'motions,',sum(len(clip['frames']) for clip in reference['clips']),'poses, 22 joints/pose:',output.name)
