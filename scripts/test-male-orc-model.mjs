@@ -57,14 +57,11 @@ for(const weapon of STUDIO_WEAPONS){
  assert.deepEqual(normalizeEquipment({...settings,position:[0.1,0.2,0.3]}).position,[0.1,0.2,0.3],'Saved custom grips remain adjustable');
 }
 const leader=catalog.models.find(m=>m.id==='orc-leader-male-uniformed');
-assert.deepEqual(leader.weaponAttachmentProfileIds,entry.weaponAttachmentProfileIds,'Both uniformed Orcs opt into all approved grip groups');
-state.libraryModels.push({...leader,weaponAttachmentProfiles:profiles});
-state.libraryModelId=leader.id;
-for(const weapon of STUDIO_WEAPONS){
- const leaderSettings=resolve(weapon.id);state.libraryModelId=entry.id;
- assert.deepEqual(leaderSettings,resolve(weapon.id),'Leader inherits identical grip defaults');
- state.libraryModelId=leader.id;
+const carl=catalog.models.find(m=>m.id==='dungeon-crawler-carl-v3');
+for(const other of [leader,carl]){
+ const otherProfiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry:other,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
+ state.libraryModels.push({...other,weaponAttachmentProfiles:otherProfiles});
+ state.libraryModelId=other.id;
+ for(const weapon of STUDIO_WEAPONS)assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`);
 }
-state.libraryModelId='dungeon-crawler-carl-v3';
-for(const weapon of STUDIO_WEAPONS)assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),'Other models retain global defaults');
-console.log('PASS uniformed Orc catalog parsing, shared one-handed/2H sword/spear selection/reset, preserved other models and custom grips');
+console.log('PASS regular Orc calibration retained; Orc Leader and Carl resolve identical equipment defaults');

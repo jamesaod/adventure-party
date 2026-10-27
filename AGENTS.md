@@ -25,6 +25,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
+- Rev 164: Orc Leader now uses the same global per-weapon equipment defaults as Dungeon Crawler Carl for user QA. Its three Orc attachment-profile opt-ins are removed; regular `male-orc` retains them. Reload and Reset grip to replace previously saved Leader adjustments. Assets, animations and off-hand/shield behavior are unchanged.
 - Rev 163: **Orc Leader, Male, Uniformed** (`orc-leader-male-uniformed`) joins Studio/MOB Creator with all 22 uploaded animations and the same three grip profiles as `male-orc`. Both gain the approved spear XYZ [-0.010,0.030,-0.060] / [100,77,-43] degrees at 100%. Leader geometry, rig and texture are preserved. See docs/ORC_LEADER_MODEL.md.
 - Rev 162: `male-orc` is displayed as **Orc, Male, Uniformed** with model-specific primary one-handed and two-handed sword grip profiles. Selection/Reset grip applies the user values; saved custom mounts stay intact. See docs/MALE_ORC_MODEL.md for exact vectors and profile reproduction.
 - Rev 161: Male Orc (`male-orc`) joins Studio and MOB Creator with all 22 uploaded animations. Its 11,519 triangles, 65-bone rig and original 2048px texture are preserved; armature units are normalized for shared hand mounts. Legacy Orc models/fallback ordering remain intact. Read docs/MALE_ORC_MODEL.md; validate against the new 110-pose independent fixture.
