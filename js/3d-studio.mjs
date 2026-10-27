@@ -14,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C173';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C174';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -32,7 +32,7 @@ import {
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C172';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C174';
 import {browserAuthoringStore} from './authoring-store.mjs?v=R238C172';
 import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C172';
 const authoringQuery=new URLSearchParams(location.search);
@@ -2943,6 +2943,7 @@ async function start() {
     getStyle: () => pixelRenderOptions(true),
     getWorkspaceSettings,
     onProfileChange:restoreProfileEquipment,
+    onCapture:(profile,pose)=>{if(!poseLibraryPanel)throw Error('Wait for Action Pose Capture to finish loading.');poseLibraryPanel.recordCapture(profile,pose);},
     onLockChange: syncCaptureLock,
     onError: showError,
     onStatus: status
@@ -3080,7 +3081,8 @@ async function start() {
     useCurrentFormatAfterClear();
     selectFacing(state.facing);
     poseLibraryPanel=createStudioPoseLibrary({
-      initialLibrary:linkedLibrary||state.poseLibrary,
+      readOnly:query.get('preview')==='1',
+      initialLibrary:query.get('preview')==='1'?(linkedLibrary||state.poseLibrary):(state.poseLibrary||linkedLibrary),
       getSample:()=>{if(!state.action||!state.modelReady)throw Error('Load a model and select an animation first.');return portablePoseSample(state.action.getClip(),state.action.time,state.sourceClips,state.animationRanges);},
       getClips:()=>state.clips.map(clip=>({sourceId:animationSourceId(clip),duration:clip.duration})),
       selectProfile:id=>poseCapture.switchActionProfile(id),

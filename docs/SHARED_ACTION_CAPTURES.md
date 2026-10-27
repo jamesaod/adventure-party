@@ -93,3 +93,18 @@ Rev 173 stores capture pixel buffers with lossless gzip (`pixelEncoding: "gzip-v
 
 
 Regression: `scripts/test-studio-capture-export.mjs` covers mixed/current-only/all-outdated groups, original differing frame sizes, exact source/time/loadout recovery, and Unit Package references. `test-studio-weapon-sets.mjs` executes the real equipment handlers and rejects capture invalidation during weapon/off-hand/shield changes.
+
+
+## Rev 174 — one Action Pose Capture workflow
+
+The author used the main Capture buttons correctly, but the separate Reusable pose library panel remained empty because capture never called its recording hook. The user chose to move forward with a unified interface and redo their captures; no existing user workspace or imported file was cleared by this change.
+
+There is one **Action Pose Capture** panel beside the existing model/equipment layout. Choose a pose library, weapon type (or Magic/Death-Prone), action pose, animation and frame, then press **Capture selected pose**. The same operation records the exact portable source animation/time in the reusable library and the six model-specific sprite views with their equipment transforms. Library references autosave; the compressed pixel workspace keeps its linked copy. Sliced/frozen clips use `portablePoseSample` so recipes reference original source frames. Capturing an unresolvable animation fails visibly rather than silently creating a pixel-only pose.
+
+The panel displays captured/missing/outdated slots, frame references and separate library/workspace save feedback together. Library naming, humanoid size, new/import and legacy recovery choices live in collapsed Library settings. **Preview saved pose** positions the model at the selected saved reference; it does not create another capture. The lower sprite table is labeled QA preview and contains no competing capture workflow. Pinned MOB definitions stay unchanged until explicitly updated. Reopening an editable Studio workspace retains its latest linked working library; embedded MOB previews continue honoring the pinned library.
+
+**Export action poses (ZIP)** includes `pose-library.json`, the same library under Unit Package `references.poseLibrary`, all existing physical/shared manifests and images, and any outdated recovery records from Rev 173. There is no separate normal JSON export, Record frame, Save library, or Copy existing captures button. QA image export remains clearly separate from the integration dataset.
+
+Older saved workspaces with captured frames but an empty starter library are seeded automatically once after their source animations load. Already assigned libraries are not overwritten on opening. Embedded MOB previews never perform this seeding/write. If local library persistence fails, the open references remain linked to the workspace/export and the panel reports the error; it never claims library-save success. Existing local-store conflict checks prevent overwriting another tab's library revision.
+
+Validation: `test-studio-unified-capture.mjs` executes the real capture handler and library controller, checks reference-before-workspace wiring, exact physical/shared frames, automatic persistence, failed-write retention, read-only preview behavior, and the single-panel/combined-export contract. Browser QA captures multiple poses, edits equipment, switches shared groups, reloads and verifies the ZIP's JSON matches every manifest's source frame. Existing models, equipment offsets, animations, combat rules and captured dataset version 2 are unchanged.

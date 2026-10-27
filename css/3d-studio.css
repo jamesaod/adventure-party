@@ -393,3 +393,13 @@ body.studio-page {
 .studio-embedded .studio-size-control,.studio-embedded .studio-footer .studio-note{display:none}
 .studio-embedded .studio-footer{padding:8px;margin:4px 0 0;font-size:14px}
 .studio-embedded .studio-model-height{font-size:12px}
+
+/* Rev 174: one capture workflow beside the model, with secondary library settings. */
+.studio-pose-library{margin:12px 0;padding:10px 0;border-block:1px solid var(--divider)}
+.studio-library-options summary{cursor:pointer;color:var(--cyan)}
+.studio-capture-choice{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin:12px 0}
+.studio-capture-choice .studio-field{flex:1 1 180px;margin:0}
+.studio-capture-choice .studio-button{flex:1 1 140px}
+.studio-animation > .studio-workspace-status{display:block;margin:8px 0}
+.studio-animation > .studio-button{margin:6px 6px 0 0}
+.studio-pose-library .error{color:#ffada0}

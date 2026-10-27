@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/adventure-party.css?v=R238C137">
-  <link rel="stylesheet" href="css/3d-studio.css?v=R238C160">
+  <link rel="stylesheet" href="css/3d-studio.css?v=R238C174">
   <script type="importmap">
   {
     "imports": {
@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 173</span>
+        <span class="studio-build">Candidate Rev 174</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -306,7 +306,7 @@
 
         <section class="studio-animation studio-panel chrome" aria-labelledby="studioAnimationHeading">
           <div class="studio-panel-heading">
-            <h2 id="studioAnimationHeading">Animation</h2>
+            <h2 id="studioAnimationHeading">Action Pose Capture</h2>
             <output id="studioTime" class="studio-time" for="studioTimeline">0.00 / 0.00 s</output>
           </div>
           <div class="studio-animation-fields">
@@ -362,18 +362,32 @@
             </div>
             <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
           </details>
+          <span id="studioWorkspaceStatus" class="studio-workspace-status" role="status" aria-live="polite">Preparing saved workspace…</span>
+          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 42 sprites</output>
+        <label class="studio-field studio-set-name" for="studioSpriteSetName">
+          <span>Sprite set name</span>
+          <input id="studioSpriteSetName" type="text" maxlength="80" value="Studio mannequin" autocomplete="off">
+        </label>
+          <div id="studioPoseLibraryMount"></div>
           <label class="studio-field" for="studioActionProfile"><span>Weapon type / shared action to capture</span><select id="studioActionProfile" aria-label="Weapon type / shared action to capture"></select></label>
           <p id="studioCaptureProfileSummary" class="studio-note" aria-live="polite"></p>
-          <div class="studio-capture-buttons" role="group" aria-label="Capture six facings of a pose">
-            <button id="studioCaptureReadyButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Ready pose">Ready</button>
-            <button id="studioCaptureWindupButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Wind Up pose">Wind Up</button>
-            <button id="studioCaptureAttackButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Attack pose">Attack</button>
-            <button id="studioCaptureFallingButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Falling pose">Falling</button>
-            <button id="studioCaptureProneButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Prone pose">Prone</button>
-            <button id="studioCaptureCastingWindupButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Casting Wind Up pose">Casting Wind Up</button>
-            <button id="studioCaptureCastButton" class="studio-button studio-primary" type="button" disabled aria-label="Capture Casting pose">Casting</button>
+          <p id="studioPoseCoverage" class="studio-note" aria-live="polite"></p>
+          <div class="studio-capture-choice">
+        <label class="studio-field" for="studioActionPose"><span>Action pose to record</span>
+          <select id="studioActionPose" aria-label="Action pose to record">
+            <option value="ready">Ready</option>
+            <option value="windup">Wind Up</option>
+            <option value="attack">Attack</option>
+            <option value="falling">Falling</option><option value="prone">Prone</option>
+            <option value="casting-windup">Casting Wind Up</option><option value="cast">Casting</option>
+          </select>
+        </label>
+        <button id="studioCaptureSelectedPoseButton" class="studio-button studio-primary" type="button" disabled>Capture selected pose</button>
           </div>
-          <p class="studio-note studio-help">Pause or drag the timeline to any moment. Each capture freezes that moment and saves all six directions. Capture again to replace a pose. Choose Magic for Casting Wind Up and Casting, or Death/Prone animation for Falling and Prone. These four captures are shared by every weapon type.</p>
+          <p class="studio-note studio-help">Capture saves this frame, all six sprites and equipment settings together. Magic and Death/Prone poses are shared across weapons.</p>
+        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export action poses (ZIP)</button>
+        <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
+      <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture once to save sprites and frame references. Export includes every weapon/shared group and pose-library.json.</p>
         </section>
       </section>
 
@@ -488,27 +502,11 @@
 
     <section class="studio-sheet-panel studio-panel chrome" aria-labelledby="studioSheetHeading">
       <div class="studio-panel-heading">
-        <h2 id="studioSheetHeading">Captured sprite sheet</h2>
+        <h2 id="studioSheetHeading">Captured sprites · QA preview</h2>
         <div class="studio-sheet-heading-meta">
-          <span id="studioWorkspaceStatus" class="studio-workspace-status" role="status" aria-live="polite">Preparing saved workspace…</span>
-          <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 42 sprites</output>
         </div>
       </div>
       <div class="studio-sheet-intro">
-        <label class="studio-field studio-set-name" for="studioSpriteSetName">
-          <span>Sprite set name</span>
-          <input id="studioSpriteSetName" type="text" maxlength="80" value="Studio mannequin" autocomplete="off">
-        </label>
-        <label class="studio-field" for="studioActionPose"><span>Action pose to record</span>
-          <select id="studioActionPose" aria-label="Action pose to record">
-            <option value="ready">Ready</option>
-            <option value="windup">Wind Up</option>
-            <option value="attack">Attack</option>
-            <option value="falling">Falling</option><option value="prone">Prone</option>
-            <option value="casting-windup">Casting Wind Up</option><option value="cast">Casting</option>
-          </select>
-        </label>
-        <button id="studioCaptureSelectedPoseButton" class="studio-button studio-primary" type="button" disabled>Capture selected pose</button>
         <p class="studio-note">Each weapon type keeps Ready, Wind Up and Attack. Magic shares Casting Wind Up and Casting; Death/Prone animation shares Falling and Prone across all weapons. Capture each shared pose once. Export includes all groups and six facings.</p>
       </div>
       <div class="studio-sheet-scroll">
@@ -519,11 +517,8 @@
       </div>
       <div class="studio-sheet-actions">
         <button id="studioExportPoseSheetButton" class="studio-button" type="button" disabled>Export QA sprite sheet</button>
-        <button id="studioExportPackageButton" class="studio-button studio-primary" type="button" disabled>Export all action groups (ZIP)</button>
-        <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
-        <button id="studioClearPosesButton" class="studio-button" type="button" disabled>Clear sheet</button>
+        <button id="studioClearPosesButton" class="studio-button" type="button" disabled>Clear captured sprites</button>
       </div>
-      <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture weapon poses and shared Magic / Death/Prone poses, then export all groups.</p>
       <p class="studio-note studio-help">Captures save automatically in this browser. Test in combat saves your set and opens combat in this tab; Return to 3d studio restores the set you tested. The sprite sheet is for visual QA only; Test in combat saves pose references and only the available preview frames, without a sprite-sheet image.</p>
     </section>
 
@@ -534,7 +529,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C173"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C174"></script>
 
 </body>
 </html>
