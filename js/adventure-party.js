@@ -2712,17 +2712,23 @@ const UNIT_POSE_DEFINITIONS={
 const registeredStudioSpriteSets=new Map();
 const selectedStudioPlayerSpriteSets=new Map();
 const defaultStudioPlayerSpriteSets=new Map();
-const studioSpriteLoading=createStudioSpriteLoadingGate();
+const studioSpriteLoading=createStudioSpriteLoadingGate(15000,window.adventurePartyGameStartup?.ready);
 
-function createStudioSpriteLoadingGate(timeoutMs=15000){
+function createStudioSpriteLoadingGate(timeoutMs=15000,startupReady=null){
   let state="pending";
   let resolveReady;
   const ready=new Promise(resolve=>{resolveReady=resolve;});
-  const timer=setTimeout(()=>{
-    if(state!=="pending") return;
-    state="timed-out";
-    resolveReady();
-  },timeoutMs);
+  let timer;
+  const startTimeout=()=>{
+    if(state!=="pending")return;
+    timer=setTimeout(()=>{
+      if(state!=="pending")return;
+      state="timed-out";
+      resolveReady();
+    },timeoutMs);
+  };
+  // Required script retries must not consume the optional sprite-load timeout.
+  if(startupReady)startupReady.then(startTimeout);else startTimeout();
   return Object.freeze({
     ready,
     get state(){return state;},
@@ -30909,9 +30915,11 @@ if(audioCtx && audioCtx.state==="running"){
 }
 
 updateAudioIndicators();
-window.addEventListener("DOMContentLoaded",()=>{
+if(document.readyState==="loading"){
+  window.addEventListener("DOMContentLoaded",verifyWebUIFont,{once:true});
+}else{
   verifyWebUIFont();
-});
+}
 
 /* R107 reusable persistent debuff VFX hook: Sleep, Unconscious, Confusion, Taunt. */
 window.AdventurePartyStatusFx={
