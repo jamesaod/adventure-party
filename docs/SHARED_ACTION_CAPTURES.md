@@ -108,3 +108,8 @@ The panel displays captured/missing/outdated slots, frame references and separat
 Older saved workspaces with captured frames but an empty starter library are seeded automatically once after their source animations load. Already assigned libraries are not overwritten on opening. Embedded MOB previews never perform this seeding/write. If local library persistence fails, the open references remain linked to the workspace/export and the panel reports the error; it never claims library-save success. Existing local-store conflict checks prevent overwriting another tab's library revision.
 
 Validation: `test-studio-unified-capture.mjs` executes the real capture handler and library controller, checks reference-before-workspace wiring, exact physical/shared frames, automatic persistence, failed-write retention, read-only preview behavior, and the single-panel/combined-export contract. Browser QA captures multiple poses, edits equipment, switches shared groups, reloads and verifies the ZIP's JSON matches every manifest's source frame. Existing models, equipment offsets, animations, combat rules and captured dataset version 2 are unchanged.
+
+
+## Rev 175 — completed capture groups
+
+The weapon/shared-action selector prefixes a green ✅ when every required pose has a current capture: three poses for weapon types, two for Magic, and two for Death/Prone. Labels refresh on capture, clear, invalidation and workspace restore; missing or outdated slots remove the check. Stored group IDs, frame references and export data are unchanged.
