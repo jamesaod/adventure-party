@@ -45,38 +45,42 @@ export function shadowMask(source,{sx=0,sy=0,sw=source.naturalWidth||source.widt
   ctx.globalCompositeOperation='source-in';ctx.fillStyle='#000';ctx.fillRect(0,0,sw,sh);
   entry.tiles.set(key,mask);return mask;
 }
-// Locate independent lower-body silhouettes, so a wide stance can have two
-// different projected ground depths. Padding and the unit pivot are not feet.
+// Fit visible foot contacts, lowering the silhouette cut when clothing or
+// bent legs still join them. Padding and the unit pivot are not feet.
 export function findShadowFootLine(rgba,width,height){
   let top=height,bottom=-1;
   for(let y=0;y<height;y++)for(let x=0;x<width;x++)if(rgba[(y*width+x)*4+3]>=64){top=Math.min(top,y);bottom=Math.max(bottom,y);}
   if(bottom<0)return {slope:0,intercept:height,contacts:[]};
-  const cut=Math.floor(top+(bottom-top+1)*0.60),seen=new Uint8Array(width*height),parts=[];
-  for(let y=cut;y<=bottom;y++)for(let x=0;x<width;x++){
-    const start=y*width+x;
-    if(seen[start]||rgba[start*4+3]<64)continue;
-    const queue=[start];seen[start]=1;
-    let count=0,footY=-1,sumX=0,footPixels=0;
-    for(let cursor=0;cursor<queue.length;cursor++){
-      const at=queue[cursor],px=at%width,py=Math.floor(at/width);count++;
-      if(py>footY){footY=py;sumX=0;footPixels=0;}
-      if(py===footY){sumX+=px+0.5;footPixels++;}
-      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
-        const nx=px+dx,ny=py+dy,next=ny*width+nx;
-        if(nx<0||nx>=width||ny<cut||ny>bottom||seen[next]||rgba[next*4+3]<64)continue;
-        seen[next]=1;queue.push(next);
+  const firstCut=Math.floor(top+(bottom-top+1)*0.60),seen=new Uint32Array(width*height);
+  let front=null;
+  for(let cut=firstCut;cut<=bottom;cut++){
+    const visit=cut+1,parts=[];
+    for(let y=cut;y<=bottom;y++)for(let x=0;x<width;x++){
+      const start=y*width+x;
+      if(seen[start]===visit||rgba[start*4+3]<64)continue;
+      const queue=[start];seen[start]=visit;
+      let count=0,footY=-1,sumX=0,footPixels=0;
+      for(let cursor=0;cursor<queue.length;cursor++){
+        const at=queue[cursor],px=at%width,py=Math.floor(at/width);count++;
+        if(py>footY){footY=py;sumX=0;footPixels=0;}
+        if(py===footY){sumX+=px+0.5;footPixels++;}
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+          const nx=px+dx,ny=py+dy,next=ny*width+nx;
+          if(nx<0||nx>=width||ny<cut||ny>bottom||seen[next]===visit||rgba[next*4+3]<64)continue;
+          seen[next]=visit;queue.push(next);
+        }
       }
+      parts.push({count,x:sumX/footPixels,y:footY+0.5});
     }
-    parts.push({count,x:sumX/footPixels,y:footY+0.5});
-  }
-  parts.sort((a,b)=>b.count-a.count);
-  const contacts=parts.filter(p=>p.count>=Math.max(3,(parts[0]?.count||0)*0.12)).slice(0,2).sort((a,b)=>a.x-b.x);
-  if(contacts.length===2&&contacts[1].x-contacts[0].x>=2){
-    const slope=(contacts[1].y-contacts[0].y)/(contacts[1].x-contacts[0].x);
-    if(Math.abs(slope)<=1.5)return {slope,intercept:contacts[0].y-slope*contacts[0].x,contacts};
+    parts.sort((a,b)=>b.count-a.count);
+    const contacts=parts.filter(p=>p.count>=Math.max(3,(parts[0]?.count||0)*0.12)).slice(0,2).sort((a,b)=>a.x-b.x);
+    if(contacts.length===2&&contacts[1].x-contacts[0].x>=2){
+      const slope=(contacts[1].y-contacts[0].y)/(contacts[1].x-contacts[0].x);
+      if(Math.abs(slope)<=1.5)return {slope,intercept:contacts[0].y-slope*contacts[0].x,contacts};
+    }
+    if(cut===firstCut)front=contacts.reduce((best,p)=>!best||p.y>best.y?p:best,null);
   }
   // Nearly overlapping feet cannot define a stable plane from a flat sprite.
-  const front=contacts.reduce((best,p)=>!best||p.y>best.y?p:best,null);
   return {slope:0,intercept:front?.y??bottom+0.5,contacts:front?[front]:[]};
 }
 const footLines=new WeakMap();
@@ -105,29 +109,10 @@ export function drawUnitShadow(ctx,source,{x,y,width,height,anchorX=0.5,anchorY=
   ctx.restore();
 }
 
-function preferenceKey(){return 'adventure-party-sun-hour:'+new URL('.',location.href).pathname;}
-let currentHour=DEFAULT_SUN_HOUR;
-try{
-  const query=new URLSearchParams(location.search);
-  currentHour=normalizeSunHour(query.has('sunHour')?query.get('sunHour'):localStorage.getItem(preferenceKey()));
-}catch{ /* Node tests, disabled storage and older drafts use noon. */ }
-const controls=new Set();
+// Noon is fixed for Studio and combat. Old URL, preference and workspace hours
+// are deliberately ignored; pure sun-path helpers remain available for later use.
 export const unitSun={
   drawingGround:false,
-  get hour(){return currentHour;},
-  setHour(value){
-    currentHour=normalizeSunHour(value);
-    try{localStorage.setItem(preferenceKey(),String(currentHour));}catch{}
-    for(const {input,output} of controls){input.value=String(currentHour);output.textContent=sunDescription(currentHour);}
-    return currentHour;
-  },
-  bind(input,output,onChange=()=>{}){
-    controls.add({input,output});this.setHour(currentHour);
-    input.addEventListener('input',()=>{
-      this.setHour(input.value);
-      try{const url=new URL(location.href);url.searchParams.set('sunHour',String(currentHour));history.replaceState(history.state,'',url);}catch{}
-      onChange(currentHour);
-    });
-  },
-  draw(ctx,source,options){drawUnitShadow(ctx,source,{...options,hour:currentHour});}
+  get hour(){return DEFAULT_SUN_HOUR;},
+  draw(ctx,source,options){drawUnitShadow(ctx,source,{...options,hour:DEFAULT_SUN_HOUR});}
 };

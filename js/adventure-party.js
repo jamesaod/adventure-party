@@ -244,7 +244,6 @@ function studioReturnUrl(){
   for(const key of ["model","mob","poseLibrary","preview"]){
     if(source.has(key))query.set(key,source.get(key));
   }
-  if(globalThis.adventurePartySun)query.set("sunHour",String(globalThis.adventurePartySun.hour));
   return "./3d-studio.html?"+query.toString();
 }
 
@@ -30272,8 +30271,6 @@ function handleLauncherKey(event){
 }
 
 function handleCombatKey(event){
-  // Let the sun slider handle its own arrows without issuing unit commands.
-  if(event.target?.id==="combatSunHour"&&event.key!=="Escape")return;
   const code=event.code;
   const keyLower=event.key.toLowerCase();
 

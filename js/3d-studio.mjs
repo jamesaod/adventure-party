@@ -1,4 +1,4 @@
-import { unitSun, sunPosition, shadowMask, shadowFootLine } from './unit-sun-shadow.mjs?v=R238C167';
+import { unitSun, sunPosition, shadowMask, shadowFootLine } from './unit-sun-shadow.mjs?v=R238C168';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
 import * as THREE from 'three';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
@@ -13,7 +13,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C167';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C168';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -182,7 +182,6 @@ const previews = HEX_FACINGS.map(facing => ({
 
 function getWorkspaceSettings() {
   return {
-    sunHour:unitSun.hour,
     unitPackage:state.unitPackage,poseLibrary:state.poseLibrary,poseLibrarySignature:state.poseLibrarySignature,
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
     libraryModelId: state.libraryModelId,
@@ -2617,9 +2616,6 @@ function bindControls() {
     poseCapture?.updateModelScale(state.modelScalePercent);
     poseCapture?.saveWorkspace();
   });
-  unitSun.bind($('studioSunHour'),$('studioSunHourValue'),()=>{
-    invalidate();poseCapture?.saveWorkspace();
-  });
   for (const [name, key, divisor] of [
     ['AmbientIntensity', 'ambientIntensity', 100], ['KeyIntensity', 'keyIntensity', 100],
     ['KeyElevation', 'keyElevation', 1], ['AmbientColor', 'ambientColor'],
@@ -2888,7 +2884,6 @@ function restoreWorkspaceValues({ settings = {}, style = {}, captureCount = 0 })
   try { state.modelScalePercent = validateSpriteModelScale(settings.modelScalePercent ?? 100); }
   catch { state.modelScalePercent = 100; }
   state.hexScalePercent = validateSpriteHexScale(settings.hexScalePercent);
-  if(!authoringQuery.has('sunHour')&&Number.isFinite(settings.sunHour))unitSun.setHour(settings.sunHour);
   state.lighting = normalizedLighting(settings.lighting);
   if (!settings.lighting && captureCount) state.lighting.legacyRig = 'rev47';
   const size = spriteLayoutDimensions(state.layoutId, state.resolutionPercent);

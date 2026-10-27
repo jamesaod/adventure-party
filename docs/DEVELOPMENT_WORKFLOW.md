@@ -143,3 +143,7 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 167 — shadow foot contact
 
 [Unit sun shadows](UNIT_SUN_SHADOWS.md#foot-contact-correction-rev-167) records alpha-based foot-contact fitting, the shared Studio/combat projection and 45% daytime opacity. Fix presentation contact without moving the unit pivot or rewriting captured PNGs.
+
+## Candidate Rev 168 — noon and connected-leg contacts
+
+[Unit sun shadows](UNIT_SUN_SHADOWS.md) now uses fixed noon in Studio and combat. Do not restore previous query, local-storage or workspace hours; the sliders have been removed. Adaptive alpha separation fixes the missed boot when the legs connect below the original cut. Reproduce with the checked-in Orc silhouette fixture and verify both contacts through the shared projection without rewriting captures.

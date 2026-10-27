@@ -372,3 +372,7 @@ For the user's placement comparison, **Orc Leader, Male, Uniformed** uses Dungeo
 ## Candidate Rev 166 — dynamic ground shadows
 
 [Unit sun shadows](UNIT_SUN_SHADOWS.md) documents the Time of day controls, shared sun projection, separate ground pass, persistence and QA. Shadow direction/length change dynamically without changing material lighting or invalidating captured poses. Keep exported character artwork shadow-free so it can be reused at every hour.
+
+## Candidate Rev 168 — noon shadows
+
+Studio and combat now use noon with no time slider. Saved old hours are ignored. The shared contact detector separates bent legs below the original silhouette cut so both boots anchor the shadow in wide stances. See [Unit sun shadows](UNIT_SUN_SHADOWS.md); no recapture is needed.

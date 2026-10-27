@@ -27,6 +27,6 @@ Use `3d-studio.html?model=orc-leader-male-uniformed&poseLibrary=humanoid-medium`
 
 `test-studio-footprints.mjs` covers all existing archetypes/footprints, one player, selected sprite/scale metadata, configured allies/opponents, occupancy, character-sheet isolation, empty-test behavior and ordinary Carl regression. `test-combat-roster-setup.mjs` exercises adding rows without leaving Studio. `test-studio-combat-exit.mjs` covers scoped manual/victory/defeat returns; directional and capture tests preserve pose/facing selection. Run Adventure Party Validation and verify the published candidate bytes after merging.
 
-## Time of day (Rev 166)
+## Noon shadows (Rev 168)
 
-The selected hour follows Test in combat and Return to Studio. Setup and battlefield sliders are synchronized; they change only the dynamic ground shadow and never spend a turn or invalidate captures. See [Unit sun shadows](UNIT_SUN_SHADOWS.md).
+Studio, setup and battlefield now use fixed noon with no time sliders. Legacy `sunHour` values in URLs, preferences and restored workspace settings are ignored; outbound Test in combat removes the old parameter. Model scope and capture restoration are unchanged. See [Unit sun shadows](UNIT_SUN_SHADOWS.md).
