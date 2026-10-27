@@ -1,4 +1,4 @@
-import { unitSun } from './unit-sun-shadow.mjs?v=R238C167';
+import { unitSun } from './unit-sun-shadow.mjs?v=R238C168';
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C153';
 import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C153';
 import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C93';
@@ -7,11 +7,6 @@ import { ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C153';
 
 const api = window.adventurePartySpriteSets;
 window.adventurePartySun=unitSun;
-for(const prefix of ['combatSetup','combat']){
-  unitSun.bind(document.getElementById(prefix+'SunHour'),document.getElementById(prefix+'SunHourValue'),()=>{
-    api.redraw();refreshControls();
-  });
-}
 const assets = new Map();
 let setSelect, setStatus, inspector, inspectorHelp, combatStudioReturn;
 

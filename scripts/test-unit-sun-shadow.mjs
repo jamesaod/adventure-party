@@ -61,10 +61,33 @@ for(const hour of [7,9,12,15,17])for(const flip of [false,true])for(const scale 
 }
 close(sunPosition(12).opacity,0.45);
 
-const inputs=[{},{}],outputs=[{},{}],callbacks=[];
-for(const input of inputs)input.addEventListener=(_name,callback)=>{callbacks.push(callback);};
-unitSun.bind(inputs[0],outputs[0]);unitSun.bind(inputs[1],outputs[1]);
-inputs[0].value='15.25';callbacks[0]();assert.equal(inputs[1].value,'15.25');assert.match(outputs[1].textContent,/15:15/);
+// Legacy hours must never restore a non-noon environment after slider removal.
+globalThis.location={href:'https://example.test/candidate/?sunHour=9',search:'?sunHour=9'};
+globalThis.localStorage={getItem:()=> '15'};
+const restoredSun=(await import('../js/unit-sun-shadow.mjs?legacy-hour-test')).unitSun;
+assert.equal(restoredSun.hour,12);assert.equal(unitSun.hour,12);
+transforms=[];restoredSun.draw(ctx,source,{x:0,y:0,width:160,height:200,hour:0});
+assert.equal(transforms.length,1,'Shared runtime always renders noon, even with an old requested hour');
+close(transforms[0][2],shadowProjection(12).shearX);close(transforms[0][3],shadowProjection(12).shearY);
+delete globalThis.location;delete globalThis.localStorage;
+
+// Regression from an actual Orc render: bent legs connect below the old cut.
+const fixture=JSON.parse(readFileSync(new URL('./fixtures/orc-wide-stance-shadow.json',import.meta.url),'utf8'));
+const connectedRgba=new Uint8ClampedArray(fixture.width*fixture.height*4);
+for(const [y,...runs] of fixture.rows)for(let i=0;i<runs.length;i+=2)
+ for(let x=runs[i];x<runs[i+1];x++)connectedRgba[(y*fixture.width+x)*4+3]=255;
+const connectedFeet=findShadowFootLine(connectedRgba,fixture.width,fixture.height);
+assert.deepEqual(connectedFeet.contacts.map(p=>[p.x,p.y]),fixture.contacts,'Both boots detected despite a connected upper-leg silhouette');
+const connectedSource={width:fixture.width,height:fixture.height};shadowMask(connectedSource).rgba=connectedRgba;
+for(const flip of [false,true])for(const scale of [0.5,1,2.4]){
+ transforms=[];
+ unitSun.draw(ctx,connectedSource,{x:80,y:120,width:fixture.width*scale,height:fixture.height*scale,anchorX:0.43,anchorY:0.62,flip});
+ const [a,b,c,d,e,f]=transforms[0];
+ for(const [px,py] of fixture.contacts){
+  const u=(px-fixture.width*0.43)*scale,v=(py-fixture.height*0.62)*scale;
+  close(a*u+c*v+e,80+(flip?-u:u));close(b*u+d*v+f,120+v);
+ }
+}
 
 // Exercise the production sprite ground pass: exact facing, pose, scale and
 // anchor, without drawing the body twice or revealing invisible units.
@@ -86,14 +109,10 @@ assert.ok(engine.indexOf('if(actor.unit)actor.fn()')<engine.lastIndexOf('  actor
 const studio=readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 const capture=readFileSync(new URL('../js/studio-capture.mjs',import.meta.url),'utf8');
 assert.ok(studio.includes('if(sunShadowMesh)sunShadowMesh.visible=false;'),'3D ground shadow is excluded from the capture atlas');
-assert.ok(studio.includes('sunHour:unitSun.hour'));
-assert.ok(capture.includes("target.searchParams.set('sunHour',String(unitSun.hour))"));
-const handler=studio.slice(studio.indexOf("unitSun.bind($('studioSunHour')"),studio.indexOf('  for (const [name, key, divisor]'));
-assert.ok(handler.includes('saveWorkspace()'));assert.ok(!handler.includes('invalidateCaptures'));
-console.log('PASS sun arc, horizon/night bounds, fixed world direction, alpha-mask reuse, shared controls, terrain-only pass, invisibility and shadow-free capture data');
-
-const keyStart=engine.indexOf('function handleCombatKey('),keyEnd=engine.indexOf('function handleCombatConditionsKey(',keyStart);
-const keySandbox={};vm.runInNewContext(engine.slice(keyStart,keyEnd),keySandbox);
-for(const key of ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End',' ','q','e','+']){
- keySandbox.handleCombatKey({key,target:{id:'combatSunHour'},preventDefault(){throw new Error('Native slider input was consumed');}});
+assert.ok(!studio.includes('sunHour:unitSun.hour')&&!studio.includes('unitSun.setHour'),'Old workspace hour cannot override noon');
+assert.ok(capture.includes("target.searchParams.delete('sunHour')"),'Combat handoff drops legacy hours');
+for(const file of ['3d-studio.html','index.html']){
+ const html=readFileSync(new URL('../'+file,import.meta.url),'utf8');
+ assert.ok(!/id="(?:studio|combatSetup|combat)SunHour/.test(html),'No time sliders remain in '+file);
 }
+console.log('PASS sun arc, noon default ignoring legacy hours, both real Orc foot contacts, mask caching, terrain-only pass, invisibility and shadow-free captures');
