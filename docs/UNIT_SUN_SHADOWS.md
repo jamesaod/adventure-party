@@ -1,32 +1,48 @@
-# Unit sun shadows — Candidate Rev 168
+# Unit sun shadows — Candidate Rev 169
 
 ## Current behavior
 
-Studio's 3D view, six Pixel previews and combat use **noon** (12:00). Time sliders have been removed from Studio, Combat Setup and the combat sidebar. Old `sunHour` URL values, browser preferences and workspace fields cannot override noon. Test in combat removes that obsolete parameter; Return to Studio retains the existing model/MOB/pose-library scope.
+Studio's orbit view, six Pixel previews and combat use **noon** (12:00, sun 60 degrees high toward the south), with 45% shadow opacity and no time sliders. Old hour preferences cannot override noon. Model shadows now come from the evaluated 3D geometry projected flat onto the floor, including standing, falling and prone poses.
 
-Noon uses the existing fixed sun path: 60 degrees high toward the south. Shadow opacity remains 45%. Material textures, model lighting, visibility/LOS, combat rules and spell light are unchanged. Existing captured PNGs and Unit Packages remain shadow-free; no recapture is required. Save PNG and QA sheet/export still export the original character artwork. Use a screenshot to record the displayed shadow.
+Material lighting, geometry assets, animations, equipment calibration and combat rules are unchanged. Character captures, Save PNG, QA sheets and Unit Package PNGs remain shadow-free. Model/animation/frame references remain the portable export data. Use a screenshot to record the displayed shadow.
 
-## Shared implementation
+Existing captures are retained. New captures carry their precise geometry shadow into combat automatically. Recapture an old pose to add that shadow; older prone PNG-only artwork has a conservative contact-shadow fallback instead of the displaced standing-style projection.
 
-- `js/unit-sun-shadow.mjs` owns the fixed runtime hour, sun vector, alpha-mask caching, contact detection and projected silhouette. It imports the existing `CAMERA_ELEVATION` for Studio/battlefield parity. Pure time-normalization and sun-path functions remain for future environment controls, but runtime `unitSun` always draws at noon.
-- Transparent character alpha is copied to a black mask using `source-in`; the original source is never edited. Static masks/contact lines are cached by decoded image identity. Studio atlas masks are keyed by tile and render revision, retaining only the current six tiles.
-- Height is approximated by distance above the visible foot-contact line. The shared affine transform leaves both contact points fixed at their sprite positions while preserving source padding, render scale, enlargement and mirroring. Reflecting a unit must not reflect world sun direction. This is a silhouette approximation, not depth/terrain ray tracing.
-- Studio composites the shadow beneath the character over the grass preview. Its orbit view displays the same silhouette on a ground mesh using the contact line's ground depth. The mesh is hidden during every atlas render and excluded from model bounds, animation fitting, capture and export.
-- Combat draws shadows through the production unit paths in a ground-only pass before the actor depth queue. This uses the exact pose, footprint center, scale and rounded sprite anchor. Walls, trees, units and fog then render over it. Invisible or unseen units must not reveal themselves through shadows; mirror-image ghosts do not gain independent physical shadows.
-- `sprite-set-runtime.mjs` exposes the shared sun to the classic combat engine. Environment presentation does not alter model definitions, pose libraries or captured data.
+## Projection and rendering
 
-## Foot-contact correction
+`js/ground-shadow-geometry.mjs` supplies one shared projection matrix and override material to the **existing** Studio and combat WebGL renderers. No extra renderer, equipment system, animation evaluation or model normalization is introduced.
 
-Rev 166 projected onto a horizontal line at the unit pivot. Rev 167 instead fitted visible feet from connected components below 60% of the opaque bounds and increased opacity from 30% to 45%.
+The vertex shader runs after morph targets and skinning, then applies the model's world matrix. For a world vertex (x, y, z) it projects to:
 
-That fixed cut still joined the Orc's bent legs in some facings, so only one boot was detected. **Rev 168 progressively lowers the cut until the two substantial lower silhouettes separate**, then fits their contact line. It reuses visitation memory and caches the result with the mask. Nearly overlapping feet retain the lowest-contact fallback when no stable two-foot line is available. This changes neither sprite placement nor captured pixels.
+- X = x + sun.groundX × max(0, y)
+- Y = 0.004 (a small floor separation to avoid z-fighting)
+- Z = z + sun.groundZ × max(0, y)
 
-The real alpha fixture `scripts/fixtures/orc-wide-stance-shadow.json` comes from Studio's Orc, Male, Uniformed with Spear, Bayonet Stab at 0.98 seconds, NW facing and 155% model size, exported at 160 × 200. Each nonempty row stores Y followed by opaque X start/end pairs (end exclusive, alpha threshold 64). The original fixed cut produced one contact; the revised detector finds both boots at (61, 129.5) and (113, 136.5). Keeping this fixture avoids relying only on an artificial stance whose legs were already disconnected.
+Ground depth Z is preserved independently of height Y. This is the missing information in the earlier 2D foot-line approximation: a lying body extends across the floor, not vertically above a foot. Every projected vertex lies on the same horizontal plane, at every model facing. The sun remains world-aligned. Below-floor vertices clamp height to zero instead of reversing the shadow direction.
+
+Studio saves the untouched character atlas before reusing the same render target for a separate opaque black geometry pass. The override material is restored in `finally`. Helpers and the displayed shadow quad are excluded from the atlas. The shadow atlas is reduced tile by tile to native battlefield size. Six previews composite it with the exact body frame and anchor; the orbit view maps it back onto the horizontal floor without a second shear.
+
+Equipment-regenerated combat sprites use that same material, projection and existing renderer. `unit-sun-shadow.mjs` composites the already-projected mask at the body's exact normalized anchor and draw scale. It does not estimate another foot line or project the shadow again.
+
+Combat retains its ground-only pass before the actor depth queue. Walls, trees, bodies and fog draw above shadows. Invisible/unseen units do not reveal themselves through shadows. Noon/opacity are presentation settings; sunlight occlusion by terrain, trees or buildings remains outside this implementation.
+
+## Capture and compatibility
+
+- A new capture stores `groundShadowRgba` separately from `raw`/`battlefieldRaw`. It is a top-down six-facing atlas at the captured native battlefield dimensions. Workspace validation checks its type/length and existing size limits apply. Derived `shadowFrames` are rebuilt on restore rather than duplicated in saved workspaces.
+- Test in combat encodes those optional frames into a separate `shadows` map. It is saved atomically with the normal PNG files and exact return workspace. Shadow bytes count toward the existing 64 MiB draft cap; filenames must match ordinary image names.
+- Keys are **full-resolution character filenames**, even though shadow images have native battlefield dimensions. Combat currently draws the full-resolution decoded character image, so attach the shadow to that exact image identity. Attaching only to the optional battlefield derivative silently loses the shadow.
+- Missing old sidecars are valid. Corrupt optional shadow images do not prevent valid character art from loading. The source character PNG is never edited. Unit Package/export image schema is unchanged; runtime equipment renders regenerate shadows from the model recipe.
+- Legacy upright PNGs retain the cached alpha/foot-contact fallback from Revs 167–168. Legacy `prone` images instead use their close silhouette under the body with at most one source-pixel offset. This conservative fallback cannot recover 3D depth; recapture for precise shadows.
 
 ## Reproduce and validate
 
-1. Open Studio with `?model=male-orc&poseLibrary=humanoid-medium&sunHour=15`. Verify there is no time slider and noon shadows appear despite the old parameter. Pause Bayonet Stab at 0.98 seconds with Spear and inspect the NW-facing wide stance.
-2. Capture Ready in a test workspace, then Test in combat. Verify one controlled Orc, no time controls in setup or battle, and shadows below both visible boots. Check different facings, map zoom and existing opponent selection.
-3. Return to Studio and reload. Verify model/pose-library scope and the six Ready captures survive; no old hour is restored. Inspect the orbit view and six previews for the same contact behavior.
+1. Load Orc, Male, Uniformed with Spear in Studio. Check Standing Idle and a wide Bayonet Stab frame, then Standing Death Forward 01 at its final frame. Compare all six previews and orbit the model: the shadow remains on the floor beside the fallen body.
+2. Capture Ready and Prone, Test in combat, then choose Prone in Inspect sprite poses. Check map zoom and the grounded shadow. Return to Studio and verify both captures and their exact frame references survive.
+3. Save a PNG or export a QA sheet and confirm it contains only the character. Existing old captures must remain available; no automatic recapture or model-setting rewrite is performed.
+4. Check an equipment-regenerated combat model and invisible-unit handling. Ground projection must use the world matrix after skinning, not unposed local geometry or an independently rotated sun.
 
-Run `node scripts/test-unit-sun-shadow.mjs`, existing capture/directional/footprint tests and full Adventure Party Validation. The shadow regression proves both real Orc contacts stay at their sprite positions for mirrors and three scales, in addition to the existing synthetic multi-hour fixture. It also checks legacy-hour rejection, noon rendering, absent time controls, mask reuse, invisibility and shadow-free capture wiring. Verify published candidate bytes after merge.
+Run `scripts/test-ground-shadow-geometry.mjs`, `scripts/test-unit-sun-shadow.mjs` and Adventure Party Validation. Tests cover standing/prone ground-depth invariants in six facings, shader skinning order, override restoration after failure, exact shadow anchoring without double projection, atomic optional sidecars, full-resolution render-source association, older-draft compatibility and invisible-unit handling. Browser QA covers the final death pose, six previews and captured combat/return flow.
+
+## History
+
+Rev 166 inferred height above the unit pivot. Rev 167 fitted visible foot contacts and increased opacity to 45%. Rev 168 lowered the alpha cut to separate connected legs and fixed noon. The real Orc alpha fixture in `scripts/fixtures/orc-wide-stance-shadow.json` remains useful for the legacy upright fallback. Rev 169 supersedes that inference for model-based rendering with the true floor projection described above.

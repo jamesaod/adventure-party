@@ -147,3 +147,7 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 168 — noon and connected-leg contacts
 
 [Unit sun shadows](UNIT_SUN_SHADOWS.md) now uses fixed noon in Studio and combat. Do not restore previous query, local-storage or workspace hours; the sliders have been removed. Adaptive alpha separation fixes the missed boot when the legs connect below the original cut. Reproduce with the checked-in Orc silhouette fixture and verify both contacts through the shared projection without rewriting captures.
+
+## Candidate Rev 169 — geometry projected onto the floor
+
+[Unit sun shadows](UNIT_SUN_SHADOWS.md) documents the shared world-space floor projection for standing and death poses. Reuse the existing WebGL renderer and camera, preserve the body atlas before the shadow pass, and keep shadow sidecars separate in the atomic Studio combat draft. Do not reintroduce foot-line height inference for posed 3D models. Validate full-resolution combat image association as well as native shadow dimensions.

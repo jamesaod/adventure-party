@@ -6,7 +6,7 @@ import {
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C160';
+} from './sprite-set-store.mjs?v=R238C169';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
 import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C153';
 import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C160';
@@ -117,13 +117,13 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     return {
       version: 1, name: ui.SpriteSetName.value.slice(0, 120), style: { ...style }, settings,
       captures: Object.fromEntries(Object.entries(captures).map(([pose, value]) => {
-        const { frames, battlefieldFrames, ...saved } = value;
+        const { frames, battlefieldFrames, shadowFrames, ...saved } = value;
         return [pose, saved];
       })),
       profileEquipment:Object.fromEntries(equipmentByProfile),
       actionProfiles:Object.fromEntries([...capturesByProfile, [selectedProfileId,captures]].map(([id,group])=>[id,
         Object.fromEntries(Object.entries(group).map(([pose,value])=>{
-          const {frames,battlefieldFrames,...saved}=value;return [pose,saved];
+          const {frames,battlefieldFrames,shadowFrames,...saved}=value;return [pose,saved];
         }))]))
     };
   }
@@ -313,6 +313,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         ...renderStyle,outline:physicalOutlinePixels(renderStyle,bw,bw),transparent:true,tileWidth:bw,tileHeight:bh
       });
       capture.battlefieldFrames=splitSixFacingAtlas(battlefieldRgba,bw,bh);
+      if(capture.groundShadowRgba)capture.shadowFrames=splitSixFacingAtlas(capture.groundShadowRgba,bw,bh);
     }
   }
 
@@ -430,6 +431,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       : null;
     return {
       manifest,poseFrames,battlefieldPoseFrames,
+      shadowFrames:Object.fromEntries(Object.entries(captures).filter(([,c])=>!c.stale&&c.shadowFrames).map(([pose,c])=>[pose,c.shadowFrames])),
       sheet:assembleSpriteSheet({...Object.fromEntries(SPRITE_POSES.map(pose=>[pose,poseFrames[pose] || {}]))},width,height),
       workspace:workspaceSnapshot()
     };
@@ -501,7 +503,12 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       await flushSave();
       // Finish saving the exact test set and return workspace before leaving
       // this page. A failed save leaves the studio and its captures open.
-      await saveStudioDraft({ manifest: exported.manifest, files, workspace: exported.workspace });
+      const shadows={};
+      for(const [pose,frames] of Object.entries(exported.shadowFrames))for(const facing of SPRITE_DIRECTIONS){
+        const field=exported.manifest.battlefield;
+        shadows[exported.manifest.poses[pose].frames[facing]]=await pngBlob(frames[facing],field.width,field.height);
+      }
+      await saveStudioDraft({ manifest: exported.manifest, files, shadows, workspace: exported.workspace });
       const target=new URL('./index.html',window.location.href);
       target.search=window.location.search;
       target.searchParams.delete('studioRestore');target.searchParams.delete('restore');

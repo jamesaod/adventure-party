@@ -93,10 +93,28 @@ export function shadowFootLine(mask){
   return line;
 }
 
-export function drawUnitShadow(ctx,source,{x,y,width,height,anchorX=0.5,anchorY=1,flip=false,hour=DEFAULT_SUN_HOUR,opacity=1,...crop}){
+const groundShadows=new WeakMap();
+export function setGroundShadow(source,shadow){groundShadows.set(source,shadow);}
+
+export function drawUnitShadow(ctx,source,{x,y,width,height,anchorX=0.5,anchorY=1,flip=false,hour=DEFAULT_SUN_HOUR,opacity=1,groundShadow=groundShadows.get(source),pose=null,...crop}){
   const sun=shadowProjection(hour);
   if(sun.opacity<=0||width<=0||height<=0||opacity<=0)return;
+  if(groundShadow){
+    ctx.save();ctx.globalAlpha*=sun.opacity*opacity;ctx.imageSmoothingEnabled=false;
+    ctx.translate(x,y);if(flip)ctx.scale(-1,1);
+    const sx=crop.sx||0,sy=crop.sy||0,sw=crop.sw||groundShadow.width,sh=crop.sh||groundShadow.height;
+    ctx.drawImage(groundShadow,sx,sy,sw,sh,-anchorX*width,-anchorY*height,width,height);
+    ctx.restore();return;
+  }
   const mask=shadowMask(source,crop);if(!mask)return;
+  // Older PNG-only prone captures have no depth. Keep a conservative contact
+  // silhouette under the body instead of treating its ground depth as height.
+  if(pose==='prone'){
+    ctx.save();ctx.globalAlpha*=sun.opacity*opacity;ctx.imageSmoothingEnabled=false;
+    ctx.translate(x,y);if(flip)ctx.scale(-1,1);
+    ctx.drawImage(mask,-anchorX*width,-anchorY*height+height/mask.height,width,height);
+    ctx.restore();return;
+  }
   ctx.save();ctx.globalAlpha*=sun.opacity*opacity;ctx.imageSmoothingEnabled=false;
   // Every point on the visible foot-contact line stays fixed under projection.
   // Reflection changes the silhouette, never the world-fixed sun direction.
@@ -113,6 +131,7 @@ export function drawUnitShadow(ctx,source,{x,y,width,height,anchorX=0.5,anchorY=
 // are deliberately ignored; pure sun-path helpers remain available for later use.
 export const unitSun={
   drawingGround:false,
+  setGroundShadow,
   get hour(){return DEFAULT_SUN_HOUR;},
   draw(ctx,source,options){drawUnitShadow(ctx,source,{...options,hour:DEFAULT_SUN_HOUR});}
 };
