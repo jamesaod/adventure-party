@@ -197,7 +197,7 @@ Connections:  {
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
-    assert.equal(catalog.animations.length,14);
+    assert.equal(catalog.animations.length,22);
     for(const entry of catalog.animations){
       const source=await fs.readFile(new URL('../'+entry.file,import.meta.url));
       assert.equal(source.length,entry.bytes);
@@ -215,8 +215,8 @@ Connections:  {
     try {
       const clips=await loadUploadedFbxAnimations({appRoot,targetModel,THREE,FBXLoader,
         prepareStudioAnimations,retargetHumanoidClip,fetchAsset,disposeModel(){disposed++;}});
-      assert.equal(clips.length,14);
-      assert.equal(disposed,14);
+      assert.equal(clips.length,22);
+      assert.equal(disposed,22);
       assert.deepEqual(clips.map(clip=>clip.name),catalog.animations.map(entry=>entry.label));
       assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=60));
       assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
@@ -226,7 +226,9 @@ Connections:  {
       const idle=clips.find(clip=>clip.name==='Standing Idle');
       assert.equal(idle.userData.studioAnimationId,'uploaded:standing-idle:0');
       assert.deepEqual(idle.userData.actionProfiles,['unarmed']);
-      assert.equal(catalog.animations.at(-1).id,'standing-idle','Append new clips to preserve existing saved indices');
+      assert.deepEqual(catalog.animations.slice(0,14).map(entry=>entry.id),["goalie-throw", "standing-2h-cast-spell-01", "standing-2h-magic-attack-04", "boxing", "rifle-aim-to-down", "stabbing", "bayonet-stab", "sword-and-shield-slash", "sword-and-shield-idle", "standing-aim-recoil", "great-sword-idle", "great-sword-slash-01", "great-sword-slash-02", "standing-idle"],'Append new clips to preserve existing saved indices');
+      assert.deepEqual(clips.map(clip=>clip.userData.studioAnimationId),catalog.animations.map(entry=>`uploaded:${entry.id}:0`));
+      assert.equal(reference.clips.length,22);
       const mixer=new THREE.AnimationMixer(targetModel);
       let maxAngularError=0, maxHipError=0;
       for(const [index,clip] of clips.entries()){
@@ -262,7 +264,7 @@ Connections:  {
         }
         mixer.stopAllAction();
       }
-      console.log(`PASS ${modelId}: 70 real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
+      console.log(`PASS ${modelId}: ${reference.clips.reduce((count,clip)=>count+clip.frames.length,0)} real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
     } finally {THREE.TextureLoader.prototype.load=loadTexture;}
     }
   }
