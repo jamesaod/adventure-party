@@ -34,3 +34,14 @@ Studio, setup and battlefield now use fixed noon with no time sliders. Legacy `s
 ## Grounded death shadows (Rev 169)
 
 New captures save optional shadow PNGs in a separate `shadows` map beside the ordinary draft files, in the same atomic transaction as the return workspace. The map is keyed by the full-resolution character filename because combat draws that image. Shadow pixels have native battlefield dimensions and use the same normalized anchor. Older drafts remain valid; old prone PNGs use a conservative contact shadow. Recapture old poses for exact model-based shadows. Equipment-regenerated combat poses use the same projection directly.
+
+
+## Equipment refresh across uploaded humanoids (Rev 170)
+
+A gear swap previously failed for the Scale Mail Woman with `The selected combat model has no playable animation clips`, leaving the captured sword visible. Its source GLB has no embedded clips. Combat loaded the shared FBX library only for Carl by ID, although Studio already used the catalog's `animationLibrary` field.
+
+Carry `animationLibrary` from the resolved catalog model through the appearance recipe/cache key. The existing combat renderer loads `uploaded-fbx` models through `loadUploadedFbxAnimations`, using the same recovered world-bind retargeting as Studio. Keep the old Carl-ID fallback for historical recipes. Do not add a separate renderer, embed replacement clips, or substitute another model.
+
+An explicit Studio combat draft can refresh any matching catalog archetype, including Orc/Orc Leader; ordinary legacy units retain the existing registration gate. Read the paired combat workspace in its original model/library scope, retain captured frame dimensions, footprint, pose names/times, lighting and mount settings, and reject stale/mismatched captures. A newly selected weapon uses its own mount preset rather than the previous sword's saved grip. Existing render revision checks continue preventing an older asynchronous equipment request from winning.
+
+Reproduce with the Scale Mail Woman, sword and round wooden shield: capture the action poses, Test in combat, begin the round, open Inventory and ready Battle Axe. Verify the axe replaces the sword while the model, shield and pose remain. Switch back to the sword and verify a valid cached set is reused. `test-combat-capture-parity.mjs` checks all four current humanoid catalog models through paired workspace resolution and appearance recipe creation, including gear-dependent cache keys; the runtime test checks stale-result rejection and in-flight deduplication.

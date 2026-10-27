@@ -113,7 +113,7 @@ export const VISIBLE_SHIELD_ASSETS=Object.freeze({
   'round-wooden-shield':visibleShield('round-wooden-shield','Round Wooden Shield','round-wooden-shield')
 });
 
-export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = null, bodyReferenceHeightInches, poseProfile = null, renderSettings = {}, presentationAction = null, presentationConditions = [] } = {}) {
+export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = null, animationLibrary = null, bodyReferenceHeightInches, poseProfile = null, renderSettings = {}, presentationAction = null, presentationConditions = [] } = {}) {
   if (!unit) throw new Error('A MOB is required.');
   applyMobHeight(unit);
   const inventory = Array.isArray(unit.inventory) ? unit.inventory : [];
@@ -137,7 +137,7 @@ export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = nu
     format: 'adventure-party-mob-appearance-recipe',
     version: 1,
     mob: { id: unit.id || null, type: unit.type || null, name: unit.name || null, heightInches: unit.heightInches },
-    model: { id: modelId || null, hash: modelHash || null, url: modelUrl || null, bodyReferenceHeightInches: bodyReferenceHeightInches ?? null },
+    model: { animationLibrary, id: modelId || null, hash: modelHash || null, url: modelUrl || null, bodyReferenceHeightInches: bodyReferenceHeightInches ?? null },
     equipment: visual ? { itemName: equipped.name, appearanceId: equipped.appearanceId, ...visual } : null,
     shield: shieldVisual ? { itemName: equippedShield.name, appearanceId: equippedShield.appearanceId, ...shieldVisual } : null,
     animation: { ...animationState, spriteFamilySignature },
