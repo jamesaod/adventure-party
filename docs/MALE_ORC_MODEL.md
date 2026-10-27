@@ -1,6 +1,6 @@
-# Male Orc model — Candidate Rev 161
+# Orc, Male, Uniformed — Candidate Rev 162
 
-`male-orc` / **Male Orc** is available in 3D Studio / Pixel Studio and MOB Creator through the existing `data/studio-models.json` catalog. It shares all 22 uploaded FBX animations and initially selects Sword And Shield Idle. The existing model scale, orientation, primary/off-hand equipment, shield and grip controls remain available.
+`male-orc` / **Orc, Male, Uniformed** is available in 3D Studio / Pixel Studio and MOB Creator through the existing `data/studio-models.json` catalog. It shares all 22 uploaded FBX animations and initially selects Sword And Shield Idle. The existing model scale, orientation, primary/off-hand equipment, shield and grip controls remain available.
 
 This is a new model identity. The archived `male-orc-fighter` and other Orc assets remain unchanged. The new entry is appended to `models` so existing first-match Orc combat fallback selection is preserved. Its ID is appended to `studioModelIds`, alongside Carl Ver 3 and the Scale Mail Woman. MOB Creator reads this same filtered catalog; no new renderer, rig adapter, combat factory or Unit Package is introduced.
 
@@ -39,3 +39,18 @@ All **110 real skinned poses** (five authored sample times for each of 22 animat
 Browser QA uses an isolated URL such as `3d-studio.html?model=male-orc&poseLibrary=humanoid-medium`, preserving the user's normal Studio workspace. Check the textured idle, sword/shield, two-handed stab with spear, and six facing previews. Pose selections and fine grip adjustments remain user-authored. Run repository validation, merge a candidate PR only after CI passes, and compare the published GLB bytes/hash after Pages finishes.
 
 Rev 161 browser QA confirmed 20/20 humanoid roles, textured Standing Idle, Sword And Shield Idle with both props, and Bayonet Stab at 0.98 seconds with the spear. The 155% inspection scale is a local QA setting, not a new default. Six Ready facings captured successfully in the isolated workspace; the browser reported no errors. Male Orc also appears in the MOB Creator model selector.
+
+## Rev 162: model-specific grip defaults
+
+The display name changes from Male Orc to **Orc, Male, Uniformed**. Its stable `male-orc` identity, asset bytes, animations and package references are unchanged.
+
+The existing catalog-driven attachment workflow now accepts `weaponAttachmentProfileIds`, an array of keys in `weaponAttachmentProfiles`. Each profile lists explicit `weaponIds` and hand-local XYZ `position` / XYZ Euler `rotation` in degrees. The old single-profile sword format remains supported for archived models. Only `male-orc` opts into these new profiles:
+
+| Primary equipment | Position XYZ | Rotation XYZ (degrees) |
+| --- | --- | --- |
+| One-handed: Medieval Sword, Battle Axe, Short Sword, Dagger, Wizard Staff Grip, Sling | -0.020, 0.050, 0.005 | 161, -46, 15 |
+| Two-Handed Sword | -0.045, 0.065, 0.060 | -114, -16, -30 |
+
+Select this model, then select the weapon or press **Reset grip** to apply its profile. Profile values are applied after normalizing the weapon's preset revision, so versioned weapon defaults cannot discard the model calibration. Scale, off-hand mounts, shield and secondary-grip calibration retain their existing controls. Other two-handed weapons keep their own defaults.
+
+Saved custom grips and captured poses are not silently rewritten. If a restored workspace shows older offsets, use Reset grip (clear captured poses first if equipment is locked), then recapture affected poses. New captures and Unit Package exports carry the actual adjusted equipment snapshot through the existing path. Shared pose libraries and animation retargeting are unchanged. Visual grip QA for this revision belongs to the user.

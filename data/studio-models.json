@@ -229,12 +229,16 @@
     },
     {
       "id": "male-orc",
-      "label": "Male Orc",
+      "label": "Orc, Male, Uniformed",
       "file": "assets/models/orcs/male-orc/male-orc.glb",
       "upAxis": "Y",
       "mobType": "orc",
       "animationLibrary": "uploaded-fbx",
-      "initialAnimation": "Sword And Shield Idle"
+      "initialAnimation": "Sword And Shield Idle",
+      "weaponAttachmentProfileIds": [
+        "uniformed-orc-one-handed-v1",
+        "uniformed-orc-two-handed-sword-v1"
+      ]
     }
   ],
   "weaponAttachmentProfiles": {
@@ -267,6 +271,45 @@
       ],
       "status": "user-calibrated",
       "description": "Rev 124: Woman Warrior sword grip calibrated from accepted Studio slider settings. Model-specific Medieval Sword position and rotation, without changing Carl or Orc presets."
+    },
+    "uniformed-orc-one-handed-v1": {
+      "weaponIds": [
+        "medieval-sword",
+        "battle-axe",
+        "short-sword",
+        "dagger",
+        "wizard-staff-grip",
+        "sling"
+      ],
+      "position": [
+        -0.02,
+        0.05,
+        0.005
+      ],
+      "rotation": [
+        161,
+        -46,
+        15
+      ],
+      "status": "user-calibrated",
+      "description": "Rev 162: user-supplied primary one-handed grip for Orc, Male, Uniformed. Off-hand mounts remain independent."
+    },
+    "uniformed-orc-two-handed-sword-v1": {
+      "weaponIds": [
+        "medieval-two-handed-sword"
+      ],
+      "position": [
+        -0.045,
+        0.065,
+        0.06
+      ],
+      "rotation": [
+        -114,
+        -16,
+        -30
+      ],
+      "status": "user-calibrated",
+      "description": "Rev 162: user-supplied two-handed sword grip for Orc, Male, Uniformed; other two-handed weapons retain their existing presets."
     }
   },
   "studioModelIds": [

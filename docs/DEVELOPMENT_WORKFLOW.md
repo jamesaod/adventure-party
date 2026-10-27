@@ -120,3 +120,7 @@ See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/
 ## Candidate Rev 161 — Male Orc import
 
 [Male Orc model](MALE_ORC_MODEL.md) records the source hashes, preserved texture/topology, armature-scale normalization and independent animation acceptance. Add new model identities to the shared Studio catalog and selector without replacing archived models or changing their combat fallback order. MOB Creator automatically uses the same offerings.
+
+## Rev 162: per-model grip corrections
+
+For user-calibrated weapon offsets, extend `data/studio-models.json` attachment profiles and opt in the model by stable ID. Use `weaponAttachmentProfileIds` with explicit weapon lists for multiple grip groups. Keep global weapon presets unchanged; selection and Reset grip reuse Studio's existing resolver. Normalize the global preset first before applying model vectors, preserving its preset revision. See [Orc grip reproduction](MALE_ORC_MODEL.md#rev-162-model-specific-grip-defaults). Preserve saved custom adjustments and recapture explicitly after resetting a grip. A display rename must not rename model IDs, paths or package references.

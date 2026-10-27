@@ -460,10 +460,12 @@ function resetPreviewReferenceToReady() {
 // calibrated profile by ID. Changing gear or pressing Reset grip reapplies it.
 function defaultEquipmentSettingsForModel(weaponId) {
   const entry = state.libraryModels.find(model => model.id === state.libraryModelId);
-  const profile = entry?.weaponAttachmentProfile;
-  return normalizeEquipment(profile?.weaponId === weaponId
-    ? { rightHand: weaponId, position: [...profile.position], rotation: [...profile.rotation] }
-    : { rightHand: weaponId });
+  const profile = entry?.weaponAttachmentProfiles?.find(profile => profile.weaponIds.includes(weaponId))
+    || entry?.weaponAttachmentProfile;
+  const defaults = normalizeEquipment({ rightHand: weaponId });
+  return profile?.weaponId === weaponId || profile?.weaponIds?.includes(weaponId)
+    ? normalizeEquipment({ ...defaults, position: [...profile.position], rotation: [...profile.rotation] })
+    : defaults;
 }
 
 async function changeEquipment(value, { resetPose = true } = {}) {
@@ -2201,9 +2203,27 @@ async function loadModelLibrary() {
           rotation: [...profile.rotation]
         };
       }
+      const profileIds = entry.weaponAttachmentProfileIds || [];
+      if (!Array.isArray(profileIds) || new Set(profileIds).size !== profileIds.length) {
+        throw new Error('Invalid model weapon attachment profile IDs.');
+      }
+      const assignedWeapons = new Set();
+      const weaponAttachmentProfiles = profileIds.map(profileId => {
+        const profile = attachmentProfiles[profileId];
+        const validVector = (value, min, max) => Array.isArray(value) && value.length === 3 &&
+          value.every(item => Number.isFinite(item) && item >= min && item <= max);
+        if (typeof profileId !== 'string' || !Array.isArray(profile?.weaponIds) || !profile.weaponIds.length ||
+            new Set(profile.weaponIds).size !== profile.weaponIds.length ||
+            !validVector(profile.position, -1, 1) || !validVector(profile.rotation, -180, 180) ||
+            typeof profile.status !== 'string' || profile.weaponIds.some(id => !studioWeapon(id) || assignedWeapons.has(id))) {
+          throw new Error('Invalid model-specific weapon attachment profile.');
+        }
+        for (const id of profile.weaponIds) assignedWeapons.add(id);
+        return { weaponIds: [...profile.weaponIds], position: [...profile.position], rotation: [...profile.rotation] };
+      });
       ids.add(entry.id);
       return {
-        ...entry, weaponAttachmentProfile,
+        ...entry, weaponAttachmentProfile, weaponAttachmentProfiles,
         animationFamilies: [...(entry.animationFamilies || [])], url: url.href
       };
     }).filter(entry => !catalog.studioModelIds || catalog.studioModelIds.includes(entry.id));

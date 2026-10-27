@@ -26,3 +26,32 @@ console.log('PASS Male Orc: source texture preserved, 11,519 triangles, 65 unit-
 assert.equal(entry.mobType,'orc');
 assert.equal(meta.sourceArchiveSha256,'b2ba66853edcd1376e73daa419fcdd59de8d23c77704969c847143aed6752f25');
 assert.equal(catalog.models.find(model=>model.mobType==='orc').id,'male-orc-fighter','Existing Orc combat fallback ordering is preserved');
+
+// Exercise the actual catalog parser and selector/reset resolver, including
+// preset-revision migration that previously discarded non-sword overrides.
+const {default:vm}=await import('node:vm');
+const {studioWeapon,normalizeEquipment,STUDIO_WEAPONS}=await import('../js/studio-equipment.mjs');
+assert.equal(entry.label,'Orc, Male, Uniformed');
+const studio=fs.readFileSync(new URL('js/3d-studio.mjs',root),'utf8');
+const parser=studio.slice(studio.indexOf('      const profileIds = entry.weaponAttachmentProfileIds'),studio.indexOf('      ids.add(entry.id);'));
+const profiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
+const model={...entry,weaponAttachmentProfiles:profiles};
+const state={libraryModels:[model],libraryModelId:'male-orc'};
+const resolver=studio.slice(studio.indexOf('function defaultEquipmentSettingsForModel('),studio.indexOf('async function changeEquipment('));
+const resolve=vm.runInNewContext(`${resolver};defaultEquipmentSettingsForModel`,{state,normalizeEquipment});
+for(const weapon of STUDIO_WEAPONS){
+ const settings=resolve(weapon.id);
+ if((weapon.handsRequired||1)===1){
+  assert.deepEqual(settings.position,[-0.020,0.050,0.005],weapon.id);
+  assert.deepEqual(settings.rotation,[161,-46,15],weapon.id);
+ }else if(weapon.id==='medieval-two-handed-sword'){
+  assert.deepEqual(settings.position,[-0.045,0.065,0.060]);
+  assert.deepEqual(settings.rotation,[-114,-16,-30]);
+ }else assert.deepEqual(settings,normalizeEquipment({rightHand:weapon.id}),'Other two-handed presets unchanged');
+ assert.equal(settings.sizePercent,weapon.defaultSizePercent||100);
+ assert.deepEqual(settings.secondaryGripOffsetInches,[0,0,0]);
+ assert.deepEqual(normalizeEquipment({...settings,position:[0.1,0.2,0.3]}).position,[0.1,0.2,0.3],'Saved custom grips remain adjustable');
+}
+state.libraryModelId='dungeon-crawler-carl-v3';
+for(const weapon of STUDIO_WEAPONS)assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),'Other models retain global defaults');
+console.log('PASS uniformed Orc catalog parsing, one-handed/2H sword selection/reset, preserved other models and custom grips');

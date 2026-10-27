@@ -355,3 +355,7 @@ See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/
 ## Candidate Rev 161 — Male Orc import
 
 [Male Orc model](MALE_ORC_MODEL.md) records the source hashes, preserved texture/topology, armature-scale normalization and independent animation acceptance. Add new model identities to the shared Studio catalog and selector without replacing archived models or changing their combat fallback order. MOB Creator automatically uses the same offerings.
+
+## Candidate Rev 162 — Orc grip presets
+
+The imported Orc is now labeled **Orc, Male, Uniformed**. Its primary one-handed and two-handed sword defaults use the user-supplied calibration in [MALE_ORC_MODEL.md](MALE_ORC_MODEL.md#rev-162-model-specific-grip-defaults). Choose a weapon or Reset grip to apply the new values. Saved custom adjustments remain authoritative; recapture poses after changing equipment. Other models and shared animation/pose libraries are unchanged.
