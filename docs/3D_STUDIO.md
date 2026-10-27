@@ -170,7 +170,7 @@ At the default single-hex 160 × 200 frame size, the sheet is **960 × 600**. Ot
 
 ### Quick combat check and permanent import
 
-**Test in combat** opens Combat Setup in the current tab with the captured set selected. Choosing **Dungeon Crawler Carl** uses exactly one Carl: the existing player character, with the selected sprites and footprint, against six Kobolds. His name, Fighter statistics, equipment, and player control are retained. Monster tests use six units to display all facings; Ranger and Mage tests retain their six friendly inspection copies with Kobold opponents. Initial placement accommodates all occupied hexes. Use **Ready**, **Attack**, **Prone**, or **Live** during paused inspection to check the captured poses. Starting battle clears that visual override; movement and attacks select each unit's actual facing and pose. Use **Return to 3d studio** to export or revise the exact tested captures.
+**Test in combat** opens Combat Setup with one player-controlled character using the selected captured model, footprint and existing MOB/player archetype. Use **+ Add MOB** to choose opponents or allies, their counts and factions, then **Begin Battle**. No automatic Carl, six model copies or fixed opponents are added. An empty roster permits solo inspection. Before Space starts combat, the pose buttons inspect the selected character; live movement and actions select its facing and pose. **Add / change opponents** reopens Setup and Begin Battle restarts with that roster. **Return to 3d studio** restores the exact tested captures, including model/pose-library workspace scope. See [Studio combat test](STUDIO_COMBAT_TEST.md).
 
 For a permanent asset addition, export the ZIP and run the small importer from the repository:
 

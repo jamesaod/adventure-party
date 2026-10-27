@@ -502,7 +502,11 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       // Finish saving the exact test set and return workspace before leaving
       // this page. A failed save leaves the studio and its captures open.
       await saveStudioDraft({ manifest: exported.manifest, files, workspace: exported.workspace });
-      window.location.assign(new URL('./index.html?studioSprite=draft', window.location.href).href);
+      const target=new URL('./index.html',window.location.href);
+      target.search=window.location.search;
+      target.searchParams.delete('studioRestore');target.searchParams.delete('restore');
+      target.searchParams.set('studioSprite','draft');
+      window.location.assign(target.href);
     });
   });
 

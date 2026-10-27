@@ -15,8 +15,20 @@ assert.ok(game.includes('function deployConfiguredCombatMobs('));
 assert.ok(game.includes('makeStudioTestMob(group.type,index'));
 assert.ok(game.includes('mob.controller=friendly?"player":"mob"'));
 assert.ok(game.includes('occupiedHexesAt(mob,pos.x,pos.y'),'MOB footprint collision handling');
-assert.ok(game.includes('studioUnits=selectedMobEncounter==="studio-kobold"'),
+assert.ok(game.includes('selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition)'),
  'Studio sprite-test handoff remains supported');
-assert.ok(game.includes('const allies=[...studioAllies,...configured.allies]'));
+assert.ok(game.includes('const allies=configured.allies'));
+assert.ok(game.includes('id="combatPlayerName"')||page.includes('id="combatPlayerName"'));
 assert.ok(css.includes('.combat-mob-editor-row'));
 console.log('PASS dynamic empty-default MOB roster and deployment source checks');
+
+const {default:vm}=await import('node:vm');
+const start=game.indexOf('document.getElementById("addCombatMobButton")?.addEventListener');
+const handler=game.slice(start,game.indexOf('\n});',start)+4);
+let add,updates=0;
+const context={selectedMobEncounter:'studio-kobold',combatMobRoster:[],combatMobRowSequence:0,
+ document:{getElementById:()=>({addEventListener:(_event,callback)=>{add=callback;}})},
+ cancelPendingCombatStart(){},updateCombatMobSelection(){updates++;}};
+vm.runInNewContext(handler,context);add();add();
+assert.equal(context.selectedMobEncounter,'studio-kobold','Adding opponents keeps the selected Studio player');
+assert.equal(context.combatMobRoster.length,2);assert.equal(updates,2);

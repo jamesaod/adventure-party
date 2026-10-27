@@ -188,6 +188,10 @@ function readCombatMobRoster(){
   return combatMobRoster.map(({type,count,faction})=>({type,count,faction}));
 }
 function updateCombatMobSelection(){
+  const playerLabel=document.getElementById("combatPlayerName");
+  if(playerLabel)playerLabel.textContent=selectedMobEncounter==="studio-kobold"
+    ? registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label || "Studio Kobold"
+    : "Dungeon Crawler Carl";
   const container=document.getElementById("combatMobRows");
   if(!container)return;
   container.replaceChildren();
@@ -221,16 +225,26 @@ function updateCombatMobSelection(){
   const hint=document.getElementById("combatMobRosterHint");
   if(hint)hint.textContent=combatMobRoster.length
     ? combatMobRoster.reduce((total,item)=>total+item.count,0)+" MOBs configured"
-    : "No MOBs selected. Add a friendly or hostile group to begin.";
+    : "No opponents selected. Use + Add MOB to choose opponents or allies.";
 }
 document.getElementById("addCombatMobButton")?.addEventListener("click",()=>{
   combatMobRoster.push({rowId:++combatMobRowSequence,type:"kobold",count:1,faction:"hostile"});
-  selectedMobEncounter="custom";cancelPendingCombatStart();updateCombatMobSelection();
+  if(selectedMobEncounter!=="studio-kobold")selectedMobEncounter="custom";
+  cancelPendingCombatStart();updateCombatMobSelection();
 });
 let selectedStudioSpriteSetId="studio-kobold";
 
 function isStudioTestCombat(combat=game){
   return combat?.studioSpriteTest===true;
+}
+
+function studioReturnUrl(){
+  const source=new URLSearchParams(window.location.search || "");
+  const query=new URLSearchParams("studioRestore=1");
+  for(const key of ["model","mob","poseLibrary","preview"]){
+    if(source.has(key))query.set(key,source.get(key));
+  }
+  return "./3d-studio.html?"+query.toString();
 }
 
 function returnToStudioFromCombat(){
@@ -244,7 +258,7 @@ function returnToStudioFromCombat(){
   }
   if(!game.returningToStudio){
     game.returningToStudio=true;
-    window.location.assign("./3d-studio.html?studioRestore=1");
+    window.location.assign(studioReturnUrl());
   }
   return true;
 }
@@ -3787,6 +3801,8 @@ window.adventurePartySpriteSets=Object.freeze({
   setDefaults:configureDefaultPlayerSpriteSets,
   select:selectStudioSpriteSet,
   inspect:inspectStudioSpritePose,
+  openSetup:showCombatConditions,
+  returnUrl:studioReturnUrl,
   loadingState:()=>studioSpriteLoading.state,
   finishLoading:()=>studioSpriteLoading.finish(),
   canAutoSelectDraft:canAutoSelectStudioDraft,
@@ -16313,74 +16329,27 @@ function makeStudioTestMob(mobType,index,position){
   }
 }
 
-function makeStudioKoboldEncounter(condition=selectedCombatCondition,player=null){
+function makeStudioTestPlayer(condition=selectedCombatCondition){
   const set=registeredStudioSpriteSets.get(selectedStudioSpriteSetId);
   const mobType=set?.mobType || "kobold";
-  if(mobType==="fighter"){
-    // Carl already exists as game.player. Inspect that same character instead
-    // of creating an additional party of copies for his six sprite facings.
-    const fighter=player || makeFighter();
-    fighter.spriteSetId=selectedStudioSpriteSetId;
-    fighter.footprintId=set?.layoutId || "single";
-    fighter.studioSpriteTest=true;
-    lastMobDeployment={
-      direction:"Dungeon Crawler Carl sprite test",
-      anchorDistance:0,anchor:{x:fighter.x,y:fighter.y},clusterRadius:0,count:1,condition
-    };
-    return [fighter];
-  }
-  const radius=(set?.footprintCells || 1)>1 ? 5 : 3;
-  const occupied=new Set(occupiedHexes(player || {x:0,y:0}).map(cell=>key(cell.x,cell.y)));
-  const positions=HEX_DIRS.map(dir=>({x:dir.x*radius,y:dir.y*radius}));
-  /* Keep the original single-hex NW view clear of the northern tree cluster. */
-  if(radius===3) positions[2]={x:-2,y:0};
-  const candidates=axialDisk({x:0,y:0},radius+3)
-    .filter(pos=>inside(pos.x,pos.y) && !isWall(pos.x,pos.y));
-
-  const units=positions.map((preferred,index)=>{
-    const unit=makeStudioTestMob(mobType,index,preferred);
-    unit.id=`studio-${mobType}-${index+1}`;
-    unit.name=`${set?.label || "Studio Kobold"} ${index+1}`;
-    unit.spriteSetId=selectedStudioSpriteSetId;
-    unit.studioSpriteTest=true;
-    unit.footprintId=set?.layoutId || "single";
-    unit.facingHex=index;
-    unit.facing=[0,1,5].includes(index) ? "right" : "left";
-    const position=[preferred,...candidates.slice().sort((a,b)=>
-      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
-    )].find(pos=>occupiedHexesAt(unit,pos.x,pos.y,index).every(cell=>
-      inside(cell.x,cell.y) && !isWall(cell.x,cell.y) && !occupied.has(key(cell.x,cell.y))
-    ));
-    if(!position) throw new Error("Unable to place all six sprite-test footprints on this battlefield.");
-    unit.x=position.x;
-    unit.y=position.y;
-    occupiedHexes(unit).forEach(cell=>occupied.add(key(cell.x,cell.y)));
-    return unit;
-  });
-
-  lastMobDeployment={
-    direction:"Six-facing sprite test around Carl",
-    anchorDistance:radius,
-    anchor:{x:0,y:0},
-    clusterRadius:radius,
-    count:units.length,
-    condition
-  };
-  return units;
-}
-
-function makeStudioPlayerOpponents(party){
-  const occupied=new Set(party.flatMap(unit=>occupiedHexes(unit).map(cell=>key(cell.x,cell.y))));
-  const candidates=axialDisk({x:0,y:0},11).filter(pos=>inside(pos.x,pos.y) && !isWall(pos.x,pos.y));
-  return HEX_DIRS.map((dir,index)=>{
-    const preferred={x:dir.x*9,y:dir.y*9};
-    const position=candidates.slice().sort((a,b)=>
-      hexDistance(a,preferred)-hexDistance(b,preferred) || a.x-b.x || a.y-b.y
-    ).find(pos=>!occupied.has(key(pos.x,pos.y)));
-    if(!position) throw new Error("Unable to place the player sprite test's Kobold opponents.");
-    occupied.add(key(position.x,position.y));
-    return makeKobold(index,position);
-  });
+  const player=mobType==="fighter" ? makeFighter() : makeStudioTestMob(mobType,0,{x:0,y:0});
+  // Allegiance and input control are independent of the model/archetype.
+  player.id="player";
+  player.faction="player";
+  if(mobType!=="fighter"){player.controller="player";player.name=set?.label || player.name;}
+  player.spriteSetId=selectedStudioSpriteSetId;
+  player.footprintId=set?.layoutId || "single";
+  player.studioSpriteTest=true;
+  delete player.studioPoseInspection;
+  player.facingHex=0;player.facing="right";
+  const calibratedHeight=set?.unit?.calibration?.measuredHeightInches;
+  if(Number.isFinite(calibratedHeight)&&calibratedHeight>0)player.heightInches=calibratedHeight;
+  const position=axialDisk({x:0,y:0},17).sort((a,b)=>hexDistance(a,{x:0,y:0})-hexDistance(b,{x:0,y:0}) || a.y-b.y || a.x-b.x)
+    .find(pos=>occupiedHexesAt(player,pos.x,pos.y,0).every(cell=>inside(cell.x,cell.y)&&!isWall(cell.x,cell.y)));
+  if(!position)throw new Error("Unable to place the Studio player's footprint on this battlefield.");
+  player.x=position.x;player.y=position.y;
+  lastMobDeployment={direction:"Studio player test",anchorDistance:0,anchor:position,clusterRadius:0,count:1,condition};
+  return player;
 }
 
 
@@ -16685,6 +16654,8 @@ function markEnemyNeutralized(enemy){
 
 function checkCombatVictory(){
   if(!game || game.over) return false;
+  // A Studio test with no chosen opponents is a solo inspection sandbox.
+  if(isStudioTestCombat() && game.enemies.length===0) return false;
 
   if(activeEnemies().length===0){
     game.over=true;
@@ -16744,9 +16715,6 @@ function newGame(condition=selectedCombatCondition){
     aiTimer=null;
   }
 
-  const player=makeFighter();
-  delete player.studioSpriteTest;
-  delete player.studioPoseInspection;
 
   /*
     R186: configure terrain before encounter placement so a large footprint can
@@ -16754,25 +16722,13 @@ function newGame(condition=selectedCombatCondition){
   */
   configureArchitecturalWalls(condition);
 
-  /*
-    R179 combat setup cleanup: the default battle test now starts with Carl
-    as the sole player character. Ranger and Mage definitions remain in the
-    engine. Carl's sprite test uses this canonical player; Ranger and Mage
-    sprite tests retain their six friendly inspection copies.
-  */
-  // The deprecated six-facing Kobold preset is only retained internally for
-  // the 3D Studio draft handoff; the normal Combat Conditions roster starts empty.
-  const studioUnits=selectedMobEncounter==="studio-kobold"
-    ? makeStudioKoboldEncounter(condition,player) : [];
-  const studioPlayers=studioUnits.filter(unit=>unit.faction==="player");
-  const studioAllies=studioPlayers.filter(unit=>unit!==player);
-  const studioEnemies=selectedMobEncounter==="studio-kobold"
-    ? (studioPlayers.length?makeStudioPlayerOpponents([player,...studioAllies]):studioUnits)
-    : [];
-  const configured=selectedMobEncounter==="studio-kobold"
-    ? {allies:[],enemies:studioEnemies}
-    : deployConfiguredCombatMobs(condition,player);
-  const allies=[...studioAllies,...configured.allies];
+  const player=selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter();
+  if(selectedMobEncounter!=="studio-kobold"){
+    delete player.studioSpriteTest;
+    delete player.studioPoseInspection;
+  }
+  const configured=deployConfiguredCombatMobs(condition,player);
+  const allies=configured.allies;
   const enemies=configured.enemies;
   const groupKobolds=enemies.filter(isKoboldUnit);
   lastOrcDeployment=null;
@@ -16900,8 +16856,7 @@ function newGame(condition=selectedCombatCondition){
     "system"
   );
   log(
-    `Level ${player.level} Fighter ready: ${player.maxHp} HP, AC ${player.ac}, THAC0 ${player.thaco}, `+
-    `${player.weapon}, ${player.attacksLabel}.`,
+    `${player.name} ready: ${player.maxHp} HP, AC ${player.ac}, THAC0 ${player.thaco}, ${player.weapon}.`,
     "system"
   );
 
@@ -16934,20 +16889,8 @@ function newGame(condition=selectedCombatCondition){
       "system"
     );
   }else if(selectedMobEncounter==="studio-kobold"){
-    log(
-      player.studioSpriteTest
-        ? "One Dungeon Crawler Carl uses the selected sprite collection against six Kobolds. Movement and attacks turn his sprite with the tactical facing."
-        : "Six sprite-test units deployed facing E, NE, NW, W, SW, and SE. Movement and attacks turn the sprite with the tactical facing.",
-      "system"
-    );
-    log(
-      selectedStudioSpriteSetId==="studio-kobold"
-        ? "Sprite test uses ordinary Kobold combat stats and dagger attacks. This ready-only set retains the matching ready view during attacks."
-        : player.studioSpriteTest
-        ? `Carl retains his Fighter rules and ${unitFootprintCellCount(player)}-hex footprint. Imported ready, attack, and prone artwork follows his actual combat pose.`
-        : `Sprite test uses the implemented ${registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.mobType || "kobold"} rules and ${unitFootprintCellCount(enemies[0])}-hex footprint. Imported ready, attack, and prone artwork follows the actual combat pose.`,
-      "system"
-    );
+    log(`${player.name} is your player-controlled Studio test character. ${enemies.length} opponents and ${allies.length} allies were added through Combat Setup.`,"system");
+    log(`The captured model and ${unitFootprintCellCount(player)}-hex footprint follow the test character's movement, facing and action poses.`,"system");
   }else{
     log(
       `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
@@ -16967,7 +16910,9 @@ function newGame(condition=selectedCombatCondition){
 
   if(lastMobDeployment){
     log(
-      selectedMobEncounter==="large-test"
+      ["studio-kobold","custom"].includes(selectedMobEncounter)
+        ? `Configured roster deployed: ${enemies.length} opponents and ${allies.length} allies.`
+        : selectedMobEncounter==="large-test"
         ? `Red Dragon pivot: ${lastMobDeployment.anchor.x},${lastMobDeployment.anchor.y}; 7-hex radius-1 footprint.`
         : selectedMobEncounter==="orcs"
           ? (
@@ -17046,7 +16991,9 @@ function startRound(){
   game.player.waitedThisRound=false;
   game.player.sweepUsedThisRound=false;
   sweepInProgress=false;
-  game.player.attacksThisRound=fighterAttacksThisRound(game.player,game.round);
+  game.player.attacksThisRound=game.player.type==="fighter" ? fighterAttacksThisRound(game.player,game.round) : 1;
+  game.player.shotsThisRound=game.player.missileRateOfFire || 1;
+  game.player.shotsRemaining=game.player.shotsThisRound;
   game.player.attacksRemaining=game.player.attacksThisRound;
 
   for(const ally of game.allies || []){
@@ -17073,12 +17020,12 @@ function startRound(){
 
   ui.roundLabel.textContent=`ROUND ${game.round}`;
   ui.initiativeLabel.textContent=
-    `INIT: FTR ${fighterRoll} / ${activeEnemies().length} MOBS`;
+    `INIT: PLAYER ${fighterRoll} / ${activeEnemies().length} MOBS`;
 
   log(
     `Round ${game.round}: ${game.order.length} initiative slots. `+
     `${firstUnit?.name || "Unknown"} acts first. `+
-    `Fighter attacks this round: ${game.player.attacksThisRound}.`,
+    `${game.player.name} attacks this round: ${game.player.attacksThisRound}.`,
     "system"
   );
 
@@ -19821,6 +19768,7 @@ function canUseSweep(){
     game.over ||
     game.active!=="player" ||
     !game.player.alive ||
+    game.player.type!=="fighter" ||
     !FIGHTER_CLASS.canSweep ||
     sweepInProgress
   ){
@@ -25794,12 +25742,37 @@ function renderMagicHtml(fighter){
   );
 }
 
+function renderStudioTestCharacterSheet(subject){
+  const sections={
+    sheetIdentity:[["Name",subject.name],["Type",subject.type],["Controller","Player"],["Class",subject.className || "MOB"]],
+    sheetCombat:[["HP",`${subject.hp}/${subject.maxHp}`],["AC",subject.ac],["THAC0",subject.thaco],["Move",subject.move],["Weapon",subject.weapon],["Ranged",subject.rangedWeapon || "None"]],
+    sheetAbilities:Object.entries(subject.stats || {}).map(([key,value])=>[key.toUpperCase(),value]),
+    sheetSaves:Object.entries(subject.saves || {}),
+    sheetTraining:[["Rules","Uses the selected archetype's existing combat rules."]],
+    sheetMagic:[["Spells",(subject.knownSpellIds || []).join(", ") || "None"]],
+    sheetStatus:[["Hex",`${subject.x}, ${subject.y}`],["Facing",subject.facing],["Alive",subject.alive ? "Yes" : "No"]]
+  };
+  for(const [id,rows] of Object.entries(sections)){
+    const node=document.getElementById(id);
+    node.replaceChildren();
+    for(const [label,value] of rows){
+      const key=document.createElement("span"),item=document.createElement("span");
+      key.textContent=label;item.textContent=String(value ?? "—");node.append(key,item);
+    }
+  }
+}
+
 function renderCharacterSheet(){
   const subject=activePlayerControlledUnit() || game?.player || persistentFighter;
   if(!subject) return;
 
   const subtitle=document.getElementById("sheetSubtitle");
   if(subtitle) subtitle.textContent=`Adventure Party — AD&D 2nd Edition ${subject.className || "Character"}`;
+
+  if(subject.studioSpriteTest && subject.type!=="fighter" && !isMageCharacter(subject)){
+    renderStudioTestCharacterSheet(subject);
+    return;
+  }
 
   if(isMageCharacter(subject)){
     const mage=subject;
