@@ -124,3 +124,7 @@ See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/
 ## Rev 162: per-model grip corrections
 
 For user-calibrated weapon offsets, extend `data/studio-models.json` attachment profiles and opt in the model by stable ID. Use `weaponAttachmentProfileIds` with explicit weapon lists for multiple grip groups. Keep global weapon presets unchanged; selection and Reset grip reuse Studio's existing resolver. Normalize the global preset first before applying model vectors, preserving its preset revision. See [Orc grip reproduction](MALE_ORC_MODEL.md#rev-162-model-specific-grip-defaults). Preserve saved custom adjustments and recapture explicitly after resetting a grip. A display rename must not rename model IDs, paths or package references.
+
+## Candidate Rev 163 — reusing a calibrated model family
+
+[Orc Leader model](ORC_LEADER_MODEL.md) follows the established Male Orc importer, including unit-scale bones and original encoded texture preservation. Append the new catalog identity without changing the historical fallback order. Reference the same attachment profile IDs to reuse approved calibrations; add new family corrections (such as the spear) to every intended model's list. Generate an independent animation reference for each new rig and run the existing 22-clip acceptance test. Model-specific saved custom grips still take precedence until Reset grip is used.

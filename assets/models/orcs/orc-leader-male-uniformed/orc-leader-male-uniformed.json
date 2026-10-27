@@ -1,0 +1,23 @@
+{
+  "id": "orc-leader-male-uniformed",
+  "sourceArchive": "orc leader+3d+model.zip",
+  "sourceArchiveBytes": 11515384,
+  "sourceArchiveSha256": "bbe4360c4070fcaeb0462d8db20694c8df047f06394d951aed99677d44c8203c",
+  "sourceFile": "tripo_convert_0f898e57-ea78-4732-b917-0b13598f8f8a.fbx",
+  "sourceSha256": "6be98c41dcba5d9a9b7200a0433bbb79eb68a84a346777074c6adc6eb4033057",
+  "sourceTextureSha256": "572bcee73f8860208f8232feb531ece12086d22195de34795cb697a031b8ae27",
+  "triangles": 11451,
+  "sourceVertices": 5832,
+  "bones": 65,
+  "textureSize": [
+    2048,
+    2048
+  ],
+  "bytes": 6083572,
+  "sha256": "8d51b1f56bfd57c796fc5bcda54430e9da1eae837a2280e116e3ab66473d4fd4",
+  "importer": "Blender 5.1.1",
+  "animationLibrary": "uploaded-fbx",
+  "retargetMode": "world-bind-delta",
+  "hipTranslation": "scaled-world-y",
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. Original PNG embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring."
+}

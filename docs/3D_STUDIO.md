@@ -359,3 +359,7 @@ See [MOB Creator](MOB_CREATOR.md) for six-score MOB definitions, separate model/
 ## Candidate Rev 162 — Orc grip presets
 
 The imported Orc is now labeled **Orc, Male, Uniformed**. Its primary one-handed and two-handed sword defaults use the user-supplied calibration in [MALE_ORC_MODEL.md](MALE_ORC_MODEL.md#rev-162-model-specific-grip-defaults). Choose a weapon or Reset grip to apply the new values. Saved custom adjustments remain authoritative; recapture poses after changing equipment. Other models and shared animation/pose libraries are unchanged.
+
+## Candidate Rev 163 — uniformed Orc Leader and spear calibration
+
+**Orc Leader, Male, Uniformed** joins the model selector and MOB Creator with the same uploaded-animation library and one-handed / two-handed sword presets as **Orc, Male, Uniformed**. Both now use the approved Spear position [-0.010, 0.030, -0.060], XYZ rotation [100, 77, -43] degrees and 100% weapon size. Selection or Reset grip applies these defaults; existing custom saved adjustments and captures remain intact. See [Orc Leader model](ORC_LEADER_MODEL.md) for source hashes, import steps and animation checks.

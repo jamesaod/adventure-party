@@ -237,7 +237,22 @@
       "initialAnimation": "Sword And Shield Idle",
       "weaponAttachmentProfileIds": [
         "uniformed-orc-one-handed-v1",
-        "uniformed-orc-two-handed-sword-v1"
+        "uniformed-orc-two-handed-sword-v1",
+        "uniformed-orc-two-handed-spear-v1"
+      ]
+    },
+    {
+      "id": "orc-leader-male-uniformed",
+      "label": "Orc Leader, Male, Uniformed",
+      "file": "assets/models/orcs/orc-leader-male-uniformed/orc-leader-male-uniformed.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Sword And Shield Idle",
+      "weaponAttachmentProfileIds": [
+        "uniformed-orc-one-handed-v1",
+        "uniformed-orc-two-handed-sword-v1",
+        "uniformed-orc-two-handed-spear-v1"
       ]
     }
   ],
@@ -310,11 +325,29 @@
       ],
       "status": "user-calibrated",
       "description": "Rev 162: user-supplied two-handed sword grip for Orc, Male, Uniformed; other two-handed weapons retain their existing presets."
+    },
+    "uniformed-orc-two-handed-spear-v1": {
+      "weaponIds": [
+        "spear"
+      ],
+      "position": [
+        -0.01,
+        0.03,
+        -0.06
+      ],
+      "rotation": [
+        100,
+        77,
+        -43
+      ],
+      "status": "user-calibrated",
+      "description": "Rev 163: user-supplied 100% two-handed spear grip for both uniformed male Orc models."
     }
   },
   "studioModelIds": [
     "dungeon-crawler-carl-v3",
     "blond-scale-mail-woman",
-    "male-orc"
+    "male-orc",
+    "orc-leader-male-uniformed"
   ]
 }

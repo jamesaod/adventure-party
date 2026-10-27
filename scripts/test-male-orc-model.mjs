@@ -18,7 +18,7 @@ const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),2048);assert.equal(png.readUInt32BE(20),2048);
 const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
-assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc']);
+assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'male-orc.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');
 console.log('PASS Male Orc: source texture preserved, 11,519 triangles, 65 unit-scale joints, shared animation catalog');
@@ -47,11 +47,24 @@ for(const weapon of STUDIO_WEAPONS){
  }else if(weapon.id==='medieval-two-handed-sword'){
   assert.deepEqual(settings.position,[-0.045,0.065,0.060]);
   assert.deepEqual(settings.rotation,[-114,-16,-30]);
+ }else if(weapon.id==='spear'){
+  assert.deepEqual(settings.position,[-0.010,0.030,-0.060]);
+  assert.deepEqual(settings.rotation,[100,77,-43]);
+  assert.equal(settings.sizePercent,100);
  }else assert.deepEqual(settings,normalizeEquipment({rightHand:weapon.id}),'Other two-handed presets unchanged');
  assert.equal(settings.sizePercent,weapon.defaultSizePercent||100);
  assert.deepEqual(settings.secondaryGripOffsetInches,[0,0,0]);
  assert.deepEqual(normalizeEquipment({...settings,position:[0.1,0.2,0.3]}).position,[0.1,0.2,0.3],'Saved custom grips remain adjustable');
 }
+const leader=catalog.models.find(m=>m.id==='orc-leader-male-uniformed');
+assert.deepEqual(leader.weaponAttachmentProfileIds,entry.weaponAttachmentProfileIds,'Both uniformed Orcs opt into all approved grip groups');
+state.libraryModels.push({...leader,weaponAttachmentProfiles:profiles});
+state.libraryModelId=leader.id;
+for(const weapon of STUDIO_WEAPONS){
+ const leaderSettings=resolve(weapon.id);state.libraryModelId=entry.id;
+ assert.deepEqual(leaderSettings,resolve(weapon.id),'Leader inherits identical grip defaults');
+ state.libraryModelId=leader.id;
+}
 state.libraryModelId='dungeon-crawler-carl-v3';
 for(const weapon of STUDIO_WEAPONS)assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),'Other models retain global defaults');
-console.log('PASS uniformed Orc catalog parsing, one-handed/2H sword selection/reset, preserved other models and custom grips');
+console.log('PASS uniformed Orc catalog parsing, shared one-handed/2H sword/spear selection/reset, preserved other models and custom grips');
