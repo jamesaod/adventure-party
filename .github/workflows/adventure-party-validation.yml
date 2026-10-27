@@ -30,6 +30,7 @@ jobs:
         run: |
           node --check js/adventure-party.js
           node scripts/test-battlefield-font.mjs
+          node scripts/test-combat-info-panel.mjs
 
       - name: Validate 3D studio projection and VGA rendering
         run: |

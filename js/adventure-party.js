@@ -25381,6 +25381,22 @@ function unitHpDisplay(unit){
   return `${current}/${maximum}`;
 }
 
+// Read the current combat loadout without changing equipment or combat rules.
+function unitWieldedEquipmentLabel(unit){
+  const inventory=Array.isArray(unit?.inventory) ? unit.inventory : [];
+  const ranged=unitHasRangedWeaponInHand(unit);
+  const primary=inventory.find(item=>item?.equipped &&
+    ["weapon","backup-weapon"].includes(item.slot) &&
+    !!(item.catalogMissileWeaponId || item.missileWeapon || item.role==="Primary ranged weapon")===ranged);
+  const names=[primary?.name || (ranged ? unit?.rangedWeapon : unit?.weapon || unit?.weaponBaseName) || "Unarmed"];
+  for(const item of inventory){
+    if(item?.equipped && ["off-hand","shield"].includes(item.slot) && item.name)names.push(item.name);
+  }
+  // Catalog MOBs may carry a shield without a player-style inventory record.
+  if(!inventory.some(item=>item?.slot==="shield") && unit?.shieldName && unit.shieldName!=="None")names.push(unit.shieldName);
+  return names.join(" + ");
+}
+
 function updateUnitInfoPanel(){
   if(!game) return;
 
@@ -25403,119 +25419,27 @@ function updateUnitInfoPanel(){
     return;
   }
 
-  ui.unitInfoMode.textContent=aimMode
-    ? (
-        pendingAimAction
-          ? `${getSpellEntry(pendingAimAction.spellId)?.name || "TARGET ACTION"}`
-          : "INSPECT / TARGET"
-      )
-    : "";
-
-  ui.unitInfoRows.innerHTML="";
-  ui.unitInfoEffects.innerHTML="";
-  ui.unitInfoEffects.hidden=true;
-
-  /* Compact combat panel intentionally omits ability scores. */
+  // Keep the requested name / hitpoints / AC / wielded order even in AIM mode.
+  ui.unitInfoMode.textContent="";
+  ui.unitInfoMode.hidden=true;
   ui.unitInfoAbilities.innerHTML="";
   ui.unitInfoAbilities.hidden=true;
-
   ui.unitInfoName.textContent=inspected.name;
+  ui.unitInfoName.classList.toggle("hostile",!isFriendlyCombatUnit(inspected));
 
-  const facingText=tacticalFacingLabel(inspected);
-  const aimingUnit=activePlayerControlledUnit();
-  const aimedAttackSector=
-    aimMode && aimingUnit?.alive && inspected.id!==aimingUnit.id
-      ? attackPositionData(aimingUnit,inspected).label
-      : null;
-
-  if(inspected.id==="player"){
-    const moveText=inspected.fullMove
-      ? `${inspected.move} FULL`
-      : `${inspected.halfMove} + ATTACK`;
-
-    ui.unitInfoRows.innerHTML=
-      `<span>Class</span><span>Fighter ${inspected.level}</span>`+
-      `<span>Height</span><span>${formatMobHeight(inspected.heightInches)}</span>`+
-      `<span>Facing</span><span>${facingText}</span>`+
-      `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
-      `<span>AC</span><span>${inspected.ac}</span>`+
-      `<span>THAC0</span><span>${inspected.thaco}</span>`+
-      `<span>Attacks</span><span>${inspected.attacksRemaining}/${inspected.attacksThisRound} (${inspected.attacksLabel})</span>`+
-      `<span>Move</span><span>${moveText}</span>`+
-      `<span>Weapon</span><span>${inspected.weapon}</span>`+
-      `<span>Proficient</span><span>${inspected.proficientWeapons.join(", ")}</span>`;
-  }else if(inspected.type==="mage"){
-    const slotText=(inspected.spellSlots || []).
-      map((count,index)=>count ? `${index+1}:${count}` : null).
-      filter(Boolean).
-      join(" ");
-    ui.unitInfoRows.innerHTML=
-      `<span>Race / Sex</span><span>${inspected.race} / ${inspected.sex}</span>`+
-      `<span>Class</span><span>Mage ${inspected.level}</span>`+
-      `<span>Facing</span><span>${facingText}</span>`+
-      `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
-      `<span>Controller</span><span>${isPlayerControlledUnit(inspected) ? "Player Controlled" : "Player-Controlled Mage"}</span>`+
-      `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
-      `<span>AC</span><span>${inspected.ac}</span>`+
-      `<span>THAC0</span><span>${inspected.thaco}</span>`+
-      `<span>Move</span><span>${inspected.move}</span>`+
-      `<span>INT</span><span>${inspected.stats?.int ?? "—"}</span>`+
-      `<span>Max Spell Level</span><span>${inspected.maxSpellLevel}</span>`+
-      `<span>Known / Memorized</span><span>${inspected.knownSpellIds?.length || 0} / ${inspected.memorizedSpellIds?.length || 0}</span>`+
-      `<span>Spell Slots</span><span>${slotText || "—"}</span>`+
-      `<span>Armor</span><span>None</span>`+
-      `<span>Weapon</span><span>${inspected.weapon}</span>`;
-  }else if(inspected.controller==="npc"){
-    ui.unitInfoRows.innerHTML=
-      `<span>Race / Sex</span><span>${inspected.race} / ${inspected.sex}</span>`+
-      `<span>Class</span><span>${inspected.className} ${inspected.level}</span>`+
-      `<span>Facing</span><span>${facingText}</span>`+
-      `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
-      `<span>Controller</span><span>Friendly NPC</span>`+
-      `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
-      `<span>AC</span><span>${inspected.ac}</span>`+
-      `<span>THAC0</span><span>${inspected.thaco}</span>`+
-      `<span>Move</span><span>${inspected.move}</span>`+
-      `<span>Armor</span><span>Chain Mail</span>`+
-      `<span>Ranged</span><span>Longbow</span>`+
-      `<span>Backup</span><span>Short Sword</span>`+
-      `<span>Rate of Fire</span><span>${inspected.missileRateOfFire}/round</span>`;
-  }else{
-    ui.unitInfoRows.innerHTML=
-      `<span>Type</span><span>${inspected.name}</span>`+
-      `<span>Facing</span><span>${facingText}</span>`+
-      `${aimedAttackSector ? `<span>Your Attack Sector</span><span>${aimedAttackSector}</span>` : ""}`+
-      `<span>Controller</span><span>${getUnitEffect(inspected,"charm-person") ? "Charmed AI" : "MOB"}</span>`+
-      `<span>Footprint</span><span>${unitFootprintCellCount(inspected)} hex${unitFootprintCellCount(inspected)===1 ? "" : "es"}</span>`+
-      `<span>HD</span><span>${inspected.hitDiceLabel || "—"}</span>`+
-      `<span>HP</span><span>${unitHpDisplay(inspected)}</span>`+
-      `<span>AC</span><span>${inspected.ac}</span>`+
-      `<span>THAC0</span><span>${inspected.thaco}</span>`+
-      `<span>Move</span><span>${inspected.move}</span>`+
-      `<span>Melee</span><span>${inspected.weapon ? `${inspected.weapon} ${inspected.weaponDamageSM || "—"} vs S/M` : "None"}</span>`+
-      `<span>Ranged</span><span>${inspected.rangedWeapon || "None"}</span>`+
-      `${inspected.missileAmmoCatalogId ? `<span>Ammo</span><span>${inspected.missileAmmoName || inspected.missileAmmoCatalogId}: ${inspected.missileAmmoQuantity ?? "—"}</span>` : ""}`+
-      (
-        isKoboldUnit(inspected)
-          ? `<span>Group Morale</span><span>${game.enemyGroupMorale?.moraleLabel || inspected.moraleLabel || "Average (8-10)"} — target ${game.enemyGroupMorale?.baseMorale ?? inspected.morale}${game.enemyGroupMorale?.broken ? " — BROKEN" : ""}</span>`
-          : `<span>Morale</span><span>${inspected.moraleLabel || inspected.morale || "—"}</span>`
-      );
-
-    if(inspected.type==="juvenile-red-dragon"){
-      const breathState=dragonBreathReady(inspected)
-        ? "READY"
-        : "Recharging — last used round "+inspected.breathWeapon.lastUsedRound;
-
-      ui.unitInfoRows.innerHTML+=
-        "<span>Routine</span><span>Claw 1d10+4 / Claw 1d10+4 / Bite 3d10+4</span>"+
-        "<span>Breath</span><span>90' cone — 8d10+4 fire — save vs Breath for half</span>"+
-        "<span>Breath Cycle</span><span>Once every 3 rounds — "+breathState+"</span>"+
-        "<span>Defense</span><span>Immune to fire; MR Nil</span>"+
-        "<span>Innate</span><span>Affect Normal Fires 3/day; Pyrotechnics 3/day</span>"+
-        "<span>Flight</span><span>30 (C); Jump 3</span>";
-    }
-  }
-
+  const rows=[
+    ["HITPOINTS",unitHpDisplay(inspected)],
+    ["AC",String(inspected.ac ?? "—")],
+    ["WIELDED",unitWieldedEquipmentLabel(inspected)]
+  ];
+  const cells=rows.flatMap(([label,text])=>{
+    const heading=document.createElement("span"),value=document.createElement("span");
+    heading.textContent=label;
+    if(label==="HITPOINTS")value.innerHTML=text; // Numeric HP with the existing damaged-HP highlight.
+    else value.textContent=text;
+    return [heading,value];
+  });
+  ui.unitInfoRows.replaceChildren(...cells);
   renderUnitStatusEffects(inspected);
 }
 
