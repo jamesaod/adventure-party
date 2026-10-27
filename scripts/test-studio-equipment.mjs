@@ -443,8 +443,8 @@ assert.ok(studio.includes("requestedWeapon?.handsRequired===2")&&studio.includes
 assert.ok(studio.includes("Two-handed weapons and shields are mutually exclusive"),
   'Capture rejects an impossible two-handed weapon plus shield state');
 const extract = (start, end) => studio.slice(studio.indexOf(start), studio.indexOf(end, studio.indexOf(start)));
-// Changing equipment after a capture must remain possible, but flag previous
-// frames as outdated so they cannot silently enter Combat Test.
+// Changing equipment affects the next capture; prior frames retain their own
+// captured loadout and remain available for export/combat.
 let invalidations=0, selectionCount=0;
 const editable = vm.createContext({
   state: { modelReady: true, modelLoading: false, disposed: false, model: {} },
@@ -462,7 +462,7 @@ const editable = vm.createContext({
 vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), editable);
 await vm.runInContext('changeEquipment({rightHand:"medieval-sword"})', editable);
 assert.equal(selectionCount,1,'Captured poses do not block equipment changes');
-assert.equal(invalidations,1,'Old poses are marked dirty when equipment changes');
+assert.equal(invalidations,0,'Equipment edits preserve earlier captured loadouts');
 for (const gear of [{ loading: true, settings }, { loading: false, attached: false, settings, error: 'Sword unavailable' }]) {
   const capture = vm.createContext({
     state: { modelReady: true, model: {}, action: {} },

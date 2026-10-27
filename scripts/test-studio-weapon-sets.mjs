@@ -75,7 +75,7 @@ const context=vm.createContext({
  equipment:manager(normalizeEquipment,{rightHand:'medieval-sword'}),
  offHandEquipment:manager(normalizeOffHandEquipment,{}),
  shieldEquipment:manager(normalizeShield,{leftHandShield:'round-wooden-shield'}),
- poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
+ poseCapture:{invalidateCaptures(){throw Error('Equipment edits must preserve captured pose snapshots');},saveWorkspace(){}},
  updateEquipmentControls(){},resetPreviewReferenceToReady(){}
 });
 vm.runInContext(studio.slice(studio.indexOf('async function changeEquipment('),studio.indexOf('function setModelReady(')),context);

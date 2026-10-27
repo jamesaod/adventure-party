@@ -48,7 +48,7 @@ assert.deepEqual(draws[0],[shadow,0,0,80,100,-38.400000000000006,-78,96,120]);
 const store=readFileSync(new URL('../js/sprite-set-store.mjs',import.meta.url),'utf8');
 const fn=store.slice(store.indexOf('export async function saveStudioDraft('),store.indexOf('export async function loadStudioDraft(')).replace('export ','');
 let records;
-const sandbox={Blob,Date,validateSpriteSetManifest(){},validateStudioWorkspace(){},studioDraftImageNames:()=>['ready-e.png'],writeRecords:async value=>{records=value;}};
+const sandbox={Blob,Date,prepareWorkspace:async value=>value,validateSpriteSetManifest(){},validateStudioWorkspace(){},studioDraftImageNames:()=>['ready-e.png'],writeRecords:async value=>{records=value;}};
 vm.runInNewContext(fn,sandbox);
 const body=new Blob(['character']),sidecar=new Blob(['shadow']),manifest={sheet:{file:'sheet.png'}};
 await sandbox.saveStudioDraft({manifest,files:{'ready-e.png':body},shadows:{'ready-e.png':sidecar},workspace:{captures:{}}});

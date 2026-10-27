@@ -58,14 +58,14 @@ const capture=readFileSync('js/studio-capture.mjs','utf8');
 const studio=readFileSync('js/3d-studio.mjs','utf8');
 const studioPage=readFileSync('3d-studio.html','utf8');
 const gamePage=readFileSync('index.html','utf8');
-assert.ok(studioPage.includes('Candidate Rev 172') &&
-  studioPage.includes('js/3d-studio.mjs?v=R238C172') &&
-  studio.includes('./studio-capture.mjs?v=R238C172'),
+assert.ok(studioPage.includes('Candidate Rev 173') &&
+  studioPage.includes('js/3d-studio.mjs?v=R238C173') &&
+  studio.includes('./studio-capture.mjs?v=R238C173'),
   'Candidate Studio must load current capture code rather than stale cached modules');
-assert.ok(gamePage.includes('Candidate Rev 172') &&
-  gamePage.includes('"candidateRevision":172') &&
-  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C172'),
-  'Candidate game label, metadata and sprite loader must agree on Rev 172');
+assert.ok(gamePage.includes('Candidate Rev 173') &&
+  gamePage.includes('"candidateRevision":173') &&
+  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C173'),
+  'Candidate game label, metadata and sprite loader must agree on Rev 173');
 
 assert.ok(capture.includes('function invalidateCaptures(')&&
   capture.includes('capture.stale = true')&&
@@ -78,8 +78,8 @@ assert.ok(!capture.includes("if (busy || freshCount() !== 18) return;"),
 assert.ok(studio.includes("state.playing = restoreSettings ? !!restoreSettings.playing : false"),
   'Newly loaded animations start paused; a restored workspace keeps its own playback state');
 assert.ok(studio.includes('poseCapture?.invalidateCaptures(\'Lighting changed\')') &&
-  studio.includes("poseCapture?.invalidateCaptures('Weapon or grip changed',{allProfiles:false})"),
-  'Lighting and equipped sword changes mark saved sprites outdated');
+  !studio.includes("poseCapture?.invalidateCaptures('Weapon or grip changed',{allProfiles:false})"),
+  'Lighting invalidates captures; equipment edits preserve independent pose snapshots');
 assert.ok(studio.includes('preserveThinSpriteDetails(supersampleImage.data'),
   'Native battlefield rendering includes coverage-safe downsampling');
 console.log('PASS Rev 118: 36 captured/runtime PNGs, thin swords in all six directions, stale capture protection, paused default');

@@ -385,3 +385,10 @@ Model previews now project the posed 3D geometry onto the floor, so death/prone 
 ## Candidate Rev 172 — weapon-independent Magic and Death/Prone
 
 The capture selector now offers Magic and Death/Prone animation. Weapons contain Ready, Wind Up and Attack; capture the remaining four poses once per model workspace or reusable library. See [Shared action captures](SHARED_ACTION_CAPTURES.md) for version 2 JSON, ZIP paths, legacy recovery and combat test composition. This supersedes the seven-poses-per-weapon instructions above.
+
+
+## Rev 173 capture export recovery
+
+Weapon, off-hand and shield edits preserve earlier captured pose snapshots. All action-group ZIP exports include current captures and any outdated snapshots in a recovery section, with exact animation source/time and saved grips. Reload and re-export the existing workspace to recover poses excluded by earlier exports; do not clear it. See [recovery workflow](SHARED_ACTION_CAPTURES.md#rev-173--preserve-pose-snapshots-and-recover-excluded-exports).
+
+Autosave now stores raw capture pixels with lossless compression, so a full 31-pose set at 500% does not fail merely because uncompressed buffers exceed 512 MiB. A failed-save warning means keep the tab open. Back up existing capture references to pose-library JSON before refreshing; see the shared-action recovery guide.

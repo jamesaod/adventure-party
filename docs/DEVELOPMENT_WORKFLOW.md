@@ -166,3 +166,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 172 — shared action captures
 
 [Shared action captures](SHARED_ACTION_CAPTURES.md) supersedes Rev 153 per-weapon casting/death guidance. Keep physical weapon recipes separate from Magic and Death/Prone, migrate older libraries/workspaces without losing alternative frames, and use versioned shared-group references in exports. Combat test assembles physical and shared groups using the existing renderer.
+
+
+## Candidate Rev 173 — lossless capture handoff
+
+Each pose owns its captured equipment settings. Preserve those snapshots when adjusting another pose. ZIPs include outdated pixels and source references under recovery/ instead of silently filtering them. Check both current manifests and references.captureRecovery during an asset handoff. See [Shared action captures](SHARED_ACTION_CAPTURES.md#rev-173--preserve-pose-snapshots-and-recover-excluded-exports).

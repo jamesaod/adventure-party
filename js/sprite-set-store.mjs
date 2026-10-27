@@ -1,3 +1,4 @@
+import {encodeStudioWorkspace,decodeStudioWorkspace} from './studio-workspace-codec.mjs?v=R238C173';
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C153';
 import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 
@@ -70,9 +71,6 @@ export function validateStudioWorkspace(workspace) {
   if (sources !== undefined && (!Array.isArray(sources) || sources.some(source =>
     !plain(source) || typeof source.name !== 'string' || !source.name || !(source.blob instanceof Blob)))) {
     invalid('invalid model source files.');
-  }
-  if (storedBytes(workspace) > MAX_WORKSPACE_BYTES) {
-    invalid('the model and captures exceed 256 MB. Export the asset ZIP to keep the captures.');
   }
   return workspace;
 }
@@ -151,14 +149,23 @@ async function readRecord(key,name=databaseName) {
   } finally { db.close(); }
 }
 
+async function prepareWorkspace(workspace){
+  validateStudioWorkspace(workspace);
+  const encoded=await encodeStudioWorkspace(workspace);
+  if(storedBytes(encoded)>MAX_WORKSPACE_BYTES)throw Error('Autosave did not finish: compressed model and captures exceed 512 MB. Keep this tab open and export all action groups before leaving.');
+  return {...encoded,savedAt:Date.now()};
+}
+
 export async function saveStudioWorkspace(workspace) {
   validateStudioWorkspace(workspace);
   if(previewWorkspace)return; // Embedded preview reads the model draft but never writes it.
-  await writeRecords([['workspace', { ...workspace, savedAt: Date.now() }]]);
+  await writeRecords([['workspace', await prepareWorkspace(workspace)]]);
 }
 
 export async function loadStudioWorkspace({ fromCombat = false } = {}) {
-  const workspace = await readRecord(fromCombat ? 'combat-workspace' : 'workspace',sourceDatabaseName);
+  const stored = await readRecord(fromCombat ? 'combat-workspace' : 'workspace',sourceDatabaseName);
+  if(stored?.pixelEncoding&&storedBytes(stored)>MAX_WORKSPACE_BYTES)throw Error('Saved compressed workspace exceeds its storage limit.');
+  const workspace=await decodeStudioWorkspace(stored);
   return workspace ? validateStudioWorkspace(workspace) : null;
 }
 
@@ -194,7 +201,7 @@ export async function saveStudioDraft({ manifest, files, shadows = {}, workspace
   const records = [['current', { manifest, files: storedFiles, shadows:storedShadows, savedAt: Date.now() }]];
   if (workspace) {
     validateStudioWorkspace(workspace);
-    records.push(['combat-workspace', { ...workspace, savedAt: Date.now() }]);
+    records.push(['combat-workspace', await prepareWorkspace(workspace)]);
   }
   // The PNG test set and its editable return workspace are one atomic write.
   await writeRecords(records);
