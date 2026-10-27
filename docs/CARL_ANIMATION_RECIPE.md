@@ -12,7 +12,7 @@ The original Ver 2 GLB is still byte-for-byte intact: SHA-256 `5284bd3cd0b9fe666
 
 ## Explicit Carl recipe
 
-`js/repository-fbx-animations.mjs` installs only the cataloged user-uploaded files (currently 14) in `data/animation-library-sources.json`, using the existing pinned FBX loader and shared retargeter. It explicitly selects `{mode: 'world-bind-delta', hipTranslation: 'scaled-world-y'}` and records recipe ID `carl-v2-mixamo-world-v1`. Studio and combat regeneration call this same loader.
+`js/repository-fbx-animations.mjs` installs only the cataloged user-uploaded files (currently 22) in `data/animation-library-sources.json`, using the existing pinned FBX loader and shared retargeter. It explicitly selects `{mode: 'world-bind-delta', hipTranslation: 'scaled-world-y'}` and records recipe ID `carl-v2-mixamo-world-v1`. Studio and combat regeneration call this same loader.
 
 1. Work from the pristine target before its mixer, view transforms, or equipment constraints are applied. The original 13 motion FBXs and Rev 147 Standing Idle contain the same reference skeleton; verify this again for any future upload.
 2. Resolve semantic joints, keeping the target's actual inverse-bind orientations. Derive the source and target anatomical bases from shoulders, hips and head; let their conversion be `C`.
@@ -34,7 +34,7 @@ python scripts/generate-carl-animation-reference.py
 node scripts/test-fbx-animations.mjs
 ```
 
-The generator uses the original `tripo_mixamo_bake_core.py` FBX Euler evaluator and `bake_mixamo_pack_v2.py` anatomical basis, independently of the JavaScript loader/retargeter. It writes only `scripts/fixtures/carl-uploaded-animation-reference.json`, never a source model or source animation. The fixture records all source hashes, 22 major joint world orientations and hip position at five authored key times per cataloged motion (currently 14 motions / 70 poses).
+The generator uses the original `tripo_mixamo_bake_core.py` FBX Euler evaluator and `bake_mixamo_pack_v2.py` anatomical basis, independently of the JavaScript loader/retargeter. It writes only `scripts/fixtures/carl-uploaded-animation-reference.json`, never a source model or source animation. The fixture records all source hashes, 22 major joint world orientations and hip position at five authored key times per cataloged motion (currently 22 motions / 110 poses per model).
 
 The Node test uses Carl's real inverse binds, skin weights and all mesh vertices. Rev 140 measures a maximum 0.6436-degree joint difference and 3.27e-8 native-unit hip-position difference from the offline reference. The one-degree tolerance allows the pinned loader's quaternion sampling to differ slightly from the independent Euler evaluator. It must not be relaxed to accommodate a different retargeting formula. Bounds/finite checks supplement the pose comparison; they are not the acceptance criterion by themselves.
 
@@ -52,3 +52,32 @@ User source `Standing Idle.fbx` is copied byte-for-byte to `assets/animations/un
 The recovered offline FBX evaluator compared all 65 source bind-bone positions and rotations to Goalie Throw with zero difference. The same world-bind-delta and scaled-world-y policy is therefore used without any loader/rig changes. Regenerating `scripts/generate-carl-animation-reference.py` adds five independent reference poses; all older reference entries remain identical. `node scripts/test-fbx-animations.mjs` validates all 14 source hashes, stable IDs, durations, actual skinning and 70 poses against the independent evaluator with the unchanged one-degree tolerance.
 
 For future supplied animations: copy the original bytes into the appropriate animation folder, append an entry with its hash/size/label and profile tags, verify source bind compatibility, regenerate the independent fixture, and run repository validation plus visual Studio playback/scrubbing. Append rather than reorder entries to preserve legacy saved clip indices. The shared catalog request uses `cache: 'no-cache'`, so adding a new asset path requires no retargeter rewrite or broad module cache changes. Publish using the normal candidate PR workflow and compare the live FBX checksum. Do not overwrite source files or reset existing captures as part of registration.
+
+## Casting, death and idle batch — Candidate Rev 159
+
+Eight user uploads are appended after Standing Idle, bringing the shared library to **22 animations** for Carl Ver 3 and Blond Haired Woman in Scale Mail. Source FBX bytes are copied unchanged; exact hashes and byte counts are in `data/animation-library-sources.json`. The duplicate-download suffix in `Sword And Shield Death (1).fbx` is omitted from its display label and repository filename.
+
+| Animation | Source ID | Duration (seconds) | FBX bytes |
+| --- | --- | ---: | ---: |
+| Great Sword Casting | `great-sword-casting` | 4.800 | 590,992 |
+| Magic Heal | `magic-heal` | 2.667 | 518,368 |
+| Standing React Death Forward | `standing-react-death-forward` | 3.667 | 674,960 |
+| Standing Death Forward 01 | `standing-death-forward-01` | 3.167 | 566,960 |
+| Two Handed Sword Death | `two-handed-sword-death` | 2.400 | 493,632 |
+| Sword And Shield Death | `sword-and-shield-death` | 3.900 | 575,152 |
+| Unarmed Idle 01 | `unarmed-idle-01` | 11.600 | 1,204,720 |
+| Standing Torch Idle 01 | `standing-torch-idle-01` | 8.100 | 860,032 |
+
+Every new source matches all 65 reference bind-bone positions and rotations of Goalie Throw exactly. Use the unchanged world-bind-delta / scaled-world-y recipe. Great Sword Casting and Magic Heal have casting tags; weapon-specific deaths retain their weapon tags. General death and torch-idle motions have no weapon restriction. No pose frames are automatically assigned: the user chooses frames for the existing capture slots. All animations remain selectable with every equipment loadout.
+
+The first 14 catalog entries and their stable `uploaded:<source-id>:0` IDs retain their order. Existing model bytes, initial animations, equipment mounts, combat systems and saved captures are unchanged. The catalog already loads with `cache: 'no-cache'`, and each new FBX has a new path, so no loader changes or broad cache reset are needed.
+
+Reproduce by copying each supplied FBX byte-for-byte to its manifest path, checking its source bind with `fbx_skeleton` from `scripts/tripo_mixamo_bake_core.py`, appending its manifest entry, and regenerating both independent fixtures:
+
+```sh
+python scripts/generate-carl-animation-reference.py
+python scripts/generate-carl-animation-reference.py --target assets/models/humans/blond-scale-mail-woman/blond-scale-mail-woman.glb --output scripts/fixtures/blond-scale-mail-uploaded-animation-reference.json
+node scripts/test-fbx-animations.mjs
+```
+
+Keep the existing joint/hip tolerances. Automated checks cover 110 skinned poses per model (220 total), file hashes, duration, finite tracks and preserved clip IDs. Run repository validation and verify all eight published FBX hashes after the candidate PR is merged. At the user's request, visual playback and pose/grip QA for these new motions are left to the user.

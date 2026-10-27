@@ -184,6 +184,105 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "great-sword-casting",
+      "label": "Great Sword Casting",
+      "file": "assets/animations/spellcasting/great-sword-casting.fbx",
+      "bytes": 590992,
+      "sha256": "ef607616f3b8ab2eb368445e75c401434cd43460a1be7185ac662ebdab93468a",
+      "actionProfiles": [
+        "spell-casting",
+        "two-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "magic-heal",
+      "label": "Magic Heal",
+      "file": "assets/animations/spellcasting/magic-heal.fbx",
+      "bytes": 518368,
+      "sha256": "e6b94a5ddef8c76a668f2cee047d4e6351e7875a5e6bcb4e0b41b106a92a9004",
+      "actionProfiles": [
+        "spell-casting"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "standing-react-death-forward",
+      "label": "Standing React Death Forward",
+      "file": "assets/animations/death/standing-react-death-forward.fbx",
+      "bytes": 674960,
+      "sha256": "e0e389ec6a851304c0017fe290980e3fd1d08501e8f69f093eda132a8475fd56",
+      "actionProfiles": [],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "standing-death-forward-01",
+      "label": "Standing Death Forward 01",
+      "file": "assets/animations/death/standing-death-forward-01.fbx",
+      "bytes": 566960,
+      "sha256": "4587b13615a79f4b6f6308552ef9194ef57ad8259929d7d4de3829a1ca6abdab",
+      "actionProfiles": [],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "two-handed-sword-death",
+      "label": "Two Handed Sword Death",
+      "file": "assets/animations/two-handed-swing/two-handed-sword-death.fbx",
+      "bytes": 493632,
+      "sha256": "cdce1903394b69bbce2fed2fdff868ddc27992dd431b93df29ba898d54f4a04e",
+      "actionProfiles": [
+        "two-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "sword-and-shield-death",
+      "label": "Sword And Shield Death",
+      "file": "assets/animations/one-handed-swing/sword-and-shield-death.fbx",
+      "bytes": 575152,
+      "sha256": "b65ee29f0a4b5ac588cb4a1decf41aaa3dee13202c5cd863753d4d762ea4f88e",
+      "actionProfiles": [
+        "one-handed-swing"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "unarmed-idle-01",
+      "label": "Unarmed Idle 01",
+      "file": "assets/animations/unarmed/unarmed-idle-01.fbx",
+      "bytes": 1204720,
+      "sha256": "6e8f453aa5a91233025c708126bb10fe41a65ca67af8e84af2a68b117c82dadc",
+      "actionProfiles": [
+        "unarmed"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "standing-torch-idle-01",
+      "label": "Standing Torch Idle 01",
+      "file": "assets/animations/idle/standing-torch-idle-01.fbx",
+      "bytes": 860032,
+      "sha256": "f406eece0ef078417f5c9425f3c9fa9ebbd89d1e5b4abb23e6d7acc79f4c8d54",
+      "actionProfiles": [],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "carl-v2-mixamo-world-v1"
     }
   ]
 }
