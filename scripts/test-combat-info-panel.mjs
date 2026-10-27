@@ -21,11 +21,12 @@ target={id:'ranger',name:'Ranger',faction:'player',hp:10,maxHp:10,ac:3,weapon:'S
 context.updateUnitInfoPanel();assert.equal(rows()[2],'Longbow');
 target.weaponInHand='melee';context.updateUnitInfoPanel();assert.equal(rows()[2],'Short Sword','Switching to melee must not list the carried bow');
 target={id:'player',name:'Carl',faction:'player',hp:10,maxHp:10,ac:-2,weapon:'Sword',inventory:[{name:'Battle Axe',slot:'weapon',equipped:true},{name:'Dagger',slot:'off-hand',equipped:true},{name:'Shield',slot:'shield',equipped:false}]};
-context.updateUnitInfoPanel();assert.equal(rows()[2],'Battle Axe + Dagger');assert.equal(rows()[1],'AC -2');
-target.inventory[1].equipped=false;target.inventory[2].equipped=true;context.updateUnitInfoPanel();assert.equal(rows()[2],'Battle Axe + Shield');
-assert.equal(context.unitWieldedEquipmentLabel({weapon:'Short Sword',shieldName:'Wood/Wicker Shield'}),'Short Sword + Wood/Wicker Shield');
-assert.equal(context.unitWieldedEquipmentLabel({weapon:'Unarmed',shieldName:'Old shield',inventory:[{slot:'shield',name:'Old shield',equipped:false}]}),'Unarmed');
-assert.equal(context.unitWieldedEquipmentLabel({}),'Unarmed');
+context.updateUnitInfoPanel();assert.deepEqual(rows().slice(2),['Battle Axe','Dagger']);assert.equal(rows()[1],'AC -2');
+target.inventory[1].equipped=false;target.inventory[2].equipped=true;context.updateUnitInfoPanel();assert.deepEqual(rows().slice(2),['Battle Axe','Shield']);
+assert.deepEqual([...context.unitWieldedEquipmentLabels({weapon:'Short Sword',shieldName:'Wood/Wicker Shield'})],['Short Sword','Wood/Wicker Shield']);
+assert.deepEqual([...context.unitWieldedEquipmentLabels({weapon:'Unarmed',shieldName:'Old shield',inventory:[{slot:'shield',name:'Old shield',equipped:false}]})],['Unarmed']);
+assert.deepEqual([...context.unitWieldedEquipmentLabels({})],['Unarmed']);
+assert.deepEqual([...context.unitWieldedEquipmentLabels({weapon:'Sword +5',shieldName:'Shield +1'})],['Sword +5','Shield +1'],'Enchantment plus signs remain part of the equipment name');
 const priorName=ui.unitInfoName.textContent,priorRows=rows();
 context.aimMode=true;visible=false;target={...target,name:'Hidden Orc',faction:'enemy'};context.updateUnitInfoPanel();
 assert.equal(ui.unitInfoName.textContent,priorName);assert.deepEqual(rows(),priorRows,'Hidden AIM targets cannot leak equipment or stats');

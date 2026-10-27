@@ -25,6 +25,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
+- Rev 158: Each wielded item gets its own combat-summary row. Ctrl+Q assigns all living, non-fled units in the player faction to existing Quick control; Escape clears all assignments and pending callbacks. Plain Q remains per active player-controlled unit; NPC/MOB controllers stay unchanged. See docs/BATTLEFIELD_CONTROLS.md and scripts/test-quick-command.mjs.
 - Rev 157: Blond Haired Woman in Scale Mail joins Carl in Studio with the same 14 uploaded animations and shared equipment controls. Read docs/BLOND_SCALE_MAIL_MODEL.md; FBX armature centimetres must be normalized during import for existing hand mounts. Preserve geometry, weights, texture bytes and world bind pose.
 - Rev 156: HITPOINTS and AC are green inline labels with a single space before their values. Current equipment appears on its own line without WIELDED. Preserve damaged-HP highlighting and existing loadout selection.
 - Rev 155: Compact right-hand combat summary shows name, HITPOINTS current/max, AC and current WIELDED equipment. Hostile names are yellow; same-faction names are light blue. Preserve current-hand selection, equipped shield/off-hand handling, damaged-HP highlight, status effects and the existing hidden-target guard. See docs/BATTLEFIELD_CONTROLS.md and scripts/test-combat-info-panel.mjs.

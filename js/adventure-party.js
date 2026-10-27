@@ -19568,7 +19568,7 @@ function cancelAllQuickCommands(reason=""){
 
   if(count>0){
     setCombatMessage(
-      count===1 ? "Quick canceled." : `Quick canceled for ${count} characters.`
+      count===1 ? "Quick canceled." : `Quick canceled for ${count} units.`
     );
   }
 
@@ -19720,7 +19720,7 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
   }
 }
 
-function activateQuickCommand(){
+function activateQuickCommand({allFriendly=false}={}){
   if(
     !game ||
     game.over ||
@@ -19730,28 +19730,32 @@ function activateQuickCommand(){
   ) return false;
 
   const selected=selectedPlayerUnitForQuickCommand();
-
-  if(!selected){
-    setCombatMessage("Quick Command requires the active player-controlled unit.");
+  const units=allFriendly
+    ? activeCombatants().filter(isFriendlyCombatUnit)
+    : selected ? [selected] : [];
+  if(!units.length){
+    setCombatMessage("Quick Command requires an active friendly unit.");
     return false;
   }
 
-  quickCommandUnitIds.add(selected.id);
-  quickCommandGeneration++;
-  syncQuickCommandState(selected.id);
+  const added=units.filter(unit=>!isQuickCommandUnit(unit));
+  if(!added.length) return true;
+  for(const unit of added) quickCommandUnitIds.add(unit.id);
+  // Adding units must not invalidate a Quick turn already running.
+  syncQuickCommandState();
   const token=quickCommandGeneration;
+  const startSelected=selected && added.some(unit=>unit.id===selected.id);
 
   exitAimMode(false,true);
   closeCharacterSheet();
-
-  log(`${selected.name} is under Quick computer control. Press Escape to cancel Quick for all player-controlled characters.`,"system");
-  setCombatMessage(`${selected.name} is set to Quick. Hit <ESC> to cancel Quick.`);
-
+  const subject=allFriendly ? `All ${units.length} friendly units` : selected.name;
+  log(`${subject} set to Quick computer control. Press Escape to cancel Quick for all friendly units.`,"system");
+  setCombatMessage(`${subject} set to Quick. Hit <ESC> to cancel Quick.`);
   refreshTurnBanner();
   updateUi();
   draw();
 
-  setTimeout(()=>{
+  if(startSelected) setTimeout(()=>{
     if(
       isQuickCommandUnit(selected) &&
       token===quickCommandGeneration &&
@@ -25382,7 +25386,7 @@ function unitHpDisplay(unit){
 }
 
 // Read the current combat loadout without changing equipment or combat rules.
-function unitWieldedEquipmentLabel(unit){
+function unitWieldedEquipmentLabels(unit){
   const inventory=Array.isArray(unit?.inventory) ? unit.inventory : [];
   const ranged=unitHasRangedWeaponInHand(unit);
   const primary=inventory.find(item=>item?.equipped &&
@@ -25394,7 +25398,7 @@ function unitWieldedEquipmentLabel(unit){
   }
   // Catalog MOBs may carry a shield without a player-style inventory record.
   if(!inventory.some(item=>item?.slot==="shield") && unit?.shieldName && unit.shieldName!=="None")names.push(unit.shieldName);
-  return names.join(" + ");
+  return names;
 }
 
 function updateUnitInfoPanel(){
@@ -25430,7 +25434,7 @@ function updateUnitInfoPanel(){
   const rows=[
     ["HITPOINTS",unitHpDisplay(inspected)],
     ["AC",String(inspected.ac ?? "—")],
-    ["",unitWieldedEquipmentLabel(inspected)]
+    ...unitWieldedEquipmentLabels(inspected).map(name=>["",name])
   ];
   const cells=rows.map(([label,text])=>{
     const value=document.createElement("span");
@@ -26106,7 +26110,7 @@ function updateUi(){
     returnButton.setAttribute(
       "aria-label",
       anyQuick
-        ? "Hit Escape to cancel Quick for all player-controlled characters"
+        ? "Hit Escape to cancel Quick for all friendly units"
         : spellTargeting
           ? "Escape to abort spell casting"
           : (aimOnly ? "Escape to abort Aim" : studioTest ? "Escape to return to 3d studio" : "Escape to return to launcher")
@@ -30333,6 +30337,19 @@ function handleCombatKey(event){
   const code=event.code;
   const keyLower=event.key.toLowerCase();
 
+  // Ctrl+Q assigns the friendly roster without changing controller types.
+  if(keyLower==="q"){
+    if(event.defaultPrevented || event.isComposing || event.metaKey || event.altKey ||
+      event.target?.isContentEditable || ["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName))return;
+    if(event.ctrlKey){
+      if(event.shiftKey)return;
+      event.preventDefault();
+      if(!event.repeat)activateQuickCommand({allFriendly:true});
+      return;
+    }
+    if(event.repeat)return;
+  }
+
   // Font controls work before combat and during aiming without taking a turn.
   const fontDirection=event.key==="+" || event.key==="=" || code==="NumpadAdd" ? 1
     : event.key==="-" || code==="NumpadSubtract" ? -1 : 0;
@@ -30387,7 +30404,7 @@ function handleCombatKey(event){
     event.preventDefault();
 
     const canceledQuick=cancelAllQuickCommands(
-      quickCommandUnitIds.size ? "Quick canceled for all player-controlled characters." : ""
+      quickCommandUnitIds.size ? "Quick canceled for all friendly units." : ""
     );
 
     if(spellCastOverlayOpen){
@@ -30875,7 +30892,7 @@ document.getElementById("spellbookTabs").addEventListener("click",(event)=>{
 
 document.getElementById("returnButton").addEventListener("click",()=>{
   if(quickCommandUnitIds.size){
-    cancelAllQuickCommands("Quick canceled for all player-controlled characters.");
+    cancelAllQuickCommands("Quick canceled for all friendly units.");
     return;
   }
 
