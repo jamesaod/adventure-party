@@ -1,4 +1,4 @@
-# Battlefield controls — Candidate Rev 155
+# Battlefield controls — Candidate Rev 156
 
 While the Combat System Test is open:
 
@@ -22,3 +22,5 @@ The right-hand summary shows the unit name, then **HITPOINTS** (current/max), **
 `updateUnitInfoPanel` reuses the existing active-unit/AIM selection and line-of-sight guard. `unitWieldedEquipmentLabel` reads the current ranged/melee hand state, equipped primary weapon and equipped shield/off-hand entries, with the existing weapon/shield names as catalog-MOB fallbacks. Carried backups and armor are not included. Explicitly unequipped shields stay absent. The summary does not mutate inventory, combat rules or Unit Package data. Use current faction rather than controller/species for name color, so charm and friendly MOBs stay correct.
 
 Reproduce with `node scripts/test-combat-info-panel.mjs`, then the repository workflow. The regression exercises row order, damaged hitpoints, allegiance changes, ranged-to-melee switches, shields, off-hand weapons, hidden AIM targets, empty initiative gaps and text-safe equipment names. Browser QA: launch Combat System Test with the Carl sprite test, start combat, inspect a yellow Kobold and light-blue Carl, and use +/- to check the compact summary at 100% and 130%. Carl should show his currently equipped sword and shield; the Kobold should show its dagger. Preserve status effects and the last valid display between initiative slots.
+
+Rev 156 presentation adjustment: HITPOINTS and AC labels are green, with each value following its own label by one literal space rather than a shared value column. The equipment line has no WIELDED label. Damaged hitpoints keep their existing yellow highlight.
