@@ -96,6 +96,35 @@ await assert.rejects(loadCombatPoseRecipe({mobType:'fighter',fromCombat:true}),/
   'Never silently downgrade to a lower-resolution replacement');
 draft.manifest.frame.renderWidth=10;
 
+// Every current source-only humanoid must carry the same uploaded animation
+// policy through the paired workspace into the equipment render recipe.
+const {appearanceRecipeForMob,appearanceCacheKey}=await import('../js/mob-appearance.mjs');
+for(const id of ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed']){
+  const entry=catalog.models.find(model=>model.id===id);
+  records['combat-workspace']={...matching,settings:{...matching.settings,
+    libraryModelId:id,mobType:entry.mobType},captures:{ready:{...capture('Sword And Shield Idle'),
+      clipSourceId:'uploaded:sword-and-shield-idle:0'}}};
+  const captured=await loadCombatPoseRecipe({mobType:entry.mobType,fromCombat:true});
+  assert.equal(captured.model.modelId,id,`${id}: gear refresh retains the selected model`);
+  assert.equal(captured.model.animationLibrary,'uploaded-fbx',`${id}: load its shared animations`);
+  assert.equal(captured.poseProfile.poses.ready.animation,'Sword And Shield Idle');
+  assert.equal(captured.poseProfile.poses.ready.timeSeconds,0.25);
+  assert.deepEqual(captured.renderSettings.frame,result.renderSettings.frame);
+  const unit={id:'player',type:entry.mobType,inventory:[
+    {name:'Battle Axe',slot:'weapon',appearanceId:'battle-axe',equipped:true},
+    {name:'Round Wooden Shield',slot:'shield',appearanceId:'round-wooden-shield',equipped:true}]};
+  const context={...captured.model,poseProfile:captured.poseProfile,renderSettings:captured.renderSettings};
+  const axeRecipe=appearanceRecipeForMob(unit,context);
+  assert.equal(axeRecipe.model.animationLibrary,'uploaded-fbx');
+  assert.equal(axeRecipe.model.id,id);
+  assert.equal(axeRecipe.equipment.studioId,'battle-axe');
+  assert.equal(axeRecipe.shield.studioId,'round-wooden-shield');
+  unit.inventory[0].appearanceId='flaming-sword-5';
+  assert.notEqual(appearanceCacheKey(axeRecipe),appearanceCacheKey(appearanceRecipeForMob(unit,context)),
+    `${id}: the old sword cache cannot satisfy an axe render`);
+}
+records['combat-workspace']=matching;
+
 const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const renderer=readFileSync(new URL('../js/combat-mob-renderer.mjs',import.meta.url),'utf8');
 assert.ok(game.includes('if(!player.studioSpriteTest && typeof markMobAppearanceDirty'),
@@ -106,4 +135,4 @@ assert.ok(renderer.includes('resolveCombatWeaponMount(recipe.equipment,recipe.re
 assert.ok(renderer.includes('preserveThinSpriteDetails(sourceTopDown'),
   'Runtime continues preserving fine weapon pixels after native downsampling');
 assert.ok(renderer.includes('antialias:true'),'Studio and combat must share source antialiasing');
-console.log('PASS Rev 125: paired Studio combat frames, exact resolution, scoped weapon grips and equipment refresh');
+console.log('PASS paired Studio captures, catalog animation libraries, exact frames and equipment refresh across all current humanoids');

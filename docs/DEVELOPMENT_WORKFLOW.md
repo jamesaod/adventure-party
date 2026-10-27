@@ -151,3 +151,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 169 — geometry projected onto the floor
 
 [Unit sun shadows](UNIT_SUN_SHADOWS.md) documents the shared world-space floor projection for standing and death poses. Reuse the existing WebGL renderer and camera, preserve the body atlas before the shadow pass, and keep shadow sidecars separate in the atomic Studio combat draft. Do not reintroduce foot-line height inference for posed 3D models. Validate full-resolution combat image association as well as native shadow dimensions.
+
+
+## Candidate Rev 170 — equipment refresh and animation library parity
+
+[Studio combat testing](STUDIO_COMBAT_TEST.md#equipment-refresh-across-uploaded-humanoids-rev-170) records the source-only GLB failure and its regression coverage. Equipment regeneration must honor the catalog's `animationLibrary` through the appearance recipe, using the same shared FBX retargeter as Studio for every opted-in humanoid. Preserve paired workspace scope, captured poses/frames, footprint and asynchronous stale-render guards.

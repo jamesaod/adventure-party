@@ -1,5 +1,5 @@
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
-import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C153';
+import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C169';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
 
 const REQUIRED_POSES = Object.freeze(['ready','attack','prone']);
@@ -12,11 +12,11 @@ function vec3(value, fallback = [0,0,0]) {
   return Array.isArray(value) && value.length === 3 && value.every(Number.isFinite)
     ? value.slice() : fallback.slice();
 }
-function completeCaptureWorkspace(workspace) {
+function completeCaptureWorkspace(workspace, mobType) {
   if (!workspace?.settings || !workspace?.captures) return false;
   // Incomplete capture sets are valid; absent poses are intentionally fallback sprites.
   const identity = `${workspace.settings.libraryModelId || ''} ${workspace.settings.modelName || ''} ${workspace.name || ''}`.toLowerCase();
-  return workspace.settings.mobType === 'fighter' || identity.includes('carl');
+  return workspace.settings.mobType === mobType || (mobType === 'fighter' && identity.includes('carl'));
 }
 /** Resolve saved Studio captures to the *same* baked model for combat.
  * Paths are restricted to versioned assets from the repository model catalog.
@@ -37,6 +37,7 @@ export function compatibleStudioCombatModel(settings, catalog, mobType = 'fighte
     value.every(Number.isFinite);
   return {
     modelId: resolved.id,
+    animationLibrary: resolved.animationLibrary || null,
     modelHash: `catalog:${resolved.id}:${resolved.file}`,
     modelUrl: `../${resolved.file}`,
     bodyReferenceHeightInches: Number.isFinite(settings?.unitCalibration?.measuredHeightInches)
@@ -89,9 +90,9 @@ export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = f
     if (fromCombat) throw error;
     return fallbackRecipe(`Studio capture workspace needs repair: ${error?.message || error}`);
   }
-  if (!completeCaptureWorkspace(workspace)) {
+  if (!completeCaptureWorkspace(workspace,mobType)) {
     if (fromCombat) throw new Error('Combat test workspace metadata is incomplete; keeping saved sprites.');
-    return fallbackRecipe('The saved Studio workspace does not contain Ready, Attack and Prone captures for Carl.');
+    return fallbackRecipe('The saved Studio workspace does not match this combat archetype.');
   }
 
   const settings = workspace.settings;

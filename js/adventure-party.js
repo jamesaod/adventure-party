@@ -7197,14 +7197,17 @@ function humanoidRuntimeModel(unit){
 }
 
 async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipment-change"}={}){
+  if(!unit)return null;
   const model=humanoidRuntimeModel(unit);
-  if(!unit||!model)return null;
+  const fromCombat=!!unit.studioSpriteTest &&
+    new URLSearchParams(location.search).get("studioSprite")==="draft";
+  if(!model&&!fromCombat)return null;
   try{
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C146")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C169"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C170")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C170"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7212,11 +7215,9 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C153",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C170",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
-    const fromCombat=!!unit.studioSpriteTest &&
-      new URLSearchParams(location.search).get("studioSprite")==="draft";
     const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const result=await runtime.ensure(unit,{
@@ -7235,7 +7236,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!spriteSetId)return null;
     unit.dynamicAppearanceSpriteSetId=spriteSetId;
     unit.spriteSetId=spriteSetId;
-    unit.footprintId="single";
+    unit.footprintId=result.spriteSet.manifest?.layout?.id||unit.footprintId||"single";
     unit.studioPlayerSpriteTarget=unit.type;
     unit.appearancePoseSource=captured.source;
     unit.appearanceFamilyKey=result.recipe?.animation?.spriteFamilySignature||result.key;

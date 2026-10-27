@@ -13,7 +13,7 @@ import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C146';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C170';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
 import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C152';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C146';
@@ -227,7 +227,9 @@ export async function generateCombatSpriteSet(recipe){
   if(!modelUrl)throw new Error(`No humanoid runtime model is registered for ${recipe?.mob?.type||'this MOB'}.`);
   const gltf=await loadGltf(modelUrl);
   const model=gltf.scene;
-  if(recipe?.model?.id==='dungeon-crawler-carl-v3'){
+  // Source-only GLBs use the catalog's animation library, just as Studio does.
+  // Keep the ID fallback for older Carl recipes without this metadata.
+  if(recipe?.model?.animationLibrary==='uploaded-fbx'||recipe?.model?.id==='dungeon-crawler-carl-v3'){
     gltf.animations=await loadUploadedFbxAnimations({
       appRoot:new URL('../',import.meta.url),targetModel:model,FBXLoader,THREE,
       prepareStudioAnimations,retargetHumanoidClip,
