@@ -106,3 +106,7 @@ Use the existing action-profile capture map and shared equipment attachment mana
 ## Casting capture datasets (Candidate Rev 153)
 
 Use the same per-weapon capture maps and Unit Package export for `casting-windup` and `cast`. Preserve existing physical attack rows and older manifest layouts. [3D Studio](3D_STUDIO.md#candidate-rev-153--casting-captures-in-every-weapon-set) documents the seven-slot workflow, export keys, compatibility and QA checks. Casting frame selection remains in Studio; spell timing and mechanics remain in Engine QA.
+
+## Battlefield text controls (Candidate Rev 154)
+
+[Battlefield controls](BATTLEFIELD_CONTROLS.md) records font shortcut behavior, scoped persistence, layout handling and validation. Keep presentation scaling independent of map zoom, input editing and combat turn state.

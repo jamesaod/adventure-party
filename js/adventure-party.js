@@ -7064,6 +7064,40 @@ function changeBattlefieldZoom(direction){
   draw();
 }
 
+// Battlefield text size is separate from map zoom and combat rules.
+const BATTLEFIELD_FONT_MIN=80;
+const BATTLEFIELD_FONT_MAX=160;
+const BATTLEFIELD_FONT_STEP=10;
+const BATTLEFIELD_FONT_STORAGE_KEY="adventure-party:battlefield-font:"+new URL(".",document.baseURI).pathname;
+function normalizeBattlefieldFontPercent(value){
+  const percent=Number(value);
+  return Number.isFinite(percent) && percent>=BATTLEFIELD_FONT_MIN && percent<=BATTLEFIELD_FONT_MAX
+    ? Math.round(percent/BATTLEFIELD_FONT_STEP)*BATTLEFIELD_FONT_STEP : 100;
+}
+function loadBattlefieldFontPercent(){
+  try{return normalizeBattlefieldFontPercent(localStorage.getItem(BATTLEFIELD_FONT_STORAGE_KEY));}
+  catch{return 100;}
+}
+let battlefieldFontPercent=loadBattlefieldFontPercent();
+function applyBattlefieldFontSize(){
+  document.getElementById("combatScreen")?.style.setProperty("--combat-font-scale",String(battlefieldFontPercent/100));
+  const status=document.getElementById("battlefieldFontSize");
+  if(status)status.textContent=`TEXT ${battlefieldFontPercent}% [− / +]`;
+}
+function battlefieldTextFont(basePixels){
+  return `700 ${basePixels*battlefieldFontPercent/100}px "EB Garamond", Georgia, "Times New Roman", serif`;
+}
+function changeBattlefieldFontSize(direction){
+  const next=Math.max(BATTLEFIELD_FONT_MIN,Math.min(BATTLEFIELD_FONT_MAX,
+    battlefieldFontPercent+direction*BATTLEFIELD_FONT_STEP));
+  if(next===battlefieldFontPercent)return;
+  battlefieldFontPercent=next;
+  applyBattlefieldFontSize();
+  try{localStorage.setItem(BATTLEFIELD_FONT_STORAGE_KEY,String(next));}catch{/* Session controls still work without storage. */}
+  draw();
+}
+applyBattlefieldFontSize();
+
 const ui={
   roundLabel:document.getElementById("roundLabel"),
   initiativeLabel:document.getElementById("initiativeLabel"),
@@ -27103,7 +27137,7 @@ function drawCombatMessageBox(){
     boxH-2
   );
 
-  ctx.font='700 18px "EB Garamond", Georgia, "Times New Roman", serif';
+  ctx.font=battlefieldTextFont(18);
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.fillStyle=lettering;
@@ -29222,7 +29256,7 @@ function drawMagicEffectFx(){
     /* Kind-specific application symbol. */
     if(fx.kind==="sleep"){
       ctx.save();
-      ctx.font='700 12px "EB Garamond", Georgia, "Times New Roman", serif';
+      ctx.font=battlefieldTextFont(12);
       ctx.textAlign="center";
       ctx.textBaseline="middle";
       ctx.lineWidth=2.5;
@@ -29238,7 +29272,7 @@ function drawMagicEffectFx(){
       drawStatusStar(c.x-11-local*2,c.y-39-local*5,2.8,`rgba(255,250,211,${0.88*fade})`,`rgba(20,13,5,${0.80*fade})`);
     }else if(fx.kind==="confusion"){
       ctx.save();
-      ctx.font='700 13px "EB Garamond", Georgia, "Times New Roman", serif';
+      ctx.font=battlefieldTextFont(13);
       ctx.textAlign="center";
       ctx.textBaseline="middle";
       ctx.lineWidth=2.8;
@@ -29403,7 +29437,7 @@ function drawPersistentSleepStatusFx(){
     const zFade=Math.sin(Math.PI*drift);
 
     ctx.save();
-    ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
+    ctx.font=battlefieldTextFont(11);
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.lineWidth=2.6;
@@ -29495,7 +29529,7 @@ function drawPersistentConfusionStatusFx(){
       const alpha=0.72+0.16*Math.sin(phase*2.5+q);
 
       ctx.save();
-      ctx.font='700 11px "EB Garamond", Georgia, "Times New Roman", serif';
+      ctx.font=battlefieldTextFont(11);
       ctx.textAlign="center";
       ctx.textBaseline="middle";
       ctx.lineWidth=2.4;
@@ -29779,7 +29813,7 @@ function drawPersistentTauntStatusFx(){
     const exY=c.y-45+bob;
 
     ctx.save();
-    ctx.font='700 12px "EB Garamond", Georgia, "Times New Roman", serif';
+    ctx.font=battlefieldTextFont(12);
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.lineWidth=2.8;
@@ -30042,7 +30076,7 @@ function drawWhiteBattlefieldText(textValue,x,y,{fontSize=14,maxWidth=null}={}){
   if(!textValue) return;
 
   ctx.save();
-  ctx.font=`700 ${fontSize}px "EB Garamond", Georgia, "Times New Roman", serif`;
+  ctx.font=battlefieldTextFont(fontSize);
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.lineWidth=4;
@@ -30374,6 +30408,17 @@ function handleLauncherKey(event){
 function handleCombatKey(event){
   const code=event.code;
   const keyLower=event.key.toLowerCase();
+
+  // Font controls work before combat and during aiming without taking a turn.
+  const fontDirection=event.key==="+" || event.key==="=" || code==="NumpadAdd" ? 1
+    : event.key==="-" || code==="NumpadSubtract" ? -1 : 0;
+  if(fontDirection){
+    if(event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey ||
+      event.target?.isContentEditable || ["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName))return;
+    event.preventDefault();
+    changeBattlefieldFontSize(fontDirection);
+    return;
+  }
 
   // Available before the first round and while aiming; never consume typing.
   if(
