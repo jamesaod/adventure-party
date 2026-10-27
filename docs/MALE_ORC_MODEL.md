@@ -44,13 +44,16 @@ Rev 161 browser QA confirmed 20/20 humanoid roles, textured Standing Idle, Sword
 
 The display name changes from Male Orc to **Orc, Male, Uniformed**. Its stable `male-orc` identity, asset bytes, animations and package references are unchanged.
 
-The existing catalog-driven attachment workflow now accepts `weaponAttachmentProfileIds`, an array of keys in `weaponAttachmentProfiles`. Each profile lists explicit `weaponIds` and hand-local XYZ `position` / XYZ Euler `rotation` in degrees. The old single-profile sword format remains supported for archived models. Only `male-orc` opts into these new profiles:
+The existing catalog-driven attachment workflow now accepts `weaponAttachmentProfileIds`, an array of keys in `weaponAttachmentProfiles`. Each profile lists explicit `weaponIds` and hand-local XYZ `position` / XYZ Euler `rotation` in degrees. The old single-profile sword format remains supported for archived models. The original opt-in was `male-orc`; Rev 163 also shares these profiles with `orc-leader-male-uniformed`:
 
 | Primary equipment | Position XYZ | Rotation XYZ (degrees) |
 | --- | --- | --- |
 | One-handed: Medieval Sword, Battle Axe, Short Sword, Dagger, Wizard Staff Grip, Sling | -0.020, 0.050, 0.005 | 161, -46, 15 |
 | Two-Handed Sword | -0.045, 0.065, 0.060 | -114, -16, -30 |
+| Spear (Rev 163, 100% weapon size) | -0.010, 0.030, -0.060 | 100, 77, -43 |
 
 Select this model, then select the weapon or press **Reset grip** to apply its profile. Profile values are applied after normalizing the weapon's preset revision, so versioned weapon defaults cannot discard the model calibration. Scale, off-hand mounts, shield and secondary-grip calibration retain their existing controls. Other two-handed weapons keep their own defaults.
 
 Saved custom grips and captured poses are not silently rewritten. If a restored workspace shows older offsets, use Reset grip (clear captured poses first if equipment is locked), then recapture affected poses. New captures and Unit Package exports carry the actual adjusted equipment snapshot through the existing path. Shared pose libraries and animation retargeting are unchanged. Visual grip QA for this revision belongs to the user.
+
+Rev 163 adds the user-approved spear profile to both uniformed Orc models. [Orc Leader import](ORC_LEADER_MODEL.md) records the new source and conversion. Keep the same profile IDs on both models so future approved Orc grip changes remain shared.

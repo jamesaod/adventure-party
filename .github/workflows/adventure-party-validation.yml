@@ -63,6 +63,7 @@ jobs:
           node scripts/test-fbx-animations.mjs
           node scripts/test-blond-scale-mail-model.mjs
           node scripts/test-male-orc-model.mjs
+          node scripts/test-orc-leader-model.mjs
           node scripts/test-studio-equipment.mjs
           node scripts/test-studio-weapon-sets.mjs
           node scripts/test-studio-casting-captures.mjs
@@ -129,7 +130,7 @@ jobs:
           python scripts/test-equipment-batch-assets.py
 
       - name: Check Blender pipeline Python syntax
-        run: python -m py_compile scripts/blender_repair_orc_turns.py scripts/import-male-orc.py
+        run: python -m py_compile scripts/blender_repair_orc_turns.py scripts/import-male-orc.py scripts/import-orc-leader.py
 
       - name: Validate reusable pose libraries and MOB authoring
         run: |
