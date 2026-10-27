@@ -150,16 +150,17 @@ Connections:  {
       }
     } finally { THREE.TextureLoader.prototype.load = loadTexture; }
   }
-  // Ver 3 loads exactly the source-supplied FBX set on the preserved Ver 2 rig.
+  // Selected humanoids share the source-supplied FBX set and explicit retarget recipe.
   {
     const THREE = await import(pathToFileURL(path.join(three, 'three.core.min.js')));
     const modelCatalog = JSON.parse(await fs.readFile(new URL('../data/studio-models.json', import.meta.url), 'utf8'));
-    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3']);
-    const carl = modelCatalog.models.find(model => model.id === modelCatalog.studioModelIds[0]);
-    assert.equal(carl.label, 'Dungeon Crawler Carl Ver 3');
-    assert.equal(carl.animationLibrary, 'uploaded-fbx');
-    assert.equal(carl.file, modelCatalog.models.find(model => model.id === 'dungeon-crawler-carl-v2').file);
-    const bytes = await fs.readFile(new URL('../'+carl.file, import.meta.url));
+    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman']);
+    for(const modelId of modelCatalog.studioModelIds){
+    const modelEntry = modelCatalog.models.find(model => model.id === modelId);
+    if(modelId==='dungeon-crawler-carl-v3')assert.equal(modelEntry.label, 'Dungeon Crawler Carl Ver 3');
+    assert.equal(modelEntry.animationLibrary, 'uploaded-fbx');
+    if(modelId==='dungeon-crawler-carl-v3')assert.equal(modelEntry.file, modelCatalog.models.find(model => model.id === 'dungeon-crawler-carl-v2').file);
+    const bytes = await fs.readFile(new URL('../'+modelEntry.file, import.meta.url));
     const json = JSON.parse(bytes.subarray(20, 20+bytes.readUInt32LE(12)).toString('utf8'));
     const nodes = json.nodes.map(node => {
       const object = new THREE.Bone(); object.name=node.name || '';
@@ -191,8 +192,8 @@ Connections:  {
     geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(accessor(attributes.JOINTS_0),4));
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(accessor(attributes.WEIGHTS_0),4));
     const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshBasicMaterial());
-    nodes[meshIndex].add(mesh); mesh.bind(skeleton,nodes[meshIndex].matrixWorld);
-    const reference=JSON.parse(await fs.readFile(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url),'utf8'));
+    nodes[meshIndex].add(mesh); mesh.bind(skeleton,new THREE.Matrix4()); // Match GLTFLoader, including scaled Armature parents.
+    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${modelId==='dungeon-crawler-carl-v3'?'carl':'blond-scale-mail'}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
@@ -220,7 +221,7 @@ Connections:  {
       assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=60));
       assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
       assert.ok(clips.every(clip=>clip.tracks.every(track=>Array.from(track.values).every(Number.isFinite))));
-      assert.ok(clips.some(clip=>clip.name===carl.initialAnimation));
+      assert.ok(clips.some(clip=>clip.name===modelEntry.initialAnimation));
       assert.equal(clips.find(clip=>clip.name==='Bayonet Stab').userData.actionProfiles[0],'two-handed-thrust');
       const idle=clips.find(clip=>clip.name==='Standing Idle');
       assert.equal(idle.userData.studioAnimationId,'uploaded:standing-idle:0');
@@ -254,14 +255,16 @@ Connections:  {
           for(let vertex=0;vertex<geometry.attributes.position.count;vertex++){
             position.fromBufferAttribute(geometry.attributes.position,vertex);
             mesh.applyBoneTransform(vertex,position);
+            position.applyMatrix4(mesh.matrixWorld);
             assert.ok(position.toArray().every(Number.isFinite));bounds.expandByPoint(position);
           }
-          assert.ok(bounds.getSize(new THREE.Vector3()).length()<2,`${clip.name}: actual skinned body remains bounded`);
+          assert.ok(bounds.getSize(new THREE.Vector3()).length()<2,`${clip.name}: actual skinned body remains bounded (${bounds.getSize(new THREE.Vector3()).toArray()})`);
         }
         mixer.stopAllAction();
       }
-      console.log(`PASS Carl recipe: 70 real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
+      console.log(`PASS ${modelId}: 70 real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
     } finally {THREE.TextureLoader.prototype.load=loadTexture;}
+    }
   }
   console.log('FBX animations: distinct and duplicate-named stacks, shared curves and connection order, authored ranges, named-take fallback, empty layers/stacks, layered warnings, and returned-root metadata passed.');
 } finally {
