@@ -128,3 +128,8 @@ For user-calibrated weapon offsets, extend `data/studio-models.json` attachment 
 ## Candidate Rev 163 — reusing a calibrated model family
 
 [Orc Leader model](ORC_LEADER_MODEL.md) follows the established Male Orc importer, including unit-scale bones and original encoded texture preservation. Append the new catalog identity without changing the historical fallback order. Reference the same attachment profile IDs to reuse approved calibrations; add new family corrections (such as the spear) to every intended model's list. Generate an independent animation reference for each new rig and run the existing 22-clip acceptance test. Model-specific saved custom grips still take precedence until Reset grip is used.
+
+
+## Candidate Rev 165 — selected-model combat testing
+
+[Studio combat test](STUDIO_COMBAT_TEST.md) records the single controlled model handoff, configurable opponent roster and exact workspace round trip. Reuse existing MOB factories, player turn handling, footprint deployment and sprite manifests. Keep model identity independent of allegiance, preserve scoped IndexedDB keys, and guard Fighter-only equipment/class logic when a monster is the test player.

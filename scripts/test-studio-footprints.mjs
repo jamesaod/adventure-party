@@ -61,7 +61,7 @@ const functions = [
   'unitDistance', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
   'searchRotatingFootprintPath', 'pathToHex', 'axialDisk',
   'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'makeOrc', 'makeOrcLeader', 'makeOrcShaman',
-  'makeLargeMobTest', 'makeStudioTestMob', 'makeStudioKoboldEncounter', 'makeStudioPlayerOpponents', 'drawStudioSpriteMob',
+  'makeLargeMobTest', 'makeStudioTestMob', 'makeStudioTestPlayer', 'deployConfiguredCombatMobs', 'drawStudioSpriteMob',
   'drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage',
   'isStudioPlayerSpriteTarget', 'playerSpriteSetForType', 'applyPlayerSpriteSet',
   'makeFighter', 'makeFriendlyElvenRanger', 'makeTestPartyMage', 'clamp',
@@ -71,7 +71,7 @@ const functions = [
   'newGame', 'allUnits', 'livingPartyMembers', 'isPlayerControlledUnit', 'isKoboldUnit',
   'studioSpriteTestUnits', 'inspectStudioSpritePose', 'beginCombatFromPrompt', 'startRound',
   'rollInitiative', 'getUnitById', 'activeEnemies', 'fighterAttacksThisRound',
-  'fighterBaseAttacksThisRound', 'fighterSpecialistAttacksThisRound', 'isStudioTestCombat', 'returnToStudioFromCombat',
+  'fighterBaseAttacksThisRound', 'fighterSpecialistAttacksThisRound', 'isStudioTestCombat', 'studioReturnUrl', 'returnToStudioFromCombat', 'checkCombatVictory', 'renderStudioTestCharacterSheet', 'renderCharacterSheet', 'canUseSweep',
   'animateEntitySteps', 'animateMobAlongPath', 'tryPlayerMove'
 ];
 vm.createContext(sandbox);
@@ -181,64 +181,29 @@ const expectedMobs = {
   'orc-shaman': { ac: 6, thaco: 19, move: 9, hitDiceValue: 2, priestLevel: 3, weapon: 'Spear' },
   'juvenile-red-dragon': { ac: -3, thaco: 7, move: 9, hitDiceValue: 15, weapon: 'Bite', attacksPerRound: 3 },
   fighter: { ac: 4, thaco: 1, move: 9, level: 20, heightInches: 76, weapon: 'Flaming Sword +5', faction: 'player', attacksThisRound: 2 },
-  ranger: { ac: 5, thaco: 11, move: 9, level: 10, weapon: 'Short Sword', rangedWeapon: 'Longbow', controller: 'npc', faction: 'player' },
+  ranger: { ac: 5, thaco: 11, move: 9, level: 10, weapon: 'Short Sword', rangedWeapon: 'Longbow', controller: 'player', faction: 'player' },
   mage: { ac: 9, thaco: 14, move: 12, level: 20, weapon: 'Staff', controller: 'player', faction: 'player' }
 };
-// Every layout can use every existing MOB factory without substituting Kobold
-// rules. Placement reserves all occupied cells, including Carl's starting cell.
+// Every supported archetype becomes one controlled player with its own stats,
+// selected capture and complete footprint, without spawning inspection clones.
 for (const mob of SPRITE_MOBS) {
   for (const layout of allLayoutPresets) {
     const id = `test-${mob.id}-${layout.id}`;
     sandbox.UNIT_POSE_DEFINITIONS[id] = { spriteLayout: layout };
     sandbox.registeredStudioSpriteSets.set(id, { id, manifestId: id, label: 'Imported test', mobType: mob.id, layoutId: layout.id, footprintCells: layout.offsets.length });
     sandbox.selectedStudioSpriteSetId = id;
-    if (mob.targetKind === 'player') sandbox.selectedStudioPlayerSpriteSets.set(mob.id, id);
-    const player = sandbox.makeFighter();
-    const units = sandbox.makeStudioKoboldEncounter('grass', player);
-    const isCarl = mob.id === 'fighter';
-    assert.equal(units.length, isCarl ? 1 : 6);
-    assert.deepEqual(plain(units.map(unit => unit.facingHex)), isCarl ? [0] : [0, 1, 2, 3, 4, 5]);
-    const cells = new Set(isCarl ? [] : sandbox.occupiedHexes(player).map(cell => `${cell.x},${cell.y}`));
-    for (const unit of units) {
-      assert.equal(unit.type, mob.id);
-      for (const [key, value] of Object.entries(expectedMobs[mob.id])) assert.equal(unit[key], value, `${mob.id} preserves ${key}`);
-      for (const cell of sandbox.occupiedHexes(unit)) {
-        const key = `${cell.x},${cell.y}`;
-        assert.equal(cells.has(key), false, `${mob.id}/${layout.id} does not overlap another footprint`);
-        assert.equal(sandbox.inside(cell.x, cell.y), true);
-        cells.add(key);
-      }
-    }
-    if (mob.targetKind === 'player') {
-      const factory = { fighter: 'makeFighter', ranger: 'makeFriendlyElvenRanger', mage: 'makeTestPartyMage' }[mob.id];
-      assert.equal(sandbox[factory]().spriteSetId, id, 'The real player factory adopts its selected collection');
-      assert.equal(player.id, 'player', 'Inspection copies cannot mutate the persistent player identity');
-      for (let i = 1; i < units.length; i++) {
-        assert.notEqual(units[i].inventory, units[0].inventory);
-        assert.notEqual(units[i].buffs, units[0].buffs);
-      }
-      if (mob.id === 'fighter') {
-        assert.equal(units[0], player, 'Carl inspection reuses the canonical player instead of cloning him');
-        assert.equal(sandbox.isPlayerControlledUnit(units[0]), true);
-        assert.equal(player.spriteSetId, id, 'The actual Carl receives the selected fighter collection');
-        const shield=player.inventory.find(item=>item.slot==='shield'&&item.equipped);
-        assert.equal(shield?.appearanceId,'round-wooden-shield','Carl inspection keeps the equipped Round Wooden Shield');
-        assert.equal(shield?.catalogArmorId,'shield-medium','Round Wooden Shield uses the existing medium-shield rules');
-      }
-      if (mob.id === 'mage') {
-        assert.ok(units[0].knownSpellIds.includes('magic-missile'));
-        assert.equal(units[0].memorizedSpellIds.filter(id => id === 'fireball').length, 5);
-      }
-      const opponents = sandbox.makeStudioPlayerOpponents([player, ...units.filter(unit => unit !== player)]);
-      assert.equal(opponents.length, 6);
-      for (const enemy of opponents) {
-        assert.equal(enemy.type, 'kobold');
-        assert.equal(enemy.controller, 'mob');
-        assert.equal(enemy.faction, 'enemy');
-        assert.equal(cells.has(`${enemy.x},${enemy.y}`), false, 'Live-combat opponents never overlap the friendly formation');
-        cells.add(`${enemy.x},${enemy.y}`);
-      }
-    }
+    const player = sandbox.makeStudioTestPlayer('grass');
+    assert.equal(player.id,'player');assert.equal(player.faction,'player');
+    assert.equal(sandbox.isPlayerControlledUnit(player),true);
+    assert.equal(player.type,mob.id);assert.equal(player.spriteSetId,id);
+    assert.equal(player.footprintId,layout.id);assert.equal(player.facingHex,0);
+    for(const [key,value] of Object.entries(expectedMobs[mob.id]))assert.equal(player[key],value,`${mob.id} preserves ${key}`);
+    assert.ok(sandbox.occupiedHexes(player).every(cell=>sandbox.inside(cell.x,cell.y)&&!sandbox.isWall(cell.x,cell.y)));
+    if(mob.id==='fighter'){
+      assert.equal(player,sandbox.persistentFighter,'Carl keeps his canonical player');
+      assert.equal(player.inventory.find(item=>item.slot==='shield'&&item.equipped)?.appearanceId,'round-wooden-shield');
+    }else assert.equal(player.name,'Imported test','The selected model/capture label identifies the player');
+    if(mob.id==='mage')assert.ok(player.knownSpellIds.includes('magic-missile'));
   }
 }
 
@@ -255,7 +220,8 @@ Object.assign(sandbox, {
   MAP_WIDTH_HEXES: 25, MAP_HEIGHT_HEXES: 25,
   ui: { combatLog: {}, resultOverlay: { classList: { remove() {} } }, roundLabel: {}, initiativeLabel: {}, turnBanner: {} },
   log() {}, setCombatMessage() {}, updateUi() {}, draw() {}, expireTimedUnitEffects() {}, beginTurn() {},
-  document: { dispatchEvent() {} }, Event,
+  document: { dispatchEvent() {} }, Event, URLSearchParams,
+  readCombatMobRoster:()=>[{type:'kobold',count:2,faction:'hostile'}],
   window: { location: { assign: url => studioReturns.push(url) } }
 });
 for (const layout of allLayoutPresets) {
@@ -277,7 +243,7 @@ for (const layout of allLayoutPresets) {
   assert.equal(sandbox.livingPartyMembers()[0], player);
   assert.equal(sandbox.studioSpriteTestUnits().length, 1);
   assert.equal(sandbox.studioSpriteTestUnits()[0], player);
-  assert.equal(sandbox.game.enemies.length, 6);
+  assert.equal(sandbox.game.enemies.length, 2,'Only configured opponents are created');
   assert.ok(sandbox.game.enemies.every(unit => unit.type === 'kobold' && unit.controller === 'mob' && unit.faction === 'enemy'));
   for (const [pose, internal] of [['ready', 'stand'], ['attack', 'attack'], ['prone', 'prone']]) {
     assert.equal(sandbox.inspectStudioSpritePose(pose), true);
@@ -286,8 +252,8 @@ for (const layout of allLayoutPresets) {
   }
   assert.equal(await sandbox.beginCombatFromPrompt(), true);
   assert.equal(player.studioPoseInspection, undefined);
-  assert.equal(sandbox.game.order.length, 7);
-  assert.equal(new Set(sandbox.game.order).size, 7);
+  assert.equal(sandbox.game.order.length, 3);
+  assert.equal(new Set(sandbox.game.order).size, 3);
   assert.equal(sandbox.game.order.filter(id => id === 'player').length, 1, 'Carl has exactly one initiative slot');
   assert.equal(player.attacksThisRound, 2);
   sandbox.newGame('grass');
@@ -297,14 +263,46 @@ for (const layout of allLayoutPresets) {
 }
 assert.equal(sandbox.returnToStudioFromCombat(), true);
 assert.deepEqual(studioReturns, ['./3d-studio.html?studioRestore=1']);
-for (const type of ['orc', 'ranger', 'mage']) {
+for (const type of ['orc','orc-leader','ranger','mage']) {
   sandbox.selectedStudioSpriteSetId = `test-${type}-single`;
   sandbox.newGame('grass');
-  assert.equal(sandbox.game.player.studioSpriteTest, undefined, 'A fresh non-Carl test clears the persistent player inspection flag');
-  assert.equal(sandbox.studioSpriteTestUnits().length, 6, `${type} keeps its existing six-facing test`);
-  assert.equal(sandbox.game.allies.length, type === 'orc' ? 0 : 6);
-  assert.equal(sandbox.allUnits().filter(unit => unit.type === 'fighter').length, 1);
+  assert.equal(sandbox.game.player.type,type);
+  assert.equal(sandbox.game.player.controller,'player');
+  assert.equal(sandbox.game.player.spriteSetId,`test-${type}-single`);
+  assert.equal(sandbox.studioSpriteTestUnits().length,1);
+  assert.equal(sandbox.game.allies.length,0);
+  assert.equal(sandbox.allUnits().filter(unit=>unit.type==='fighter').length,0,'No leftover Carl is deployed');
+  await sandbox.beginCombatFromPrompt();
+  assert.equal(sandbox.game.player.attacksThisRound,1,'Monster/class test player does not inherit Carl attacks');
+  assert.equal(new Set(sandbox.game.order).size,3);
 }
+sandbox.selectedStudioSpriteSetId='test-orc-single';
+sandbox.readCombatMobRoster=()=>[{type:'orc',count:2,faction:'hostile'},{type:'kobold',count:1,faction:'friendly'}];
+sandbox.newGame('grass');
+assert.equal(sandbox.game.enemies.length,2);assert.equal(sandbox.game.allies.length,1);
+assert.ok(sandbox.game.enemies.every(unit=>unit.faction==='enemy'&&!unit.studioSpriteTest&&!unit.spriteSetId),'Same-species opponents do not inherit the test model');
+assert.equal(sandbox.game.allies[0].controller,'player');
+const reserved=new Set();
+for(const unit of sandbox.allUnits())for(const cell of sandbox.occupiedHexes(unit)){
+ const key=`${cell.x},${cell.y}`;assert.ok(!reserved.has(key),'Configured roster avoids every player/ally/enemy footprint');reserved.add(key);
+}
+// A monster character sheet is read-only; Fighter equipment sync would replace
+// its weapon, AC and movement and previously assumed missing ability scores.
+const sheetNodes=new Map();
+sandbox.document.getElementById=id=>{if(!sheetNodes.has(id))sheetNodes.set(id,{textContent:'',children:[],replaceChildren(){this.children=[];},append(...items){this.children.push(...items);}});return sheetNodes.get(id);};
+sandbox.document.createElement=()=>({textContent:''});
+sandbox.activePlayerControlledUnit=()=>sandbox.game.player;
+sandbox.isMageCharacter=unit=>unit.type==='mage';
+const beforeSheet=JSON.stringify(sandbox.game.player);
+sandbox.renderCharacterSheet();
+assert.equal(JSON.stringify(sandbox.game.player),beforeSheet);
+assert.ok(sheetNodes.get('sheetCombat').children.some(node=>node.textContent==='Scimitar'));
+sandbox.game.active='player';assert.equal(sandbox.canUseSweep(),false,'Orc player cannot inherit Fighter Sweep');
+sandbox.readCombatMobRoster=()=>[];sandbox.newGame('grass');
+assert.equal(sandbox.game.enemies.length,0);assert.equal(sandbox.game.allies.length,0);
+assert.equal(sandbox.checkCombatVictory(),false,'An empty Studio test stays open for solo inspection');
+sandbox.selectedMobEncounter='custom';sandbox.newGame('grass');
+assert.equal(sandbox.game.player.type,'fighter');assert.equal(sandbox.game.player.studioSpriteTest,undefined,'Ordinary combat still uses Carl');
 
 // Free strikes are awaited before movement commits. A rotating attacker can
 // occupy the planned destination during that reaction; all movement entry
@@ -330,4 +328,4 @@ for (const move of [
 }
 occupied.clear();
 
-console.log('Studio footprints: seven layouts × six facings, player and monster centroid rendering, blocked movement, real class factories, one canonical Carl through setup/initiative/inspection/restart/return, and unchanged six-facing monster/Ranger/Mage tests passed.');
+console.log('Studio footprints: seven layouts × six facings, player and monster centroid rendering, blocked movement, real class factories, one controlled selected character through setup/initiative/inspection/restart/return, configurable opponents, empty sandbox and unchanged ordinary Carl passed.');

@@ -13,7 +13,7 @@ function message(text) { setStatus.textContent = text; }
 function makeControls() {
   const panel = document.createElement('section');
   panel.className = 'combat-roster-placeholder';
-  panel.setAttribute('aria-label', 'Six-direction sprite test');
+  panel.setAttribute('aria-label', 'Studio player test');
   const row = document.createElement('div');
   row.className = 'combat-roster-row';
   const label = document.createElement('label');
@@ -28,7 +28,7 @@ function makeControls() {
   const studioLink = document.createElement('a');
   studioLink.id = 'combatSetupStudioReturnLink';
   studioLink.className = 'combat-roster-add combat-roster-test';
-  studioLink.href = './3d-studio.html?studioRestore=1';
+  studioLink.href = api.returnUrl();
   studioLink.textContent = 'Return to 3d studio';
   row.append(label, setSelect, studioLink);
   setStatus = document.createElement('p');
@@ -62,12 +62,16 @@ function makeControls() {
   inspectorHelp = help;
   help.className = 'small';
   help.style.cssText = 'margin:8px 0 0;';
-  inspector.append(heading, buttons, help);
+  const opponents=document.createElement('button');
+  opponents.type='button';opponents.className='combat-action';
+  opponents.textContent='Add / change opponents';
+  opponents.addEventListener('click',()=>api.openSetup());
+  inspector.append(heading, buttons, help, opponents);
   document.querySelector('#combatScreen .side').append(inspector);
   combatStudioReturn = document.createElement('a');
   combatStudioReturn.id = 'combatStudioReturnLink';
   combatStudioReturn.className = 'combat-action';
-  combatStudioReturn.href = './3d-studio.html?studioRestore=1';
+  combatStudioReturn.href = api.returnUrl();
   combatStudioReturn.textContent = 'Return to 3d studio';
   document.getElementById('returnButton').before(combatStudioReturn);
   document.addEventListener('adventure-party:sprite-state', refreshControls);
@@ -82,10 +86,7 @@ function refreshControls() {
   setSelect.replaceChildren(...options);
   setSelect.value = snapshot.selectedId;
   inspector.hidden = !snapshot.inspecting;
-  const selectedSet = snapshot.sets.find(set => set.id === snapshot.selectedId);
-  inspectorHelp.textContent = selectedSet?.mobType === 'fighter'
-    ? 'Inspect one Dungeon Crawler Carl using the selected sprite collection. Kobolds provide opponents. Space begins combat and restores live poses; movement and attacks turn Carl to the matching facing. Completed tests return directly to 3d studio without a loot screen.'
-    : 'Preview all six facings before combat. Player targets are friendly characters with their own class rules; Kobolds provide opponents. Space begins combat and restores live poses. Completed tests return directly to 3d studio without a loot screen.';
+  inspectorHelp.textContent = 'Your selected model is the player-controlled test character. Add opponents through Combat Setup. Space begins combat and restores live poses; movement and attacks choose the matching facing. Return to Studio keeps your exact capture workspace.';
   combatStudioReturn.hidden = snapshot.encounter !== 'studio-kobold';
   const selected = { stand: 'ready', windup: 'windup', attack: 'attack', falling: 'falling', prone: 'prone', 'casting-windup': 'casting-windup', cast: 'cast' }[snapshot.inspectionPose] || 'live';
   inspector.querySelectorAll('[data-sprite-inspect]').forEach(button => {
@@ -201,19 +202,14 @@ async function loadDraft() {
   api.select(id, { openSetup: true });
   const mob = spriteMob(manifest.mobType || 'kobold');
   const layout = spriteLayout(manifest.layout?.id || 'single');
-  const targetNote = mob.id === 'fighter'
-    ? 'One Dungeon Crawler Carl uses this collection, keeping his Fighter rules and equipment, against six Kobolds.'
-    : mob.targetKind === 'player'
-    ? 'Six friendly copies use this character’s class and equipment. This collection also supplies the matching test player’s sprites.'
-    : 'The selected monster keeps its existing combat rules.';
-  const inspectNote = mob.id === 'fighter' ? 'Carl’s captured poses' : 'all six directions';
-  message(`${manifest.label}: ${mob.label}, ${layout.offsets.length}-hex footprint, ${Object.keys(manifest.poses).length*6} captured sprites; missing poses use fallback artwork. ${targetNote} Choose Begin Battle to inspect ${inspectNote}.`);
+  message(`${manifest.label}: ${mob.label}, ${layout.offsets.length}-hex footprint, ${Object.keys(manifest.poses).length*6} captured sprites; missing poses use fallback artwork. You control this test character with the selected archetype's combat rules. Use + Add MOB to choose opponents, then Begin Battle.`);
+
 }
 
 async function start() {
   if (!api) return;
   makeControls();
-  message('Use the selected set with the six-facing encounter.');
+  message('Test the selected model as your player character. Use + Add MOB to choose opponents.');
   const wantsDraft = new URLSearchParams(location.search).get('studioSprite') === 'draft';
   try {
     const response = await fetch('data/sprite-sets.json', { cache: 'no-store' });

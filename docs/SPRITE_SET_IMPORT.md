@@ -27,9 +27,9 @@ Partial and complete sheets autosave in this browser with their source pixels, m
 
 ## Test immediately
 
-Choose **Test in combat** after capturing all 18 sprites. The studio saves the PNGs and an exact copy of the captured workspace, then opens Combat System Test in the current tab with that character selected. If saving fails, the studio stays open with your captures. The test creates six units using the selected MOB's implemented statistics and behavior, with the set's chosen footprint. This lets you inspect the ready, attack, and prone artwork before importing it into the repository.
+Choose **Test in combat** with the available captured poses. Studio saves the preview PNGs, pose references and an exact copy of the workspace before opening Combat Setup in the same tab; save failures keep Studio open. The selected model becomes one player-controlled test character, with the chosen footprint and existing archetype statistics. Missing poses retain the existing fallback behavior. No automatic Carl or six hostile copies are created.
 
-The `fighter` target uses exactly one Dungeon Crawler Carl: the existing player with the selected sprite set, against six Kobolds. It creates no extra Carl allies or initiative entries. The `ranger` and `mage` targets retain six friendly inspection copies of Elven Ranger or Baub with Kobold opponents. Existing class, equipment, statistics and player/NPC control are retained, and the pose inspector works on the selected friendly test character or formation.
+Use **+ Add MOB** to choose opponent type, number and Hostile faction; Friendly adds a controlled ally. The roster starts empty, allowing solo inspection. **Add / change opponents** in combat returns to Setup; Begin Battle restarts with your choices. Carl, Ranger and Mage also use this single-player path and their existing archetype rules. Model identity and player allegiance are independent. See [Studio combat test](STUDIO_COMBAT_TEST.md).
 
 Choose **Return to 3d studio** from setup or combat to restore the exact tested captures in the same tab and export or adjust them. Victory, defeat, and manual exit from a studio battle also return directly to the studio without a loot screen. Stable and candidate drafts are separate. Export the ZIP to keep a transferable copy and use the import command below to make the character part of the game repository.
 

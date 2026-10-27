@@ -14,7 +14,7 @@ const returnStart = source.indexOf('document.getElementById("returnButton").addE
 assert.ok(returnStart >= 0);
 const returnHandler = source.slice(returnStart, source.indexOf('\n});', returnStart) + 4);
 const functions = [
-  'isStudioTestCombat', 'returnToStudioFromCombat', 'exitCombat', 'scheduleCombatFinish',
+  'isStudioTestCombat', 'studioReturnUrl', 'returnToStudioFromCombat', 'exitCombat', 'scheduleCombatFinish',
   'finishCombat', 'checkCombatVictory', 'checkPartyDefeat', 'handleCombatKey', 'handleCombatConditionsKey'
 ];
 const restoreUrl = './3d-studio.html?studioRestore=1';
@@ -44,7 +44,7 @@ function harness(studioTest, spriteSetId = 'studio-kobold') {
     ui: { turnBanner: {}, resultOverlay: { classList: { remove() {} } } },
     spellCastOverlayOpen: false, characterSheetOpen: false, classReportOpen: false,
     cancelAllQuickCommands: () => false, isSpellTargetingMode: () => false, exitAimMode: () => false,
-    console
+    console, URLSearchParams
   };
   sandbox.activeEnemies = () => sandbox.game.enemies.filter(unit => unit.alive);
   sandbox.livingPartyMembers = () => sandbox.game.player.alive ? [sandbox.game.player] : [];
@@ -125,3 +125,8 @@ for (const staleState of ['new-battle', 'launcher']) {
 }
 
 console.log('Studio combat exit: built-in/imported victory, defeat, manual exits, single navigation, ordinary XP/loot, fresh setup, and stale completion guards passed.');
+
+const scoped=harness(true);
+scoped.sandbox.window.location.search='?studioSprite=draft&model=orc-leader-male-uniformed&poseLibrary=humanoid-medium';
+scoped.sandbox.exitCombat();
+assert.equal(scoped.calls.navigation[0],'./3d-studio.html?studioRestore=1&model=orc-leader-male-uniformed&poseLibrary=humanoid-medium','Combat returns to the exact scoped model workspace');
