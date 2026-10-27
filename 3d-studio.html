@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 175</span>
+        <span class="studio-build">Candidate Rev 176</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -101,7 +101,7 @@
               <span class="studio-label-row">Off-hand size <output id="studioOffHandSizeValue">100%</output></span>
               <input id="studioOffHandSize" type="range" min="25" max="200" step="5" value="100" disabled>
             </label>
-            <fieldset><legend>Off-hand position</legend>
+            <fieldset><legend>Off-hand position — world axes</legend>
               <label class="studio-field" for="studioOffHandPositionX">
                 <span class="studio-label-row">X <output id="studioOffHandPositionXValue">0</output></span>
                 <input id="studioOffHandPositionX" aria-label="Off-hand position X" type="range" min="-1" max="1" step="0.005" value="0" disabled>
@@ -140,7 +140,8 @@
           <p id="studioShieldStatus" class="studio-note studio-help" role="status" aria-live="polite">Load Carl to preview a shield on his left hand.</p>
           <details class="studio-equipment-grip">
             <summary>Adjust shield</summary>
-            <label class="studio-field" for="studioShieldScale">
+            <fieldset><legend>Shield position — world axes</legend><label class="studio-field"><span class="studio-label-row">X<output id="studioShieldPositionXValue">0</output></span><input id="studioShieldPositionX" aria-label="Shield world position X" type="range" min="-1" max="1" step="0.005" value="0" disabled></label><label class="studio-field"><span class="studio-label-row">Y<output id="studioShieldPositionYValue">0</output></span><input id="studioShieldPositionY" aria-label="Shield world position Y" type="range" min="-1" max="1" step="0.005" value="0" disabled></label><label class="studio-field"><span class="studio-label-row">Z<output id="studioShieldPositionZValue">0</output></span><input id="studioShieldPositionZ" aria-label="Shield world position Z" type="range" min="-1" max="1" step="0.005" value="0" disabled></label></fieldset>
+<label class="studio-field" for="studioShieldScale">
               <span class="studio-label-row">Shield scale <output id="studioShieldScaleValue" for="studioShieldScale">100%</output></span>
               <input id="studioShieldScale" type="range" min="25" max="200" step="5" value="100" disabled>
             </label>
@@ -204,7 +205,7 @@
           <details class="studio-equipment-grip">
             <summary>Adjust grip</summary>
             <fieldset>
-              <legend>Position in hand</legend>
+              <legend>Position — world axes</legend>
               <div class="studio-equipment-axes studio-grip-slider-axes">
                 <label class="studio-field" for="studioWeaponPositionX">
                   <span class="studio-label-row">X <output id="studioWeaponPositionXValue" for="studioWeaponPositionX">0.015</output></span>
@@ -529,7 +530,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C175"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C176"></script>
 
 </body>
 </html>

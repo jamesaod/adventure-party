@@ -1,9 +1,10 @@
-import {recoveryPoseReference} from './studio-capture-export.mjs?v=R238C173';
-import {captureGroupPath,isSharedCaptureGroup} from './action-capture-groups.mjs?v=R238C172';
-import {normalizePoseLibrary} from './pose-library.mjs?v=R238C172';
+import {recoveryPoseReference} from './studio-capture-export.mjs?v=R238C176';
+import {captureGroupPath,isSharedCaptureGroup} from './action-capture-groups.mjs?v=R238C176';
+import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
+import {normalizePoseLibrary} from './pose-library.mjs?v=R238C176';
 import { createUnitPackage } from './unit-package.mjs';
-import { spriteSetSlug } from './sprite-set-core.mjs?v=R238C153';
-import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C146';
+import { spriteSetSlug } from './sprite-set-core.mjs?v=R238C176';
+import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C176';
 
 // Bundle references to existing assets; each capture retains its own loadout,
 // stable animation source ID and time instead of borrowing the last UI state.
@@ -30,7 +31,7 @@ export function buildStudioUnitExport({name,settings,profiles,recovery=[]}){
     attachments:settings.unitPackage?.attachments||null,
     actionProfiles:[...new Set([...(settings.unitPackage?.actionProfiles||[]),...Object.keys(spriteSets),...recovery.filter(record=>!isSharedCaptureGroup(record.id)).map(record=>record.id)])],equipment:[...equipment.values()],
     mob:{...(settings.unitPackage?.mob||{}),type:settings.mobType||null},
-    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:normalizePoseLibrary(settings.poseLibrary)}:{}),captureFormatVersion:2,spriteSets,sharedActionGroups,
+    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:normalizePoseLibrary(settings.poseLibrary)}:{}),captureFormatVersion:2,poseFallbacks:POSE_FALLBACKS,spriteSets,sharedActionGroups,
       captureRecovery:recovery.map(recoveryPoseReference)}
   });
 }

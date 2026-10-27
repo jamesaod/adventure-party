@@ -1,6 +1,6 @@
 import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C169';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
-import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C153';
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
 import * as THREE from 'three';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -14,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C175';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C176';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -25,16 +25,16 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, STUDIO_OFF_HAND_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C152';
+} from './studio-equipment.mjs?v=R238C176';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C146';
+} from './studio-shield.mjs?v=R238C176';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C174';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C172';
-import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C172';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C176';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C176';
+import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C176';
 const authoringQuery=new URLSearchParams(location.search);
 const authoringScoped=!!authoringWorkspaceSuffix(location.search);
 if(authoringScoped&&authoringQuery.get('preview')==='1')document.documentElement.classList.add('studio-embedded');
@@ -79,6 +79,7 @@ const ui = Object.fromEntries([
   'OffHandPositionXValue', 'OffHandPositionYValue', 'OffHandPositionZValue',
   'OffHandRotationX', 'OffHandRotationY', 'OffHandRotationZ',
   'OffHandRotationXValue', 'OffHandRotationYValue', 'OffHandRotationZValue',
+  'ShieldPositionX','ShieldPositionY','ShieldPositionZ','ShieldPositionXValue','ShieldPositionYValue','ShieldPositionZValue',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
   'WeaponPositionXValue', 'WeaponPositionYValue', 'WeaponPositionZValue',
   'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
@@ -366,7 +367,7 @@ function updateEquipmentControls(locked = false) {
     : 'One-handed weapons only. Selecting one replaces the shield.');
   for(const [name,key] of [['Position','position'],['Rotation','rotation']]){
     for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
-      const input=ui[`OffHand${name}${axis}`], value=offHandSettings[key][index];
+      const input=ui[`OffHand${name}${axis}`], value=key==='position'?offHandEquipment.worldPosition()[index]:offHandSettings[key][index];
       input.value=String(value);input.disabled=offHandDisabled;
       ui[`OffHand${name}${axis}Value`].textContent=name==='Rotation' ? `${Math.round(value)}°` : value.toFixed(3);
     }
@@ -395,6 +396,10 @@ function updateEquipmentControls(locked = false) {
     ui[`ShieldRotation${axis}Value`].textContent=`${Math.round(value)}°`;
     field.setAttribute('aria-valuetext',`${Math.round(value)} degrees`);
   }
+  for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
+    const value=shieldEquipment.worldPosition()[index],field=ui[`ShieldPosition${axis}`];
+    field.value=String(value);field.disabled=shieldDisabled;ui[`ShieldPosition${axis}Value`].textContent=value.toFixed(3);
+  }
   ui.ResetShieldButton.disabled=shieldDisabled;
   ui.WeaponSize.value = String(settings.sizePercent);
   ui.WeaponSizeValue.textContent = `${settings.sizePercent}%`;
@@ -402,7 +407,7 @@ function updateEquipmentControls(locked = false) {
   for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
     for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
       const field = ui[`Weapon${name}${axis}`];
-      const value = settings[key][index];
+      const value = key==='position'?equipment.worldPosition()[index]:settings[key][index];
       field.value = String(value);
       field.disabled = busy || locked || settings.rightHand === 'none';
       const formatted = name === 'Position' ? value.toFixed(3) : `${Math.round(value)}°`;
@@ -1230,6 +1235,7 @@ function setClip(index) {
 }
 
 function updateAnimationControls() {
+  updateEquipmentControls();
   const available = state.modelReady && !!state.action;
   ui.PlayButton.disabled = !available;
   ui.RestartButton.disabled = !available;
@@ -2499,7 +2505,8 @@ function bindControls() {
   for(const [name,key] of [['Position','position'],['Rotation','rotation']]){
     for(const [axis,index] of [['X',0],['Y',1],['Z',2]]){
       ui[`OffHand${name}${axis}`].addEventListener('input',event=>{
-        const next=offHandEquipment.snapshot().settings;next[key][index]=event.target.valueAsNumber;void changeOffHand(next);
+        const next=key==='position'?offHandEquipment.withWorldPosition(index,event.target.valueAsNumber):offHandEquipment.snapshot().settings;
+        if(key!=='position')next[key][index]=event.target.valueAsNumber;void changeOffHand(next);
       });
     }
   }
@@ -2526,6 +2533,9 @@ function bindControls() {
       void changeShield(next,{resetPose:false});
     });
   }
+  for(const [axis,index] of [['X',0],['Y',1],['Z',2]])ui[`ShieldPosition${axis}`].addEventListener('input',event=>{
+    void changeShield(shieldEquipment.withWorldPosition(index,event.target.valueAsNumber),{resetPose:false});
+  });
   ui.ResetShieldButton.addEventListener('click',()=>{
     void changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}));
   });
@@ -2542,8 +2552,8 @@ function bindControls() {
   for (const [name, key] of [['Position', 'position'], ['Rotation', 'rotation']]) {
     for (const [axis, index] of [['X', 0], ['Y', 1], ['Z', 2]]) {
       ui[`Weapon${name}${axis}`].addEventListener('input', event => {
-        const next = equipment.snapshot().settings;
-        next[key][index] = event.target.valueAsNumber;
+        const next = key==='position'?equipment.withWorldPosition(index,event.target.valueAsNumber):equipment.snapshot().settings;
+        if(key!=='position')next[key][index] = event.target.valueAsNumber;
         // Adjust only the held item live. Do not snap the animation to ready
         // while calibrating a grip in the middle of a sword swing.
         void changeEquipment(next, { resetPose: false });
@@ -3091,7 +3101,7 @@ async function start() {
       invalidateCaptures:(reason,options)=>poseCapture.invalidateCaptures(reason,options),
       getLinkedLibrary:()=>state.poseLibrary,
       getSignature:()=>state.poseLibrarySignature,
-      setLink:(library,signature)=>{state.poseLibrary=structuredClone(library);state.poseLibrarySignature=signature;poseCapture.saveWorkspace();}
+      setLink:(library,signature)=>{state.poseLibrary=structuredClone(library);state.poseLibrarySignature=signature;poseCapture.refreshControls();poseCapture.saveWorkspace();}
     });
     if(authoringScoped&&query.get('preview')==='1'){
       window.addEventListener('message',async event=>{

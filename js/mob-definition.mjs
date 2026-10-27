@@ -1,6 +1,7 @@
 import {createUnitPackage,validateUnitPackage} from './unit-package.mjs';
-import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C172';
-import {DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C172';
+import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
+import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C176';
+import {DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C176';
 export const ABILITY_SCORES=Object.freeze(['str','dex','con','int','wis','cha']);
 export const MOB_ABILITIES=Object.freeze([{id:'bright-light-penalty',label:'Bright-light attack penalty (−1)'},{id:'spellcasting',label:'Spellcasting'}]);
 const number=(v,label,min,max,integer=false)=>{if(!Number.isFinite(v)||v<min||v>max||(integer&&!Number.isInteger(v)))throw Error(`${label} must be ${integer?'a whole number ':''}between ${min} and ${max}.`);return v;};
@@ -27,7 +28,7 @@ export function createMobDefinition({id,name,modelId,library,abilities={},rules=
   }else spellcasting=null;
   const poseLibrary=normalizePoseLibrary(library);
   return createUnitPackage({id,name,modelId,character:{...character,abilities:scores,rules:normalizeMobRules(rules)},actionProfiles:weaponTypes,equipment,
-    attachments,references:{...structuredClone(references),poseLibrary},mob:{authoringVersion:1,revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
+    attachments,references:{...structuredClone(references),poseFallbacks:POSE_FALLBACKS,poseLibrary},mob:{authoringVersion:1,revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
 }
 export function normalizeMobDefinition(value){
   validateUnitPackage(value);

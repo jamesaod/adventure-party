@@ -1,4 +1,5 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C146';
+import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C176';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -37,6 +38,7 @@ export const STUDIO_WEAPONS = Object.freeze([
     visualClass:TWO_HANDED_SWORD_ITEM.appearance.visualClass,
     poseProfileId:TWO_HANDED_SWORD_ITEM.appearance.poseProfileId,
     file:TWO_HANDED_SWORD_ITEM.appearance.asset,
+    materialOverrides:TWO_HANDED_SWORD_ITEM.appearance.materialOverrides,
     grip:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.grip]),
     secondaryGrip:Object.freeze([...TWO_HANDED_SWORD_ITEM.appearance.secondaryGrip]),
     handsRequired:TWO_HANDED_SWORD_ITEM.appearance.handsRequired,
@@ -502,15 +504,7 @@ export function createWeaponAttachment(THREE, hand, model, settings, options = {
   // The bow's source riser has slight transmission. Its extra render pass
   // corrupts scissored six-facing atlas tiles; use the authored opaque override
   // for both Studio and combat without changing source textures or the GLB.
-  if (Number.isFinite(weapon.materialOverrides?.transmission)) model.traverse(object => {
-    if (!object.isMesh) return;
-    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-      if (material && 'transmission' in material) {
-        material.transmission = weapon.materialOverrides.transmission;
-        material.needsUpdate = true;
-      }
-    }
-  });
+  applyEquipmentMaterialOverrides(model,weapon.materialOverrides);
   const socket = new THREE.Group(); socket.name = (options.attachmentHand || weapon.attachmentHand) === 'left' ? 'StudioLeftHandEquipment' : 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
   const grip = new THREE.Group(); grip.name = 'WeaponGripOrigin'; grip.position.fromArray(weapon.grip).multiplyScalar(-1); grip.add(model); socket.add(grip); hand.add(socket);
   const attachment = { socket, model, weapon, secondaryGripOffsetInches:[0,0,0], update:null, detach: () => socket.removeFromParent() };
@@ -616,5 +610,7 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   }
   function setModel(next, value = {}) { ++request; detach(); model=next; settings=normalize(); loading=false; error=''; constraint={active:false,solved:false,error:null}; preConstraintPose=null; return select(value); }
   function dispose() { restoreBonePose(preConstraintPose); preConstraintPose=null; disposed=true; ++request; detach(); model=null; loading=false; }
-  return { snapshot, select, setModel, restoreConstraints, applyConstraints, dispose };
+  const worldPosition=()=>worldGripPosition(THREE,handFor(studioWeapon(settings.rightHand)),settings.position);
+  const withWorldPosition=(axis,value)=>({...normalize(settings),position:setWorldGripAxis(THREE,handFor(studioWeapon(settings.rightHand)),settings.position,axis,value)});
+  return { snapshot, select, setModel, restoreConstraints, applyConstraints, dispose, worldPosition, withWorldPosition };
 }

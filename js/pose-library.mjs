@@ -1,5 +1,6 @@
-import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C172';
-import {CAPTURE_GROUP_CATALOG,WEAPON_CAPTURE_POSES,SHARED_CAPTURE_GROUPS,captureGroupForPose,isSharedCaptureGroup,splitCaptureGroups} from './action-capture-groups.mjs?v=R238C172';
+import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C176';
+import {CAPTURE_GROUP_CATALOG,WEAPON_CAPTURE_POSES,SHARED_CAPTURE_GROUPS,captureGroupForPose,isSharedCaptureGroup,splitCaptureGroups} from './action-capture-groups.mjs?v=R238C176';
+import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 export const POSE_LIBRARY_SCHEMA='adventure-party.pose-library';
 export const POSE_LIBRARY_VERSION=2;
 export const HUMANOID_SIZES=Object.freeze(['small','medium','large']);
@@ -63,19 +64,21 @@ export function addCaptureRecipes(library,groups){
   return next;
 }
 export function resolveLibraryPose(library,profile,pose,clips){
-  const sample=libraryPoseGroup(normalizePoseLibrary(library),captureGroupForPose(profile,pose))?.[pose];
+  const normalized=normalizePoseLibrary(library);
+  captureGroupForPose(profile,pose);
+  const resolved=poseWithFallback(normalized.profiles,normalized.sharedActionGroups,profile,pose),sample=resolved?.sample;
   if(!sample)throw Error('This action group has no assigned '+pose+' pose.');
   const index=clips.findIndex(clip=>(clip.sourceId||clip.userData?.studioAnimationId)===sample.sourceId);
   if(index<0)throw Error(`Animation unavailable on this model: ${sample.animation}. Load its source animation first.`);
   if(sample.timeSeconds>clips[index].duration+0.0001)throw Error(`Pose time exceeds ${sample.animation}'s duration.`);
-  return {index,sample};
+  return {index,sample,...(resolved.fallback?{fallback:true,profileId:resolved.groupId,pose:resolved.pose}:{})};
 }
 export function poseLibraryCoverage(library,profileIds,{casting=false}={}){
   const normalized=normalizePoseLibrary(library),ids=[...new Set(profileIds)];
   if(ids.some(id=>!ACTION_PROFILE_CATALOG.has(id)))throw Error('Unknown weapon type.');
   const groups=[...ids,...(ids.length?['death-prone']:[]),...(casting?['magic']:[])];
   const missing=[];let present=0,total=0;
-  for(const id of groups)for(const pose of CAPTURE_GROUP_CATALOG.get(id).poses){total++;if(libraryPoseGroup(normalized,id)[pose])present++;else missing.push({profileId:id,pose});}
+  for(const id of groups)for(const pose of (CAPTURE_GROUP_CATALOG.get(id)?.poses||WEAPON_CAPTURE_POSES)){total++;if(poseWithFallback(normalized.profiles,normalized.sharedActionGroups,id,pose))present++;else missing.push({profileId:id,pose});}
   return {present,total,missing};
 }
 // Scope each MOB/model workspace separately. Plain Studio keeps its original key.

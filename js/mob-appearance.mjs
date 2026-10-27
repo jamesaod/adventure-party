@@ -1,5 +1,5 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C149';
-import { studioShield } from './studio-shield.mjs?v=R238C146';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C176';
+import { studioShield } from './studio-shield.mjs?v=R238C176';
 import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C146';
 export { WEAPON_POSE_PROFILES };
 

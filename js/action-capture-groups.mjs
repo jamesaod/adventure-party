@@ -1,4 +1,6 @@
-import {ACTION_PROFILE_CATALOG, ACTION_POSES} from './action-profile-catalog.mjs?v=R238C172';
+import {ACTION_PROFILE_CATALOG, ACTION_POSES} from './action-profile-catalog.mjs?v=R238C176';
+
+import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 
 export const CAPTURE_FORMAT_VERSION=2;
 export const WEAPON_CAPTURE_POSES=Object.freeze(['ready','windup','attack']);
@@ -56,7 +58,10 @@ export function upgradeCaptureWorkspace(workspace){
 export function combinedCaptureGroup(workspace,profileId=workspace.settings.weaponActionProfileId||workspace.settings.actionProfileId){
   const next=upgradeCaptureWorkspace(workspace);
   const id=ACTION_PROFILE_CATALOG.has(profileId)?profileId:'one-handed-swing';
-  return {...next.actionProfiles?.[id],...next.sharedActionGroups?.magic,...next.sharedActionGroups?.['death-prone']};
+  return Object.fromEntries(ACTION_POSES.flatMap(pose=>{
+    const resolved=poseWithFallback(next.actionProfiles,next.sharedActionGroups,id,pose);
+    return resolved?[[pose,resolved.sample]]:[];
+  }));
 }
 export function assertCompatibleCaptureFrames(captures){
   const rows=Object.values(captures).filter(value=>value&&!value.stale),first=rows[0];

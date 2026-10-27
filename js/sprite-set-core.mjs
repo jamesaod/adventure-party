@@ -1,7 +1,7 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
 import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C93';
 
-import { ACTION_POSES } from './action-profile-catalog.mjs?v=R238C153';
+import { ACTION_POSES } from './action-profile-catalog.mjs?v=R238C176';
 
 export const SPRITE_DIRECTIONS = Object.freeze(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
 export const SPRITE_POSES = ACTION_POSES;

@@ -1,5 +1,6 @@
-import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C172';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C172';
+import {DEFAULT_MEDIUM_POSE_LIBRARY} from './default-pose-library.mjs?v=R238C176';
+import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C176';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C176';
 export function createAuthoringStore(storage,scope){
   const key=`adventure-party-authoring:${scope}`;
   function read(){
@@ -9,7 +10,7 @@ export function createAuthoringStore(storage,scope){
     return {version:1,libraries:data.libraries.map(normalizePoseLibrary),mobs:data.mobs.map(normalizeMobDefinition)};
   }
   function write(data){try{storage.setItem(key,JSON.stringify(data));}catch{throw Error('Browser storage could not save this draft. Export JSON to keep your work.');}}
-  const seeds=()=>['small','medium','large'].map(size=>createPoseLibrary({id:`humanoid-${size}`,name:`Humanoid ${size[0].toUpperCase()+size.slice(1)}`,size}));
+  const seeds=()=>['small','medium','large'].map(size=>createPoseLibrary({id:`humanoid-${size}`,name:`Humanoid ${size[0].toUpperCase()+size.slice(1)}`,size})).concat(normalizePoseLibrary({...DEFAULT_MEDIUM_POSE_LIBRARY,id:'humanoid-medium-user-r16',name:'Humanoid Medium — supplied poses',revision:0}));
   function libraries(){const data=read();return [...seeds().filter(seed=>!data.libraries.some(item=>item.id===seed.id)),...data.libraries];}
   function saveLibrary(value){
     const next=normalizePoseLibrary(value),data=read(),old=data.libraries.find(item=>item.id===next.id);

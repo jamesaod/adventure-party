@@ -249,6 +249,15 @@
       "mobType": "orc",
       "animationLibrary": "uploaded-fbx",
       "initialAnimation": "Sword And Shield Idle"
+    },
+    {
+      "id": "orc-female-shaman",
+      "label": "Orc Shaman, Female",
+      "file": "assets/models/orcs/orc-female-shaman/orc-female-shaman.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Sword And Shield Idle"
     }
   ],
   "weaponAttachmentProfiles": {
@@ -343,6 +352,7 @@
     "dungeon-crawler-carl-v3",
     "blond-scale-mail-woman",
     "male-orc",
-    "orc-leader-male-uniformed"
+    "orc-leader-male-uniformed",
+    "orc-female-shaman"
   ]
 }

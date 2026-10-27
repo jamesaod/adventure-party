@@ -1,7 +1,8 @@
-import {capturePosesForGroup,captureGroupForPose} from './action-capture-groups.mjs?v=R238C172';
-import {ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C172';
-import {createPoseLibrary,normalizePoseLibrary,recordLibraryPose,addCaptureRecipes,poseLibrarySignature,resolveLibraryPose,libraryPoseGroup,changedLibraryPoses} from './pose-library.mjs?v=R238C172';
-import {browserAuthoringStore,readAuthoringJson} from './authoring-store.mjs?v=R238C172';
+import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
+import {capturePosesForGroup,captureGroupForPose} from './action-capture-groups.mjs?v=R238C176';
+import {ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C176';
+import {createPoseLibrary,normalizePoseLibrary,recordLibraryPose,addCaptureRecipes,poseLibrarySignature,resolveLibraryPose,libraryPoseGroup,changedLibraryPoses} from './pose-library.mjs?v=R238C176';
+import {browserAuthoringStore,readAuthoringJson} from './authoring-store.mjs?v=R238C176';
 export function createStudioPoseLibrary({getSample,getClips,preview,selectProfile,getCaptureRecipes,invalidateCaptures,getSignature,getLinkedLibrary,setLink,initialLibrary=null,readOnly=false}){
   const store=browserAuthoringStore(),panel=document.createElement('div');panel.className='studio-pose-library';panel.id='studioPoseLibraryPanel';
   panel.innerHTML=`<label class="studio-field">Pose library<select id="studioPoseLibrarySelect"></select></label>
@@ -22,7 +23,9 @@ export function createStudioPoseLibrary({getSample,getClips,preview,selectProfil
   function refresh(){
     const allowed=capturePosesForGroup(currentProfile()),pose=libraryPoseGroup(library,currentProfile())?.[currentPose()];
     summary.textContent=`${count()} frame references · ${ACTION_POSE_LABELS[currentPose()]}: ${pose?pose.animation+' @ '+pose.timeSeconds.toFixed(3)+' s':'No frame captured yet'}`;
-    previewButton.disabled=!pose;
+    const fallback=poseWithFallback(library.profiles,library.sharedActionGroups,currentProfile(),currentPose());
+    previewButton.disabled=!fallback;
+    if(!pose&&fallback)summary.textContent+=` · Fallback: 1H Swing ${ACTION_POSE_LABELS[fallback.pose]}`;
     const earlier=Object.entries(library.legacySharedPoses||{}).flatMap(([id,poses])=>allowed.filter(p=>poses[p]).map(p=>[id,p]));
     byId('LegacyRecipePanel').hidden=!earlier.length;
     byId('LegacyRecipe').replaceChildren(...earlier.map(([id,p])=>new Option(`${ACTION_PROFILE_CATALOG.get(id).label}: ${ACTION_POSE_LABELS[p]}`,id+':'+p)));

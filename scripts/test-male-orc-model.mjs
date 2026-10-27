@@ -18,7 +18,7 @@ const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),2048);assert.equal(png.readUInt32BE(20),2048);
 const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
-assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed']);
+assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'male-orc.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');
 console.log('PASS Male Orc: source texture preserved, 11,519 triangles, 65 unit-scale joints, shared animation catalog');

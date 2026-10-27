@@ -1,4 +1,5 @@
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C146';
+import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C176';
 import { findHumanoidBone, analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 
 const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');
@@ -11,6 +12,7 @@ export const STUDIO_SHIELDS=Object.freeze([
     visualClass:WOODEN_SHIELD_ITEM.appearance.visualClass,
     representation:WOODEN_SHIELD_ITEM.appearance.representation,
     file:WOODEN_SHIELD_ITEM.appearance.asset,
+    materialOverrides:WOODEN_SHIELD_ITEM.appearance.materialOverrides,
     sourceSha256:WOODEN_SHIELD_ITEM.appearance.source.originalSha256,
     assetSha256:WOODEN_SHIELD_ITEM.appearance.runtimeAsset.sha256,
     sourceBounds:Object.freeze({
@@ -99,6 +101,7 @@ export function createShieldAttachment(THREE,hand,model,settings){
   if(!hand?.isBone||!shield||!model?.isObject3D){
     throw new Error('A shield and a left-hand bone are required.');
   }
+  applyEquipmentMaterialOverrides(model,shield.materialOverrides);
   const socket=new THREE.Group();
   socket.name='StudioLeftHandShield';
   socket.userData.studioShield=true;
@@ -209,5 +212,7 @@ export function createStudioShield({THREE,loadAsset,disposeObject,onChange=()=>{
     model=null;
     loading=false;
   }
-  return {snapshot,select,setModel,dispose};
+  const worldPosition=()=>worldGripPosition(THREE,findLeftHand(model),settings.position);
+  const withWorldPosition=(axis,value)=>({...normalizeShield(settings),position:setWorldGripAxis(THREE,findLeftHand(model),settings.position,axis,value)});
+  return {snapshot,select,setModel,dispose,worldPosition,withWorldPosition};
 }

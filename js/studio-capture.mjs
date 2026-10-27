@@ -1,19 +1,19 @@
-import {planCaptureExport,recoveryPoseReference} from './studio-capture-export.mjs?v=R238C173';
+import {planCaptureExport,recoveryPoseReference} from './studio-capture-export.mjs?v=R238C176';
 import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R238C153';
+} from './sprite-set-core.mjs?v=R238C176';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C173';
+} from './sprite-set-store.mjs?v=R238C176';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
-import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C172';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C173';
+import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C176';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C176';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
-import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C172';
+import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C176';
 
 const poseLabel = pose => ACTION_POSE_LABELS[pose];
 const spriteCount = SPRITE_POSES.length * SPRITE_DIRECTIONS.length;
@@ -94,6 +94,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
   if(ui.ActionProfile){
     for(const profile of CAPTURE_GROUP_CATALOG.values()){
+      if(profile.id==='spell-casting')continue;
       const option=document.createElement('option');option.value=profile.id;option.textContent=profile.label;
       ui.ActionProfile.append(option);
     }
@@ -275,17 +276,23 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       ui.ActionProfile.disabled=busy||equipmentBusy;
       for(const option of ui.ActionProfile.options){
         const group=CAPTURE_GROUP_CATALOG.get(option.value),saved=capturesByProfile.get(option.value)||{};
-        const complete=group.poses.every(pose=>saved[pose]&&!saved[pose].stale);
+        const library=getWorkspaceSettings().poseLibrary;
+        const assigned=isSharedCaptureGroup(option.value)?library?.sharedActionGroups?.[option.value]:library?.profiles?.[option.value];
+        const complete=group.poses.every(pose=>assigned?.[pose]||(!library&&saved[pose]));
         option.textContent=(complete?'✅ ':'')+group.label;
       }
     }
     if(ui.CaptureProfileSummary){
       const total=[...capturesByProfile.values()].reduce((n,group)=>n+Object.keys(group).length,0);
       const outdated=[...capturesByProfile.values()].reduce((n,group)=>n+Object.values(group).filter(pose=>pose.stale).length,0);
-      ui.CaptureProfileSummary.textContent=`${CAPTURE_GROUP_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${groupPoses().length} poses · ${total} captured poses across all groups${outdated?` · ${outdated} outdated snapshots preserved`:""}`;
+      ui.CaptureProfileSummary.textContent=`${CAPTURE_GROUP_CATALOG.get(selectedProfileId)?.label}: ${fresh/SPRITE_DIRECTIONS.length}/${groupPoses().length} current sprite captures · ${total} captured poses across all groups${outdated?` · ${outdated} outdated snapshots preserved`:""}`;
     }
     const coverage=byId('PoseCoverage');
-    if(coverage)coverage.textContent=groupPoses().map(pose=>`${poseLabel(pose)}: ${!captures[pose]?'missing':captures[pose].stale?'outdated (kept in export)':'captured'}`).join(' · ');
+    if(coverage){
+      const library=getWorkspaceSettings().poseLibrary;
+      const assigned=isSharedCaptureGroup(selectedProfileId)?library?.sharedActionGroups?.[selectedProfileId]:library?.profiles?.[selectedProfileId];
+      coverage.textContent=groupPoses().map(pose=>`${poseLabel(pose)}: ${assigned?.[pose]?'frame assigned':'frame unassigned'}; sprites ${!captures[pose]?'not captured':captures[pose].stale?'need re-render (preserved)':'current'}`).join(' · ');
+    }
     // No capture-state editor lock: affected captures are marked outdated
     // when an edit changes the rendered model.
     onLockChange(false);
@@ -746,7 +753,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
         }
         capturesByProfile.set(id,rows);
       }
-      selectedProfileId=CAPTURE_GROUP_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
+      selectedProfileId=workspace.settings.actionProfileId==='spell-casting'?'magic':CAPTURE_GROUP_CATALOG.has(workspace.settings.actionProfileId)?workspace.settings.actionProfileId:'one-handed-swing';
       weaponProfileId=ACTION_PROFILE_CATALOG.has(workspace.settings.weaponActionProfileId)?workspace.settings.weaponActionProfileId:(isSharedCaptureGroup(selectedProfileId)?'one-handed-swing':selectedProfileId);
       captures=capturesByProfile.get(selectedProfileId)||staged;
       capturesByProfile.set(selectedProfileId,captures);
@@ -805,7 +812,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) queueSave(); });
 
   return Object.freeze({
-    reset, snapshot, saveWorkspace, flushSave, updateModelScale, invalidateCaptures,
+    reset, snapshot, saveWorkspace, flushSave, updateModelScale, invalidateCaptures, refreshControls,
     switchActionProfile,
     recipeProfiles:()=>Object.fromEntries([...capturesByProfile].map(([id,poses])=>[id,Object.fromEntries(Object.entries(poses).map(([pose,capture])=>[pose,{clip:capture.clip,clipSourceId:capture.clipSourceId,time:capture.time}]))])),
     setEquipmentBusy(value){
