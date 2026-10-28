@@ -132,3 +132,15 @@ Combat-test fallback images are rendered temporarily from the borrowed source fr
 Restoration counts captures across all weapon/shared groups, even when the selected group is empty. It selects the newer full editable/combat workspace in the same scoped database, rather than blindly rolling back to the last tested copy. Catalog models whose stored source blobs are absent reload with saved settings and without resetting captures. Empty-group setup normalization also checks the total across groups.
 
 Regression coverage executes the restore path with populated weapon and Magic captures, an empty selected Bow group, distinct snapshot timestamps, source pixels and equipment settings. Browser QA captures a Staff Pose on Orc Shaman, tests combat, returns, then repeats with empty Bow using the 1H fallback; the original captured pose remains available.
+
+## Rev 181 — library management and capture checklist
+
+Shared Pose Library uses the existing `humanoid-medium` ID and cannot be deleted. New library from Shared copies its frame assignments, never model pixels. Custom and starter libraries can be deleted with confirmation; deletion tombstones prevent starters reappearing and stale tabs silently resurrecting deleted records. Pinned MOB snapshots remain unchanged.
+
+The checklist beneath Action Pose Capture always lists 1H Swing Ready/Wind Up/Attack and shared Falling/Prone, adding groups with assignments or captures. Green requires a current capture matching the assigned source/time; red means missing sprites, even if a reference exists. Amber retains an outdated snapshot for recovery. Text identifies each state independently of color.
+
+Capture banks are isolated by library within the existing model workspace. Switching saves/restores all groups, legacy snapshots and per-group equipment; inactive banks survive compressed autosave and combat return. Global model/render changes mark inactive captures outdated too. Clear library poses removes all assignments and this workspace's active capture bank after confirmation. Reset model adjustments resets size, front and current equipment grips separately, keeping references and marking pixels outdated. Other model workspaces and pinned MOB definitions are not deleted.
+
+Export Pose Library JSON transfers references only. Import previews name, size and assignment count, then explicitly creates a new library or confirms replacing the selected library's assignments/captures. Complete Capture ZIP is for repository integration and includes pose-library.json, per-pose sprites/grips and capture-summary.json with current/missing/outdated counts. It is not a Studio workspace restore file: extract its pose-library.json to reuse frame assignments; recapture on the selected model. Exported recovery pixels remain preserved.
+
+Tests execute library deletion protections, capture-bank isolation/clear, five required checklist slots, mismatched/stale references and compression round-trip. Existing capture/export and MOB pinning tests remain required.

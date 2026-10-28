@@ -150,6 +150,7 @@ jobs:
           node scripts/test-studio-capture-export.mjs
           node --check js/studio-pose-library.mjs
           node scripts/test-studio-unified-capture.mjs
+          node scripts/test-pose-library-controls.mjs
 
       - name: Check validator syntax
         run: node --check scripts/validate-repo.mjs

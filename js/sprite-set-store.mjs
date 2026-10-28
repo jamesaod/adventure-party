@@ -1,4 +1,4 @@
-import {encodeStudioWorkspace,decodeStudioWorkspace} from './studio-workspace-codec.mjs?v=R238C173';
+import {encodeStudioWorkspace,decodeStudioWorkspace} from './studio-workspace-codec.mjs?v=R238C181';
 import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C176';
 import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 
@@ -37,6 +37,7 @@ export function validateStudioWorkspace(workspace) {
   if (workspace.settings.modelScalePercent !== undefined) validateSpriteModelScale(workspace.settings.modelScalePercent);
   const settingsHexScale = validateSpriteHexScale(workspace.settings.hexScalePercent);
   const groups=[workspace.captures,...Object.values(workspace.actionProfiles||{}),...Object.values(workspace.sharedActionGroups||{}),...Object.values(workspace.legacySharedCaptures||{})];
+  for(const bank of Object.values(workspace.libraryCaptures||{}))groups.push(...Object.values(bank.groups||{}),...Object.values(bank.legacySharedCaptures||{}));
   for(const group of groups){
   if(!plain(group))invalid('invalid weapon capture group.');
   let dimensions, modelScale, hexScale;
