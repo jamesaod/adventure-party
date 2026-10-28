@@ -205,3 +205,7 @@ See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-c
 ## Candidate Rev 184
 
 [Combat scale handoff](STUDIO_COMBAT_TEST.md#rev-184--delayed-ordinary-combat-scale-replacement) records the fallback body/camera calibration correction. Preserve explicit Studio placement and apply model/hex scale only once.
+
+## Candidate Rev 185
+
+[Editable library IDs](SHARED_ACTION_CAPTURES.md#rev-185--editable-library-ids) uses explicit save-as-copy semantics to preserve pinned MOB references and original capture banks. Never silently rename Shared or overwrite another library.

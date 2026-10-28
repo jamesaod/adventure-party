@@ -144,3 +144,7 @@ Capture banks are isolated by library within the existing model workspace. Switc
 Export Pose Library JSON transfers references only. Import previews name, size and assignment count, then explicitly creates a new library or confirms replacing the selected library's assignments/captures. Complete Capture ZIP is for repository integration and includes pose-library.json, per-pose sprites/grips and capture-summary.json with current/missing/outdated counts. It is not a Studio workspace restore file: extract its pose-library.json to reuse frame assignments; recapture on the selected model. Exported recovery pixels remain preserved.
 
 Tests execute library deletion protections, capture-bank isolation/clear, five required checklist slots, mismatched/stale references and compression round-trip. Existing capture/export and MOB pinning tests remain required.
+
+## Rev 185 — editable library IDs
+
+Library settings now allows editing the Library ID, followed by Save under new ID. This creates an independent copy of the frame assignments and the current model workspace’s capture bank, including equipment and pixels. The original library stays available for existing MOB links and other model workspaces. Shared retains its permanent humanoid-medium identity; saving from Shared creates a custom copy. Duplicate, invalid and deleted IDs are rejected. Name/size edits keep the current ID until the explicit save action. Read-only previews cannot change IDs. Regression coverage is in test-pose-library-controls.mjs.
