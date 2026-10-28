@@ -1,0 +1,121 @@
+export const ORC_FIGHTER_POSE_LIBRARY={
+  "schema": "adventure-party.pose-library",
+  "version": 2,
+  "id": "orc-fighter",
+  "name": "Orc",
+  "bodyFamily": "humanoid",
+  "size": "medium",
+  "revision": 1,
+  "profiles": {
+    "one-handed-swing": {
+      "ready": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.3392
+      },
+      "attack": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.9557333333333333
+      }
+    },
+    "two-handed-swing": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "one-handed-thrust": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "two-handed-thrust": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "dual-wield": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "unarmed": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "spell-casting": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "bow": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "direct-fire": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "sling": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "throw": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "wizard-staff-grip": {
+      "ready": {
+        "animation": "Axe Stance",
+        "sourceId": "uploaded:staff-pose:0",
+        "timeSeconds": 6.1
+      },
+      "windup": {
+        "animation": "Axe Stance",
+        "sourceId": "uploaded:staff-pose:0",
+        "timeSeconds": 3.9467
+      },
+      "attack": {
+        "animation": "Axe Stance",
+        "sourceId": "uploaded:staff-pose:0",
+        "timeSeconds": 3.1353999999999997
+      }
+    }
+  },
+  "sharedActionGroups": {
+    "magic": {
+      "casting-windup": {
+        "animation": "Axe Stance",
+        "sourceId": "uploaded:staff-pose:0",
+        "timeSeconds": 3.7697999999999996
+      },
+      "cast": {
+        "animation": "Axe Stance",
+        "sourceId": "uploaded:staff-pose:0",
+        "timeSeconds": 3.8979
+      }
+    },
+    "death-prone": {
+      "falling": {
+        "animation": "Standing Death Forward 01",
+        "sourceId": "uploaded:standing-death-forward-01:0",
+        "timeSeconds": 1.098833333333333
+      },
+      "prone": {
+        "animation": "Standing Death Forward 01",
+        "sourceId": "uploaded:standing-death-forward-01:0",
+        "timeSeconds": 3.1666666666666665
+      }
+    }
+  }
+};

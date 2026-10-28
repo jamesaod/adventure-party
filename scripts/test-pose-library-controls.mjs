@@ -56,3 +56,12 @@ el('PoseLibraryId').value='Invalid ID';await el('SaveLibraryId').listeners.click
 // Capture-bank copies own their pixels; later edits cannot affect the source.
 ctx.structuredClone=structuredClone;ctx.selectCaptureLibrary('copied',{copyCurrent:true});assert.equal(ctx.captures.attack.time,.75);ctx.captures.attack.time=1;ctx.selectCaptureLibrary('second');assert.equal(ctx.captures.attack.time,.75);
 console.log('PASS editable ID copy, duplicate/invalid guards and independent capture banks');
+// The supplied Orc library is exact and appears once even with a browser copy.
+const {ORC_FIGHTER_POSE_LIBRARY}=await import('../js/orc-fighter-pose-library.mjs');
+assert.deepEqual(ORC_FIGHTER_POSE_LIBRARY,JSON.parse(readFileSync(new URL('../data/pose-libraries/orc-fighter.json',import.meta.url),'utf8')));
+assert.equal(store.libraries().filter(l=>l.id==='orc-fighter').length,1);
+const orcSaved=store.saveLibrary({...store.library('orc-fighter'),name:'My edited Orc'});
+assert.equal(store.libraries().filter(l=>l.id==='orc-fighter').length,1);
+assert.equal(store.library('orc-fighter').name,'My edited Orc');
+store.deleteLibrary('orc-fighter',orcSaved.revision);assert.equal(store.library('orc-fighter'),null);
+console.log('PASS exact Orc Fighter preset, duplicate prevention, saved precedence and deletion');

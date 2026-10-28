@@ -65,3 +65,7 @@ New MOBs open as Templates, with weighted class/level, primary weapon and off-ha
 Appearance & shared poses now contains only the library selector, library identity and an assigned-pose checklist. Each populated group lists its assigned/missing slots; 1H Swing and Death/Prone are always shown as the baseline. Green means an actual frame assignment, never a fallback or proof of rendered sprites. Empty optional groups are omitted. Changing libraries refreshes the list immediately. Model selection lives in MOB definition. The embedded preview and pose-preview controls were removed from this page; Studio remains the animation authoring surface.
 
 The unsolicited Orc Shaman preset and its repository seed files have been removed. Existing browser-saved custom libraries and pinned MOB snapshots are preserved. No extra library is added by this correction.
+
+## Candidate Rev 186 — supplied Orc Fighter poses
+
+The user-authorized orc-fighter library (display name Orc, revision 1) is supplied by data/pose-libraries/orc-fighter.json and its matching browser module. Preserve all ten source/time assignments exactly, including Stabbing in 1H Swing. The existing authoring store deduplicates by ID: saved orc-fighter data takes precedence over the seed, and deletion tombstones stay honored. No alias, Shaman entry, model binding or character stats are added. Select Orc in MOB Creator to link this library.
