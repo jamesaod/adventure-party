@@ -28,6 +28,7 @@ export async function loadUploadedFbxAnimations({
     if (!response.ok) throw new Error(`${entry.label} returned ${response.status}.`);
     const source = new FBXLoader().parse(await response.arrayBuffer(), '');
     try {
+      if(entry.restoreSkinBindPose)restoreAnimationSkinBindPose(THREE,source);
       const clips = prepareStudioAnimations(source.animations || []);
       if (!clips.length) throw new Error(`${entry.label} contains no usable animation.`);
       for (const [index, clip] of clips.entries()) {
@@ -43,4 +44,23 @@ export async function loadUploadedFbxAnimations({
     } finally { disposeModel(source); }
   }
   return result;
+}
+
+// FBX may initialize bones at its first animated frame. Recover the real bind
+// matrices before evaluating deltas. Include non-bone parents (often scale 100);
+// Skeleton.pose() assumes an unscaled non-bone parent and doubles that scale.
+export function restoreAnimationSkinBindPose(THREE,source){
+  source.updateWorldMatrix(true,true);
+  const bind=new Map();
+  source.traverse(object=>{
+    if(object.isSkinnedMesh)object.skeleton.bones.forEach((bone,index)=>{
+      if(!bind.has(bone))bind.set(bone,object.skeleton.boneInverses[index].clone().invert());
+    });
+  });
+  if(!bind.size)throw Error('This animation requires its source skin bind matrices.');
+  for(const [bone,world] of bind){
+    const parent=bind.get(bone.parent)||bone.parent?.matrixWorld||new THREE.Matrix4();
+    parent.clone().invert().multiply(world).decompose(bone.position,bone.quaternion,bone.scale);
+  }
+  source.updateWorldMatrix(true,true);
 }

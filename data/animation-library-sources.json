@@ -286,17 +286,18 @@
     },
     {
       "id": "staff-pose",
-      "label": "Staff Pose",
-      "file": "assets/animations/staff/staff-pose.fbx",
-      "bytes": 301324,
-      "sha256": "401fcc7a019546ed25e7912089b33129e1247e4cd793a016ef4eff99989d5b94",
+      "label": "Axe Stance",
+      "file": "assets/animations/staff/axe-stance-bind-v2.fbx",
+      "bytes": 8007004,
+      "sha256": "c9a1c7c8d26e485d689a8f0c5f53d3c87307ff9ab3930d4394b670d2e4205ae0",
       "actionProfiles": [
         "wizard-staff-grip"
       ],
       "status": "source-supplied",
       "assignedPoses": {},
-      "rigCompatibility": "meshy-posed-skeleton-v1",
-      "retargetMode": "anatomical-aim"
+      "rigCompatibility": "meshy-neutral-bind-world-v2",
+      "retargetMode": "world-bind-delta",
+      "restoreSkinBindPose": true
     }
   ]
 }

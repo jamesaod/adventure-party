@@ -2901,7 +2901,16 @@ class AnimationParser {
 	generateVectorTrack( modelName, curves, initialValue, type ) {
 
 		const times = this.getTimesForAllAxes( curves );
-		const values = this.getKeyframeTrackValues( times, curves, initialValue );
+		const values = times.flatMap( time => [ 'x', 'y', 'z' ].map( ( axis, component ) => {
+            const curve = curves[ axis ];
+            if ( ! curve || ! curve.times.length ) return initialValue[ component ];
+            let index = 0;
+            while ( index + 1 < curve.times.length && curve.times[ index + 1 ] <= time ) index ++;
+            if ( time <= curve.times[ 0 ] ) return curve.values[ 0 ];
+            if ( index + 1 === curve.times.length ) return curve.values[ index ];
+            const weight = ( time - curve.times[ index ] ) / ( curve.times[ index + 1 ] - curve.times[ index ] );
+            return curve.values[ index ] + weight * ( curve.values[ index + 1 ] - curve.values[ index ] );
+        } ) );
 
 		return new VectorKeyframeTrack( modelName + '.' + type, times, values );
 
@@ -3106,6 +3115,26 @@ class AnimationParser {
 	// These will be converted to quaternions which don't support values greater than
 	// PI, so we'll interpolate large rotations
 	interpolateRotations( curvex, curvey, curvez, eulerOrder ) {
+
+        // Meshy independently simplifies each Euler axis. Array indices are
+        // not necessarily the same moment: align on key times before unrolling.
+        const curves = [ curvex, curvey, curvez ];
+        const aligned = curves.every( curve => curve.times.length === curvex.times.length &&
+            curve.times.every( ( time, index ) => time === curvex.times[ index ] ) );
+        if ( ! aligned ) {
+            const clock = [ ...new Set( curves.flatMap( curve => curve.times ) ) ].sort( ( a, b ) => a - b );
+            [ curvex, curvey, curvez ] = curves.map( curve => {
+                let index = 0;
+                const values = clock.map( time => {
+                    while ( index + 1 < curve.times.length && curve.times[ index + 1 ] <= time ) index ++;
+                    if ( time <= curve.times[ 0 ] ) return curve.values[ 0 ];
+                    if ( index + 1 === curve.times.length ) return curve.values[ index ];
+                    const weight = ( time - curve.times[ index ] ) / ( curve.times[ index + 1 ] - curve.times[ index ] );
+                    return curve.values[ index ] + weight * ( curve.values[ index + 1 ] - curve.values[ index ] );
+                } );
+                return { ...curve, times: clock, values };
+            } );
+        }
 
 		const times = [];
 		const values = [];

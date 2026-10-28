@@ -258,6 +258,15 @@
       "mobType": "orc",
       "animationLibrary": "uploaded-fbx",
       "initialAnimation": "Sword And Shield Idle"
+    },
+    {
+      "id": "orc-female-shaman-v2",
+      "label": "Orc Shaman, Female Ver 2",
+      "file": "assets/models/orcs/orc-female-shaman-v2/orc-female-shaman-v2.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Axe Stance"
     }
   ],
   "weaponAttachmentProfiles": {
@@ -353,6 +362,7 @@
     "blond-scale-mail-woman",
     "male-orc",
     "orc-leader-male-uniformed",
-    "orc-female-shaman"
+    "orc-female-shaman",
+    "orc-female-shaman-v2"
   ]
 }

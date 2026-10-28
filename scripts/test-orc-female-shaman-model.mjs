@@ -18,7 +18,7 @@ const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),512);assert.equal(png.readUInt32BE(20),512);
 const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
-assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman']);
+assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'orc-female-shaman.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');
 console.log('PASS Orc Shaman: source texture preserved, 13,094 triangles, 65 unit-scale joints, shared animation catalog');
