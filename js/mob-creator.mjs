@@ -1,3 +1,4 @@
+import {mobFromStudioPackage,readMobImport} from './mob-studio-import.mjs?v=R238C187';
 import {createGenerationEditor} from './mob-generation-editor.mjs?v=R238C183';
 import {sampleGeneration,generationWeaponTypes} from './mob-generation.mjs?v=R238C182';
 import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C176';
@@ -15,19 +16,21 @@ function attempt(fn){return async event=>{try{await fn(event);}catch(error){stat
 function checkboxes(container,entries,name){for(const entry of entries){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.name=name;input.value=entry.id;label.append(input,document.createTextNode(entry.label));$(container).append(label);}}
 const checked=name=>[...document.querySelectorAll(`input[name="${name}"]:checked`)].map(input=>input.value);
 const setChecked=(name,values)=>document.querySelectorAll(`input[name="${name}"]`).forEach(input=>{input.checked=values.includes(input.value);});
-function libraryOptions(){const items=store.libraries();if(library&&!items.some(item=>item.id===library.id))items.push(library);$('libraryId').replaceChildren(...items.map(item=>new Option(item.name,item.id)));if(library)$('libraryId').value=library.id;}
+function libraryOptions(){const items=store.libraries();if(library&&!items.some(item=>item.id===library.id))items.push(library);$('libraryId').replaceChildren(...items.map(item=>new Option(`${item.id==='orc-fighter'?'Orc Fighter':item.name} · ${item.id}`,item.id)));if(library)$('libraryId').value=library.id;}
 function mobOptions(){const selected=loaded?.id||'';$('savedMob').replaceChildren(new Option('New MOB',''),...store.mobs().map(mob=>new Option(mob.name,mob.id)));$('savedMob').value=selected;}
 function read(){
+ if(!$('modelId').value)throw Error('Import a Complete Capture ZIP or Unit Package from Studio first. A pose library alone has no model or footprint.');
  if(!$('mobForm').reportValidity())throw Error('Check the highlighted fields.');
  const sameModel=loaded?.modelId===$('modelId').value;
  const references=sameModel?structuredClone(loaded.references):{};
  if(!sameModel||poseLibrarySignature(library)!==poseLibrarySignature(loaded.references.poseLibrary)){delete references.spriteSets;delete references.sharedActionGroups;delete references.captureRecovery;delete references.captureFormatVersion;}
  return createMobDefinition({id:$('mobId').value.trim(),name:$('mobName').value.trim(),modelId:$('modelId').value,library,
  abilities:Object.fromEntries(ABILITY_SCORES.map(id=>[id,Number($(id).value)])),rules:Object.fromEntries(['hpMode','hitDice','maxHp','ac','thaco','move','attacksPerRound','morale','xpValue'].map(id=>[id,['hpMode','hitDice'].includes(id)?$(id).value:Number($(id).value)])),
- generation:generationEditor.read(),weaponTypes:[...new Set([...checked('weaponType'),...generationWeaponTypes(generationEditor.read())])],species:$('species').value,size:$('size').value,footprint:$('footprint').value,specialAbilities:checked('specialAbility'),spellcasting:{classId:$('casterClass').value,level:Number($('casterLevel').value),spellIds:$('spellIds').value.split(',').map(id=>id.trim()).filter(Boolean)},notes:$('notes').value,
+ generation:generationEditor.read(),weaponTypes:[...new Set([...checked('weaponType'),...generationWeaponTypes(generationEditor.read())])],species:$('species').value,size:library.size,footprint:$('footprint').value,specialAbilities:checked('specialAbility'),spellcasting:{classId:$('casterClass').value,level:Number($('casterLevel').value),spellIds:$('spellIds').value.split(',').map(id=>id.trim()).filter(Boolean)},notes:$('notes').value,
  revision:loaded?.id===$('mobId').value?loaded.mob.revision:0,equipment:sameModel?loaded.equipment:[],attachments:sameModel?loaded.attachments:null,references,character:loaded?.character||{}});
 }
 function renderPoses(){
+ $('size').value=library.size;
  $('castingFields').hidden=!checked('specialAbility').includes('spellcasting');
  $('libraryInfo').textContent=`${library.name} · revision ${library.revision} · Humanoid ${library.size}. Checks mean assigned animation frames, not model-specific sprite captures.`;
  $('poseChecklist').replaceChildren();
@@ -41,17 +44,19 @@ function renderPoses(){
  }
 }
 function fill(mob){
+ $('mobDefinitionFields').disabled=false;
  loaded=normalizeMobDefinition(mob);library=loaded.references.poseLibrary;generationEditor.load(loaded.mob.generation,loaded.character,loaded.equipment);generated=null;$('exportGeneratedMob').disabled=true;$('generatedMobSummary').textContent='Generate a sample to inspect class, level and equipment.';
  for(const [id,value] of Object.entries({mobId:mob.id,mobName:mob.name,modelId:mob.modelId,species:mob.mob.species,size:mob.mob.size,footprint:mob.mob.footprint,notes:mob.mob.notes,...mob.character.abilities,...mob.character.rules}))if($(id))$(id).value=value;
  if(!models.some(model=>model.id===mob.modelId)){$('modelId').add(new Option('Unavailable model: '+mob.modelId,mob.modelId));$('modelId').value=mob.modelId;}
  setChecked('weaponType',mob.actionProfiles);setChecked('specialAbility',mob.mob.specialAbilities);$('casterClass').value=mob.mob.spellcasting?.classId||'wizard';$('casterLevel').value=mob.mob.spellcasting?.level||1;$('spellIds').value=(mob.mob.spellcasting?.spellIds||[]).join(', ');
+ const appearance=loaded.references.studioAppearance;$('studioAppearanceInfo').textContent=appearance?`From Studio: model size ${appearance.modelScalePercent}% · hex scale ${appearance.hexScalePercent}% · footprint ${appearance.footprint}. Change these in Studio and re-export.`:'Imported legacy MOB: model and footprint preserved. Import a fresh Studio ZIP to include visual scale.';
  libraryOptions();mobOptions();renderPoses();dirty=false;
 }
-function fresh(){const id='humanoid-'+Date.now();fill(createMobDefinition({id,name:'New Humanoid',modelId:models[0].id,library:store.library('humanoid-medium'),generation:{version:1,kind:'template',alwaysItems:[],classLevels:[{classId:'none',level:1,weight:100}],primary:[{itemId:'none',weight:100}],offHand:[{itemId:'none',weight:100}]}}));status('New MOB. Set its name, model, stats and weapon types.');}
+function fresh(){const id='humanoid-'+Date.now();fill(createMobDefinition({id,name:'New Humanoid',modelId:'pending-studio-model',library:store.library('humanoid-medium'),generation:{version:1,kind:'template',alwaysItems:[],classLevels:[{classId:'none',level:1,weight:100}],primary:[{itemId:'none',weight:100}],offHand:[{itemId:'none',weight:100}]}}));$('mobDefinitionFields').disabled=true;$('modelId').value='';$('studioAppearanceInfo').textContent='No Studio appearance imported. Import a Complete Capture ZIP; selecting a pose library does not choose a model.';status('Import your Studio Complete Capture ZIP, then edit the MOB name, stats and equipment probabilities.');}
 function save(){const mob=read();if(loaded?.id!==mob.id&&store.mob(mob.id))throw Error('That MOB ID already exists. Choose a different ID.');loaded=store.saveMob(mob);dirty=false;const url=new URL(location.href);url.searchParams.set("mob",loaded.id);history.replaceState(null,"",url);mobOptions();renderPoses();const ready=mobReadiness(loaded);status(`Saved ${loaded.name} r${loaded.mob.revision}. ${ready.present}/${ready.total} required poses assigned. Export when ready for integration.`);return loaded;}
 async function start(){
  const response=await fetch('./data/studio-models.json',{cache:'no-cache'});if(!response.ok)throw Error('Model catalog could not be loaded.');const catalog=await response.json();models=catalog.models.filter(model=>!catalog.studioModelIds||catalog.studioModelIds.includes(model.id));if(!models.length)throw Error('No Studio models are available.');
- $('modelId').replaceChildren(...models.map(model=>new Option(model.label,model.id)));$('footprint').replaceChildren(...SPRITE_LAYOUT_PRESETS.map(item=>new Option(item.label,item.id)));
+ $('modelId').replaceChildren(new Option('Not imported from Studio',''),...models.map(model=>new Option(model.label,model.id)));$('footprint').replaceChildren(...SPRITE_LAYOUT_PRESETS.map(item=>new Option(item.label,item.id)));
  for(const id of ABILITY_SCORES){const label=document.createElement('label'),input=document.createElement('input');label.textContent=id.toUpperCase();Object.assign(input,{id,type:'number',min:'1',max:'25',value:'10',required:true});label.append(input);$('scores').append(label);}
  checkboxes('weaponTypes',[...ACTION_PROFILE_CATALOG.values()].filter(item=>item.id!=='spell-casting'),'weaponType');checkboxes('specialAbilities',MOB_ABILITIES,'specialAbility');
  generationEditor=createGenerationEditor($('generationEditor'),{onChange:()=>{dirty=true;generated=null;$('exportGeneratedMob').disabled=true;renderPoses();}});
@@ -69,7 +74,7 @@ async function start(){
  $('savedMob').addEventListener('change',attempt(()=>{const id=$('savedMob').value;if(dirty){$('savedMob').value=loaded?.id||'';throw Error('Save your edits before opening another MOB.');}if(id){fill(store.mob(id));status('Opened '+loaded.name);}else fresh();}));
  $('exportMob').addEventListener('click',attempt(()=>{const mob=read();downloadAuthoringJson(mob,mob.id+'.unit-package.json');dirty=false;status('Exported MOB category, generation choices, stats, equipment and linked pose library. Use Studio ZIP for rendered sprites and equipment grips.');}));
  $('importMob').addEventListener('click',()=>{$('importFile').value='';$('importFile').click();});
- $('importFile').addEventListener('change',attempt(async()=>{if(dirty)throw Error('Save your current edits before importing.');const data=await readAuthoringJson($('importFile').files[0]);if(data.schema==='adventure-party.pose-library'){let incoming=normalizePoseLibrary(data);const existing=store.library(incoming.id);if(existing&&poseLibrarySignature(existing)!==poseLibrarySignature(incoming))incoming={...incoming,id:incoming.id.slice(0,65)+'-import-'+Date.now(),revision:0};else if(existing)incoming=existing;library=store.saveLibrary(incoming);libraryOptions();renderPoses();dirty=true;status('Imported and linked pose library. Save the MOB to keep its selection.');}else{const incoming=normalizeMobDefinition(data);if(store.mob(incoming.id)){incoming.id=incoming.id.slice(0,65)+'-import-'+Date.now();incoming.mob.revision=0;}fill(incoming);dirty=true;status('Imported MOB as a draft. Review it, then save.');}}));
+ $('importFile').addEventListener('change',attempt(async()=>{if(dirty&&$('modelId').value)throw Error('Save your current edits before importing.');const data=await readMobImport($('importFile').files[0]);if(data.schema==='adventure-party.pose-library'){let incoming=normalizePoseLibrary(data);const existing=store.library(incoming.id);if(existing&&poseLibrarySignature(existing)!==poseLibrarySignature(incoming))(()=>{throw Error('A different library already uses this ID. Update it in Studio or save there under a new ID before importing.');})();else if(existing)incoming=existing;library=store.saveLibrary(incoming);libraryOptions();renderPoses();dirty=true;status('Imported and linked pose library. Save the MOB to keep its selection.');}else{const incoming=mobFromStudioPackage(data);if(store.mob(incoming.id)){incoming.id=incoming.id.slice(0,65)+'-import-'+Date.now();incoming.mob.revision=0;}fill(incoming);dirty=true;status('Imported Studio/MOB package. Model and footprint are read-only; edit the character sheet, then save.');}}));
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
  window.addEventListener('storage',event=>{if(event.key?.startsWith('adventure-party-authoring:')){libraryOptions();mobOptions();status('Authoring data changed in another tab. Reselect the pose library to link its latest saved revision, or reopen a changed MOB before saving.');}});
 }
