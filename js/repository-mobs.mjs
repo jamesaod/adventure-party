@@ -1,6 +1,7 @@
+import {generateMobRules} from './mob-class-rules.mjs?v=R238C190';
 import {sampleGeneration} from './mob-generation.mjs?v=R238C182';
 import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C176';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C188';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C190';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C95';
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
@@ -14,9 +15,10 @@ export function createRepositoryMob(template,catalog){
   const sample=sampleGeneration(template.mob.generation,rng),rules=template.character.rules;
   const match=/^(\d+)d(\d+)([+-]\d+)?$/.exec(rules.hitDice);
   if(rules.hpMode==='rolled'&&!match)throw Error('Unsupported repository MOB hit dice: '+rules.hitDice);
-  const hp=rules.hpMode==='rolled'?Math.max(1,Array.from({length:+match[1]},()=>1+Math.floor(rng()*+match[2])).reduce((a,b)=>a+b,Number(match[3]||0))):rules.maxHp;
+  const hp=rules.maxHp;
   Object.assign(unit,{repositoryMobId:template.id,repositoryMobModel:model,name:template.name,classId:sample.classId,level:sample.level,abilities:structuredClone(template.character.abilities),hp,maxHp:hp,ac:rules.ac,authoredBaseAc:rules.ac,unarmoredAc:rules.ac,thaco:rules.thaco,move:rules.move,authoredMove:rules.move,attacksPerRound:rules.attacksPerRound,morale:rules.morale,moraleLabel:String(rules.morale),xpValue:rules.xpValue,hitDiceLabel:rules.hitDice,hitDiceValue:match?+match[1]:1,brightLightAttackPenalty:template.mob.specialAbilities.includes('bright-light-penalty')?-1:0});
   unit.inventory=sample.equipment.map(e=>{const item=ITEM_CATALOG[e.itemId];return {name:item.name,type:item.category==='shield'?'Shield':'Weapon',slot:item.slot,qty:e.quantity||1,equipped:e.slot!=='inventory',equippable:true,catalogItemId:item.id,catalogWeaponId:item.rules.catalogWeaponId,catalogArmorId:item.rules.catalogArmorId,appearanceId:item.appearance?.appearanceId||item.id,weaponPoseProfileId:item.appearance?.poseProfileId,...item.rules};});
+  Object.assign(unit,generateMobRules(template,sample,rng));
   return unit;
  }
  function recipe(unit){
@@ -36,6 +38,6 @@ export function createRepositoryMob(template,catalog){
 }
 if(typeof window!=='undefined'){
  const load=async path=>{const response=await fetch(new URL(path,import.meta.url));if(!response.ok)throw Error('Could not load '+path);return response.json();};
- const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C189'),load('../data/studio-models.json')]);
+ const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/studio-models.json')]);
  window.adventurePartyRepositoryMobs=createRepositoryMob(template,catalog);
 }

@@ -217,3 +217,7 @@ See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-c
 ## Candidate Rev 188
 
 [One library export](MOB_CREATOR.md#candidate-rev-188--one-library-export) supersedes Rev 187 ZIP-only appearance handoff. Optional studioAppearance belongs to the library envelope; individual pose samples remain animation references only.
+
+## Candidate Rev 190
+
+MOB Creator and repository spawns share class generation and spell preparation. See [class-derived combatants](MOB_CREATOR.md#candidate-rev-190--class-derived-combatants-and-spell-preparation). Preserve explicit authored overrides and run the class-rule parity tests when editing engine class tables or the base spell catalog.
