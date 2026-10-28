@@ -59,3 +59,13 @@ const supplied=store.library('humanoid-medium-user-r16');
 assert.equal(Object.values({...supplied.profiles,...supplied.sharedActionGroups}).flatMap(Object.values).filter(Boolean).length,25);
 assert.equal(supplied.sharedActionGroups.magic.cast.timeSeconds,2.776666666666667);
 console.log('PASS batch: explicit-first fallbacks, assignment checkmarks, world XYZ for primary/off-hand/shield, brighter materials, supplied 25-frame preset');
+// The fallback render uses the existing capture path and restores the user's frame.
+const studio=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+const fallbackFn=studio.slice(studio.indexOf('function renderFallbackCapture('),studio.indexOf('function readCapturePose('));
+let renderedAt;
+const state={clips:[{id:'old'},{id:'fallback'}],action:{time:1.2},playing:true,mixer:{update(){}}};
+const uiState={Clip:{value:'0'}};
+const scope={state,ui:uiState,animationSourceId:clip=>clip.id,equipment:{restoreConstraints(){},applyConstraints(){}},setClip(index){uiState.Clip.value=String(index);state.action={time:0};},readCapturePose(){renderedAt={clip:uiState.Clip.value,time:state.action.time};return {equipment:'current-loadout'};},updateAnimationControls(){},invalidate(){}};
+vm.runInNewContext(fallbackFn,scope);
+assert.equal(scope.renderFallbackCapture({clipSourceId:'fallback',time:.7}).equipment,'current-loadout');
+assert.deepEqual(renderedAt,{clip:'1',time:.7});assert.equal(uiState.Clip.value,'0');assert.equal(state.action.time,1.2);assert.equal(state.playing,true);

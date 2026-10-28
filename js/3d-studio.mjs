@@ -1635,6 +1635,21 @@ function updateSunShadowView(){
   points.needsUpdate=true;sunShadowMesh.material.opacity=sun.opacity;
 }
 
+function renderFallbackCapture(capture){
+  const index=state.clips.findIndex(clip=>animationSourceId(clip)===capture.clipSourceId);
+  if(index<0)throw Error('Fallback animation is unavailable on this model.');
+  const previous={index:Number(ui.Clip.value),time:state.action?.time||0,playing:state.playing};
+  try{
+    state.playing=false;setClip(index);state.action.paused=true;state.action.time=capture.time;
+    equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();
+    return readCapturePose();
+  }finally{
+    setClip(previous.index);
+    if(state.action){state.action.time=previous.time;equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();}
+    state.playing=previous.playing;updateAnimationControls();invalidate();
+  }
+}
+
 function readCapturePose() {
   if (!state.modelReady || !state.model || state.disposed) throw new Error('Load a model before capturing a pose. Your saved sprites can still be exported.');
   if (!state.action) throw new Error('T-Pose is for height and model-size calibration only. Select an animation before capturing Ready, Attack, or Prone.');
@@ -2950,6 +2965,7 @@ async function start() {
   populateSetupControls();
   poseCapture = createPoseCapture({
     readPose: readCapturePose,
+    renderFallback:renderFallbackCapture,
     getStyle: () => pixelRenderOptions(true),
     getWorkspaceSettings,
     onProfileChange:restoreProfileEquipment,

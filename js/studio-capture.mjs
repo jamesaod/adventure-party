@@ -59,7 +59,7 @@ function download(blob, name) {
 
 // Captures retain unquantized pixels, allowing one color/outline adjustment to
 // update every saved pose without re-evaluating animation or moving its camera.
-export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus, onProfileChange = async () => {}, onCapture = () => {} }) {
+export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = () => ({}), onLockChange, onError, onStatus, onProfileChange = async () => {}, onCapture = () => {}, renderFallback = null }) {
   const byId = suffix => document.getElementById(`studio${suffix}`);
   const ui = Object.fromEntries([
     'CaptureCount', 'SpriteSetName', 'PoseSheetRows', 'SheetStatus', 'CaptureLockNote',
@@ -567,7 +567,17 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     if (busy) return;
     runExport(async () => {
       const groups=Object.fromEntries(capturesByProfile);
-      const group=assertCompatibleCaptureFrames(combinedCaptureGroup({captureFormatVersion:2,settings:{},actionProfiles:groups,sharedActionGroups:groups},weaponProfileId));
+      const group=combinedCaptureGroup({captureFormatVersion:2,settings:{},actionProfiles:groups,sharedActionGroups:groups},weaponProfileId);
+      // Borrow only the source frame. Render it with this model's currently
+      // selected equipment; do not reuse pixels depicting the fallback weapon.
+      if(renderFallback)for(const [pose,captured] of Object.entries(group)){
+        const direct=(pose==='falling'||pose==='prone'?groups['death-prone']:pose==='cast'||pose==='casting-windup'?groups.magic:groups[weaponProfileId])?.[pose];
+        if(!direct&&!captured.stale){
+          const rendered=await renderFallback(captured);
+          rendered.edgeDirections=frameEdgeDirections(rendered);rendered.stale=false;quantizeCapture(rendered);group[pose]=rendered;
+        }
+      }
+      assertCompatibleCaptureFrames(group);
       const exported=buildExport(group,weaponProfileId);
       ui.SheetStatus.textContent = 'Saving your captured sprites before opening combat…';
       const files = await packageFiles(exported,{includeQaSheet:false});
