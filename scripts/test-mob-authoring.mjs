@@ -68,3 +68,9 @@ const {zipSync,strToU8}=await import('../assets/vendor/three/addons/libs/fflate.
 const zip=zipSync({'unit-package.json':strToU8(JSON.stringify(handoff)),'unneeded.png':new Uint8Array(20)});
 assert.deepEqual(await readMobImport({name:'orc.zip',size:zip.length,arrayBuffer:async()=>zip.buffer}),handoff);
 console.log('PASS Studio model/size/footprint handoff, ZIP import, missing appearance rejection and legacy MOB compatibility');
+const linkedOrc=normalizePoseLibrary({...assigned,studioAppearance:{version:1,modelId:'male-orc-fighter',modelScalePercent:155,hexScalePercent:109,footprint:'single',equipment:{rightHand:'battle-axe',position:[.1,.2,.3]},poseEquipment:{'one-handed-swing':{ready:{equipment:{rightHand:'battle-axe'}}}}}});
+assert.deepEqual(normalizePoseLibrary(JSON.parse(JSON.stringify(linkedOrc))),linkedOrc);
+const linkedSaved=store.saveLibrary({...linkedOrc,id:'linked-orc',revision:0});assert.deepEqual(store.library('linked-orc').studioAppearance,linkedOrc.studioAppearance);
+assert.throws(()=>normalizePoseLibrary({...linkedOrc,studioAppearance:{...linkedOrc.studioAppearance,footprint:'bad'}}),/Invalid Studio appearance/);
+assert.throws(()=>normalizePoseLibrary({...linkedOrc,studioAppearance:{...linkedOrc.studioAppearance,modelId:'../bad'}}),/Invalid Studio appearance/);
+console.log('PASS single-library JSON appearance/grips round trip and validation');

@@ -81,3 +81,11 @@ The user-authorized orc-fighter library (display name Orc, revision 1) is suppli
 7. Supply both original Complete Capture ZIP and MOB JSON for repository registration, validation, PR, candidate publication and combat QA.
 
 Library options show display name plus stable ID; orc-fighter is labeled Orc Fighter. Saved libraries with the same ID take precedence. Conflicting JSON imports require an explicit new ID in Studio, rather than silently creating duplicates. No user libraries are deleted by label cleanup.
+
+## Candidate Rev 188 — one library export
+
+This supersedes Rev 187's requirement for a ZIP. Load the repository model in Studio, choose the library, adjust size/footprint/equipment and capture required poses. Under Library settings click Export Library for MOB Creator. The single pose-library.json includes optional versioned studioAppearance metadata: model ID, model/hex scale, footprint, current equipment/shield/off-hand settings, recolor and captured per-pose equipment adjustments. Its source-frame assignments remain reusable; PNGs are not included. Export saves this enriched library in the existing authoring store.
+
+In MOB Creator import that one JSON, or select its saved library on the same site. The appearance panel lists resolved model label/file, scales, footprint, humanoid size and whether equipment adjustments were supplied, followed by the pose checklist. Character fields unlock when the library supplies appearance. Older pose-only libraries remain readable but require a new Studio export before creating a linked MOB. Existing Unit Package/ZIP imports remain supported. Equal/newer revisions update the existing library ID; older conflicting imports are rejected. No duplicate alias is generated.
+
+Finish stats, abilities and equipment probabilities, then export MOB JSON for repository integration. Complete Capture ZIP remains optional for handing off pre-rendered PNGs; it is not required to import a library into MOB Creator.
