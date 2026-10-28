@@ -197,3 +197,7 @@ Library management, protected Shared default, per-library capture banks, checkli
 ## Candidate Rev 182
 
 [Unique and Template MOBs](MOB_CREATOR.md#candidate-rev-182--unique-and-template-mobs) documents weighted generation, explicit combat stats, guaranteed inventory, sample exports and the supplied Shaman pose preset. Keep generation metadata in the existing Unit Package and reuse the canonical item catalog.
+
+## Candidate Rev 183
+
+See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-creator-layout): visible Template probability tables, library-only checklist panel and removal of the unsolicited Shaman seed. Preserve saved user libraries.

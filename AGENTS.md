@@ -25,6 +25,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
+- Rev 183: New MOBs default to Template with weighted tables first. Appearance panel is library selector plus assigned-pose checklist only; model selection is in MOB definition. Do not add unsolicited pose presets.
 - Rev 182: MOB Creator supports Unique/Template generation metadata, conditional off-hand choices and guaranteed inventory. See docs/MOB_CREATOR.md; generation samples are authoring outputs, not automatic live encounter registration.
 - Rev 181: Shared Pose Library (`humanoid-medium`) is permanent; checklist distinguishes frames from current sprites. Capture banks are library-scoped inside model workspaces and compressed together. Keep clear/reset/delete separate and JSON import explicit; see docs/SHARED_ACTION_CAPTURES.md.
 - Rev 178 supersedes Rev 177 Staff Pose retargeting: Axe Stance restores the with-skin neutral inverse bind, then uses world-bind deltas. The FBX loader aligns independent XYZ key times. Orc Shaman, Female Ver 2 is a separate 32-bone model. See docs/ORC_FEMALE_SHAMAN_V2_MODEL.md; retain the independent Blender pose checks.

@@ -4,7 +4,6 @@ import {normalizeGeneration,sampleGeneration,primaryItems,offHandItems,needsBoth
 import {createMobDefinition,normalizeMobDefinition} from '../js/mob-definition.mjs';
 import {createPoseLibrary} from '../js/pose-library.mjs';
 import {createAuthoringStore} from '../js/authoring-store.mjs';
-import {ORC_SHAMAN_POSE_LIBRARY} from '../js/orc-shaman-pose-library.mjs';
 const g={version:1,kind:'template',classLevels:[{classId:'fighter',level:1,weight:75},{classId:'fighter',level:2,weight:20},{classId:'fighter',level:3,weight:5}],primary:[{itemId:'none',weight:100}],offHand:[{itemId:'none',weight:100}],alwaysItems:[]};
 for(const [roll,level] of [[0,1],[.74999,1],[.75,2],[.94999,2],[.95,3],[.99999,3]])assert.equal(sampleGeneration(g,()=>roll).level,level);
 const counts=[0,0,0];for(let i=0;i<100;i++)counts[sampleGeneration(g,()=>i/100).level-1]++;assert.deepEqual(counts,[75,20,5]);
@@ -21,7 +20,8 @@ assert.deepEqual(sampleGeneration(sample.generation,()=>{throw Error('Unique mus
 const noClass=sampleGeneration({...g,classLevels:[{classId:'none',level:1,weight:100}]},()=>0);assert.equal(noClass.classId,null);assert.deepEqual(noClass.equipment,[]);
 const library=createPoseLibrary({id:'test-library',name:'Test'});
 for(const generation of [undefined,g,draft,sample.generation]){const mob=createMobDefinition({id:'test-mob',name:'Test',modelId:'test-model',library,generation});assert.deepEqual(normalizeMobDefinition(JSON.parse(JSON.stringify(mob))),mob);}
-assert.deepEqual(ORC_SHAMAN_POSE_LIBRARY,JSON.parse(fs.readFileSync(new URL('../data/pose-libraries/orc-shaman-user-r2.json',import.meta.url))));
 const memory=new Map(),store=createAuthoringStore({getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)},'test');
-const preset=store.library('orc-shaman-supplied-r2');assert.deepEqual(preset.profiles,ORC_SHAMAN_POSE_LIBRARY.profiles);assert.deepEqual(preset.sharedActionGroups,ORC_SHAMAN_POSE_LIBRARY.sharedActionGroups);const saved=store.saveLibrary({...preset,name:'Custom Shaman'});assert.equal(store.library(saved.id).name,'Custom Shaman');assert.equal(store.library('humanoid-medium').name,'Shared Pose Library');
-console.log('MOB generation: probabilities, equipment, round trips and Shaman preset passed.');
+console.log('MOB generation: probabilities, equipment, round trips and library defaults passed.');
+
+assert.equal(store.library('orc-shaman-supplied-r2'),null,'No unsolicited preset');
+assert.equal(store.library('humanoid-medium').name,'Shared Pose Library');
