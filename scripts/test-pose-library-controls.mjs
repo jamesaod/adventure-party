@@ -47,3 +47,12 @@ pending=el('ApplyLibraryImport').listeners.click();el('LibraryConfirmYes').liste
 assert.equal(panel.library().id,target);assert.equal(panel.library().profiles['one-handed-swing'].attack.sourceId,sample.sourceId);assert.equal(cleared,1);
 await el('PoseLibraryFile').listeners.change();el('LibraryImportMode').value='new';await el('ApplyLibraryImport').listeners.click();assert.notEqual(panel.library().id,target);assert.equal(cleared,1,'Import as new does not clear the previous library');
 console.log('PASS JSON review before mutation, replacement cancellation/confirmation and import-as-new isolation');
+
+// A new ID copies assignments without overwriting the old library.
+const oldId=panel.library().id;el('PoseLibraryId').value='orc-custom-poses';await el('SaveLibraryId').listeners.click();
+assert.equal(panel.library().id,'orc-custom-poses');assert.ok(panel.library().profiles['one-handed-swing'].attack);
+el('PoseLibraryId').value=SHARED_POSE_LIBRARY_ID;await el('SaveLibraryId').listeners.click();assert.equal(panel.library().id,'orc-custom-poses','Duplicate IDs never overwrite Shared');
+el('PoseLibraryId').value='Invalid ID';await el('SaveLibraryId').listeners.click();assert.equal(panel.library().id,'orc-custom-poses','Invalid ID does not change the selection');
+// Capture-bank copies own their pixels; later edits cannot affect the source.
+ctx.structuredClone=structuredClone;ctx.selectCaptureLibrary('copied',{copyCurrent:true});assert.equal(ctx.captures.attack.time,.75);ctx.captures.attack.time=1;ctx.selectCaptureLibrary('second');assert.equal(ctx.captures.attack.time,.75);
+console.log('PASS editable ID copy, duplicate/invalid guards and independent capture banks');

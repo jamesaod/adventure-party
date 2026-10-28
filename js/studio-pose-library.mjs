@@ -4,12 +4,12 @@ import {capturePosesForGroup,captureGroupForPose} from './action-capture-groups.
 import {ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C176';
 import {createPoseLibrary,normalizePoseLibrary,recordLibraryPose,addCaptureRecipes,poseLibrarySignature,resolveLibraryPose,libraryPoseGroup,changedLibraryPoses} from './pose-library.mjs?v=R238C176';
 import {browserAuthoringStore,readAuthoringJson,downloadAuthoringJson,SHARED_POSE_LIBRARY_ID} from './authoring-store.mjs?v=R238C183';
-export function createStudioPoseLibrary({getSample,getClips,preview,selectProfile,getCaptureRecipes,invalidateCaptures,getSignature,getLinkedLibrary,setLink,initialLibrary=null,readOnly=false,getCaptureStates=()=>({}),selectCaptureLibrary=()=>{},clearCaptures=()=>{},resetAdjustments=async()=>{}}){
+export function createStudioPoseLibrary({getSample,getClips,preview,selectProfile,getCaptureRecipes,invalidateCaptures,getSignature,getLinkedLibrary,setLink,initialLibrary=null,readOnly=false,getCaptureStates=()=>({}),selectCaptureLibrary=()=>{},copyCaptureLibrary=()=>{},clearCaptures=()=>{},resetAdjustments=async()=>{}}){
   const store=browserAuthoringStore(),panel=document.createElement('div');panel.className='studio-pose-library';panel.id='studioPoseLibraryPanel';
   panel.innerHTML=`<label class="studio-field">Pose library<select id="studioPoseLibrarySelect"></select></label>
   <p class="studio-note">Every capture saves its animation frame here and its sprites/equipment with this model.</p>
   <details class="studio-library-options"><summary>Library settings</summary><div class="studio-recipe-fields"><label class="studio-field">Library name<input id="studioPoseLibraryName" maxlength="160"></label><label class="studio-field">Library ID<input id="studioPoseLibraryId" maxlength="100"></label><label class="studio-field">Humanoid size<select id="studioPoseLibrarySize"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label></div>
-  <div class="studio-sheet-actions"><button id="studioImportPoseLibrary" type="button" class="studio-button">Import library JSON</button><button id="studioNewPoseLibrary" type="button" class="studio-button">New library from Shared</button></div><input id="studioPoseLibraryFile" type="file" accept=".json,application/json" hidden>
+  <div class="studio-sheet-actions"><button id="studioSaveLibraryId" type="button" class="studio-button">Save under new ID</button></div><p class="studio-note">Enter a unique ID using lowercase letters, numbers and hyphens. Saving under a new ID copies this library and this model’s captures; existing MOB links keep the original. Shared keeps its permanent ID.</p><div class="studio-sheet-actions"><button id="studioImportPoseLibrary" type="button" class="studio-button">Import library JSON</button><button id="studioNewPoseLibrary" type="button" class="studio-button">New library from Shared</button></div><input id="studioPoseLibraryFile" type="file" accept=".json,application/json" hidden>
   <div class="studio-sheet-actions"><button id="studioClearPoseLibrary" type="button" class="studio-button">Clear library poses</button><button id="studioDeletePoseLibrary" type="button" class="studio-button">Delete library</button><button id="studioResetModelAdjustments" type="button" class="studio-button">Reset model adjustments</button></div>
   <p class="studio-note">Shared Pose Library is the permanent editable default. Clear removes this library's assignments and captures in this workspace. Reset restores model size/front and equipped-item grips; it keeps pose assignments.</p>
   <div class="studio-sheet-actions"><button id="studioExportLibraryJson" type="button" class="studio-button">Export Pose Library JSON</button></div>
@@ -47,8 +47,8 @@ export function createStudioPoseLibrary({getSample,getClips,preview,selectProfil
     byId('LegacyRecipePanel').hidden=!earlier.length;
     byId('LegacyRecipe').replaceChildren(...earlier.map(([id,p])=>new Option(`${ACTION_PROFILE_CATALOG.get(id).label}: ${ACTION_POSE_LABELS[p]}`,id+':'+p)));
   }
-  function fields(){byId('PoseLibraryId').disabled=true;byId('PoseLibraryName').disabled=readOnly||library.id===SHARED_POSE_LIBRARY_ID;byId('PoseLibraryName').value=library.id===SHARED_POSE_LIBRARY_ID?'Shared Pose Library':library.name;byId('PoseLibraryId').value=library.id;byId('PoseLibrarySize').value=library.size;updateList();refresh();}
-  function readFields(){return normalizePoseLibrary({...library,id:byId('PoseLibraryId').value.trim(),name:byId('PoseLibraryName').value.trim(),size:byId('PoseLibrarySize').value});}
+  function fields(){byId('PoseLibraryId').disabled=readOnly;byId('PoseLibraryName').disabled=readOnly||library.id===SHARED_POSE_LIBRARY_ID;byId('PoseLibraryName').value=library.id===SHARED_POSE_LIBRARY_ID?'Shared Pose Library':library.name;byId('PoseLibraryId').value=library.id;byId('PoseLibrarySize').value=library.size;updateList();refresh();}
+  function readFields(){return normalizePoseLibrary({...library,id:library.id,name:byId('PoseLibraryName').value.trim(),size:byId('PoseLibrarySize').value});}
   function persist(){
     dirty=true;
     try{if(library.id!==loadedId&&store.library(library.id)?.revision)throw Error('That library ID already exists. Use a new ID.');library=store.saveLibrary(library);loadedId=library.id;dirty=false;status(`Frame references saved automatically · ${library.name} r${library.revision}`);}
@@ -88,12 +88,18 @@ export function createStudioPoseLibrary({getSample,getClips,preview,selectProfil
     if(replace&&!await confirmChange(`Replace all assignments in ${library.name} and clear its captures in this workspace? Other libraries are preserved.`))return;
     library=replace?{...pendingImport,id:library.id,name:library.name,revision:library.revision}:{...pendingImport,id:'humanoid-import-'+Date.now(),revision:0};
     if(persist()){if(replace)clearCaptures();pendingImport=null;byId('LibraryImportReview').hidden=true;refresh();status('Pose references imported. Capture them on this model to create sprites.');}}));
-  for(const id of ['PoseLibraryName','PoseLibraryId','PoseLibrarySize'])byId(id).addEventListener('change',attempt(()=>{library=readFields();persist();}));
+  byId('SaveLibraryId').addEventListener('click',attempt(()=>{ensureSaved();const id=byId('PoseLibraryId').value.trim();
+    if(id===library.id){status('This is already the current library ID.');return;}
+    const next=normalizePoseLibrary({...readFields(),id,revision:0,name:library.id===SHARED_POSE_LIBRARY_ID?'Copy of Shared Pose Library':byId('PoseLibraryName').value.trim()});
+    if(store.library(id))throw Error('That library ID already exists. Choose a unique ID.');
+    const saved=store.saveLibrary(next);copyCaptureLibrary(id);useLibrary(saved);status(`Saved under ${id}. Poses and this model’s captures copied; the original library and existing MOB links are unchanged.`);
+  }));
+  for(const id of ['PoseLibraryName','PoseLibrarySize'])byId(id).addEventListener('change',attempt(()=>{library=readFields();persist();}));
   for(const id of ['ActionProfile','ActionPose'])byId(id).addEventListener('change',refresh);
   document.addEventListener('studio-captures-changed',refresh);
   window.addEventListener('storage',event=>{if(event.key?.startsWith('adventure-party-authoring:'))status('This library changed in another tab. Export open work before selecting the saved library again.',true);});
   window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
-  for(const id of ['ClearPoseLibrary','ResetModelAdjustments','ImportPoseLibrary','NewPoseLibrary','ApplyLibraryImport','PoseLibrarySize'])byId(id).disabled=readOnly;
+  for(const id of ['SaveLibraryId','ClearPoseLibrary','ResetModelAdjustments','ImportPoseLibrary','NewPoseLibrary','ApplyLibraryImport','PoseLibrarySize'])byId(id).disabled=readOnly;
   selectCaptureLibrary(library.id);fields();
   // Older workspaces can have pixels but an empty starter library. Seed once,
   // automatically; never overwrite an already assigned reusable library.

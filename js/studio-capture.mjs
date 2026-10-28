@@ -73,11 +73,12 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   const equipmentByProfile=new Map();
   let captureLibraryId=null,libraryCaptures={};
   const savedGroups=()=>Object.fromEntries([...capturesByProfile].map(([id,group])=>[id,Object.fromEntries(Object.entries(group).map(([pose,value])=>{const {frames,battlefieldFrames,shadowFrames,...saved}=value;return [pose,saved];}))]));
-  function selectCaptureLibrary(id){
+  function selectCaptureLibrary(id,{copyCurrent=false}={}){
     if(busy||equipmentBusy)throw Error('Wait for capture or equipment loading to finish.');
     if(!captureLibraryId){captureLibraryId=id;return;}
     if(captureLibraryId===id)return;
     libraryCaptures[captureLibraryId]={groups:savedGroups(),legacySharedCaptures,profileEquipment:Object.fromEntries(equipmentByProfile),style:{...style}};
+    if(copyCurrent)libraryCaptures[id]=structuredClone(libraryCaptures[captureLibraryId]);
     const saved=libraryCaptures[id];delete libraryCaptures[id];captureLibraryId=id;
     capturesByProfile.clear();equipmentByProfile.clear();legacySharedCaptures=saved?.legacySharedCaptures||{};
     for(const [group,poses] of Object.entries(saved?.groups||{})){

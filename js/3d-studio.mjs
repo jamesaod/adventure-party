@@ -14,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C181';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C185';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -32,7 +32,7 @@ import {
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C183';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C185';
 import {browserAuthoringStore} from './authoring-store.mjs?v=R238C183';
 import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C176';
 const authoringQuery=new URLSearchParams(location.search);
@@ -3125,6 +3125,7 @@ async function start() {
       getCaptureRecipes:()=>{const groups=poseCapture.recipeProfiles();for(const poses of Object.values(groups))for(const capture of Object.values(poses)){if(!capture.clipSourceId||capture.clipSourceId==='t-pose')continue;const clip=state.clips.find(item=>animationSourceId(item)===capture.clipSourceId);if(!clip)throw Error('Load the source animation before copying capture references: '+capture.clip);const sample=portablePoseSample(clip,capture.time,state.sourceClips,state.animationRanges);capture.clip=sample.animation;capture.clipSourceId=sample.sourceId;capture.time=sample.timeSeconds;}return groups;},
       getCaptureStates:()=>poseCapture.captureStates(),
       selectCaptureLibrary:id=>poseCapture.selectCaptureLibrary(id),
+      copyCaptureLibrary:id=>poseCapture.selectCaptureLibrary(id,{copyCurrent:true}),
       clearCaptures:()=>poseCapture.clearLibraryCaptures(),
       resetAdjustments:async()=>{
         if(!state.modelReady||state.modelLoading)throw Error('Load a model first.');
