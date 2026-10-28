@@ -57,3 +57,14 @@ const equipped={...unit,character:{...unit.character,classId:'wizard',level:3},e
 assert.deepEqual(normalizeMobDefinition(equipped),equipped);
 const preserved=buildStudioUnitExport({name:'Preview',settings:{unitPackage:equipped,libraryModelId:equipped.modelId},profiles:[]});assert.deepEqual(preserved.equipment,equipped.equipment);assert.deepEqual(preserved.attachments,equipped.attachments);assert.equal(preserved.character.level,3);
 console.log('PASS: read-only preview inherits saved grips; imported class/level, attachments and equipment survive authoring/export');
+// Studio is authoritative for appearance in a newly authored MOB.
+const {mobFromStudioPackage,readMobImport}=await import('../js/mob-studio-import.mjs');
+const handoff=buildStudioUnitExport({name:'Orc Fighter',settings:{libraryModelId:'male-orc-fighter',modelScalePercent:145,hexScalePercent:109,layoutId:'triangle3',poseLibrary:assigned},profiles:[]});
+const imported=mobFromStudioPackage(handoff);
+assert.equal(imported.modelId,'male-orc-fighter');assert.equal(imported.mob.footprint,'triangle3');assert.equal(imported.references.studioAppearance.modelScalePercent,145);assert.deepEqual(imported.references.poseLibrary,assigned);
+const incomplete=structuredClone(handoff);delete incomplete.references.studioAppearance;assert.throws(()=>mobFromStudioPackage(incomplete),/Export a new Complete Capture ZIP/);
+assert.deepEqual(mobFromStudioPackage(unit),unit,'Existing MOB definitions remain importable');
+const {zipSync,strToU8}=await import('../assets/vendor/three/addons/libs/fflate.module.js');
+const zip=zipSync({'unit-package.json':strToU8(JSON.stringify(handoff)),'unneeded.png':new Uint8Array(20)});
+assert.deepEqual(await readMobImport({name:'orc.zip',size:zip.length,arrayBuffer:async()=>zip.buffer}),handoff);
+console.log('PASS Studio model/size/footprint handoff, ZIP import, missing appearance rejection and legacy MOB compatibility');

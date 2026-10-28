@@ -31,7 +31,7 @@ export function buildStudioUnitExport({name,settings,profiles,recovery=[]}){
     attachments:settings.unitPackage?.attachments||null,
     actionProfiles:[...new Set([...(settings.unitPackage?.actionProfiles||[]),...Object.keys(spriteSets),...recovery.filter(record=>!isSharedCaptureGroup(record.id)).map(record=>record.id)])],equipment:[...equipment.values()],
     mob:{...(settings.unitPackage?.mob||{}),type:settings.mobType||null},
-    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:normalizePoseLibrary(settings.poseLibrary)}:{}),captureFormatVersion:2,poseFallbacks:POSE_FALLBACKS,spriteSets,sharedActionGroups,
+    references:{...(settings.unitPackage?.references||{}),...(settings.poseLibrary?{poseLibrary:normalizePoseLibrary(settings.poseLibrary)}:{}),studioAppearance:{version:1,modelId:settings.libraryModelId||spriteSetSlug(settings.modelName||name),modelScalePercent:settings.modelScalePercent??100,hexScalePercent:settings.hexScalePercent??100,footprint:settings.layoutId||settings.layout?.id||'single',size:settings.poseLibrary?.size||'medium'},captureFormatVersion:2,poseFallbacks:POSE_FALLBACKS,spriteSets,sharedActionGroups,
       captureRecovery:recovery.map(recoveryPoseReference)}
   });
 }

@@ -209,3 +209,7 @@ See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-c
 ## Candidate Rev 185
 
 [Editable library IDs](SHARED_ACTION_CAPTURES.md#rev-185--editable-library-ids) uses explicit save-as-copy semantics to preserve pinned MOB references and original capture banks. Never silently rename Shared or overwrite another library.
+
+## Candidate Rev 187
+
+[Studio-to-MOB workflow](MOB_CREATOR.md#candidate-rev-187--studio-to-mob-workflow) makes Studio appearance metadata authoritative and adds bounded ZIP metadata import. Do not infer a model from a pose-library name or default to Carl.

@@ -69,3 +69,15 @@ The unsolicited Orc Shaman preset and its repository seed files have been remove
 ## Candidate Rev 186 — supplied Orc Fighter poses
 
 The user-authorized orc-fighter library (display name Orc, revision 1) is supplied by data/pose-libraries/orc-fighter.json and its matching browser module. Preserve all ten source/time assignments exactly, including Stabbing in 1H Swing. The existing authoring store deduplicates by ID: saved orc-fighter data takes precedence over the seed, and deletion tombstones stay honored. No alias, Shaman entry, model binding or character stats are added. Select Orc in MOB Creator to link this library.
+
+## Candidate Rev 187 — Studio-to-MOB workflow
+
+1. In Studio, choose the model and set model size, footprint and equipment grips.
+2. Choose/create the pose library and capture the needed weapon and shared actions.
+3. Export Complete Capture ZIP. New exports include references.studioAppearance version 1 in unit-package.json: modelId, modelScalePercent, hexScalePercent, footprint and library size.
+4. In MOB Creator, use Import Studio ZIP / JSON. The ZIP reader extracts only root unit-package.json (bounded to 2 MB); sprites remain in the ZIP for repository integration. An extracted Unit Package JSON also works. Old Studio packages missing appearance metadata must be re-exported. Existing MOB Creator JSON remains compatible.
+5. Confirm read-only model, size and footprint. Model scale is shown as Studio metadata. New MOBs have no assumed model; character fields remain disabled until a package is imported. Pose-library JSON alone only supplies frame assignments.
+6. Edit MOB name, ID, species, six scores, combat stats, Unique/Template settings, equipment probabilities and abilities. Save and export MOB JSON.
+7. Supply both original Complete Capture ZIP and MOB JSON for repository registration, validation, PR, candidate publication and combat QA.
+
+Library options show display name plus stable ID; orc-fighter is labeled Orc Fighter. Saved libraries with the same ID take precedence. Conflicting JSON imports require an explicit new ID in Studio, rather than silently creating duplicates. No user libraries are deleted by label cleanup.
