@@ -113,6 +113,12 @@ function buildSceneGraph(model,recipe){
   }else{
     // Fallback only for older browsers with no complete Studio capture recipe.
     normalizeFallbackModel(model);
+    // The legacy frame/camera already includes the authored 175% model and
+    // 109% hex calibration. Apply that same factor to the normalized body;
+    // otherwise the async equipment render replaces it at roughly half size.
+    const modelScale=finite(recipe.renderSettings?.modelScalePercent,175)/100;
+    const hexScale=finite(recipe.renderSettings?.hexScalePercent,109)/100;
+    placement.scale.setScalar(modelScale*hexScale);
   }
   return turntable;
 }

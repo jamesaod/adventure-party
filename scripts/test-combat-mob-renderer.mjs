@@ -50,7 +50,7 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C176")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C178")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C184")'));
 assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C181",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
@@ -94,3 +94,16 @@ assert.ok(renderer.includes("poseNames.map(capture=>"));
 assert.ok(renderer.includes("windupDurationMs:profile?.poses?.windup"));
 
 assert.ok(renderer.includes("recipe?.model?.animationLibrary==='uploaded-fbx'") && renderer.includes('await loadUploadedFbxAnimations('), 'Every catalog-selected uploaded-FBX model uses the same motion library in combat as Studio');
+// Execute the real scene assembly on a body proxy: delayed fallback rendering
+// must retain the canonical frame's 175% model / 109% hex body calibration.
+const core=fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
+const THREE=await import(`data:text/javascript;base64,${core.toString('base64')}`);
+const bodyBuilder=new Function('THREE',`${renderer.slice(renderer.indexOf('const finite='),renderer.indexOf('function loadImage('))}\n${renderer.slice(renderer.indexOf('function buildSceneGraph('),renderer.indexOf('function configureCamera('))}\nreturn buildSceneGraph;`)(THREE);
+function body(){return new THREE.Mesh(new THREE.BoxGeometry(1,2,.4),new THREE.MeshBasicMaterial());}
+const fallbackBody=body(),fallbackScene=bodyBuilder(fallbackBody,{renderSettings:{}});
+assert.ok(Math.abs(new THREE.Box3().setFromObject(fallbackScene,true).getSize(new THREE.Vector3()).y-3.815)<1e-6,'Fallback body must match the scale baked into the canonical camera/frame');
+const explicit=bodyBuilder(body(),{renderSettings:{modelScalePercent:125,hexScalePercent:109}});
+assert.ok(Math.abs(new THREE.Box3().setFromObject(explicit,true).getSize(new THREE.Vector3()).y-2.725)<1e-6,'Explicit model size is applied once');
+const capturedScene=bodyBuilder(body(),{renderSettings:{modelScalePercent:125,hexScalePercent:109,transform:{placement:{scale:3,position:[0,0,0]},upAxis:'Y',heading:0}}});
+assert.ok(Math.abs(new THREE.Box3().setFromObject(capturedScene,true).getSize(new THREE.Vector3()).y-8.175)<1e-6,'Studio placement must not acquire the legacy fallback factor');
+console.log('PASS delayed fallback body scale and exact Studio scale preservation');

@@ -201,3 +201,7 @@ Library management, protected Shared default, per-library capture banks, checkli
 ## Candidate Rev 183
 
 See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-creator-layout): visible Template probability tables, library-only checklist panel and removal of the unsolicited Shaman seed. Preserve saved user libraries.
+
+## Candidate Rev 184
+
+[Combat scale handoff](STUDIO_COMBAT_TEST.md#rev-184--delayed-ordinary-combat-scale-replacement) records the fallback body/camera calibration correction. Preserve explicit Studio placement and apply model/hex scale only once.
