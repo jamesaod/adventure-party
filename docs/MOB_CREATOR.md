@@ -44,3 +44,17 @@ Rev 160 browser verification: saved/reopened all six distinct ability scores; re
 ## Rev 172 shared action groups
 
 Pose library version 2 separates three physical poses per weapon from shared Magic and Death/Prone groups. Creator preview offers both groups, and readiness counts death/prone once and magic once for spellcasters. Existing version 1 libraries and pinned MOB snapshots migrate on read; no live combat registration is created. See [Shared action captures](SHARED_ACTION_CAPTURES.md).
+
+## Candidate Rev 182 — Unique and Template MOBs
+
+Choose Unique for a fixed class/level and equipped primary/off-hand pair. Choose Template for separate weighted class/level, primary weapon and off-hand tables. No character class and None equipment are explicit choices. Each row has a percentage; totals above 100 are rejected. Incomplete distributions can be saved/exported as drafts, but Generate sample requires every table to total 100%. Class/level entries are mutually exclusive (not multiclass). The supported existing classes are Fighter, Mage, Cleric, Thief and Ranger, levels 1–20.
+
+Off-hand probabilities are conditional on a free hand: a two-handed primary suppresses off-hand selection. One-handed off-hand weapons use the existing Studio eligibility list. Always has items are guaranteed carried inventory with fixed quantities, additional to equipped items. They are not automatically equipped. Combat stats and spellcasting remain explicitly authored; class selection does not derive HP, AC, THAC0 or spells.
+
+Save/Export MOB preserves `mob.generation` version 1 in the existing Unit Package. Unique definitions contain `fixed`; templates contain `classLevels`, `primary` and `offHand` weighted arrays. Both contain `alwaysItems`. Existing definitions without generation metadata remain valid. Selected equipment adds its required weapon pose types to coverage; shared action fallbacks remain unchanged.
+
+Generate sample resolves choices using the shared `mob-generation.mjs` module and offers a separate generated Unique MOB JSON export. A sample is not automatically saved or deployed. Changing the definition requires generating a fresh sample. Existing model pixels are removed from samples because equipment changed; reusable pose references remain. Live combat registration still follows the existing repository integration workflow, not a second encounter engine.
+
+The verified user Shaman library is preserved verbatim in `data/pose-libraries/orc-shaman-user-r2.json`; `orc-shaman-pose-library.mjs` supplies the browser preset named Orc Shaman — supplied poses. It has ten assignments: three 1H Swing, three Wizard Staff Grip, two Magic, Falling and Prone. The preset has its own identity and never replaces Shared or saved custom libraries. This adds reusable frame references, not the export ZIP's model-specific PNGs.
+
+Validation: `node scripts/test-mob-generation.mjs` covers probability boundaries, invalid/incomplete tables, two-hand exclusion, guaranteed inventory, Unit Package round trips and preset fidelity. Existing MOB authoring, library isolation and renderer checks remain required.
