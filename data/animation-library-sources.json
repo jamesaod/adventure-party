@@ -283,6 +283,20 @@
       "status": "source-supplied",
       "assignedPoses": {},
       "rigCompatibility": "carl-v2-mixamo-world-v1"
+    },
+    {
+      "id": "staff-pose",
+      "label": "Staff Pose",
+      "file": "assets/animations/staff/staff-pose.fbx",
+      "bytes": 301324,
+      "sha256": "401fcc7a019546ed25e7912089b33129e1247e4cd793a016ef4eff99989d5b94",
+      "actionProfiles": [
+        "wizard-staff-grip"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "meshy-posed-skeleton-v1",
+      "retargetMode": "anatomical-aim"
     }
   ]
 }

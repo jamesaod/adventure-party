@@ -197,7 +197,7 @@ Connections:  {
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
-    assert.equal(catalog.animations.length,22);
+    assert.equal(catalog.animations.length,23);
     for(const entry of catalog.animations){
       const source=await fs.readFile(new URL('../'+entry.file,import.meta.url));
       assert.equal(source.length,entry.bytes);
@@ -215,10 +215,10 @@ Connections:  {
     try {
       const clips=await loadUploadedFbxAnimations({appRoot,targetModel,THREE,FBXLoader,
         prepareStudioAnimations,retargetHumanoidClip,fetchAsset,disposeModel(){disposed++;}});
-      assert.equal(clips.length,22);
-      assert.equal(disposed,22);
+      assert.equal(clips.length,23);
+      assert.equal(disposed,23);
       assert.deepEqual(clips.map(clip=>clip.name),catalog.animations.map(entry=>entry.label));
-      assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=60));
+      assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=(clip.name==='Staff Pose'?20:60)));
       assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
       assert.ok(clips.every(clip=>clip.tracks.every(track=>Array.from(track.values).every(Number.isFinite))));
       assert.ok(clips.some(clip=>clip.name===modelEntry.initialAnimation));
@@ -231,7 +231,7 @@ Connections:  {
       assert.equal(reference.clips.length,22);
       const mixer=new THREE.AnimationMixer(targetModel);
       let maxAngularError=0, maxHipError=0;
-      for(const [index,clip] of clips.entries()){
+      for(const [index,clip] of clips.slice(0,22).entries()){
         const expected=reference.clips[index];
         assert.equal(expected.id,catalog.animations[index].id);
         assert.equal(expected.sourceSha256,catalog.animations[index].sha256);
@@ -264,6 +264,40 @@ Connections:  {
         }
         mixer.stopAllAction();
       }
+      const staff=clips.find(clip=>clip.name==='Staff Pose');
+      assert.equal(staff.userData.humanoidImport.retargetMode,'anatomical-child-direction-with-hip-y');
+      const staffReference={duration:6.1,frames:[0,.25,.5,.75,1].map(fraction=>({timeSeconds:fraction*6.1,directions:Object.fromEntries(['LeftArm:LeftForeArm','LeftForeArm:LeftHand','RightArm:RightForeArm','RightForeArm:RightHand','LeftUpLeg:LeftLeg','LeftLeg:LeftFoot','RightUpLeg:RightLeg','RightLeg:RightFoot'].map(pair=>[pair,null]))}))};
+      assert.ok(Math.abs(staff.duration-staffReference.duration)<.0001);
+      const bone=name=>nodes.find(node=>node.name==='mixamorig:'+name);
+      const position=name=>bone(name).getWorldPosition(new THREE.Vector3());
+      targetModel.updateWorldMatrix(true,true);
+      const x=position('RightShoulder').sub(position('LeftShoulder')).normalize();
+      const y=position('Head').sub(position('Hips'));y.addScaledVector(x,-y.dot(x)).normalize();
+      const z=new THREE.Vector3().crossVectors(x,y).normalize();y.crossVectors(z,x);
+      const inverseBasis=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z)).invert();
+      const rawStaff=await fs.readFile(new URL('../assets/animations/staff/staff-pose.fbx',import.meta.url));
+      const sourceStaff=new FBXLoader().parse(rawStaff.buffer.slice(rawStaff.byteOffset,rawStaff.byteOffset+rawStaff.byteLength),'');
+      const sm=new THREE.AnimationMixer(sourceStaff),sa=sm.clipAction(prepareStudioAnimations(sourceStaff.animations)[0]).play();sa.paused=true;
+      const sp=n=>sourceStaff.getObjectByName('mixamorig'+n).getWorldPosition(new THREE.Vector3());
+      const sx=sp('RightShoulder').sub(sp('LeftShoulder')).normalize(),sy=sp('Head').sub(sp('Hips'));sy.addScaledVector(sx,-sy.dot(sx)).normalize();const sz=new THREE.Vector3().crossVectors(sx,sy).normalize();sy.crossVectors(sz,sx);
+      const sib=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(sx,sy,sz)).invert();
+      const staffAction=mixer.clipAction(staff).play();staffAction.paused=true;
+      for(const frame of staffReference.frames){
+        staffAction.time=frame.timeSeconds;mixer.update(0);targetModel.updateWorldMatrix(true,true);
+        for(const pair of Object.keys(frame.directions)){
+          const [parent,child]=pair.split(':');
+          sa.time=frame.timeSeconds;sm.update(0);sourceStaff.updateWorldMatrix(true,true);
+          const direction=sp(child).sub(sp(parent)).normalize().applyQuaternion(sib).toArray();
+          const actual=position(child).sub(position(parent)).normalize().applyQuaternion(inverseBasis);
+          assert.ok(actual.angleTo(new THREE.Vector3(...direction))<Math.PI/180,`${modelId} Staff Pose ${pair} time ${frame.timeSeconds}: ${actual.toArray()} expected ${direction}, angle ${actual.angleTo(new THREE.Vector3(...direction))*180/Math.PI}`);
+        }
+        for(let vertex=0;vertex<geometry.attributes.position.count;vertex++){
+          const point=new THREE.Vector3().fromBufferAttribute(geometry.attributes.position,vertex);mesh.applyBoneTransform(vertex,point);
+          assert.ok(point.toArray().every(Number.isFinite));
+        }
+      }
+      mixer.stopAllAction();
+      console.log(`PASS ${modelId}: Staff Pose, five source poses / eight limb directions`);
       console.log(`PASS ${modelId}: ${reference.clips.reduce((count,clip)=>count+clip.frames.length,0)} real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
     } finally {THREE.TextureLoader.prototype.load=loadTexture;}
     }

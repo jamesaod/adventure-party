@@ -14,7 +14,8 @@ export async function loadUploadedFbxAnimations({
   }
   const seen = new Set(), entries = catalog.animations.map(entry => {
     const url = new URL(entry.file, appRoot);
-    if (!entry.id || seen.has(entry.id) || typeof entry.label !== 'string' || !entry.label ||
+    if ((entry.retargetMode && !['world-bind-delta','anatomical-aim'].includes(entry.retargetMode)) ||
+        !entry.id || seen.has(entry.id) || typeof entry.label !== 'string' || !entry.label ||
         url.origin !== appRoot.origin || !url.pathname.startsWith(appRoot.pathname + 'assets/animations/') ||
         !/\.fbx$/i.test(url.pathname)) throw new Error('Invalid uploaded animation entry.');
     seen.add(entry.id);
@@ -32,7 +33,7 @@ export async function loadUploadedFbxAnimations({
       for (const [index, clip] of clips.entries()) {
         const label = clips.length === 1 ? entry.label : `${entry.label} ${index + 1}`;
         const retargeted = retargetHumanoidClip(THREE, clip, source, targetModel, label, {
-          mode:'world-bind-delta', hipTranslation:'scaled-world-y'
+          mode:entry.retargetMode || 'world-bind-delta', hipTranslation:'scaled-world-y'
         });
         retargeted.userData = {...retargeted.userData,
           studioAnimationId:`uploaded:${entry.id}:${index}`,

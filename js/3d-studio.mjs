@@ -2,7 +2,7 @@ import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C1
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
 import * as THREE from 'three';
-import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C140';
+import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C177';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
@@ -14,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C176';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C177';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -2313,7 +2313,7 @@ async function loadModelLibrary() {
   syncModelLibraryControls();
 }
 
-async function loadLibraryModel() {
+async function loadLibraryModel({restoreSettings=null} = {}) {
   const entry = state.libraryModels.find(model => model.id === ui.ModelLibrary.value);
   if(authoringScoped&&entry?.id!==authoringQuery.get('model')){showError(new Error('Choose the model in MOB Creator, then reopen its Studio workspace.'));return;}
   if (!entry || !renderer || state.disposed || state.libraryLoading || state.modelLoading) return;
@@ -2328,7 +2328,7 @@ async function loadLibraryModel() {
     const blob = await response.blob();
     if (version !== state.loadingVersion || state.disposed) return;
     const filename = new URL(entry.url).pathname.split('/').pop();
-    await loadFiles([new File([blob], filename, { type: 'model/gltf-binary' })], { modelDefaults: entry });
+    await loadFiles([new File([blob], filename, { type: 'model/gltf-binary' })], { modelDefaults: entry, restoreSettings });
   } catch (error) {
     if (version === state.loadingVersion && !state.disposed) {
       showError(error);
@@ -2824,7 +2824,7 @@ function bindControls() {
 }
 
 function useCurrentFormatAfterClear() {
-  if (!poseCapture?.snapshot().captureCount) {
+  if (!poseCapture?.snapshot().totalCaptureCount) {
     if (state.modelScalePercent > STUDIO_MODEL_SCALE_MAX) {
       const previousScalePercent = state.modelScalePercent;
       poseCapture.updateModelScale(STUDIO_MODEL_SCALE_MAX);
@@ -3090,6 +3090,9 @@ async function start() {
         return file;
       });
       await loadFiles(files, { restoreSettings: restored.settings });
+    } else if (restored && offeredModel) {
+      ui.ModelLibrary.value=restored.settings.libraryModelId;
+      await loadLibraryModel({restoreSettings:restored.settings});
     } else if (restored?.captureCount) {
       setModelReady(false);
       ui.EmptyMessage.hidden = false;

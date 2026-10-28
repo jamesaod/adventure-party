@@ -181,3 +181,7 @@ Use the single Action Pose Capture panel for sprite and reusable-frame authoring
 ## Candidate Rev 176 — Studio batch and female Orc shaman
 
 [Female Orc shaman](ORC_FEMALE_SHAMAN_MODEL.md) records the preserved 512px model import, neutral export joint, 22-clip acceptance, world-axis grip editor conversion and catalog material brightness overrides. [Shared captures](SHARED_ACTION_CAPTURES.md#rev-176--assignment-checks-magic-and-explicit-fallbacks) records assigned-reference checks, the supplied pose preset and the new fallback contract. Keep saved bone-local mounts and model-specific pixels separate from reusable animation frames.
+
+## Candidate Rev 177
+
+Staff Pose is an explicitly opted-in posed-skeleton animation; see [Carl animation recipe](CARL_ANIMATION_RECIPE.md#staff-pose-proof-of-concept--candidate-rev-177). Keep the other animation recipes unchanged. Combat return must preserve full scoped captures, including groups other than the active selection; see [shared captures](SHARED_ACTION_CAPTURES.md#combat-return-preservation--candidate-rev-177).
