@@ -113,3 +113,16 @@ Validation: `test-studio-unified-capture.mjs` executes the real capture handler 
 ## Rev 175 — completed capture groups
 
 The weapon/shared-action selector prefixes a green ✅ when every required pose has a current capture: three poses for weapon types, two for Magic, and two for Death/Prone. Labels refresh on capture, clear, invalidation and workspace restore; missing or outdated slots remove the check. Stored group IDs, frame references and export data are unchanged.
+
+
+## Rev 176 — assignment checks, Magic and explicit fallbacks
+
+Green checks now mean every required **animation/frame reference is assigned** in the linked library. Lighting/framing changes affect sprite freshness separately and never remove these checks. The coverage line labels frame assignment and sprite status separately. A fallback is usable but does not falsely count as an explicit assignment. Library switching and imports refresh the same selector.
+
+Only Magic is offered for casting in Studio/MOB Creator pose menus. The historical `spell-casting` ID remains readable/exportable internally to preserve old libraries and captures; it is not a second authoring choice. Existing shared Magic assignments take precedence. No saved data is deleted.
+
+`pose-fallbacks.mjs` implements the requested policy: an absent weapon Ready/Wind Up/Attack uses the corresponding `one-handed-swing` reference; absent Falling/Prone uses that profile's Ready. Explicit weapon/shared assignments always win. Casting has no physical-pose fallback. Studio recipe previews, MOB coverage, combined combat captures and action-profile resolution use this policy. Exports retain explicit null slots and declare `references.poseFallbacks`; consumers should resolve these at use time, never replace the user's stored choices or silently promote stale captures. Existing v2 capture-format/schema envelopes remain compatible.
+
+The user-provided `blond-haired-woman-in-scale-mail-weapon-sets (7).zip` contains 25 source-frame assignments and 150 primary six-facing PNGs. Thirteen snapshots are preserved under recovery because lighting changed. `data/pose-libraries/humanoid-medium-user-r16.json` archives its exact portable library. A separately named **Humanoid Medium — supplied poses** preset is available in Studio/MOB Creator; ordinary starter libraries and all browser saves retain priority. Its 1H Swing uses Stabbing exactly as exported; do not guess replacement clips. The preset has no model pixels or grips, so capture sprites separately on each model. The original ZIP remains the source for model-specific images and attachment snapshots.
+
+Combat-test fallback images are rendered temporarily from the borrowed source frame with the current model/loadout through `readCapturePose`. They do not copy the 1H sword pixels onto another weapon or create new authored assignments. Original workspace capture records stay unchanged.

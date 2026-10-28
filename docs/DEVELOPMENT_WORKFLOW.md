@@ -176,3 +176,8 @@ Each pose owns its captured equipment settings. Preserve those snapshots when ad
 ## Candidate Rev 174 — unified action capture
 
 Use the single Action Pose Capture panel for sprite and reusable-frame authoring. Capture automatically saves both; one action ZIP contains pose-library.json plus Unit Package/current/recovery data. Preserve the portable source-frame conversion and separate model-specific grip snapshots. See [Shared action captures](SHARED_ACTION_CAPTURES.md#rev-174--one-action-pose-capture-workflow).
+
+
+## Candidate Rev 176 — Studio batch and female Orc shaman
+
+[Female Orc shaman](ORC_FEMALE_SHAMAN_MODEL.md) records the preserved 512px model import, neutral export joint, 22-clip acceptance, world-axis grip editor conversion and catalog material brightness overrides. [Shared captures](SHARED_ACTION_CAPTURES.md#rev-176--assignment-checks-magic-and-explicit-fallbacks) records assigned-reference checks, the supplied pose preset and the new fallback contract. Keep saved bone-local mounts and model-specific pixels separate from reusable animation frames.

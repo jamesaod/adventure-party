@@ -1,8 +1,8 @@
 /**
  * Adventure Party action profiles v2.
  * Extensible data definitions: add profiles without modifying the renderer.
- * A missing pose is deliberately null. It must be rendered with the unit's
- * fallback sprite, not by substituting another animation/pose.
+ * Missing weapon poses resolve to 1H Swing. Falling/Prone use 1H Ready.
+ * Explicit assigned poses always win; null remains null in the stored data.
  */
 export const ACTION_POSES=Object.freeze(['ready','windup','attack','falling','prone','casting-windup','cast']);
 export const ACTION_POSE_LABELS=Object.freeze({ready:'Ready',windup:'Wind Up',attack:'Attack',falling:'Falling',prone:'Prone','casting-windup':'Casting Wind Up',cast:'Casting'});
@@ -67,6 +67,9 @@ export function resolveActionPose(profile,poseName,sharedProne=null,catalog=ACTI
   }
   if(poseName==='prone'&&profile?.sharedProne&&sharedProne)
     return {source:'shared-prone',pose:normalizePose(sharedProne)};
+  const fallbackPose=['ready','windup','attack'].includes(poseName)?poseName:['falling','prone'].includes(poseName)?'ready':null;
+  const borrowed=fallbackPose&&catalog?.get('one-handed-swing')?.poses?.[fallbackPose];
+  if(borrowed)return {source:'profile-fallback',profileId:'one-handed-swing',pose:borrowed};
   return {source:'fallback-sprite',pose:null};
 }
 export const ACTION_PROFILE_CATALOG=createActionProfileCatalog();
