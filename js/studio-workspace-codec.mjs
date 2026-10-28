@@ -26,6 +26,14 @@ async function mapWorkspace(workspace,convert){
     result[key]={};
     for(const [id,poses] of Object.entries(workspace[key]))result[key][id]=await group(poses);
   }
+  if(workspace.libraryCaptures){
+    result.libraryCaptures={};
+    for(const [id,bank] of Object.entries(workspace.libraryCaptures)){
+      const saved={...bank,groups:{},legacySharedCaptures:{}};
+      for(const key of ['groups','legacySharedCaptures'])for(const [groupId,poses] of Object.entries(bank[key]||{}))saved[key][groupId]=await group(poses);
+      result.libraryCaptures[id]=saved;
+    }
+  }
   return result;
 }
 export async function encodeStudioWorkspace(workspace){

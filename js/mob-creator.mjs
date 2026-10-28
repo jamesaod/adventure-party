@@ -4,7 +4,7 @@ import {ACTION_POSES,ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-p
 import {SPRITE_LAYOUT_PRESETS} from './sprite-layouts.mjs?v=R238C95';
 import {ABILITY_SCORES,MOB_ABILITIES,createMobDefinition,normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C176';
 import {normalizePoseLibrary,poseLibrarySignature,libraryPoseGroup,poseLibraryCoverage} from './pose-library.mjs?v=R238C176';
-import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C176';
+import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C181';
 const $=id=>document.getElementById(id),store=browserAuthoringStore();
 let loaded=null,library=null,models=[],dirty=false,previewReady=false;
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};

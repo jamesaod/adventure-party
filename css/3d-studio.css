@@ -403,3 +403,5 @@ body.studio-page {
 .studio-animation > .studio-workspace-status{display:block;margin:8px 0}
 .studio-animation > .studio-button{margin:6px 6px 0 0}
 .studio-pose-library .error{color:#ffada0}
+
+.studio-pose-checklist ul{list-style:none;padding:0;margin:.5rem 0}.studio-pose-checklist li{padding:.25rem 0}.pose-check-captured{color:#8ee675}.pose-check-missing{color:#ff8e8e}.pose-check-outdated{color:#edcc73}

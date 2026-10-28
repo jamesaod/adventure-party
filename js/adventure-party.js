@@ -7221,7 +7221,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C176",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C181",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});

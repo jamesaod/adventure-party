@@ -1,6 +1,10 @@
 # MOB Creator and reusable humanoid pose libraries (Candidate Rev 160)
 
-## Data ownership
+## Current Studio workflow (Rev 181)
+
+Use Action Pose Capture for both frame assignments and model-specific sprites. Shared Pose Library is the protected editable default; new libraries copy its assignments. JSON transfers reusable references only. Complete Capture ZIP supplies sprites, equipment settings and references for repository integration. The checklist distinguishes missing/current/outdated sprites; the dropdown's assignment checks are not sprite checks. Missing physical poses use 1H Swing; Falling/Prone use 1H Ready; Magic has no physical fallback. MOBs pin their own library snapshot. See [shared action captures](SHARED_ACTION_CAPTURES.md#rev-181--library-management-and-capture-checklist) for current controls and capture isolation.
+
+## Historical Rev 160 data ownership (superseded where noted below)
 
 A pose library (`adventure-party.pose-library`, version 1) contains **no model, pixels, equipment or grip transforms**. It stores all 12 canonical weapon types, each with seven nullable action slots: Ready, Wind Up, Attack, Falling, Prone, Casting Wind Up and Cast. Assigned slots contain a stable animation source ID, display name and exact source time in seconds. Missing slots stay null; a different animation is never substituted.
 
@@ -8,7 +12,7 @@ Humanoid Small, Medium and Large are empty starter libraries, not pre-authored a
 
 The MOB remains an existing version-1 Unit Package: identity, model ID, STR/DEX/CON/INT/WIS/CHA, typed AD&D rules, allowed weapon types and ability metadata. `references.poseLibrary` embeds a complete pinned snapshot, including library ID/revision. Replacing the shared library does not rewrite saved MOBs. Model attachment profiles and per-pose rendered equipment remain model-specific.
 
-## Reproduce the authoring workflow
+## Historical Rev 160 workflow (separate capture controls superseded by Rev 174)
 
 1. Open **MOB Creator** from the title screen or MOB Catalog. Choose the model and one of the humanoid libraries. Set all six scores, hit dice/fixed HP, AC, THAC0, movement, attacks, morale, XP, size and footprint. Select every weapon type the MOB can use. Bright-light penalty and spellcasting are typed abilities; other descriptions belong in notes. Spell IDs are integration metadata and must refer to existing spells.
 2. **Save MOB**, then **Open in Studio**. This opens an isolated workspace for this MOB and model; the ordinary Studio draft is untouched. Adjust grips, scale, orientation and lighting through the existing controls.
