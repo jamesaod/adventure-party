@@ -2,7 +2,7 @@ import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } fr
 import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js';
-import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C140';
+import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C177';
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
 import { prepareStudioAnimations } from './studio-animations.mjs?v=R238C82';
 import * as THREE from '../assets/vendor/three/three.module.min.js';

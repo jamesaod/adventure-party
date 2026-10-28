@@ -126,3 +126,9 @@ Only Magic is offered for casting in Studio/MOB Creator pose menus. The historic
 The user-provided `blond-haired-woman-in-scale-mail-weapon-sets (7).zip` contains 25 source-frame assignments and 150 primary six-facing PNGs. Thirteen snapshots are preserved under recovery because lighting changed. `data/pose-libraries/humanoid-medium-user-r16.json` archives its exact portable library. A separately named **Humanoid Medium — supplied poses** preset is available in Studio/MOB Creator; ordinary starter libraries and all browser saves retain priority. Its 1H Swing uses Stabbing exactly as exported; do not guess replacement clips. The preset has no model pixels or grips, so capture sprites separately on each model. The original ZIP remains the source for model-specific images and attachment snapshots.
 
 Combat-test fallback images are rendered temporarily from the borrowed source frame with the current model/loadout through `readCapturePose`. They do not copy the 1H sword pixels onto another weapon or create new authored assignments. Original workspace capture records stay unchanged.
+
+## Combat return preservation — Candidate Rev 177
+
+Restoration counts captures across all weapon/shared groups, even when the selected group is empty. It selects the newer full editable/combat workspace in the same scoped database, rather than blindly rolling back to the last tested copy. Catalog models whose stored source blobs are absent reload with saved settings and without resetting captures. Empty-group setup normalization also checks the total across groups.
+
+Regression coverage executes the restore path with populated weapon and Magic captures, an empty selected Bow group, distinct snapshot timestamps, source pixels and equipment settings. Browser QA captures a Staff Pose on Orc Shaman, tests combat, returns, then repeats with empty Bow using the 1H fallback; the original captured pose remains available.

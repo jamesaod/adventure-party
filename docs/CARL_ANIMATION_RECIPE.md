@@ -81,3 +81,11 @@ node scripts/test-fbx-animations.mjs
 ```
 
 Keep the existing joint/hip tolerances. Automated checks cover 110 skinned poses per model (220 total), file hashes, duration, finite tracks and preserved clip IDs. Run repository validation and verify all eight published FBX hashes after the candidate PR is merged. At the user's request, visual playback and pose/grip QA for these new motions are left to the user.
+
+## Staff Pose proof of concept — Candidate Rev 177
+
+The supplied Meshy ZIP contains `Animation_Axe_Stance_without_skin.fbx`, registered as **Staff Pose** (`uploaded:staff-pose:0`), 301,324 bytes and 6.10 seconds. The original FBX bytes are preserved at `assets/animations/staff/staff-pose.fbx`; checksum is pinned in the animation catalog. Its unrelated texture files are not needed for this skeleton-only animation.
+
+This Mixamo-named skeleton has an authored starting stance, no neutral bind-pose record and fewer finger bones than our existing Mixamo uploads. A world-bind delta would erase that initial stance. Only this catalog entry opts into the existing `anatomical-aim` retargeting mode, which transfers child-bone directions. The previous 22 sources keep their world-bind recipe unchanged. This is a proof of concept: missing finger detail and axial hand twist cannot be fully recovered from limb directions; artistic staff grip QA remains necessary. No capture slots are assigned automatically.
+
+`test-fbx-animations.mjs` compares eight transferred limb directions at five times against the loaded source animation on all five models, checks finite skinning, source checksum/duration and stable IDs, and retains every earlier independent 110-pose reference. The offline world-bind fixture generator excludes explicitly direction-retargeted sources, which have the separate direction assertions. Future animation exports should include a neutral reference skeleton/bind pose when available.

@@ -242,6 +242,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   }
   const groupPoses=()=>capturePosesForGroup(selectedProfileId);
   function count() { return Object.keys(captures).length * 6; }
+  function totalCount() { return [...capturesByProfile.values()].reduce((sum,group)=>sum+Object.keys(group).length*6,0); }
   function freshCount() { return Object.values(captures).filter(capture => !capture.stale).length * 6; }
   function modelScaleAdjustable() {
     return !freshCount() || Object.values(captures).every(capture => !!capture.layout && !capture.battlefieldRaw);
@@ -408,7 +409,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
   function snapshot() {
     const first = Object.values(captures)[0];
     return {
-      captureCount: count(), freshCaptureCount: freshCount(),
+      captureCount: count(), totalCaptureCount: totalCount(), freshCaptureCount: freshCount(),
       outdatedCaptureCount: count()-freshCount(), captureLocked: false,
       modelScaleAdjustable: modelScaleAdjustable(),
       modelReady, workspaceRestored: restored,
@@ -737,8 +738,10 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
     refreshControls();
     workspaceStatus('Checking for saved captures…');
     try {
-      const savedWorkspace = await loadStudioWorkspace({ fromCombat }) || await legacyCombatWorkspace() ||
-        (fromCombat ? await loadStudioWorkspace() : null);
+      const editable = await loadStudioWorkspace();
+      const tested = fromCombat ? await loadStudioWorkspace({fromCombat:true}) : null;
+      const savedWorkspace = editable && (!tested || (editable.savedAt||0)>=(tested.savedAt||0))
+        ? editable : tested || await legacyCombatWorkspace();
       if (!savedWorkspace) {
         workspaceStatus('Captures and studio settings save automatically in this browser.');
         return null;
@@ -793,7 +796,7 @@ export function createPoseCapture({ readPose, getStyle, getWorkspaceSettings = (
       }
       return {
         settings: workspace.settings, style: { ...style }, name: workspace.name,
-        captureCount: count(), savedAt: workspace.savedAt, recoveredFromCombat: !!workspace.recoveredFromCombat,
+        captureCount: totalCount(), savedAt: workspace.savedAt, recoveredFromCombat: !!workspace.recoveredFromCombat,
         persisted
       };
     } catch (error) {
