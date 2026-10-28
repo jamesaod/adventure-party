@@ -1,7 +1,7 @@
 import {normalizeGeneration,generationWeaponTypes,sampleGeneration} from './mob-generation.mjs?v=R238C182';
 import {createUnitPackage,validateUnitPackage} from './unit-package.mjs';
 import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
-import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C176';
+import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C188';
 import {DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C176';
 export const ABILITY_SCORES=Object.freeze(['str','dex','con','int','wis','cha']);
 export const MOB_ABILITIES=Object.freeze([{id:'bright-light-penalty',label:'Bright-light attack penalty (−1)'},{id:'spellcasting',label:'Spellcasting'}]);

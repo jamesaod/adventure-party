@@ -19,7 +19,9 @@ export function normalizePoseLibrary(value){
   if(value.bodyFamily!=='humanoid'||!HUMANOID_SIZES.includes(value.size))throw Error('Choose a humanoid Small, Medium or Large pose library.');
   if(!Number.isInteger(value.revision)||value.revision<0)throw Error('Invalid pose library revision.');
   if(!object(value.profiles)||Object.keys(value.profiles).some(id=>!ACTION_PROFILE_CATALOG.has(id)))throw Error('Unknown weapon type in pose library.');
-  if(Object.keys(value).some(key=>!['schema','version','id','name','bodyFamily','size','revision','profiles','sharedActionGroups','legacySharedPoses'].includes(key)))throw Error('Pose libraries must not contain model-specific settings.');
+  if(Object.keys(value).some(key=>!['schema','version','id','name','bodyFamily','size','revision','profiles','sharedActionGroups','legacySharedPoses','studioAppearance'].includes(key)))throw Error('Pose libraries must not contain model-specific settings.');
+  const appearance=value.studioAppearance;
+  if(appearance!==undefined&&(!object(appearance)||appearance.version!==1||!validAuthoringId(appearance.modelId)||!['single','triangle3','triangle3-inverted','hex7'].includes(appearance.footprint)||![appearance.modelScalePercent,appearance.hexScalePercent].every(n=>Number.isFinite(n)&&n>0)))throw Error('Invalid Studio appearance in pose library.');
   const normalizeGroup=(poses,allowed)=>{
     if(!object(poses)||Object.keys(poses).some(pose=>!allowed.includes(pose)))throw Error('Unknown action pose.');
     return Object.fromEntries(allowed.map(pose=>[pose,normalizePoseSample(poses[pose])]));
@@ -35,6 +37,7 @@ export function normalizePoseLibrary(value){
   const shared=value.version===2?Object.fromEntries(Object.values(SHARED_CAPTURE_GROUPS).map(group=>[group.id,normalizeGroup(value.sharedActionGroups?.[group.id]||{},group.poses)])):{};
   const split=splitCaptureGroups(profiles,shared,'one-handed-swing',legacy);
   return {schema:POSE_LIBRARY_SCHEMA,version:2,id:value.id,name:text(value.name,'library name'),bodyFamily:'humanoid',size:value.size,revision:value.revision,
+    ...(appearance?{studioAppearance:structuredClone(appearance)}:{}),
     profiles:Object.fromEntries(DEFAULT_ACTION_PROFILE_IDS.map(id=>[id,normalizeGroup(split.profiles[id],WEAPON_CAPTURE_POSES)])),
     sharedActionGroups:Object.fromEntries(Object.values(SHARED_CAPTURE_GROUPS).map(group=>[group.id,normalizeGroup(split.sharedActionGroups[group.id],group.poses)])),
     ...(Object.keys(split.legacySharedPoses).length?{legacySharedPoses:Object.fromEntries(Object.entries(split.legacySharedPoses).map(([id,poses])=>[id,normalizeGroup(poses,ACTION_POSES.filter(p=>!WEAPON_CAPTURE_POSES.includes(p)))]))}:{})};

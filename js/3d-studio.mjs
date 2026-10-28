@@ -14,7 +14,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C187';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C188';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -32,9 +32,9 @@ import {
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C186';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C186';
-import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C176';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C188';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C188';
+import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C188';
 const authoringQuery=new URLSearchParams(location.search);
 const authoringScoped=!!authoringWorkspaceSuffix(location.search);
 if(authoringScoped&&authoringQuery.get('preview')==='1')document.documentElement.classList.add('studio-embedded');
@@ -3124,6 +3124,7 @@ async function start() {
       preview:async({index,sample})=>{if(!state.modelReady||state.modelLoading)throw Error('Wait for the model to load.');state.playing=false;setClip(index);state.action.paused=true;state.action.time=sample.timeSeconds;equipment.restoreConstraints(); state.mixer.update(0); equipment.applyConstraints();updateAnimationControls();invalidate();poseCapture.saveWorkspace();},
       getCaptureRecipes:()=>{const groups=poseCapture.recipeProfiles();for(const poses of Object.values(groups))for(const capture of Object.values(poses)){if(!capture.clipSourceId||capture.clipSourceId==='t-pose')continue;const clip=state.clips.find(item=>animationSourceId(item)===capture.clipSourceId);if(!clip)throw Error('Load the source animation before copying capture references: '+capture.clip);const sample=portablePoseSample(clip,capture.time,state.sourceClips,state.animationRanges);capture.clip=sample.animation;capture.clipSourceId=sample.sourceId;capture.time=sample.timeSeconds;}return groups;},
       getCaptureStates:()=>poseCapture.captureStates(),
+      getStudioAppearance:()=>{if(!state.modelReady||state.modelLoading||!state.libraryModelId)throw Error('Load a repository model and wait for it to finish loading.');const settings=getWorkspaceSettings();return {version:1,modelId:state.libraryModelId,modelScalePercent:state.modelScalePercent,hexScalePercent:state.hexScalePercent,footprint:state.layoutId,equipment:settings.equipment,offHandEquipment:settings.offHandEquipment,shield:settings.shield,appearanceRecolor:settings.appearanceRecolor,poseEquipment:Object.fromEntries(Object.entries(poseCapture.captureStates()).map(([group,poses])=>[group,Object.fromEntries(Object.entries(poses).map(([pose,capture])=>[pose,{equipment:capture.render?.equipment,offHandEquipment:capture.render?.offHandEquipment,shield:capture.render?.shield}]))]))};},
       selectCaptureLibrary:id=>poseCapture.selectCaptureLibrary(id),
       copyCaptureLibrary:id=>poseCapture.selectCaptureLibrary(id,{copyCurrent:true}),
       clearCaptures:()=>poseCapture.clearLibraryCaptures(),

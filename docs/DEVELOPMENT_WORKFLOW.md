@@ -213,3 +213,7 @@ See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-c
 ## Candidate Rev 187
 
 [Studio-to-MOB workflow](MOB_CREATOR.md#candidate-rev-187--studio-to-mob-workflow) makes Studio appearance metadata authoritative and adds bounded ZIP metadata import. Do not infer a model from a pose-library name or default to Carl.
+
+## Candidate Rev 188
+
+[One library export](MOB_CREATOR.md#candidate-rev-188--one-library-export) supersedes Rev 187 ZIP-only appearance handoff. Optional studioAppearance belongs to the library envelope; individual pose samples remain animation references only.

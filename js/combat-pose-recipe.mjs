@@ -1,5 +1,5 @@
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
-import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C181';
+import { loadStudioWorkspace, loadStudioDraft, upgradeStudioWorkspaceHexScale } from './sprite-set-store.mjs?v=R238C188';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
 
 import {combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C176';
