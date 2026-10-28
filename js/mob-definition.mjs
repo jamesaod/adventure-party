@@ -1,3 +1,4 @@
+import {normalizeGeneration,generationWeaponTypes,sampleGeneration} from './mob-generation.mjs?v=R238C182';
 import {createUnitPackage,validateUnitPackage} from './unit-package.mjs';
 import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
 import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C176';
@@ -12,7 +13,7 @@ export function normalizeMobRules(value={}){
   if(!/^(?:[1-9]\d?|100)d(?:[1-9]\d?|100)(?:[+-]\d{1,3})?$/.test(hitDice))throw Error('Hit dice must be an expression such as 2d8+2.');
   return {system:'adnd-2e',hpMode,hitDice,maxHp:number(value.maxHp??8,'Maximum HP',1,100000,true),ac:number(value.ac??10,'AC',-20,20),thaco:number(value.thaco??20,'THAC0',-20,30),move:number(value.move??12,'Movement',0,100),attacksPerRound:number(value.attacksPerRound??1,'Attacks per round',0.5,20),morale:number(value.morale??10,'Morale',2,20,true),xpValue:number(value.xpValue??0,'XP',0,10000000,true)};
 }
-export function createMobDefinition({id,name,modelId,library,abilities={},rules={},weaponTypes=['unarmed'],species='Humanoid',size='medium',footprint='single',specialAbilities=[],spellcasting=null,notes='',revision=0,equipment=[],attachments=null,references={},character={}}){
+export function createMobDefinition({id,name,modelId,library,abilities={},rules={},weaponTypes=['unarmed'],species='Humanoid',size='medium',footprint='single',specialAbilities=[],spellcasting=null,notes='',revision=0,equipment=[],attachments=null,references={},character={},generation=null}){
   if(typeof name!=='string'||!name.trim()||name.length>160)throw Error('Enter a MOB name up to 160 characters.');
   if(!validAuthoringId(id)||!validAuthoringId(modelId))throw Error('Choose valid MOB and model IDs.');
   if(!['small','medium','large'].includes(size))throw Error('Invalid MOB size.');
@@ -27,8 +28,9 @@ export function createMobDefinition({id,name,modelId,library,abilities={},rules=
     if(spellcasting.spellIds.length>100||spellcasting.spellIds.some(id=>!validAuthoringId(id)))throw Error('Invalid spell IDs.');
   }else spellcasting=null;
   const poseLibrary=normalizePoseLibrary(library);
+  if(generation){generation=normalizeGeneration(generation);weaponTypes=[...new Set([...weaponTypes,...generationWeaponTypes(generation)])];if(generation.kind==='unique'){const fixed=sampleGeneration(generation);character={...character,classId:fixed.classId,level:fixed.level};equipment=fixed.equipment;}}
   return createUnitPackage({id,name,modelId,character:{...character,abilities:scores,rules:normalizeMobRules(rules)},actionProfiles:weaponTypes,equipment,
-    attachments,references:{...structuredClone(references),poseFallbacks:POSE_FALLBACKS,poseLibrary},mob:{authoringVersion:1,revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
+    attachments,references:{...structuredClone(references),poseFallbacks:POSE_FALLBACKS,poseLibrary},mob:{authoringVersion:1,...(generation?{generation}:{}),revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
 }
 export function normalizeMobDefinition(value){
   validateUnitPackage(value);

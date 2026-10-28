@@ -193,3 +193,7 @@ Rev 177 Staff Pose direction retargeting is superseded by the with-skin neutral-
 ## Candidate Rev 181
 
 Library management, protected Shared default, per-library capture banks, checklist semantics and JSON/ZIP boundaries are documented in [shared action captures](SHARED_ACTION_CAPTURES.md#rev-181--library-management-and-capture-checklist).
+
+## Candidate Rev 182
+
+[Unique and Template MOBs](MOB_CREATOR.md#candidate-rev-182--unique-and-template-mobs) documents weighted generation, explicit combat stats, guaranteed inventory, sample exports and the supplied Shaman pose preset. Keep generation metadata in the existing Unit Package and reuse the canonical item catalog.
