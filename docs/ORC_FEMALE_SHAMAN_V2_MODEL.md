@@ -25,3 +25,7 @@ Browser QA checked the new and earlier Shaman, beginning/end poses and staff att
 ## Candidate Rev 179 — Green texture
 
 The user-supplied `Meshy_AI_tripo_convert_10960f4_biped_texture_0 Green.png` replaces only V2 base color, downsampled to 512px in encoded sRGB with Pillow LANCZOS. Reproduce after the original import with `python scripts/update-shaman-v2-texture.py INPUT_PNG`. The script asserts every non-image buffer view is byte-identical, preserving geometry, UVs, rig and weights. Updated hashes and original PNG checksum are recorded in the model JSON. Select Load selected model to replace an older saved browser model; existing captured PNGs retain their original appearance until recaptured.
+
+## Candidate Rev 180 — Green and red texture
+
+Replaced V2 base color with the user-supplied `Meshy_AI_tripo_convert_10960f4_biped_texture_0 Green  and Red  Update.png` through the same 512px replacement script. Non-image buffers remain byte-identical. Update the animation reference fixture model checksum after a texture-only replacement; retain its independently sampled pose values. Source and output hashes remain in the model JSON.

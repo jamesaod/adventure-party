@@ -3,7 +3,7 @@
   "sourceArchive": "Meshy_AI_tripo_convert_10960f4_biped (1).zip",
   "sourceFile": "Meshy_AI_tripo_convert_10960f4_biped_Character_output.fbx",
   "sourceSha256": "a9a90bff3ec29a52e24c7c356bb99b8abaa406ebc2c999eec522f5cba584080e",
-  "sourceTextureSha256": "656061d43c247524015fae1f1b278e8a5c61045c81e00fff78dd58fb12a787b2",
+  "sourceTextureSha256": "224d28499a85ce86dc1b850009fc657d9d4d87a36f161462a406aa5817dadf3d",
   "triangles": 13086,
   "sourceVertices": 39071,
   "bones": 32,
@@ -11,13 +11,13 @@
     512,
     512
   ],
-  "bytes": 2616260,
-  "sha256": "a9a51c0003da10a2387d259517a6036df3739e52c93e3c7720888361394c4250",
+  "bytes": 2623308,
+  "sha256": "f5a94da32fff85b36b6b04f96584dd65bbe0d1bfdd43cbbeed50f9c27bc2e282",
   "importer": "Blender 5.1.1",
   "animationLibrary": "uploaded-fbx",
   "retargetMode": "world-bind-delta",
   "hipTranslation": "scaled-world-y",
-  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. 512px sRGB base color resized using Pillow LANCZOS and embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring. Rev 179: user Green PNG replaces base color; all non-image buffer views verified byte-identical.",
-  "textureSourceFile": "Meshy_AI_tripo_convert_10960f4_biped_texture_0 Green.png",
-  "textureSourceSha256": "4bac20269635040f1f83e20ca01aef136eea08d7a7b7c2ea8933f260cfb89744"
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. 512px sRGB base color resized using Pillow LANCZOS and embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring. Rev 180: supplied Green and Red Update PNG replaces base color; all non-image buffers remain byte-identical.",
+  "textureSourceFile": "Meshy_AI_tripo_convert_10960f4_biped_texture_0 Green  and Red  Update.png",
+  "textureSourceSha256": "2e19e3845b6ff4c2dcc292a1c2142e290091ff7d8c5609152e15beb565c5d626"
 }
