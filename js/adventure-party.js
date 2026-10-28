@@ -17011,7 +17011,7 @@ function startRound(){
   game.player.waitedThisRound=false;
   game.player.sweepUsedThisRound=false;
   sweepInProgress=false;
-  game.player.attacksThisRound=game.player.type==="fighter" ? fighterAttacksThisRound(game.player,game.round) : 1;
+  game.player.attacksThisRound=game.player.repositoryMobId?repositoryAttacksThisRound(game.player,game.round):game.player.type==="fighter" ? fighterAttacksThisRound(game.player,game.round) : 1;
   game.player.shotsThisRound=game.player.missileRateOfFire || 1;
   game.player.shotsRemaining=game.player.shotsThisRound;
   game.player.attacksRemaining=game.player.attacksThisRound;
@@ -17023,7 +17023,7 @@ function startRound(){
       ally.turnMoves=0;
       ally.fullMove=false;
       ally.waitedThisRound=false;
-      ally.attacksThisRound=ally.type==="fighter" ? fighterAttacksThisRound(ally,game.round) : 1;
+      ally.attacksThisRound=ally.repositoryMobId?repositoryAttacksThisRound(ally,game.round):ally.type==="fighter" ? fighterAttacksThisRound(ally,game.round) : 1;
       ally.attacksRemaining=ally.attacksThisRound;
     }
 
@@ -24788,6 +24788,28 @@ function rangedRetreatStep(unit,threat){
   return options[0] || null;
 }
 
+function repositoryAttacksThisRound(unit,round){
+ const rate=unit.attacksPerRound||1;return Math.floor(rate)+(rate%1&&round%2===0?1:0);
+}
+async function repositoryMobAttack(unit,target){
+ if(!unit.repositoryMobId)return attack(unit,target);
+ let result;for(let n=0;n<repositoryAttacksThisRound(unit,game.round);n++){
+  if(game.over||!unit.alive||!target.alive||!canMeleeAttackTarget(unit,target))break;
+  result=await attack(unit,target);if(result?.criticalMiss)break;
+ }return result;
+}
+async function repositoryMobCast(unit){
+ if(!unit.repositoryMobId||!['mage','cleric'].includes(unit.classId))return false;
+ const ids=unit.classId==='cleric'?unit.memorizedPriestSpellIds:unit.memorizedSpellIds;
+ for(const id of ids||[]){const spell=getSpellEntry(id);if(!spell?.combatImplemented)continue;
+  let target=null;
+  if(spell.kind==='heal')target=allUnits().filter(u=>u.alive&&!u.fled&&u.faction===unit.faction&&u.hp<u.maxHp&&hexDistance(unit,u)<=1).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
+  else if(spell.targetMode==='self'&&!getUnitEffect(unit,id))target=unit;
+  else if(['hostile-creature','adjacent-hostile'].includes(spell.targetMode))target=allUnits().filter(u=>u.alive&&!u.fled&&u.faction!==unit.faction&&hexDistance(unit,u)<=(spell.targetMode==='adjacent-hostile'?1:spellRangeHexes(spell,unit.level))&&!lineOfSightBlocked(unit,u)).sort((a,b)=>hexDistance(unit,a)-hexDistance(unit,b))[0];
+  if(target&&await castPreparedCombatSpell({type:unit.classId==='cleric'?'priest-spell':'memorized-spell',spellId:id,casterLevel:unit.level,sourceUnitId:unit.id,spellCommitted:false},{x:target.x,y:target.y},target))return true;
+ }return false;
+}
+
 async function mobTurn(mob){
   if(
     game.over ||
@@ -24799,6 +24821,8 @@ async function mobTurn(mob){
   ){
     return;
   }
+
+  if(await repositoryMobCast(mob))return;
 
   const taunt=getUnitEffect(mob,"taunt");
   const tauntSource=taunt
@@ -24997,7 +25021,7 @@ async function mobTurn(mob){
       }
     }
 
-    const result=await attack(mob,target);
+    const result=await repositoryMobAttack(mob,target);
 
     if(result?.killed || result?.criticalMiss){
       await waitForCombatActionPause();
@@ -25056,7 +25080,7 @@ async function mobTurn(mob){
       }
     }
 
-    const result=await attack(mob,target);
+    const result=await repositoryMobAttack(mob,target);
 
     if(result?.killed || result?.criticalMiss){
       await waitForCombatActionPause();

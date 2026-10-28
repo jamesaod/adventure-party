@@ -25,7 +25,8 @@
       "move": 12,
       "attacksPerRound": 1,
       "morale": 10,
-      "xpValue": 0
+      "xpValue": 0,
+      "classRules": "class"
     }
   },
   "actionProfiles": [
