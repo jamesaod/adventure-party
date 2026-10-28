@@ -89,3 +89,13 @@ This supersedes Rev 187's requirement for a ZIP. Load the repository model in St
 In MOB Creator import that one JSON, or select its saved library on the same site. The appearance panel lists resolved model label/file, scales, footprint, humanoid size and whether equipment adjustments were supplied, followed by the pose checklist. Character fields unlock when the library supplies appearance. Older pose-only libraries remain readable but require a new Studio export before creating a linked MOB. Existing Unit Package/ZIP imports remain supported. Equal/newer revisions update the existing library ID; older conflicting imports are rejected. No duplicate alias is generated.
 
 Finish stats, abilities and equipment probabilities, then export MOB JSON for repository integration. Complete Capture ZIP remains optional for handing off pre-rendered PNGs; it is not required to import a library into MOB Creator.
+
+## Candidate Rev 189 — repository Orc template in combat
+
+`data/mobs/orc-male-uniformed.unit-package.json` is the supplied MOB Creator export, with the user's approved None 50% off-hand row added. The ordinary Orc factory now uses this template; Orc Leader and Orc Shaman remain unchanged. Fighter levels 1/2/3 roll at 75/20/5%, battle axe/short sword at 50/50%, shield/empty at 50/50%. Stale preview equipment in the package does not override the generation table.
+
+`repository-mobs.mjs` adapts the package to existing inventory, rules and offscreen sprite generation. Startup loads the package before enabling combat. Pinned animation/frame references, shared death/prone, 1H fallback, captured camera/light settings, model scale 140%, hex scale 109%, and model-specific catalog grips drive the existing renderer. Runtime pixels are regenerated for the actual sampled equipment; the JSON's external PNG paths are not required. Identical Orc appearances share the appearance cache.
+
+Class levels are currently metadata: the authored 1d8 HP, THAC0 20 and other explicit rules remain in effect regardless of rolled level. Fighter-derived HP/THAC0 progression is deferred to the user's next change. Shield protection uses the existing equipment rules. Future package imports should extend this adapter/registration path rather than implement a renderer or duplicate generation logic. The current adapter requires a captured camera in spriteSets; a library-only package still needs that framing integration before this path is universal.
+
+Validation: test-repository-mobs checks weighted boundaries, actual equipment, pinned pose fallback, scale and grips; existing footprint tests execute the actual Orc factory.

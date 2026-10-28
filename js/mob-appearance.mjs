@@ -136,7 +136,7 @@ export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = nu
   return {
     format: 'adventure-party-mob-appearance-recipe',
     version: 1,
-    mob: { id: unit.id || null, type: unit.type || null, name: unit.name || null, heightInches: unit.heightInches },
+    mob: { id: unit.repositoryMobId || unit.id || null, type: unit.type || null, name: unit.name || null, heightInches: unit.heightInches },
     model: { animationLibrary, id: modelId || null, hash: modelHash || null, url: modelUrl || null, bodyReferenceHeightInches: bodyReferenceHeightInches ?? null },
     equipment: visual ? { itemName: equipped.name, appearanceId: equipped.appearanceId, ...visual } : null,
     shield: shieldVisual ? { itemName: equippedShield.name, appearanceId: equippedShield.appearanceId, ...shieldVisual } : null,

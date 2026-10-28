@@ -1,3 +1,4 @@
+import {createRepositoryMob} from '../js/repository-mobs.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -28,6 +29,8 @@ const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
 const sandbox = {
+  window:{adventurePartyRepositoryMobs:createRepositoryMob(JSON.parse(fs.readFileSync(new URL('../data/mobs/orc-male-uniformed.unit-package.json',import.meta.url),'utf8')),JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
+  markMobAppearanceDirty:()=>Promise.resolve(null),
   PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
   HEX_DIRS: directions.map((name, index) => ({ name, x: vectors[index][0], y: vectors[index][1] })),
   UNIT_FOOTPRINTS: { single: SPRITE_LAYOUTS.single, hex7: SPRITE_LAYOUTS.hex7 },
@@ -60,7 +63,7 @@ const functions = [
   'occupiedHexes', 'unitFootprintCellCount', 'unitOccupiesHex', 'unitFootprintScreenCenter',
   'unitDistance', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
   'searchRotatingFootprintPath', 'pathToHex', 'axialDisk',
-  'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'makeOrc', 'makeOrcLeader', 'makeOrcShaman',
+  'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'makeOrc', 'makeLegacyOrc', 'makeOrcLeader', 'makeOrcShaman',
   'makeLargeMobTest', 'makeStudioTestMob', 'makeStudioTestPlayer', 'deployConfiguredCombatMobs', 'drawStudioSpriteMob',
   'drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage',
   'isStudioPlayerSpriteTarget', 'playerSpriteSetForType', 'applyPlayerSpriteSet',
@@ -176,7 +179,7 @@ const expectedMobs = {
   kobold: { ac: 7, thaco: 20, move: 6, hitDiceValue: 0.5, weapon: 'Dagger' },
   'kobold-bodyguard': { ac: 6, thaco: 20, move: 6, hitDiceValue: 1, weapon: 'Short Sword' },
   'kobold-slinger': { ac: 7, thaco: 20, move: 6, hitDiceValue: 0.5, rangedWeapon: 'Sling' },
-  orc: { ac: 6, thaco: 19, move: 9, hitDiceValue: 1, weapon: 'Scimitar' },
+  orc: { thaco: 20, move: 12, hitDiceValue: 1, repositoryMobId: 'orc-male-uniformed' },
   'orc-leader': { ac: 6, thaco: 19, move: 9, hitDiceValue: 1, weapon: 'Axe, battle' },
   'orc-shaman': { ac: 6, thaco: 19, move: 9, hitDiceValue: 2, priestLevel: 3, weapon: 'Spear' },
   'juvenile-red-dragon': { ac: -3, thaco: 7, move: 9, hitDiceValue: 15, weapon: 'Bite', attacksPerRound: 3 },
@@ -222,7 +225,7 @@ Object.assign(sandbox, {
   log() {}, setCombatMessage() {}, updateUi() {}, draw() {}, expireTimedUnitEffects() {}, beginTurn() {},
   document: { dispatchEvent() {} }, Event, URLSearchParams,
   readCombatMobRoster:()=>[{type:'kobold',count:2,faction:'hostile'}],
-  window: { location: { assign: url => studioReturns.push(url) } }
+  window: { ...sandbox.window, location: { assign: url => studioReturns.push(url) } }
 });
 for (const layout of allLayoutPresets) {
   const id = `test-fighter-${layout.id}`;
@@ -296,7 +299,7 @@ sandbox.isMageCharacter=unit=>unit.type==='mage';
 const beforeSheet=JSON.stringify(sandbox.game.player);
 sandbox.renderCharacterSheet();
 assert.equal(JSON.stringify(sandbox.game.player),beforeSheet);
-assert.ok(sheetNodes.get('sheetCombat').children.some(node=>node.textContent==='Scimitar'));
+assert.ok(sheetNodes.get('sheetCombat').children.some(node=>['Battle Axe','Short Sword'].includes(node.textContent)));
 sandbox.game.active='player';assert.equal(sandbox.canUseSweep(),false,'Orc player cannot inherit Fighter Sweep');
 sandbox.readCombatMobRoster=()=>[];sandbox.newGame('grass');
 assert.equal(sandbox.game.enemies.length,0);assert.equal(sandbox.game.allies.length,0);

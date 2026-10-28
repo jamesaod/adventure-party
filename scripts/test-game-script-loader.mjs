@@ -10,7 +10,8 @@ const entries=[...html.matchAll(/<script src="([^"]+)" type="text\/plain" data-g
 const pathOf=entry=>entry.src.split('?')[0];
 assert.ok(entries.length>40,'The complete existing engine runs behind the startup gate');
 assert.equal(pathOf(entries[0]),'js/priest-spells.js');
-assert.equal(pathOf(entries[1]),'js/adventure-party.js');
+assert.equal(pathOf(entries[1]),'js/repository-mobs.mjs');
+assert.equal(pathOf(entries[2]),'js/adventure-party.js');
 assert.equal(pathOf(entries.at(-1)),'js/sprite-set-runtime.mjs');
 assert.equal(entries.at(-1).type,'module');
 const activeSources=[...html.matchAll(/<script\b([^>]*src="[^"]+"[^>]*)>/g)]
@@ -18,7 +19,7 @@ const activeSources=[...html.matchAll(/<script\b([^>]*src="[^"]+"[^>]*)>/g)]
 assert.equal(activeSources.length,1,'No game script can bypass ordered startup');
 assert.ok(activeSources[0][1].includes('js/game-script-loader.mjs'));
 for(const entry of entries){
-  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188)$/,'Refresh the former shared R238 script cache');
+  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189)$/,'Refresh the former shared R238 script cache');
   if(entry.type==='classic')new vm.Script(read(pathOf(entry)),{filename:pathOf(entry)});
 }
 

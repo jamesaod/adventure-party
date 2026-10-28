@@ -7199,7 +7199,7 @@ const HUMANOID_PRESENTATION_CONDITION_IDS=new Set(["sleep","unconscious","prone"
 let combatMobAppearanceRuntimePromise=null;
 
 function humanoidRuntimeModel(unit){
-  return unit?HUMANOID_RUNTIME_MODELS[unit.type]||null:null;
+  return unit?.repositoryMobModel || (unit?HUMANOID_RUNTIME_MODELS[unit.type]||null:null);
 }
 
 async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipment-change"}={}){
@@ -7212,8 +7212,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C176")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C184"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C189")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C189"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7224,7 +7224,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       import(new URL("js/combat-pose-recipe.mjs?v=R238C188",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
-    const captured=await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
+    const captured=unit.repositoryMobId&&!fromCombat ? window.adventurePartyRepositoryMobs.recipe(unit) : await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const result=await runtime.ensure(unit,{
       ...model,
@@ -15674,6 +15674,17 @@ function isKoboldUnit(unit){
 
 
 function makeOrc(index,position){
+  const unit=makeLegacyOrc(index,position);
+  const authored=window.adventurePartyRepositoryMobs;
+  if(!authored)throw new Error("Repository Orc template is not loaded.");
+  authored.apply(unit);
+  syncFighterEquipment(unit);
+  unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
+  unit.move=unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);
+  return unit;
+}
+
+function makeLegacyOrc(index,position){
   /*
     AD&D 2e standard Orc, using the armored/equipped values from the
     Monstrous Manual stat block supplied for this test:
@@ -16948,6 +16959,7 @@ function newGame(condition=selectedCombatCondition){
   // A Studio combat test already has an exact 18-frame native battlefield
   // capture. Keep those approved frames unchanged until an actual gear change
   // instead of asynchronously replacing them with a lower-detail render.
+  for(const unit of [player,...allies,...enemies])if(unit.repositoryMobId&&!unit.studioSpriteTest)markMobAppearanceDirty(unit,{reason:"repository-mob-spawn"});
   if(!player.studioSpriteTest && typeof markMobAppearanceDirty==="function"){
     markMobAppearanceDirty(player,{reason:"combat-start"});
   }
