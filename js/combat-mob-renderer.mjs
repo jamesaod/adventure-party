@@ -13,7 +13,7 @@ import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C176';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C189';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
 import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C176';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C176';
@@ -106,6 +106,7 @@ function buildSceneGraph(model,recipe){
     const modelScale=finite(recipe.renderSettings.modelScalePercent,100)/100;
     const hexScale=finite(recipe.renderSettings.hexScalePercent,100)/100;
     const factor=modelScale*hexScale;
+    if(transform.normalizeRest)normalizeFallbackModel(model);
     placement.position.fromArray(vec3(transform.placement.position,[0,0,0])).multiplyScalar(factor);
     placement.scale.setScalar(transform.placement.scale*factor);
     upAxisGroup.rotation.x=transform.upAxis==='Z'?-Math.PI/2:0;

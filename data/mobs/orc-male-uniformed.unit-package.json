@@ -1,0 +1,729 @@
+{
+  "schema": "adventure-party.unit-package",
+  "version": 1,
+  "id": "orc-male-uniformed",
+  "name": "Orc, Male, Uniformed",
+  "modelId": "male-orc",
+  "character": {
+    "classId": null,
+    "level": 1,
+    "abilities": {
+      "str": 10,
+      "dex": 10,
+      "con": 10,
+      "int": 10,
+      "wis": 10,
+      "cha": 10
+    },
+    "rules": {
+      "system": "adnd-2e",
+      "hpMode": "rolled",
+      "hitDice": "1d8",
+      "maxHp": 8,
+      "ac": 10,
+      "thaco": 20,
+      "move": 12,
+      "attacksPerRound": 1,
+      "morale": 10,
+      "xpValue": 0
+    }
+  },
+  "actionProfiles": [
+    "one-handed-swing",
+    "one-handed-thrust"
+  ],
+  "equipment": [
+    {
+      "itemId": "flaming-sword-5",
+      "slot": "primary"
+    }
+  ],
+  "attachments": null,
+  "references": {
+    "poseLibrary": {
+      "schema": "adventure-party.pose-library",
+      "version": 2,
+      "id": "orc-fighter",
+      "name": "Orc",
+      "bodyFamily": "humanoid",
+      "size": "medium",
+      "revision": 1,
+      "profiles": {
+        "one-handed-swing": {
+          "ready": {
+            "animation": "Stabbing",
+            "sourceId": "uploaded:stabbing:0",
+            "timeSeconds": 0
+          },
+          "windup": {
+            "animation": "Stabbing",
+            "sourceId": "uploaded:stabbing:0",
+            "timeSeconds": 0.3392
+          },
+          "attack": {
+            "animation": "Stabbing",
+            "sourceId": "uploaded:stabbing:0",
+            "timeSeconds": 0.9557333333333333
+          }
+        },
+        "two-handed-swing": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "one-handed-thrust": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "two-handed-thrust": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "dual-wield": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "unarmed": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "spell-casting": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "bow": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "direct-fire": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "sling": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "throw": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "wizard-staff-grip": {
+          "ready": {
+            "animation": "Axe Stance",
+            "sourceId": "uploaded:staff-pose:0",
+            "timeSeconds": 6.1
+          },
+          "windup": {
+            "animation": "Axe Stance",
+            "sourceId": "uploaded:staff-pose:0",
+            "timeSeconds": 3.9467
+          },
+          "attack": {
+            "animation": "Axe Stance",
+            "sourceId": "uploaded:staff-pose:0",
+            "timeSeconds": 3.1353999999999997
+          }
+        }
+      },
+      "sharedActionGroups": {
+        "magic": {
+          "casting-windup": {
+            "animation": "Axe Stance",
+            "sourceId": "uploaded:staff-pose:0",
+            "timeSeconds": 3.7697999999999996
+          },
+          "cast": {
+            "animation": "Axe Stance",
+            "sourceId": "uploaded:staff-pose:0",
+            "timeSeconds": 3.8979
+          }
+        },
+        "death-prone": {
+          "falling": {
+            "animation": "Standing Death Forward 01",
+            "sourceId": "uploaded:standing-death-forward-01:0",
+            "timeSeconds": 1.098833333333333
+          },
+          "prone": {
+            "animation": "Standing Death Forward 01",
+            "sourceId": "uploaded:standing-death-forward-01:0",
+            "timeSeconds": 3.1666666666666665
+          }
+        }
+      }
+    },
+    "studioAppearance": {
+      "version": 1,
+      "modelId": "male-orc",
+      "modelScalePercent": 140,
+      "hexScalePercent": 109,
+      "footprint": "single",
+      "size": "medium"
+    },
+    "captureFormatVersion": 2,
+    "poseFallbacks": {
+      "weaponProfile": "one-handed-swing",
+      "falling": "ready",
+      "prone": "ready"
+    },
+    "spriteSets": {
+      "one-handed-swing": {
+        "manifest": "profiles/one-handed-swing/manifest.json",
+        "poses": {
+          "ready": {
+            "clip": "Stabbing",
+            "time": 0,
+            "frames": {
+              "E": "ready-e.png",
+              "NE": "ready-ne.png",
+              "NW": "ready-nw.png",
+              "W": "ready-w.png",
+              "SW": "ready-sw.png",
+              "SE": "ready-se.png"
+            },
+            "clipSourceId": "uploaded:stabbing:0",
+            "render": {
+              "model": "Orc, Male, Uniformed",
+              "heading": 0,
+              "upAxis": "Y",
+              "cameraElevation": 34.63379577659358,
+              "frameHeight": 7.927790867528223,
+              "center": [
+                0,
+                1.5893338416586458,
+                0
+              ],
+              "framingMode": "animations",
+              "modelScalePercent": 140,
+              "lighting": {
+                "ambientIntensity": 2.35,
+                "ambientColor": "#ffffff",
+                "keyIntensity": 0,
+                "keyColor": "#ffffff",
+                "keyElevation": 58,
+                "keyDirection": "SW"
+              },
+              "equipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "medieval-sword",
+                "sizePercent": 100,
+                "position": [
+                  -0.02,
+                  0.05,
+                  0.005
+                ],
+                "rotation": [
+                  161,
+                  -46,
+                  15
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "shield": {
+                "version": 3,
+                "presetRevision": 0,
+                "leftHandShield": "none",
+                "sizePercent": 100,
+                "position": [
+                  0,
+                  0,
+                  0.04
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "distanceInches": 0,
+                "forearmSlideInches": 0,
+                "forearmRollDegrees": 0
+              },
+              "offHandEquipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "none",
+                "sizePercent": 100,
+                "position": [
+                  0.005,
+                  0.065,
+                  -0.005
+                ],
+                "rotation": [
+                  163,
+                  -180,
+                  0
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          },
+          "windup": {
+            "clip": "Stabbing",
+            "time": 0.3392,
+            "frames": {
+              "E": "windup-e.png",
+              "NE": "windup-ne.png",
+              "NW": "windup-nw.png",
+              "W": "windup-w.png",
+              "SW": "windup-sw.png",
+              "SE": "windup-se.png"
+            },
+            "clipSourceId": "uploaded:stabbing:0",
+            "render": {
+              "model": "Orc, Male, Uniformed",
+              "heading": 0,
+              "upAxis": "Y",
+              "cameraElevation": 34.63379577659358,
+              "frameHeight": 7.927790867528223,
+              "center": [
+                0,
+                1.5893338416586458,
+                0
+              ],
+              "framingMode": "animations",
+              "modelScalePercent": 140,
+              "lighting": {
+                "ambientIntensity": 2.35,
+                "ambientColor": "#ffffff",
+                "keyIntensity": 0,
+                "keyColor": "#ffffff",
+                "keyElevation": 58,
+                "keyDirection": "SW"
+              },
+              "equipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "medieval-sword",
+                "sizePercent": 100,
+                "position": [
+                  -0.02,
+                  0.05,
+                  0.005
+                ],
+                "rotation": [
+                  161,
+                  -46,
+                  15
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "shield": {
+                "version": 3,
+                "presetRevision": 0,
+                "leftHandShield": "none",
+                "sizePercent": 100,
+                "position": [
+                  0,
+                  0,
+                  0.04
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "distanceInches": 0,
+                "forearmSlideInches": 0,
+                "forearmRollDegrees": 0
+              },
+              "offHandEquipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "none",
+                "sizePercent": 100,
+                "position": [
+                  0.005,
+                  0.065,
+                  -0.005
+                ],
+                "rotation": [
+                  163,
+                  -180,
+                  0
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          },
+          "attack": {
+            "clip": "Stabbing",
+            "time": 0.9557333333333333,
+            "frames": {
+              "E": "attack-e.png",
+              "NE": "attack-ne.png",
+              "NW": "attack-nw.png",
+              "W": "attack-w.png",
+              "SW": "attack-sw.png",
+              "SE": "attack-se.png"
+            },
+            "clipSourceId": "uploaded:stabbing:0",
+            "render": {
+              "model": "Orc, Male, Uniformed",
+              "heading": 0,
+              "upAxis": "Y",
+              "cameraElevation": 34.63379577659358,
+              "frameHeight": 7.927790867528223,
+              "center": [
+                0,
+                1.5893338416586458,
+                0
+              ],
+              "framingMode": "animations",
+              "modelScalePercent": 140,
+              "lighting": {
+                "ambientIntensity": 2.35,
+                "ambientColor": "#ffffff",
+                "keyIntensity": 0,
+                "keyColor": "#ffffff",
+                "keyElevation": 58,
+                "keyDirection": "SW"
+              },
+              "equipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "medieval-sword",
+                "sizePercent": 100,
+                "position": [
+                  -0.02,
+                  0.05,
+                  0.005
+                ],
+                "rotation": [
+                  161,
+                  -46,
+                  15
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "shield": {
+                "version": 3,
+                "presetRevision": 0,
+                "leftHandShield": "none",
+                "sizePercent": 100,
+                "position": [
+                  0,
+                  0,
+                  0.04
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "distanceInches": 0,
+                "forearmSlideInches": 0,
+                "forearmRollDegrees": 0
+              },
+              "offHandEquipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "none",
+                "sizePercent": 100,
+                "position": [
+                  0.005,
+                  0.065,
+                  -0.005
+                ],
+                "rotation": [
+                  163,
+                  -180,
+                  0
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          }
+        },
+        "sharedActionGroups": [
+          "death-prone"
+        ]
+      }
+    },
+    "sharedActionGroups": {
+      "death-prone": {
+        "manifest": "shared/death-prone/manifest.json",
+        "poses": {
+          "falling": {
+            "clip": "Standing Death Forward 01",
+            "time": 1.098833333333333,
+            "frames": {
+              "E": "falling-e.png",
+              "NE": "falling-ne.png",
+              "NW": "falling-nw.png",
+              "W": "falling-w.png",
+              "SW": "falling-sw.png",
+              "SE": "falling-se.png"
+            },
+            "clipSourceId": "uploaded:standing-death-forward-01:0",
+            "render": {
+              "model": "Orc, Male, Uniformed",
+              "heading": 0,
+              "upAxis": "Y",
+              "cameraElevation": 34.63379577659358,
+              "frameHeight": 7.927790867528223,
+              "center": [
+                0,
+                1.5893338416586458,
+                0
+              ],
+              "framingMode": "animations",
+              "modelScalePercent": 140,
+              "lighting": {
+                "ambientIntensity": 2.35,
+                "ambientColor": "#ffffff",
+                "keyIntensity": 0,
+                "keyColor": "#ffffff",
+                "keyElevation": 58,
+                "keyDirection": "SW"
+              },
+              "equipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "medieval-sword",
+                "sizePercent": 100,
+                "position": [
+                  -0.02,
+                  0.05,
+                  0.005
+                ],
+                "rotation": [
+                  161,
+                  -46,
+                  15
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "shield": {
+                "version": 3,
+                "presetRevision": 0,
+                "leftHandShield": "none",
+                "sizePercent": 100,
+                "position": [
+                  0,
+                  0,
+                  0.04
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "distanceInches": 0,
+                "forearmSlideInches": 0,
+                "forearmRollDegrees": 0
+              },
+              "offHandEquipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "none",
+                "sizePercent": 100,
+                "position": [
+                  0.005,
+                  0.065,
+                  -0.005
+                ],
+                "rotation": [
+                  163,
+                  -180,
+                  0
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          },
+          "prone": {
+            "clip": "Standing Death Forward 01",
+            "time": 3.1666666666666665,
+            "frames": {
+              "E": "prone-e.png",
+              "NE": "prone-ne.png",
+              "NW": "prone-nw.png",
+              "W": "prone-w.png",
+              "SW": "prone-sw.png",
+              "SE": "prone-se.png"
+            },
+            "clipSourceId": "uploaded:standing-death-forward-01:0",
+            "render": {
+              "model": "Orc, Male, Uniformed",
+              "heading": 0,
+              "upAxis": "Y",
+              "cameraElevation": 34.63379577659358,
+              "frameHeight": 7.927790867528223,
+              "center": [
+                0,
+                1.5893338416586458,
+                0
+              ],
+              "framingMode": "animations",
+              "modelScalePercent": 140,
+              "lighting": {
+                "ambientIntensity": 2.35,
+                "ambientColor": "#ffffff",
+                "keyIntensity": 0,
+                "keyColor": "#ffffff",
+                "keyElevation": 58,
+                "keyDirection": "SW"
+              },
+              "equipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "medieval-sword",
+                "sizePercent": 100,
+                "position": [
+                  -0.02,
+                  0.05,
+                  0.005
+                ],
+                "rotation": [
+                  161,
+                  -46,
+                  15
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "shield": {
+                "version": 3,
+                "presetRevision": 0,
+                "leftHandShield": "none",
+                "sizePercent": 100,
+                "position": [
+                  0,
+                  0,
+                  0.04
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "distanceInches": 0,
+                "forearmSlideInches": 0,
+                "forearmRollDegrees": 0
+              },
+              "offHandEquipment": {
+                "version": 3,
+                "presetRevision": 0,
+                "rightHand": "none",
+                "sizePercent": 100,
+                "position": [
+                  0.005,
+                  0.065,
+                  -0.005
+                ],
+                "rotation": [
+                  163,
+                  -180,
+                  0
+                ],
+                "secondaryGripOffsetInches": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "captureRecovery": []
+  },
+  "mob": {
+    "authoringVersion": 1,
+    "generation": {
+      "version": 1,
+      "kind": "template",
+      "alwaysItems": [],
+      "classLevels": [
+        {
+          "classId": "fighter",
+          "level": 1,
+          "weight": 75
+        },
+        {
+          "classId": "fighter",
+          "level": 2,
+          "weight": 20
+        },
+        {
+          "classId": "fighter",
+          "level": 3,
+          "weight": 5
+        }
+      ],
+      "primary": [
+        {
+          "itemId": "battle-axe",
+          "weight": 50
+        },
+        {
+          "itemId": "short-sword",
+          "weight": 50
+        }
+      ],
+      "offHand": [
+        {
+          "itemId": "round-wooden-shield",
+          "weight": 50
+        },
+        {
+          "itemId": "none",
+          "weight": 50
+        }
+      ]
+    },
+    "revision": 1,
+    "species": "Humanoid",
+    "size": "medium",
+    "footprint": "single",
+    "specialAbilities": [],
+    "spellcasting": null,
+    "notes": ""
+  }
+}
