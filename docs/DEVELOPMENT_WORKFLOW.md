@@ -185,3 +185,7 @@ Use the single Action Pose Capture panel for sprite and reusable-frame authoring
 ## Candidate Rev 177
 
 Staff Pose is an explicitly opted-in posed-skeleton animation; see [Carl animation recipe](CARL_ANIMATION_RECIPE.md#staff-pose-proof-of-concept--candidate-rev-177). Keep the other animation recipes unchanged. Combat return must preserve full scoped captures, including groups other than the active selection; see [shared captures](SHARED_ACTION_CAPTURES.md#combat-return-preservation--candidate-rev-177).
+
+## Candidate Rev 178 — Axe Stance correction
+
+Rev 177 Staff Pose direction retargeting is superseded by the with-skin neutral-bind source and time-aligned FBX axis curves. Preserve the stable source ID and all earlier animation recipes. Reproduction, model import, independent Blender validation and capture recovery: [Orc Shaman V2 and Axe Stance](ORC_FEMALE_SHAMAN_V2_MODEL.md).

@@ -2,7 +2,7 @@ import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C1
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
 import * as THREE from 'three';
-import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C177';
+import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C178';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
@@ -188,6 +188,7 @@ function getWorkspaceSettings() {
     unitPackage:state.unitPackage,poseLibrary:state.poseLibrary,poseLibrarySignature:state.poseLibrarySignature,
     modelName: state.modelName, sourceFiles: state.sourceFiles, isDemo: state.isDemo,
     libraryModelId: state.libraryModelId,
+    axeStanceRecipe:'neutral-bind-v2',
     animationRecipe: state.sourceClips.find(clip => clip.userData?.animationRecipe)?.userData.animationRecipe || null,
     equipmentAssetSha256: studioWeapon(equipment.snapshot().settings.rightHand)?.assetSha256 || null,
     demoSourceUpAxis: state.demoSourceUpAxis,
@@ -2424,6 +2425,11 @@ async function loadFiles(fileList, { restoreSettings = null, modelDefaults = nul
         restoreSettings.equipmentAssetSha256 !== equipmentAssetSha256) {
       poseCapture?.invalidateCaptures('Weapon texture updated');
       poseCapture?.saveWorkspace();
+    }
+    if(restoreSettings && restoreSettings.axeStanceRecipe!=='neutral-bind-v2'){
+      const changedPoses=Object.entries(poseCapture.recipeProfiles()).flatMap(([groupId,poses])=>
+        Object.entries(poses).filter(([,capture])=>capture.clipSourceId==='uploaded:staff-pose:0').map(([pose])=>({groupId,pose})));
+      if(changedPoses.length)poseCapture.invalidateCaptures('Axe Stance corrected; recapture this pose',{changedPoses});
     }
     if (restoreSettings && effectiveModelDefaults?.animationLibrary === 'uploaded-fbx' &&
         restoreSettings.animationRecipe !== CARL_ANIMATION_RECIPE) {

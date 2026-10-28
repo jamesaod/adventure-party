@@ -50,7 +50,7 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C176")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C177")'));
+assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C178")'));
 assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C176",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));

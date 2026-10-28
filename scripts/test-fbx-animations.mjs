@@ -1,4 +1,4 @@
-import { loadUploadedFbxAnimations } from '../js/repository-fbx-animations.mjs';
+import { loadUploadedFbxAnimations, restoreAnimationSkinBindPose } from '../js/repository-fbx-animations.mjs';
 import { retargetHumanoidClip } from '../js/mixamo-retarget.mjs';
 import { prepareStudioAnimations } from '../js/studio-animations.mjs';
 import crypto from 'node:crypto';
@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url';
 
 // Run the production pinned loader and its real dependencies in Node without
 // changing the browser package's module format or installing dependencies.
+globalThis.window={URL};
 const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'adventure-party-fbx-'));
 try {
   await fs.writeFile(path.join(temporary, 'package.json'), '{"type":"module"}');
@@ -154,7 +155,7 @@ Connections:  {
   {
     const THREE = await import(pathToFileURL(path.join(three, 'three.core.min.js')));
     const modelCatalog = JSON.parse(await fs.readFile(new URL('../data/studio-models.json', import.meta.url), 'utf8'));
-    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman']);
+    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2']);
     for(const modelId of modelCatalog.studioModelIds){
     const modelEntry = modelCatalog.models.find(model => model.id === modelId);
     if(modelId==='dungeon-crawler-carl-v3')assert.equal(modelEntry.label, 'Dungeon Crawler Carl Ver 3');
@@ -193,7 +194,7 @@ Connections:  {
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(accessor(attributes.WEIGHTS_0),4));
     const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshBasicMaterial());
     nodes[meshIndex].add(mesh); mesh.bind(skeleton,new THREE.Matrix4()); // Match GLTFLoader, including scaled Armature parents.
-    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${({'dungeon-crawler-carl-v3':'carl','blond-scale-mail-woman':'blond-scale-mail','male-orc':'male-orc','orc-leader-male-uniformed':'orc-leader','orc-female-shaman':'orc-female-shaman'})[modelId]}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
+    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${({'dungeon-crawler-carl-v3':'carl','blond-scale-mail-woman':'blond-scale-mail','male-orc':'male-orc','orc-leader-male-uniformed':'orc-leader','orc-female-shaman':'orc-female-shaman','orc-female-shaman-v2':'orc-female-shaman-v2'})[modelId]}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
@@ -218,7 +219,7 @@ Connections:  {
       assert.equal(clips.length,23);
       assert.equal(disposed,23);
       assert.deepEqual(clips.map(clip=>clip.name),catalog.animations.map(entry=>entry.label));
-      assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=(clip.name==='Staff Pose'?20:60)));
+      assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=(modelId==='orc-female-shaman-v2'||clip.name==='Axe Stance'?20:60)));
       assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
       assert.ok(clips.every(clip=>clip.tracks.every(track=>Array.from(track.values).every(Number.isFinite))));
       assert.ok(clips.some(clip=>clip.name===modelEntry.initialAnimation));
@@ -260,44 +261,41 @@ Connections:  {
             position.applyMatrix4(mesh.matrixWorld);
             assert.ok(position.toArray().every(Number.isFinite));bounds.expandByPoint(position);
           }
-          assert.ok(bounds.getSize(new THREE.Vector3()).length()<2,`${clip.name}: actual skinned body remains bounded (${bounds.getSize(new THREE.Vector3()).toArray()})`);
+          assert.ok(bounds.getSize(new THREE.Vector3()).length()<(modelId==='orc-female-shaman-v2'?3:2),`${clip.name}: actual skinned body remains bounded (${bounds.getSize(new THREE.Vector3()).toArray()})`);
         }
         mixer.stopAllAction();
       }
-      const staff=clips.find(clip=>clip.name==='Staff Pose');
-      assert.equal(staff.userData.humanoidImport.retargetMode,'anatomical-child-direction-with-hip-y');
-      const staffReference={duration:6.1,frames:[0,.25,.5,.75,1].map(fraction=>({timeSeconds:fraction*6.1,directions:Object.fromEntries(['LeftArm:LeftForeArm','LeftForeArm:LeftHand','RightArm:RightForeArm','RightForeArm:RightHand','LeftUpLeg:LeftLeg','LeftLeg:LeftFoot','RightUpLeg:RightLeg','RightLeg:RightFoot'].map(pair=>[pair,null]))}))};
-      assert.ok(Math.abs(staff.duration-staffReference.duration)<.0001);
+      const axe=clips.find(clip=>clip.name==='Axe Stance');
+      assert.equal(axe.userData.studioAnimationId,'uploaded:staff-pose:0','Saved frame IDs survive display-name correction');
+      assert.equal(axe.userData.humanoidImport.retargetMode,'semantic-world-bind-delta');
+      const referenceAxe=JSON.parse(await fs.readFile(new URL('./fixtures/axe-stance-blender-reference.json',import.meta.url),'utf8'));
       const bone=name=>nodes.find(node=>node.name==='mixamorig:'+name);
       const position=name=>bone(name).getWorldPosition(new THREE.Vector3());
       targetModel.updateWorldMatrix(true,true);
-      const x=position('RightShoulder').sub(position('LeftShoulder')).normalize();
-      const y=position('Head').sub(position('Hips'));y.addScaledVector(x,-y.dot(x)).normalize();
-      const z=new THREE.Vector3().crossVectors(x,y).normalize();y.crossVectors(z,x);
-      const inverseBasis=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z)).invert();
-      const rawStaff=await fs.readFile(new URL('../assets/animations/staff/staff-pose.fbx',import.meta.url));
-      const sourceStaff=new FBXLoader().parse(rawStaff.buffer.slice(rawStaff.byteOffset,rawStaff.byteOffset+rawStaff.byteLength),'');
-      const sm=new THREE.AnimationMixer(sourceStaff),sa=sm.clipAction(prepareStudioAnimations(sourceStaff.animations)[0]).play();sa.paused=true;
-      const sp=n=>sourceStaff.getObjectByName('mixamorig'+n).getWorldPosition(new THREE.Vector3());
-      const sx=sp('RightShoulder').sub(sp('LeftShoulder')).normalize(),sy=sp('Head').sub(sp('Hips'));sy.addScaledVector(sx,-sy.dot(sx)).normalize();const sz=new THREE.Vector3().crossVectors(sx,sy).normalize();sy.crossVectors(sz,sx);
-      const sib=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(sx,sy,sz)).invert();
-      const staffAction=mixer.clipAction(staff).play();staffAction.paused=true;
-      for(const frame of staffReference.frames){
-        staffAction.time=frame.timeSeconds;mixer.update(0);targetModel.updateWorldMatrix(true,true);
-        for(const pair of Object.keys(frame.directions)){
-          const [parent,child]=pair.split(':');
-          sa.time=frame.timeSeconds;sm.update(0);sourceStaff.updateWorldMatrix(true,true);
-          const direction=sp(child).sub(sp(parent)).normalize().applyQuaternion(sib).toArray();
-          const actual=position(child).sub(position(parent)).normalize().applyQuaternion(inverseBasis);
-          assert.ok(actual.angleTo(new THREE.Vector3(...direction))<Math.PI/180,`${modelId} Staff Pose ${pair} time ${frame.timeSeconds}: ${actual.toArray()} expected ${direction}, angle ${actual.angleTo(new THREE.Vector3(...direction))*180/Math.PI}`);
+      const targetBind=Object.fromEntries(Object.keys(referenceAxe.bind).map(name=>[name,{position:position(name),quaternion:bone(name).getWorldQuaternion(new THREE.Quaternion())}]));
+      const basis=pose=>{
+        const x=pose.RightShoulder.position.clone().sub(pose.LeftShoulder.position).normalize();
+        const y=pose.Head.position.clone().sub(pose.Hips.position);y.addScaledVector(x,-y.dot(x)).normalize();
+        const z=new THREE.Vector3().crossVectors(x,y).normalize();y.crossVectors(z,x);
+        return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));
+      };
+      const sourceBind=Object.fromEntries(Object.entries(referenceAxe.bind).map(([name,b])=>[name,{position:new THREE.Vector3(...b.position),quaternion:new THREE.Quaternion(...b.quaternion)}]));
+      const correction=basis(targetBind).multiply(basis(sourceBind).invert());
+      const heightRatio=targetBind.Hips.position.y/sourceBind.Hips.position.y;
+      const axeAction=mixer.clipAction(axe).play();axeAction.paused=true;
+      for(const frame of referenceAxe.frames){
+        axeAction.time=frame.timeSeconds;mixer.update(0);targetModel.updateWorldMatrix(true,true);
+        for(const [name,sourcePose] of Object.entries(frame.bones)){
+          const expected=correction.clone().multiply(new THREE.Quaternion(...sourcePose.quaternion).multiply(sourceBind[name].quaternion.clone().invert())).multiply(correction.clone().invert()).multiply(targetBind[name].quaternion).normalize();
+          const error=THREE.MathUtils.radToDeg(bone(name).getWorldQuaternion(new THREE.Quaternion()).angleTo(expected));
+          assert.ok(error<1,`${modelId} Axe Stance ${frame.timeSeconds} ${name}: ${error} degrees from Blender`);
         }
-        for(let vertex=0;vertex<geometry.attributes.position.count;vertex++){
-          const point=new THREE.Vector3().fromBufferAttribute(geometry.attributes.position,vertex);mesh.applyBoneTransform(vertex,point);
-          assert.ok(point.toArray().every(Number.isFinite));
-        }
+        const expectedHip=targetBind.Hips.position.clone();expectedHip.y+=new THREE.Vector3(...frame.bones.Hips.position).sub(sourceBind.Hips.position).applyQuaternion(correction).multiplyScalar(heightRatio).y;
+        assert.ok(position('Hips').distanceTo(expectedHip)<.0001,`${modelId} time ${frame.timeSeconds}: hips ${position('Hips').toArray()} expected ${expectedHip.toArray()} error ${position('Hips').distanceTo(expectedHip)}`);
       }
       mixer.stopAllAction();
-      console.log(`PASS ${modelId}: Staff Pose, five source poses / eight limb directions`);
+      console.log(`PASS ${modelId}: Axe Stance matches five Blender poses, 22 joints and neutral-bind hip height`);
+
       console.log(`PASS ${modelId}: ${reference.clips.reduce((count,clip)=>count+clip.frames.length,0)} real skinned poses match recovered offline reference; max joint error ${maxAngularError.toFixed(4)} degrees, hip error ${maxHipError.toExponential(2)}`);
     } finally {THREE.TextureLoader.prototype.load=loadTexture;}
     }

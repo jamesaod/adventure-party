@@ -41,7 +41,7 @@ target_basis=rig_basis(target_world,lookup)
 roles=['Hips','Spine','Spine1','Spine2','Neck','Head','LeftShoulder','LeftArm','LeftForeArm','LeftHand','RightShoulder','RightArm','RightForeArm','RightHand','LeftUpLeg','LeftLeg','LeftFoot','LeftToeBase','RightUpLeg','RightLeg','RightFoot','RightToeBase']
 reference={'method':'Rev 58 world delta + Rev 108 anatomical basis + Rev 110 stationary hips policy','targetSha256':hashlib.sha256(raw).hexdigest(),'clips':[]}
 for entry in catalog['animations']:
-    if entry.get('retargetMode')=='anatomical-aim':continue # Posed-only sources use direction checks in test-fbx-animations.mjs.
+    if entry.get('restoreSkinBindPose') or entry.get('retargetMode')=='anatomical-aim':continue # Posed-only sources use direction checks in test-fbx-animations.mjs.
     path=root/entry['file']
     records,curves,evaluate=fbx_skeleton(path)
     bind=evaluate(None)

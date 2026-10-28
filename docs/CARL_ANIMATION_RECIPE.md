@@ -89,3 +89,7 @@ The supplied Meshy ZIP contains `Animation_Axe_Stance_without_skin.fbx`, registe
 This Mixamo-named skeleton has an authored starting stance, no neutral bind-pose record and fewer finger bones than our existing Mixamo uploads. A world-bind delta would erase that initial stance. Only this catalog entry opts into the existing `anatomical-aim` retargeting mode, which transfers child-bone directions. The previous 22 sources keep their world-bind recipe unchanged. This is a proof of concept: missing finger detail and axial hand twist cannot be fully recovered from limb directions; artistic staff grip QA remains necessary. No capture slots are assigned automatically.
 
 `test-fbx-animations.mjs` compares eight transferred limb directions at five times against the loaded source animation on all five models, checks finite skinning, source checksum/duration and stable IDs, and retains every earlier independent 110-pose reference. The offline world-bind fixture generator excludes explicitly direction-retargeted sources, which have the separate direction assertions. Future animation exports should include a neutral reference skeleton/bind pose when available.
+
+## Candidate Rev 178 — Axe Stance correction
+
+Rev 177 Staff Pose direction retargeting is superseded by the with-skin neutral-bind source and time-aligned FBX axis curves. Preserve the stable source ID and all earlier animation recipes. Reproduction, model import, independent Blender validation and capture recovery: [Orc Shaman V2 and Axe Stance](ORC_FEMALE_SHAMAN_V2_MODEL.md).
