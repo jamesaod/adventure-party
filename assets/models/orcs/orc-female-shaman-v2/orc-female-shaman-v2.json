@@ -3,7 +3,7 @@
   "sourceArchive": "Meshy_AI_tripo_convert_10960f4_biped (1).zip",
   "sourceFile": "Meshy_AI_tripo_convert_10960f4_biped_Character_output.fbx",
   "sourceSha256": "a9a90bff3ec29a52e24c7c356bb99b8abaa406ebc2c999eec522f5cba584080e",
-  "sourceTextureSha256": "9603099c4e5f7ff1ccd0c553c3e7a0a74791f9a9557746fc36eec3496d16e9ab",
+  "sourceTextureSha256": "656061d43c247524015fae1f1b278e8a5c61045c81e00fff78dd58fb12a787b2",
   "triangles": 13086,
   "sourceVertices": 39071,
   "bones": 32,
@@ -11,11 +11,13 @@
     512,
     512
   ],
-  "bytes": 2616128,
-  "sha256": "13b6c25d1ffe558d3f2e60456a23b9ffa93159ad7f9ba927ba7f52a0b4cd78df",
+  "bytes": 2616260,
+  "sha256": "a9a51c0003da10a2387d259517a6036df3739e52c93e3c7720888361394c4250",
   "importer": "Blender 5.1.1",
   "animationLibrary": "uploaded-fbx",
   "retargetMode": "world-bind-delta",
   "hipTranslation": "scaled-world-y",
-  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. 512px sRGB base color resized using Pillow LANCZOS and embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring."
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. 512px sRGB base color resized using Pillow LANCZOS and embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring. Rev 179: user Green PNG replaces base color; all non-image buffer views verified byte-identical.",
+  "textureSourceFile": "Meshy_AI_tripo_convert_10960f4_biped_texture_0 Green.png",
+  "textureSourceSha256": "4bac20269635040f1f83e20ca01aef136eea08d7a7b7c2ea8933f260cfb89744"
 }
