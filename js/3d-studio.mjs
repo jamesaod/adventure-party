@@ -32,8 +32,8 @@ import {
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C182';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C182';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C183';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C183';
 import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C176';
 const authoringQuery=new URLSearchParams(location.search);
 const authoringScoped=!!authoringWorkspaceSuffix(location.search);

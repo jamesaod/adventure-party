@@ -55,6 +55,13 @@ Save/Export MOB preserves `mob.generation` version 1 in the existing Unit Packag
 
 Generate sample resolves choices using the shared `mob-generation.mjs` module and offers a separate generated Unique MOB JSON export. A sample is not automatically saved or deployed. Changing the definition requires generating a fresh sample. Existing model pixels are removed from samples because equipment changed; reusable pose references remain. Live combat registration still follows the existing repository integration workflow, not a second encounter engine.
 
-The verified user Shaman library is preserved verbatim in `data/pose-libraries/orc-shaman-user-r2.json`; `orc-shaman-pose-library.mjs` supplies the browser preset named Orc Shaman — supplied poses. It has ten assignments: three 1H Swing, three Wizard Staff Grip, two Magic, Falling and Prone. The preset has its own identity and never replaces Shared or saved custom libraries. This adds reusable frame references, not the export ZIP's model-specific PNGs.
 
-Validation: `node scripts/test-mob-generation.mjs` covers probability boundaries, invalid/incomplete tables, two-hand exclusion, guaranteed inventory, Unit Package round trips and preset fidelity. Existing MOB authoring, library isolation and renderer checks remain required.
+Validation: `node scripts/test-mob-generation.mjs` covers probability boundaries, invalid/incomplete tables, two-hand exclusion, guaranteed inventory, Unit Package round trips. Existing MOB authoring, library isolation and renderer checks remain required.
+
+## Candidate Rev 183 — corrected creator layout
+
+New MOBs open as Templates, with weighted class/level, primary weapon and off-hand tables at the top of MOB definition. Select Unique for a fixed individual; saved Unique definitions retain their category. The 100% validation and Always has controls are unchanged.
+
+Appearance & shared poses now contains only the library selector, library identity and an assigned-pose checklist. Each populated group lists its assigned/missing slots; 1H Swing and Death/Prone are always shown as the baseline. Green means an actual frame assignment, never a fallback or proof of rendered sprites. Empty optional groups are omitted. Changing libraries refreshes the list immediately. Model selection lives in MOB definition. The embedded preview and pose-preview controls were removed from this page; Studio remains the animation authoring surface.
+
+The unsolicited Orc Shaman preset and its repository seed files have been removed. Existing browser-saved custom libraries and pinned MOB snapshots are preserved. No extra library is added by this correction.
