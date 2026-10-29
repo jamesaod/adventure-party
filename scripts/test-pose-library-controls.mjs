@@ -65,3 +65,15 @@ assert.equal(store.libraries().filter(l=>l.id==='orc-fighter').length,1);
 assert.equal(store.library('orc-fighter').name,'My edited Orc');
 store.deleteLibrary('orc-fighter',orcSaved.revision);assert.equal(store.library('orc-fighter'),null);
 console.log('PASS exact Orc Fighter preset, duplicate prevention, saved precedence and deletion');
+// Rev 200: source assignments survive the import; the one-handed spear copy is explicit.
+const {unzipSync,strFromU8}=await import('../assets/vendor/three/addons/libs/fflate.module.js');
+const archive=unzipSync(new Uint8Array(readFileSync(new URL('../assets/pose-libraries/orc-fighter/source-r22.zip',import.meta.url))));
+const original=JSON.parse(strFromU8(archive['pose-library.json']));
+for(const [id,poses] of Object.entries(original.profiles))if(id!=='one-handed-thrust')assert.deepEqual(ORC_FIGHTER_POSE_LIBRARY.profiles[id],poses);
+assert.deepEqual(ORC_FIGHTER_POSE_LIBRARY.sharedActionGroups,original.sharedActionGroups);
+assert.deepEqual(ORC_FIGHTER_POSE_LIBRARY.profiles['one-handed-thrust'],original.profiles['two-handed-thrust']);
+assert.equal(ORC_FIGHTER_POSE_LIBRARY.revision,23);
+assert.equal(ORC_FIGHTER_POSE_LIBRARY.studioAppearance.modelId,'male-orc');
+assert.equal(ORC_FIGHTER_POSE_LIBRARY.studioAppearance.modelScalePercent,150);
+assert.deepEqual(ORC_FIGHTER_POSE_LIBRARY.studioAppearance.poseEquipment['one-handed-thrust'],ORC_FIGHTER_POSE_LIBRARY.studioAppearance.poseEquipment['two-handed-thrust']);
+console.log('PASS Orc revision 23: original assignments, appearance, spear copy, archive and single stable ID');

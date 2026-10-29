@@ -11,7 +11,7 @@ import {ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalo
 import {SPRITE_LAYOUT_PRESETS} from './sprite-layouts.mjs?v=R238C95';
 import {ABILITY_SCORES,MOB_ABILITIES,createMobDefinition,normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C199';
 import {normalizePoseLibrary,poseLibrarySignature,libraryPoseGroup} from './pose-library.mjs?v=R238C196';
-import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C199';
+import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C200';
 const $=id=>document.getElementById(id),store=browserAuthoringStore();
 let spellEditor,generationEditor,generated=null,generatedFrom=null;
 let loaded=null,library=null,models=[],dirty=false;

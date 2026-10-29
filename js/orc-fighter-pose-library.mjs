@@ -5,23 +5,23 @@ export const ORC_FIGHTER_POSE_LIBRARY={
   "name": "Orc",
   "bodyFamily": "humanoid",
   "size": "medium",
-  "revision": 1,
+  "revision": 23,
   "profiles": {
     "one-handed-swing": {
       "ready": {
-        "animation": "Stabbing",
-        "sourceId": "uploaded:stabbing:0",
+        "animation": "Sword And Shield Slash",
+        "sourceId": "uploaded:sword-and-shield-slash:0",
         "timeSeconds": 0
       },
       "windup": {
-        "animation": "Stabbing",
-        "sourceId": "uploaded:stabbing:0",
-        "timeSeconds": 0.3392
+        "animation": "Sword And Shield Slash",
+        "sourceId": "uploaded:sword-and-shield-slash:0",
+        "timeSeconds": 0.41700000000000004
       },
       "attack": {
-        "animation": "Stabbing",
-        "sourceId": "uploaded:stabbing:0",
-        "timeSeconds": 0.9557333333333333
+        "animation": "Sword And Shield Slash",
+        "sourceId": "uploaded:sword-and-shield-slash:0",
+        "timeSeconds": 0.6285
       }
     },
     "two-handed-swing": {
@@ -30,14 +30,38 @@ export const ORC_FIGHTER_POSE_LIBRARY={
       "attack": null
     },
     "one-handed-thrust": {
-      "ready": null,
-      "windup": null,
-      "attack": null
+      "ready": {
+        "animation": "Bayonet Stab",
+        "sourceId": "uploaded:bayonet-stab:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Bayonet Stab",
+        "sourceId": "uploaded:bayonet-stab:0",
+        "timeSeconds": 0.6468
+      },
+      "attack": {
+        "animation": "Bayonet Stab",
+        "sourceId": "uploaded:bayonet-stab:0",
+        "timeSeconds": 1.176
+      }
     },
     "two-handed-thrust": {
-      "ready": null,
-      "windup": null,
-      "attack": null
+      "ready": {
+        "animation": "Bayonet Stab",
+        "sourceId": "uploaded:bayonet-stab:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Bayonet Stab",
+        "sourceId": "uploaded:bayonet-stab:0",
+        "timeSeconds": 0.6468
+      },
+      "attack": {
+        "animation": "Bayonet Stab",
+        "sourceId": "uploaded:bayonet-stab:0",
+        "timeSeconds": 1.176
+      }
     },
     "dual-wield": {
       "ready": null,
@@ -107,14 +131,747 @@ export const ORC_FIGHTER_POSE_LIBRARY={
     },
     "death-prone": {
       "falling": {
-        "animation": "Standing Death Forward 01",
-        "sourceId": "uploaded:standing-death-forward-01:0",
-        "timeSeconds": 1.098833333333333
+        "animation": "Standing React Death Forward",
+        "sourceId": "uploaded:standing-react-death-forward:0",
+        "timeSeconds": 1.397
       },
       "prone": {
-        "animation": "Standing Death Forward 01",
-        "sourceId": "uploaded:standing-death-forward-01:0",
-        "timeSeconds": 3.1666666666666665
+        "animation": "Standing React Death Forward",
+        "sourceId": "uploaded:standing-react-death-forward:0",
+        "timeSeconds": 3.384333333333333
+      }
+    }
+  },
+  "studioAppearance": {
+    "version": 1,
+    "modelId": "male-orc",
+    "modelScalePercent": 150,
+    "hexScalePercent": 109,
+    "footprint": "single",
+    "size": "medium",
+    "poseEquipment": {
+      "one-handed-swing": {
+        "ready": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "medieval-sword",
+            "sizePercent": 100,
+            "position": [
+              -0.02,
+              0.05,
+              0.005
+            ],
+            "rotation": [
+              161,
+              -46,
+              15
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 0,
+            "leftHandShield": "none",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "windup": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "medieval-sword",
+            "sizePercent": 100,
+            "position": [
+              -0.02,
+              0.05,
+              0.005
+            ],
+            "rotation": [
+              161,
+              -46,
+              15
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 0,
+            "leftHandShield": "none",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "attack": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "medieval-sword",
+            "sizePercent": 100,
+            "position": [
+              -0.02,
+              0.05,
+              0.005
+            ],
+            "rotation": [
+              161,
+              -46,
+              15
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 0,
+            "leftHandShield": "none",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        }
+      },
+      "two-handed-thrust": {
+        "ready": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 1,
+            "rightHand": "spear",
+            "sizePercent": 105,
+            "position": [
+              -0.01,
+              0.03,
+              -0.06
+            ],
+            "rotation": [
+              100,
+              77,
+              -43
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 1,
+            "leftHandShield": "shield-orc",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "windup": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 1,
+            "rightHand": "spear",
+            "sizePercent": 105,
+            "position": [
+              -0.01,
+              0.03,
+              -0.06
+            ],
+            "rotation": [
+              100,
+              77,
+              -43
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 1,
+            "leftHandShield": "shield-orc",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "attack": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 1,
+            "rightHand": "spear",
+            "sizePercent": 105,
+            "position": [
+              -0.01,
+              0.03,
+              -0.06
+            ],
+            "rotation": [
+              100,
+              77,
+              -43
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 1,
+            "leftHandShield": "shield-orc",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        }
+      },
+      "death-prone": {
+        "falling": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "medieval-sword",
+            "sizePercent": 100,
+            "position": [
+              -0.02,
+              0.05,
+              0.005
+            ],
+            "rotation": [
+              161,
+              -46,
+              15
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 0,
+            "leftHandShield": "none",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "prone": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "medieval-sword",
+            "sizePercent": 100,
+            "position": [
+              -0.02,
+              0.05,
+              0.005
+            ],
+            "rotation": [
+              161,
+              -46,
+              15
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 0,
+            "leftHandShield": "none",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        }
+      },
+      "one-handed-thrust": {
+        "ready": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 1,
+            "rightHand": "spear",
+            "sizePercent": 105,
+            "position": [
+              -0.01,
+              0.03,
+              -0.06
+            ],
+            "rotation": [
+              100,
+              77,
+              -43
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 1,
+            "leftHandShield": "shield-orc",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "windup": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 1,
+            "rightHand": "spear",
+            "sizePercent": 105,
+            "position": [
+              -0.01,
+              0.03,
+              -0.06
+            ],
+            "rotation": [
+              100,
+              77,
+              -43
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 1,
+            "leftHandShield": "shield-orc",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        },
+        "attack": {
+          "equipment": {
+            "version": 3,
+            "presetRevision": 1,
+            "rightHand": "spear",
+            "sizePercent": 105,
+            "position": [
+              -0.01,
+              0.03,
+              -0.06
+            ],
+            "rotation": [
+              100,
+              77,
+              -43
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "offHandEquipment": {
+            "version": 3,
+            "presetRevision": 0,
+            "rightHand": "none",
+            "sizePercent": 100,
+            "position": [
+              0.005,
+              0.065,
+              -0.005
+            ],
+            "rotation": [
+              163,
+              -180,
+              0
+            ],
+            "shaftRollDegrees": 0,
+            "secondaryGripOffsetInches": [
+              0,
+              0,
+              0
+            ]
+          },
+          "shield": {
+            "version": 3,
+            "presetRevision": 1,
+            "leftHandShield": "shield-orc",
+            "sizePercent": 100,
+            "position": [
+              0,
+              0,
+              0.04
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "distanceInches": 0,
+            "forearmSlideInches": 0,
+            "forearmRollDegrees": 0
+          }
+        }
       }
     }
   }
