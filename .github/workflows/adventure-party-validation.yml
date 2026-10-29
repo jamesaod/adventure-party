@@ -146,6 +146,7 @@ jobs:
           node scripts/test-mob-authoring.mjs
           node scripts/test-mob-generation.mjs
           node scripts/test-equipment-library.mjs
+          node scripts/test-shield-orc.mjs
           node scripts/test-repository-mobs.mjs
           node scripts/test-orc-axe-basis.mjs
           node scripts/test-weapon-shaft-roll.mjs

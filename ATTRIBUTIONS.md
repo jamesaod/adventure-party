@@ -60,3 +60,7 @@ Model License:
 If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
 This work is based on "TMK 21816:KP14913 shamaanin sauva - Shaman staff" (https://sketchfab.com/3d-models/tmk-21816kp14913-shamaanin-sauva-shaman-staff-a4399b18b844429ba3b7e1074e57ceff) by Turku Museum Centre - Turun museokeskus (https://sketchfab.com/turunmuseokeskus) licensed under CC-BY-NC-ND-4.0 (http://creativecommons.org/licenses/by-nc-nd/4.0/)
 Modified: normalized grip orientation, reduced geometry and 256px textures. Repository owner confirmed separate permission to optimize and publish (2026-10-29).
+
+## Shield, Orc
+
+User-supplied `SM_Wep_Shield_Set_54.fbx` and `Shield_Optimised_01.png` (2026-10-29). Red/black design selected by the repository owner. Original author/license metadata was not supplied. Modified: atlas crop and front UV remap, plain wood/iron backing materials, normalized shared shield frame and 256px runtime texture; 622 triangles preserved. See docs/SHIELD_ORC.md.

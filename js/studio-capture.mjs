@@ -11,7 +11,7 @@ import {
 } from './sprite-set-store.mjs?v=R238C196';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
 import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C196';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C196';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C198';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
 import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C196';

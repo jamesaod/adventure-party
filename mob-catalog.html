@@ -30,7 +30,7 @@ body{background:#080b17;color:#e5d9b2;font-family:"EB Garamond",Georgia,serif;ma
 </main>
 <section id="authoringDrafts" class="mob-notice"><h2>Your MOB drafts</h2><div id="draftList" class="mob-list"></div></section>
 <script type="module">
-import {browserAuthoringStore} from './js/authoring-store.mjs?v=R238C197';
+import {browserAuthoringStore} from './js/authoring-store.mjs?v=R238C198';
 const draftList=document.getElementById('draftList');
 try{for(const mob of browserAuthoringStore().mobs()){const card=document.createElement('article');card.className='mob-card';const link=document.createElement('a');link.className='mob-return';link.href='./mob-creator.html?mob='+encodeURIComponent(mob.id);link.textContent=mob.name;const detail=document.createElement('p');detail.textContent=mob.modelId+' · '+mob.references.poseLibrary.name+' · draft r'+mob.mob.revision;card.append(link,detail);draftList.append(card);}if(!draftList.children.length)draftList.textContent='No browser drafts yet. Use Create a MOB to begin.';}catch(error){draftList.textContent=error.message;}
 

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { ITEM_CATALOG_VERSION, ITEM_CATALOG, itemCatalogEntry } from '../js/item-catalog.mjs';
 
-assert.equal(ITEM_CATALOG_VERSION,3);
+assert.equal(ITEM_CATALOG_VERSION,4);
 for(const id of ['flaming-sword-5','battle-axe','two-handed-sword','chain-mail','round-wooden-shield']){
   assert.equal(itemCatalogEntry(id),ITEM_CATALOG[id],`Catalog lookup resolves ${id}`);
   assert.ok(Object.isFrozen(ITEM_CATALOG[id]),`${id} is immutable`);

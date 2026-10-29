@@ -1,7 +1,7 @@
 import {ORC_FIGHTER_POSE_LIBRARY} from './orc-fighter-pose-library.mjs?v=R238C196';
 import {DEFAULT_MEDIUM_POSE_LIBRARY} from './default-pose-library.mjs?v=R238C196';
 import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C196';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C197';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C198';
 export const SHARED_POSE_LIBRARY_ID='humanoid-medium';
 export function createAuthoringStore(storage,scope){
   const key=`adventure-party-authoring:${scope}`;
