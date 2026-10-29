@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resolveEquipmentLibrary,equipmentSnapshot,emptyEquipmentLibrary} from '../js/equipment-library-core.mjs?v=R238C197';
 import {sampleGeneration,offHandItems,primaryItems,generationWeaponTypes} from '../js/mob-generation.mjs?v=R238C197';
-import {normalizeMobDefinition} from '../js/mob-definition.mjs?v=R238C197';
+import {normalizeMobDefinition} from '../js/mob-definition.mjs?v=R238C202';
 const data=emptyEquipmentLibrary();
 data.items=[{id:'long-sword',overrides:{rules:{damageSM:'2d4'}}},{id:'heirloom',parentId:'long-sword',overrides:{name:'Heirloom',unique:true,enchanted:true,questId:'lost-crown',rules:{magicHitBonus:2,offHandAllowed:true},effects:[{recipient:'target',trigger:'on-hit',kind:'condition',parameter:'slowed',value:'1',chance:25,rounds:3,save:'spell',stacking:'refresh',maxStacks:1}]}},{id:'invisible-heirloom',parentId:'heirloom',overrides:{name:'Invisible heirloom',appearance:null,rules:{poseProfileId:'one-handed-swing'}}}];
 const catalog=resolveEquipmentLibrary(data);

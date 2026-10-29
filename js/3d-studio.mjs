@@ -1,6 +1,6 @@
 import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C169';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
-import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C201';
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
 import * as THREE from 'three';
 import { gripSettingsReport } from './weapon-shaft-roll.mjs?v=R238C194';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C178';
@@ -15,15 +15,15 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C201';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C202';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
-} from './sprite-layouts.mjs?v=R238C201';
+} from './sprite-layouts.mjs?v=R238C202';
 import {
   STUDIO_FEET_PER_HEX, STUDIO_HEIGHT_RULER_FEET, studioWorldUnitsPerFoot,
   studioModelHeightFeet, studioFootprintGuide, studioLightPosition
-} from './studio-geometry.mjs?v=R238C201';
+} from './studio-geometry.mjs?v=R238C202';
 import {
   STUDIO_WEAPONS, STUDIO_OFF_HAND_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
 } from './studio-equipment.mjs?v=R238C201';
@@ -33,8 +33,8 @@ import {
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C201';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C201';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C202';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C202';
 import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C196';
 const authoringQuery=new URLSearchParams(location.search);
 const authoringScoped=!!authoringWorkspaceSuffix(location.search);

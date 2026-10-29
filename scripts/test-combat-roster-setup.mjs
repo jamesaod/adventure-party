@@ -28,7 +28,7 @@ const handler=game.slice(start,game.indexOf('\n});',start)+4);
 let add,updates=0;
 const context={selectedMobEncounter:'studio-kobold',combatMobRoster:[],combatMobRowSequence:0,
  document:{getElementById:()=>({addEventListener:(_event,callback)=>{add=callback;}})},
- cancelPendingCombatStart(){},updateCombatMobSelection(){updates++;}};
+ availableCombatMobChoices:()=>[["mob:orc-archer","Orc Archer"]],cancelPendingCombatStart(){},updateCombatMobSelection(){updates++;}};
 vm.runInNewContext(handler,context);add();add();
 assert.equal(context.selectedMobEncounter,'studio-kobold','Adding opponents keeps the selected Studio player');
 assert.equal(context.combatMobRoster.length,2);assert.equal(updates,2);

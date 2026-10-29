@@ -241,3 +241,7 @@ Supersedes Rev 193 relative roll. Equipment stores base `rotation` (XYZ degrees)
 ## Candidate Rev 198
 
 [Shield, Orc](SHIELD_ORC.md) records atlas extraction and shared shield registration. Published equipment is shared across Library, MOB Creator and Studio registrations. Browser-local item variants currently feed MOB Creator, not Studio presets.
+
+## MOB authoring and encounter integration
+
+See [MOB library](MOB_LIBRARY.md) for Studio → sheet → combat, local saves versus publication, height calibration and manifest registration.

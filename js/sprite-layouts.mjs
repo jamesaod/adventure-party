@@ -54,6 +54,7 @@ export function spriteLayout(id = 'single') {
 }
 
 export function spriteMob(id = 'kobold') {
+  if(id==='library-mob')return {id,label:'MOB Library unit',defaultLayout:'single',targetKind:'monster'};
   const found = SPRITE_MOBS.find(item => item.id === id);
   if (!found) throw new Error(`Unknown sprite MOB: ${String(id)}.`);
   return found;

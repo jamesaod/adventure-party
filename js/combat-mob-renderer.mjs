@@ -1,7 +1,7 @@
-import {repositoryRestFrame} from './repository-mob-frame.mjs?v=R238C201';
+import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs?v=R238C202';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
-import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C201';
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C178';
 import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C178';
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
@@ -13,7 +13,7 @@ import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C194';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
-import { studioLightPosition } from './studio-geometry.mjs?v=R238C201';
+import { studioLightPosition } from './studio-geometry.mjs?v=R238C202';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C201';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C196';
 import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C201';
@@ -104,14 +104,21 @@ function buildSceneGraph(model,recipe){
 
   const transform=recipe.renderSettings?.transform;
   if(transform?.placement && Number.isFinite(transform.placement.scale)){
-    const modelScale=finite(recipe.renderSettings.modelScalePercent,100)/100;
+    let modelScale=finite(recipe.renderSettings.modelScalePercent,100)/100;
     const hexScale=finite(recipe.renderSettings.hexScalePercent,100)/100;
-    const factor=modelScale*hexScale;
+    let factor=modelScale*hexScale;
     if(transform.normalizeRest)normalizeFallbackModel(model);
     if(transform.fitRest){
       const bounds=new THREE.Box3().setFromObject(model,true);
       Object.assign(transform,repositoryRestFrame(bounds.min.toArray(),bounds.max.toArray(),recipe.renderSettings.frame.width/recipe.renderSettings.frame.height));
       recipe.renderSettings.frame.anchorY=recipe.renderSettings.frame.height/2*(1+2*transform.center[1]*Math.cos(CAMERA_ELEVATION)/transform.frameHeight);
+    }
+    if(Number.isFinite(recipe.renderSettings.heightInches)){
+      const bounds=new THREE.Box3().setFromObject(model,true),frame=recipe.renderSettings.frame;
+      const baseHeight=frame.renderHeight/factor,baseWidth=frame.renderWidth/factor;
+      const calibrated=calibratedMobScale(recipe.renderSettings.heightInches,bounds.max.y-bounds.min.y,transform.frameHeight,baseHeight,hexScale*100);
+      factor=calibrated.factor;recipe.renderSettings.modelScalePercent=calibrated.modelScalePercent;
+      frame.renderWidth=baseWidth*factor;frame.renderHeight=baseHeight*factor;
     }
     placement.position.fromArray(vec3(transform.placement.position,[0,0,0])).multiplyScalar(factor);
     placement.scale.setScalar(transform.placement.scale*factor);
@@ -348,13 +355,13 @@ export async function generateCombatSpriteSet(recipe){
         capture==='attack'?'Mixamo_sword_and_shield_attack':null,
         capture==='prone'?'Mixamo_sword_and_shield_death':null]
         .map(name=>name&&byName.get(name)).find(Boolean)||gltf.animations[0];
-      if(!clip) throw new Error('The selected combat model has no playable animation clips.');
+      if(!clip&&!pose.rest) throw new Error('The selected combat model has no playable animation clips.');
       mixer.stopAllAction();
-      const action=mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1).play();
+      const action=pose.rest?{time:0}:mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1).play();
       action.paused=true;
-      action.time=Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
+      action.time=pose.rest?0:Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
-      poses[capture]={clip:clip.name,time:action.time,frames:{}};
+      poses[capture]={clip:pose.rest?'T-pose':clip.name,time:action.time,frames:{}};
       for(const facing of HEX_FACINGS){
         const rendered=frameCanvases(
           renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,shadowMaterial

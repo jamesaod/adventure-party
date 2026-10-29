@@ -184,7 +184,14 @@ const COMBAT_MOB_CHOICES=[
   ["orc-leader","Orc Leader"],["orc-shaman","Orc Shaman"],
   ["juvenile-red-dragon","Juvenile Red Dragon"]
 ];
+function availableCombatMobChoices(){
+ const registry=window.adventurePartyRepositoryMobs;
+ if(!registry?.choices)return COMBAT_MOB_CHOICES;
+ return [...registry.choices(),...COMBAT_MOB_CHOICES.filter(([id])=>!registry.managedTypes.includes(id)).map(([id,label])=>[id,label+' (built-in)'])];
+}
 function readCombatMobRoster(){
+  const valid=new Set(availableCombatMobChoices().map(([id])=>id));
+  for(const row of combatMobRoster)if(!valid.has(row.type))throw Error('A selected MOB is disabled or deleted. Return to setup and choose an available MOB.');
   return combatMobRoster.map(({type,count,faction})=>({type,count,faction}));
 }
 function updateCombatMobSelection(){
@@ -192,13 +199,15 @@ function updateCombatMobSelection(){
   if(playerLabel)playerLabel.textContent=selectedMobEncounter==="studio-kobold"
     ? registeredStudioSpriteSets.get(selectedStudioSpriteSetId)?.label || "Studio Kobold"
     : "Dungeon Crawler Carl";
+  const testId=new URLSearchParams(window.location?.search||'').get('testMob');
+  if(playerLabel&&testId&&new URLSearchParams(window.location?.search||'').get('testRole')!=='hostile')playerLabel.textContent=window.adventurePartyRepositoryMobs.get(testId)?.name||'Unavailable MOB';
   const container=document.getElementById("combatMobRows");
   if(!container)return;
   container.replaceChildren();
   for(const entry of combatMobRoster){
     const line=document.createElement("div");line.className="combat-mob-editor-row";
     const mob=document.createElement("select");mob.setAttribute("aria-label","MOB type");
-    for(const [id,label] of COMBAT_MOB_CHOICES){
+    for(const [id,label] of availableCombatMobChoices()){
       const option=document.createElement("option");option.value=id;option.textContent=label;
       mob.append(option);
     }
@@ -228,18 +237,19 @@ function updateCombatMobSelection(){
     : "No opponents selected. Use + Add MOB to choose opponents or allies.";
 }
 document.getElementById("addCombatMobButton")?.addEventListener("click",()=>{
-  combatMobRoster.push({rowId:++combatMobRowSequence,type:"kobold",count:1,faction:"hostile"});
+  combatMobRoster.push({rowId:++combatMobRowSequence,type:availableCombatMobChoices()[0]?.[0]||"kobold",count:1,faction:"hostile"});
   if(selectedMobEncounter!=="studio-kobold")selectedMobEncounter="custom";
   cancelPendingCombatStart();updateCombatMobSelection();
 });
 let selectedStudioSpriteSetId="studio-kobold";
 
 function isStudioTestCombat(combat=game){
-  return combat?.studioSpriteTest===true;
+  return combat?.studioSpriteTest===true || !!new URLSearchParams(window.location?.search||'').get("testMob");
 }
 
 function studioReturnUrl(){
   const source=new URLSearchParams(window.location.search || "");
+  if(source.has("testMob"))return "./mob-creator.html?mob="+encodeURIComponent(source.get("testMob"));
   const query=new URLSearchParams("studioRestore=1");
   for(const key of ["model","mob","poseLibrary","preview"]){
     if(source.has(key))query.set(key,source.get(key));
@@ -3697,7 +3707,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   }
   const id=`sprite-set:${manifest.id}`;
   const mobType=manifest.mobType || "kobold";
-  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-archer","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType) &&
+  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-archer","orc-leader","orc-shaman","juvenile-red-dragon","library-mob"].includes(mobType) &&
     !isStudioPlayerSpriteTarget(mobType)){
     throw new Error("This sprite target has not been implemented.");
   }
@@ -7214,7 +7224,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C201")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C201"))
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C202"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7222,7 +7232,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C201",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C202",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const captured=unit.repositoryMobId&&!fromCombat ? window.adventurePartyRepositoryMobs.recipe(unit) : await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
@@ -15674,6 +15684,19 @@ function isKoboldUnit(unit){
 }
 
 
+function makeLibraryMob(id,index,position){
+ const unit=makeLegacyOrc(index,position);
+ window.adventurePartyRepositoryMobs.apply(unit,Math.random,id);
+ unit.type='library-mob';unit.id=`library-mob-${index+1}`;
+ syncFighterEquipment(unit);unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
+ unit.move=unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);return unit;
+}
+function libraryTestPlayer(){
+ const id=new URLSearchParams(window.location?.search||'').get('testMob'),role=new URLSearchParams(window.location?.search||'').get('testRole');
+ if(!id||role==='hostile')return null;
+ if(!window.adventurePartyRepositoryMobs.canTest(id))throw Error('This MOB is incomplete or deleted. Return to its sheet.');
+ const unit=makeLibraryMob(id,0,{x:0,y:0});unit.id='player';unit.controller='player';unit.faction='player';return unit;
+}
 function makeOrc(index,position,templateId){
   const unit=makeLegacyOrc(index,position);
   const authored=window.adventurePartyRepositoryMobs;
@@ -16335,6 +16358,11 @@ function makeWallTestKoboldArmy(count=10,bodyguardCount=3,slingerCount=3){
 }
 
 function makeStudioTestMob(mobType,index,position){
+  if(mobType.startsWith('mob:')){
+    const id=mobType.slice(4);
+    if(!window.adventurePartyRepositoryMobs.choices().some(([key])=>key===mobType))throw Error('This MOB is disabled or was deleted. Return to encounter setup.');
+    return makeLibraryMob(id,index,position);
+  }
   switch(mobType){
     case "kobold": return makeKobold(index,position);
     case "kobold-bodyguard": return makeKoboldBodyguard(index,position);
@@ -16744,7 +16772,7 @@ function newGame(condition=selectedCombatCondition){
   */
   configureArchitecturalWalls(condition);
 
-  const player=selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter();
+  const player=libraryTestPlayer() || (selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter());
   if(selectedMobEncounter!=="studio-kobold"){
     delete player.studioSpriteTest;
     delete player.studioPoseInspection;
@@ -16913,7 +16941,7 @@ function newGame(condition=selectedCombatCondition){
   }else if(selectedMobEncounter==="studio-kobold"){
     log(`${player.name} is your player-controlled Studio test character. ${enemies.length} opponents and ${allies.length} allies were added through Combat Setup.`,"system");
     log(`The captured model and ${unitFootprintCellCount(player)}-hex footprint follow the test character's movement, facing and action poses.`,"system");
-  }else{
+  }else if(selectedMobEncounter!=="custom"){
     log(
       `10 Kobolds deployed: AC 7, THAC0 20, Move 6, 1d4 HP each; dagger only; new dagger sprite set.`,
       "system"
@@ -25460,6 +25488,18 @@ function updateUnitInfoPanel(){
 function renderClassReport(){
   const fighter=game?.player || persistentFighter;
   if(!fighter) return;
+  if(fighter.repositoryMobId){
+    const rows=entries=>entries.map(([label,value])=>`<span>${String(label).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]))}</span><span>${String(value??'—').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>`).join('');
+    document.getElementById('sheetIdentity').innerHTML=rows([['Name',fighter.name],['Height',formatMobHeight(fighter.heightInches)],['Class',fighter.className||fighter.classId||'No character class'],['Level',fighter.level],['MOB',fighter.repositoryMobId]]);
+    document.getElementById('sheetCombat').innerHTML=rows([['HP',fighter.hp+'/'+fighter.maxHp],['AC',fighter.ac],['THAC0',fighter.thaco],['Attacks',fighter.attacksPerRound],['Move',fighter.move],['Weapon',fighter.weapon]]);
+    document.getElementById('sheetAbilities').innerHTML=rows(Object.entries(fighter.abilities||fighter.stats||{}));
+    document.getElementById('sheetSaves').innerHTML=rows(Object.entries(fighter.saves||{}));
+    document.getElementById('sheetTraining').textContent='Defined by the MOB template and generated class rules.';
+    document.getElementById('sheetMagic').textContent=[...(fighter.memorizedSpellIds||[]),...(fighter.memorizedPriestSpellIds||[])].join(', ')||'No prepared spells.';
+    document.getElementById('sheetStatus').innerHTML=rows([['Current Hex',fighter.x+', '+fighter.y],['Facing',fighter.facing],['Controller',fighter.controller],['Alive',fighter.alive?'Yes':'No']]);
+    return;
+  }
+
 
   const summary=document.getElementById("classSummary");
   const body=document.getElementById("classTableBody");
@@ -25924,6 +25964,18 @@ function renderCharacterSheet(){
 
   const fighter=game?.player || persistentFighter;
   if(!fighter) return;
+  if(fighter.repositoryMobId){
+    const rows=entries=>entries.map(([label,value])=>`<span>${String(label).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]))}</span><span>${String(value??'—').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>`).join('');
+    document.getElementById('sheetIdentity').innerHTML=rows([['Name',fighter.name],['Height',formatMobHeight(fighter.heightInches)],['Class',fighter.className||fighter.classId||'No character class'],['Level',fighter.level],['MOB',fighter.repositoryMobId]]);
+    document.getElementById('sheetCombat').innerHTML=rows([['HP',fighter.hp+'/'+fighter.maxHp],['AC',fighter.ac],['THAC0',fighter.thaco],['Attacks',fighter.attacksPerRound],['Move',fighter.move],['Weapon',fighter.weapon]]);
+    document.getElementById('sheetAbilities').innerHTML=rows(Object.entries(fighter.abilities||fighter.stats||{}));
+    document.getElementById('sheetSaves').innerHTML=rows(Object.entries(fighter.saves||{}));
+    document.getElementById('sheetTraining').textContent='Defined by the MOB template and generated class rules.';
+    document.getElementById('sheetMagic').textContent=[...(fighter.memorizedSpellIds||[]),...(fighter.memorizedPriestSpellIds||[])].join(', ')||'No prepared spells.';
+    document.getElementById('sheetStatus').innerHTML=rows([['Current Hex',fighter.x+', '+fighter.y],['Facing',fighter.facing],['Controller',fighter.controller],['Alive',fighter.alive?'Yes':'No']]);
+    return;
+  }
+
   syncFighterEquipment(fighter);
   const nextXp=fighterNextLevelXp(fighter.level);
   const saves=fighter.saves || warriorSavingThrows(fighter.level);
@@ -26170,14 +26222,14 @@ function updateUi(){
       ? 'Hit &lt;ESC&gt; to cancel Quick'
       : spellTargeting
         ? 'ESC — ABORT SPELL CASTING'
-        : (aimOnly ? 'ESC — ABORT AIM' : studioTest ? 'ESC — RETURN TO 3D STUDIO' : 'ESC — RETURN TO LAUNCHER');
+        : (aimOnly ? 'ESC — ABORT AIM' : studioTest ? (new URLSearchParams(window.location.search).has('testMob')?'ESC — RETURN TO MOB SHEET':'ESC — RETURN TO 3D STUDIO') : 'ESC — RETURN TO LAUNCHER');
     returnButton.setAttribute(
       "aria-label",
       anyQuick
         ? "Hit Escape to cancel Quick for all friendly units"
         : spellTargeting
           ? "Escape to abort spell casting"
-          : (aimOnly ? "Escape to abort Aim" : studioTest ? "Escape to return to 3d studio" : "Escape to return to launcher")
+          : (aimOnly ? "Escape to abort Aim" : studioTest ? (new URLSearchParams(window.location.search).has("testMob")?"Escape to return to MOB sheet":"Escape to return to 3d studio") : "Escape to return to launcher")
     );
   }
 
@@ -31011,3 +31063,14 @@ window.AdventurePartyStatusFx={
   persistentTauntUnits,
   ensurePersistentStatusFxLoop
 };
+
+window.adventurePartyGameStartup?.ready.then(()=>{
+ const query=new URLSearchParams(location.search),id=query.get('testMob');if(!id)return;
+ const mob=window.adventurePartyRepositoryMobs.get(id);if(!mob){alert('This MOB was deleted or is unavailable.');return;}
+ const back=document.createElement('a');back.href='./mob-creator.html?mob='+encodeURIComponent(id);back.textContent='Return to MOB sheet';back.className='command';document.getElementById('returnButton')?.after(back);
+ if(query.get('testRole')==='hostile'){
+   if(!window.adventurePartyRepositoryMobs.choices().some(([key])=>key==='mob:'+id)){alert('Enable and save this MOB before adding it as an opponent.');return;}
+   combatMobRoster.push({rowId:++combatMobRowSequence,type:'mob:'+id,count:1,faction:'hostile'});
+ }
+ showCombatConditions();
+});

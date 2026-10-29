@@ -1,5 +1,9 @@
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
 // Same normalized rest-body framing as Studio; never fit equipment or each pose.
+export function calibratedMobScale(heightInches,bodyHeight,frameHeight,baseRenderHeight,hexScalePercent){
+ const factor=(heightInches/12)*64*frameHeight/(bodyHeight*baseRenderHeight*10);
+ return {factor,modelScalePercent:factor*10000/hexScalePercent};
+}
 export function repositoryRestFrame(min,max,aspect){
  const low=Math.min(0,min[1]),high=Math.max(0,max[1]);
  const radius=Math.max(...[min[0],max[0]].flatMap(x=>[min[2],max[2]].map(z=>Math.hypot(x,z))));

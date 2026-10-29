@@ -13,7 +13,7 @@ assert.ok(game.includes('document.getElementById("inventoryList").addEventListen
 assert.ok(game.includes('if(keyLower==="i")'),'Inventory hotkey must work');
 assert.ok(game.includes('if(inventoryOpen){closeInventory();return;}'),'Escape closes inventory');
 assert.ok(game.includes('window.location.assign("./mob-catalog.html")'));
-assert.ok(catalog.includes("SPRITE_MOBS") && catalog.includes("studio-models.json"),
- 'Catalog should use existing registered MOBs and models');
+assert.ok(catalog.includes("mob-library-page.mjs") && catalog.includes("mobCards"),
+ 'Catalog should display shared MOB library cards');
 assert.ok(!game.includes('getElementById("sheetInventory")'));
 console.log('PASS MOB catalog launcher, separate inventory modal and existing equip/use handlers');

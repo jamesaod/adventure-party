@@ -15,7 +15,7 @@ export function normalizeMobRules(value={}){
   if(!/^(?:[1-9]\d?|100)d(?:[1-9]\d?|100)(?:[+-]\d{1,3})?$/.test(hitDice))throw Error('Hit dice must be an expression such as 2d8+2.');
   return {classRules:value.classRules==='class'?'class':'authored',overrideHp:value.overrideHp===true,overrideThaco:value.overrideThaco===true,overrideAttacks:value.overrideAttacks===true,system:'adnd-2e',hpMode,hitDice,maxHp:number(value.maxHp??8,'Maximum HP',1,100000,true),ac:number(value.ac??10,'AC',-20,20),thaco:number(value.thaco??20,'THAC0',-20,30),move:number(value.move??12,'Movement',0,100),attacksPerRound:number(value.attacksPerRound??1,'Attacks per round',0.5,20),morale:number(value.morale??10,'Morale',2,20,true),xpValue:number(value.xpValue??0,'XP',0,10000000,true)};
 }
-export function createMobDefinition({id,name,modelId,library,abilities={},rules={},weaponTypes=['unarmed'],species='Humanoid',size='medium',footprint='single',specialAbilities=[],spellcasting=null,notes='',revision=0,equipment=[],attachments=null,references={},character={},generation=null,spellPreparation={}}){
+export function createMobDefinition({id,name,modelId,library,abilities={},rules={},weaponTypes=['unarmed'],species='Humanoid',size='medium',footprint='single',specialAbilities=[],spellcasting=null,notes='',revision=0,equipment=[],attachments=null,references={},character={},generation=null,spellPreparation={},heightInches=null,encounterEnabled=false}){
   if(typeof name!=='string'||!name.trim()||name.length>160)throw Error('Enter a MOB name up to 160 characters.');
   if(!validAuthoringId(id)||!validAuthoringId(modelId))throw Error('Choose valid MOB and model IDs.');
   if(!['small','medium','large'].includes(size))throw Error('Invalid MOB size.');
@@ -35,7 +35,7 @@ export function createMobDefinition({id,name,modelId,library,abilities={},rules=
   if(generation){generation=normalizeGeneration(generation,{catalog:equipmentCatalog});weaponTypes=[...new Set([...weaponTypes,...generationWeaponTypes(generation,equipmentCatalog)])];if(generation.kind==='unique'){const fixed=sampleGeneration(generation,Math.random,equipmentCatalog);character={...character,classId:fixed.classId,level:fixed.level};equipment=fixed.equipment;}}
   if(generation){const levels=generation.kind==='unique'?[generation.fixed]:generation.classLevels.filter(row=>row.weight>0);for(const row of levels)if(spellPreparation[row.classId]?.mode==='prepared')prepareMobSpells(row.classId,row.level,scores,spellPreparation);}
   return createUnitPackage({id,name,modelId,character:{...character,abilities:scores,rules:normalizeMobRules(rules)},actionProfiles:weaponTypes,equipment,
-    attachments,references:{...structuredClone(references),poseFallbacks:POSE_FALLBACKS,poseLibrary},mob:{authoringVersion:1,spellPreparation,...(generation?{generation}:{}),revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
+    attachments,references:{...structuredClone(references),poseFallbacks:POSE_FALLBACKS,poseLibrary},mob:{authoringVersion:1,heightInches:heightInches===null?null:number(heightInches,'Height in inches',6,600),encounterEnabled:encounterEnabled===true,spellPreparation,...(generation?{generation}:{}),revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
 }
 export function normalizeMobDefinition(value){
   validateUnitPackage(value);
