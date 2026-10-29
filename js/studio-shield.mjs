@@ -1,5 +1,5 @@
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C199';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C201';
 import { findHumanoidBone, analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 
 const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');

@@ -1,6 +1,7 @@
+import {repositoryRestFrame} from './repository-mob-frame.mjs?v=R238C201';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
-import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C196';
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C201';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C178';
 import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C178';
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
@@ -12,11 +13,11 @@ import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C194';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
-import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C199';
+import { studioLightPosition } from './studio-geometry.mjs?v=R238C201';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C201';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C196';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C199';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C199';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C201';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C201';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({
@@ -107,6 +108,11 @@ function buildSceneGraph(model,recipe){
     const hexScale=finite(recipe.renderSettings.hexScalePercent,100)/100;
     const factor=modelScale*hexScale;
     if(transform.normalizeRest)normalizeFallbackModel(model);
+    if(transform.fitRest){
+      const bounds=new THREE.Box3().setFromObject(model,true);
+      Object.assign(transform,repositoryRestFrame(bounds.min.toArray(),bounds.max.toArray(),recipe.renderSettings.frame.width/recipe.renderSettings.frame.height));
+      recipe.renderSettings.frame.anchorY=recipe.renderSettings.frame.height/2*(1+2*transform.center[1]*Math.cos(CAMERA_ELEVATION)/transform.frameHeight);
+    }
     placement.position.fromArray(vec3(transform.placement.position,[0,0,0])).multiplyScalar(factor);
     placement.scale.setScalar(transform.placement.scale*factor);
     upAxisGroup.rotation.x=transform.upAxis==='Z'?-Math.PI/2:0;
@@ -251,10 +257,11 @@ export async function generateCombatSpriteSet(recipe){
     applyWarriorRecolor(THREE,model,recipe.renderSettings?.appearanceRecolor);
   }
 
-  const frame=normalizedFrame(recipe);
+  let frame=normalizedFrame(recipe);
   const style=normalizedStyle(recipe);
   const scene=new THREE.Scene();
   const turntable=buildSceneGraph(model,recipe);
+  frame=normalizedFrame(recipe);
   scene.add(turntable);
   configureLights(scene,recipe);
   const camera=configureCamera(recipe,frame);

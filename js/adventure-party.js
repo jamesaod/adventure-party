@@ -180,7 +180,7 @@ const combatMobRoster=[];
 let combatMobRowSequence=0;
 const COMBAT_MOB_CHOICES=[
   ["kobold","Kobold"],["kobold-bodyguard","Kobold Body Guard"],
-  ["kobold-slinger","Kobold Slinger"],["orc","Orc"],
+  ["kobold-slinger","Kobold Slinger"],["orc","Orc"],["orc-archer","Orc Archer"],
   ["orc-leader","Orc Leader"],["orc-shaman","Orc Shaman"],
   ["juvenile-red-dragon","Juvenile Red Dragon"]
 ];
@@ -2672,6 +2672,7 @@ const UNIT_POSE_DEFINITIONS={
       attack:orcAttackSprite
     }
   },
+  "orc-archer":{defaultPose:"stand",actionPose:"attack",actionDurationMs:UNIT_DEFAULT_ACTION_POSE_MS,nativeFacing:"right",sprites:{stand:orcStandSprite,attack:orcAttackSprite}},
   "orc-leader":{
     defaultPose:"stand",
     actionPose:"attack",
@@ -3696,7 +3697,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   }
   const id=`sprite-set:${manifest.id}`;
   const mobType=manifest.mobType || "kobold";
-  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType) &&
+  if(!["kobold","kobold-bodyguard","kobold-slinger","orc","orc-archer","orc-leader","orc-shaman","juvenile-red-dragon"].includes(mobType) &&
     !isStudioPlayerSpriteTarget(mobType)){
     throw new Error("This sprite target has not been implemented.");
   }
@@ -7212,8 +7213,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C199")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C199"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C201")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C201"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -7221,7 +7222,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }
     const [runtime,poseModule]=await Promise.all([
       combatMobAppearanceRuntimePromise,
-      import(new URL("js/combat-pose-recipe.mjs?v=R238C188",document.baseURI).href)
+      import(new URL("js/combat-pose-recipe.mjs?v=R238C201",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const captured=unit.repositoryMobId&&!fromCombat ? window.adventurePartyRepositoryMobs.recipe(unit) : await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
@@ -15673,11 +15674,12 @@ function isKoboldUnit(unit){
 }
 
 
-function makeOrc(index,position){
+function makeOrc(index,position,templateId){
   const unit=makeLegacyOrc(index,position);
   const authored=window.adventurePartyRepositoryMobs;
   if(!authored)throw new Error("Repository Orc template is not loaded.");
-  authored.apply(unit);
+  authored.apply(unit,Math.random,templateId);
+  if(templateId==="orc-archer"){unit.type="orc-archer";unit.id=`orc-archer-${String(index+1).padStart(2,"0")}`;}
   syncFighterEquipment(unit);
   unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
   unit.move=unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);
@@ -16338,6 +16340,7 @@ function makeStudioTestMob(mobType,index,position){
     case "kobold-bodyguard": return makeKoboldBodyguard(index,position);
     case "kobold-slinger": return makeKoboldSlinger(index,position);
     case "orc": return makeOrc(index,position);
+    case "orc-archer": return makeOrc(index,position,"orc-archer");
     case "orc-leader": return makeOrcLeader(index,position);
     case "orc-shaman": return makeOrcShaman(index,position);
     case "juvenile-red-dragon": return makeLargeMobTest(position);
@@ -17344,13 +17347,15 @@ async function longbowAttack(attacker,defender){
     return {hit:false,killed:false,damage:0,outOfRange:true};
   }
 
+  if(Number.isFinite(attacker.missileAmmoQuantity)&&attacker.missileAmmoQuantity<=0)return {hit:false,killed:false,damage:0,outOfAmmo:true};
+
   const position=
     attackPositionData(attacker,defender);
 
   await focusRangedAttacker(attacker);
 
   attacker.weaponInHand="ranged";
-  setUnitActionBanner(attacker,`Firing Longbow — ${position.label}`);
+  setUnitActionBanner(attacker,`Firing ${attacker.rangedWeapon || "Longbow"} — ${position.label}`);
 
   updateFacingForStep(
     attacker,
@@ -17359,9 +17364,11 @@ async function longbowAttack(attacker,defender){
   );
 
   await prepareUnitAttackWindup(attacker);
+  if(!consumeMissileAmmo(attacker))return {hit:false,killed:false,damage:0,outOfAmmo:true};
   triggerUnitAttackPose(attacker);
+  updateUi();
 
-  breakInvisibility(attacker,"making a Longbow attack");
+  breakInvisibility(attacker,"making a missile attack");
 
   /* R97: do not play the successful-hit transient until the roll is known to hit. */
   const rawRoll=d(20);
@@ -17450,7 +17457,7 @@ async function longbowAttack(attacker,defender){
     return {hit:false,killed:false,damage:0,mirrorImage:true};
   }
 
-  const bow=getMissileCatalogEntry("bow-long");
+  const bow=getMissileCatalogEntry(attacker.missileCatalogId||"bow-long");
   const damageExpression=damageExpressionForSize(
     bow,
     defender
@@ -17488,7 +17495,7 @@ async function longbowAttack(attacker,defender){
   }
 
   log(
-    `${attacker.name} hits ${defender.name} from ${position.label} with a Longbow for ${damage} damage (${damageExpression}).`,
+    `${attacker.name} hits ${defender.name} from ${position.label} with ${attacker.rangedWeapon || "Longbow"} for ${damage} damage (${damageExpression}).`,
     "good"
   );
 
@@ -17959,7 +17966,7 @@ function rangedAiRangeBandFrom(unit,source,target){
     return {distance,band:"OUT",penalty:null};
   }
 
-  if(unit.rangedWeapon==="Longbow"){
+  if(unit.rangedWeapon==="Longbow" || (unit.repositoryMobId && unit.missileCatalogId!=="sling" && unit.rangedWeapon)){
     const increment=Math.max(1,unit.missileRangeIncrementHexes||7);
     const maxRange=Math.min(unit.missileMaxRangeHexes||increment*3,increment*3);
 
@@ -18006,7 +18013,7 @@ function rangedAiCanAttackFrom(unit,source,target){
   const range=rangedAiRangeBandFrom(unit,source,target);
   if(range.penalty===null) return false;
 
-  if(unit.type==="kobold-slinger" && range.distance<=1){
+  if((unit.type==="kobold-slinger" || unit.repositoryMobId) && range.distance<=1){
     return false;
   }
 
@@ -18305,7 +18312,7 @@ function mobCanMissileAttack(mob,target){
   const distance=unitDistance(mob,target);
 
   /* R113 Slingers are dedicated missile troops and may fire from 2+ hexes. */
-  if(mob.type==="kobold-slinger"){
+  if(mob.type==="kobold-slinger" || (mob.repositoryMobId && mob.rangedWeapon)){
     if(distance<=1) return false;
   }else if(distance<=MOB_MISSILE_DEFAULT_DISTANCE){
     return false;
@@ -18315,6 +18322,7 @@ function mobCanMissileAttack(mob,target){
     return false;
   }
 
+  if(mob.repositoryMobId && mob.rangedWeapon)return rangedAiCanAttackFrom(mob,mob,target);
   if(mob.rangedWeapon==="Sling"){
     return canSling(mob,target);
   }
@@ -18323,6 +18331,15 @@ function mobCanMissileAttack(mob,target){
 }
 
 async function mobMissileAttack(mob,target){
+  if(mob.repositoryMobId && mob.rangedWeapon){
+    const rate=mob.missileRateOfFire||1;
+    const shots=rate<1?(game.round%Math.round(1/rate)===1?1:0):Math.floor(rate);
+    for(let shot=0;shot<shots;shot++){
+      if(game.over||!mob.alive||!target.alive||!rangedAiCanAttackFrom(mob,mob,target))break;
+      if(mob.missileCatalogId==="sling")await slingAttack(mob,target);
+      else await longbowAttack(mob,target);
+    }return true;
+  }
   if(mob.rangedWeapon==="Sling"){
     await slingAttack(mob,target);
     return true;
@@ -18447,7 +18464,7 @@ async function slingAttack(attacker,defender){
   playSlingReleaseSound();
 
   if(Number.isFinite(attacker.missileAmmoQuantity)){
-    attacker.missileAmmoQuantity=Math.max(0,attacker.missileAmmoQuantity-1);
+    consumeMissileAmmo(attacker);
     updateUi();
   }
 
@@ -24920,7 +24937,7 @@ async function mobTurn(mob){
     Reaching that lane within half movement allows an immediate shot; a more
     distant lane becomes a full-turn repositioning goal.
   */
-  if(mob.type==="kobold-slinger" && !taunt){
+  if((mob.type==="kobold-slinger" || (mob.repositoryMobId && mob.rangedWeapon)) && !taunt){
     if((mob.missileAmmoQuantity||0)>0){
       let firingTarget=
         !rangedAiPositionThreatened(mob,mob)
@@ -24939,7 +24956,7 @@ async function mobTurn(mob){
 
           log(
             canMoveAndFire
-              ? `${mob.name} has no clear Sling shot and moves ${stepsToFiringHex} hex${stepsToFiringHex===1 ? "" : "es"} to gain line of sight.`
+              ? `${mob.name} has no clear ranged shot and moves ${stepsToFiringHex} hex${stepsToFiringHex===1 ? "" : "es"} to gain line of sight.`
               : `${mob.name} has no line of sight and moves toward a firing lane (${stepsToFiringHex} hexes away).`,
             "system"
           );
@@ -24967,7 +24984,7 @@ async function mobTurn(mob){
 
       if(firingTarget && mobCanMissileAttack(mob,firingTarget)){
         log(
-          `${mob.name} uses its Sling (${mob.missileAmmoQuantity} bullets remaining before the shot).`,
+          `${mob.name} uses its ${mob.rangedWeapon} (${mob.missileAmmoQuantity} ammunition remaining before the shot).`,
           "system"
         );
         await mobMissileAttack(mob,firingTarget);
@@ -24977,9 +24994,9 @@ async function mobTurn(mob){
     }
 
     if((mob.missileAmmoQuantity||0)<=0){
-      log(`${mob.name} is out of sling bullets and holds position.`,"system");
+      log(`${mob.name} is out of ammunition and holds position.`,"system");
     }else{
-      log(`${mob.name} cannot find a reachable Sling firing lane and holds position.`,"system");
+      log(`${mob.name} cannot find a reachable ranged firing lane and holds position.`,"system");
     }
 
     if(canMobGuard(mob)){
@@ -25616,6 +25633,34 @@ function closeSpellCastOverlay(){
   updateUi();
 }
 
+function syncRepositoryMissileEquipment(unit){
+ if(!unit.repositoryMobId)return;
+ const item=unit.inventory.find(i=>i.slot==="weapon"&&i.equipped);
+ const id=item?.catalogMissileWeaponId||({bow:"bow-short","direct-fire":"crossbow-light",sling:"sling"})[item?.weaponPoseProfileId];
+ const missile=getMissileCatalogEntry(id);
+ unit.missileCatalogId=missile?.id||null;unit.rangedWeapon=missile?item.name:null;
+ if(!missile){unit.missileAmmoQuantity=0;unit.weaponInHand="melee";return;}
+ const ammoId=missile.ammoId||missile.ammoChoices?.[0],ammo=getWeaponCatalogEntry(ammoId);
+ if(!ammo)return;
+ let stack=unit.inventory.find(i=>i.type==="Ammo"&&i.catalogWeaponId===ammoId);
+ if(!stack){stack={name:ammo.name,type:"Ammo",catalogWeaponId:ammoId,qty:10,equipped:false,equippable:false};unit.inventory.push(stack);}
+ unit.missileAmmoCatalogId=ammoId;unit.missileAmmoName=ammo.name;unit.missileAmmoQuantity=stack.qty;
+ unit.missileRangeIncrementHexes=Math.max(1,(missile.rangeIncrementFt||40)/10);
+ unit.missileMaxRangeHexes=unit.missileRangeIncrementHexes*3;
+ unit.slingShortRange=unit.missileRangeIncrementHexes;unit.slingMediumRange=unit.slingShortRange*2;unit.slingLongRange=unit.slingShortRange*3;
+ unit.missileRateOfFire=missile.rateOfFire||1;unit.weaponInHand="ranged";
+ unit.missileAttackBonus=item.magicHitBonus??item.hitBonus??0;
+ unit.weapon="Unarmed";unit.weaponCatalogId=null;unit.weaponDamageSM="1d2";unit.weaponDamageL="1d2";
+}
+function consumeMissileAmmo(unit){
+ if(!Number.isFinite(unit.missileAmmoQuantity))return true;
+ if(unit.missileAmmoQuantity<=0)return false;
+ unit.missileAmmoQuantity--;
+ const stack=unit.inventory?.find(i=>i.type==="Ammo"&&i.catalogWeaponId===unit.missileAmmoCatalogId);
+ if(stack)stack.qty=unit.missileAmmoQuantity;
+ return true;
+}
+
 function syncFighterEquipment(fighter){
   if(!fighter) return;
 
@@ -25652,6 +25697,7 @@ function syncFighterEquipment(fighter){
     fighter.bonusDamageType=null;
   }
 
+  syncRepositoryMissileEquipment(fighter);
   const armorItem=inventory.find(item=>item.slot==="armor" && item.equipped);
   const armor=getArmorCatalogEntry(armorItem?.catalogArmorId) || armorItem || null;
 

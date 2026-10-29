@@ -1,4 +1,4 @@
-import {resolveEquipmentLibrary,emptyEquipmentLibrary} from './equipment-library-core.mjs?v=R238C199';
+import {resolveEquipmentLibrary,emptyEquipmentLibrary} from './equipment-library-core.mjs?v=R238C201';
 export const equipmentStorageKey='adventure-party-equipment:'+ (typeof location==='undefined'?'/':new URL('.',location.href).pathname);
 export function readEquipmentLibrary(){
  const raw=typeof localStorage==='undefined'?null:localStorage.getItem(equipmentStorageKey);

@@ -38,6 +38,7 @@ export const SPRITE_MOBS = Object.freeze([
   { id: 'kobold-bodyguard', label: 'Kobold Body Guard', defaultLayout: 'single', targetKind: 'monster' },
   { id: 'kobold-slinger', label: 'Kobold Slinger', defaultLayout: 'single', targetKind: 'monster' },
   { id: 'orc', label: 'Orc', defaultLayout: 'single', targetKind: 'monster' },
+  { id: 'orc-archer', label: 'Orc Archer', modelId:'orc-leader-male-uniformed', package:'data/mobs/orc-archer.unit-package.json', defaultLayout: 'single', targetKind: 'monster' },
   { id: 'orc-leader', label: 'Orc Leader', defaultLayout: 'single', targetKind: 'monster' },
   { id: 'orc-shaman', label: 'Orc Shaman', defaultLayout: 'single', targetKind: 'monster' },
   { id: 'juvenile-red-dragon', label: 'Juvenile Red Dragon', defaultLayout: 'hex7', targetKind: 'monster' },

@@ -187,7 +187,7 @@ export const ITEM_CATALOG=freezeRecord({
   },
   'recurve-bow':{
     id:'recurve-bow',name:'Bow',category:'weapon',slot:'weapon',
-    rules:{baseName:'Bow',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
+    rules:{baseName:'Bow',catalogMissileWeaponId:'bow-short',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
     physical:{authoredLengthInches:null,calibratedLengthInches:59,
       status:'Provisional 59-inch Studio bow; adjust size and grip for the selected rig.'},
     appearance:{
