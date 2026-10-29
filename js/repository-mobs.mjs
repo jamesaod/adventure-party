@@ -1,9 +1,9 @@
 import {generateMobRules} from './mob-class-rules.mjs?v=R238C190';
-import {sampleGeneration} from './mob-generation.mjs?v=R238C199';
-import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C199';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C199';
+import {sampleGeneration} from './mob-generation.mjs?v=R238C201';
+import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C201';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C201';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
-import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C95';
+import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C201';
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
 
 export function createRepositoryMob(template,catalog){
@@ -27,18 +27,27 @@ export function createRepositoryMob(template,catalog){
   const weapon=unit.inventory.find(i=>i.slot==='weapon'&&i.equipped),profileId=ITEM_CATALOG[weapon?.catalogItemId]?.rules?.poseProfileId||ITEM_CATALOG[weapon?.catalogItemId]?.appearance?.poseProfileId||'one-handed-swing';
   const poses={};for(const pose of ['ready','windup','attack','falling','prone','casting-windup','cast']){const resolved=poseWithFallback(library.profiles,library.sharedActionGroups,profileId,pose);if(resolved)poses[pose]={...resolved.sample,gripCorrection:null};}
   const render=template.references.spriteSets?.[profileId]?.poses?.ready?.render||template.references.spriteSets?.['one-handed-swing']?.poses?.ready?.render;
-  if(!render)throw Error('Repository MOB is missing its captured camera settings.');
+  // Portable pose libraries have no sprite camera. Fit the normalized rest body once.
+  const portable=!render;
+  const camera=render||{heading:0,upAxis:'Y',frameHeight:3.15,center:[0,1,0],...appearance};
   const studioWeaponId=ITEM_CATALOG[weapon?.catalogItemId]?.appearance?.studioId;
   const grip=(entry.weaponAttachmentProfileIds||[]).map(id=>catalog.weaponAttachmentProfiles?.[id]).find(p=>p?.weaponIds?.includes(studioWeaponId));
   const factor=appearance.modelScalePercent*appearance.hexScalePercent/10000;
   const frame=spriteLayoutDimensions(appearance.footprint,200,appearance.modelScalePercent,appearance.hexScalePercent);
-  frame.anchorX=frame.width/2;frame.anchorY=frame.height/2*(1+2*render.center[1]*Math.cos(CAMERA_ELEVATION)/render.frameHeight);
-  return {source:'repository-mob:'+template.id,model,poseProfile:{id:template.id+':'+profileId,version:library.revision,poses},renderSettings:{source:'repository-mob',frame,modelScalePercent:appearance.modelScalePercent,hexScalePercent:appearance.hexScalePercent,layoutId:appearance.footprint,resolutionPercent:200,transform:{normalizeRest:true,placement:{position:[0,0,0],scale:1},heading:render.heading,upAxis:render.upAxis,frameHeight:render.frameHeight/factor,center:render.center.map(v=>v/factor)},weaponAttachmentProfile:grip?{...grip,weaponId:studioWeaponId}:null,lighting:render.lighting,equipment:render.equipment,shield:render.shield,offHandEquipment:render.offHandEquipment,style:{brightness:1,contrast:1,hue:0,saturation:1,outline:0}}};
+  frame.anchorX=frame.width/2;frame.anchorY=frame.height/2*(1+2*camera.center[1]*Math.cos(CAMERA_ELEVATION)/camera.frameHeight);
+  return {source:'repository-mob:'+template.id,model,poseProfile:{id:template.id+':'+profileId,version:library.revision,poses},renderSettings:{source:'repository-mob',frame,modelScalePercent:appearance.modelScalePercent,hexScalePercent:appearance.hexScalePercent,layoutId:appearance.footprint,resolutionPercent:200,transform:{normalizeRest:true,fitRest:portable,placement:{position:[0,0,0],scale:1},heading:camera.heading,upAxis:camera.upAxis,frameHeight:camera.frameHeight/factor,center:camera.center.map(v=>v/factor)},weaponAttachmentProfile:grip?{...grip,weaponId:studioWeaponId}:null,lighting:camera.lighting,equipment:camera.equipment,shield:camera.shield,offHandEquipment:camera.offHandEquipment,appearanceRecolor:appearance.appearanceRecolor,style:{brightness:1,contrast:1,hue:0,saturation:1,outline:0}}};
  }
  return {apply,recipe,template};
 }
+export function createRepositoryMobRegistry(templates,catalog){
+ const entries=new Map(templates.map(t=>[t.id,createRepositoryMob(t,catalog)]));
+ if(entries.size!==templates.length)throw Error('Duplicate repository MOB ID.');
+ const defaultMob=entries.get('orc-male-uniformed')||entries.values().next().value;
+ return {apply:(unit,rng,id)=>{const api=id?entries.get(id):defaultMob;if(!api)throw Error('Unknown repository MOB: '+id);return api.apply(unit,rng);},
+ recipe:unit=>{const api=entries.get(unit.repositoryMobId);if(!api)throw Error('Unknown repository MOB: '+unit.repositoryMobId);return api.recipe(unit);}};
+}
 if(typeof window!=='undefined'){
  const load=async path=>{const response=await fetch(new URL(path,import.meta.url));if(!response.ok)throw Error('Could not load '+path);return response.json();};
- const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/studio-models.json?v=R238C196')]);
- window.adventurePartyRepositoryMobs=createRepositoryMob(template,catalog);
+ const [template,archer,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/mobs/orc-archer.unit-package.json?v=R238C201'),load('../data/studio-models.json?v=R238C196')]);
+ window.adventurePartyRepositoryMobs=createRepositoryMobRegistry([template,archer],catalog);
 }

@@ -117,3 +117,7 @@ The reusable mob-class-rules module derives from the engine's existing class/cat
 Replaces the existing `orc-fighter` seed with the user export revision 22, enriched to revision 23. Source archive is retained byte-for-byte at `assets/pose-libraries/orc-fighter/source-r22.zip`; provenance is in `data/pose-libraries/orc-fighter-import.json`. All 13 original frame assignments remain exact. At user request, the three Bayonet Stab references and captured equipment settings are copied from 2H Stab to 1H Stab, without removing 2H Stab. There are now 16 assigned references. The original ZIP contains eight complete six-facing captures and five Staff/Magic reference-only poses. Do not label the latter as captured sprites.
 
 The library carries Male Orc appearance metadata from the package: model scale 150%, hex scale 109%, single footprint, and per-pose equipment/shield settings. It can be loaded directly by MOB Creator. No duplicate ID/alias is added. Saved browser libraries still take precedence; to replace a local draft explicitly, import the updated `data/pose-libraries/orc-fighter.json` in MOB Creator/Studio after exporting any desired local edits. Existing pinned MOB definitions and live combat roster are not silently updated.
+
+## Candidate Rev 201 — Orc Archer and ranged ammunition
+
+[Orc Archer integration](ORC_ARCHER.md) records its supplied weighted template, portable-library rest framing, catalog entry and finite ten-round starting ammunition. This supersedes the earlier requirement for captured camera metadata when rendering a repository MOB.

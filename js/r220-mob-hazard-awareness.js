@@ -600,8 +600,8 @@ makeKoboldSlinger=function(index,position){
 };
 
 const r220BaseMakeOrc=makeOrc;
-makeOrc=function(index,position){
-  const unit=r220BaseMakeOrc(index,position);
+makeOrc=function(index,position,...options){
+  const unit=r220BaseMakeOrc(index,position,...options);
   unit.intelligenceScore=9;
   unit.intelligence=unit.intelligence || "Average (8-10)";
   return unit;

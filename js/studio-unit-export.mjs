@@ -3,8 +3,8 @@ import {captureGroupPath,isSharedCaptureGroup} from './action-capture-groups.mjs
 import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
 import {normalizePoseLibrary} from './pose-library.mjs?v=R238C196';
 import { createUnitPackage } from './unit-package.mjs';
-import { spriteSetSlug } from './sprite-set-core.mjs?v=R238C196';
-import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C199';
+import { spriteSetSlug } from './sprite-set-core.mjs?v=R238C201';
+import { itemCatalogEntry, ITEM_CATALOG } from './item-catalog.mjs?v=R238C201';
 
 // Bundle references to existing assets; each capture retains its own loadout,
 // stable animation source ID and time instead of borrowing the last UI state.

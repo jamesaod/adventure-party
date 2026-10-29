@@ -171,5 +171,8 @@ jobs:
           node scripts/test-ground-shadow-geometry.mjs
           node scripts/test-unit-sun-shadow.mjs
 
+      - name: Validate Orc Archer and ranged ammunition
+        run: node scripts/test-orc-archer.mjs
+
       - name: Validate repository structure and assets
         run: node scripts/validate-repo.mjs

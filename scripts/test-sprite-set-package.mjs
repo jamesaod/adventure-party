@@ -211,11 +211,11 @@ assert.deepEqual(spriteLayoutDimensions('single', 200, 55), {
 assert.throws(() => spriteLayout('constructor'), /Unknown sprite layout/);
 assert.throws(() => spriteMob('unknown'), /Unknown sprite MOB/);
 assert.deepEqual(SPRITE_MOBS.map(mob => mob.id), [
-  'kobold', 'kobold-bodyguard', 'kobold-slinger', 'orc', 'orc-leader', 'orc-shaman', 'juvenile-red-dragon',
+  'kobold', 'kobold-bodyguard', 'kobold-slinger', 'orc', 'orc-archer', 'orc-leader', 'orc-shaman', 'juvenile-red-dragon',
   'fighter', 'ranger', 'mage'
 ]);
 assert.equal(spriteMob('juvenile-red-dragon').defaultLayout, 'hex7');
-assert.equal(SPRITE_MOBS.filter(mob => mob.targetKind === 'monster').length, 7);
+assert.equal(SPRITE_MOBS.filter(mob => mob.targetKind === 'monster').length, 8);
 for (const id of ['fighter', 'ranger', 'mage']) {
   assert.equal(spriteMob(id).targetKind, 'player');
   assert.equal(spriteMob(id).defaultLayout, 'single');

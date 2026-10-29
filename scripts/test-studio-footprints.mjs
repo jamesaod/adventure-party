@@ -1,4 +1,4 @@
-import {createRepositoryMob} from '../js/repository-mobs.mjs';
+import {createRepositoryMobRegistry} from '../js/repository-mobs.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -29,7 +29,7 @@ const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
 const sandbox = {
-  window:{adventurePartyRepositoryMobs:createRepositoryMob(JSON.parse(fs.readFileSync(new URL('../data/mobs/orc-male-uniformed.unit-package.json',import.meta.url),'utf8')),JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
+  window:{adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(fs.readFileSync(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
   markMobAppearanceDirty:()=>Promise.resolve(null),
   PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
   HEX_DIRS: directions.map((name, index) => ({ name, x: vectors[index][0], y: vectors[index][1] })),
@@ -68,8 +68,8 @@ const functions = [
   'drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage',
   'isStudioPlayerSpriteTarget', 'playerSpriteSetForType', 'applyPlayerSpriteSet',
   'makeFighter', 'makeFriendlyElvenRanger', 'makeTestPartyMage', 'clamp',
-  'conHpAdjustment', 'strengthMods', 'syncFighterEquipment', 'calculateArmorClass', 'dexterityAdjustments',
-  'getWeaponCatalogEntry', 'getArmorCatalogEntry', 'getSpellEntry',
+  'conHpAdjustment', 'strengthMods', 'syncFighterEquipment', 'syncRepositoryMissileEquipment', 'calculateArmorClass', 'dexterityAdjustments',
+  'getMissileCatalogEntry', 'getWeaponCatalogEntry', 'getArmorCatalogEntry', 'getSpellEntry',
   'applyFighterClassRules', 'fighterLevelData', 'warriorSavingThrows',
   'newGame', 'allUnits', 'livingPartyMembers', 'isPlayerControlledUnit', 'isKoboldUnit',
   'studioSpriteTestUnits', 'inspectStudioSpritePose', 'beginCombatFromPrompt', 'startRound',
@@ -85,7 +85,7 @@ const mageEnd = source.indexOf('function levelUpMage(', mageStart);
 const spellStart = source.indexOf('const SPELL_CATALOG=');
 const spellEnd = source.indexOf('function getSpellEntry(', spellStart);
 vm.runInContext([
-  ...['RULESET', 'FIGHTER_CLASS', 'WEAPON_CATALOG', 'ARMOR_CATALOG', 'DEXTERITY_TABLE'].map(name => productionDeclaration(name)),
+  ...['RULESET', 'FIGHTER_CLASS', 'WEAPON_CATALOG', 'MISSILE_WEAPON_CATALOG', 'ARMOR_CATALOG', 'DEXTERITY_TABLE'].map(name => productionDeclaration(name)),
   productionDeclaration('FIGHTER_LEVELS', '\n];'),
   source.slice(mageStart, mageEnd), source.slice(spellStart, spellEnd),
   ...functions.map(productionFunction)
@@ -176,6 +176,7 @@ assert.equal(sandbox.unitTransitionBlocked(legacySingle, legacySingle, { x: 1, y
 walls.clear();
 
 const expectedMobs = {
+  'orc-archer':{ac:10,move:12,rangedWeapon:'Bow',missileAmmoQuantity:10},
   kobold: { ac: 7, thaco: 20, move: 6, hitDiceValue: 0.5, weapon: 'Dagger' },
   'kobold-bodyguard': { ac: 6, thaco: 20, move: 6, hitDiceValue: 1, weapon: 'Short Sword' },
   'kobold-slinger': { ac: 7, thaco: 20, move: 6, hitDiceValue: 0.5, rangedWeapon: 'Sling' },

@@ -3,7 +3,7 @@ import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 import {capturePosesForGroup,captureGroupForPose} from './action-capture-groups.mjs?v=R238C196';
 import {ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C196';
 import {createPoseLibrary,normalizePoseLibrary,recordLibraryPose,addCaptureRecipes,poseLibrarySignature,resolveLibraryPose,libraryPoseGroup,changedLibraryPoses} from './pose-library.mjs?v=R238C196';
-import {browserAuthoringStore,readAuthoringJson,downloadAuthoringJson,SHARED_POSE_LIBRARY_ID} from './authoring-store.mjs?v=R238C200';
+import {browserAuthoringStore,readAuthoringJson,downloadAuthoringJson,SHARED_POSE_LIBRARY_ID} from './authoring-store.mjs?v=R238C201';
 export function createStudioPoseLibrary({getSample,getClips,preview,selectProfile,getCaptureRecipes,invalidateCaptures,getSignature,getLinkedLibrary,setLink,initialLibrary=null,readOnly=false,getCaptureStates=()=>({}),getStudioAppearance=()=>null,selectCaptureLibrary=()=>{},copyCaptureLibrary=()=>{},clearCaptures=()=>{},resetAdjustments=async()=>{}}){
   const store=browserAuthoringStore(),panel=document.createElement('div');panel.className='studio-pose-library';panel.id='studioPoseLibraryPanel';
   panel.innerHTML=`<label class="studio-field">Pose library<select id="studioPoseLibrarySelect"></select></label>

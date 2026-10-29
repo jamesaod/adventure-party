@@ -1,5 +1,5 @@
 /** Small, shared contract for studio captures and separately stored game assets. */
-import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C93';
+import { createSpriteLayoutMetadata, spriteLayoutDimensions, spriteMob, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C201';
 
 import { ACTION_POSES } from './action-profile-catalog.mjs?v=R238C196';
 
