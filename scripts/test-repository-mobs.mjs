@@ -27,5 +27,10 @@ assert.ok(shaft(sword,swordGrip).dot(shaft(axe,axeGrip))>.9999,'Orc axe shaft al
 assert.ok(shaft(sword,swordGrip).dot(shaft(axe,swordGrip))<.5,'Regression reproduces the erroneous shared rotation');
 assert.deepEqual(swordGrip.rotation,[161,-46,15]);
 assert.equal(catalog.models.find(m=>m.id==='male-orc').weaponAttachmentProfileIds.filter(id=>profiles[id].weaponIds.includes('battle-axe')).length,1);
-assert.deepEqual(api.recipe(a).renderSettings.weaponAttachmentProfile.rotation,[161,-46,144]);
+assert.deepEqual(api.recipe(a).renderSettings.weaponAttachmentProfile.rotation,axeGrip.rotation);
 console.log('PASS Orc axe axis correction, unchanged sword, unique profile and combat mount');
+
+const previousAxe=q([161,-46,144]);
+const correctedAxe=q(axeGrip.rotation);
+const rolled=previousAxe.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(...axe.primaryAxis).normalize(),Math.PI/2));
+assert.ok(correctedAxe.angleTo(rolled)<1e-6,"Blade turns 90 degrees around shaft, preserving its direction");

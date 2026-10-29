@@ -249,7 +249,10 @@
       "upAxis": "Y",
       "mobType": "orc",
       "animationLibrary": "uploaded-fbx",
-      "initialAnimation": "Sword And Shield Idle"
+      "initialAnimation": "Sword And Shield Idle",
+      "weaponAttachmentProfileIds": [
+        "uniformed-orc-leader-battle-axe-v1"
+      ]
     },
     {
       "id": "orc-female-shaman",
@@ -366,12 +369,29 @@
         0.005
       ],
       "rotation": [
-        161,
-        -46,
-        144
+        59.8371520461,
+        -10.5895221252,
+        81.6220351719
       ],
       "status": "axis-corrected",
-      "description": "Rev 191: preserve Orc sword calibration while retaining the axe native-axis correction: Q_orcSword * inverse(Q_defaultSword) * Q_defaultAxe. Sword and axe shaft now point along the same hand direction."
+      "description": "Rev 192: Orc axe shaft alignment plus 90-degree local shaft roll to face the cutting blade forward."
+    },
+    "uniformed-orc-leader-battle-axe-v1": {
+      "weaponIds": [
+        "battle-axe"
+      ],
+      "position": [
+        -0.0110366223,
+        0.0500547638,
+        0.0172543788
+      ],
+      "rotation": [
+        60.9198574074,
+        6.2401516058,
+        49.2059715386
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 192: transfer regular Orc axe mount through source and Leader neutral hand world quaternions; preserve forward blade roll."
     }
   },
   "studioModelIds": [

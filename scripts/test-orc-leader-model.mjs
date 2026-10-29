@@ -30,4 +30,4 @@ assert.equal(catalog.models.find(model=>model.mobType==='orc').id,'male-orc-figh
 assert.equal(entry.label,'Orc Leader, Male, Uniformed');
 const carl=catalog.models.find(m=>m.id==='dungeon-crawler-carl-v3');
 assert.equal(entry.weaponAttachmentProfileId,carl.weaponAttachmentProfileId);
-assert.deepEqual(entry.weaponAttachmentProfileIds,carl.weaponAttachmentProfileIds,'Leader uses Carl global equipment defaults');
+assert.deepEqual(entry.weaponAttachmentProfileIds,['uniformed-orc-leader-battle-axe-v1'],'Leader opts into its own axe calibration');
