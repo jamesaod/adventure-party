@@ -1,6 +1,6 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C194';
-import { studioShield } from './studio-shield.mjs?v=R238C176';
-import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C146';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C196';
+import { studioShield } from './studio-shield.mjs?v=R238C196';
+import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C196';
 export { WEAPON_POSE_PROFILES };
 
 /** Adventure Party pending first pass: MOB height + equipment appearance recipes. */
@@ -77,16 +77,26 @@ function visibleWeapon(id, itemName, studioId) {
 }
 
 export const VISIBLE_WEAPON_ASSETS = Object.freeze({
+  'trident': visibleWeapon('trident', 'Trident', 'trident'),
+  'scimitar': visibleWeapon('scimitar', 'Scimitar', 'scimitar'),
+  'broadsword': visibleWeapon('broadsword', 'Broadsword', 'broadsword'),
+  'lucerne-hammer': visibleWeapon('lucerne-hammer', 'Lucerne Hammer', 'lucerne-hammer'),
+  'mace': visibleWeapon('mace', 'Mace', 'mace'),
+  'morning-star': visibleWeapon('morning-star', 'Morning Star', 'morning-star'),
+  'flail': visibleWeapon('flail', 'Flail', 'flail'),
+  'club': visibleWeapon('club', 'Club', 'club'),
+  'horse-head-staff': visibleWeapon('horse-head-staff', 'Horse Head Staff', 'horse-head-staff'),
+
   'flaming-sword-5': visibleWeapon('flaming-sword-5', 'Flaming Sword +5', 'medieval-sword'),
   'battle-axe': visibleWeapon('battle-axe', 'Battle Axe', 'battle-axe'),
   spear: visibleWeapon('spear', 'Spear', 'spear'),
-  'wizard-staff-grip': visibleWeapon('wizard-staff-grip', 'Wizard Staff Grip', 'wizard-staff-grip'),
+  'wizard-staff-grip': visibleWeapon('wizard-staff-grip', 'Wooden Staff 1', 'wizard-staff-grip'),
   'wooden-staff': visibleWeapon('wooden-staff', 'Wooden Staff', 'wooden-staff'),
   'short-sword': visibleWeapon('short-sword', 'Short Sword', 'short-sword'),
   'dagger': visibleWeapon('dagger', 'Dagger', 'dagger'),
   sling: visibleWeapon('sling', 'Sling', 'sling'),
   crossbow: visibleWeapon('crossbow', 'Crossbow', 'crossbow'),
-  'recurve-bow': visibleWeapon('recurve-bow', 'Recurve Bow', 'recurve-bow'),
+  'recurve-bow': visibleWeapon('recurve-bow', 'Bow', 'recurve-bow'),
   'two-handed-sword': visibleWeapon('two-handed-sword', 'Two-Handed Sword', 'medieval-two-handed-sword')
 });
 

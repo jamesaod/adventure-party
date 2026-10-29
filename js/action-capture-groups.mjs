@@ -1,4 +1,4 @@
-import {ACTION_PROFILE_CATALOG, ACTION_POSES} from './action-profile-catalog.mjs?v=R238C176';
+import {ACTION_PROFILE_CATALOG, ACTION_POSES} from './action-profile-catalog.mjs?v=R238C196';
 
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 

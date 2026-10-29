@@ -1,6 +1,6 @@
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
-import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C196';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C178';
 import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C178';
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
@@ -13,10 +13,10 @@ import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C194';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C194';
-import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C194';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C176';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C196';
+import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C196';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C196';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C196';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({

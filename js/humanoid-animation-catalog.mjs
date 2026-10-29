@@ -124,7 +124,7 @@ export const HUMANOID_ANIMATION_CATALOG=freezeDeep({
     sourceCandidates:['LAB_Staff_Hold']
   }),
   'wizard-staff-grip':entry({
-    id:'wizard-staff-grip',category:'weapon',label:'Wizard Staff Grip',
+    id:'wizard-staff-grip',category:'weapon',label:'Wooden Staff 1',
     fallbackId:'one-handed-swing',handedness:'one-handed',attackStyle:'staff',
     sourceCandidates:['Sword And Shield Idle']
   }),

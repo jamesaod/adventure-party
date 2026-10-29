@@ -44,7 +44,7 @@ function glb(path) {
 
 // Use the actual preserved assets so bone aliases, source pivot and authored
 // animation transforms are exercised, not only an idealized arm fixture.
-assert.equal(STUDIO_WEAPONS.length, 11, 'Existing equipment plus Sling are registered');
+assert.equal(STUDIO_WEAPONS.length, 20, 'Existing equipment plus Sling are registered');
 const heldAxis = new THREE.Vector3(...HELD_WEAPON_AXIS).normalize();
 for (const weapon of STUDIO_WEAPONS.filter(weapon=>!['bow','crossbow','wizard-staff','sling'].includes(weapon.visualClass))) {
   const axis = new THREE.Vector3(...weapon.primaryAxis).normalize();

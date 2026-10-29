@@ -106,7 +106,7 @@ console.log('PASS canonical item catalog, Carl 76-inch height and wooden shield 
 await import('./test-unit-package.mjs');
 
 const wizardItem=itemCatalogEntry('wizard-staff-grip'),ordinaryStaff=itemCatalogEntry('wooden-staff');
-assert.equal(wizardItem.name,'Wizard Staff Grip');assert.equal(wizardItem.rules.catalogWeaponId,'staff');
+assert.equal(wizardItem.name,'Wooden Staff 1');assert.equal(wizardItem.rules.catalogWeaponId,'staff');
 assert.equal(wizardItem.rules.handsRequired,1);assert.equal(ordinaryStaff.rules.handsRequired,2);
 assert.equal(wizardItem.appearance.asset,ordinaryStaff.appearance.asset);
 assert.deepEqual(wizardItem.appearance.runtimeAsset,ordinaryStaff.appearance.runtimeAsset);

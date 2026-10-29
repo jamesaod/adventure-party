@@ -1,4 +1,4 @@
-import {capturePosesForGroup,captureGroupPath} from './action-capture-groups.mjs?v=R238C176';
+import {capturePosesForGroup,captureGroupPath} from './action-capture-groups.mjs?v=R238C196';
 
 // Current manifests retain the runtime contract. Outdated snapshots get their
 // own manifest/frame so different historical resolutions are never mixed.

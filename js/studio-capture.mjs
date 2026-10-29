@@ -1,20 +1,20 @@
-import {poseChecklist} from './pose-checklist.mjs?v=R238C181';
-import {planCaptureExport,recoveryPoseReference} from './studio-capture-export.mjs?v=R238C176';
+import {poseChecklist} from './pose-checklist.mjs?v=R238C196';
+import {planCaptureExport,recoveryPoseReference} from './studio-capture-export.mjs?v=R238C196';
 import { quantizeRgba } from './studio-core.mjs?v=R238C99';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
   splitSixFacingAtlas, assembleSpriteSheet, validateSpriteSetManifest
-} from './sprite-set-core.mjs?v=R238C176';
+} from './sprite-set-core.mjs?v=R238C196';
 import {
   saveStudioDraft, loadStudioDraft, saveStudioWorkspace, loadStudioWorkspace,
   upgradeStudioWorkspaceHexScale
-} from './sprite-set-store.mjs?v=R238C188';
+} from './sprite-set-store.mjs?v=R238C196';
 import { spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C95';
-import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C176';
-import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C188';
+import { ACTION_PROFILE_CATALOG, ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C196';
+import { buildStudioUnitExport } from './studio-unit-export.mjs?v=R238C196';
 import { zipSync, strToU8 } from '../assets/vendor/three/addons/libs/fflate.module.js';
 
-import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C176';
+import {CAPTURE_FORMAT_VERSION,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturePosesForGroup,captureGroupPath,upgradeCaptureWorkspace,combinedCaptureGroup,assertCompatibleCaptureFrames} from './action-capture-groups.mjs?v=R238C196';
 
 const poseLabel = pose => ACTION_POSE_LABELS[pose];
 const spriteCount = SPRITE_POSES.length * SPRITE_DIRECTIONS.length;

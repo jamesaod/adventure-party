@@ -8,16 +8,26 @@ import { createWeaponPoseProfilePackage } from './weapon-pose-profile-export.mjs
 const POSE_NAMES = ['ready', 'attack', 'prone'];
 const saved = new Map();
 const APPEARANCE_BY_STUDIO_WEAPON = Object.freeze({
+  "trident": Object.freeze({"appearanceId": "trident", "itemName": "Trident", "visualClass": "spear", "poseProfileId": "two-handed-thrust"}),
+  "scimitar": Object.freeze({"appearanceId": "scimitar", "itemName": "Scimitar", "visualClass": "sword", "poseProfileId": "one-handed-swing"}),
+  "broadsword": Object.freeze({"appearanceId": "broadsword", "itemName": "Broadsword", "visualClass": "sword", "poseProfileId": "one-handed-swing"}),
+  "lucerne-hammer": Object.freeze({"appearanceId": "lucerne-hammer", "itemName": "Lucerne Hammer", "visualClass": "staff", "poseProfileId": "two-handed-swing"}),
+  "mace": Object.freeze({"appearanceId": "mace", "itemName": "Mace", "visualClass": "mace", "poseProfileId": "one-handed-swing"}),
+  "morning-star": Object.freeze({"appearanceId": "morning-star", "itemName": "Morning Star", "visualClass": "morning-star", "poseProfileId": "one-handed-swing"}),
+  "flail": Object.freeze({"appearanceId": "flail", "itemName": "Flail", "visualClass": "flail", "poseProfileId": "one-handed-swing"}),
+  "club": Object.freeze({"appearanceId": "club", "itemName": "Club", "visualClass": "club", "poseProfileId": "one-handed-swing"}),
+  "horse-head-staff": Object.freeze({"appearanceId": "horse-head-staff", "itemName": "Horse Head Staff", "visualClass": "wizard-staff", "poseProfileId": "wizard-staff-grip"}),
+
   'medieval-sword': Object.freeze({
     appearanceId: 'flaming-sword-5', itemName: 'Flaming Sword +5', visualClass: 'sword', poseProfileId: 'one-handed-swing'
   }),
-  'wizard-staff-grip': Object.freeze({appearanceId:'wizard-staff-grip',itemName:'Wizard Staff Grip',visualClass:'wizard-staff',poseProfileId:'wizard-staff-grip'}),
+  'wizard-staff-grip': Object.freeze({appearanceId:'wizard-staff-grip',itemName:'Wooden Staff 1',visualClass:'wizard-staff',poseProfileId:'wizard-staff-grip'}),
   'wooden-staff': Object.freeze({appearanceId:'wooden-staff',itemName:'Wooden Staff',visualClass:'staff',poseProfileId:'two-handed-swing'}),
   'short-sword': Object.freeze({appearanceId:'short-sword',itemName:'Short Sword',visualClass:'sword',poseProfileId:'one-handed-thrust'}),
   'dagger': Object.freeze({appearanceId:'dagger',itemName:'Dagger',visualClass:'dagger',poseProfileId:'one-handed-thrust'}),
   sling: Object.freeze({appearanceId:'sling',itemName:'Sling',visualClass:'sling',poseProfileId:'sling'}),
   crossbow: Object.freeze({appearanceId:'crossbow',itemName:'Crossbow',visualClass:'crossbow',poseProfileId:'direct-fire'}),
-  'recurve-bow': Object.freeze({appearanceId:'recurve-bow',itemName:'Recurve Bow',visualClass:'bow',poseProfileId:'bow'}),
+  'recurve-bow': Object.freeze({appearanceId:'recurve-bow',itemName:'Bow',visualClass:'bow',poseProfileId:'bow'}),
   spear: Object.freeze({
     appearanceId: 'spear', itemName: 'Spear', visualClass: 'spear', poseProfileId: 'two-handed-thrust'
   }),
@@ -107,7 +117,7 @@ function init() {
       if(equipmentDescriptor.poseProfileId==='bow'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Bow';
       if(equipmentDescriptor.poseProfileId==='sling'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Slings';
       if(equipmentDescriptor.poseProfileId==='direct-fire'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Direct Fire Weapons (Crossbow)';
-      if(equipmentDescriptor.poseProfileId==='wizard-staff-grip'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Wizard Staff Grip';
+      if(equipmentDescriptor.poseProfileId==='wizard-staff-grip'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Wooden Staff 1';
       if(equipmentDescriptor.poseProfileId==='one-handed-thrust'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='One-handed stabbing weapon';
       const rightHand = snap.equipment?.settings?.rightHand;
       for (const pose of POSE_NAMES) {

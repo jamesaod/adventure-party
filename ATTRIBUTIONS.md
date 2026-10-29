@@ -30,3 +30,33 @@ The attribution above is not intended to imply that PamNawi endorses Adventure P
 - File: `assets/models/weapons/slings/sling.glb`.
 - Modifications: folded into a hanging held shape; normalized scale; three PBR maps resized to 512 x 512. All 9,512 triangles and original UVs retained.
 - Source license and provenance: `assets/models/weapons/slings/grab3d-LICENSE.txt` and `grab3d-manifest.json`.
+
+## Club
+
+Model Information:
+* title:	Neolithic Stone Club
+* source:	https://sketchfab.com/3d-models/neolithic-stone-club-4a14743e04cd46b9b5075af5997cc439
+* author:	Asylum Nox (https://sketchfab.com/peter.pottiez)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Neolithic Stone Club" (https://sketchfab.com/3d-models/neolithic-stone-club-4a14743e04cd46b9b5075af5997cc439) by Asylum Nox (https://sketchfab.com/peter.pottiez) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+Modified: normalized grip orientation, reduced geometry and 256px textures.
+
+## Horse Head Staff
+
+Model Information:
+* title:	TMK 21816:KP14913 shamaanin sauva - Shaman staff
+* source:	https://sketchfab.com/3d-models/tmk-21816kp14913-shamaanin-sauva-shaman-staff-a4399b18b844429ba3b7e1074e57ceff
+* author:	Turku Museum Centre - Turun museokeskus (https://sketchfab.com/turunmuseokeskus)
+
+Model License:
+* license type:	CC-BY-NC-ND-4.0 (http://creativecommons.org/licenses/by-nc-nd/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions can not be distributed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "TMK 21816:KP14913 shamaanin sauva - Shaman staff" (https://sketchfab.com/3d-models/tmk-21816kp14913-shamaanin-sauva-shaman-staff-a4399b18b844429ba3b7e1074e57ceff) by Turku Museum Centre - Turun museokeskus (https://sketchfab.com/turunmuseokeskus) licensed under CC-BY-NC-ND-4.0 (http://creativecommons.org/licenses/by-nc-nd/4.0/)
+Modified: normalized grip orientation, reduced geometry and 256px textures. Repository owner confirmed separate permission to optimize and publish (2026-10-29).

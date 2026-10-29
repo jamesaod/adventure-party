@@ -1,6 +1,6 @@
 import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C176';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C196';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -17,7 +17,7 @@ const TWO_HANDED_SWORD_ITEM=itemCatalogEntry('two-handed-sword');
 if(!TWO_HANDED_SWORD_ITEM?.appearance)throw new Error('Two-Handed Sword catalog appearance is required.');
 export const STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
-    id: 'medieval-sword', label: 'Medieval Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing',
+    id: 'medieval-sword', label: 'Long Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing',
     file: 'assets/models/weapons/swords/medieval-sword.glb',
     grip: Object.freeze([0.34, 0.109, 0]), nativeScale: 0.55,
     primaryAxis: Object.freeze([-1, 0, 0]),
@@ -76,7 +76,7 @@ export const STUDIO_WEAPONS = Object.freeze([
     defaultSizePercent:CROSSBOW_ITEM.appearance.defaultSizePercent,
     calibratedLengthInches:CROSSBOW_ITEM.physical.calibratedLengthInches,presetRevision:1
   }),
-  ...['wooden-staff','short-sword','dagger','wizard-staff-grip','sling'].map(id => {
+  ...['wooden-staff','short-sword','dagger','wizard-staff-grip','sling','trident','scimitar','broadsword','lucerne-hammer','mace','morning-star','flail','club','horse-head-staff'].map(id => {
     const item=itemCatalogEntry(id), appearance=item.appearance;
     return Object.freeze({
       id:appearance.studioId,label:item.name,visualClass:appearance.visualClass,
@@ -540,6 +540,13 @@ function restoreBonePose(pose) {
 // defines eligible off-hand weapons; staff and sling remain primary-only.
 const OFF_HAND_POSITION = Object.freeze([0.005, 0.065, -0.005]);
 export const OFF_HAND_GRIPS = Object.freeze({
+  'scimitar': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'broadsword': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'mace': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'morning-star': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'flail': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  'club': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+
   'medieval-sword': Object.freeze({rotation:Object.freeze([163,-180,0])}),
   'battle-axe': Object.freeze({rotation:Object.freeze([154,6,-51]),position:Object.freeze([-0.005,0.075,-0.005])}),
   'short-sword': Object.freeze({rotation:Object.freeze([-22,0,-90])}),
