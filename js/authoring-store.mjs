@@ -1,4 +1,4 @@
-import {ORC_FIGHTER_POSE_LIBRARY} from './orc-fighter-pose-library.mjs?v=R238C196';
+import {ORC_FIGHTER_POSE_LIBRARY} from './orc-fighter-pose-library.mjs?v=R238C200';
 import {DEFAULT_MEDIUM_POSE_LIBRARY} from './default-pose-library.mjs?v=R238C196';
 import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C196';
 import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C199';

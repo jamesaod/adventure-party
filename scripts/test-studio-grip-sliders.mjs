@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const html = readFileSync('3d-studio.html','utf8');
 const studio = readFileSync('js/3d-studio.mjs','utf8');
 const css = readFileSync('css/3d-studio.css','utf8');
-assert.match(html, /Candidate Rev (11[7-9]|1[2-9][0-9])/);
+assert.match(html, /Candidate Rev (11[7-9]|1[2-9][0-9]|[2-9][0-9]{2}|[1-9][0-9]{3,})/);
 assert.match(html, /css\/3d-studio\.css\?v=R238C181/);
 
 for (const [name, min, max, step] of [
