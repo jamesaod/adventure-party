@@ -25,6 +25,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - Do not make users manually upload assets by default; manual upload is a fallback, not the normal pipeline.
 
 ## Current development context at handoff
+- Rev 203: Minimum HP is a post-generation floor; no-class samples use explicit/auto Monstrous Manual baselines. Unknown species require a verified entry or explicit authored stats. Preserve PHB class branches and equipment-derived protection. See docs/MONSTER_BASELINES.md.
 - Rev 202: Shared MOB library merges published manifest entries with browser overrides. Sheet/catalog/encounter choices use the same IDs and availability; height uses neutral body calibration through the existing renderer. See docs/MOB_LIBRARY.md. This supersedes older notes that browser MOB drafts cannot enter local combat.
 - Rev 183: New MOBs default to Template with weighted tables first. Appearance panel is library selector plus assigned-pose checklist only; model selection is in MOB definition. Do not add unsolicited pose presets.
 - Rev 182: MOB Creator supports Unique/Template generation metadata, conditional off-hand choices and guaranteed inventory. See docs/MOB_CREATOR.md; generation samples are authoring outputs, not automatic live encounter registration.

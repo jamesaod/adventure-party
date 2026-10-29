@@ -1,3 +1,4 @@
+import {monsterBaseline} from './monster-baselines.mjs?v=R238C203';
 // Class rules and catalog declarations extracted from the existing engine.
 // scripts/test-mob-class-rules.mjs verifies parity with their engine definitions.
 import {PRIEST_SPELLS} from './priest-spells.mjs?v=R238C190';
@@ -1154,10 +1155,12 @@ export function prepareMobSpells(classId,level,abilities,plans={},rng=Math.rando
  return {spellSlots:slots,knownSpellIds:classId==='mage'?plan.choices.filter(r=>slots[SPELL_CATALOG[r.spellId].level-1]>0).map(r=>r.spellId):[],memorizedSpellIds:classId==='mage'?prepared:[],memorizedPriestSpellIds:classId==='cleric'?prepared:[]};
 }
 export function generateMobRules(definition,sample,rng=Math.random){
- const rules=definition.character.rules,abilities=definition.character.abilities,progression=classProgression(sample.classId,sample.level,abilities),derived=rules.classRules==='class'?progression:null;
+ const authored=definition.character.rules,baseline=!sample.classId||sample.classId==='none'?monsterBaseline(authored,definition.mob.species):null;
+ const rules=baseline?{...authored,...baseline,hpMode:'rolled'}:authored,abilities=definition.character.abilities,progression=classProgression(sample.classId,sample.level,abilities),derived=rules.classRules==='class'?progression:null;
  const roll=(count,die,bonus=0)=>Array.from({length:count},()=>Math.max(1,1+Math.floor(rng()*die)+bonus)).reduce((a,b)=>a+b,0);
  const match=/^(\d+)d(\d+)([+-]\d+)?$/.exec(rules.hitDice);
- const hp=derived&&!rules.overrideHp?roll(derived.dice,derived.die,derived.con)+derived.flat:rules.hpMode==='fixed'?rules.maxHp:Math.max(1,roll(+match[1],+match[2])+Number(match[3]||0));
+ const rolledHp=derived&&!rules.overrideHp?roll(derived.dice,derived.die,derived.con)+derived.flat:rules.hpMode==='fixed'?rules.maxHp:Math.max(1,roll(+match[1],+match[2])+Number(match[3]||0));
+ const hp=Math.max(authored.minimumHp??1,rolledHp);
  const spells=prepareMobSpells(sample.classId,sample.level,abilities,definition.mob.spellPreparation,rng);
- return {hp,maxHp:hp,hitDiceLabel:derived&&!rules.overrideHp?derived.hitDice:rules.hitDice,hitDiceValue:derived?derived.dice:+match[1],thaco:derived&&!rules.overrideThaco?derived.thaco:rules.thaco,attacksPerRound:derived&&!rules.overrideAttacks?derived.attacksPerRound:rules.attacksPerRound,saves:progression?.saves||{},stats:{...abilities},...spells};
+ return {...(baseline?{ac:baseline.ac,authoredBaseAc:baseline.ac,unarmoredAc:baseline.ac,move:baseline.move,authoredMove:baseline.move,morale:baseline.morale,moraleLabel:String(baseline.morale),xpValue:baseline.xpValue,monsterBaselineId:baseline.id}:{}),hp,maxHp:hp,hitDiceLabel:derived&&!rules.overrideHp?derived.hitDice:rules.hitDice,hitDiceValue:baseline?.hitDiceValue??(derived?derived.dice:+match[1]),thaco:derived&&!rules.overrideThaco?derived.thaco:rules.thaco,attacksPerRound:derived&&!rules.overrideAttacks?derived.attacksPerRound:rules.attacksPerRound,saves:progression?.saves||(baseline?savingThrowsFromBands(Math.max(1,Math.ceil(baseline.hitDiceValue)),WARRIOR_SAVING_THROW_BANDS):{}),stats:{...abilities},...spells};
 }

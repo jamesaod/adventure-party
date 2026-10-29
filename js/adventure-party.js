@@ -15688,8 +15688,8 @@ function makeLibraryMob(id,index,position){
  const unit=makeLegacyOrc(index,position);
  window.adventurePartyRepositoryMobs.apply(unit,Math.random,id);
  unit.type='library-mob';unit.id=`library-mob-${index+1}`;
- syncFighterEquipment(unit);unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
- unit.move=unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);return unit;
+ syncFighterEquipment(unit);if(!unit.monsterBaselineId)unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
+ unit.move=unit.monsterBaselineId?Math.min(unit.move,unit.authoredMove):unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);return unit;
 }
 function libraryTestPlayer(){
  const id=new URLSearchParams(window.location?.search||'').get('testMob'),role=new URLSearchParams(window.location?.search||'').get('testRole');
@@ -15704,8 +15704,8 @@ function makeOrc(index,position,templateId){
   authored.apply(unit,Math.random,templateId);
   if(templateId==="orc-archer"){unit.type="orc-archer";unit.id=`orc-archer-${String(index+1).padStart(2,"0")}`;}
   syncFighterEquipment(unit);
-  unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
-  unit.move=unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);
+  if(!unit.monsterBaselineId)unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
+  unit.move=unit.monsterBaselineId?Math.min(unit.move,unit.authoredMove):unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);
   return unit;
 }
 

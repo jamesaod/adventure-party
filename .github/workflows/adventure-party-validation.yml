@@ -174,6 +174,9 @@ jobs:
       - name: Validate Orc Archer and ranged ammunition
         run: node scripts/test-orc-archer.mjs
 
+      - name: Validate monster baselines and minimum HP
+        run: node scripts/test-monster-baselines.mjs
+
       - name: Validate shared MOB library
         run: node scripts/test-mob-library.mjs
 
