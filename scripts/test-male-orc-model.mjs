@@ -62,6 +62,6 @@ for(const other of [leader,carl]){
  const otherProfiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry:other,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
  state.libraryModels.push({...other,weaponAttachmentProfiles:otherProfiles});
  state.libraryModelId=other.id;
- for(const weapon of STUDIO_WEAPONS){if(other===leader&&weapon.id==='battle-axe'){assert.deepEqual(resolve(weapon.id).rotation,catalog.weaponAttachmentProfiles['uniformed-orc-leader-battle-axe-v1'].rotation);continue;}assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`); }
+ for(const weapon of STUDIO_WEAPONS){if(other===leader){const profile=otherProfiles.find(p=>p.weaponIds.includes(weapon.id));assert.ok(profile,weapon.id+' Leader profile');assert.deepEqual(resolve(weapon.id).rotation,Array.from(profile.rotation));assert.deepEqual(resolve(weapon.id).position,Array.from(profile.position));continue;}assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`); }
 }
-console.log('PASS regular Orc calibration retained; Orc Leader and Carl resolve identical equipment defaults');
+console.log('PASS regular Orc calibration retained; Orc Leader resolves per-weapon profiles and Carl retains global defaults');
