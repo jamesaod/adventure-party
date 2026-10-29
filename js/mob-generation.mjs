@@ -1,4 +1,4 @@
-import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C196';
+import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C198';
 export const MOB_CLASSES=Object.freeze([{id:'none',name:'No character class'},...['fighter','mage','cleric','thief','ranger'].map(id=>({id,name:id[0].toUpperCase()+id.slice(1)}))]);
 const offHands=new Set(['medieval-sword','battle-axe','short-sword','dagger','scimitar','broadsword','mace','morning-star','flail','club']);
 export const primaryItems=(catalog=ITEM_CATALOG)=>Object.values(catalog).filter(i=>i.category==='weapon');

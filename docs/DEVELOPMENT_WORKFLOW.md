@@ -237,3 +237,7 @@ Supersedes Rev 193 relative roll. Equipment stores base `rotation` (XYZ degrees)
 ## Candidate Rev 197
 
 [Equipment Library](EQUIPMENT_LIBRARY.md) describes item inheritance, optional existing models, independent unique/enchantment metadata, structured effect definitions, browser storage and portable equipment snapshots in MOB exports. Preserve the canonical catalog and shared renderer; pending weapon grip/scale adjustments are separate.
+
+## Candidate Rev 198
+
+[Shield, Orc](SHIELD_ORC.md) records atlas extraction and shared shield registration. Published equipment is shared across Library, MOB Creator and Studio registrations. Browser-local item variants currently feed MOB Creator, not Studio presets.

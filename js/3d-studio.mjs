@@ -15,7 +15,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C196';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C198';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -26,15 +26,15 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, STUDIO_OFF_HAND_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C196';
+} from './studio-equipment.mjs?v=R238C198';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C196';
+} from './studio-shield.mjs?v=R238C198';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C197';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C197';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C198';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C198';
 import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C196';
 const authoringQuery=new URLSearchParams(location.search);
 const authoringScoped=!!authoringWorkspaceSuffix(location.search);
@@ -440,9 +440,9 @@ function updateEquipmentControls(locked = false) {
     : current.rightHandBone ? 'Choose a weapon to equip this model.'
     : 'Load a compatible rigged MOB model to equip a weapon.';
   ui.ShieldStatus.classList.toggle('error', !!shieldCurrent.error);
-  ui.ShieldStatus.textContent = shieldCurrent.loading ? 'Loading wooden shield…' : shieldCurrent.error
+  ui.ShieldStatus.textContent = shieldCurrent.loading ? 'Loading shield…' : shieldCurrent.error
     ? shieldCurrent.error
-    : shieldCurrent.attached ? 'Wooden shield follows the left hand through the selected animation.'
+    : shieldCurrent.attached ? 'Shield follows the left hand through the selected animation.'
     : shieldCurrent.leftHandBone ? 'Choose a left-hand shield for animation QA.'
     : 'Load a compatible rigged MOB model to use a left-hand shield.';
   ui.EquipmentLockNote.classList.toggle('locked', locked);

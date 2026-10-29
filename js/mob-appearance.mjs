@@ -1,5 +1,5 @@
-import { studioWeapon } from './studio-equipment.mjs?v=R238C196';
-import { studioShield } from './studio-shield.mjs?v=R238C196';
+import { studioWeapon } from './studio-equipment.mjs?v=R238C198';
+import { studioShield } from './studio-shield.mjs?v=R238C198';
 import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C196';
 export { WEAPON_POSE_PROFILES };
 
@@ -120,6 +120,7 @@ function visibleShield(id,itemName,studioId){
 }
 
 export const VISIBLE_SHIELD_ASSETS=Object.freeze({
+  'shield-orc':visibleShield('shield-orc','Shield, Orc','shield-orc'),
   'round-wooden-shield':visibleShield('round-wooden-shield','Round Wooden Shield','round-wooden-shield')
 });
 

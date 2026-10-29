@@ -1,5 +1,5 @@
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C196';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C198';
 import { findHumanoidBone, analyzeHumanoidRig } from './humanoid-rig.mjs?v=R238C101';
 
 const WOODEN_SHIELD_ITEM=itemCatalogEntry('round-wooden-shield');
@@ -26,7 +26,8 @@ export const STUDIO_SHIELDS=Object.freeze([
     rotation:Object.freeze([0,0,0]),
     defaultSizePercent:100,
     presetRevision:4
-  })
+  }),
+  ...['shield-orc'].map(id=>{const item=itemCatalogEntry(id),a=item.appearance;return Object.freeze({id,label:item.name,visualClass:a.visualClass,representation:a.representation,file:a.asset,sourceSha256:a.source.originalSha256,assetSha256:a.runtimeAsset.sha256,sourceBounds:item.physical.sourceModelBounds,modelOrigin:Object.freeze([...a.modelOrigin]),nativeScale:a.nativeScale,position:Object.freeze([0,0,0.04]),rotation:Object.freeze([0,0,0]),defaultSizePercent:100,presetRevision:1});})
 ]);
 
 const SHIELD_ALIASES=Object.freeze({

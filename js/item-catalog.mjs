@@ -1,4 +1,4 @@
-export const ITEM_CATALOG_VERSION=3;
+export const ITEM_CATALOG_VERSION=4;
 
 function freezeRecord(value){
   if(value&&typeof value==='object'){
@@ -9,6 +9,61 @@ function freezeRecord(value){
 }
 
 export const ITEM_CATALOG=freezeRecord({
+  'shield-orc':{
+  "id": "shield-orc",
+  "name": "Shield, Orc",
+  "category": "shield",
+  "slot": "shield",
+  "rules": {
+    "catalogArmorId": "shield-medium",
+    "acBonus": 1,
+    "encumbrance": 8,
+    "cost": "12 gp",
+    "rearProtection": false,
+    "maxProtectedAttacksPerRound": 2
+  },
+  "physical": {
+    "sourceModelBounds": {
+      "min": [
+        -0.5,
+        0,
+        0
+      ],
+      "max": [
+        0.5,
+        1,
+        0.067735
+      ]
+    },
+    "status": "Matches the existing round shield mount and render size; physical dimensions are not yet calibrated."
+  },
+  "appearance": {
+    "appearanceId": "shield-orc",
+    "studioId": "shield-orc",
+    "visualClass": "round-shield",
+    "representation": "source-gltf-v1",
+    "asset": "assets/models/shields/shield-orc.glb",
+    "attachment": "left-hand",
+    "nativeScale": 0.45,
+    "modelOrigin": [
+      0,
+      0.5,
+      0
+    ],
+    "source": {
+      "originalFilename": "SM_Wep_Shield_Set_54.fbx",
+      "originalBytes": 72464,
+      "originalSha256": "1a75d14b951298191a43e8b0dae8f3036702382d77ebca616cd6f8cfff1917ce"
+    },
+    "runtimeAsset": {
+      "bytes": 91180,
+      "sha256": "d3ea72f9591b911ebe953f0d751c7877c25eb89fffe6c41e70f6a2f3cc96d810",
+      "textureResolution": 256,
+      "triangles": 622,
+      "derivation": "User FBX with red/black atlas crop, front UV remap, plain backing and edge, normalized to the shared shield frame."
+    }
+  }
+},
   'flaming-sword-5':{
     id:'flaming-sword-5',
     name:'Flaming Sword +5',

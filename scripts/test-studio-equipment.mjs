@@ -171,7 +171,7 @@ const migratedAxe = normalizeEquipment({
 assert.equal(migratedAxe.sizePercent,100,'Rev 66 saved axe size remains at the approved 100% UI default');
 assert.deepEqual(migratedAxe.rotation,[-129,-90,0],'Rev 66 axe migrates to the 180-degree blade roll without changing shaft alignment');
 assert.equal(migratedAxe.presetRevision,5);
-assert.equal(STUDIO_SHIELDS.length,1);
+assert.equal(STUDIO_SHIELDS.length,2);
 assert.equal(STUDIO_SHIELDS[0].id,'round-wooden-shield');
 assert.equal(STUDIO_SHIELDS[0].sourceSha256,'4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
 assert.equal(STUDIO_SHIELDS[0].representation,'source-gltf-v1');
