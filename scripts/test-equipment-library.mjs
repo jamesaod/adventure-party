@@ -21,3 +21,7 @@ const two=structuredClone(data);two.items[2].overrides.rules.handsRequired=2;ass
 assert.throws(()=>sampleGeneration({...generation,fixed:{...generation.fixed,offHand:'heirloom'}},()=>0,resolveEquipmentLibrary(two)),/Two-handed/);
 assert.equal(resolveEquipmentLibrary()['long-sword'].rules.magicHitBonus,0);
 console.log('Equipment library: inheritance, identity, effects, duplicates, cycles, eligibility and portable MOB round trip passed.');
+
+const spearCatalog=resolveEquipmentLibrary();assert.equal(spearCatalog.spear.rules.handsRequired,1);
+const spearAndShield={version:1,kind:'unique',fixed:{classId:'fighter',level:1,primary:'spear',offHand:'shield-orc'},alwaysItems:[]};
+assert.equal(sampleGeneration(spearAndShield,()=>0,spearCatalog).equipment.length,2);assert.deepEqual(generationWeaponTypes(spearAndShield,spearCatalog),['one-handed-thrust']);

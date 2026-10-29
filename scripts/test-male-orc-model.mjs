@@ -43,7 +43,7 @@ for(const weapon of STUDIO_WEAPONS){
  const settings=resolve(weapon.id);
  if(weapon.file.includes('/batch-196/')){
   const p=profiles.find(p=>p.weaponIds.includes(weapon.id));assert.ok(p);assert.deepEqual(settings.position,Array.from(p.position));assert.deepEqual(settings.rotation,Array.from(p.rotation));
- }else if((weapon.handsRequired||1)===1){
+ }else if((weapon.handsRequired||1)===1&&weapon.id!=='spear'){
   assert.deepEqual(settings.position,[-0.020,0.050,0.005],weapon.id);
   assert.deepEqual(settings.rotation,weapon.id==='battle-axe'?catalog.weaponAttachmentProfiles['uniformed-orc-battle-axe-v1'].rotation:[161,-46,15],weapon.id);
  }else if(weapon.id==='medieval-two-handed-sword'){
