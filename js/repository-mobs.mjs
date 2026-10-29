@@ -38,6 +38,6 @@ export function createRepositoryMob(template,catalog){
 }
 if(typeof window!=='undefined'){
  const load=async path=>{const response=await fetch(new URL(path,import.meta.url));if(!response.ok)throw Error('Could not load '+path);return response.json();};
- const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/studio-models.json?v=R238C192')]);
+ const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/studio-models.json?v=R238C195')]);
  window.adventurePartyRepositoryMobs=createRepositoryMob(template,catalog);
 }

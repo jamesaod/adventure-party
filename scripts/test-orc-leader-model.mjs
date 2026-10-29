@@ -30,4 +30,7 @@ assert.equal(catalog.models.find(model=>model.mobType==='orc').id,'male-orc-figh
 assert.equal(entry.label,'Orc Leader, Male, Uniformed');
 const carl=catalog.models.find(m=>m.id==='dungeon-crawler-carl-v3');
 assert.equal(entry.weaponAttachmentProfileId,carl.weaponAttachmentProfileId);
-assert.deepEqual(entry.weaponAttachmentProfileIds,['uniformed-orc-leader-battle-axe-v1'],'Leader opts into its own axe calibration');
+const {STUDIO_WEAPONS}=await import('../js/studio-equipment.mjs');
+const assigned=entry.weaponAttachmentProfileIds.flatMap(id=>catalog.weaponAttachmentProfiles[id].weaponIds);
+assert.equal(new Set(assigned).size,assigned.length,'Each Leader weapon has exactly one profile');
+assert.deepEqual([...assigned].sort(),STUDIO_WEAPONS.map(w=>w.id).sort(),'All Leader weapons calibrated');

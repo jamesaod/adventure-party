@@ -251,7 +251,17 @@
       "animationLibrary": "uploaded-fbx",
       "initialAnimation": "Sword And Shield Idle",
       "weaponAttachmentProfileIds": [
-        "uniformed-orc-leader-battle-axe-v1"
+        "uniformed-orc-leader-battle-axe-v1",
+        "uniformed-orc-leader-medieval-sword-v1",
+        "uniformed-orc-leader-medieval-two-handed-sword-v1",
+        "uniformed-orc-leader-spear-v1",
+        "uniformed-orc-leader-crossbow-v1",
+        "uniformed-orc-leader-wooden-staff-v1",
+        "uniformed-orc-leader-short-sword-v1",
+        "uniformed-orc-leader-dagger-v1",
+        "uniformed-orc-leader-wizard-staff-grip-v1",
+        "uniformed-orc-leader-sling-v1",
+        "uniformed-orc-leader-recurve-bow-v1"
       ]
     },
     {
@@ -392,6 +402,176 @@
       ],
       "status": "axis-corrected",
       "description": "Rev 192: transfer regular Orc axe mount through source and Leader neutral hand world quaternions; preserve forward blade roll."
+    },
+    "uniformed-orc-leader-medieval-sword-v1": {
+      "weaponIds": [
+        "medieval-sword"
+      ],
+      "position": [
+        -0.011036622142939902,
+        0.05005476376830507,
+        0.017254379031803584
+      ],
+      "rotation": [
+        120.64153225657039,
+        -77.76398864777424,
+        -31.195007674842866
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Medieval Sword calibrated from male-orc through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-medieval-two-handed-sword-v1": {
+      "weaponIds": [
+        "medieval-two-handed-sword"
+      ],
+      "position": [
+        0.0020261836249797346,
+        0.06289346109662353,
+        0.07674833634161306
+      ],
+      "rotation": [
+        -98.03413090420587,
+        -24.605572778778733,
+        7.846385617146777
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Two-Handed Sword calibrated from male-orc through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-spear-v1": {
+      "weaponIds": [
+        "spear"
+      ],
+      "position": [
+        -0.042302335681610626,
+        0.03295642127934627,
+        -0.04152573530160043
+      ],
+      "rotation": [
+        158.9712558450229,
+        48.75039043664114,
+        -103.8110358873666
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Spear calibrated from male-orc through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-crossbow-v1": {
+      "weaponIds": [
+        "crossbow"
+      ],
+      "position": [
+        -0.006243283941553923,
+        0.05090105415794451,
+        -0.010959201213370203
+      ],
+      "rotation": [
+        -101.68095022007999,
+        -19.456520303469127,
+        170.16959209210083
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Crossbow calibrated from dungeon-crawler-carl-v3 through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-wooden-staff-v1": {
+      "weaponIds": [
+        "wooden-staff"
+      ],
+      "position": [
+        -0.006243283941553923,
+        0.05090105415794451,
+        -0.010959201213370203
+      ],
+      "rotation": [
+        -93.87768403022355,
+        8.652486931410731,
+        170.1520307251987
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Wooden Staff calibrated from dungeon-crawler-carl-v3 through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-short-sword-v1": {
+      "weaponIds": [
+        "short-sword"
+      ],
+      "position": [
+        -0.011036622142939902,
+        0.05005476376830507,
+        0.017254379031803584
+      ],
+      "rotation": [
+        61.256337074156605,
+        6.302309151282223,
+        10.509408790059338
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Short Sword calibrated from male-orc through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-dagger-v1": {
+      "weaponIds": [
+        "dagger"
+      ],
+      "position": [
+        -0.011036622142939902,
+        0.05005476376830507,
+        0.017254379031803584
+      ],
+      "rotation": [
+        61.256337074156605,
+        6.302309151282223,
+        10.509408790059338
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Dagger calibrated from male-orc through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-wizard-staff-grip-v1": {
+      "weaponIds": [
+        "wizard-staff-grip"
+      ],
+      "position": [
+        -0.006243283941553923,
+        0.05090105415794451,
+        -0.010959201213370203
+      ],
+      "rotation": [
+        -110.13363203863493,
+        44.33945244990112,
+        -141.92840988643485
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Wizard Staff Grip calibrated from dungeon-crawler-carl-v3 through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-sling-v1": {
+      "weaponIds": [
+        "sling"
+      ],
+      "position": [
+        -0.006243283941553923,
+        0.05090105415794451,
+        -0.010959201213370203
+      ],
+      "rotation": [
+        165.02693622569655,
+        -80.35820195476298,
+        136.75546693156352
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Sling calibrated from dungeon-crawler-carl-v3 through RightHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-leader-recurve-bow-v1": {
+      "weaponIds": [
+        "recurve-bow"
+      ],
+      "position": [
+        -0.00230591618749799,
+        0.04860474335201947,
+        0.011500507563605808
+      ],
+      "rotation": [
+        -173.1415653752749,
+        11.464296791598668,
+        -99.78290848757004
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 195: Recurve Bow calibrated from dungeon-crawler-carl-v3 through LeftHand bind basis; preserve asset-specific axes."
     }
   },
   "studioModelIds": [
