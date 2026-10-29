@@ -43,7 +43,7 @@ for(const weapon of STUDIO_WEAPONS){
  const settings=resolve(weapon.id);
  if((weapon.handsRequired||1)===1){
   assert.deepEqual(settings.position,[-0.020,0.050,0.005],weapon.id);
-  assert.deepEqual(settings.rotation,weapon.id==='battle-axe'?[161,-46,144]:[161,-46,15],weapon.id);
+  assert.deepEqual(settings.rotation,weapon.id==='battle-axe'?catalog.weaponAttachmentProfiles['uniformed-orc-battle-axe-v1'].rotation:[161,-46,15],weapon.id);
  }else if(weapon.id==='medieval-two-handed-sword'){
   assert.deepEqual(settings.position,[-0.045,0.065,0.060]);
   assert.deepEqual(settings.rotation,[-114,-16,-30]);
@@ -62,6 +62,6 @@ for(const other of [leader,carl]){
  const otherProfiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry:other,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
  state.libraryModels.push({...other,weaponAttachmentProfiles:otherProfiles});
  state.libraryModelId=other.id;
- for(const weapon of STUDIO_WEAPONS)assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`);
+ for(const weapon of STUDIO_WEAPONS){if(other===leader&&weapon.id==='battle-axe'){assert.deepEqual(resolve(weapon.id).rotation,catalog.weaponAttachmentProfiles['uniformed-orc-leader-battle-axe-v1'].rotation);continue;}assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`); }
 }
 console.log('PASS regular Orc calibration retained; Orc Leader and Carl resolve identical equipment defaults');

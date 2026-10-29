@@ -144,6 +144,7 @@ jobs:
           node scripts/test-mob-authoring.mjs
           node scripts/test-mob-generation.mjs
           node scripts/test-repository-mobs.mjs
+          node scripts/test-orc-axe-basis.mjs
           node scripts/test-mob-class-rules.mjs
           node --check js/action-capture-groups.mjs
           node scripts/test-shared-action-captures.mjs
