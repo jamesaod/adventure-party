@@ -233,3 +233,7 @@ Supersedes Rev 193 relative roll. Equipment stores base `rotation` (XYZ degrees)
 ## Candidate Rev 196
 
 [Weapon batch](EQUIPMENT_BATCH_196.md) records the nine 256px, under-5K-triangle imports, nested archives, ASCII FBX handling, normalized shaft axes, preserved color, permissions and stable-ID display renames. Reuse shared catalog/capture/attachment paths.
+
+## Candidate Rev 197
+
+[Equipment Library](EQUIPMENT_LIBRARY.md) describes item inheritance, optional existing models, independent unique/enchantment metadata, structured effect definitions, browser storage and portable equipment snapshots in MOB exports. Preserve the canonical catalog and shared renderer; pending weapon grip/scale adjustments are separate.
