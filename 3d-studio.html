@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 193</span>
+        <span class="studio-build">Candidate Rev 194</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -227,7 +227,7 @@
                 <span class="studio-label-row">Roll around shaft <output id="studioWeaponShaftRollValue" for="studioWeaponShaftRoll">0°</output></span>
                 <input id="studioWeaponShaftRoll" type="range" min="-180" max="180" step="1" value="0" disabled>
               </label>
-              <p class="studio-help">Twist without changing aim. Loading a grip or editing X/Y/Z resets this slider to 0°; your rotation stays saved.</p>
+              <p class="studio-help">Roll is saved separately. X/Y/Z edits keep this twist; Reset grip restores the defaults.</p>
               <div class="studio-equipment-axes studio-grip-slider-axes">
                 <label class="studio-field" for="studioWeaponRotationX">
                   <span class="studio-label-row">X <output id="studioWeaponRotationXValue" for="studioWeaponRotationX">0°</output></span>
@@ -261,7 +261,10 @@
             </fieldset>
             <p class="studio-note studio-help">Move and turn the grip relative to the hand. Fit all animations after a large adjustment.</p>
           </details>
-          <button id="studioResetEquipmentButton" class="studio-button studio-wide-button" type="button" disabled>Reset grip</button>
+          <button id="studioCopyGripButton" class="studio-button studio-wide-button" type="button" disabled>Copy grip settings</button>
+            <p id="studioGripCopyStatus" role="status"></p>
+            <textarea id="studioGripSettingsText" style="width:100%;box-sizing:border-box" aria-label="Grip settings to share" rows="8" readonly hidden></textarea>
+            <button id="studioResetEquipmentButton" class="studio-button studio-wide-button" type="button" disabled>Reset grip</button>
           <p id="studioEquipmentStatus" class="studio-note studio-help" role="status" aria-live="polite">Load a compatible MOB model to test equipped weapons.</p>
           <p id="studioEquipmentLockNote" class="studio-note studio-help">Selected equipment is included in all six previews and new captures. Bows use the left hand.</p>
         </section>
@@ -536,7 +539,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C193"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C194"></script>
 
 </body>
 </html>

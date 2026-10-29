@@ -13,10 +13,10 @@ const orc = catalog.weaponAttachmentProfiles['tripo-mixamo-orc-one-hand-sword-up
 const saved = {rightHand:'medieval-sword',position:[-0.025,0.070,0.015],rotation:[12,-85,179],sizePercent:125};
 const settings = {equipment:saved,weaponAttachmentProfile:warrior};
 assert.deepEqual(resolveCombatWeaponMount(equipped,settings,preset),{
-  position:saved.position,rotation:saved.rotation,sizePercent:125
+  position:saved.position,rotation:saved.rotation,sizePercent:125,shaftRollDegrees:0
 },'Latest captured grip wins, including saved sword size');
 assert.deepEqual(resolveCombatWeaponMount(equipped,{weaponAttachmentProfile:warrior},preset),{
-  position:[-0.010,0.065,0.010],rotation:[0,-90,180],sizePercent:100
+  position:[-0.010,0.065,0.010],rotation:[0,-90,180],sizePercent:100,shaftRollDegrees:0
 },'Woman Warrior catalog grip is the default even without a saved slider adjustment');
 assert.deepEqual(resolveCombatWeaponMount(equipped,{weaponAttachmentProfile:orc},preset).rotation,[-29,-55,175],
   'Orc still uses its own scoped model profile');

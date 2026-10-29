@@ -541,7 +541,7 @@ assert.equal(spear.assetSha256, spearMetadata.sha256);
 assert.equal(weaponAssetUrl(spear, 'https://example.test/candidate/').searchParams.get('v'), spearMetadata.sha256);
 assert.equal(weaponAssetUrl(STUDIO_WEAPONS[0], 'https://example.test/candidate/').search, '');
 const savedSpearGrip = {rightHand:'spear',presetRevision:1,sizePercent:125,position:[0.02,0.03,0.04],rotation:[-75,10,5],secondaryGripOffsetInches:[1,-2,0.5]};
-assert.deepEqual(normalizeEquipment(savedSpearGrip), {version:3,...savedSpearGrip});
+assert.deepEqual(normalizeEquipment(savedSpearGrip), {version:3,...savedSpearGrip,shaftRollDegrees:0});
 
 // Bow selection uses the same manager with a left-hand mount, without applying
 // the melee secondary-grip solver to the archer's draw hand.

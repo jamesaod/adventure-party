@@ -1,3 +1,4 @@
+import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
 import { itemCatalogEntry } from './item-catalog.mjs?v=R238C176';
 import {
@@ -135,6 +136,7 @@ export function normalizeEquipment(value = {}) {
       : bounded(value?.sizePercent, weapon?.defaultSizePercent ?? 100, EQUIPMENT_LIMITS.sizePercent),
     position: vector('position'),
     rotation: vector('rotation'),
+    shaftRollDegrees: migratePreset ? 0 : normalizeShaftRoll(value?.shaftRollDegrees),
     secondaryGripOffsetInches
   };
 }
@@ -511,7 +513,7 @@ export function createWeaponAttachment(THREE, hand, model, settings, options = {
   function update(next) {
     const normalized = normalizeEquipment(next);
     socket.position.fromArray(normalized.position);
-    socket.rotation.set(...normalized.rotation.map(degrees => degrees * Math.PI / 180), 'XYZ');
+    socket.quaternion.copy(weaponGripQuaternion(THREE, normalized.rotation, weapon.primaryAxis, normalized.shaftRollDegrees));
     socket.scale.setScalar(weapon.nativeScale * normalized.sizePercent / 100);
     attachment.secondaryGripOffsetInches = [...normalized.secondaryGripOffsetInches];
     socket.updateWorldMatrix(true, true);

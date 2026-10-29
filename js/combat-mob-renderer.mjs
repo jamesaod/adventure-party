@@ -10,12 +10,12 @@ import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js'
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
-import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C125';
+import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C194';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C97';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C189';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C194';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C146';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C176';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C194';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C176';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
@@ -290,7 +290,7 @@ export async function generateCombatSpriteSet(recipe){
       presetRevision:preset.presetRevision||0,
       sizePercent:mount.sizePercent,
       position:mount.position,
-      rotation:mount.rotation
+      rotation:mount.rotation,shaftRollDegrees:mount.shaftRollDegrees
     });
   }
   const savedOffHand=normalizeOffHandEquipment(recipe.renderSettings?.offHandEquipment||{});

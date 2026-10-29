@@ -2,8 +2,7 @@ import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C1
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
 import * as THREE from 'three';
-import { createWeaponShaftRoll } from './weapon-shaft-roll.mjs?v=R238C193';
-const weaponShaftRoll = createWeaponShaftRoll(THREE);
+import { gripSettingsReport } from './weapon-shaft-roll.mjs?v=R238C194';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C178';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -27,7 +26,7 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, STUDIO_OFF_HAND_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C176';
+} from './studio-equipment.mjs?v=R238C194';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
 } from './studio-shield.mjs?v=R238C176';
@@ -84,7 +83,7 @@ const ui = Object.fromEntries([
   'ShieldPositionX','ShieldPositionY','ShieldPositionZ','ShieldPositionXValue','ShieldPositionYValue','ShieldPositionZValue',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
   'WeaponPositionXValue', 'WeaponPositionYValue', 'WeaponPositionZValue',
-  'WeaponShaftRoll', 'WeaponShaftRollValue', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
+  'CopyGripButton', 'GripSettingsText', 'GripCopyStatus', 'WeaponShaftRoll', 'WeaponShaftRollValue', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
   'WeaponRotationXValue', 'WeaponRotationYValue', 'WeaponRotationZValue',
   'OffHandGripAlong', 'OffHandGripAlongValue', 'OffHandGripAcross', 'OffHandGripAcrossValue', 'OffHandGripDepth', 'OffHandGripDepthValue',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
@@ -404,7 +403,8 @@ function updateEquipmentControls(locked = false) {
     field.value=String(value);field.disabled=shieldDisabled;ui[`ShieldPosition${axis}Value`].textContent=value.toFixed(3);
   }
   ui.ResetShieldButton.disabled=shieldDisabled;
-  const shaftRoll = weaponShaftRoll.sync(state.libraryModelId, settings);
+  const shaftRoll = settings.shaftRollDegrees;
+  ui.CopyGripButton.disabled = busy || settings.rightHand === 'none';
   ui.WeaponShaftRoll.value = String(shaftRoll);
   ui.WeaponShaftRollValue.textContent = `${shaftRoll}°`;
   ui.WeaponShaftRoll.disabled = busy || locked || settings.rightHand === 'none';
@@ -481,7 +481,7 @@ function defaultEquipmentSettingsForModel(weaponId) {
     || entry?.weaponAttachmentProfile;
   const defaults = normalizeEquipment({ rightHand: weaponId });
   return profile?.weaponId === weaponId || profile?.weaponIds?.includes(weaponId)
-    ? normalizeEquipment({ ...defaults, position: [...profile.position], rotation: [...profile.rotation] })
+    ? normalizeEquipment({ ...defaults, position: [...profile.position], rotation: [...profile.rotation], shaftRollDegrees: profile.shaftRollDegrees || 0 })
     : defaults;
 }
 
@@ -2281,7 +2281,7 @@ async function loadModelLibrary() {
         weaponAttachmentProfile = {
           weaponId: profile.weaponId,
           position: [...profile.position],
-          rotation: [...profile.rotation]
+          rotation: [...profile.rotation], shaftRollDegrees: profile.shaftRollDegrees || 0
         };
       }
       const profileIds = entry.weaponAttachmentProfileIds || [];
@@ -2300,7 +2300,7 @@ async function loadModelLibrary() {
           throw new Error('Invalid model-specific weapon attachment profile.');
         }
         for (const id of profile.weaponIds) assignedWeapons.add(id);
-        return { weaponIds: [...profile.weaponIds], position: [...profile.position], rotation: [...profile.rotation] };
+        return { weaponIds: [...profile.weaponIds], position: [...profile.position], rotation: [...profile.rotation], shaftRollDegrees: profile.shaftRollDegrees || 0 };
       });
       ids.add(entry.id);
       return {
@@ -2567,11 +2567,28 @@ function bindControls() {
   ui.ResetShieldButton.addEventListener('click',()=>{
     void changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}));
   });
+  ui.CopyGripButton.addEventListener('click', async () => {
+    const settings = equipment.snapshot().settings;
+    const weapon = studioWeapon(settings.rightHand);
+    if (!weapon) return;
+    const model = state.libraryModels.find(entry => entry.id === state.libraryModelId)
+      || {id:state.libraryModelId || null,label:state.modelName};
+    const text = JSON.stringify(gripSettingsReport(model, weapon, settings), null, 2);
+    ui.GripSettingsText.value = text;
+    ui.GripSettingsText.hidden = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ui.GripCopyStatus.textContent = 'Grip settings copied. Paste them into chat.';
+    } catch {
+      ui.GripSettingsText.focus(); ui.GripSettingsText.select();
+      ui.GripCopyStatus.textContent = 'Select and copy the settings below, then paste them into chat.';
+    }
+  });
   ui.WeaponShaftRoll.addEventListener('input', () => {
     const settings = equipment.snapshot().settings;
     const axis = studioWeapon(settings.rightHand)?.primaryAxis;
     if (!axis) return;
-    const next = weaponShaftRoll.apply(state.libraryModelId, settings, axis, ui.WeaponShaftRoll.valueAsNumber);
+    const next = {...settings, shaftRollDegrees: ui.WeaponShaftRoll.valueAsNumber};
     void changeEquipment(next, { resetPose: false });
   });
   ui.WeaponSize.addEventListener('input', () => {
@@ -2596,7 +2613,6 @@ function bindControls() {
     }
   }
   ui.ResetEquipmentButton.addEventListener('click', () => {
-    weaponShaftRoll.reset();
     void changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand));
   });
 
