@@ -2,6 +2,8 @@ import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C1
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
 import * as THREE from 'three';
+import { createWeaponShaftRoll } from './weapon-shaft-roll.mjs?v=R238C193';
+const weaponShaftRoll = createWeaponShaftRoll(THREE);
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C178';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -82,7 +84,7 @@ const ui = Object.fromEntries([
   'ShieldPositionX','ShieldPositionY','ShieldPositionZ','ShieldPositionXValue','ShieldPositionYValue','ShieldPositionZValue',
   'WeaponPositionX', 'WeaponPositionY', 'WeaponPositionZ',
   'WeaponPositionXValue', 'WeaponPositionYValue', 'WeaponPositionZValue',
-  'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
+  'WeaponShaftRoll', 'WeaponShaftRollValue', 'WeaponRotationX', 'WeaponRotationY', 'WeaponRotationZ',
   'WeaponRotationXValue', 'WeaponRotationYValue', 'WeaponRotationZValue',
   'OffHandGripAlong', 'OffHandGripAlongValue', 'OffHandGripAcross', 'OffHandGripAcrossValue', 'OffHandGripDepth', 'OffHandGripDepthValue',
   'ModelInfo', 'FrameButton', 'FrameAnimationsButton', 'ResetViewButton', 'Heading', 'HeadingValue',
@@ -402,6 +404,11 @@ function updateEquipmentControls(locked = false) {
     field.value=String(value);field.disabled=shieldDisabled;ui[`ShieldPosition${axis}Value`].textContent=value.toFixed(3);
   }
   ui.ResetShieldButton.disabled=shieldDisabled;
+  const shaftRoll = weaponShaftRoll.sync(state.libraryModelId, settings);
+  ui.WeaponShaftRoll.value = String(shaftRoll);
+  ui.WeaponShaftRollValue.textContent = `${shaftRoll}°`;
+  ui.WeaponShaftRoll.disabled = busy || locked || settings.rightHand === 'none';
+  ui.WeaponShaftRoll.setAttribute('aria-valuetext', `${shaftRoll} degrees around shaft`);
   ui.WeaponSize.value = String(settings.sizePercent);
   ui.WeaponSizeValue.textContent = `${settings.sizePercent}%`;
   ui.WeaponSize.disabled = busy || locked || settings.rightHand === 'none';
@@ -2560,6 +2567,13 @@ function bindControls() {
   ui.ResetShieldButton.addEventListener('click',()=>{
     void changeShield(normalizeShield({leftHandShield:shieldEquipment.snapshot().settings.leftHandShield}));
   });
+  ui.WeaponShaftRoll.addEventListener('input', () => {
+    const settings = equipment.snapshot().settings;
+    const axis = studioWeapon(settings.rightHand)?.primaryAxis;
+    if (!axis) return;
+    const next = weaponShaftRoll.apply(state.libraryModelId, settings, axis, ui.WeaponShaftRoll.valueAsNumber);
+    void changeEquipment(next, { resetPose: false });
+  });
   ui.WeaponSize.addEventListener('input', () => {
     void changeEquipment({ ...equipment.snapshot().settings, sizePercent: ui.WeaponSize.valueAsNumber });
   });
@@ -2582,6 +2596,7 @@ function bindControls() {
     }
   }
   ui.ResetEquipmentButton.addEventListener('click', () => {
+    weaponShaftRoll.reset();
     void changeEquipment(defaultEquipmentSettingsForModel(equipment.snapshot().settings.rightHand));
   });
 

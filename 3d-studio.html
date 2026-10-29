@@ -28,7 +28,7 @@
         <h1>3d studio</h1>
       </div>
       <div class="studio-header-actions">
-        <span class="studio-build">Candidate Rev 192</span>
+        <span class="studio-build">Candidate Rev 193</span>
         <a class="studio-button studio-return" href="./index.html">Return to title page</a>
       </div>
     </header>
@@ -223,6 +223,11 @@
             </fieldset>
             <fieldset>
               <legend>Rotation (degrees)</legend>
+              <label class="studio-field" for="studioWeaponShaftRoll">
+                <span class="studio-label-row">Roll around shaft <output id="studioWeaponShaftRollValue" for="studioWeaponShaftRoll">0°</output></span>
+                <input id="studioWeaponShaftRoll" type="range" min="-180" max="180" step="1" value="0" disabled>
+              </label>
+              <p class="studio-help">Twist without changing aim. Loading a grip or editing X/Y/Z resets this slider to 0°; your rotation stays saved.</p>
               <div class="studio-equipment-axes studio-grip-slider-axes">
                 <label class="studio-field" for="studioWeaponRotationX">
                   <span class="studio-label-row">X <output id="studioWeaponRotationXValue" for="studioWeaponRotationX">0°</output></span>
@@ -531,7 +536,7 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
-  <script type="module" src="js/3d-studio.mjs?v=R238C190"></script>
+  <script type="module" src="js/3d-studio.mjs?v=R238C193"></script>
 
 </body>
 </html>

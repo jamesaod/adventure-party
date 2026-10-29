@@ -221,3 +221,7 @@ See [corrected MOB Creator layout](MOB_CREATOR.md#candidate-rev-183--corrected-c
 ## Candidate Rev 190
 
 MOB Creator and repository spawns share class generation and spell preparation. See [class-derived combatants](MOB_CREATOR.md#candidate-rev-190--class-derived-combatants-and-spell-preparation). Preserve explicit authored overrides and run the class-rule parity tests when editing engine class tables or the base spell catalog.
+
+## Candidate Rev 193 — weapon shaft roll
+
+Studio Adjust grip includes a relative Roll around shaft slider (-180 to 180 degrees). It post-multiplies the existing grip quaternion by an axis-angle rotation around the weapon catalog primaryAxis, then stores ordinary XYZ Euler rotation. No asset or export schema migration is needed. Zero rebases on model/weapon selection, restored rotations, manual XYZ edits and Reset grip; it is an editing reference, not an additional saved transform. Position and animation time remain unchanged. New imports must define a nonzero primaryAxis along their length. Verify shaft direction invariance and round-trip saves with scripts/test-weapon-shaft-roll.mjs.
