@@ -86,6 +86,8 @@ await vm.runInContext("changeShield({leftHandShield:'round-wooden-shield'})",con
 assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'none');
 await vm.runInContext("changeOffHand({rightHand:'dagger'})",context);
 await vm.runInContext("changeEquipment({rightHand:'spear'},{resetPose:false})",context);
+assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'dagger');
+await vm.runInContext("changeEquipment({rightHand:'medieval-two-handed-sword'},{resetPose:false})",context);
 assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'none');
 assert.equal(context.shieldEquipment.snapshot().settings.leftHandShield,'none');
 await vm.runInContext("changeOffHand({rightHand:'dagger'})",context);
