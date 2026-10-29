@@ -16,6 +16,7 @@ export function resolveCombatWeaponMount(equipped, renderSettings = {}, preset =
   return {
     position: [...(source?.position || (triple(equipped?.grip?.position) ? equipped.grip.position : preset.position))],
     rotation: [...(source?.rotation || (triple(equipped?.grip?.rotationDegrees) ? equipped.grip.rotationDegrees : preset.rotation))],
+    shaftRollDegrees: Number.isFinite(source?.shaftRollDegrees) ? source.shaftRollDegrees : Number.isFinite(equipped?.grip?.shaftRollDegrees) ? equipped.grip.shaftRollDegrees : 0,
     sizePercent: Number.isFinite(source?.sizePercent) ? source.sizePercent
       : Number.isFinite(equipped?.grip?.sizePercent) ? equipped.grip.sizePercent
       : preset.defaultSizePercent || 100

@@ -1,27 +1,25 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {createWeaponShaftRoll} from '../js/weapon-shaft-roll.mjs';
+import {weaponGripQuaternion,gripSettingsReport} from '../js/weapon-shaft-roll.mjs';
 import {STUDIO_WEAPONS,normalizeEquipment} from '../js/studio-equipment.mjs';
-const q=r=>new THREE.Quaternion().setFromEuler(new THREE.Euler(...r.map(THREE.MathUtils.degToRad),'XYZ'));
+import {resolveCombatWeaponMount} from '../js/combat-weapon-mount.mjs';
 for(const weapon of STUDIO_WEAPONS){
- assert.ok(weapon.primaryAxis?.some(v=>v!==0),weapon.id+' has length axis');
- const initial=normalizeEquipment({rightHand:weapon.id}),edit=createWeaponShaftRoll(THREE);
- const axis=new THREE.Vector3(...weapon.primaryAxis).normalize();
- const before=axis.clone().applyQuaternion(q(initial.rotation));
- let next=initial;
- for(const angle of [30,90,-90,180,-180,0]){
-  next=normalizeEquipment(edit.apply('orc',next,weapon.primaryAxis,angle));
-  assert.equal(edit.sync('orc',next),angle,'slider retains relative angle');
-  assert.ok(before.distanceTo(axis.clone().applyQuaternion(q(next.rotation)))<1e-10,weapon.id+' shaft stays fixed');
-  assert.deepEqual(next.position,initial.position);assert.equal(next.sizePercent,initial.sizePercent);
-  assert.deepEqual(normalizeEquipment(JSON.parse(JSON.stringify(next))),JSON.parse(JSON.stringify(next)),'saved format round trip');
+ const original=normalizeEquipment({rightHand:weapon.id});
+ assert.equal(original.shaftRollDegrees,0,'old grips are not rerolled');
+ const legacy=new THREE.Quaternion().setFromEuler(new THREE.Euler(...original.rotation.map(THREE.MathUtils.degToRad),'XYZ'));
+ assert.ok(legacy.angleTo(weaponGripQuaternion(THREE,original.rotation,weapon.primaryAxis))<1e-6);
+ for(const roll of [-180,-29,90,180]){
+  let settings=normalizeEquipment({...original,shaftRollDegrees:roll});
+  settings=normalizeEquipment({...settings,rotation:[20,48,133],position:[.01,.05,.02]});
+  assert.equal(settings.shaftRollDegrees,roll,'XYZ edits preserve roll');
+  const axis=new THREE.Vector3(...weapon.primaryAxis).normalize();
+  const base=weaponGripQuaternion(THREE,settings.rotation,weapon.primaryAxis,0),turned=weaponGripQuaternion(THREE,settings.rotation,weapon.primaryAxis,roll);
+  assert.ok(axis.clone().applyQuaternion(base).distanceTo(axis.clone().applyQuaternion(turned))<1e-10,'shaft direction unchanged');
+  const report=JSON.parse(JSON.stringify(gripSettingsReport({id:'male-orc',label:'Orc'},weapon,settings)));
+  assert.equal(report.positionSpace,'hand-local');assert.equal(report.modelId,'male-orc');
+  assert.deepEqual(normalizeEquipment(report.settings),settings,'copied data reconstructs saved mount');
+  const combat=resolveCombatWeaponMount({studioId:weapon.id},{equipment:report.settings},weapon);
+  assert.equal(combat.shaftRollDegrees,roll);assert.deepEqual(combat.rotation,settings.rotation);
  }
- assert.deepEqual(next.rotation,initial.rotation,'return to zero restores exact baseline');
- next=edit.apply('orc',next,weapon.primaryAxis,75);
- assert.equal(edit.sync('leader',next),0,'model change rebases');
- next=edit.apply('leader',next,weapon.primaryAxis,30);next.rotation[0]+=1;
- assert.equal(edit.sync('leader',next),0,'manual XYZ edit rebases');
- edit.reset();assert.equal(edit.sync('leader',next),0);
- const restored=createWeaponShaftRoll(THREE);assert.equal(restored.sync('leader',next),0);
 }
-console.log('PASS shaft roll for all catalog weapons: stable aim, zero return, save roundtrip and editor rebase');
+console.log('PASS independent roll: legacy appearance, XYZ edits, save/export report and combat parity for all weapons');
