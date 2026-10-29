@@ -133,6 +133,8 @@ jobs:
           python scripts/test-sling-asset.py
           python scripts/test-crossbow-asset.py
           python scripts/test-equipment-batch-assets.py
+          python scripts/test-weapons-196.py
+          node scripts/test-weapons-196.mjs
 
       - name: Check Blender pipeline Python syntax
         run: python -m py_compile scripts/blender_repair_orc_turns.py scripts/import-male-orc.py scripts/import-orc-leader.py scripts/import-orc-female-shaman.py scripts/import-orc-female-shaman-v2.py scripts/generate-axe-stance-reference.py

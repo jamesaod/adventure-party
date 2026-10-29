@@ -239,7 +239,8 @@
         "uniformed-orc-one-handed-v1",
         "uniformed-orc-two-handed-sword-v1",
         "uniformed-orc-two-handed-spear-v1",
-        "uniformed-orc-battle-axe-v1"
+        "uniformed-orc-battle-axe-v1",
+        "uniformed-orc-batch-196-one-hand"
       ]
     },
     {
@@ -320,7 +321,8 @@
         "short-sword",
         "dagger",
         "wizard-staff-grip",
-        "sling"
+        "sling",
+        "horse-head-staff"
       ],
       "position": [
         -0.02,
@@ -354,7 +356,8 @@
     },
     "uniformed-orc-two-handed-spear-v1": {
       "weaponIds": [
-        "spear"
+        "spear",
+        "trident"
       ],
       "position": [
         -0.01,
@@ -439,7 +442,8 @@
     },
     "uniformed-orc-leader-spear-v1": {
       "weaponIds": [
-        "spear"
+        "spear",
+        "trident"
       ],
       "position": [
         -0.042302335681610626,
@@ -473,7 +477,8 @@
     },
     "uniformed-orc-leader-wooden-staff-v1": {
       "weaponIds": [
-        "wooden-staff"
+        "wooden-staff",
+        "lucerne-hammer"
       ],
       "position": [
         -0.006243283941553923,
@@ -490,7 +495,13 @@
     },
     "uniformed-orc-leader-short-sword-v1": {
       "weaponIds": [
-        "short-sword"
+        "short-sword",
+        "scimitar",
+        "broadsword",
+        "mace",
+        "morning-star",
+        "flail",
+        "club"
       ],
       "position": [
         -0.011036622142939902,
@@ -524,7 +535,8 @@
     },
     "uniformed-orc-leader-wizard-staff-grip-v1": {
       "weaponIds": [
-        "wizard-staff-grip"
+        "wizard-staff-grip",
+        "horse-head-staff"
       ],
       "position": [
         -0.006243283941553923,
@@ -572,6 +584,29 @@
       ],
       "status": "axis-corrected",
       "description": "Rev 195: Recurve Bow calibrated from dungeon-crawler-carl-v3 through LeftHand bind basis; preserve asset-specific axes."
+    },
+    "uniformed-orc-batch-196-one-hand": {
+      "weaponIds": [
+        "scimitar",
+        "broadsword",
+        "mace",
+        "morning-star",
+        "flail",
+        "club",
+        "lucerne-hammer"
+      ],
+      "position": [
+        -0.02,
+        0.05,
+        0.005
+      ],
+      "rotation": [
+        60.09022870571096,
+        -10.357575676679826,
+        43.00823175892731
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 196: approved sword hand frame transferred to unit +Y weapons."
     }
   },
   "studioModelIds": [

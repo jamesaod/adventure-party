@@ -1,6 +1,6 @@
 import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C169';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
-import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C176';
+import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C196';
 import * as THREE from 'three';
 import { gripSettingsReport } from './weapon-shaft-roll.mjs?v=R238C194';
 import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C178';
@@ -15,7 +15,7 @@ import {
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C99';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C118';
 import { applyWarriorRecolor, isWarriorRecolorModel, normalizeWarriorRecolor } from './warrior-recolor.mjs?v=R238C127';
-import { createPoseCapture } from './studio-capture.mjs?v=R238C188';
+import { createPoseCapture } from './studio-capture.mjs?v=R238C196';
 import {
   SPRITE_LAYOUT_PRESETS, SPRITE_MOBS, SPRITE_RESOLUTION, SPRITE_MODEL_SCALE, SPRITE_HEX_SCALE_PERCENT, spriteLayout,
   spriteMob, spriteLayoutDimensions, spriteLayoutOffsets, createSpriteLayoutMetadata, validateSpriteModelScale, validateSpriteHexScale
@@ -26,16 +26,16 @@ import {
 } from './studio-geometry.mjs?v=R238C94';
 import {
   STUDIO_WEAPONS, STUDIO_OFF_HAND_WEAPONS, studioWeapon, weaponAssetUrl, normalizeEquipment, normalizeOffHandEquipment, createStudioEquipment
-} from './studio-equipment.mjs?v=R238C194';
+} from './studio-equipment.mjs?v=R238C196';
 import {
   STUDIO_SHIELDS, normalizeShield, createStudioShield
-} from './studio-shield.mjs?v=R238C176';
+} from './studio-shield.mjs?v=R238C196';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from './studio-skinning.mjs?v=R238C105';
 import { ORC_NATIVE_BIND_REBASE, rebaseOrcUal2Clips } from './studio-orc-native-bind.mjs?v=R238C106';
 
-import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C190';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C190';
-import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C188';
+import {createStudioPoseLibrary} from './studio-pose-library.mjs?v=R238C196';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C196';
+import {authoringWorkspaceSuffix,normalizePoseLibrary,portablePoseSample} from './pose-library.mjs?v=R238C196';
 const authoringQuery=new URLSearchParams(location.search);
 const authoringScoped=!!authoringWorkspaceSuffix(location.search);
 if(authoringScoped&&authoringQuery.get('preview')==='1')document.documentElement.classList.add('studio-embedded');
@@ -503,7 +503,7 @@ async function changeEquipment(value, { resetPose = true } = {}) {
     // and capture framing unchanged when gear is equipped or removed.
     if (resetPose) {
       resetPreviewReferenceToReady();
-      if (['bow','direct-fire'].includes(selectedWeapon?.poseProfileId) || ['wooden-staff','short-sword','dagger','wizard-staff-grip','sling'].includes(selectedWeapon?.id)) {
+      if (['bow','direct-fire'].includes(selectedWeapon?.poseProfileId) || ['wooden-staff','short-sword','dagger','wizard-staff-grip','sling','trident','scimitar','broadsword','lucerne-hammer','mace','morning-star','flail','club','horse-head-staff'].includes(selectedWeapon?.id)) {
         const profileClip = (state.clips || []).findIndex(clip => clip.userData?.actionProfiles?.includes(selectedWeapon.poseProfileId));
         if (profileClip >= 0) {
           setClip(profileClip);

@@ -131,8 +131,8 @@ export const ITEM_CATALOG=freezeRecord({
     }
   },
   'recurve-bow':{
-    id:'recurve-bow',name:'Recurve Bow',category:'weapon',slot:'weapon',
-    rules:{baseName:'Recurve Bow',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
+    id:'recurve-bow',name:'Bow',category:'weapon',slot:'weapon',
+    rules:{baseName:'Bow',handsRequired:2,damageType:'piercing',attackStyle:'ranged'},
     physical:{authoredLengthInches:null,calibratedLengthInches:59,
       status:'Provisional 59-inch Studio bow; adjust size and grip for the selected rig.'},
     appearance:{
@@ -265,12 +265,12 @@ export const ITEM_CATALOG=freezeRecord({
   },
   "wizard-staff-grip":{
     id:"wizard-staff-grip",
-    name:"Wizard Staff Grip",
+    name:"Wooden Staff 1",
     category:"weapon",
     slot:"weapon",
     rules:{
       catalogWeaponId:"staff",
-      baseName:"Wizard Staff Grip",
+      baseName:"Wooden Staff 1",
       handsRequired:1,
       damageType:"bludgeoning"
     },
@@ -366,6 +366,547 @@ export const ITEM_CATALOG=freezeRecord({
       rotationDegrees:[-90,0,0],
       source:{"originalFilename":"medieval_dagger_3d_model.zip","sourceSha256":"7a934c9eaee89b700a0349a69b71e8ef0e75f0587990df60a0bcb368fd3891ac"},
       runtimeAsset:{"bytes":674868,"sha256":"625b794a045968d3d1643bfdb3bb10c73eb51b582d5f0471f9a3b3661810ae56","triangles":960,"textureResolution":512}
+    }
+  },
+  "trident": {
+    "id": "trident",
+    "name": "Trident",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "trident",
+      "baseName": "Trident",
+      "handsRequired": 2,
+      "damageType": "piercing"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 72,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "trident",
+      "studioId": "trident",
+      "visualClass": "spear",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/trident.glb",
+      "attachment": "right-hand",
+      "handsRequired": 2,
+      "poseProfileId": "two-handed-thrust",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.35,
+        0
+      ],
+      "nativeScale": 0.925,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "mossy-golden-trident.zip",
+        "sourceSha256": "d099bf080ea73bb69a53a21c1ec162856e3a55ecd3c49ed456ae5e8c1d7d76d9"
+      },
+      "runtimeAsset": {
+        "bytes": 359968,
+        "sha256": "d7d96c0fb57f5240cf14fb6613d637339e74e73439e997a1e4348320bb9249b5",
+        "triangles": 1136,
+        "textureResolution": 256
+      },
+      "secondaryGrip": [
+        0,
+        0.55,
+        0
+      ]
+    }
+  },
+  "scimitar": {
+    "id": "scimitar",
+    "name": "Scimitar",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "sword-scimitar",
+      "baseName": "Scimitar",
+      "handsRequired": 1,
+      "damageType": "slashing"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 34,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "scimitar",
+      "studioId": "scimitar",
+      "visualClass": "sword",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/scimitar.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "one-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.14,
+        0
+      ],
+      "nativeScale": 0.436806,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "pirate-scimitar-sword.zip",
+        "sourceSha256": "a80671d90ead5c3b2acb89ff073bc5948bba8c82bcec23ec933e1b92c3b9cf37"
+      },
+      "runtimeAsset": {
+        "bytes": 215340,
+        "sha256": "94ccd84a8a1c38fec5a68ce3a19c229dd44ecfbe1287d89d1aaa2017d7be1edc",
+        "triangles": 787,
+        "textureResolution": 256
+      }
+    }
+  },
+  "broadsword": {
+    "id": "broadsword",
+    "name": "Broadsword",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "sword-broad",
+      "baseName": "Broadsword",
+      "handsRequired": 1,
+      "damageType": "slashing"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 38,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "broadsword",
+      "studioId": "broadsword",
+      "visualClass": "sword",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/broadsword.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "one-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.13,
+        0
+      ],
+      "nativeScale": 0.488194,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "ps1-italian-broadsword.zip",
+        "sourceSha256": "bdbaae90bdeb25b80425add997a2838157152bb5cd36c51db81601bb6bdbc866"
+      },
+      "runtimeAsset": {
+        "bytes": 98580,
+        "sha256": "7f2590c7b80a2506c93ea22f7299b2206adea1e3a942f7fec48afa46919a8f17",
+        "triangles": 174,
+        "textureResolution": 256
+      }
+    }
+  },
+  "lucerne-hammer": {
+    "id": "lucerne-hammer",
+    "name": "Lucerne Hammer",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "pole-arm",
+      "baseName": "Lucerne Hammer",
+      "handsRequired": 2,
+      "damageType": "bludgeoning"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 72,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "lucerne-hammer",
+      "studioId": "lucerne-hammer",
+      "visualClass": "staff",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/lucerne-hammer.glb",
+      "attachment": "right-hand",
+      "handsRequired": 2,
+      "poseProfileId": "two-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.25,
+        0
+      ],
+      "nativeScale": 0.925,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "medieval-war-hammer.zip",
+        "sourceSha256": "cc2c8f42a710288846a58fa50fe17aad923de41586353380aa01c89141608119"
+      },
+      "runtimeAsset": {
+        "bytes": 466808,
+        "sha256": "c058d4d290cd93a3ba4314984824975820c6278eb6ed830109493a4bfe1aa55c",
+        "triangles": 4498,
+        "textureResolution": 256
+      },
+      "secondaryGrip": [
+        0,
+        0.45,
+        0
+      ]
+    }
+  },
+  "mace": {
+    "id": "mace",
+    "name": "Mace",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "mace-heavy",
+      "baseName": "Mace",
+      "handsRequired": 1,
+      "damageType": "bludgeoning"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 28,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "mace",
+      "studioId": "mace",
+      "visualClass": "mace",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/mace.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "one-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.15,
+        0
+      ],
+      "nativeScale": 0.359722,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "mace.zip",
+        "sourceSha256": "900218e5da3b8a1017d4e48868b8f8e419c710328873f054ff9f82e5ff7d6bb8"
+      },
+      "runtimeAsset": {
+        "bytes": 303360,
+        "sha256": "0c2b191d2d8a9d3314f332489143bc18d4f08fbd649d5029ba9ceff23787214d",
+        "triangles": 894,
+        "textureResolution": 256
+      }
+    }
+  },
+  "morning-star": {
+    "id": "morning-star",
+    "name": "Morning Star",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "morning-star",
+      "baseName": "Morning Star",
+      "handsRequired": 1,
+      "damageType": "bludgeoning"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 30,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "morning-star",
+      "studioId": "morning-star",
+      "visualClass": "morning-star",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/morning-star.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "one-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.15,
+        0
+      ],
+      "nativeScale": 0.385417,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "medieval-mace.zip",
+        "sourceSha256": "984851baa2f51f0c1875a7e5e78afcd7ef8a31ea93284d007ebbe8c276647cb7"
+      },
+      "runtimeAsset": {
+        "bytes": 334952,
+        "sha256": "e9adb44ff87d40b68bc08eee8f499d8b83294c7c7800d764f05507804d1e069d",
+        "triangles": 4800,
+        "textureResolution": 256
+      }
+    }
+  },
+  "flail": {
+    "id": "flail",
+    "name": "Flail",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "flail-light",
+      "baseName": "Flail",
+      "handsRequired": 1,
+      "damageType": "bludgeoning"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 42,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "flail",
+      "studioId": "flail",
+      "visualClass": "flail",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/flail.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "one-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.15,
+        0
+      ],
+      "nativeScale": 0.539583,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "medieval-flail.zip",
+        "sourceSha256": "b0806245e893f8466e680b6db2925f8ec8ef7975ff4de325be69f3934baa72c3"
+      },
+      "runtimeAsset": {
+        "bytes": 416084,
+        "sha256": "683728f5311725f44d23dc607d4d8275b1655cefa0eaa4e579f153073ac097eb",
+        "triangles": 4800,
+        "textureResolution": 256
+      }
+    }
+  },
+  "club": {
+    "id": "club",
+    "name": "Club",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "club",
+      "baseName": "Club",
+      "handsRequired": 1,
+      "damageType": "bludgeoning"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 28,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "club",
+      "studioId": "club",
+      "visualClass": "club",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/club.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "one-handed-swing",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.15,
+        0
+      ],
+      "nativeScale": 0.359722,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -90,
+        0,
+        0
+      ],
+      "source": {
+        "originalFilename": "neolithic_stone_club.zip",
+        "sourceSha256": "f8e7018f6df179e1a4632672abe5576b843835c2b7200d633a74a323e8d2ad18"
+      },
+      "runtimeAsset": {
+        "bytes": 183384,
+        "sha256": "89cc8421a9474360d38e2a68e024c8a8fac6206aa111007ce56cc53a21b3d9b2",
+        "triangles": 576,
+        "textureResolution": 256
+      }
+    }
+  },
+  "horse-head-staff": {
+    "id": "horse-head-staff",
+    "name": "Horse Head Staff",
+    "category": "weapon",
+    "slot": "weapon",
+    "rules": {
+      "catalogWeaponId": "staff",
+      "baseName": "Horse Head Staff",
+      "handsRequired": 1,
+      "damageType": "bludgeoning"
+    },
+    "physical": {
+      "authoredLengthInches": null,
+      "calibratedLengthInches": 60,
+      "status": "Provisional Studio length; scale and grip remain adjustable."
+    },
+    "appearance": {
+      "appearanceId": "horse-head-staff",
+      "studioId": "horse-head-staff",
+      "visualClass": "wizard-staff",
+      "representation": "optimized-gltf-v1",
+      "asset": "assets/models/weapons/batch-196/horse-head-staff.glb",
+      "attachment": "right-hand",
+      "handsRequired": 1,
+      "poseProfileId": "wizard-staff-grip",
+      "primaryAxis": [
+        0,
+        1,
+        0
+      ],
+      "grip": [
+        0,
+        0.55,
+        0
+      ],
+      "nativeScale": 0.770833,
+      "defaultSizePercent": 100,
+      "position": [
+        0.015,
+        0.05,
+        0.005
+      ],
+      "rotationDegrees": [
+        -69.201659,
+        -33.008024,
+        46.485403
+      ],
+      "source": {
+        "originalFilename": "tmk_21816kp14913_shamaanin_sauva_-_shaman_staff.zip",
+        "sourceSha256": "0f709f34a12cafa02073bb89c36ca8d86365e1b7288c17045c9a1ca808c5ab42"
+      },
+      "runtimeAsset": {
+        "bytes": 595680,
+        "sha256": "bd3328677f6d501b4b9a0d5879225422c8d064ed3a913614d3f15922afae2e6f",
+        "triangles": 4800,
+        "textureResolution": 256
+      }
     }
   },
   'chain-mail':{

@@ -1,8 +1,8 @@
 import {encodeStudioWorkspace,decodeStudioWorkspace} from './studio-workspace-codec.mjs?v=R238C181';
-import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C176';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C196';
 import { SPRITE_HEX_SCALE_PERCENT, spriteLayoutDimensions, validateSpriteModelScale, validateSpriteHexScale } from './sprite-layouts.mjs?v=R238C57';
 
-import {authoringWorkspaceSuffix} from './pose-library.mjs?v=R238C188';
+import {authoringWorkspaceSuffix} from './pose-library.mjs?v=R238C196';
 
 // Candidate and stable share an origin, so isolate their drafts by page folder.
 const scope = new URL('.', location.href).pathname;

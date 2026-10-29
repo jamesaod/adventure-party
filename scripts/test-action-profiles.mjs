@@ -42,5 +42,5 @@ borrowedCatalog.set('dual-wield',defineActionProfile({id:'dual-wield',label:'Dua
 assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).pose.animation,'TwoWeaponSlash');
 
 const wizardProfile=ACTION_PROFILE_CATALOG.get('wizard-staff-grip');
-assert.equal(wizardProfile.label,'Wizard Staff Grip');assert.equal(wizardProfile.fallbackId,null);
+assert.equal(wizardProfile.label,'Wooden Staff 1');assert.equal(wizardProfile.fallbackId,null);
 assert.equal(resolveActionPose(wizardProfile,'ready',null,borrowedCatalog).source,'fallback-sprite','Wizard captures cannot silently reuse another weapon grip');

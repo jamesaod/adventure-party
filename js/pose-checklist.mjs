@@ -1,5 +1,5 @@
-import {CAPTURE_GROUP_CATALOG,capturePosesForGroup} from './action-capture-groups.mjs?v=R238C176';
-import {ACTION_POSE_LABELS} from './action-profile-catalog.mjs?v=R238C176';
+import {CAPTURE_GROUP_CATALOG,capturePosesForGroup} from './action-capture-groups.mjs?v=R238C196';
+import {ACTION_POSE_LABELS} from './action-profile-catalog.mjs?v=R238C196';
 export function poseChecklist(library,captures={}){
   const assignments={...library.profiles,...library.sharedActionGroups};
   const ids=new Set(['one-handed-swing','death-prone']);

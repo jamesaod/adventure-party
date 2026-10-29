@@ -1,5 +1,5 @@
-import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C176';
-import {CAPTURE_GROUP_CATALOG,WEAPON_CAPTURE_POSES,SHARED_CAPTURE_GROUPS,captureGroupForPose,isSharedCaptureGroup,splitCaptureGroups} from './action-capture-groups.mjs?v=R238C176';
+import {ACTION_POSES,ACTION_PROFILE_CATALOG,DEFAULT_ACTION_PROFILE_IDS} from './action-profile-catalog.mjs?v=R238C196';
+import {CAPTURE_GROUP_CATALOG,WEAPON_CAPTURE_POSES,SHARED_CAPTURE_GROUPS,captureGroupForPose,isSharedCaptureGroup,splitCaptureGroups} from './action-capture-groups.mjs?v=R238C196';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 export const POSE_LIBRARY_SCHEMA='adventure-party.pose-library';
 export const POSE_LIBRARY_VERSION=2;

@@ -1,9 +1,9 @@
 import { unitSun } from './unit-sun-shadow.mjs?v=R238C169';
-import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C176';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C188';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C196';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C196';
 import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C93';
 
-import { ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C176';
+import { ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C196';
 
 const api = window.adventurePartySpriteSets;
 window.adventurePartySun=unitSun;

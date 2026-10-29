@@ -229,3 +229,7 @@ Studio Adjust grip includes a relative Roll around shaft slider (-180 to 180 deg
 ## Candidate Rev 194 — persistent grip calibration
 
 Supersedes Rev 193 relative roll. Equipment stores base `rotation` (XYZ degrees) plus `shaftRollDegrees`; the shared Studio/combat attachment composes base quaternion times local primaryAxis roll. Missing roll means zero, preserving every legacy grip exactly, including Rev 193 baked rotations. XYZ and position edits preserve roll; Reset grip uses model/catalog defaults. Workspace, capture/export and combat mounts retain the independent value. Copy grip settings produces versioned JSON identifying model and weapon, size, exact hand-local position, base XYZ and shaft roll; use these settings for reproducible catalog defaults, not displayed world XYZ (which depends on pose and scale). Clipboard failure exposes selectable JSON instead. No user screenshot defaults were applied.
+
+## Candidate Rev 196
+
+[Weapon batch](EQUIPMENT_BATCH_196.md) records the nine 256px, under-5K-triangle imports, nested archives, ASCII FBX handling, normalized shaft axes, preserved color, permissions and stable-ID display renames. Reuse shared catalog/capture/attachment paths.

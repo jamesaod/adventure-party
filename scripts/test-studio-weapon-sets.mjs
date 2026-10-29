@@ -36,7 +36,7 @@ await off.select({rightHand:'spear'});assert.equal(left.children.length,0);
 // just the normalizer's returned Euler values.
 const handReference=JSON.parse(fs.readFileSync(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
 const offWeapons=STUDIO_OFF_HAND_WEAPONS;
-assert.deepEqual(offWeapons.map(weapon=>weapon.id),['medieval-sword','battle-axe','short-sword','dagger']);
+assert.deepEqual(offWeapons.map(weapon=>weapon.id),['medieval-sword','battle-axe','short-sword','dagger','scimitar','broadsword','mace','morning-star','flail','club']);
 for(const id of ['wizard-staff-grip','sling']){
   assert.equal(normalizeEquipment({rightHand:id}).rightHand,id,'Removed off-hand weapons remain available in the primary hand');
   await off.select({rightHand:id});assert.equal(left.children.length,0,'Saved/selected excluded off-hand gear cannot attach');

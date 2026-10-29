@@ -1,7 +1,7 @@
 import {generateMobRules} from './mob-class-rules.mjs?v=R238C190';
-import {sampleGeneration} from './mob-generation.mjs?v=R238C182';
-import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C176';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C190';
+import {sampleGeneration} from './mob-generation.mjs?v=R238C196';
+import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C196';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C196';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C95';
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
@@ -38,6 +38,6 @@ export function createRepositoryMob(template,catalog){
 }
 if(typeof window!=='undefined'){
  const load=async path=>{const response=await fetch(new URL(path,import.meta.url));if(!response.ok)throw Error('Could not load '+path);return response.json();};
- const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/studio-models.json?v=R238C195')]);
+ const [template,catalog]=await Promise.all([load('../data/mobs/orc-male-uniformed.unit-package.json?v=R238C190'),load('../data/studio-models.json?v=R238C196')]);
  window.adventurePartyRepositoryMobs=createRepositoryMob(template,catalog);
 }
