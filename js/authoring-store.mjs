@@ -1,7 +1,7 @@
 import {ORC_FIGHTER_POSE_LIBRARY} from './orc-fighter-pose-library.mjs?v=R238C200';
 import {DEFAULT_MEDIUM_POSE_LIBRARY} from './default-pose-library.mjs?v=R238C196';
 import {createPoseLibrary,normalizePoseLibrary,poseLibrarySignature} from './pose-library.mjs?v=R238C196';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C201';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C202';
 export const SHARED_POSE_LIBRARY_ID='humanoid-medium';
 export function createAuthoringStore(storage,scope){
   const key=`adventure-party-authoring:${scope}`;
@@ -9,7 +9,7 @@ export function createAuthoringStore(storage,scope){
     const text=storage.getItem(key);if(!text)return {version:1,libraries:[],mobs:[]};
     let data;try{data=JSON.parse(text);}catch{throw Error('Authoring storage is unreadable. Export your open work before resetting storage.');}
     if(data.version!==1||!Array.isArray(data.libraries)||!Array.isArray(data.mobs))throw Error('Unsupported authoring storage.');
-    return {version:1,deletedLibraryIds:data.deletedLibraryIds||[],libraries:data.libraries.map(normalizePoseLibrary),mobs:data.mobs.map(normalizeMobDefinition)};
+    return {version:1,deletedMobIds:data.deletedMobIds||[],deletedLibraryIds:data.deletedLibraryIds||[],libraries:data.libraries.map(normalizePoseLibrary),mobs:data.mobs.map(normalizeMobDefinition)};
   }
   function write(data){try{storage.setItem(key,JSON.stringify(data));}catch{throw Error('Browser storage could not save this draft. Export JSON to keep your work.');}}
   const seeds=()=>['small','medium','large'].map(size=>createPoseLibrary({id:`humanoid-${size}`,name:size==='medium'?'Shared Pose Library':`Humanoid ${size[0].toUpperCase()+size.slice(1)}`,size})).concat(normalizePoseLibrary({...DEFAULT_MEDIUM_POSE_LIBRARY,id:'humanoid-medium-user-r16',name:'Humanoid Medium — supplied poses',revision:0}),normalizePoseLibrary(ORC_FIGHTER_POSE_LIBRARY));
@@ -31,10 +31,13 @@ export function createAuthoringStore(storage,scope){
   }
   function saveMob(value){
     const next=normalizeMobDefinition(value),data=read(),old=data.mobs.find(item=>item.id===next.id);
+    if((data.deletedMobIds||[]).includes(next.id))throw Error('This MOB was deleted. Restore it before saving.');
     if(old&&old.mob.revision!==next.mob.revision)throw Error('This MOB changed in another tab. Reopen it before saving.');
     next.mob.revision=(old?.mob.revision||0)+1;data.mobs=data.mobs.filter(item=>item.id!==next.id).concat(next);write(data);return next;
   }
-  return {deleteLibrary,libraries,library:id=>libraries().find(item=>item.id===id)||null,mobs:()=>read().mobs,mob:id=>read().mobs.find(item=>item.id===id)||null,saveLibrary,saveMob};
+  function deleteMob(id,revision){const data=read(),old=data.mobs.find(m=>m.id===id);if(old&&old.mob.revision!==revision)throw Error('This MOB changed in another tab. Reload before deleting.');data.mobs=data.mobs.filter(m=>m.id!==id);data.deletedMobIds=[...new Set([...(data.deletedMobIds||[]),id])];write(data);}
+  function restoreMob(value){const data=read();if(data.mobs.some(m=>m.id===value.id))throw Error('A MOB with this ID already exists.');data.deletedMobIds=(data.deletedMobIds||[]).filter(id=>id!==value.id);data.mobs.push(normalizeMobDefinition(value));write(data);}
+  return {deleteMob,restoreMob,deletedMobIds:()=>read().deletedMobIds||[],deleteLibrary,libraries,library:id=>libraries().find(item=>item.id===id)||null,mobs:()=>read().mobs,mob:id=>read().mobs.find(item=>item.id===id)||null,saveLibrary,saveMob};
 }
 export function browserAuthoringStore(){return createAuthoringStore(localStorage,new URL('.',location.href).pathname);}
 export function downloadAuthoringJson(value,filename){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

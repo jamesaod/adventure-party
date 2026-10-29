@@ -174,5 +174,8 @@ jobs:
       - name: Validate Orc Archer and ranged ammunition
         run: node scripts/test-orc-archer.mjs
 
+      - name: Validate shared MOB library
+        run: node scripts/test-mob-library.mjs
+
       - name: Validate repository structure and assets
         run: node scripts/validate-repo.mjs

@@ -1,5 +1,5 @@
 import {validateUnitPackage} from './unit-package.mjs';
-import {createMobDefinition,normalizeMobDefinition} from './mob-definition.mjs?v=R238C201';
+import {createMobDefinition,normalizeMobDefinition} from './mob-definition.mjs?v=R238C202';
 import {normalizePoseLibrary} from './pose-library.mjs?v=R238C196';
 import {unzipSync,strFromU8} from '../assets/vendor/three/addons/libs/fflate.module.js';
 export function mobFromStudioPackage(value){

@@ -1,7 +1,7 @@
 import { unitSun } from './unit-sun-shadow.mjs?v=R238C169';
-import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C201';
-import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C201';
-import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C201';
+import { SPRITE_DIRECTIONS, SPRITE_POSES, posesInSpriteSet, validateSpriteSetManifest } from './sprite-set-core.mjs?v=R238C202';
+import { loadStudioDraft } from './sprite-set-store.mjs?v=R238C202';
+import { spriteLayout, spriteMob } from './sprite-layouts.mjs?v=R238C202';
 
 import { ACTION_POSE_LABELS } from './action-profile-catalog.mjs?v=R238C196';
 
@@ -39,6 +39,7 @@ function makeControls() {
   setStatus.setAttribute('role', 'status');
   setStatus.style.cssText = 'margin:8px 12px;overflow-wrap:anywhere;';
   panel.append(row, setStatus);
+  if(new URLSearchParams(location.search).has('testMob')){label.hidden=true;setSelect.hidden=true;setStatus.hidden=true;studioLink.textContent='Return to MOB sheet';}
   document.querySelector('.combat-condition-actions').before(panel);
   setSelect.addEventListener('change', () => api.select(setSelect.value));
 
@@ -74,7 +75,7 @@ function makeControls() {
   combatStudioReturn.id = 'combatStudioReturnLink';
   combatStudioReturn.className = 'combat-action';
   combatStudioReturn.href = api.returnUrl();
-  combatStudioReturn.textContent = 'Return to 3d studio';
+  combatStudioReturn.textContent = new URLSearchParams(location.search).has('testMob')?'Return to MOB sheet':'Return to 3d studio';
   document.getElementById('returnButton').before(combatStudioReturn);
   document.addEventListener('adventure-party:sprite-state', refreshControls);
   refreshControls();

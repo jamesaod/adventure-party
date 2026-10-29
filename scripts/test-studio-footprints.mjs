@@ -64,7 +64,7 @@ const functions = [
   'unitDistance', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
   'searchRotatingFootprintPath', 'pathToHex', 'axialDisk',
   'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'repositoryAttacksThisRound', 'makeOrc', 'makeLegacyOrc', 'makeOrcLeader', 'makeOrcShaman',
-  'makeLargeMobTest', 'makeStudioTestMob', 'makeStudioTestPlayer', 'deployConfiguredCombatMobs', 'drawStudioSpriteMob',
+  'makeLargeMobTest', 'makeStudioTestMob', 'makeLibraryMob', 'libraryTestPlayer', 'availableCombatMobChoices', 'makeStudioTestPlayer', 'deployConfiguredCombatMobs', 'drawStudioSpriteMob',
   'drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage',
   'isStudioPlayerSpriteTarget', 'playerSpriteSetForType', 'applyPlayerSpriteSet',
   'makeFighter', 'makeFriendlyElvenRanger', 'makeTestPartyMage', 'clamp',
