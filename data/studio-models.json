@@ -238,7 +238,8 @@
       "weaponAttachmentProfileIds": [
         "uniformed-orc-one-handed-v1",
         "uniformed-orc-two-handed-sword-v1",
-        "uniformed-orc-two-handed-spear-v1"
+        "uniformed-orc-two-handed-spear-v1",
+        "uniformed-orc-battle-axe-v1"
       ]
     },
     {
@@ -303,7 +304,6 @@
     "uniformed-orc-one-handed-v1": {
       "weaponIds": [
         "medieval-sword",
-        "battle-axe",
         "short-sword",
         "dagger",
         "wizard-staff-grip",
@@ -355,6 +355,23 @@
       ],
       "status": "user-calibrated",
       "description": "Rev 163: user-supplied 100% two-handed spear grip for both uniformed male Orc models."
+    },
+    "uniformed-orc-battle-axe-v1": {
+      "weaponIds": [
+        "battle-axe"
+      ],
+      "position": [
+        -0.02,
+        0.05,
+        0.005
+      ],
+      "rotation": [
+        161,
+        -46,
+        144
+      ],
+      "status": "axis-corrected",
+      "description": "Rev 191: preserve Orc sword calibration while retaining the axe native-axis correction: Q_orcSword * inverse(Q_defaultSword) * Q_defaultAxe. Sword and axe shaft now point along the same hand direction."
     }
   },
   "studioModelIds": [

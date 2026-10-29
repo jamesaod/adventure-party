@@ -43,7 +43,7 @@ for(const weapon of STUDIO_WEAPONS){
  const settings=resolve(weapon.id);
  if((weapon.handsRequired||1)===1){
   assert.deepEqual(settings.position,[-0.020,0.050,0.005],weapon.id);
-  assert.deepEqual(settings.rotation,[161,-46,15],weapon.id);
+  assert.deepEqual(settings.rotation,weapon.id==='battle-axe'?[161,-46,144]:[161,-46,15],weapon.id);
  }else if(weapon.id==='medieval-two-handed-sword'){
   assert.deepEqual(settings.position,[-0.045,0.065,0.060]);
   assert.deepEqual(settings.rotation,[-114,-16,-30]);

@@ -59,3 +59,7 @@ Saved custom grips and captured poses are not silently rewritten. If a restored 
 Rev 163 adds the user-approved spear profile to both uniformed Orc models. [Orc Leader import](ORC_LEADER_MODEL.md) records the new source and conversion. Keep the same profile IDs on both models so future approved Orc grip changes remain shared.
 
 Rev 164 changes only the Leader back to Carl's global weapon defaults for a comparison test. The regular `male-orc` keeps all three calibration profiles above.
+
+## Rev 191: Battle Axe native-axis correction
+
+The axe and sword have different native shaft axes. Copying the sword absolute Euler rotation to the axe removed its asset alignment correction. The separate `uniformed-orc-battle-axe-v1` profile keeps position [-0.020, 0.050, 0.005] and uses XYZ rotation [161, -46, 144] degrees. Reproduce with quaternion composition `Q_orcSword * inverse(Q_defaultSword) * Q_defaultAxe`, then convert to XYZ Euler. Studio and repository combat mounts already resolve these per-weapon profiles. The sword and Orc Leader defaults stay unchanged. Existing saved custom grips remain authoritative: select the axe and use Reset grip to adopt the corrected default; recapture poses explicitly if needed. `scripts/test-repository-mobs.mjs` checks shaft alignment, the formerly wrong rotation, unique profile selection and combat recipe resolution.
