@@ -71,3 +71,7 @@ node scripts/test-mob-appearance.mjs
 ```
 
 The image test compares the actual embedded base color against an independently measured source-color reference (three-channel tolerance of 3), checks retained texture contrast, and checks linear data-map values. Passing the Rev 138 GLB as an optional argument reproduces the failure. CI runs this test; a checksum/dimension-only check is insufficient. In Studio, inspect Bayonet Stab with Spear in multiple facings and ensure the shaft has source brown tones. Verify the exact published GLB checksum after the candidate publisher completes.
+
+## Candidate Rev 199 — one-handed spear
+
+Spear now requires one hand and uses the existing `one-handed-thrust` (1H Stab) pose profile. Studio preserves an equipped shield/off-hand weapon and bypasses the two-handed support-arm solver. MOB Creator accepts spear plus shield and chooses the 1H Stab pose group. Model bytes, primary grip, scale and saved adjustments remain unchanged; previously captured poses are not rewritten. This supersedes earlier two-handed classification in this document.

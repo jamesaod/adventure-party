@@ -478,8 +478,10 @@ console.log('Studio weapon integrity, animated sword grip (4 clips × 6 facings)
 
 // Spear integration: real binary, packed 512px PBR maps and shared mount controls.
 const spear = STUDIO_WEAPONS.find(weapon => weapon.id === 'spear');
-assert.equal(spear.handsRequired, 2);
-assert.equal(spear.poseProfileId, 'two-handed-thrust');
+assert.equal(spear.handsRequired, 1);
+assert.equal(spear.secondaryGrip, undefined);
+assert.equal(solveTwoHandedGrip(THREE,{model:new THREE.Group(),attachment:{weapon:spear}}).active,false);
+assert.equal(spear.poseProfileId, 'one-handed-thrust');
 const spearAsset = glb(spear.file);
 const spearMetadata = JSON.parse(fs.readFileSync(new URL('../assets/models/weapons/spears/spear.json', import.meta.url)));
 assert.equal(spearAsset.bytes.length, spearMetadata.bytes);
@@ -519,7 +521,7 @@ assert.deepEqual(spearMount.secondaryGripOffsetInches, [1,-2,0.5]);
 assert.deepEqual(spearMount.socket.position.toArray(), [0.02,0.03,0.04]);
 assert.equal(normalizeEquipment({...spearSettings,sizePercent:125}).sizePercent,125);
 spearMount.detach();
-console.log('PASS spear: reduced binary, 512px PBR maps, 2H Stab mapping and adjustable shared mount');
+console.log('PASS spear: reduced binary, 512px PBR maps, 1H Stab mapping and adjustable shared mount');
 
 let spearShieldRemovals = 0;
 const spearSelection = vm.createContext({
@@ -534,7 +536,7 @@ const spearSelection = vm.createContext({
 });
 vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), spearSelection);
 await vm.runInContext('changeEquipment({rightHand:"spear"})', spearSelection);
-assert.equal(spearShieldRemovals,1,'Normalized spear settings clear the shield through the shared selection path');
+assert.equal(spearShieldRemovals,0,'One-handed spear preserves the shield through the shared selection path');
 
 // Color-only updates refresh the HTTP cache without resetting approved grips.
 assert.equal(spear.assetSha256, spearMetadata.sha256);

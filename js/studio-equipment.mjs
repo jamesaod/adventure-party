@@ -1,6 +1,6 @@
 import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C198';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C199';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -56,7 +56,6 @@ export const STUDIO_WEAPONS = Object.freeze([
     visualClass:SPEAR_ITEM.appearance.visualClass,poseProfileId:SPEAR_ITEM.appearance.poseProfileId,
     file:SPEAR_ITEM.appearance.asset,assetSha256:SPEAR_ITEM.appearance.runtimeAsset.sha256,handsRequired:SPEAR_ITEM.appearance.handsRequired,
     grip:Object.freeze([...SPEAR_ITEM.appearance.grip]),
-    secondaryGrip:Object.freeze([...SPEAR_ITEM.appearance.secondaryGrip]),
     primaryAxis:Object.freeze([...SPEAR_ITEM.appearance.primaryAxis]),
     nativeScale:SPEAR_ITEM.appearance.nativeScale,
     position:Object.freeze([...SPEAR_ITEM.appearance.position]),

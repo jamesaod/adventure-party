@@ -1,7 +1,7 @@
-import {resolveEquipmentLibrary,emptyEquipmentLibrary,EFFECT_OPTIONS} from './equipment-library-core.mjs?v=R238C198';
-import {readEquipmentLibrary,saveEquipmentLibrary} from './equipment-library-store.mjs?v=R238C198';
-import {ITEM_CATALOG as BASE} from './item-catalog.mjs?v=R238C198';
-import {offHandItems} from './mob-generation.mjs?v=R238C198';
+import {resolveEquipmentLibrary,emptyEquipmentLibrary,EFFECT_OPTIONS} from './equipment-library-core.mjs?v=R238C199';
+import {readEquipmentLibrary,saveEquipmentLibrary} from './equipment-library-store.mjs?v=R238C199';
+import {ITEM_CATALOG as BASE} from './item-catalog.mjs?v=R238C199';
+import {offHandItems} from './mob-generation.mjs?v=R238C199';
 import {ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C196';
 const $=id=>document.getElementById(id),clone=v=>structuredClone(v);
 let library,catalog,selected,record,dirty=false,effects=[];
