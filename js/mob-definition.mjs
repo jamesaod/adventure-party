@@ -1,5 +1,6 @@
+import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C197';
 import {normalizeSpellPreparation,prepareMobSpells} from './mob-class-rules.mjs?v=R238C190';
-import {normalizeGeneration,generationWeaponTypes,sampleGeneration} from './mob-generation.mjs?v=R238C196';
+import {normalizeGeneration,generationWeaponTypes,sampleGeneration} from './mob-generation.mjs?v=R238C197';
 import {createUnitPackage,validateUnitPackage} from './unit-package.mjs';
 import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
 import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C196';
@@ -30,7 +31,8 @@ export function createMobDefinition({id,name,modelId,library,abilities={},rules=
   }else spellcasting=null;
   spellPreparation=normalizeSpellPreparation(spellPreparation);
   const poseLibrary=normalizePoseLibrary(library);
-  if(generation){generation=normalizeGeneration(generation);weaponTypes=[...new Set([...weaponTypes,...generationWeaponTypes(generation)])];if(generation.kind==='unique'){const fixed=sampleGeneration(generation);character={...character,classId:fixed.classId,level:fixed.level};equipment=fixed.equipment;}}
+  const equipmentCatalog=resolveEquipmentLibrary(references.equipmentLibrary);
+  if(generation){generation=normalizeGeneration(generation,{catalog:equipmentCatalog});weaponTypes=[...new Set([...weaponTypes,...generationWeaponTypes(generation,equipmentCatalog)])];if(generation.kind==='unique'){const fixed=sampleGeneration(generation,Math.random,equipmentCatalog);character={...character,classId:fixed.classId,level:fixed.level};equipment=fixed.equipment;}}
   if(generation){const levels=generation.kind==='unique'?[generation.fixed]:generation.classLevels.filter(row=>row.weight>0);for(const row of levels)if(spellPreparation[row.classId]?.mode==='prepared')prepareMobSpells(row.classId,row.level,scores,spellPreparation);}
   return createUnitPackage({id,name,modelId,character:{...character,abilities:scores,rules:normalizeMobRules(rules)},actionProfiles:weaponTypes,equipment,
     attachments,references:{...structuredClone(references),poseFallbacks:POSE_FALLBACKS,poseLibrary},mob:{authoringVersion:1,spellPreparation,...(generation?{generation}:{}),revision:number(revision,'Revision',0,100000,true),species:String(species).slice(0,100),size,footprint,specialAbilities,spellcasting,notes:String(notes).slice(0,4000)}});
