@@ -1,4 +1,4 @@
-import {createRepositoryMob} from './repository-mobs.mjs?v=R238C202';
+import {createRepositoryMob} from './repository-mobs.mjs?v=R238C203';
 import {appearanceRecipeForMob} from './mob-appearance.mjs?v=R238C202';
 import {generateCombatSpriteSet} from './combat-mob-renderer.mjs?v=R238C202';
 // A deterministic example of a weighted template, never an implicit saved roll.

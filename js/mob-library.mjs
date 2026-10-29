@@ -1,12 +1,14 @@
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C202';
-import {normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C202';
-import {normalizeGeneration} from './mob-generation.mjs?v=R238C202';
+import {hasNoClass,monsterBaseline} from './monster-baselines.mjs?v=R238C203';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C203';
+import {normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C203';
+import {normalizeGeneration} from './mob-generation.mjs?v=R238C203';
 import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C202';
 export function encounterReadiness(mob,catalog){
  const reasons=[];
  try{mob=normalizeMobDefinition(mob);const appearance=mob.references.studioAppearance||mob.references.poseLibrary.studioAppearance;
  if(!catalog.models.some(m=>m.id===mob.modelId))reasons.push('Model is unavailable.');
  if(!appearance||appearance.modelId!==mob.modelId)reasons.push('Link the model and footprint from Studio.');
+ if(hasNoClass(mob.mob.generation))monsterBaseline(mob.character.rules,mob.mob.species);
  const coverage=mobReadiness(mob);if(coverage.missing.length)reasons.push(`${coverage.missing.length} required poses have no assigned frame or allowed fallback.`);
  normalizeGeneration(mob.mob.generation,{complete:true,catalog:resolveEquipmentLibrary(mob.references.equipmentLibrary)});
  }catch(error){reasons.push(error.message);}

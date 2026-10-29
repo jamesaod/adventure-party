@@ -1,4 +1,4 @@
-import {MOB_SPELLS,normalizeSpellPreparation} from './mob-class-rules.mjs?v=R238C190';
+import {MOB_SPELLS,normalizeSpellPreparation} from './mob-class-rules.mjs?v=R238C203';
 export function createMobSpellEditor(root,onChange){
  let value=normalizeSpellPreparation();
  function render(){root.replaceChildren();for(const classId of ['mage','cleric']){

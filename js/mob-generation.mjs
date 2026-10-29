@@ -6,7 +6,7 @@ export const offHandItems=(catalog=ITEM_CATALOG)=>Object.values(catalog).filter(
 export const needsBothHands=(id,catalog=ITEM_CATALOG)=>(catalog[id]?.rules?.handsRequired||catalog[id]?.appearance?.handsRequired||1)===2;
 const integer=(v,min,max,label)=>{if(!Number.isInteger(v)||v<min||v>max)throw Error(`Invalid ${label}.`);return v;};
 const item=(id,choices,label)=>{if(id!=='none'&&!choices.some(i=>i.id===id))throw Error(`Invalid ${label} item.`);return id;};
-const classLevel=value=>{if(!MOB_CLASSES.some(c=>c.id===value?.classId))throw Error('Choose a supported character class.');return {classId:value.classId,level:value.classId==='none'?1:integer(value.level,1,20,'class level')};};
+const classLevel=value=>{if(!value?.classId)value={...value,classId:'none'};if(!MOB_CLASSES.some(c=>c.id===value?.classId))throw Error('Choose a supported character class.');return {classId:value.classId,level:value.classId==='none'?1:integer(value.level,1,20,'class level')};};
 export function distribution(rows,normalize,label,{complete=false}={}){
  if(!Array.isArray(rows)||rows.length>100)throw Error(`Invalid ${label} distribution.`);
  const seen=new Set();let total=0;
@@ -24,7 +24,7 @@ export function normalizeGeneration(value,{complete=false,catalog=ITEM_CATALOG}=
   const fixed={...classLevel(value.fixed),primary:item(value.fixed?.primary,primaryItems(catalog),'primary'),offHand:item(value.fixed?.offHand,offHandItems(catalog),'off-hand')};
   if(needsBothHands(fixed.primary,catalog)&&fixed.offHand!=='none')throw Error('Two-handed weapons require an empty off hand.');return {...base,fixed};
  }
- return {...base,classLevels:distribution(value.classLevels,classLevel,'Class/level',{complete}),primary:distribution(value.primary,r=>({itemId:item(r.itemId,primaryItems(catalog),'primary')}),'Primary weapon',{complete}),offHand:distribution(value.offHand,r=>({itemId:item(r.itemId,offHandItems(catalog),'off-hand')}),'Off hand',{complete})};
+ return {...base,classLevels:distribution(value.classLevels?.length?value.classLevels:[{classId:'none',level:1,weight:100}],classLevel,'Class/level',{complete}),primary:distribution(value.primary,r=>({itemId:item(r.itemId,primaryItems(catalog),'primary')}),'Primary weapon',{complete}),offHand:distribution(value.offHand,r=>({itemId:item(r.itemId,offHandItems(catalog),'off-hand')}),'Off hand',{complete})};
 }
 export function defaultGeneration(character={},equipment=[],catalog=ITEM_CATALOG){return {version:1,kind:'unique',fixed:{classId:MOB_CLASSES.some(c=>c.id===character.classId)?character.classId:'none',level:character.level||1,primary:equipment.find(i=>i.slot==='primary')?.itemId||'none',offHand:equipment.find(i=>['off-hand','shield'].includes(i.slot))?.itemId||'none'},alwaysItems:equipment.filter(i=>!['primary','off-hand','shield'].includes(i.slot)&&catalog[i.itemId]).map(i=>({itemId:i.itemId,quantity:i.quantity||1}))};}
 export function sampleGeneration(value,rng=Math.random,catalog=ITEM_CATALOG){

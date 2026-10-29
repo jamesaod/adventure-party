@@ -1,6 +1,7 @@
+import {MONSTER_BASELINES} from './monster-baselines.mjs?v=R238C203';
 import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C201';
-import {normalizeSpellPreparation,prepareMobSpells} from './mob-class-rules.mjs?v=R238C190';
-import {normalizeGeneration,generationWeaponTypes,sampleGeneration} from './mob-generation.mjs?v=R238C201';
+import {normalizeSpellPreparation,prepareMobSpells} from './mob-class-rules.mjs?v=R238C203';
+import {normalizeGeneration,generationWeaponTypes,sampleGeneration} from './mob-generation.mjs?v=R238C203';
 import {createUnitPackage,validateUnitPackage} from './unit-package.mjs';
 import {POSE_FALLBACKS} from './pose-fallbacks.mjs?v=R238C176';
 import {normalizePoseLibrary,validAuthoringId,poseLibraryCoverage} from './pose-library.mjs?v=R238C196';
@@ -13,7 +14,8 @@ export function normalizeMobRules(value={}){
   const hpMode=value.hpMode==='fixed'?'fixed':'rolled';
   const hitDice=String(value.hitDice||'1d8').trim();
   if(!/^(?:[1-9]\d?|100)d(?:[1-9]\d?|100)(?:[+-]\d{1,3})?$/.test(hitDice))throw Error('Hit dice must be an expression such as 2d8+2.');
-  return {classRules:value.classRules==='class'?'class':'authored',overrideHp:value.overrideHp===true,overrideThaco:value.overrideThaco===true,overrideAttacks:value.overrideAttacks===true,system:'adnd-2e',hpMode,hitDice,maxHp:number(value.maxHp??8,'Maximum HP',1,100000,true),ac:number(value.ac??10,'AC',-20,20),thaco:number(value.thaco??20,'THAC0',-20,30),move:number(value.move??12,'Movement',0,100),attacksPerRound:number(value.attacksPerRound??1,'Attacks per round',0.5,20),morale:number(value.morale??10,'Morale',2,20,true),xpValue:number(value.xpValue??0,'XP',0,10000000,true)};
+  const monsterBaseline=value.monsterBaseline??'auto';if(!['auto','authored',...Object.keys(MONSTER_BASELINES)].includes(monsterBaseline))throw Error('Unknown monster baseline.');
+  return {monsterBaseline,minimumHp:number(value.minimumHp??1,'Minimum HP',1,100000,true),classRules:value.classRules==='class'?'class':'authored',overrideHp:value.overrideHp===true,overrideThaco:value.overrideThaco===true,overrideAttacks:value.overrideAttacks===true,system:'adnd-2e',hpMode,hitDice,maxHp:number(value.maxHp??8,'Maximum HP',1,100000,true),ac:number(value.ac??10,'AC',-20,20),thaco:number(value.thaco??20,'THAC0',-20,30),move:number(value.move??12,'Movement',0,100),attacksPerRound:number(value.attacksPerRound??1,'Attacks per round',0.5,20),morale:number(value.morale??10,'Morale',2,20,true),xpValue:number(value.xpValue??0,'XP',0,10000000,true)};
 }
 export function createMobDefinition({id,name,modelId,library,abilities={},rules={},weaponTypes=['unarmed'],species='Humanoid',size='medium',footprint='single',specialAbilities=[],spellcasting=null,notes='',revision=0,equipment=[],attachments=null,references={},character={},generation=null,spellPreparation={},heightInches=null,encounterEnabled=false}){
   if(typeof name!=='string'||!name.trim()||name.length>160)throw Error('Enter a MOB name up to 160 characters.');

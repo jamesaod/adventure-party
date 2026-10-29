@@ -15,3 +15,5 @@ Add a normalized Unit Package under `data/mobs/` and one unique manifest entry i
 `js/mob-library.mjs` owns merge/readiness/availability; `authoring-store.mjs` owns browser persistence and revision checks; `repository-mobs.mjs` adapts packages to existing combat rules and appearance recipes. `mob-preview.mjs` uses `combat-mob-renderer.mjs` for the sheet and catalog. Candidate and stable browser stores are isolated by path. Unit height is `mob.heightInches`; availability is `mob.encounterEnabled`. Old browser drafts default OFF; the published manifest seeds default ON.
 
 Validation: `node scripts/test-mob-library.mjs` covers merging, deduplication, enable/disable, missing data, height roundtrip, scaling, stale edits, deletion/restore and storage isolation. Existing repository-MOB, equipment, pose and roster tests remain required.
+
+For Minimum HP and no-class source selection, see [Monster baselines](MONSTER_BASELINES.md).
