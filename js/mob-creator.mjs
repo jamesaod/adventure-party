@@ -1,6 +1,6 @@
 import {monsterBaseline} from './monster-baselines.mjs?v=R238C203';
 import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C204';
-import {renderMobPreview} from './mob-preview.mjs?v=R238C204';
+import {renderMobPreview} from './mob-preview.mjs?v=R238C205';
 import {resolveEquipmentLibrary,equipmentSnapshot} from './equipment-library-core.mjs?v=R238C204';
 import {readEquipmentLibrary} from './equipment-library-store.mjs?v=R238C204';
 import {generateMobRules,classProgression} from './mob-class-rules.mjs?v=R238C203';

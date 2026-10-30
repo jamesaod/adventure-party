@@ -1,3 +1,5 @@
+import {createBandedLighting,normalizedShading} from './banded-lighting.mjs?v=R238C205';
+const bandedLighting=createBandedLighting();
 import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C169';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
@@ -47,7 +49,7 @@ const LIVE_PREVIEW_FPS = 12;
 
 const DEFAULT_LIGHTING = Object.freeze({
   ambientIntensity: 1, ambientColor: '#ffffff', keyIntensity: 2.3,
-  keyColor: '#ffffff', keyElevation: 45, keyDirection: 'NW'
+  keyColor: '#ffffff', keyElevation: 45, keyDirection: 'NW', shading: 'standard'
 });
 
 // The shared asset format still accepts older sizes up to 2000%.
@@ -92,7 +94,7 @@ const ui = Object.fromEntries([
   'ModelScale', 'ModelScaleValue', 'BattlefieldSize', 'LightingLockNote', 'LightingFields',
   'HeightRuler', 'ModelHeight', 'ModelHeightValue',
   'AmbientIntensity', 'AmbientIntensityValue', 'AmbientColor',
-  'KeyIntensity', 'KeyIntensityValue', 'KeyColor', 'KeyElevation', 'KeyElevationValue', 'KeyDirection',
+  'Shading', 'KeyIntensity', 'KeyIntensityValue', 'KeyColor', 'KeyElevation', 'KeyElevationValue', 'KeyDirection',
   'Brightness', 'BrightnessValue', 'Contrast', 'ContrastValue',
   'Hue', 'HueValue', 'Saturation', 'SaturationValue', 'ResetColorsButton', 'Outline', 'OutlineValue', 'Clip',
   'PlayButton', 'RestartButton', 'Speed', 'Timeline', 'Time', 'AnimationSummary', 'AnimationWarning',
@@ -313,7 +315,7 @@ function syncCaptureLock(_locked) {
     control.disabled = locked || !state.modelReady;
   }
   updateModelScaleAvailability();
-  for (const control of [ui.AmbientIntensity, ui.AmbientColor, ui.KeyIntensity, ui.KeyColor, ui.KeyElevation, ui.KeyDirection]) {
+  for (const control of [ui.Shading, ui.AmbientIntensity, ui.AmbientColor, ui.KeyIntensity, ui.KeyColor, ui.KeyElevation, ui.KeyDirection]) {
     control.disabled = locked || !state.modelReady;
   }
   ui.LightingLockNote.textContent = locked
@@ -617,6 +619,7 @@ function normalizedLighting(value = {}) {
     if (/^#[0-9a-f]{6}$/i.test(value[key] || '')) result[key] = value[key].toLowerCase();
   }
   if (HEX_FACINGS.some(facing => facing.id === value.keyDirection)) result.keyDirection = value.keyDirection;
+  result.shading=normalizedShading(value.shading);
   if (value.legacyRig === 'rev47') result.legacyRig = 'rev47';
   return result;
 }
@@ -632,6 +635,7 @@ function updateLighting() {
   ui.KeyElevation.value = String(light.keyElevation);
   ui.KeyElevationValue.textContent = `${light.keyElevation}°`;
   ui.KeyDirection.value = light.keyDirection;
+  ui.Shading.value=normalizedShading(light.shading);
   const legacy = light.legacyRig === 'rev47';
   ui.LightingFields.hidden = legacy;
   if (ambientLight) {
@@ -1865,7 +1869,7 @@ function renderPreviews(timestamp) {
     turntable.rotation.y = HEX_FACINGS[index].yawRadians;
     renderer.setViewport(x, y, state.width, state.height);
     renderer.setScissor(x, y, state.width, state.height);
-    renderer.render(scene, pixelCamera);
+    bandedLighting.render(renderer,scene,pixelCamera,state.lighting.shading);
   }
   renderer.setScissorTest(false);
   renderer.readRenderTargetPixels(atlasTarget, 0, 0, atlasTarget.width, atlasTarget.height, atlasSource);
@@ -1973,7 +1977,7 @@ function tick(timestamp) {
     renderer.clear(true, true, true);
     if (!state.spriteOnlyFallback) {
       updateSunShadowView();
-      renderer.render(scene, mainCamera);
+      bandedLighting.render(renderer,scene,mainCamera,state.lighting.shading);
       updateHeightGuide(timestamp);
     }
     state.mainDirty = false;
@@ -2699,9 +2703,9 @@ function bindControls() {
   for (const [name, key, divisor] of [
     ['AmbientIntensity', 'ambientIntensity', 100], ['KeyIntensity', 'keyIntensity', 100],
     ['KeyElevation', 'keyElevation', 1], ['AmbientColor', 'ambientColor'],
-    ['KeyColor', 'keyColor'], ['KeyDirection', 'keyDirection']
+    ['KeyColor', 'keyColor'], ['KeyDirection', 'keyDirection'], ['Shading','shading']
   ]) {
-    ui[name].addEventListener(name === 'KeyDirection' ? 'change' : 'input', () => {
+    ui[name].addEventListener(['KeyDirection','Shading'].includes(name) ? 'change' : 'input', () => {
       state.lighting[key] = divisor ? Number(ui[name].value) / divisor : ui[name].value;
       poseCapture?.invalidateCaptures('Lighting changed');
       updateLighting();
@@ -2856,6 +2860,7 @@ function bindControls() {
     groundShadowMaterial?.dispose();
     if(sunShadowMesh){sunShadowMesh.geometry.dispose();sunShadowMesh.material.dispose();}
     atlasTarget?.dispose();
+    bandedLighting.dispose();
     renderer?.dispose();
   });
 }
