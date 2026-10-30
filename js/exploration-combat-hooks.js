@@ -1,5 +1,4 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
-let explorationCombatScenery=[];
 const explorationFloorImage=new Image(),explorationWallImage=new Image();
 const explorationMaterialTiles=new WeakMap();
 function explorationMaterialTile(image){
@@ -146,9 +145,6 @@ async function startExplorationCombat(){
     request.previous=saved.encounters[request.event.id]||request.previous;request.player=saved.player||request.player;
     explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';explorationWallImage.src='assets/textures/exploration/wall.png?v=R238C206';
     await Promise.all([explorationFloorImage.decode(),explorationWallImage.decode()]);
-    const sceneryModule=await import('./exploration-combat-scenery.mjs?v=R238C216');
-    const terrain=explorationEncounterApi.terrainForEncounter(request.map,request.origin,new Set(request.openDoors));
-    explorationCombatScenery=await sceneryModule.createCombatScenery(request.map,terrain,new Set(request.openDoors));
     selectedMobEncounter='custom';combatMobRoster.length=0;
     const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';

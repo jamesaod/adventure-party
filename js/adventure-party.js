@@ -30223,7 +30223,8 @@ function draw(){
     depth queue. Units/fog can still correctly cover the outline afterward.
   */
   const sceneWalls=explorationTerrain?architecturalWalls.filter(w=>isArchitecturalWallVisibleToFriendlyParty(w)):architecturalWalls;
-  if(!explorationTerrain){drawArchitecturalWallShapeOutline(sceneWalls);drawArchitecturalWallTopOutline(sceneWalls);}
+  drawArchitecturalWallShapeOutline(sceneWalls);
+  drawArchitecturalWallTopOutline(sceneWalls);
 
   drawSpellAreaEffects();
 
@@ -30237,16 +30238,7 @@ function draw(){
     actors.push({sortY:c.y,sortX:c.x,fn:()=>drawExplorationTorch(torch)});
   }
 
-  if(explorationTerrain){
-    const visibleIds=new Set(sceneWalls.map(w=>w.id));
-    for(const piece of explorationCombatScenery){
-      if(piece.kind!=="door"&&!piece.wallIds.some(id=>visibleIds.has(id)))continue;
-      const c=screenPointForWorld(piece);
-      actors.push({sortY:c.y+(piece.sortY-piece.y),sortX:c.x,fn:()=>{ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.drawImage(piece.image,c.x-piece.width/2,c.y-piece.height/2,piece.width,piece.height);ctx.restore();}});
-    }
-  }
-
-  for(const wall of explorationTerrain?[]:sceneWalls){
+  for(const wall of sceneWalls){
     const a=screenPointForWorld(wall.a);
     const b=screenPointForWorld(wall.b);
     actors.push({

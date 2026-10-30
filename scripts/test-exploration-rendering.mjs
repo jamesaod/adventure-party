@@ -6,7 +6,7 @@ const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfun
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationCombatScenery:[],adventurePartySun:sun,
+  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
     visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
@@ -69,4 +69,6 @@ const closedDoor=explorationDoor(undefined,undefined),openDoor=explorationDoor(u
 assert.equal(CELL,3);assert.equal(HEIGHT,3.5);assert.equal(closedDoor.hinge.rotation.y,0);assert.equal(openDoor.hinge.rotation.y,-Math.PI/2);
 assert.equal(closedDoor.root.children.length,4);assert.equal(closedDoor.hinge.children.length,1);
 assert.equal(closedDoor.hinge.children[0].geometry.parameters.width,2.5);
-console.log('PASS shared exploration door geometry, open/closed leaves and combat wall-boundary mapping');
+assert(terrain.walls.every(w=>w.height===35&&w.thickness===3));
+assert(!hooks.includes('createCombatScenery('),'Combat must use compact walls instead of full-height scenery');
+console.log('PASS compact combat wall dimensions and shared exploration door geometry');

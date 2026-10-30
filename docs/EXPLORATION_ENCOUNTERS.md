@@ -58,3 +58,7 @@ The exploration floor conversion, tactical collision/LOS, 50% grid and unit-rend
 ## Candidate Rev 217 - restore 1:1 scale
 
 One exploration square again spans one tactical hex width. The shared terrain projection drives floor, wall/door scenery size, torch placement and collision together. This supersedes the Rev 212 expansion; current 3D wall/door materials, loading gate and 50% grid remain. The five-square crop and tactical movement rules are unchanged.
+
+## Candidate Rev 218 - restore compact combat walls
+
+Reverts the Rev 216 combat scenery presentation to the existing tactical wall renderer (35px height, 3px thickness). The 1:1 terrain projection, filtered exploration textures, torchlight, 50% grid and unit-render loading gate remain. Shared full-height geometry still serves first-person exploration; combat no longer creates the cached 3D wall/door scenery.
