@@ -279,3 +279,5 @@ Exploration startup now has explicit loading/recovery UI and versioned navigatio
 - Rev 214: Exploration combat filters original textures into cached small material tiles and imports map torches through existing illuminationSources. Floor LOS presentation uses architectural polygons; do not restore wall-edge hex-center masking or indoor test-sun shadows. See docs/EXPLORATION_ENCOUNTERS.md.
 
 - Rev 215: showCombat must await every initial unit appearance promise before uncovering the battlefield. Keep texture prefiltering when changing repeat size. See docs/EXPLORATION_ENCOUNTERS.md and test-exploration-rendering.mjs.
+
+- Rev 216: Share exploration materials and door geometry through exploration-materials.mjs. Combat wall/door snapshots use exploration-combat-scenery.mjs and the existing depth queue. Do not revert to stretched wall-strip textures. See docs/EXPLORATION_ENCOUNTERS.md.

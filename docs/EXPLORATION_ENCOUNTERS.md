@@ -46,3 +46,11 @@ Regression tests cover polygon-based floor masking, cached texture reduction, re
 Combat stone repeats at one exploration cell (half Rev 214 in each floor dimension), retaining progressive 64px prefiltering and enabling smoothing only for the floor/wall material passes. Tactical grid opacity is 50%. Original source images and unit pixel sampling are unchanged. Canvas scaling reference: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images .
 
 showCombat covers the battlefield with Please wait, rendering Units until all initial unit appearance promises finish. It follows superseding promises and reports render failure or a two-minute timeout with Retry, rather than revealing fallback sprites. The same gate is used by ordinary combat and exploration entry. No extra render jobs are started by the gate.
+
+## Candidate Rev 216 - shared exploration wall and door meshes
+
+exploration-materials.mjs is now the common source for the original sRGB textures, Lambert materials, anisotropic filtering and framed hinged-door geometry. Both the first-person exploration scene and combat use it. Combat creates the same 3x3x3.5 stone block geometry for wall cells bordering floor. Closed and open doors use their exploration hinge pose.
+
+exploration-combat-scenery.mjs renders these meshes through an orthographic camera aligned to the 1:2 tactical projection, caches the small set of wall/door images, then disposes its WebGL context. Existing combat actors depth-sort the cached scenery with unit sprites. This avoids new WebGL work every combat frame. Wall sprites retain full exploration height and can obscure units behind foreground walls; a cutaway presentation is a possible later refinement. Lighting of the cached wall art uses the exploration hemisphere/lantern setup; existing map torch floor lighting remains. Real-time wall relighting and interactive combat doors are not part of this pass.
+
+The exploration floor conversion, tactical collision/LOS, 50% grid and unit-render wait remain. Startup waits for scenery preparation as well. Tests cover shared door dimensions/hinges, mapping of visual wall cells to existing collision boundaries, and open/closed snapshot poses. Browser QA walks through both exploration doors and enters combat using the shared materials.
