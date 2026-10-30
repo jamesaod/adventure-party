@@ -1,18 +1,32 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
 const explorationFloorImage=new Image(),explorationWallImage=new Image();
+const explorationMaterialTiles=new WeakMap();
+function explorationMaterialTile(image){
+  if(!image.complete||!image.naturalWidth)return null;
+  if(explorationMaterialTiles.has(image))return explorationMaterialTiles.get(image);
+  // Prefilter once before the pixel-art battlefield samples a small repeat.
+  // Progressive reduction removes high-frequency grain instead of aliasing it.
+  let tile=image,width=image.naturalWidth,height=image.naturalHeight;
+  while(width>64||height>64){
+    const next=document.createElement('canvas');next.width=Math.max(64,Math.ceil(width/2));next.height=Math.max(64,Math.ceil(height/2));
+    const target=next.getContext('2d');target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';target.drawImage(tile,0,0,next.width,next.height);
+    tile=next;width=next.width;height=next.height;
+  }
+  explorationMaterialTiles.set(image,tile);return tile;
+}
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
 function explorationFloorPatternForView(){
   if(!explorationFloorImage.complete||!explorationFloorImage.naturalWidth)return null;
-  const pattern=ctx.createPattern(explorationFloorImage,'repeat');if(!pattern)return null;
+  const tile=explorationMaterialTile(explorationFloorImage),pattern=ctx.createPattern(tile,'repeat');if(!pattern)return null;
   const origin=screenPointForWorld({x:0,y:0});
-  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/explorationFloorImage.naturalWidth,0,0,explorationTerrain.cellH/explorationFloorImage.naturalHeight,origin.x-explorationTerrain.cellW/2,origin.y-explorationTerrain.cellH/2]));return pattern;
+  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW*2/tile.width,0,0,explorationTerrain.cellH*2/tile.height,origin.x-explorationTerrain.cellW/2,origin.y-explorationTerrain.cellH/2]));return pattern;
 }
 function explorationWallPattern(target,wall,height){
   if(!explorationWallImage.complete||!explorationWallImage.naturalWidth)return null;
-  const pattern=target.createPattern(explorationWallImage,'repeat');if(!pattern)return null;
+  const tile=explorationMaterialTile(explorationWallImage),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
   const origin=screenPointForWorld(wall.a);
-  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/explorationWallImage.naturalWidth,0,0,height/explorationWallImage.naturalHeight,origin.x,origin.y-height]));return pattern;
+  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW*2/tile.width,0,0,height/tile.height,origin.x,origin.y-height]));return pattern;
 }
 function clipExplorationFloor(){
   ctx.beginPath();for(const space of architecturalSpaces){const points=space.polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();
@@ -20,6 +34,27 @@ function clipExplorationFloor(){
 function drawExplorationDarknessVolumes(){
   if(typeof r222DrawDarknessVolume!=='function')return;
   for(const effect of game.areaEffects||[])if(effect?.type==='darkness')r222DrawDarknessVolume(effect);
+}
+function drawExplorationVisibilityMask(){
+  const observers=friendlyVisibilityObservers().map(observer=>({observer,context:observerVisibilityContext(observer)})).filter(e=>e.context);
+  if(!observers.length)return;
+  const mask=drawExplorationVisibilityMask.canvas||(drawExplorationVisibilityMask.canvas=document.createElement('canvas'));
+  if(mask.width!==BATTLEFIELD_LOGICAL_WIDTH||mask.height!==BATTLEFIELD_LOGICAL_HEIGHT){mask.width=BATTLEFIELD_LOGICAL_WIDTH;mask.height=BATTLEFIELD_LOGICAL_HEIGHT;}
+  const target=mask.getContext('2d');target.clearRect(0,0,mask.width,mask.height);target.globalCompositeOperation='source-over';target.fillStyle='rgba(0,0,0,0.33)';target.fillRect(0,0,mask.width,mask.height);
+  target.globalCompositeOperation='destination-out';target.fillStyle='#000';
+  for(const entry of observers)if(tracePolygonOnContext(target,entry.context.polygon.map(screenPointForWorld)))target.fill();
+  // Obscuring spell volumes retain their tactical visibility behavior.
+  if(hasActiveObscuringLosVolume()){
+    target.globalCompositeOperation='source-over';target.fillStyle='rgba(0,0,0,0.33)';
+    for(const tile of visibleHexes())if(observers.every(e=>obscuringVolumeBlocksLineBetweenHexes(e.observer,tile))&&tracePolygonOnContext(target,hexScreenVertices(tile.x,tile.y)))target.fill();
+  }
+  target.globalCompositeOperation='source-over';ctx.drawImage(mask,0,0);
+}
+function drawExplorationTorch(torch){
+  const c=hexCenter(torch.x,torch.y);ctx.save();
+  ctx.strokeStyle='#38251b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x,c.y-23);ctx.stroke();
+  ctx.fillStyle='#ff9c31';ctx.beginPath();ctx.moveTo(c.x-4,c.y-22);ctx.quadraticCurveTo(c.x-6,c.y-28,c.x+1,c.y-34);ctx.quadraticCurveTo(c.x+6,c.y-25,c.x+4,c.y-22);ctx.fill();
+  ctx.fillStyle='#ffe9a0';ctx.beginPath();ctx.ellipse(c.x,c.y-24,2,4,0,0,Math.PI*2);ctx.fill();ctx.restore();
 }
 
 function configureExplorationTerrain(){
@@ -30,6 +65,13 @@ function configureExplorationTerrain(){
   rebuildArchitecturalBlockedHexes();
   walls.clear();
   for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(!explorationTerrain.walkableHex(x,y))walls.add(key(x,y));
+  const floor=[];for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(!isWall(x,y))floor.push({x,y,world:worldPointForHex(x,y)});
+  explorationTerrain.torches=(request.map.torches||[]).flatMap((t,i)=>{
+    const {bounds}=explorationTerrain;if(t.x<bounds.left||t.x>bounds.right||t.z<bounds.top||t.z>bounds.bottom)return [];
+    const world=explorationTerrain.project(t.x,t.z),nearest=floor.reduce((best,p)=>!best||Math.hypot(p.world.x-world.x,p.world.y-world.y)<Math.hypot(best.world.x-world.x,best.world.y-world.y)?p:best,null);
+    if(!nearest||Math.hypot(nearest.world.x-world.x,nearest.world.y-world.y)>HEX_W)return [];
+    return [{id:'exploration-torch-'+i,sourceKind:'torch',sourceName:'Torch',x:nearest.x,y:nearest.y,radiusHexes:3,intensity:1.2,color:[255,166,77]}];
+  });
 }
 function explorationUnits(){
   const request=explorationEncounter,saved=request.previous;
@@ -86,7 +128,7 @@ async function startExplorationCombat(){
   if(new URLSearchParams(location.search).get('explorationCombat')!=='1')return;
   const panel=document.createElement('section');panel.id='explorationCombatStartup';panel.setAttribute('role','status');panel.style.cssText='position:fixed;inset:0;z-index:100000;background:#10101b;color:#83e7e8;display:grid;place-content:center;gap:20px;padding:30px;text-align:center';
   const heading=document.createElement('h1');heading.textContent='Preparing encounter';const status=document.createElement('p');status.textContent='Loading combat assets and restoring the map encounter…';
-  const back=document.createElement('a');back.textContent='Return to exploration';back.href='exploration.html?resumeEncounter=1&v=R238C213';
+  const back=document.createElement('a');back.textContent='Return to exploration';back.href='exploration.html?resumeEncounter=1&v=R238C214';
   const retry=document.createElement('button');retry.textContent='Retry encounter';retry.hidden=true;retry.onclick=()=>{const url=new URL(location.href);url.searchParams.set('gameReload',String(Date.now()));location.replace(url.href);};
   panel.append(heading,status,back,retry);document.body.append(panel);
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
@@ -94,7 +136,7 @@ async function startExplorationCombat(){
     await window.adventurePartyGameStartup.ready;
     explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C212');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
-    if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C213');back.href='exploration.html?'+safe;}
+    if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C214');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));

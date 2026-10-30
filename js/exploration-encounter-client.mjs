@@ -19,7 +19,7 @@ export function createEncounterClient(map,context){
       const event=encounterAt(map,state,progress);if(!event)return false;
       const old=progress.encounters[event.id];
       const request={map,event,scope,test:!!context,returnSearch:location.search,origin:old?.origin||{x:state.x,z:state.z},position:{x:state.x,z:state.z,facing:state.facing},returnPosition:previous,openDoors:[...state.openDoors],player:progress.player,previous:old};
-      sessionStorage.setItem(HANDOFF_KEY,JSON.stringify(request));location.assign('index.html?explorationCombat=1&v=R238C213');return true;
+      sessionStorage.setItem(HANDOFF_KEY,JSON.stringify(request));location.assign('index.html?explorationCombat=1&v=R238C214');return true;
     },
     defeated:()=>progress.player?.hp<=0,
     reset(){progress={encounters:{},player:null};storage.setItem(progressKey(scope),JSON.stringify(progress));},

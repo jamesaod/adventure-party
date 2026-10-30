@@ -35,3 +35,12 @@ makeFighter:()=>({id:'player',hp:30,alive:true}),makeLibraryMob:()=>({hp:8,alive
 vm.createContext(sandbox);vm.runInContext(hook,sandbox);
 const roster=sandbox.explorationUnits();assert.equal(roster.player.id,'player','Engine initiative resolves its controlled character by stable player ID');assert.equal(roster.player.controller,'player');assert.equal(roster.enemies.length,1);assert.notEqual(roster.enemies[0].x,roster.player.x);
 console.log('PASS encounter deployment preserves production player identity and non-overlapping opponents');
+sandbox.explorationEncounter={map,origin:{x:3,z:6},openDoors:['3,7','3,9']};
+Object.assign(sandbox,{explorationEncounterApi:{terrainForEncounter},HEX_ROW:31.5,MAP_MIN_X:-20,MAP_MAX_X:19,MAP_MIN_Y:-16,MAP_MAX_Y:15,
+  walls:new Set(),rebuildArchitecturalBlockedHexes(){},worldPointForHex:(x,y)=>({x:x*64+y*32,y:y*31.5})});
+sandbox.isWall=(x,y)=>sandbox.walls.has(`${x},${y}`);
+sandbox.configureExplorationTerrain();
+assert(sandbox.explorationTerrain.torches.length>0);
+for(const torch of sandbox.explorationTerrain.torches){assert.equal(sandbox.isWall(torch.x,torch.y),false);assert.equal(torch.sourceKind,'torch');assert.equal(torch.radiusHexes,3);}
+assert(sandbox.explorationTerrain.torches.length<map.torches.length,'Exclude torches beyond the bounded encounter');
+console.log('PASS map torches project onto valid encounter floor and remain crop bounded');

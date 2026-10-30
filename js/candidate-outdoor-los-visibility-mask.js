@@ -58,6 +58,7 @@ function candidateHexVisibleToParty(
 
 
 drawWallTestLineOfSightMask=function(){
+  if(typeof explorationTerrain!=="undefined" && explorationTerrain){drawExplorationVisibilityMask();return;}
   if(!game){
     return;
   }
