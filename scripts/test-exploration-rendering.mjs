@@ -6,7 +6,7 @@ const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfun
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,adventurePartySun:sun,
+  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationCombatScenery:[],adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
     visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
@@ -56,3 +56,17 @@ await assert.rejects(waitContext.waitForCombatUnitRenders([{name:'Orc',appearanc
 let superseded;const changing={appearanceRefreshPromise:new Promise(r=>{superseded=r;})};
 const changed=waitContext.waitForCombatUnitRenders([changing]);changing.appearanceRefreshPromise=Promise.resolve({applied:true});superseded(null);await changed;
 console.log('PASS all-unit rendering gate waits for enemies, follows superseding renders and reports failure');
+
+const {explorationDoor,CELL,HEIGHT}=await import('../js/exploration-materials.mjs');
+const {combatSceneryEntries}=await import('../js/exploration-combat-scenery.mjs');
+const {terrainForEncounter}=await import('../js/exploration-encounters.mjs');
+const map=JSON.parse(readFileSync(new URL('../data/exploration/old-tollhouse.json',import.meta.url)));
+const terrain=terrainForEncounter(map,{x:3,z:6},new Set(['3,7']));
+const scenery=combatSceneryEntries(map,terrain,new Set(['3,7']));
+assert(scenery.some(e=>e.kind==='wall'));assert(scenery.some(e=>e.kind==='door'&&e.open));assert(scenery.some(e=>e.kind==='door'&&!e.open));
+for(const entry of scenery.filter(e=>e.kind==='wall'))assert(entry.wallIds.some(id=>terrain.walls.some(w=>w.id===id)));
+const closedDoor=explorationDoor(undefined,undefined),openDoor=explorationDoor(undefined,undefined,true);
+assert.equal(CELL,3);assert.equal(HEIGHT,3.5);assert.equal(closedDoor.hinge.rotation.y,0);assert.equal(openDoor.hinge.rotation.y,-Math.PI/2);
+assert.equal(closedDoor.root.children.length,4);assert.equal(closedDoor.hinge.children.length,1);
+assert.equal(closedDoor.hinge.children[0].geometry.parameters.width,2.5);
+console.log('PASS shared exploration door geometry, open/closed leaves and combat wall-boundary mapping');
