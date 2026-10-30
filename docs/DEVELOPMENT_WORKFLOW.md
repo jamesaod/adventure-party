@@ -275,3 +275,5 @@ Exploration startup now has explicit loading/recovery UI and versioned navigatio
 - Rev 212: Exploration encounter rendering uses 1:2 terrain expansion and shared exploration textures. Preserve the clipped floor/LOS-before-actors ordering and avoid the legacy post-LOS unit repaint. See docs/EXPLORATION_ENCOUNTERS.md and scripts/test-exploration-rendering.mjs.
 
 - Rev 213: Ordered startup must await dynamic import() for ES modules, including repository-mobs.mjs top-level asynchronous data loading. A module script load event alone is not an initialization barrier. The startup gate also checks the MOB registry API. test-game-script-loader.mjs covers delayed module initialization, evaluation failure and timeout.
+
+- Rev 214: Exploration combat filters original textures into cached small material tiles and imports map torches through existing illuminationSources. Floor LOS presentation uses architectural polygons; do not restore wall-edge hex-center masking or indoor test-sun shadows. See docs/EXPLORATION_ENCOUNTERS.md.

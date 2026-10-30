@@ -6167,8 +6167,8 @@ function drawArchitecturalFloorRegions(){
       highlights and differentiates the indoor material from outdoor grass.
     */
     ctx.clip();
-    ctx.globalAlpha=explorationTerrain?0:0.10;
-    ctx.fillStyle="#9a9ca2";
+    ctx.globalAlpha=explorationTerrain?0.22:0.10;
+    ctx.fillStyle=explorationTerrain?"#181620":"#9a9ca2";
     ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
     ctx.restore();
@@ -6272,7 +6272,7 @@ const ARCHITECTURAL_WALL_SHADOW={
 };
 
 function drawArchitecturalWallShadows(){
-  if(!architecturalWalls.length) return;
+  if((typeof explorationTerrain!=="undefined"&&explorationTerrain) || !architecturalWalls.length) return; // Indoor encounters have torchlight, not the test sun.
 
   ctx.save();
   ctx.lineJoin="miter";
@@ -11442,7 +11442,7 @@ function illuminationAreaEffects(){
 function illuminationSources(){
   if(!game) return [];
 
-  const sources=[];
+  const sources=typeof explorationTerrain!=="undefined"&&explorationTerrain ? [...(explorationTerrain.torches||[])] : [];
 
   for(const unit of allUnits()){
     if(!unit?.alive || unit.fled) continue;
@@ -30197,6 +30197,12 @@ function draw(){
   const actors=[];
   const treeDecorations=visibleTreeDecorations(tiles);
   const tileSet=activeCombatTerrainTileSet();
+
+  if(explorationTerrain)for(const torch of explorationTerrain.torches||[]){
+    if(!isHexVisibleToFriendlyParty(torch.x,torch.y))continue;
+    const c=hexCenter(torch.x,torch.y);
+    actors.push({sortY:c.y,sortX:c.x,fn:()=>drawExplorationTorch(torch)});
+  }
 
   for(const wall of sceneWalls){
     const a=screenPointForWorld(wall.a);

@@ -28,3 +28,19 @@ for(const exploration of [true,false]){
   }
 }
 console.log('PASS exploration floor masking precedes single unit pass; ordinary combat keeps existing LOS repaint');
+
+const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
+const paths=[],reductions=[];
+const maskContext={clearRect(){},fillRect(){},fill(){}};
+const context={Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
+  friendlyVisibilityObservers:()=>[{x:0,y:0}],observerVisibilityContext:()=>({polygon:[{x:0,y:0},{x:100,y:0},{x:100,y:100},{x:0,y:100}]}),
+  screenPointForWorld:p=>p,tracePolygonOnContext:(_ctx,p)=>{paths.push(p);return true;},hasActiveObscuringLosVolume:()=>false,
+  visibleHexes:()=>{throw Error('Architectural floor visibility must not use hex centers');},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,ctx:{drawImage(){}}};
+vm.createContext(context);vm.runInContext(hooks.slice(0,hooks.indexOf('function configureExplorationTerrain()')),context);
+context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equal(paths[0][1].x,100);
+const image={complete:true,naturalWidth:1024,naturalHeight:1024};
+const tile=context.explorationMaterialTile(image);assert.equal(tile.width,64);assert.deepEqual(reductions,[[512,512],[256,256],[128,128],[64,64]]);
+assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reductions.length,4,'Reuse filtered texture rather than rebuilding it per frame');
+const shadows=source.slice(source.indexOf('function drawArchitecturalWallShadows(){'),source.indexOf('\nfunction closestPointOnWorldSegment('));
+vm.runInNewContext(shadows+'\ndrawArchitecturalWallShadows();',{explorationTerrain:{},architecturalWalls:[{}]});
+console.log('PASS wall-edge mask uses room LOS polygons, cached texture prefilter and no indoor test-sun shadows');

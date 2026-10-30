@@ -30,3 +30,13 @@ The reported intermittent menu return was not reproduced in the local restart te
 The encounter crop remains five exploration squares around the entry, with a 40x32 tactical bound for the expanded terrain. Ordinary combat keeps 40x20. Floor coverage is the exact union of room polygons. Floor lighting, grid, LOS and ground shadows are clipped to that union; the LOS floor pass runs before depth-sorted walls and units. Exploration combat skips the legacy post-LOS unit repaint, which selected a Kobold fallback for library MOBs and doubled the Orc image. Darkness spell volumes still render.
 
 The existing exploration floor.png and wall.png textures are loaded before combat starts, then used by the shared architectural renderer. Floor pattern placement is world-anchored so camera movement does not slide the texture. Combat doors and discovery of further rooms remain future work. Test with test-exploration-rendering.mjs and enter the sample patrol from exploration; check textured walls, clean room boundaries and single Orc sprites.
+
+## Candidate Rev 214 - room edges, filtered materials and torches
+
+Exploration floor presentation uses the existing observer LOS polygons directly, clipped to room floors. Hex-center classification no longer darkens the visible side of a wall-bisected hex. Tactical unit visibility and movement still use existing rules; obscuring spells retain their tactical mask. The fixed architectural test-sun shadows are disabled only for indoor exploration encounters.
+
+Original exploration texture files remain unchanged. Combat caches a progressive high-quality reduction to 64px per source, then repeats the stone over two exploration cells. This removes undersampling grain while preserving the source colors and stone joints. No image-generation step or external tool is required to reproduce the material.
+
+Map torches within the encounter crop project to nearby valid floor hexes. They enter the shared illuminationSources pipeline with warm RGB 255/166/77, intensity 1.2 and a three-hex radius, using existing wall occlusion, floor lighting and wall-face glow. Visible torches have a depth-sorted flame/stand marker. They are map fixtures, not inventory items or new spell effects; no fuel timer is introduced. Static lighting avoids a continuous redraw loop. Floor ambient presentation is dimmed slightly to retain contrast around the torch pools.
+
+Regression tests cover polygon-based floor masking, cached texture reduction, removal of indoor test-sun shadows and valid/crop-bounded torch placement. Browser QA: enter the patrol, check floor/wall boundaries, torch pools and source visibility, then begin combat.
