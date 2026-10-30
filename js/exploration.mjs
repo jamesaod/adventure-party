@@ -1,9 +1,9 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C206';
-import {explorationMapMarkup} from './exploration-map.mjs?v=R238C209';
-import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C208';
-import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C210';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C210';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C211';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C211';
+import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C211';
+import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C211';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C211';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const CELL=3,HEIGHT=3.5,EYE=1.65,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;
@@ -23,7 +23,10 @@ async function start(){
  const wall=new THREE.MeshLambertMaterial({map:textures[0]}),floor=new THREE.MeshLambertMaterial({map:textures[1]}),wood=new THREE.MeshLambertMaterial({map:textures[2]}),ceiling=new THREE.MeshLambertMaterial({map:textures[0],color:0x777066});
  scene.add(new THREE.HemisphereLight(0xc6b69b,0x69635a,1.2));
  const lantern=new THREE.PointLight(0xffdca1,12,18,1.4);lantern.position.set(0,.25,.2);lantern.castShadow=true;lantern.shadow.mapSize.set(512,512);lantern.shadow.bias=-.002;camera.add(lantern);
- for(let z=0;z<16;z++)for(let x=0;x<16;x++){if(map.grid[z][x]==='#')box(CELL,HEIGHT,CELL,wall,x*CELL,HEIGHT/2,z*CELL);else{box(CELL,.12,CELL,floor,x*CELL,-.06,z*CELL);box(CELL,.12,CELL,ceiling,x*CELL,HEIGHT+.06,z*CELL);}}
+ const wallCells=[],floorCells=[];for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)(map.grid[z][x]==='#'?wallCells:floorCells).push({x,z});
+ const tiles=(cells,height,y,material)=>{if(!cells.length)return;const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(CELL,height,CELL),material,cells.length),matrix=new THREE.Matrix4();cells.forEach((p,i)=>mesh.setMatrixAt(i,matrix.makeTranslation(p.x*CELL,y,p.z*CELL)));mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);};
+ tiles(wallCells,HEIGHT,HEIGHT/2,wall);tiles(floorCells,.12,-.06,floor);tiles(floorCells,.12,HEIGHT+.06,ceiling);
+ $('mapDimensions').textContent=`${map.width} × ${map.height} · North up`;
  for(const d of map.doors){const root=new THREE.Group();root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);for(const x of [-1.38,1.38])box(.24,HEIGHT,.36,wall,x,HEIGHT/2,0,root);box(CELL,.4,.36,wall,0,HEIGHT-.2,0,root);const hinge=new THREE.Group();hinge.position.set(-1.25,0,0);root.add(hinge);box(2.5,3.08,.14,wood,1.25,1.54,0,hinge);if(state.openDoors.has(cellKey(d.x,d.z)))hinge.rotation.y=-Math.PI/2;doors.set(cellKey(d.x,d.z),hinge);}
  for(const exit of map.exits||[]){const ring=new THREE.Mesh(new THREE.RingGeometry(.45,.65,24),new THREE.MeshBasicMaterial({color:0xd6b265,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(exit.x*CELL,.015,exit.z*CELL);scene.add(ring);}
  const iron=new THREE.MeshLambertMaterial({color:0x3c3025});

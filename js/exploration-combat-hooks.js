@@ -60,21 +60,34 @@ function returnFromExplorationCombat(outcome){
   const safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');
   location.assign('exploration.html?'+safe);return true;
 }
-window.adventurePartyGameStartup?.ready.then(async()=>{
+// Keep the launcher inaccessible throughout sprite loading and initialization.
+async function startExplorationCombat(){
   if(new URLSearchParams(location.search).get('explorationCombat')!=='1')return;
+  const panel=document.createElement('section');panel.id='explorationCombatStartup';panel.setAttribute('role','status');panel.style.cssText='position:fixed;inset:0;z-index:100000;background:#10101b;color:#83e7e8;display:grid;place-content:center;gap:20px;padding:30px;text-align:center';
+  const heading=document.createElement('h1');heading.textContent='Preparing encounter';const status=document.createElement('p');status.textContent='Loading combat assets and restoring the map encounter…';
+  const back=document.createElement('a');back.textContent='Return to exploration';back.href='exploration.html?resumeEncounter=1&v=R238C211';
+  const retry=document.createElement('button');retry.textContent='Retry encounter';retry.hidden=true;retry.onclick=()=>{const url=new URL(location.href);url.searchParams.set('gameReload',String(Date.now()));location.replace(url.href);};
+  panel.append(heading,status,back,retry);document.body.append(panel);
+  const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C210');
+    await window.adventurePartyGameStartup.ready;
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C211');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C206');
-    if(!request?.map||!request.event)throw Error('No exploration encounter is ready.');validateMap(request.map);
+    if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C211');back.href='exploration.html?'+safe;}
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
+    if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
     const saved=explorationEncounterApi.readProgress(request.test?sessionStorage:localStorage,request.scope);
     request.previous=saved.encounters[request.event.id]||request.previous;request.player=saved.player||request.player;
     explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';
     selectedMobEncounter='custom';combatMobRoster.length=0;
-    const back=document.createElement('button');back.textContent='Retreat to exploration';back.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(back);
+    const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';
-    await showCombat('wall');
-  }catch(error){console.error(error);const errorPanel=document.createElement('p');errorPanel.textContent='Exploration combat could not start: '+error.message;const link=document.createElement('a');link.href='exploration.html?resumeEncounter=1';link.textContent=' Return to exploration';errorPanel.append(link);document.body.prepend(errorPanel);}
-});
+    const result=await showCombat('wall');
+    if(result===false)throw Error('Encounter startup was interrupted. Retry or return to exploration.');
+    if(document.getElementById('turnBanner')?.textContent==='COMBAT INITIALIZATION ERROR')throw Error(document.getElementById('combatLog')?.textContent||'Combat initialization failed.');
+    panel.remove();window.removeEventListener('keydown',block,true);
+  }catch(error){console.error(error);heading.textContent='Encounter could not start';status.textContent=error.message;retry.hidden=false;}
+}
+void startExplorationCombat();

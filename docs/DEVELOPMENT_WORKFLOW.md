@@ -266,3 +266,8 @@ See [Exploration Test](EXPLORATION_TEST.md) for map schema, texture provenance, 
 ## Candidate Rev 210 encounters
 
 See [Exploration encounters](EXPLORATION_ENCOUNTERS.md) for editor regions, map-derived tactical walls, MOB deployment, return snapshots and proof-of-concept limits.
+
+
+## Candidate Rev 211
+
+Exploration startup now has explicit loading/recovery UI and versioned navigation. Map Editor supports 8-128 width/height with protected metadata and Undo. See EXPLORATION_EDITOR.md and EXPLORATION_ENCOUNTERS.md for validation and limitations.

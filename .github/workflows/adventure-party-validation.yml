@@ -203,3 +203,9 @@ jobs:
 
       - name: Exploration encounter integration
         run: node scripts/test-exploration-encounters.mjs
+
+      - name: Exploration map sizes
+        run: node scripts/test-exploration-sizes.mjs
+
+      - name: Exploration startup recovery
+        run: node scripts/test-exploration-startup.mjs

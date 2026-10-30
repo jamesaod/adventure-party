@@ -1,5 +1,5 @@
-import {FACINGS} from './exploration-core.mjs?v=R238C206';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps} from './exploration-authoring.mjs?v=R238C210';
+import {FACINGS} from './exploration-core.mjs?v=R238C211';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps,resizeMap} from './exploration-authoring.mjs?v=R238C211';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let pack,mapId,selected={x:2,z:13},tool='select',dirty=false,history=[],painting=false,stroke=new Set();
@@ -25,8 +25,8 @@ function inspector(){
   $('removeEntrance').disabled=!entrance;$('removeExit').disabled=!exit;
 }
 function grid(){
-  const m=map(),fragment=document.createDocumentFragment();
-  for(let z=0;z<16;z++)for(let x=0;x<16;x++){
+  const m=map(),fragment=document.createDocumentFragment();$('editorGrid').style.gridTemplateColumns=`repeat(${m.width},minmax(24px,1fr))`;$('editorGrid').style.width=`max(100%, ${m.width*24}px)`;$('editorGrid').setAttribute('aria-label',`${m.width} by ${m.height} editable map`);
+  for(let z=0;z<m.height;z++)for(let x=0;x<m.width;x++){
     const b=document.createElement('button'),cell=m.grid[z][x],door=m.doors.find(d=>d.x===x&&d.z===z);
     b.type='button';b.dataset.x=x;b.dataset.z=z;b.className=cell==='#'?'wall':cell==='D'?'door':'floor';
     const labels=[];if(m.start.x===x&&m.start.z===z)labels.push('S');if(m.torches.some(t=>t.x===x&&t.z===z))labels.push('T');if(m.entrances.some(e=>e.x===x&&e.z===z))labels.push('E');if(m.exits.some(e=>e.x===x&&e.z===z))labels.push('X');
@@ -39,6 +39,7 @@ function grid(){
 }
 function render(){
   if(!pack.maps.some(m=>m.id===mapId))mapId=pack.maps[0].id;
+  selected.x=Math.min(selected.x,map().width-1);selected.z=Math.min(selected.z,map().height-1);$('mapWidth').value=map().width;$('mapHeight').value=map().height;$('mapDimensions').textContent=`${map().width} × ${map().height} · North ↑`;$('spawnX').max=map().width-1;$('spawnZ').max=map().height-1;$('encounterWidth').max=map().width-2;$('encounterHeight').max=map().height-2;
   $('packName').value=pack.name;$('mapName').value=map().name;
   selectOptions($('mapSelect'),pack.maps.map(m=>[m.id,m.name]),mapId);
   const current=$('testEntrance').value;selectOptions($('testEntrance'),[['','Map start'],...map().entrances.map(e=>[e.id,e.name])],current);
@@ -85,6 +86,7 @@ async function start(){
   action('removeEntrance',()=>mutate(()=>{const e=map().entrances.find(e=>e.x===selected.x&&e.z===selected.z);if(!e)return;if(pack.maps.some(m=>m.exits.some(x=>x.targetMapId===mapId&&x.targetEntranceId===e.id)))throw Error('Remove incoming connections to this entrance first.');map().entrances=map().entrances.filter(a=>a!==e);}));
   action('setExit',()=>mutate(()=>linkMaps(pack,mapId,{...selected,facing:Number($('facing').value)},$('targetMap').value,$('targetEntrance').value,$('returnLink').checked)));
   action('removeExit',()=>mutate(()=>{map().exits=map().exits.filter(e=>e.x!==selected.x||e.z!==selected.z);}));
+  action('resizeMap',()=>mutate(()=>resizeMap(map(),Number($('mapWidth').value),Number($('mapHeight').value))));
   action('savePack',save);
   action('exportPack',()=>{const issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));const blob=new Blob([JSON.stringify(pack,null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='adventure-pack.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);tell('Adventure Pack exported. Save maps separately to keep browser changes.');});
   $('importPack').addEventListener('change',async()=>{try{const file=$('importPack').files[0];if(!file)return;if(file.size>2_000_000)throw Error('Adventure Pack is too large (2 MB maximum).');const imported=parsePack(await file.text());if(!confirm('Replace the current adventure with this pack? Undo can restore it until you leave this page.'))return;checkpoint();pack=imported;mapId=pack.maps[0].id;changed();}catch(e){tell(e.message);}finally{$('importPack').value='';}});
