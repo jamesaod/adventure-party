@@ -1,3 +1,4 @@
+var explorationEncounter=null,explorationTerrain=null,explorationEncounterApi=null;
 "use strict";
 const PRIEST_SPELLS=window.AdventurePartyPriestSpells||{};
 
@@ -274,6 +275,7 @@ function returnToStudioFromCombat(){
 }
 
 function exitCombat(){
+  if(typeof returnFromExplorationCombat==='function'&&returnFromExplorationCombat("retreat"))return;
   if(!returnToStudioFromCombat()) showLauncher();
 }
 
@@ -3289,6 +3291,7 @@ function terrainTreeClusterPositions(tileSet,seed){
 }
 
 function visibleTreeDecorations(tiles){
+  if(explorationTerrain)return [];
   const tileSet=activeCombatTerrainTileSet();
 
   const image=TERRAIN_TREE_IMAGES.get(tileSet.id);
@@ -16760,13 +16763,15 @@ function newGame(condition=selectedCombatCondition){
     validate every occupied cell against architectural walls at spawn time.
   */
   configureArchitecturalWalls(condition);
+  if(typeof explorationEncounter!=='undefined'&&explorationEncounter)configureExplorationTerrain();
 
-  const player=libraryTestPlayer() || (selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter());
+  const explorationRoster=typeof explorationEncounter!=='undefined'&&explorationEncounter?explorationUnits():null;
+  const player=explorationRoster?.player || libraryTestPlayer() || (selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter());
   if(selectedMobEncounter!=="studio-kobold"){
     delete player.studioSpriteTest;
     delete player.studioPoseInspection;
   }
-  const configured=deployConfiguredCombatMobs(condition,player);
+  const configured=explorationRoster || deployConfiguredCombatMobs(condition,player);
   const allies=configured.allies;
   const enemies=configured.enemies;
   const groupKobolds=enemies.filter(isKoboldUnit);
@@ -16817,6 +16822,7 @@ function newGame(condition=selectedCombatCondition){
     }
   }
 
+  if(typeof explorationEncounter!=='undefined'&&explorationEncounter)rememberExplorationCombat("active");
   lastPlayerVisibilityObserverId=null;
 
   aimMode=false;
@@ -16883,19 +16889,19 @@ function newGame(condition=selectedCombatCondition){
   ui.combatLog.innerHTML="";
   ui.resultOverlay.classList.remove("show");
 
-  log("Combat stress test initialized.","system");
+  log(typeof explorationEncounter!=='undefined'&&explorationEncounter?`Exploration encounter: ${explorationEncounter.event.name}.`:"Combat stress test initialized.","system");
   log(
-    condition==="wall"
+    typeof explorationEncounter!=='undefined'&&explorationEncounter ? "Terrain and closed doors imported from the exploration map; walls block movement and sight." : condition==="wall"
       ? "Combat Condition: WALL TEST — enlarged indoor grey-floor building, no indoor trees, solid architectural walls block movement and line of sight; use the open west entrance."
       : "Combat Condition: GRASSY BATTLEFIELD — open-field movement and line of sight.",
     "system"
   );
   log(
-    `Temporary battlefield: ${MAP_WIDTH_HEXES} × ${MAP_HEIGHT_HEXES} hexes. Fleeing units must cross a map edge to escape.`,
+    typeof explorationEncounter!=='undefined'&&explorationEncounter ? "Use Retreat to exploration to leave this encounter and preserve survivors." : `Temporary battlefield: ${MAP_WIDTH_HEXES} × ${MAP_HEIGHT_HEXES} hexes. Fleeing units must cross a map edge to escape.`,
     "system"
   );
   log(
-    `${player.name} ready: ${player.maxHp} HP, AC ${player.ac}, THAC0 ${player.thaco}, ${player.weapon}.`,
+    `${player.name} ready: ${player.hp}/${player.maxHp} HP, AC ${player.ac}, THAC0 ${player.thaco}, ${player.weapon}.`,
     "system"
   );
 
@@ -25280,6 +25286,7 @@ function finishCombat(title,text){
 
   restoreAllCharmPersonAllegiances();
 
+  if(typeof returnFromExplorationCombat==='function'&&returnFromExplorationCombat(title==="Victory"?"victory":"defeat"))return;
   if(returnToStudioFromCombat()) return;
 
   let xpAwarded=0;
@@ -26431,6 +26438,7 @@ function drawGrassDetails(x,y){
 }
 
 function drawHexFill(x,y){
+  if(explorationTerrain){const top=hexScreenVertices(x,y),c=hexCenter(x,y);ctx.save();polygonPath(top);ctx.clip();ctx.fillStyle=explorationTerrain.walkableHex(x,y)?"#8b806c":"#27231f";ctx.fillRect(c.x-HEX_W/2,c.y-HEX_H/2,HEX_W,HEX_H);if(explorationTerrain.walkableHex(x,y)&&explorationFloorImage.complete&&explorationFloorImage.naturalWidth)ctx.drawImage(explorationFloorImage,c.x-HEX_W/2,c.y-HEX_H/2,HEX_W,HEX_H);ctx.restore();return;}
   const top=hexScreenVertices(x,y);
   const c=hexCenter(x,y);
   const tileSet=activeCombatTerrainTileSet();

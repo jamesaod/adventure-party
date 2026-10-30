@@ -1,5 +1,6 @@
 import {validateMap,cellKey} from './exploration-core.mjs?v=R238C206';
 
+import {validateEncounters} from './exploration-encounters.mjs?v=R238C210';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -29,6 +30,7 @@ export function packIssues(pack){
     if(!Array.isArray(map.party)||map.party.some(p=>!p||typeof p.name!=='string'||typeof p.role!=='string'||![p.ac,p.hp,p.maxHp].every(Number.isFinite)))issues.push(`${label}: invalid example party roster.`);
     try{validateMap(map);}catch(e){issues.push(`${label}: ${e.message}`);continue;}
     if(!Array.isArray(map.entrances)||!Array.isArray(map.exits)||!Array.isArray(map.torches)){issues.push(`${label}: entrances, exits and torches must be lists.`);continue;}
+    issues.push(...validateEncounters(map).map(issue=>`${label}: ${issue}`));
     const entranceIds=new Set(),exitIds=new Set(),exitCells=new Set();
     for(const e of map.entrances){
       if(!validId(e?.id)||entranceIds.has(e.id)||typeof e.name!=='string'||!e.name.trim()||!onFloor(map,e)||!Number.isInteger(e.facing)||e.facing<0||e.facing>3)issues.push(`${label}: invalid or duplicated entrance.`);

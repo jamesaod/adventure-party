@@ -200,3 +200,6 @@ jobs:
 
       - name: Exploration map authoring and linked tests
         run: node scripts/test-exploration-authoring.mjs
+
+      - name: Exploration encounter integration
+        run: node scripts/test-exploration-encounters.mjs

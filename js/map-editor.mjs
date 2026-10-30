@@ -1,5 +1,6 @@
 import {FACINGS} from './exploration-core.mjs?v=R238C206';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps} from './exploration-authoring.mjs?v=R238C209';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps} from './exploration-authoring.mjs?v=R238C210';
+import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let pack,mapId,selected={x:2,z:13},tool='select',dirty=false,history=[],painting=false,stroke=new Set();
 const map=()=>pack.maps.find(m=>m.id===mapId);
@@ -17,6 +18,7 @@ function inspector(){
   $('selection').textContent=`Selected square ${x+1}, ${z+1} · ${m.grid[z][x]==='#'?'Wall':m.grid[z][x]==='D'?'Door':'Floor'}`;
   $('entranceName').value=entrance?.name||'';$('facing').value=String(entrance?.facing??m.start.facing);
   selectOptions($('targetMap'),pack.maps.map(m=>[m.id,m.name]),exit?.targetMapId||$('targetMap').value);destinations(exit?.targetEntranceId);
+  const event=(m.encounters||[]).find(e=>e.x===x&&e.z===z);$('encounterName').value=event?.name||'';$('encounterCount').value=event?.count||2;$('encounterWidth').value=event?.width||1;$('encounterHeight').value=event?.height||1;$('spawnX').value=(event?.spawnX??x)+1;$('spawnZ').value=(event?.spawnZ??z)+1;if(event)$('encounterMob').value=event.mobId;$('removeEncounter').disabled=!event;
   $('returnLink').checked=false;
   const target=pack.maps.find(m=>m.id===exit?.targetMapId),arrival=target?.entrances.find(e=>e.id===exit?.targetEntranceId);
   $('connectionInfo').textContent=exit?`Exit → ${target?.name||'Missing map'} / ${arrival?.name||'Missing entrance'}`:'No exit on this square. Exits trigger when stepped onto.';
@@ -28,6 +30,7 @@ function grid(){
     const b=document.createElement('button'),cell=m.grid[z][x],door=m.doors.find(d=>d.x===x&&d.z===z);
     b.type='button';b.dataset.x=x;b.dataset.z=z;b.className=cell==='#'?'wall':cell==='D'?'door':'floor';
     const labels=[];if(m.start.x===x&&m.start.z===z)labels.push('S');if(m.torches.some(t=>t.x===x&&t.z===z))labels.push('T');if(m.entrances.some(e=>e.x===x&&e.z===z))labels.push('E');if(m.exits.some(e=>e.x===x&&e.z===z))labels.push('X');
+    if((m.encounters||[]).some(e=>x>=e.x&&x<e.x+e.width&&z>=e.z&&z<e.z+e.height))labels.push('C');
     b.textContent=labels.join('')||(door?(door.axis==='x'?'│':'─'):'');
     b.setAttribute('aria-label',`Column ${x+1}, row ${z+1}: ${cell==='#'?'wall':cell==='D'?'door':'floor'}${labels.length?', '+labels.join(', '):''}`);
     if(selected.x===x&&selected.z===z)b.classList.add('selected');fragment.append(b);
@@ -56,7 +59,7 @@ function applySquare(button){
   $('issues').replaceChildren();for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}$('undo').disabled=!history.length;
 }
 async function start(){
-  const response=await fetch('data/exploration/old-tollhouse.json?v=R238C206');if(!response.ok)throw Error('Could not load the starter map.');const starter=await response.json();
+  const response=await fetch('data/exploration/old-tollhouse.json?v=R238C210');if(!response.ok)throw Error('Could not load the starter map.');const starter=await response.json();
   let saved;try{saved=localStorage.getItem(DRAFT_KEY);}catch{tell('Browser storage unavailable. Use Export Adventure Pack to keep your work.');}
   let loadNotice='';if(saved){try{pack=parsePack(saved);}catch(e){pack=seedPack(starter);loadNotice='Saved maps could not be read. A starter copy is shown; the stored data is unchanged until you explicitly save. '+e.message;}}else pack=seedPack(starter);
   mapId=pack.maps.find(m=>m.id===new URLSearchParams(location.search).get('map'))?.id||pack.maps[0].id;selected={x:map().start.x,z:map().start.z};
@@ -87,6 +90,9 @@ async function start(){
   $('importPack').addEventListener('change',async()=>{try{const file=$('importPack').files[0];if(!file)return;if(file.size>2_000_000)throw Error('Adventure Pack is too large (2 MB maximum).');const imported=parsePack(await file.text());if(!confirm('Replace the current adventure with this pack? Undo can restore it until you leave this page.'))return;checkpoint();pack=imported;mapId=pack.maps[0].id;changed();}catch(e){tell(e.message);}finally{$('importPack').value='';}});
   action('testMap',()=>{save();sessionStorage.setItem(TEST_KEY,JSON.stringify({id:newId('test'),pack:copy(pack)}));location.assign(`exploration.html?test=1&map=${encodeURIComponent(mapId)}&entrance=${encodeURIComponent($('testEntrance').value)}`);});
   addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+  const {library}=await loadMobLibrary();selectOptions($('encounterMob'),library.available().map(m=>[m.id,m.name]),'orc-male-uniformed');
+  action('setEncounter',()=>mutate(()=>{const name=$('encounterName').value.trim();if(!name)throw Error('Name the encounter.');const m=map();m.encounters=m.encounters||[];const old=m.encounters.find(e=>e.x===selected.x&&e.z===selected.z);const record={id:old?.id||newId('encounter'),name,...selected,width:Number($('encounterWidth').value),height:Number($('encounterHeight').value),mobId:$('encounterMob').value,count:Number($('encounterCount').value),spawnX:Number($('spawnX').value)-1,spawnZ:Number($('spawnZ').value)-1,enabled:true};m.encounters=m.encounters.filter(e=>e!==old);m.encounters.push(record);const issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));}));
+  action('removeEncounter',()=>mutate(()=>{map().encounters=(map().encounters||[]).filter(e=>e.x!==selected.x||e.z!==selected.z);}));
   render();tell(loadNotice||(saved?'Loaded saved maps from this browser.':'Starter tollhouse loaded. Paint it or create a new map, then Save maps.'));
 }
 start().catch(e=>{tell(e.message);document.querySelectorAll('button').forEach(b=>b.disabled=true);});

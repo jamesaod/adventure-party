@@ -261,3 +261,8 @@ See [Exploration Test](EXPLORATION_TEST.md) for map schema, texture provenance, 
 ## Candidate Rev 209 map authoring
 
 [Exploration Map Editor](EXPLORATION_EDITOR.md) documents Adventure Packs, named entrances/exits, browser drafts and isolated test snapshots. Reuse the existing exploration renderer, movement and discovery paths. Events and encounters remain later work.
+
+
+## Candidate Rev 210 encounters
+
+See [Exploration encounters](EXPLORATION_ENCOUNTERS.md) for editor regions, map-derived tactical walls, MOB deployment, return snapshots and proof-of-concept limits.
