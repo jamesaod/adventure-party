@@ -271,3 +271,5 @@ See [Exploration encounters](EXPLORATION_ENCOUNTERS.md) for editor regions, map-
 ## Candidate Rev 211
 
 Exploration startup now has explicit loading/recovery UI and versioned navigation. Map Editor supports 8-128 width/height with protected metadata and Undo. See EXPLORATION_EDITOR.md and EXPLORATION_ENCOUNTERS.md for validation and limitations.
+
+- Rev 212: Exploration encounter rendering uses 1:2 terrain expansion and shared exploration textures. Preserve the clipped floor/LOS-before-actors ordering and avoid the legacy post-LOS unit repaint. See docs/EXPLORATION_ENCOUNTERS.md and scripts/test-exploration-rendering.mjs.

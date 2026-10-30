@@ -209,3 +209,6 @@ jobs:
 
       - name: Exploration startup recovery
         run: node scripts/test-exploration-startup.mjs
+
+      - name: Exploration combat rendering
+        run: node scripts/test-exploration-rendering.mjs
