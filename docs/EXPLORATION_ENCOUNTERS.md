@@ -40,3 +40,9 @@ Original exploration texture files remain unchanged. Combat caches a progressive
 Map torches within the encounter crop project to nearby valid floor hexes. They enter the shared illuminationSources pipeline with warm RGB 255/166/77, intensity 1.2 and a three-hex radius, using existing wall occlusion, floor lighting and wall-face glow. Visible torches have a depth-sorted flame/stand marker. They are map fixtures, not inventory items or new spell effects; no fuel timer is introduced. Static lighting avoids a continuous redraw loop. Floor ambient presentation is dimmed slightly to retain contrast around the torch pools.
 
 Regression tests cover polygon-based floor masking, cached texture reduction, removal of indoor test-sun shadows and valid/crop-bounded torch placement. Browser QA: enter the patrol, check floor/wall boundaries, torch pools and source visibility, then begin combat.
+
+## Candidate Rev 215 - smaller filtered stone and unit-render gate
+
+Combat stone repeats at one exploration cell (half Rev 214 in each floor dimension), retaining progressive 64px prefiltering and enabling smoothing only for the floor/wall material passes. Tactical grid opacity is 50%. Original source images and unit pixel sampling are unchanged. Canvas scaling reference: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images .
+
+showCombat covers the battlefield with Please wait, rendering Units until all initial unit appearance promises finish. It follows superseding promises and reports render failure or a two-minute timeout with Retry, rather than revealing fallback sprites. The same gate is used by ordinary combat and exploration entry. No extra render jobs are started by the gate.

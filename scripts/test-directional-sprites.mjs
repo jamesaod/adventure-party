@@ -512,6 +512,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
     clearTimeout(timer) { timer.active = false; }, clearInterval() {},
     stopTitleMusic() {}, stopWeatherAudio() {}, updateAudioIndicators() {}, updateCombatConditionSelection() {}, updateCombatMobSelection() {},
     fitBattleCanvas() {}, requestAnimationFrame() {}, draw() {}, syncWeatherAudio() {},
+    combatRenderingPanel:()=>({finish(){},fail(error){throw error;}}),
     classReportOpen: false, characterSheetOpen: false, spellCastOverlayOpen: false,
     quickCommandUnitIds: new Set(), quickCommandActive: false, quickCommandUnitId: null, quickCommandGeneration: 0, quickCommandRunning: false,
     aiTimer: null, combatOpeningSpeechDone: false, combatAwaitingStart: false, combatMessageClearTimer: null, combatMessageFlashTimer: null,
@@ -542,12 +543,12 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
       context.registeredStudioSpriteSets.set(id, { id, manifestId: metadata.id, mobType: metadata.mobType, layoutId: "single" });
       return id;
     },
-    newGame: () => newGames.push(context.applyPlayerSpriteSet({ id: "player", type: "fighter" }))
+    newGame: () => {const player=context.applyPlayerSpriteSet({ id: "player", type: "fighter" });context.game={player,allies:[],enemies:[]};newGames.push(player);}
   };
   for (const name of ["launcherScreen", "combatScreen", "combatConditionsScreen", "xpLootScreen", "pixelScreen", "spellbookScreen", "classbookScreen", "spellPreviewScreen"]) context[name] = screen();
   vm.createContext(context);
   vm.runInContext([
-    ...["createStudioSpriteLoadingGate", "canAutoSelectStudioDraft", "cancelPendingCombatStart", "showCombat", "showLauncher", "showCombatConditions", "handleCombatConditionsKey",
+    ...["createStudioSpriteLoadingGate", "canAutoSelectStudioDraft", "cancelPendingCombatStart", "waitForCombatUnitRenders", "showCombat", "showLauncher", "showCombatConditions", "handleCombatConditionsKey",
       "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);

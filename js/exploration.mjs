@@ -3,7 +3,7 @@ import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C211';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C211';
 import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C212';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C214';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C215';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const CELL=3,HEIGHT=3.5,EYE=1.65,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;
