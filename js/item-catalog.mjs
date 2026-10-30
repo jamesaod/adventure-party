@@ -1,4 +1,5 @@
-export const ITEM_CATALOG_VERSION=4;
+import {ARMOR_ITEMS} from './armor-rules.mjs?v=R238C204';
+export const ITEM_CATALOG_VERSION=5;
 
 function freezeRecord(value){
   if(value&&typeof value==='object'){
@@ -964,25 +965,7 @@ export const ITEM_CATALOG=freezeRecord({
       }
     }
   },
-  'chain-mail':{
-    id:'chain-mail',
-    name:'Chain Mail',
-    category:'armor',
-    slot:'armor',
-    rules:{
-      catalogArmorId:'chain',
-      baseArmorClass:5,
-      acModifier:-5,
-      encumbrance:30,
-      maxMoveFt:90,
-      cost:'75 gp'
-    },
-    physical:{
-      authoredSize:null,
-      status:'Armor dimensions are not yet modeled.'
-    },
-    appearance:null
-  },
+  ...ARMOR_ITEMS,
   'round-wooden-shield':{
     id:'round-wooden-shield',
     name:'Round Wooden Shield',

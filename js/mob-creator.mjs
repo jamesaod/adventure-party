@@ -1,20 +1,20 @@
 import {monsterBaseline} from './monster-baselines.mjs?v=R238C203';
-import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C203';
-import {renderMobPreview} from './mob-preview.mjs?v=R238C203';
-import {resolveEquipmentLibrary,equipmentSnapshot} from './equipment-library-core.mjs?v=R238C201';
-import {readEquipmentLibrary} from './equipment-library-store.mjs?v=R238C201';
+import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C204';
+import {renderMobPreview} from './mob-preview.mjs?v=R238C204';
+import {resolveEquipmentLibrary,equipmentSnapshot} from './equipment-library-core.mjs?v=R238C204';
+import {readEquipmentLibrary} from './equipment-library-store.mjs?v=R238C204';
 import {generateMobRules,classProgression} from './mob-class-rules.mjs?v=R238C203';
 import {createMobSpellEditor} from './mob-spell-editor.mjs?v=R238C203';
-import {mobFromStudioPackage,readMobImport} from './mob-studio-import.mjs?v=R238C203';
-import {createGenerationEditor} from './mob-generation-editor.mjs?v=R238C203';
-import {sampleGeneration,generationWeaponTypes} from './mob-generation.mjs?v=R238C203';
+import {mobFromStudioPackage,readMobImport} from './mob-studio-import.mjs?v=R238C204';
+import {createGenerationEditor} from './mob-generation-editor.mjs?v=R238C204';
+import {sampleGeneration,generationWeaponTypes} from './mob-generation.mjs?v=R238C204';
 let equipmentDocument,ITEM_CATALOG;
 import {CAPTURE_GROUP_CATALOG,capturePosesForGroup} from './action-capture-groups.mjs?v=R238C196';
 import {ACTION_POSE_LABELS,ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C196';
 import {SPRITE_LAYOUT_PRESETS} from './sprite-layouts.mjs?v=R238C202';
-import {ABILITY_SCORES,MOB_ABILITIES,createMobDefinition,normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C203';
+import {ABILITY_SCORES,MOB_ABILITIES,createMobDefinition,normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C204';
 import {normalizePoseLibrary,poseLibrarySignature,libraryPoseGroup} from './pose-library.mjs?v=R238C196';
-import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C203';
+import {browserAuthoringStore,downloadAuthoringJson,readAuthoringJson} from './authoring-store.mjs?v=R238C204';
 const $=id=>document.getElementById(id),store=browserAuthoringStore();
 let spellEditor,generationEditor,generated=null,generatedFrom=null;
 let loaded=null,library=null,models=[],dirty=false,mobLibrary,catalog,enabled=false,lastDeleted=null,previewVersion=0,previewPending=false,previewAgain=false;
@@ -29,7 +29,7 @@ function read(report=true){
  if(!$('modelId').value)throw Error('Load a library exported with its Studio model settings. In Studio use Export Library for MOB Creator.');
  if(!(report?$('mobForm').reportValidity():$('mobForm').checkValidity()))throw Error('Check the highlighted fields.');
  const g=generationEditor.read();
- const ids=[...(g.kind==='unique'?[g.fixed.primary,g.fixed.offHand]:[...g.primary,...g.offHand].map(i=>i.itemId)),...g.alwaysItems.map(i=>i.itemId)];
+ const ids=[g.armor,...(g.kind==='unique'?[g.fixed.primary,g.fixed.offHand]:[...g.primary,...g.offHand].map(i=>i.itemId)),...g.alwaysItems.map(i=>i.itemId)];
  const sameModel=loaded?.modelId===$('modelId').value;
  const references=sameModel?structuredClone(loaded.references):{};
  if(!sameModel||poseLibrarySignature(library)!==poseLibrarySignature(loaded.references.poseLibrary)){delete references.spriteSets;delete references.sharedActionGroups;delete references.captureRecovery;delete references.captureFormatVersion;}

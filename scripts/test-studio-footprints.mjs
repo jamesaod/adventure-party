@@ -1,3 +1,4 @@
+import * as armorRules from '../js/armor-rules.mjs';
 import {createRepositoryMobRegistry} from '../js/repository-mobs.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -29,7 +30,7 @@ const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
 const sandbox = {
-  window:{adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(fs.readFileSync(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
+  window:{adventurePartyArmorRules:armorRules,adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(fs.readFileSync(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
   markMobAppearanceDirty:()=>Promise.resolve(null),
   PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
   HEX_DIRS: directions.map((name, index) => ({ name, x: vectors[index][0], y: vectors[index][1] })),

@@ -1,7 +1,7 @@
-import {resolveEquipmentLibrary,emptyEquipmentLibrary,EFFECT_OPTIONS} from './equipment-library-core.mjs?v=R238C201';
-import {readEquipmentLibrary,saveEquipmentLibrary} from './equipment-library-store.mjs?v=R238C201';
-import {ITEM_CATALOG as BASE} from './item-catalog.mjs?v=R238C201';
-import {offHandItems} from './mob-generation.mjs?v=R238C203';
+import {resolveEquipmentLibrary,emptyEquipmentLibrary,EFFECT_OPTIONS} from './equipment-library-core.mjs?v=R238C204';
+import {readEquipmentLibrary,saveEquipmentLibrary} from './equipment-library-store.mjs?v=R238C204';
+import {ITEM_CATALOG as BASE} from './item-catalog.mjs?v=R238C204';
+import {offHandItems} from './mob-generation.mjs?v=R238C204';
 import {ACTION_PROFILE_CATALOG} from './action-profile-catalog.mjs?v=R238C196';
 const $=id=>document.getElementById(id),clone=v=>structuredClone(v);
 let library,catalog,selected,record,dirty=false,effects=[];
@@ -14,7 +14,7 @@ const fields=[
  ['appearance','Model',[['none','No model'],...modelItems.map(i=>[i.appearance.studioId,i.appearance.studioId==='medieval-sword'?'Long Sword':i.name])]],
  ['rules.catalogWeaponId','Engine weapon rule ID','text'],['rules.catalogArmorId','Engine armor rule ID','text'],['rules.baseArmorClass','Base armor class','number'],['rules.acBonus','Shield AC bonus','number'],['rules.poseProfileId','Weapon pose type',[['','Unspecified'],...[...ACTION_PROFILE_CATALOG.values()].filter(i=>i.id!=='spell-casting').map(i=>[i.id,i.label])]],
  ['rules.handsRequired','Hands required',[['1','One'],['2','Two']]],['rules.offHandAllowed','Allowed in off hand','checkbox'],
- ['rules.damageSM','Damage vs small / medium','text'],['rules.damageL','Damage vs large','text'],['rules.cost','Cost','text'],['rules.encumbrance','Weight','number'],
+ ['rules.damageSM','Damage vs small / medium','text'],['rules.damageL','Damage vs large','text'],['rules.cost','Cost','text'],['rules.encumbrance','Weight (lb.)','number'],['rules.movementNotes','Movement restrictions','text'],
  ['rules.magicHitBonus','Magic attack bonus','number'],['rules.magicDamageBonus','Magic damage bonus','number'],['rules.bonusDamageExpression','Bonus damage dice','text'],['rules.bonusDamageType','Bonus damage type','text']
 ];
 const get=(value,path)=>path.split('.').reduce((v,k)=>v?.[k],value);

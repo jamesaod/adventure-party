@@ -14,10 +14,10 @@ import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
 import { resolveCombatWeaponMount } from './combat-weapon-mount.mjs?v=R238C194';
 import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mjs?v=R238C127';
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C202';
-import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C201';
+import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C204';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C196';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C201';
-import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C201';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C204';
+import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C204';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 const DEFAULT_FRAME=Object.freeze({

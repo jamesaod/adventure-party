@@ -1,6 +1,6 @@
 import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C201';
+import { itemCatalogEntry } from './item-catalog.mjs?v=R238C204';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';

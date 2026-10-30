@@ -1,8 +1,8 @@
 import {hasNoClass,monsterBaseline} from './monster-baselines.mjs?v=R238C203';
-import {browserAuthoringStore} from './authoring-store.mjs?v=R238C203';
-import {normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C203';
-import {normalizeGeneration} from './mob-generation.mjs?v=R238C203';
-import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C202';
+import {browserAuthoringStore} from './authoring-store.mjs?v=R238C204';
+import {normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C204';
+import {normalizeGeneration} from './mob-generation.mjs?v=R238C204';
+import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C204';
 export function encounterReadiness(mob,catalog){
  const reasons=[];
  try{mob=normalizeMobDefinition(mob);const appearance=mob.references.studioAppearance||mob.references.poseLibrary.studioAppearance;

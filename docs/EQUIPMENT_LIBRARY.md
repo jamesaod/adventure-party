@@ -19,3 +19,7 @@ The page edits existing rules fields rather than maintaining another weapon-stat
 Effects are **definitions only**, visibly labeled as not yet executed by combat. Each effect specifies recipient (wielder/target), trigger, kind, stat/condition/damage parameter, amount/dice, chance, rounds, saving throw that negates, stacking policy and maximum stacks. The owning item ID provides the source. Zero rounds means continuous while equipped or instant for event effects. Effects replace the inherited list when overridden. Existing numeric magic bonuses keep using established engine fields; do not claim arbitrary effects are active.
 
 Run `node scripts/test-equipment-library.mjs` plus repository validation. Tests cover inheritance, no-model items, simultaneous unique/enchantment metadata, effect bounds, duplicates/cycles, hand eligibility and a portable MOB round trip. Browser QA should create a variant, save/reload it, then find it in MOB Creator. No renderer or asset pipeline changes are required.
+
+## Candidate Rev 204 — armor
+
+See [Armor and movement](ARMOR_AND_MOVEMENT.md) for the shared PHB armor catalog, Worn armor selection and specific encumbrance movement. Preserve stable base movement and count carried armor separately from equipped AC.
