@@ -277,3 +277,5 @@ Exploration startup now has explicit loading/recovery UI and versioned navigatio
 - Rev 213: Ordered startup must await dynamic import() for ES modules, including repository-mobs.mjs top-level asynchronous data loading. A module script load event alone is not an initialization barrier. The startup gate also checks the MOB registry API. test-game-script-loader.mjs covers delayed module initialization, evaluation failure and timeout.
 
 - Rev 214: Exploration combat filters original textures into cached small material tiles and imports map torches through existing illuminationSources. Floor LOS presentation uses architectural polygons; do not restore wall-edge hex-center masking or indoor test-sun shadows. See docs/EXPLORATION_ENCOUNTERS.md.
+
+- Rev 215: showCombat must await every initial unit appearance promise before uncovering the battlefield. Keep texture prefiltering when changing repeat size. See docs/EXPLORATION_ENCOUNTERS.md and test-exploration-rendering.mjs.

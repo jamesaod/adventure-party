@@ -317,6 +317,30 @@ function cancelPendingCombatStart({preserveDraft=false}={}){
   }
 }
 
+async function waitForCombatUnitRenders(units){
+  await Promise.all(units.map(async unit=>{
+    let pending=unit.appearanceRefreshPromise;
+    while(pending){
+      const result=await pending;
+      if(pending!==unit.appearanceRefreshPromise){pending=unit.appearanceRefreshPromise;continue;}
+      if(!result && !unit.dynamicAppearanceSpriteSetId)throw Error(`Could not render ${unit.name||'unit'}. Please retry.`);
+      break;
+    }
+  }));
+}
+
+function combatRenderingPanel(){
+  const panel=document.createElement('div');panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
+  panel.style.cssText='position:fixed;inset:0;z-index:200000;background:#10101b;color:#77e7ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:24px';
+  const wasInert=combatScreen.inert;combatScreen.inert=true;
+  const label=document.createElement('strong');label.textContent='Please wait, rendering Units';panel.append(label);document.body.append(panel);
+  const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
+  return {finish(){combatScreen.inert=wasInert;panel.remove();window.removeEventListener('keydown',block,true);},fail(error){
+    label.textContent='Unit rendering could not finish';const detail=document.createElement('p');detail.textContent=error.message;
+    const retry=document.createElement('button');retry.textContent='Retry';retry.onclick=()=>location.reload();panel.append(detail,retry);
+  }};
+}
+
 async function showCombat(condition=selectedCombatCondition){
   if(pendingCombatStart) return false;
   const button=document.getElementById("beginBattleButton");
@@ -342,6 +366,7 @@ async function showCombat(condition=selectedCombatCondition){
     }
   }
   if(request.cancelled || currentScreen!==request.screen) return false;
+  const rendering=combatRenderingPanel();
   selectedCombatCondition=condition || "grass";
   currentScreen="combat";
 
@@ -360,9 +385,16 @@ async function showCombat(condition=selectedCombatCondition){
   try{
     newGame(selectedCombatCondition);
     fitBattleCanvas();
+    let renderTimer;
+    try{
+      await Promise.race([waitForCombatUnitRenders([game.player,...game.allies,...game.enemies]),new Promise((_,reject)=>{renderTimer=setTimeout(()=>reject(Error('Unit rendering timed out. Please retry.')),120000);})]);
+    }finally{clearTimeout(renderTimer);}
+    draw();
+    rendering.finish();
     requestAnimationFrame(draw);
     syncWeatherAudio();
   }catch(error){
+    rendering.fail(error);
     console.error("Combat initialization failed:",error);
 
     const banner=document.getElementById("turnBanner");
@@ -6155,6 +6187,7 @@ function drawArchitecturalFloorRegions(){
       The texture is continuous across tactical hexes; hex geometry is an
       overlay and does not define the material seams.
     */
+    if(explorationTerrain){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";}
     const floorPattern=explorationTerrain?explorationFloorPatternForView():stoneFloorPatternForCurrentView();
     ctx.fillStyle=
       floorPattern ||
@@ -6882,6 +6915,7 @@ function drawArchitecturalWallSegment(wall){
   lctx.lineCap="square";
   lctx.lineJoin="miter";
 
+  if(wall.material==="exploration-stone"){lctx.imageSmoothingEnabled=true;lctx.imageSmoothingQuality="high";}
   let wallPaint=wall.material==="exploration-stone" ? (explorationWallPattern(lctx,wall,height)||"#756d5e") : "#555860";
 
   if(wall.material==="old-wood"){
@@ -26503,7 +26537,7 @@ function drawHexFill(x,y){
 }
 
 function drawHexGridLine(x,y){
-  if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.65)";ctx.lineWidth=1;ctx.stroke();return;}
+  if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.5)";ctx.lineWidth=1;ctx.stroke();return;}
   const top=hexScreenVertices(x,y);
   const tileSet=activeCombatTerrainTileSet();
   const outdoorStroke=

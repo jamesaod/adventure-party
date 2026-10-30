@@ -44,3 +44,15 @@ assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reduction
 const shadows=source.slice(source.indexOf('function drawArchitecturalWallShadows(){'),source.indexOf('\nfunction closestPointOnWorldSegment('));
 vm.runInNewContext(shadows+'\ndrawArchitecturalWallShadows();',{explorationTerrain:{},architecturalWalls:[{}]});
 console.log('PASS wall-edge mask uses room LOS polygons, cached texture prefilter and no indoor test-sun shadows');
+
+const waitCode=source.slice(source.indexOf('async function waitForCombatUnitRenders('),source.indexOf('\nfunction combatRenderingPanel('));
+const waitContext={};vm.createContext(waitContext);vm.runInContext(waitCode,waitContext);
+let playerReady,enemyReady,finished=false;
+const player={appearanceRefreshPromise:new Promise(r=>{playerReady=r;})},enemy={appearanceRefreshPromise:new Promise(r=>{enemyReady=r;})};
+const waiting=waitContext.waitForCombatUnitRenders([player,enemy]).then(()=>{finished=true;});
+playerReady({applied:true});await new Promise(r=>setImmediate(r));assert.equal(finished,false,'A rendered player must not reveal fallback enemies');
+enemyReady({applied:true});await waiting;assert.equal(finished,true);
+await assert.rejects(waitContext.waitForCombatUnitRenders([{name:'Orc',appearanceRefreshPromise:Promise.resolve(null)}]),/Could not render Orc/);
+let superseded;const changing={appearanceRefreshPromise:new Promise(r=>{superseded=r;})};
+const changed=waitContext.waitForCombatUnitRenders([changing]);changing.appearanceRefreshPromise=Promise.resolve({applied:true});superseded(null);await changed;
+console.log('PASS all-unit rendering gate waits for enemies, follows superseding renders and reports failure');
