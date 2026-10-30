@@ -464,6 +464,8 @@ async function activateLauncherSelection(){
     return;
   }
 
+  if(target==="exploration-test"){window.location.assign("./exploration.html");return;}
+
   if(target==="3d-studio"){
     window.location.assign("./3d-studio.html");
     return;

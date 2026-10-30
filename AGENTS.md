@@ -96,3 +96,7 @@ See [Armor and movement](docs/ARMOR_AND_MOVEMENT.md) for the shared PHB armor ca
 ## Candidate Rev 205
 
 Optional Studio cartoon shading uses the existing renderer and capture path. See [Banded lighting](docs/BANDED_LIGHTING.md). Preserve standard defaults, source materials, captured pixels and saved lighting.shading through combat regeneration.
+
+## Candidate Rev 206
+
+See docs/EXPLORATION_TEST.md for the standalone 16 x 16 exploration prototype. Preserve separate authored map data, transient walk state and rendering. The sample roster is not combat state.
