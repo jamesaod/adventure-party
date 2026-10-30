@@ -273,3 +273,5 @@ See [Exploration encounters](EXPLORATION_ENCOUNTERS.md) for editor regions, map-
 Exploration startup now has explicit loading/recovery UI and versioned navigation. Map Editor supports 8-128 width/height with protected metadata and Undo. See EXPLORATION_EDITOR.md and EXPLORATION_ENCOUNTERS.md for validation and limitations.
 
 - Rev 212: Exploration encounter rendering uses 1:2 terrain expansion and shared exploration textures. Preserve the clipped floor/LOS-before-actors ordering and avoid the legacy post-LOS unit repaint. See docs/EXPLORATION_ENCOUNTERS.md and scripts/test-exploration-rendering.mjs.
+
+- Rev 213: Ordered startup must await dynamic import() for ES modules, including repository-mobs.mjs top-level asynchronous data loading. A module script load event alone is not an initialization barrier. The startup gate also checks the MOB registry API. test-game-script-loader.mjs covers delayed module initialization, evaluation failure and timeout.
