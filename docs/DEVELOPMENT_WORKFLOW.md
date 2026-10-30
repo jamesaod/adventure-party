@@ -245,3 +245,7 @@ Supersedes Rev 193 relative roll. Equipment stores base `rotation` (XYZ degrees)
 ## MOB authoring and encounter integration
 
 See [MOB library](MOB_LIBRARY.md) for Studio → sheet → combat, local saves versus publication, height calibration and manifest registration.
+
+## Candidate Rev 204 � armor
+
+See [Armor and movement](ARMOR_AND_MOVEMENT.md) for the shared PHB armor catalog, Worn armor selection and specific encumbrance movement. Preserve stable base movement and count carried armor separately from equipped AC.

@@ -88,3 +88,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - **2026-10-22, Candidate Rev 71:** Earlier chat reports successful transfer of an optimized approximately 17.9 KB wooden-shield GLB.
 - **Older alternative:** `pixel-upload-worker.js` and `R158_SETUP.md` document a Cloudflare Worker gateway that accepts Base64 PNG + manifest from Pixel Studio and uses GitHub Contents API to upload to `pixel-inbox`. This is verified for PNG/JSON only, **not** a confirmed GLB upload path.
 - On a new session, **investigate the existing Rev 109 native-blob and Rev 58 temporary-transfer mechanism first**, before declaring binary repo uploads unsupported. Do not confuse evidence that transfers were successful with proof the local-to-connector bridge is currently available.
+
+## Candidate Rev 204 — armor
+
+See [Armor and movement](docs/ARMOR_AND_MOVEMENT.md) for the shared PHB armor catalog, Worn armor selection and specific encumbrance movement. Preserve stable base movement and count carried armor separately from equipped AC.

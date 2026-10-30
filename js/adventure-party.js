@@ -7223,8 +7223,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C201")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C202"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")),
+        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C204"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.generateCombatSpriteSet,
         cacheLimit:24
@@ -9295,21 +9295,11 @@ const MISSILE_WEAPON_CATALOG={
 };
 
 const ARMOR_CATALOG={
-  "banded":{id:"banded",name:"Banded",slot:"armor",encumbrance:35,maxMoveFt:90,acModifier:-6,baseArmorClass:4,cost:"90 gp"},
-  "chain":{id:"chain",name:"Mail hauberk or byrnie (chain)",slot:"armor",encumbrance:30,maxMoveFt:90,acModifier:-5,baseArmorClass:5,cost:"75 gp"},
-  "chain-elfin":{id:"chain-elfin",name:"Mail, elfin (chain)",slot:"armor",encumbrance:15,maxMoveFt:120,acModifier:-5,baseArmorClass:5,cost:"Not sold"},
-  "leather":{id:"leather",name:"Leather",slot:"armor",encumbrance:15,maxMoveFt:120,acModifier:-2,baseArmorClass:8,cost:"5 gp"},
-  "padded":{id:"padded",name:"Padded gambeson",slot:"armor",encumbrance:10,maxMoveFt:90,acModifier:-2,baseArmorClass:8,cost:"4 gp"},
-  "plate":{id:"plate",name:"Plate",slot:"armor",encumbrance:45,maxMoveFt:60,acModifier:-7,baseArmorClass:3,cost:"400 gp"},
-  "ring":{id:"ring",name:"Ring",slot:"armor",encumbrance:35,maxMoveFt:90,acModifier:-3,baseArmorClass:7,cost:"30 gp"},
-  "scale":{id:"scale",name:"Scale or lamellar",slot:"armor",encumbrance:40,maxMoveFt:60,acModifier:-4,baseArmorClass:6,cost:"45 gp"},
-  "splint":{id:"splint",name:"Splint",slot:"armor",encumbrance:40,maxMoveFt:60,acModifier:-6,baseArmorClass:4,cost:"80 gp"},
-  "studded":{id:"studded",name:"Studded",slot:"armor",encumbrance:20,maxMoveFt:90,acModifier:-3,baseArmorClass:7,cost:"15 gp"},
+  ...window.adventurePartyArmorRules.ARMOR_ENGINE_CATALOG,
+  "chain-elfin":{id:"chain-elfin",name:"Mail, elfin (chain)",slot:"armor",encumbrance:15,acModifier:-5,baseArmorClass:5,cost:"Not sold"},
   "shield-large":{id:"shield-large",name:"Shield, large",slot:"shield",encumbrance:10,acBonus:1,cost:"15 gp",rearProtection:false,maxProtectedAttacksPerRound:3},
   "shield-medium":{id:"shield-medium",name:"Shield, medium",slot:"shield",encumbrance:8,acBonus:1,cost:"12 gp",rearProtection:false,maxProtectedAttacksPerRound:2},
   "shield-small":{id:"shield-small",name:"Shield, small",slot:"shield",encumbrance:5,acBonus:1,cost:"10 gp",rearProtection:false,maxProtectedAttacksPerRound:1},
-  "field-plate":{id:"field-plate",name:"Field plate (optional)",slot:"armor",maxMoveFt:90,acModifier:-8,baseArmorClass:2,optional:true},
-  "full-plate":{id:"full-plate",name:"Full plate (optional)",slot:"armor",maxMoveFt:60,acModifier:-9,baseArmorClass:1,optional:true}
 };
 
 function getWeaponCatalogEntry(id){
@@ -14011,7 +14001,7 @@ async function handleTurnControlEffects(actor){
 
         await animateEntitySteps(
           actor,
-          actor.move || 6,
+          actor.move ?? 6,
           ()=>fleeStep(actor,sourceNow),
           105
         );
@@ -14706,9 +14696,7 @@ function calculateArmorClass(unit){
   );
 
   const armor=
-    getArmorCatalogEntry(armorItem?.catalogArmorId) ||
-    armorItem ||
-    null;
+    armorItem ? {...getArmorCatalogEntry(armorItem.catalogArmorId),...armorItem} : null;
 
   const shield=
     getArmorCatalogEntry(shieldItem?.catalogArmorId) ||
@@ -14766,9 +14754,7 @@ function armorClassBreakdown(unit){
   );
 
   const armor=
-    getArmorCatalogEntry(armorItem?.catalogArmorId) ||
-    armorItem ||
-    null;
+    armorItem ? {...getArmorCatalogEntry(armorItem.catalogArmorId),...armorItem} : null;
 
   const shield=
     getArmorCatalogEntry(shieldItem?.catalogArmorId) ||
@@ -15688,8 +15674,8 @@ function makeLibraryMob(id,index,position){
  const unit=makeLegacyOrc(index,position);
  window.adventurePartyRepositoryMobs.apply(unit,Math.random,id);
  unit.type='library-mob';unit.id=`library-mob-${index+1}`;
- syncFighterEquipment(unit);if(!unit.monsterBaselineId)unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
- unit.move=unit.monsterBaselineId?Math.min(unit.move,unit.authoredMove):unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);return unit;
+ syncFighterEquipment(unit);if(!unit.monsterBaselineId&&!unit.inventory.some(i=>i.slot==='armor'&&i.equipped))unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
+ unit.halfMove=Math.floor(unit.move/2);return unit;
 }
 function libraryTestPlayer(){
  const id=new URLSearchParams(window.location?.search||'').get('testMob'),role=new URLSearchParams(window.location?.search||'').get('testRole');
@@ -15704,8 +15690,8 @@ function makeOrc(index,position,templateId){
   authored.apply(unit,Math.random,templateId);
   if(templateId==="orc-archer"){unit.type="orc-archer";unit.id=`orc-archer-${String(index+1).padStart(2,"0")}`;}
   syncFighterEquipment(unit);
-  if(!unit.monsterBaselineId)unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
-  unit.move=unit.monsterBaselineId?Math.min(unit.move,unit.authoredMove):unit.authoredMove;unit.halfMove=Math.floor(unit.move/2);
+  if(!unit.monsterBaselineId&&!unit.inventory.some(i=>i.slot==='armor'&&i.equipped))unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
+  unit.halfMove=Math.floor(unit.move/2);
   return unit;
 }
 
@@ -21359,7 +21345,7 @@ async function handleLevelTwoTurnEffects(actor){
       aiTimer=null;
       await animateEntitySteps(
         actor,
-        actor.move || 6,
+        actor.move ?? 6,
         ()=>fleeStep(actor,source),
         105
       );
@@ -25738,13 +25724,11 @@ function syncFighterEquipment(fighter){
   }
 
   syncRepositoryMissileEquipment(fighter);
-  const armorItem=inventory.find(item=>item.slot==="armor" && item.equipped);
-  const armor=getArmorCatalogEntry(armorItem?.catalogArmorId) || armorItem || null;
-
-  fighter.move=
-    Number.isFinite(armor?.maxMoveFt)
-      ? Math.max(1,Math.round(armor.maxMoveFt/10))
-      : FIGHTER_CLASS.baseMovement;
+  const movement=window.adventurePartyArmorRules.inventoryMovement(fighter,item=>
+    getArmorCatalogEntry(item.catalogArmorId)||getWeaponCatalogEntry(item.catalogWeaponId)||getMissileCatalogEntry(item.catalogWeaponId));
+  fighter.unencumberedMove=movement.baseMove;
+  fighter.encumbrance=movement;
+  fighter.move=movement.move;
 
   fighter.halfMove=Math.floor(fighter.move/2);
   fighter.ac=calculateArmorClass(fighter);
@@ -26029,7 +26013,10 @@ function renderCombatInventory(){
   if(!list)return;
   const name=subject?.name || "Character";
   document.getElementById("inventoryTitle").textContent=`${name.toUpperCase()}'S ITEMS`;
-  document.getElementById("inventorySubtitle").textContent="READY  ITEM";
+  const burden=subject?.encumbrance;
+  document.getElementById("inventorySubtitle").textContent=burden
+    ? `READY  ITEM · ${burden.weight.toFixed(1)} lb. carried · Move ${subject.move}/${burden.baseMove}${burden.missingWeights.length?' · '+burden.missingWeights.length+' item(s) lack weight':''}`
+    : "READY  ITEM";
   const items=subject?.inventory || [];
   list.replaceChildren();
   if(!items.length){const empty=document.createElement("div");empty.textContent="NO ITEMS";list.append(empty);return;}

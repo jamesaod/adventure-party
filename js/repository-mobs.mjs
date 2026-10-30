@@ -1,8 +1,10 @@
-import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C203';
+import * as armorRules from './armor-rules.mjs?v=R238C204';
+if(typeof window!=='undefined')window.adventurePartyArmorRules=armorRules;
+import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C204';
 import {generateMobRules} from './mob-class-rules.mjs?v=R238C203';
-import {sampleGeneration} from './mob-generation.mjs?v=R238C203';
-import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C201';
-import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C203';
+import {sampleGeneration} from './mob-generation.mjs?v=R238C204';
+import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C204';
+import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C204';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C202';
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
@@ -18,7 +20,7 @@ export function createRepositoryMob(template,catalog){
   const match=/^(\d+)d(\d+)([+-]\d+)?$/.exec(rules.hitDice);
   if(rules.hpMode==='rolled'&&!match)throw Error('Unsupported repository MOB hit dice: '+rules.hitDice);
   const hp=rules.maxHp;
-  Object.assign(unit,{repositoryMobId:template.id,heightInches:template.mob.heightInches,species:template.mob.species.toLowerCase(),footprintId:template.mob.footprint,repositoryMobModel:model,name:template.name,classId:sample.classId,level:sample.level,abilities:structuredClone(template.character.abilities),hp,maxHp:hp,ac:rules.ac,authoredBaseAc:rules.ac,unarmoredAc:rules.ac,thaco:rules.thaco,move:rules.move,authoredMove:rules.move,attacksPerRound:rules.attacksPerRound,morale:rules.morale,moraleLabel:String(rules.morale),xpValue:rules.xpValue,hitDiceLabel:rules.hitDice,hitDiceValue:match?+match[1]:1,brightLightAttackPenalty:template.mob.specialAbilities.includes('bright-light-penalty')?-1:0});
+  Object.assign(unit,{repositoryMobId:template.id,sizeCategory:template.mob.size,heightInches:template.mob.heightInches,species:template.mob.species.toLowerCase(),footprintId:template.mob.footprint,repositoryMobModel:model,name:template.name,classId:sample.classId,level:sample.level,abilities:structuredClone(template.character.abilities),hp,maxHp:hp,ac:rules.ac,authoredBaseAc:rules.ac,unarmoredAc:rules.ac,thaco:rules.thaco,move:rules.move,authoredMove:rules.move,attacksPerRound:rules.attacksPerRound,morale:rules.morale,moraleLabel:String(rules.morale),xpValue:rules.xpValue,hitDiceLabel:rules.hitDice,hitDiceValue:match?+match[1]:1,brightLightAttackPenalty:template.mob.specialAbilities.includes('bright-light-penalty')?-1:0});
   unit.inventory=sample.equipment.map(e=>{const item=ITEM_CATALOG[e.itemId];return {name:item.name,type:({shield:'Shield',weapon:'Weapon',armor:'Armor',item:'Item'})[item.category],slot:item.slot,qty:e.quantity||1,equipped:e.slot!=='inventory',equippable:true,catalogItemId:item.id,catalogWeaponId:item.rules.catalogWeaponId,catalogArmorId:item.rules.catalogArmorId,appearanceId:item.appearance?.appearanceId||null,weaponPoseProfileId:item.rules?.poseProfileId||item.appearance?.poseProfileId,...item.rules};});
   Object.assign(unit,generateMobRules(template,sample,rng));
   return unit;

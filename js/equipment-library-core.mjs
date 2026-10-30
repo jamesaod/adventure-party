@@ -1,4 +1,4 @@
-import {ITEM_CATALOG as BASE} from './item-catalog.mjs?v=R238C201';
+import {ITEM_CATALOG as BASE} from './item-catalog.mjs?v=R238C204';
 
 export const LIBRARY_SCHEMA='adventure-party.equipment-library';
 const clone=value=>structuredClone(value);

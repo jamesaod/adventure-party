@@ -177,6 +177,9 @@ jobs:
       - name: Validate monster baselines and minimum HP
         run: node scripts/test-monster-baselines.mjs
 
+      - name: Validate armor and encumbrance
+        run: node scripts/test-armor-rules.mjs
+
       - name: Validate shared MOB library
         run: node scripts/test-mob-library.mjs
 

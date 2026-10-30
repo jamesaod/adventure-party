@@ -1,5 +1,5 @@
-import {loadMobLibrary} from './mob-library.mjs?v=R238C203';
-import {renderMobPreview} from './mob-preview.mjs?v=R238C203';
+import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
+import {renderMobPreview} from './mob-preview.mjs?v=R238C204';
 const root=document.getElementById('mobCards'),status=document.getElementById('libraryStatus');
 try{const {library,catalog}=await loadMobLibrary();let sequence=Promise.resolve();const previews=new Map();
  const render=()=>{root.replaceChildren();for(const record of library.records()){
