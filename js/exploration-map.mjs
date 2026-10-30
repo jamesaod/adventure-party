@@ -6,7 +6,7 @@ export function explorationMapMarkup(map, state, discovery) {
   validateMap(map);
   const size = 16, insetX = 16, insetY = 26;
   const parts = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 292" role="img" aria-label="Old Tollhouse, 16 by 16 map. Party at column ${state.x + 1}, row ${state.z + 1}, facing ${FACINGS[state.facing]}.">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 292" role="img" aria-label="Exploration, 16 by 16 map. Party at column ${state.x + 1}, row ${state.z + 1}, facing ${FACINGS[state.facing]}.">`,
     '<defs><pattern id="mapWallHatch" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 5L5 0M4 6L6 4" stroke="#80572f" stroke-width=".45" opacity=".4"/></pattern></defs>',
     '<g fill="#654224" font-family="Georgia, serif" font-size="10" text-anchor="middle"><text x="144" y="13">N ↑</text><text x="24" y="22">1</text><text x="264" y="22">16</text></g>'
   ];
@@ -32,6 +32,7 @@ export function explorationMapMarkup(map, state, discovery) {
     parts.push(open ? '<path d="M-6 0V-12" stroke-width="2.5"/><path d="M6 0A12 12 0 0 0-6-12" stroke-width=".7" stroke-dasharray="2 1"/>' : '<rect x="-6" y="-2" width="12" height="4" fill="#b38a55" stroke-width="1.2"/>');
     parts.push('</g>');
   }
+  for(const exit of map.exits||[]){if(discovery.discovered.has(cellKey(exit.x,exit.z)))parts.push(`<text x="${insetX+(exit.x+.5)*size}" y="${insetY+(exit.z+.5)*size+4}" fill="#633b20" font-size="12" text-anchor="middle">X</text>`);}
   parts.push(`<g data-party="${state.x},${state.z},${state.facing}" transform="translate(${insetX+(state.x+.5)*size} ${insetY+(state.z+.5)*size}) rotate(${state.facing*90})"><circle r="7" fill="#f4dfac" stroke="#694021" stroke-width=".7"/><path d="M0-6L4.5 4L0 2L-4.5 4Z" fill="#633b20"/></g></svg>`);
   return parts.join('');
 }

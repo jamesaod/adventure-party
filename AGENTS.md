@@ -100,3 +100,7 @@ Optional Studio cartoon shading uses the existing renderer and capture path. See
 ## Candidate Rev 206
 
 See docs/EXPLORATION_TEST.md for the standalone 16 x 16 exploration prototype. Preserve separate authored map data, transient walk state and rendering. The sample roster is not combat state.
+
+## Candidate Rev 209
+
+See docs/EXPLORATION_EDITOR.md for map authoring. Keep design packs separate from test/campaign state and preserve named entrance/exit references.

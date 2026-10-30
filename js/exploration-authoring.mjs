@@ -1,0 +1,87 @@
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C206';
+
+export const DRAFT_KEY='adventure-party:exploration-draft:v1';
+export const TEST_KEY='adventure-party:exploration-test:v1';
+export const copy=value=>structuredClone(value);
+export const newId=prefix=>`${prefix}-${crypto.randomUUID()}`;
+const onFloor=(map,p)=>Number.isInteger(p?.x)&&Number.isInteger(p?.z)&&map.grid[p.z]?.[p.x]==='.';
+const validId=value=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(value);
+
+export function seedPack(map){
+  const first=copy(map);first.entrances=[{id:'entry',name:'Main entrance',...first.start}];first.exits=[];
+  return {format:'adventure-party-exploration',version:1,id:'tollhouse-adventure',name:'My adventure',maps:[first]};
+}
+export function blankMap(id,name){
+  return {version:1,id,name,width:16,height:16,cellFeet:10,grid:Array.from({length:16},(_,z)=>z===0||z===15?'################':'#..............#'),start:{x:2,z:13,facing:0},doors:[],torches:[],landmarks:[],party:[],entrances:[{id:'entry',name:'Main entrance',x:2,z:13,facing:0}],exits:[]};
+}
+
+// Invalid drafts may be edited, but only complete, linked packs can be tested/exported.
+export function packIssues(pack){
+  const issues=[];
+  if(pack?.format!=='adventure-party-exploration'||pack.version!==1||!Array.isArray(pack.maps)||!pack.maps.length||pack.maps.length>100)return ['Expected an Adventure Pack with 1–100 maps.'];
+  const ids=new Set();
+  for(const map of pack.maps){
+    const label=typeof map?.name==='string'?map.name:'Unnamed map';
+    if(!map||typeof map!=='object'){issues.push('Invalid map record.');continue;}
+    if(!validId(map.id)||ids.has(map.id))issues.push(`${label}: map ID is missing, invalid or duplicated.`);ids.add(map.id);
+    if(typeof map.name!=='string'||!map.name.trim()||map.name.length>100)issues.push(`${label}: give the map a name (100 characters maximum).`);
+    if(map.cellFeet!==10)issues.push(`${label}: map squares must represent ten feet.`);
+    if(!Array.isArray(map.party)||map.party.some(p=>!p||typeof p.name!=='string'||typeof p.role!=='string'||![p.ac,p.hp,p.maxHp].every(Number.isFinite)))issues.push(`${label}: invalid example party roster.`);
+    try{validateMap(map);}catch(e){issues.push(`${label}: ${e.message}`);continue;}
+    if(!Array.isArray(map.entrances)||!Array.isArray(map.exits)||!Array.isArray(map.torches)){issues.push(`${label}: entrances, exits and torches must be lists.`);continue;}
+    const entranceIds=new Set(),exitIds=new Set(),exitCells=new Set();
+    for(const e of map.entrances){
+      if(!validId(e?.id)||entranceIds.has(e.id)||typeof e.name!=='string'||!e.name.trim()||!onFloor(map,e)||!Number.isInteger(e.facing)||e.facing<0||e.facing>3)issues.push(`${label}: invalid or duplicated entrance.`);
+      entranceIds.add(e?.id);
+    }
+    for(const e of map.exits){
+      if(!validId(e?.id)||exitIds.has(e.id)||!onFloor(map,e)||exitCells.has(cellKey(e.x,e.z)))issues.push(`${label}: invalid or overlapping exit.`);
+      exitIds.add(e?.id);exitCells.add(cellKey(e?.x,e?.z));
+      const target=pack.maps.find(m=>m?.id===e?.targetMapId);
+      if(!target?.entrances?.some(a=>a.id===e.targetEntranceId))issues.push(`${label}: exit destination is missing.`);
+    }
+    for(const t of map.torches)if(!onFloor(map,t))issues.push(`${label}: torch must be on a floor square.`);
+    // Flood fill considers doors open, checking that authored connections can be reached.
+    const seen=new Set([cellKey(map.start.x,map.start.z)]),queue=[map.start];
+    for(let i=0;i<queue.length;i++)for(const [dx,dz] of [[0,-1],[1,0],[0,1],[-1,0]]){
+      const x=queue[i].x+dx,z=queue[i].z+dz,key=cellKey(x,z);
+      if('.D'.includes(map.grid[z]?.[x]??'#')&&!seen.has(key)){seen.add(key);queue.push({x,z});}
+    }
+    for(const e of [...map.entrances,...map.exits])if(!seen.has(cellKey(e.x,e.z)))issues.push(`${label}: entrance/exit at ${e.x+1}, ${e.z+1} cannot be reached from the start.`);
+  }
+  return [...new Set(issues)];
+}
+export function parsePack(text){
+  if(text.length>2_000_000)throw Error('Adventure Pack is too large (2 MB maximum).');
+  const pack=JSON.parse(text),issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));return pack;
+}
+export function paintCell(map,x,z,tool){
+  if(x<1||x>14||z<1||z>14)throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+  if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
+  if(tool==='torch'){if(map.grid[z][x]!=='.')throw Error('Place torches on floor.');const i=map.torches.findIndex(p=>p.x===x&&p.z===z);if(i<0)map.torches.push({x,z});else map.torches.splice(i,1);return;}
+  const cell=tool==='wall'?'#':tool.startsWith('door-')?'D':'.';
+  if(cell!=='.'&&[map.start,...map.entrances,...map.exits].some(p=>p.x===x&&p.z===z))throw Error('Move or remove the start, entrance or exit before blocking this square.');
+  map.grid[z]=map.grid[z].slice(0,x)+cell+map.grid[z].slice(x+1);
+  map.doors=map.doors.filter(d=>d.x!==x||d.z!==z);if(cell==='D')map.doors.push({x,z,axis:tool==='door-x'?'x':'z'});
+  if(cell!=='.')map.torches=map.torches.filter(t=>t.x!==x||t.z!==z);
+}
+export function linkMaps(pack,sourceId,point,targetId,entranceId,returnLink=false){
+  const source=pack.maps.find(m=>m.id===sourceId),target=pack.maps.find(m=>m.id===targetId),arrival=target?.entrances.find(e=>e.id===entranceId);
+  if(!source||!target||!arrival||!onFloor(source,point))throw Error('Choose a floor square and a valid destination entrance.');
+  if(returnLink&&target.exits.some(e=>e.x===arrival.x&&e.z===arrival.z))throw Error('The destination entrance already has an exit. Leave return connection unchecked or remove that exit first.');
+  const exit={id:newId('exit'),x:point.x,z:point.z,targetMapId:targetId,targetEntranceId:entranceId};
+  if(returnLink){
+    let back=source.entrances.find(e=>e.x===point.x&&e.z===point.z);
+    if(!back){back={id:newId('entrance'),name:'Return entrance',...point};source.entrances.push(back);}
+    target.exits.push({id:newId('exit'),x:arrival.x,z:arrival.z,targetMapId:sourceId,targetEntranceId:back.id});
+  }
+  source.exits=source.exits.filter(e=>e.x!==point.x||e.z!==point.z);source.exits.push(exit);
+  return exit;
+}
+export function destination(pack,mapId,x,z){
+  const exit=pack.maps.find(m=>m.id===mapId)?.exits.find(e=>e.x===x&&e.z===z);
+  if(!exit)return null;
+  const map=pack.maps.find(m=>m.id===exit.targetMapId),entrance=map?.entrances.find(e=>e.id===exit.targetEntranceId);
+  if(!map||!entrance)throw Error('Exit destination no longer exists. Return to the editor to repair it.');
+  return {map,entrance};
+}
