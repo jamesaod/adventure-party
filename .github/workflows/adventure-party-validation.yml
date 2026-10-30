@@ -180,6 +180,9 @@ jobs:
       - name: Validate armor and encumbrance
         run: node scripts/test-armor-rules.mjs
 
+      - name: Validate banded lighting
+        run: node scripts/test-banded-lighting.mjs
+
       - name: Validate shared MOB library
         run: node scripts/test-mob-library.mjs
 

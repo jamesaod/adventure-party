@@ -1,3 +1,4 @@
+import {createBandedLighting} from './banded-lighting.mjs?v=R238C205';
 import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs?v=R238C202';
 import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
 import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
@@ -183,12 +184,12 @@ function quantizedCanvas(source,width,height,style,{flipY=true}={}){
   return canvas;
 }
 
-function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,shadowMaterial){
+function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,shadowMaterial,bandedLighting,shading){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
   renderer.clear(true,true,true);
-  renderer.render(scene,camera);
+  bandedLighting.render(renderer,scene,camera,shading);
 
   const raw=new Uint8Array(frame.width*frame.height*4);
   renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,raw);
@@ -343,6 +344,7 @@ export async function generateCombatSpriteSet(recipe){
   const poseNames=WINDUP_POSES.filter(name=>profile?.poses?.[name]);
   const images={},runtimeImages={},sourceUrls={},poses={};
   const shadowMaterial=createGroundShadowMaterial();
+  const bandedLighting=createBandedLighting();
   try{
     for(const capture of poseNames){
       const pose=profile?.poses?.[capture];
@@ -364,7 +366,7 @@ export async function generateCombatSpriteSet(recipe){
       poses[capture]={clip:pose.rest?'T-pose':clip.name,time:action.time,frames:{}};
       for(const facing of HEX_FACINGS){
         const rendered=frameCanvases(
-          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,shadowMaterial
+          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,shadowMaterial,bandedLighting,recipe.renderSettings?.lighting?.shading
         );
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
         const src=rendered.sourceCanvas.toDataURL('image/png');
@@ -399,6 +401,7 @@ export async function generateCombatSpriteSet(recipe){
       else material?.dispose?.();
     });
     mixer.stopAllAction();
+    bandedLighting.dispose();
     shadowMaterial.dispose();
     target.dispose();
     renderer.dispose();

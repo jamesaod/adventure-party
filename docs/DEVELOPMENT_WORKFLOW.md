@@ -249,3 +249,7 @@ See [MOB library](MOB_LIBRARY.md) for Studio → sheet → combat, local saves v
 ## Candidate Rev 204 � armor
 
 See [Armor and movement](ARMOR_AND_MOVEMENT.md) for the shared PHB armor catalog, Worn armor selection and specific encumbrance movement. Preserve stable base movement and count carried armor separately from equipped AC.
+
+## Candidate Rev 205
+
+Optional Studio cartoon shading uses the existing renderer and capture path. See [Banded lighting](BANDED_LIGHTING.md). Preserve standard defaults, source materials, captured pixels and saved lighting.shading through combat regeneration.

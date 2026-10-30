@@ -1,6 +1,6 @@
 import {createRepositoryMob} from './repository-mobs.mjs?v=R238C204';
 import {appearanceRecipeForMob} from './mob-appearance.mjs?v=R238C204';
-import {generateCombatSpriteSet} from './combat-mob-renderer.mjs?v=R238C204';
+import {generateCombatSpriteSet} from './combat-mob-renderer.mjs?v=R238C205';
 // A deterministic example of a weighted template, never an implicit saved roll.
 export async function renderMobPreview(mob,catalog,pose='ready'){
  const api=createRepositoryMob(mob,catalog),unit=api.apply({id:mob.id,type:'orc'},()=>0);
