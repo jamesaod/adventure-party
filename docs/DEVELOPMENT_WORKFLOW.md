@@ -257,3 +257,7 @@ Optional Studio cartoon shading uses the existing renderer and capture path. See
 ## Candidate Rev 206 exploration proof of concept
 
 See [Exploration Test](EXPLORATION_TEST.md) for map schema, texture provenance, controls and validation. The title menu entry is separate from the future Map Maker Explorer editor. The queued setting concept is saved in [The Bells of Blackwater](ideas/THE_BELLS_OF_BLACKWATER.md).
+
+## Candidate Rev 209 map authoring
+
+[Exploration Map Editor](EXPLORATION_EDITOR.md) documents Adventure Packs, named entrances/exits, browser drafts and isolated test snapshots. Reuse the existing exploration renderer, movement and discovery paths. Events and encounters remain later work.

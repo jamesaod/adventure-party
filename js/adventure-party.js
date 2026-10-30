@@ -464,6 +464,7 @@ async function activateLauncherSelection(){
     return;
   }
 
+  if(target==="explorer"){window.location.assign("./map-editor.html");return;}
   if(target==="exploration-test"){window.location.assign("./exploration.html");return;}
 
   if(target==="3d-studio"){

@@ -197,3 +197,6 @@ jobs:
 
       - name: Exploration discovery and persistence
         run: node scripts/test-exploration-discovery.mjs
+
+      - name: Exploration map authoring and linked tests
+        run: node scripts/test-exploration-authoring.mjs
