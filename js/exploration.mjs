@@ -1,11 +1,12 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C206';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C207';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const CELL=3,HEIGHT=3.5,EYE=1.65,doors=new Map(),flames=[];
 let renderer,map,state,camera,scene,motion=null,frame,resizeObserver;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function message(text){if(!text)return;const li=document.createElement('li');li.textContent=text;$('messages').append(li);while($('messages').children.length>3)$('messages').firstChild.remove();}
-function status(){ $('position').textContent=`Square ${state.x+1}, ${state.z+1} · ${state.steps} steps · ${state.visited.size} squares explored`;$('facing').textContent=FACINGS[state.facing];canvas.dataset.position=`${state.x},${state.z},${state.facing}`;const place=map.landmarks?.find(p=>p.x===state.x&&p.z===state.z);if(place)$('landmark').textContent=place.text;}
+function status(){ $('areaMap').innerHTML=explorationMapMarkup(map,state);$('mapPosition').textContent=`Party: ${state.x+1}, ${state.z+1} · ${FACINGS[state.facing]}`; $('position').textContent=`Square ${state.x+1}, ${state.z+1} · ${state.steps} steps · ${state.visited.size} squares explored`;$('facing').textContent=FACINGS[state.facing];canvas.dataset.position=`${state.x},${state.z},${state.facing}`;const place=map.landmarks?.find(p=>p.x===state.x&&p.z===state.z);if(place)$('landmark').textContent=place.text;}
 function box(w,h,d,material,x,y,z,parent=scene){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
 function resize(){const r=viewport.getBoundingClientRect(),width=Math.max(1,Math.min(Math.floor(r.width),$('pixelView').checked?800:1600));renderer.setSize(width,Math.max(1,Math.round(width*r.height/r.width)),false);canvas.classList.toggle('pixel',$('pixelView').checked);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
 function command(action){if(!state||motion)return;const old={x:camera.position.x,z:camera.position.z,yaw:camera.rotation.y};const result=act(map,state,action);message(result.message);if(!result.changed)return;status();const yaw=old.yaw+(action==='left'?Math.PI/2:action==='right'?-Math.PI/2:0);motion={start:performance.now(),duration:reduced?1:190,old,x:state.x*CELL,z:state.z*CELL,yaw};}

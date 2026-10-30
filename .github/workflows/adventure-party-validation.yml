@@ -191,3 +191,6 @@ jobs:
 
       - name: Exploration map and movement
         run: node scripts/test-exploration.mjs
+
+      - name: Exploration parchment map
+        run: node scripts/test-exploration-map.mjs
