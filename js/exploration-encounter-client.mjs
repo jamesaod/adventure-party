@@ -1,4 +1,4 @@
-import {HANDOFF_KEY,progressKey,readProgress,encounterAt} from './exploration-encounters.mjs?v=R238C212';
+import {HANDOFF_KEY,progressKey,readProgress,encounterAt} from './exploration-encounters.mjs?v=R238C217';
 export function createEncounterClient(map,context){
   const storage=context?sessionStorage:localStorage;
   const scope=JSON.stringify([context?.id||'published',map.id,map.grid,map.encounters||[]]);
@@ -19,7 +19,7 @@ export function createEncounterClient(map,context){
       const event=encounterAt(map,state,progress);if(!event)return false;
       const old=progress.encounters[event.id];
       const request={map,event,scope,test:!!context,returnSearch:location.search,origin:old?.origin||{x:state.x,z:state.z},position:{x:state.x,z:state.z,facing:state.facing},returnPosition:previous,openDoors:[...state.openDoors],player:progress.player,previous:old};
-      sessionStorage.setItem(HANDOFF_KEY,JSON.stringify(request));location.assign('index.html?explorationCombat=1&v=R238C216');return true;
+      sessionStorage.setItem(HANDOFF_KEY,JSON.stringify(request));location.assign('index.html?explorationCombat=1&v=R238C217');return true;
     },
     defeated:()=>progress.player?.hp<=0,
     reset(){progress={encounters:{},player:null};storage.setItem(progressKey(scope),JSON.stringify(progress));},

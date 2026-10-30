@@ -54,3 +54,7 @@ exploration-materials.mjs is now the common source for the original sRGB texture
 exploration-combat-scenery.mjs renders these meshes through an orthographic camera aligned to the 1:2 tactical projection, caches the small set of wall/door images, then disposes its WebGL context. Existing combat actors depth-sort the cached scenery with unit sprites. This avoids new WebGL work every combat frame. Wall sprites retain full exploration height and can obscure units behind foreground walls; a cutaway presentation is a possible later refinement. Lighting of the cached wall art uses the exploration hemisphere/lantern setup; existing map torch floor lighting remains. Real-time wall relighting and interactive combat doors are not part of this pass.
 
 The exploration floor conversion, tactical collision/LOS, 50% grid and unit-render wait remain. Startup waits for scenery preparation as well. Tests cover shared door dimensions/hinges, mapping of visual wall cells to existing collision boundaries, and open/closed snapshot poses. Browser QA walks through both exploration doors and enters combat using the shared materials.
+
+## Candidate Rev 217 - restore 1:1 scale
+
+One exploration square again spans one tactical hex width. The shared terrain projection drives floor, wall/door scenery size, torch placement and collision together. This supersedes the Rev 212 expansion; current 3D wall/door materials, loading gate and 50% grid remain. The five-square crop and tactical movement rules are unchanged.
