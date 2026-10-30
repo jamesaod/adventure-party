@@ -19,7 +19,19 @@ export function scriptRequestUrl(src,baseUrl,{attempt=0,reloadToken=null,now=Dat
   return url.href;
 }
 
+export async function loadGameModule(url,{importModule=src=>import(src),timeoutMs=30000}={}){
+  let timer;
+  try{
+    // Module script load events can precede completion of top-level await.
+    // import() resolves only after the module and its dependencies evaluate.
+    return await Promise.race([importModule(url),new Promise((_,reject)=>{
+      timer=setTimeout(()=>reject(new Error(`Game module timed out: ${url}`)),timeoutMs);
+    })]);
+  }finally{clearTimeout(timer);}
+}
+
 function appendGameScript(entry,attempt,reloadToken){
+  if(entry.type==='module')return loadGameModule(scriptRequestUrl(entry.src,document.baseURI,{attempt,reloadToken}));
   return new Promise((resolve,reject)=>{
     const script=document.createElement('script');
     script.async=false;
@@ -84,7 +96,8 @@ async function startGame(){
       onProgress:(done,total)=>{status.textContent=`Loading game… ${done}/${total}`;}
     });
     if(typeof window.AdventurePartyLevel3Spells?.cleanupInvisibilityRadius!=='function'||
-       typeof window.adventurePartySpriteSets?.register!=='function'){
+       typeof window.adventurePartySpriteSets?.register!=='function'||
+       typeof window.adventurePartyRepositoryMobs?.canTest!=='function'){
       throw new Error('Required combat or sprite APIs did not initialize.');
     }
     for(const {node,inert} of blocked)node.inert=inert;

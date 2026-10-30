@@ -1,8 +1,24 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {loadGameScripts,scriptRequestUrl} from '../js/game-script-loader.mjs';
+import {loadGameScripts,scriptRequestUrl,loadGameModule} from '../js/game-script-loader.mjs';
 const root=new URL('../',import.meta.url);
+// Reproduce an asynchronously initialized registry: later classic engine code
+// must not execute while module evaluation is still suspended.
+let releaseRegistry,registryReady=false;
+const pendingRegistry=new Promise(resolve=>{releaseRegistry=()=>{registryReady=true;resolve({canTest:()=>true});};});
+const loaded=[];
+const ordered=loadGameScripts([{type:'module',src:'registry'},{type:'classic',src:'engine'}],{loadScript:async entry=>{
+  if(entry.type==='module')await loadGameModule(entry.src,{importModule:()=>pendingRegistry});
+  else assert.equal(registryReady,true);
+  loaded.push(entry.src);
+}});
+await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(loaded,[]);
+releaseRegistry();await ordered;assert.deepEqual(loaded,['registry','engine']);
+const evaluated=await loadGameModule('data:text/javascript,'+encodeURIComponent('await new Promise(r=>setTimeout(r,10));export const ready=true;'));
+assert.equal(evaluated.ready,true);
+await assert.rejects(loadGameModule('broken',{importModule:async()=>{throw Error('registry unavailable');}}),/registry unavailable/);
+await assert.rejects(loadGameModule('stalled',{importModule:()=>new Promise(()=>{}),timeoutMs:5}),/timed out/);
 const read=path=>readFileSync(new URL(path,root),'utf8');
 const html=read('index.html');
 const entries=[...html.matchAll(/<script src="([^"]+)" type="text\/plain" data-game-script="(classic|module)"><\/script>/g)]
@@ -20,7 +36,7 @@ const activeSources=[...html.matchAll(/<script\b([^>]*src="[^"]+"[^>]*)>/g)]
 assert.equal(activeSources.length,1,'No game script can bypass ordered startup');
 assert.ok(activeSources[0][1].includes('js/game-script-loader.mjs'));
 for(const entry of entries){
-  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189|190|191|192|194|195|196|197|198|199|200|201|202|203|204|205|206|209|210|211|212)$/,'Refresh the former shared R238 script cache');
+  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189|190|191|192|194|195|196|197|198|199|200|201|202|203|204|205|206|209|210|211|212|213)$/,'Refresh the former shared R238 script cache');
   if(entry.type==='classic')new vm.Script(read(pathOf(entry)),{filename:pathOf(entry)});
 }
 
