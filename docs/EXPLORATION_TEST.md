@@ -19,3 +19,7 @@ Future work: real party state, planned/random encounters, exploration saves and 
 ## Rev 207: parchment map
 
 The party sidebar now draws the actual 16 x 16 grid in brown ink on a CSS parchment background. `js/exploration-map.mjs` creates a scalable SVG from the same map and live state used for movement: hatched solids, outlined rooms and corridors, oriented doors, and a party position/facing arrow. It shows the full map, with north fixed at the top, and updates on movement, turning, door changes and restart. This is automatic map drawing, not a separate illustration or an editing interface. No generated raster asset or second map definition is needed. Run `node scripts/test-exploration-map.mjs` to check grid, door and marker synchronization.
+
+## Rev 208: line-of-sight discovery
+
+Unseen cells and doors are omitted from the parchment. A supercover grid ray reveals unobstructed cells in all directions from the party, including the first blocking wall or closed door. Rays cannot pass between blocked corners. Opening a door reveals the space beyond; previously seen cells remain inked after leaving sight. Door symbols remember their last observed state. Browser localStorage saves discovery per map ID and exact layout; reopening returns the party to the entrance but retains its map. Restart walk & clear map deliberately starts over. Corrupt saves are ignored and unavailable storage falls back to memory for the current visit.
