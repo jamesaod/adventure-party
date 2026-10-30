@@ -1,0 +1,19 @@
+# Exploration encounters — Candidate Rev 210
+
+The tollhouse now has an Orc patrol in its north room. Walk north through both doors to enter tactical combat. Press Space to begin; use the normal combat controls. Retreat to exploration saves current HP, inventory/equipment, conditions and surviving opponents. Victory returns to exploration and prevents that encounter from triggering again. Defeat requires Restart on the exploration page.
+
+## Authoring
+
+In Map Editor, select the northwest corner of a trigger region. Enter its name, width/height, choose an encounter-enabled MOB from the existing library, count (1–6), and the enemy deployment anchor (one-based column/row). Add/update encounter; C marks its region. Select its origin to edit or remove it. Save and Test Map. Adventure Pack export/import includes encounters. Existing saved drafts are preserved and do not automatically gain the sample patrol.
+
+## Integration
+
+`exploration-encounters.mjs` owns trigger validation, outcomes and square-to-hex terrain conversion. Ten-foot exploration squares and ten-foot tactical hex spacing share world dimensions. The bounded area extends five exploration squares from the entry point. Solid wall edges and closed doors become existing engine architectural wall segments; outside cells are blocked. Deployment validates full footprints and connected movement space. Partial hexes beside walls can be conservatively blocked, so narrow passages may need widening.
+
+`exploration-encounter-client.mjs` creates the session handoff. `exploration-combat-hooks.js` runs after ordered engine startup, uses existing makeFighter/makeLibraryMob factories, and provides retreat/finish persistence. Stable player ID remains `player`, required by the engine turn lookup. Refresh restores the initially saved encounter rather than sampling another opponent set. Units retain their sampled class levels, HP and equipment across retreat/re-entry. Results are JSON snapshots; no duplicate combat engine or asset renderer is introduced.
+
+Normal test progress is browser-local and scoped to map geometry/encounter definitions. Editor tests use isolated session storage. Restart clears the current map's encounter progress and discovery. This is a one-character, per-map proof of concept, not a campaign party/save system. Other map tests do not share Carl's progress yet. Combat snapshots are saved at entry and explicit return; closing the browser mid-round does not save that round. Doors cannot be changed during this combat POC. Victory loot is recorded in the encounter result, but an exploration loot UI and campaign XP award are future work. Random encounter tables, mixed MOB groups, 128×128 maps and outdoor edges remain separate updates.
+
+## Verification
+
+Run scripts/test-exploration-encounters.mjs and repository validation. Browser test: walk into patrol, begin combat, retreat, confirm reduced HP on party list, re-enter with the same opponents, and complete combat. Cleared region must no longer retrigger; Restart must allow a fresh test.

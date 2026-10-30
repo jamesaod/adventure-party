@@ -21,3 +21,6 @@ Open **Exploration Map Editor** from the title menu. The first visit copies the 
 The map grid, SVG map and first-person scene share one definition. This pass implements map authoring and connections only. Event authoring, encounter tables, combat handoff and campaign saves remain later work.
 
 Run `node scripts/test-exploration-authoring.mjs` and the repository validation workflow. Browser QA should create/paint/save a map, connect two maps in both directions, test transitions and return to the editor, and verify import/export and invalid-link feedback.
+
+
+Candidate Rev 210 adds location encounters and combat handoff; see [Exploration encounters](EXPLORATION_ENCOUNTERS.md). Random tables and campaign saves remain later work.

@@ -124,5 +124,20 @@
       "hp": 12,
       "maxHp": 16
     }
+  ],
+  "encounters": [
+    {
+      "id": "tollhouse-orc-patrol",
+      "name": "Orc patrol",
+      "x": 1,
+      "z": 4,
+      "width": 7,
+      "height": 3,
+      "mobId": "orc-male-uniformed",
+      "count": 2,
+      "spawnX": 5,
+      "spawnZ": 2,
+      "enabled": true
+    }
   ]
 }
