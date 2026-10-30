@@ -1,4 +1,4 @@
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C206';
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C211';
 
 import {validateEncounters} from './exploration-encounters.mjs?v=R238C210';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
@@ -58,7 +58,7 @@ export function parsePack(text){
   const pack=JSON.parse(text),issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));return pack;
 }
 export function paintCell(map,x,z,tool){
-  if(x<1||x>14||z<1||z>14)throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+  if(x<1||x>map.width-2||z<1||z>map.height-2)throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
   if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
   if(tool==='torch'){if(map.grid[z][x]!=='.')throw Error('Place torches on floor.');const i=map.torches.findIndex(p=>p.x===x&&p.z===z);if(i<0)map.torches.push({x,z});else map.torches.splice(i,1);return;}
   const cell=tool==='wall'?'#':tool.startsWith('door-')?'D':'.';
@@ -86,4 +86,13 @@ export function destination(pack,mapId,x,z){
   const map=pack.maps.find(m=>m.id===exit.targetMapId),entrance=map?.entrances.find(e=>e.id===exit.targetEntranceId);
   if(!map||!entrance)throw Error('Exit destination no longer exists. Return to the editor to repair it.');
   return {map,entrance};
+}
+
+export function resizeMap(map,width,height){
+  if(![width,height].every(n=>Number.isInteger(n)&&n>=8&&n<=128))throw Error('Width and height must be whole numbers from 8 to 128.');
+  const inside=p=>p.x>0&&p.z>0&&p.x<width-1&&p.z<height-1;
+  if(![map.start,...map.entrances,...map.exits,...map.doors,...map.torches,...(map.landmarks||[])].every(inside))throw Error('Move or remove starts, entrances, exits, doors, torches and landmarks outside the new boundary before shrinking.');
+  if((map.encounters||[]).some(e=>!inside({x:e.spawnX,z:e.spawnZ})||!inside(e)||e.x+e.width>width-1||e.z+e.height>height-1))throw Error('Move or remove encounters outside the new boundary before shrinking.');
+  const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.').join(''));
+  Object.assign(map,{width,height,grid});validateMap(map);return map;
 }

@@ -30636,6 +30636,7 @@ function handleCombatKey(event){
 
   if(keyLower==="r"){
     event.preventDefault();
+    if(explorationEncounter){setCombatMessage("Return to exploration and restart there to reset this encounter.");return;}
     newGame(selectedCombatCondition);
     return;
   }

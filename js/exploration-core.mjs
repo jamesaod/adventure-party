@@ -2,12 +2,12 @@ export const FACINGS=['North','East','South','West'];
 const vectors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const cellKey=(x,z)=>`${x},${z}`;
 export function validateMap(map){
- if(map?.version!==1||map.width!==16||map.height!==16||map.grid?.length!==16||map.grid.some(r=>typeof r!=='string'||r.length!==16||/[^#.D]/.test(r)))throw Error('Expected a 16 × 16 exploration map.');
- for(let i=0;i<16;i++)if(map.grid[0][i]!=='#'||map.grid[15][i]!=='#'||map.grid[i][0]!=='#'||map.grid[i][15]!=='#')throw Error('Map boundary must be enclosed.');
+ if(map?.version!==1||![map.width,map.height].every(n=>Number.isInteger(n)&&n>=8&&n<=128)||!Array.isArray(map.grid)||map.grid.length!==map.height||map.grid.some(r=>typeof r!=='string'||r.length!==map.width||/[^#.D]/.test(r)))throw Error('Expected an exploration map with width and height from 8 to 128.');
+ if([...map.grid[0],...map.grid[map.height-1]].some(c=>c!=='#')||map.grid.some(row=>row[0]!=='#'||row[map.width-1]!=='#'))throw Error('Map boundary must be enclosed.');
  const s=map.start;
  if(!Number.isInteger(s?.x)||!Number.isInteger(s?.z)||map.grid[s.z]?.[s.x]!=='.'||!Number.isInteger(s.facing)||s.facing<0||s.facing>3)throw Error('Invalid start.');
  const seen=new Set();for(const d of map.doors||[]){const k=cellKey(d.x,d.z);if(!Number.isInteger(d.x)||!Number.isInteger(d.z)||map.grid[d.z]?.[d.x]!=='D'||!['x','z'].includes(d.axis)||seen.has(k))throw Error('Invalid door.');seen.add(k);}
- for(let z=0;z<16;z++)for(let x=0;x<16;x++)if(map.grid[z][x]==='D'&&!seen.has(cellKey(x,z)))throw Error('Door metadata missing.');
+ for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)if(map.grid[z][x]==='D'&&!seen.has(cellKey(x,z)))throw Error('Door metadata missing.');
  return map;
 }
 export function createExplorationState(map){validateMap(map);return {...map.start,steps:0,openDoors:new Set(),visited:new Set([cellKey(map.start.x,map.start.z)])};}

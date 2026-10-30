@@ -1,4 +1,4 @@
-import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C206';
+import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C211';
 
 // The map and first-person view share the same authored grid and live state.
 // North is the top edge; there is no separately authored illustration to drift.
@@ -6,9 +6,9 @@ export function explorationMapMarkup(map, state, discovery) {
   validateMap(map);
   const size = 16, insetX = 16, insetY = 26;
   const parts = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 292" role="img" aria-label="Exploration, 16 by 16 map. Party at column ${state.x + 1}, row ${state.z + 1}, facing ${FACINGS[state.facing]}.">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${map.width*size+32} ${map.height*size+36}" role="img" aria-label="Exploration, ${map.width} by ${map.height} map. Party at column ${state.x + 1}, row ${state.z + 1}, facing ${FACINGS[state.facing]}.">`,
     '<defs><pattern id="mapWallHatch" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 5L5 0M4 6L6 4" stroke="#80572f" stroke-width=".45" opacity=".4"/></pattern></defs>',
-    '<g fill="#654224" font-family="Georgia, serif" font-size="10" text-anchor="middle"><text x="144" y="13">N ↑</text><text x="24" y="22">1</text><text x="264" y="22">16</text></g>'
+    `<g fill="#654224" font-family="Georgia, serif" font-size="10" text-anchor="middle"><text x="${map.width*size/2+16}" y="13">N ↑</text><text x="24" y="22">1</text><text x="${map.width*size+8}" y="22">${map.width}</text></g>`
   ];
   for (let z = 0; z < map.height; z++) {
     for (let x = 0; x < map.width; x++) {

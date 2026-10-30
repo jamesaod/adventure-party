@@ -24,3 +24,10 @@ Run `node scripts/test-exploration-authoring.mjs` and the repository validation 
 
 
 Candidate Rev 210 adds location encounters and combat handoff; see [Exploration encounters](EXPLORATION_ENCOUNTERS.md). Random tables and campaign saves remain later work.
+
+
+## Candidate Rev 211 — map dimensions
+
+Width and Height above the grid accept 8–128 independently. Resize keeps northwest coordinates, existing cells and metadata; new space is floor enclosed by a new outer wall. Old boundary walls remain editable internal walls. Shrinking crops terrain but refuses to cut out starts, entrances, exits, doors, torches, landmarks or encounter regions/anchors: move or remove those first. Undo restores the prior map, including terrain. Save/Adventure Pack export preserve dimensions. The editor scrolls large grids with readable cells. Exploration uses instanced wall/floor/ceiling tiles, dynamic parchment bounds and the same movement/discovery logic for rectangular maps. Boundary doors and open outdoor edges are still separate work.
+
+Validation includes 128×128 and rectangular round trips, preservation, boundary collision and shrink protection in `scripts/test-exploration-sizes.mjs`.

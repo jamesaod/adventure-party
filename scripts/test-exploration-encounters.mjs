@@ -30,7 +30,7 @@ bad.encounters[0].count=2;bad.encounters[0].spawnX=0;assert.ok(validateEncounter
 console.log('PASS exploration encounter regions, persistence, victory suppression, physical terrain scale and doors');
 import vm from 'node:vm';
 const hook=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
-const sandbox={structuredClone,Image:class{},window:{},explorationEncounter:{event:{mobId:'orc',count:1,spawnX:1,spawnZ:0},position:{x:0,z:0}},explorationTerrain:{project:(x,y)=>({x:x*64,y:y*32})},HEX_W:64,MAP_MIN_X:0,MAP_MAX_X:2,MAP_MIN_Y:0,MAP_MAX_Y:0,
+const sandbox={location:{search:''},URLSearchParams,structuredClone,Image:class{},window:{},explorationEncounter:{event:{mobId:'orc',count:1,spawnX:1,spawnZ:0},position:{x:0,z:0}},explorationTerrain:{project:(x,y)=>({x:x*64,y:y*32})},HEX_W:64,MAP_MIN_X:0,MAP_MAX_X:2,MAP_MIN_Y:0,MAP_MAX_Y:0,
 makeFighter:()=>({id:'player',hp:30,alive:true}),makeLibraryMob:()=>({hp:8,alive:true}),isWall:()=>false,key:(x,y)=>`${x},${y}`,inside:(x,y)=>x>=0&&x<=2&&y===0,worldPointForHex:(x,y)=>({x:x*64,y:y*32}),occupiedHexesAt:(u,x,y)=>[{x,y}],occupiedHexes:u=>[{x:u.x,y:u.y}],architecturalWallBlocksStep:()=>false};
 vm.createContext(sandbox);vm.runInContext(hook,sandbox);
 const roster=sandbox.explorationUnits();assert.equal(roster.player.id,'player','Engine initiative resolves its controlled character by stable player ID');assert.equal(roster.player.controller,'player');assert.equal(roster.enemies.length,1);assert.notEqual(roster.enemies[0].x,roster.player.x);
