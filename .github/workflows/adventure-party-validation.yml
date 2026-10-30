@@ -188,3 +188,6 @@ jobs:
 
       - name: Validate repository structure and assets
         run: node scripts/validate-repo.mjs
+
+      - name: Exploration map and movement
+        run: node scripts/test-exploration.mjs

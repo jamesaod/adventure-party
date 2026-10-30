@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-10-30",
+  "mode": "built-in imagegen",
+  "assets": [
+    {
+      "file": "wall.png",
+      "prompt": "Game texture, square seamless tileable diffuse/albedo WALL texture for a first-person medieval dungeon RPG. Entire image is flat front-on weathered grey limestone masonry, large rectangular uneven cut blocks in staggered courses, deep narrow mortar gaps, subtly chipped edges, occasional sparse dark green moss in cracks. Hand-painted realistic pixel-art-inspired material, crisp readable shapes, restrained small details, medium grey warm-neutral stone, softly varied surfaces. Uniform neutral diffuse lighting, no directional baked lighting, no perspective, no floor, no objects, no torch, no text, no borders. Pattern continues on all edges for repeating wall surfaces. Strong material definition without excessive noise. 1024x1024 square.",
+      "bytes": 4089792,
+      "sha256": "0e59b8f2df2de739717fafb218251d490de226ee25ad6c96cab1b99d421d42ba"
+    },
+    {
+      "file": "floor.png",
+      "prompt": "Game texture, square seamless tileable FLOOR diffuse/albedo texture for a first-person medieval dungeon RPG matching weathered grey limestone walls. Entire image flat orthographic top-down grey-brown flagstone paving, four by four broad roughly rectangular slabs with narrow uneven dark joints, lightly chipped rounded edges, subtle wear and a little moss confined to occasional cracks. Hand-painted realistic pixel-art-inspired material with clear readable shapes and restrained fine detail. Medium-value neutral stone, uniform diffuse lighting, no baked directional shadows, no perspective, no objects, no text, no border. All edges tile naturally. 1024x1024 square.",
+      "bytes": 3770114,
+      "sha256": "fd928a25c934067dd50d8988f01cebb05b96c8e6226ae6a09dc7772662bd3c86"
+    },
+    {
+      "file": "door.png",
+      "prompt": "Game texture for a medieval dungeon RPG: a CLOSED RECTANGULAR OAK DOOR, flat front elevation, no perspective, fills the entire square image edge to edge with wood surface. Six vertical dark honey-brown weathered oak planks, two horizontal blackened wrought-iron hinge straps with visible rivets across upper and lower thirds, a small iron ring pull on the right at middle height. Square texture will be mapped onto a tall rectangular door in the game, so make details moderately wide. Painterly realistic pixel-art-inspired fantasy material with clear readable chunky shapes and restrained detail, matching grey limestone dungeon textures. Even neutral diffuse illumination, no cast shadow, no background, no stone frame, no arch, no floor, no border, no text, no transparency. 1024x1024 square. Rustic sturdy door, warm brown wood and matte dark metal, enough midtone detail to remain legible under torchlight.",
+      "bytes": 3331292,
+      "sha256": "6ab50115caeb985eef47af0d3e7325e069c9182fc9e992d5c2982c17db508d2d"
+    }
+  ]
+}

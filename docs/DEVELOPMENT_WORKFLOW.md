@@ -253,3 +253,7 @@ See [Armor and movement](ARMOR_AND_MOVEMENT.md) for the shared PHB armor catalog
 ## Candidate Rev 205
 
 Optional Studio cartoon shading uses the existing renderer and capture path. See [Banded lighting](BANDED_LIGHTING.md). Preserve standard defaults, source materials, captured pixels and saved lighting.shading through combat regeneration.
+
+## Candidate Rev 206 exploration proof of concept
+
+See [Exploration Test](EXPLORATION_TEST.md) for map schema, texture provenance, controls and validation. The title menu entry is separate from the future Map Maker Explorer editor. The queued setting concept is saved in [The Bells of Blackwater](ideas/THE_BELLS_OF_BLACKWATER.md).
