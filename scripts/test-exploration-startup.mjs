@@ -12,7 +12,7 @@ async function scenario({missing=false,interrupted=false}={}){
  const body=node('body');
  const request={map,event:map.encounters[0],scope:'test',test:true,returnSearch:'?test=1&map=old-tollhouse-test',openDoors:[]};
  const storage={getItem:key=>key===api.HANDOFF_KEY&&!missing?JSON.stringify(request):null};
- const context={URL,URLSearchParams,Image:class{},console:{error(){}},location:{search:'?explorationCombat=1',href:'http://test/index.html?explorationCombat=1'},document:{body,createElement:node,getElementById:id=>nodes.get(id)},sessionStorage:storage,localStorage:storage,window:{adventurePartyGameStartup:{ready:gate.promise},adventurePartyRepositoryMobs:{canTest:()=>true},addEventListener(){},removeEventListener(){}},encounterApi:api,coreApi:{validateMap},combatMobRoster:[],ui:{restartButton:{}},showCombat:()=>combat.promise};
+ const context={URL,URLSearchParams,Image:class{decode(){return Promise.resolve();}},console:{error(){}},location:{search:'?explorationCombat=1',href:'http://test/index.html?explorationCombat=1'},document:{body,createElement:node,getElementById:id=>nodes.get(id)},sessionStorage:storage,localStorage:storage,window:{adventurePartyGameStartup:{ready:gate.promise},adventurePartyRepositoryMobs:{canTest:()=>true},addEventListener(){},removeEventListener(){}},encounterApi:api,coreApi:{validateMap},combatMobRoster:[],ui:{restartButton:{}},showCombat:()=>combat.promise};
  nodes.set('returnButton',node('button'));vm.createContext(context);vm.runInContext(source,context);
  const panel=body.children[0];assert.equal(panel.children[0].textContent,'Preparing encounter');assert.equal(panel.removed,undefined,'Loading must cover the launcher before ready');
  gate.resolve();await new Promise(r=>setImmediate(r));

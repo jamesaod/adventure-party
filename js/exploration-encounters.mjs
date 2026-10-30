@@ -19,15 +19,15 @@ export function recordOutcome(progress,id,outcome,player,enemies){
   const next=structuredClone(progress);next.player=player;next.encounters[id]={outcome,player,enemies};return next;
 }
 
-// Ten-foot square cells and ten-foot tactical hex spacing share physical units.
+// Exploration encounters expand each square to two tactical hex widths.
 // The engine's projected row scale is applied only at the final coordinate step.
 export function terrainForEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5){
-  const cellW=hexWidth,cellH=hexRow/(Math.sqrt(3)/2),radius=5;
+  const scale=2,cellW=hexWidth*scale,cellH=hexRow*scale/(Math.sqrt(3)/2),radius=5;
   const bounds={left:Math.max(0,origin.x-radius),right:Math.min(map.width-1,origin.x+radius),top:Math.max(0,origin.z-radius),bottom:Math.min(map.height-1,origin.z+radius)};
   const project=(x,z)=>({x:(x-origin.x)*cellW,y:(z-origin.z)*cellH});
   const floor=(x,z)=>x>=bounds.left&&x<=bounds.right&&z>=bounds.top&&z<=bounds.bottom&&'.D'.includes(map.grid[z]?.[x]??'#');
   const walls=[],spaces=[];
-  const segment=(a,b,id)=>walls.push({id,a,b,height:35,thickness:3,material:'stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[]});
+  const segment=(a,b,id)=>walls.push({id,a,b,height:35,thickness:3,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[]});
   for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++){
     if(!floor(x,z))continue;
     const a=project(x-.5,z-.5),b=project(x+.5,z+.5);
@@ -38,6 +38,6 @@ export function terrainForEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5
     if(!floor(x-1,z))segment({x:a.x,y:b.y},a,`w-${x}-${z}`);
   }
   for(const d of map.doors||[]){if(!floor(d.x,d.z)||openDoors.has(`${d.x},${d.z}`))continue;segment(d.axis==='x'?project(d.x,d.z-.5):project(d.x-.5,d.z),d.axis==='x'?project(d.x,d.z+.5):project(d.x+.5,d.z),`door-${d.x}-${d.z}`);}
-  const cellAt=(q,r)=>({x:Math.floor(origin.x+q+r/2+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/2+.5)});
-  return {walls,spaces,bounds,project,cellAt,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z)&&!(map.grid[p.z][p.x]==='D'&&!openDoors.has(`${p.x},${p.z}`));}};
+  const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
+  return {walls,spaces,bounds,project,cellAt,cellW,cellH,scale,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z)&&!(map.grid[p.z][p.x]==='D'&&!openDoors.has(`${p.x},${p.z}`));}};
 }

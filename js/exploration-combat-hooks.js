@@ -1,5 +1,26 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
-const explorationFloorImage=new Image();
+const explorationFloorImage=new Image(),explorationWallImage=new Image();
+// Material helpers extend the shared architectural renderer; gameplay uses its
+// existing walls, movement, LOS, lights and depth ordering.
+function explorationFloorPatternForView(){
+  if(!explorationFloorImage.complete||!explorationFloorImage.naturalWidth)return null;
+  const pattern=ctx.createPattern(explorationFloorImage,'repeat');if(!pattern)return null;
+  const origin=screenPointForWorld({x:0,y:0});
+  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/explorationFloorImage.naturalWidth,0,0,explorationTerrain.cellH/explorationFloorImage.naturalHeight,origin.x-explorationTerrain.cellW/2,origin.y-explorationTerrain.cellH/2]));return pattern;
+}
+function explorationWallPattern(target,wall,height){
+  if(!explorationWallImage.complete||!explorationWallImage.naturalWidth)return null;
+  const pattern=target.createPattern(explorationWallImage,'repeat');if(!pattern)return null;
+  const origin=screenPointForWorld(wall.a);
+  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/explorationWallImage.naturalWidth,0,0,height/explorationWallImage.naturalHeight,origin.x,origin.y-height]));return pattern;
+}
+function clipExplorationFloor(){
+  ctx.beginPath();for(const space of architecturalSpaces){const points=space.polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();
+}
+function drawExplorationDarknessVolumes(){
+  if(typeof r222DrawDarknessVolume!=='function')return;
+  for(const effect of game.areaEffects||[])if(effect?.type==='darkness')r222DrawDarknessVolume(effect);
+}
 
 function configureExplorationTerrain(){
   const request=explorationEncounter;
@@ -65,22 +86,23 @@ async function startExplorationCombat(){
   if(new URLSearchParams(location.search).get('explorationCombat')!=='1')return;
   const panel=document.createElement('section');panel.id='explorationCombatStartup';panel.setAttribute('role','status');panel.style.cssText='position:fixed;inset:0;z-index:100000;background:#10101b;color:#83e7e8;display:grid;place-content:center;gap:20px;padding:30px;text-align:center';
   const heading=document.createElement('h1');heading.textContent='Preparing encounter';const status=document.createElement('p');status.textContent='Loading combat assets and restoring the map encounter…';
-  const back=document.createElement('a');back.textContent='Return to exploration';back.href='exploration.html?resumeEncounter=1&v=R238C211';
+  const back=document.createElement('a');back.textContent='Return to exploration';back.href='exploration.html?resumeEncounter=1&v=R238C212';
   const retry=document.createElement('button');retry.textContent='Retry encounter';retry.hidden=true;retry.onclick=()=>{const url=new URL(location.href);url.searchParams.set('gameReload',String(Date.now()));location.replace(url.href);};
   panel.append(heading,status,back,retry);document.body.append(panel);
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C211');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C212');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
-    if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C211');back.href='exploration.html?'+safe;}
+    if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C212');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
     const saved=explorationEncounterApi.readProgress(request.test?sessionStorage:localStorage,request.scope);
     request.previous=saved.encounters[request.event.id]||request.previous;request.player=saved.player||request.player;
-    explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';
+    explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';explorationWallImage.src='assets/textures/exploration/wall.png?v=R238C206';
+    await Promise.all([explorationFloorImage.decode(),explorationWallImage.decode()]);
     selectedMobEncounter='custom';combatMobRoster.length=0;
     const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';

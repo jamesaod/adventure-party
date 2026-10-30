@@ -5155,10 +5155,10 @@ const HEX_ROW=31.5;
 const VIEW_RADIUS=20;
 
 const MAP_WIDTH_HEXES=40;
-const MAP_HEIGHT_HEXES=20;
+const MAP_HEIGHT_HEXES=typeof location!=="undefined"&&new URLSearchParams(location.search).get("explorationCombat")==="1"?32:20;
 const MAP_MIN_X=-20;
 const MAP_MAX_X=MAP_MIN_X+MAP_WIDTH_HEXES-1;
-const MAP_MIN_Y=-10;
+const MAP_MIN_Y=-MAP_HEIGHT_HEXES/2;
 const MAP_MAX_Y=MAP_MIN_Y+MAP_HEIGHT_HEXES-1;
 
 const HEX_DIRS=[
@@ -6155,7 +6155,7 @@ function drawArchitecturalFloorRegions(){
       The texture is continuous across tactical hexes; hex geometry is an
       overlay and does not define the material seams.
     */
-    const floorPattern=stoneFloorPatternForCurrentView();
+    const floorPattern=explorationTerrain?explorationFloorPatternForView():stoneFloorPatternForCurrentView();
     ctx.fillStyle=
       floorPattern ||
       space.floorColor ||
@@ -6167,7 +6167,7 @@ function drawArchitecturalFloorRegions(){
       highlights and differentiates the indoor material from outdoor grass.
     */
     ctx.clip();
-    ctx.globalAlpha=0.10;
+    ctx.globalAlpha=explorationTerrain?0:0.10;
     ctx.fillStyle="#9a9ca2";
     ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
@@ -6882,7 +6882,7 @@ function drawArchitecturalWallSegment(wall){
   lctx.lineCap="square";
   lctx.lineJoin="miter";
 
-  let wallPaint="#555860";
+  let wallPaint=wall.material==="exploration-stone" ? (explorationWallPattern(lctx,wall,height)||"#756d5e") : "#555860";
 
   if(wall.material==="old-wood"){
     const woodPattern=oldWoodWallPatternForWall(
@@ -26438,7 +26438,7 @@ function drawGrassDetails(x,y){
 }
 
 function drawHexFill(x,y){
-  if(explorationTerrain){const top=hexScreenVertices(x,y),c=hexCenter(x,y);ctx.save();polygonPath(top);ctx.clip();ctx.fillStyle=explorationTerrain.walkableHex(x,y)?"#8b806c":"#27231f";ctx.fillRect(c.x-HEX_W/2,c.y-HEX_H/2,HEX_W,HEX_H);if(explorationTerrain.walkableHex(x,y)&&explorationFloorImage.complete&&explorationFloorImage.naturalWidth)ctx.drawImage(explorationFloorImage,c.x-HEX_W/2,c.y-HEX_H/2,HEX_W,HEX_H);ctx.restore();return;}
+  if(explorationTerrain)return; // Exact room polygons supply the floor, never whole boundary hexes.
   const top=hexScreenVertices(x,y);
   const c=hexCenter(x,y);
   const tileSet=activeCombatTerrainTileSet();
@@ -26503,6 +26503,7 @@ function drawHexFill(x,y){
 }
 
 function drawHexGridLine(x,y){
+  if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.65)";ctx.lineWidth=1;ctx.stroke();return;}
   const top=hexScreenVertices(x,y);
   const tileSet=activeCombatTerrainTileSet();
   const outdoorStroke=
@@ -26676,6 +26677,8 @@ function drawFloor(){
   /* R123: continuous indoor floors overlay and split the outdoor hex textures. */
   drawArchitecturalFloorRegions();
 
+  if(explorationTerrain){ctx.save();clipExplorationFloor();}
+
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
   drawTerrainIlluminationLayer(tiles);
 
@@ -26719,6 +26722,7 @@ function drawFloor(){
     ctx.lineTo(c.x,c.y+6);
     ctx.stroke();
   }
+  if(explorationTerrain)ctx.restore();
 }
 
 function drawActiveHex(entity,color){
@@ -30176,14 +30180,17 @@ function draw(){
   );
   drawFloor();
   drawWallTestFloorPlan();
+  if(explorationTerrain){ctx.save();clipExplorationFloor();}
   drawArchitecturalWallShadows();
+  if(explorationTerrain){ctx.restore();ctx.save();clipExplorationFloor();drawWallTestLineOfSightMask();ctx.restore();}
 
   /*
     R197: outline the union silhouette once before wall bodies enter the shared
     depth queue. Units/fog can still correctly cover the outline afterward.
   */
-  drawArchitecturalWallShapeOutline(architecturalWalls);
-  drawArchitecturalWallTopOutline(architecturalWalls);
+  const sceneWalls=explorationTerrain?architecturalWalls.filter(w=>isArchitecturalWallVisibleToFriendlyParty(w)):architecturalWalls;
+  drawArchitecturalWallShapeOutline(sceneWalls);
+  drawArchitecturalWallTopOutline(sceneWalls);
 
   drawSpellAreaEffects();
 
@@ -30191,7 +30198,7 @@ function draw(){
   const treeDecorations=visibleTreeDecorations(tiles);
   const tileSet=activeCombatTerrainTileSet();
 
-  for(const wall of architecturalWalls){
+  for(const wall of sceneWalls){
     const a=screenPointForWorld(wall.a);
     const b=screenPointForWorld(wall.b);
     actors.push({
@@ -30303,9 +30310,10 @@ function draw(){
   // Project all visible unit shadows onto terrain before walls, trees, units
   // and fog. Long evening shadows must never paint over another character.
   if(globalThis.adventurePartySun){
+    if(explorationTerrain){ctx.save();clipExplorationFloor();}
     globalThis.adventurePartySun.drawingGround=true;
     try{for(const actor of actors)if(actor.unit)actor.fn();}
-    finally{globalThis.adventurePartySun.drawingGround=false;}
+    finally{globalThis.adventurePartySun.drawingGround=false;if(explorationTerrain)ctx.restore();}
   }
 
   actors.sort(
@@ -30337,14 +30345,15 @@ function draw(){
     a visible center reveals the complete hex, while an unseen center leaves the
     complete hex darkened. UI/message/text passes remain above the LOS mask.
   */
-  drawWallTestLineOfSightMask();
+  if(!explorationTerrain)drawWallTestLineOfSightMask();
 
   /*
     R133: visible masonry is repainted after the LOS overlay. The darkness
     therefore begins behind the occluding wall face instead of drawing its
     diagonal shadow across the front of a wall the party can actually see.
   */
-  drawVisibleArchitecturalWallsOverLOS();
+  if(explorationTerrain)drawExplorationDarknessVolumes();
+  else drawVisibleArchitecturalWallsOverLOS();
 
   /* R170 weather is battlefield-only; UI text remains above it. */
   drawWeatherVfx(performance.now());
