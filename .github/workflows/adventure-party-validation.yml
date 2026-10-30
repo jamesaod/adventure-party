@@ -194,3 +194,6 @@ jobs:
 
       - name: Exploration parchment map
         run: node scripts/test-exploration-map.mjs
+
+      - name: Exploration discovery and persistence
+        run: node scripts/test-exploration-discovery.mjs
