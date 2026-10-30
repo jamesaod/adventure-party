@@ -15,3 +15,7 @@ This is a standalone presentation and collision proof of concept, not an encount
 - Run `node scripts/test-exploration.mjs` for movement, door, reset, boundary and reachability checks, followed by repository validation. Visually check opening/crossing a door, wall collision, turning and restarting in a WebGL browser.
 
 Future work: real party state, planned/random encounters, exploration saves and the separate authoring interface. These are intentionally not represented as functioning features in this prototype.
+
+## Rev 207: parchment map
+
+The party sidebar now draws the actual 16 x 16 grid in brown ink on a CSS parchment background. `js/exploration-map.mjs` creates a scalable SVG from the same map and live state used for movement: hatched solids, outlined rooms and corridors, oriented doors, and a party position/facing arrow. It shows the full map, with north fixed at the top, and updates on movement, turning, door changes and restart. This is automatic map drawing, not a separate illustration or an editing interface. No generated raster asset or second map definition is needed. Run `node scripts/test-exploration-map.mjs` to check grid, door and marker synchronization.
