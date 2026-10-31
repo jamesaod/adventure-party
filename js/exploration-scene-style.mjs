@@ -1,3 +1,4 @@
+import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C231';
 // Authored scene units are metres; tactical cells and compact display heights
 // are projection choices, never dimensions embedded in artwork or item data.
 export const SCENE_STYLE=Object.freeze({
@@ -24,7 +25,8 @@ export function projectSceneObject(kind,terrain,override={}){
     artwork:{width:height*object.width/object.height,height}};
 }
 export function torchPlacement(map,point){
-  const direction=[[0,-1],[1,0],[0,1],[-1,0]].find(([dx,dz])=>map.grid[point.z+dz]?.[point.x+dx]==='#')||[0,0];
+  const edges=map.version===2?new Set(effectiveEdges(map).map(edgeKey)):null;
+  const direction=[[0,-1,'n'],[1,0,'e'],[0,1,'s'],[-1,0,'w']].find(([dx,dz,side])=>edges?edges.has(edgeKey(edgeAtSide(point.x,point.z,side))):map.grid[point.z+dz]?.[point.x+dx]==='#')||[0,0];
   return {x:point.x*SCENE_STYLE.cellMetres+direction[0]*SCENE_STYLE.torch.wallOffset,
     z:point.z*SCENE_STYLE.cellMetres+direction[1]*SCENE_STYLE.torch.wallOffset,y:SCENE_STYLE.torch.height};
 }
@@ -54,6 +56,7 @@ export function displayExposure(light){
   return {multiply:factor.map(v=>Math.round(255*Math.min(1,v))),boost:factor.map(v=>Math.round(255*(v>1?1-1/v:0)))};
 }
 export function sceneLightVisible(map,openDoors,light,point){
+  if(map.version===2&&edgeLineBlocked(map,openDoors,{x:light.x/SCENE_STYLE.cellMetres,z:light.z/SCENE_STYLE.cellMetres},{x:point.x/SCENE_STYLE.cellMetres,z:point.z/SCENE_STYLE.cellMetres},'light'))return false;
   const size=SCENE_STYLE.cellMetres,dx=point.x-light.x,dz=point.z-light.z,steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/(size/4)));
   for(let i=1;i<steps;i++){
     const x=Math.floor((light.x+dx*i/steps)/size+.5),z=Math.floor((light.z+dz*i/steps)/size+.5),cell=map.grid[z]?.[x];

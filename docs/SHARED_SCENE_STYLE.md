@@ -53,3 +53,7 @@ Open Door rebuilds architectural movement/LOS/light geometry immediately. Lighti
 ## Rev 230 - solid frames and grounded hinges
 
 Rev 229 outline-only frames are superseded by opaque, texture-filled masonry piers and lintels. Only the doorway aperture remains clear. The closed leaf base is the canonical hinge for both states, in both orientations; opening changes the projected leaf direction without translating its bottom hinge. This fixes floating open door artwork and floor/grid showing through masonry. Wall height, material repeats, movement/LOS geometry and door interaction costs remain unchanged.
+
+## Rev 231 - one edge geometry for both views
+
+exploration-edges.mjs owns canonical h/v edge coordinates and geometry, independent of either renderer. Exploration builds thin wall sections around floor squares; doors use the edge opening width and hinge, and windows have shared sill/height plus transparent glass and bars. Combat projects the same endpoints and opening fraction into architectural movement/LOS/light/projectile geometry. Edge door art anchors to the real aperture jamb in both states. The fixed 35px tactical wall height and existing shared material repeats/lighting are retained. Thin side-facing surfaces use readable cutaways; this remains a display choice rather than a blocked-hex conversion.

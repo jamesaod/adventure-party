@@ -120,3 +120,7 @@ Combat OPEN DOOR [O] costs 1 MP and persists the handoff before rebuilding archi
 ## Candidate Rev 230
 
 Door frames use filled masonry piers/lintel, not transparent outlines. Both open and closed door leaves share the same grounded hinge. Preserve these presentation invariants through combatDoorFrame/combatDoorPresentation; movement/LOS and door costs remain Rev 229.
+
+## Candidate Rev 231
+
+Exploration map v2 uses floor/void cells and canonical shared h/v wall edges in exploration-edges.mjs. The editor migrates working copies of old maps, keeping original storage until explicit Save; shifted legacy doors have migration notes. Never infer v2 doors from grid D or floor-cell occupancy. Reuse edge geometry for exploration movement/discovery and continuous combat collision, retaining 1:2 floors, 35px walls and existing O/F costs. Doors/windows require floor on both sides, stable IDs and synced derived doors. See docs/EXPLORATION_EDITOR.md and scripts/test-exploration-edges.mjs.

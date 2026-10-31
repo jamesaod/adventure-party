@@ -1,6 +1,8 @@
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C211';
+import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C231';
+export {upgradeEdgeMap,paintEdge};
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C231';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C230';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C231';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -15,6 +17,8 @@ export function seedPack(map){
 export function blankMap(id,name){
   return {version:1,id,name,width:16,height:16,cellFeet:10,grid:Array.from({length:16},(_,z)=>z===0||z===15?'################':'#..............#'),start:{x:2,z:13,facing:0},doors:[],torches:[],landmarks:[],party:[],entrances:[{id:'entry',name:'Main entrance',x:2,z:13,facing:0}],exits:[]};
 }
+
+export function blankEdgeMap(id,name){const map=upgradeEdgeMap(blankMap(id,name));map.grid=Array.from({length:map.height},()=>'.'.repeat(map.width));return map;}
 
 // Invalid drafts may be edited, but only complete, linked packs can be tested/exported.
 export function packIssues(pack){
@@ -47,7 +51,7 @@ export function packIssues(pack){
     const seen=new Set([cellKey(map.start.x,map.start.z)]),queue=[map.start];
     for(let i=0;i<queue.length;i++)for(const [dx,dz] of [[0,-1],[1,0],[0,1],[-1,0]]){
       const x=queue[i].x+dx,z=queue[i].z+dz,key=cellKey(x,z);
-      if('.D'.includes(map.grid[z]?.[x]??'#')&&!seen.has(key)){seen.add(key);queue.push({x,z});}
+      if('.D'.includes(map.grid[z]?.[x]??'#')&&!seen.has(key)&&!(map.version===2&&map.edges.some(e=>e.kind!=='door'&&edgeKey(e)===edgeKey(edgeBetween(queue[i],{x,z})))) ){seen.add(key);queue.push({x,z});}
     }
     for(const e of [...map.entrances,...map.exits])if(!seen.has(cellKey(e.x,e.z)))issues.push(`${label}: entrance/exit at ${e.x+1}, ${e.z+1} cannot be reached from the start.`);
   }
@@ -58,15 +62,20 @@ export function parsePack(text){
   const pack=JSON.parse(text),issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));return pack;
 }
 export function paintCell(map,x,z,tool){
-  if(x<1||x>map.width-2||z<1||z>map.height-2)throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+ if(map.version===2&&['wall','door-x','door-z'].includes(tool))throw Error('Choose an edge to place a wall or opening.');
+ if(map.version===2&&tool==='void')tool='wall';
+
+  if(map.version===2?(x<0||x>=map.width||z<0||z>=map.height):(x<1||x>map.width-2||z<1||z>map.height-2))throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
   if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
   if(tool==='torch'){if(map.grid[z][x]!=='.')throw Error('Place torches on floor.');const i=map.torches.findIndex(p=>p.x===x&&p.z===z);if(i<0)map.torches.push({x,z});else map.torches.splice(i,1);return;}
   const cell=tool==='wall'?'#':tool.startsWith('door-')?'D':'.';
   if(cell==='#'&&(map.encounters||[]).some(e=>Array.isArray(e.cells)&&encounterCells(e).some(p=>p.x===x&&p.z===z)))throw Error('Remove this square from its encounter area before painting a wall.');
   if(cell!=='.'&&[map.start,...map.entrances,...map.exits].some(p=>p.x===x&&p.z===z))throw Error('Move or remove the start, entrance or exit before blocking this square.');
+  if(map.version===2)map.grid=[...map.grid];
   map.grid[z]=map.grid[z].slice(0,x)+cell+map.grid[z].slice(x+1);
   map.doors=map.doors.filter(d=>d.x!==x||d.z!==z);if(cell==='D')map.doors.push({x,z,axis:tool==='door-x'?'x':'z'});
   if(cell!=='.')map.torches=map.torches.filter(t=>t.x!==x||t.z!==z);
+  if(map.version===2){map.edges=map.edges.filter(e=>edgeCells(e).every(p=>map.grid[p.z]?.[p.x]==='.')||e.kind==='wall'&&edgeCells(e).some(p=>map.grid[p.z]?.[p.x]==='.'));syncEdgeDoors(map);}
 }
 export function linkMaps(pack,sourceId,point,targetId,entranceId,returnLink=false){
   const source=pack.maps.find(m=>m.id===sourceId),target=pack.maps.find(m=>m.id===targetId),arrival=target?.entrances.find(e=>e.id===entranceId);
@@ -91,11 +100,12 @@ export function destination(pack,mapId,x,z){
 
 export function resizeMap(map,width,height){
   if(![width,height].every(n=>Number.isInteger(n)&&n>=8&&n<=128))throw Error('Width and height must be whole numbers from 8 to 128.');
-  const inside=p=>p.x>0&&p.z>0&&p.x<width-1&&p.z<height-1;
+  const inside=p=>map.version===2?p.x>=0&&p.z>=0&&p.x<width&&p.z<height:p.x>0&&p.z>0&&p.x<width-1&&p.z<height-1;
   if(![map.start,...map.entrances,...map.exits,...map.doors,...map.torches,...(map.landmarks||[])].every(inside))throw Error('Move or remove starts, entrances, exits, doors, torches and landmarks outside the new boundary before shrinking.');
   if((map.encounters||[]).some(e=>!inside({x:e.spawnX,z:e.spawnZ})||encounterCells(e).some(p=>!inside(p))))throw Error('Move or remove encounters outside the new boundary before shrinking.');
-  const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.').join(''));
-  Object.assign(map,{width,height,grid});validateMap(map);return map;
+  if(map.version===2&&(map.edges||[]).some(e=>e.x>=(e.axis==='h'?width:width+1)||e.z>=(e.axis==='h'?height+1:height)))throw Error('Move or remove wall edges outside the new boundary before shrinking.');
+  const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.version===2?(map.grid[z]?.[x]||'.'):(x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.')).join(''));
+  validateMap({...map,width,height,grid});Object.assign(map,{width,height,grid});return map;
 }
 
 // Selection itself is transient; these helpers mutate only explicit author actions.
@@ -107,7 +117,7 @@ export function rectangleSelection(a,b,base=[],mode='replace'){
   return [...keys];
 }
 export function setEncounterArea(map,record,cells){
-  const unique=new Map();for(const p of cells)if(p.x>0&&p.z>0&&p.x<map.width-1&&p.z<map.height-1&&'.D'.includes(map.grid[p.z]?.[p.x]??'#'))unique.set(`${p.x},${p.z}`,{x:p.x,z:p.z});
+  const unique=new Map();for(const p of cells)if(p.x>=(map.version===2?0:1)&&p.z>=(map.version===2?0:1)&&p.x<map.width-(map.version===2?0:1)&&p.z<map.height-(map.version===2?0:1)&&'.D'.includes(map.grid[p.z]?.[p.x]??'#'))unique.set(`${p.x},${p.z}`,{x:p.x,z:p.z});
   const area=[...unique.values()].sort((a,b)=>a.z-b.z||a.x-b.x);if(!area.length)throw Error('Select floor or door squares for this encounter area.');
   const next={...record,cells:area};delete next.x;delete next.z;delete next.width;delete next.height;
   const events=(map.encounters||[]).filter(e=>e.id!==record.id);events.push(next);
