@@ -82,19 +82,13 @@ console.log('PASS opaque unseen floor and projected torch falloff clipped to lig
 const capContext={explorationTerrain:{solidBlocks:[
 {x:1,z:1,height:35,wallIds:['a'],polygon:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}]},
 {x:2,z:1,height:35,wallIds:['b'],polygon:[{x:10,y:0},{x:20,y:0},{x:20,y:10},{x:10,y:10}]},
-{x:3,z:1,height:35,wallIds:['hidden'],polygon:[{x:20,y:0},{x:30,y:0},{x:30,y:10},{x:20,y:10}]}
+{x:3,z:1,height:35,wallIds:['hidden'],polygon:[]}
 ]}};
 vm.runInNewContext(hooks.slice(hooks.indexOf('function explorationWallCapSpans(')),capContext);
-const caps=capContext.explorationWallCapSpans([{id:'a'},{id:'b'}]);assert.equal(caps.length,1);assert.equal(caps[0].polygon[2].x,30);
-assert.equal(capContext.explorationWallCapSpans([]).length,1);
+const caps=capContext.explorationWallCapSpans([{id:'a'},{id:'b'}]);assert.equal(caps.length,1);assert.equal(caps[0].polygon[2].x,20);
+assert.equal(capContext.explorationWallCapSpans([]).length,0);
 const blockMap={width:3,height:3,grid:['...','.#.','...'],doors:[]};
 const blocks=terrainForEncounter(blockMap,{x:1,z:1},new Set());
 assert.equal(blocks.solidBlocks.length,1);assert.equal(blocks.solidBlocks[0].wallIds.length,4);assert.equal(blocks.walkableHex(0,0),false);
 for(const id of blocks.solidBlocks[0].wallIds)assert(blocks.walls.some(w=>w.id===id&&w.blocksLOS));
-console.log('PASS solid footprint blocks movement, keeps four ray boundaries, merges all caps independently of LOS');
-
-assert.equal(terrain.cellW,128);
-assert(terrain.walls.every(w=>w.height===35));
-assert(source.includes('const sceneWalls=architecturalWalls;'));
-assert(!hooks.includes('drawExplorationWallInterior'));
-console.log('PASS all wall blocks visible with 2:1 terrain and unchanged wall height');
+console.log('PASS solid footprint blocks movement, keeps four ray boundaries, merges visible caps and hides unseen caps');

@@ -30222,7 +30222,7 @@ function draw(){
     R197: outline the union silhouette once before wall bodies enter the shared
     depth queue. Units/fog can still correctly cover the outline afterward.
   */
-  const sceneWalls=architecturalWalls;
+  const sceneWalls=explorationTerrain?architecturalWalls.filter(w=>isArchitecturalWallVisibleToFriendlyParty(w)):architecturalWalls;
   drawArchitecturalWallShapeOutline(sceneWalls);
   drawArchitecturalWallTopOutline(sceneWalls);
 

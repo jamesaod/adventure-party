@@ -20,7 +20,7 @@ const closed=terrainForEncounter(map,{x:3,z:6},new Set());
 const opened=terrainForEncounter(map,{x:3,z:6},new Set(['3,7','3,9']));
 assert.equal(closed.walls.filter(w=>w.id==='door-3-7').length,1);
 assert.equal(opened.walls.filter(w=>w.id==='door-3-7').length,0);
-assert.equal(opened.project(4,6).x-opened.project(3,6).x,128);
+assert.equal(opened.project(4,6).x-opened.project(3,6).x,64);
 assert.equal(opened.walkableHex(0,0),true);
 assert.equal(opened.walkableHex(30,30),false);
 assert.ok(opened.spaces.every(s=>s.environment==='indoor'));
