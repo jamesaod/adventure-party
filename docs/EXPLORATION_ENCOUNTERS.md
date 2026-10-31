@@ -72,3 +72,7 @@ Projection callbacks must wrap screenPointForWorld(point): passing it directly t
 ## Candidate Rev 220 - solid wall footprints
 
 Terrain retains solidBlocks for occupied map cells. Existing floor-facing boundaries remain authoritative for movement/LOS/light; no internal block edges are added. Visible wall boundaries reveal their corresponding stone caps at the existing 35px height. Adjacent visible caps merge into row spans with shared world-anchored texture and no internal outlines, depth-sorted with existing faces and units. Doors remain separate boundaries. Hidden blocks do not reveal caps.
+
+## Candidate Rev 224 - reference LOS baseline
+
+User reference screenshot requires compact floor-facing wall boundaries with black unseen space, without the solid textured top caps introduced in Rev 220. Restored the Rev 219 exploration rendering/terrain path, preserving opaque floor LOS, correct zero-elevation polygon projection, wall-clipped torch illumination, 1:1 scale, encounter persistence and unit-render startup gate. This is a baseline for further user-directed LOS refinement, not final visual approval. Revs 221-223 remain superseded. See PERSISTENT_GAME_LOOP.md for the recovered architecture and remaining campaign work.
