@@ -6,7 +6,7 @@ const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfun
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationWallCapSpans:()=>[],adventurePartySun:sun,
+  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationVisibleWallBoundaries:()=>[],adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
     visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
@@ -79,16 +79,13 @@ ctx:{save(){},restore(){},clip(){lightCalls.push('clip');},translate(){},scale(x
 context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['clip','fill']);
 console.log('PASS opaque unseen floor and projected torch falloff clipped to light-blocking walls');
 
-const capContext={explorationTerrain:{solidBlocks:[
-{x:1,z:1,height:35,wallIds:['a'],polygon:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}]},
-{x:2,z:1,height:35,wallIds:['b'],polygon:[{x:10,y:0},{x:20,y:0},{x:20,y:10},{x:10,y:10}]},
-{x:3,z:1,height:35,wallIds:['hidden'],polygon:[]}
-]}};
-vm.runInNewContext(hooks.slice(hooks.indexOf('function explorationWallCapSpans(')),capContext);
-const caps=capContext.explorationWallCapSpans([{id:'a'},{id:'b'}]);assert.equal(caps.length,1);assert.equal(caps[0].polygon[2].x,20);
-assert.equal(capContext.explorationWallCapSpans([]).length,0);
-const blockMap={width:3,height:3,grid:['...','.#.','...'],doors:[]};
-const blocks=terrainForEncounter(blockMap,{x:1,z:1},new Set());
-assert.equal(blocks.solidBlocks.length,1);assert.equal(blocks.solidBlocks[0].wallIds.length,4);assert.equal(blocks.walkableHex(0,0),false);
-for(const id of blocks.solidBlocks[0].wallIds)assert(blocks.walls.some(w=>w.id===id&&w.blocksLOS));
-console.log('PASS solid footprint blocks movement, keeps four ray boundaries, merges visible caps and hides unseen caps');
+const boundaryContext={};vm.runInNewContext(hooks.slice(hooks.indexOf('function explorationVisibleFloorArea(')),boundaryContext);
+const room={left:0,right:10,top:0,bottom:10};
+assert.equal(boundaryContext.explorationVisibleFloorArea([{x:11,y:0},{x:20,y:0},{x:20,y:10},{x:11,y:10}],room),0);
+assert.equal(boundaryContext.explorationVisibleFloorArea([{x:10,y:0},{x:20,y:0},{x:20,y:10},{x:10,y:10}],room),0,'Corner/edge contact must not reveal a hidden room');
+assert(boundaryContext.explorationVisibleFloorArea([{x:0,y:0},{x:5,y:0},{x:5,y:10},{x:0,y:10}],room)>0,'Partly visible floor reveals its boundary face');
+Object.assign(boundaryContext,{friendlyVisibilityObservers:()=>[{}],observerVisibilityContext:()=>({polygon:[{x:0,y:0},{x:5,y:0},{x:5,y:10},{x:0,y:10}]}),architecturalWalls:[{id:'visible',borderFloor:room},{id:'hidden',borderFloor:{left:20,right:30,top:0,bottom:10}}]});
+assert.deepEqual(Array.from(boundaryContext.explorationVisibleWallBoundaries(),w=>w.id),['visible']);
+assert(!source.includes('drawExplorationWallCap'));
+assert(terrain.walls.filter(w=>!w.id.startsWith('door-')).every(w=>w.borderFloor));
+console.log('PASS visible passable floor reveals boundary walls, hidden rooms stay hidden, solid caps removed');

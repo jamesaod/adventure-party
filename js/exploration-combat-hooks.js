@@ -150,7 +150,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C220');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C221');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -172,24 +172,25 @@ async function startExplorationCombat(){
 }
 void startExplorationCombat();
 
-// Merge adjacent visible caps into row spans: one fill, no internal outlines.
-function explorationWallCapSpans(visibleWalls){
-  const ids=new Set(visibleWalls.map(w=>w.id)),spans=[];
-  for(const block of explorationTerrain.solidBlocks||[]){
-    if(!block.wallIds.some(id=>ids.has(id)))continue;
-    const previous=spans[spans.length-1];
-    if(previous&&previous.z===block.z&&previous.lastX+1===block.x){
-      previous.lastX=block.x;previous.polygon[1]=block.polygon[1];previous.polygon[2]=block.polygon[2];
-    }else spans.push({z:block.z,lastX:block.x,height:block.height,polygon:block.polygon.map(p=>({...p}))});
+// A boundary face is revealed by visible passable floor on its room side.
+// Clip the LOS polygon to that floor cell; a corner touch alone is not enough.
+function explorationVisibleFloorArea(polygon,rect){
+  const inset=0.5,bounds=[['x',rect.left+inset,1],['x',rect.right-inset,-1],['y',rect.top+inset,1],['y',rect.bottom-inset,-1]];
+  let points=polygon;
+  for(const [axis,limit,sign] of bounds){
+    const clipped=[];
+    for(let i=0;i<points.length;i++){
+      const a=points[i],b=points[(i+1)%points.length],da=(a[axis]-limit)*sign,db=(b[axis]-limit)*sign;
+      if(da>=0)clipped.push(a);
+      if((da>=0)!==(db>=0)){const t=da/(da-db);clipped.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});}
+    }
+    points=clipped;
   }
-  return spans;
+  return Math.abs(points.reduce((area,a,i)=>{const b=points[(i+1)%points.length];return area+a.x*b.y-b.x*a.y;},0))/2;
 }
-function drawExplorationWallCap(span){
-  const points=span.polygon.map(p=>screenPointForWorld(p,span.height));
-  ctx.save();
-  const tile=explorationMaterialTile(explorationWallImage),pattern=tile?ctx.createPattern(tile,'repeat'):null;
-  if(pattern){const origin=screenPointForWorld({x:0,y:0},span.height);pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/tile.width,0,0,explorationTerrain.cellH/tile.height,origin.x,origin.y]));}
-  ctx.fillStyle=pattern||'#81796b';
-  if(tracePolygonOnContext(ctx,points))ctx.fill();
-  ctx.restore();
+function explorationVisibleWallBoundaries(){
+  const contexts=friendlyVisibilityObservers().map(observer=>observerVisibilityContext(observer)).filter(Boolean);
+  return architecturalWalls.filter(wall=>wall.borderFloor
+    ? contexts.some(context=>explorationVisibleFloorArea(context.polygon,wall.borderFloor)>0.1)
+    : isArchitecturalWallVisibleToFriendlyParty(wall));
 }

@@ -72,3 +72,7 @@ Projection callbacks must wrap screenPointForWorld(point): passing it directly t
 ## Candidate Rev 220 - solid wall footprints
 
 Terrain retains solidBlocks for occupied map cells. Existing floor-facing boundaries remain authoritative for movement/LOS/light; no internal block edges are added. Visible wall boundaries reveal their corresponding stone caps at the existing 35px height. Adjacent visible caps merge into row spans with shared world-anchored texture and no internal outlines, depth-sorted with existing faces and units. Doors remain separate boundaries. Hidden blocks do not reveal caps.
+
+## Candidate Rev 221 - visible floor boundary walls
+
+Rev 220 solid-block caps and footprint additions are reverted. Walls are only generated along passable-floor boundaries. A face is shown when the party LOS polygon overlaps a positive area of its adjacent floor cell (inset to reject edge-only contact). This avoids hiding whole faces when wall-center rays are blocked near corners. Hidden floor cells reveal no boundary faces; solid interiors stay black. Closed doors retain the existing visibility test. Collision, light blocking and floor LOS are unchanged.
