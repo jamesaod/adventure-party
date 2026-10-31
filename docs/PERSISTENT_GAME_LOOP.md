@@ -113,3 +113,7 @@ Read this alongside AGENTS.md and docs/DEVELOPMENT_WORKFLOW.md. Verify current c
 ## Follow-up: reference combat-map baseline
 
 The user rejected the Rev 220 visual result and supplied a screenshot showing compact wall faces and black unseen areas, asking to revert map LOS to that baseline before further fixes. Rev 224 restores the pre-solid-cap Rev 219 exploration rendering path. Screenshot correspondence remains a visual comparison, not recovered transcript evidence. The prior Rev 220 restoration was technically published but did not satisfy the user's intended map appearance.
+
+## Rev 225 continuation
+
+Colored multi-square encounter areas now support partial/bulk removal and Undo. Exploration-to-combat conversion is 1:2 in the floor plane, keeping compact 35px walls. This supersedes the earlier 1:1 description. Campaign party ownership and rewards remain unfinished.

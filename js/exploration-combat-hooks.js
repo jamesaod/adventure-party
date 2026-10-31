@@ -114,7 +114,8 @@ function explorationUnits(){
     enemy.id=`exploration-enemy-${i}`;
     if(!saved){enemy.faction='enemy';enemy.controller='mob';}
     if(!enemy.alive||enemy.fled)return;
-    const positions=saved?[{x:enemy.x,y:enemy.y},...available]:available.slice().sort((a,b)=>distance(a,spawn)-distance(b,spawn));
+    const scaleRatio=(explorationTerrain.scale||1)/(saved?.terrainScale||1);
+    const positions=saved?[{x:Math.round(enemy.x*scaleRatio),y:Math.round(enemy.y*scaleRatio)},...available]:available.slice().sort((a,b)=>distance(a,spawn)-distance(b,spawn));
     const p=positions.find(p=>reached.has(key(p.x,p.y))&&occupiedHexesAt(enemy,p.x,p.y).every(c=>inside(c.x,c.y)&&!isWall(c.x,c.y)&&!occupied.has(key(c.x,c.y))));
     if(!p)throw Error('Not enough connected floor space for the encounter. Reduce its count or widen the room.');
     Object.assign(enemy,p);occupiedHexes(enemy).forEach(c=>occupied.add(key(c.x,c.y)));
@@ -128,6 +129,7 @@ function rememberExplorationCombat(outcome){
   const snapshot=unit=>JSON.parse(JSON.stringify(unit,(k,v)=>typeof v==='function'||(typeof Node!=='undefined'&&v instanceof Node)?undefined:v));
   const next=explorationEncounterApi.recordOutcome(progress,request.event.id,outcome,snapshot(game.player),game.enemies.map(snapshot));
   next.encounters[request.event.id].origin=request.origin;
+  next.encounters[request.event.id].terrainScale=explorationTerrain.scale;
   if(outcome==='victory')next.encounters[request.event.id].loot=collectLootFromSlainEnemies().items;
   storage.setItem(explorationEncounterApi.progressKey(request.scope),JSON.stringify(next));
 }
@@ -150,7 +152,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C224');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C225');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
