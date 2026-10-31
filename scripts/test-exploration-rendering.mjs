@@ -94,9 +94,10 @@ vm.runInContext('explorationFloorImage.complete=explorationWallImage.complete=tr
 const patternTarget={createPattern(){return {setTransform(){}};}};
 context.explorationFloorPatternForView();context.explorationWallPattern(patternTarget,{a:{x:128,y:64}},35);
 const floorTransform=transforms[0],wallTransform=transforms[1];
-assert.equal(floorTransform[0]*128,128);
+assert.equal(sceneApi.materialMetrics(terrain).floorWidth,terrain.cellW/2,'Floor slabs are half their former width and depth');
+assert.equal(sceneApi.materialMetrics(terrain).wallWidth,terrain.cellW/2,'Bricks are half their former width');
 assert.equal(wallTransform[3],1,'Wall source is filtered to its 35px displayed height');
 assert.equal(sceneApi.materialMetrics(terrain,35).wallHeight,35,'Six source rows occupy the full compact face');
 context.explorationWallPattern(patternTarget,{a:{x:256,y:64}},35);
 assert.equal(transforms[2][4],wallTransform[4],'Adjacent wall faces keep a continuous horizontal texture phase');
-console.log('PASS anisotropic filtering, four floor slabs per exploration square and six world-anchored wall rows at fixed wall height');
+console.log('PASS anisotropic filtering, eight floor slabs per exploration square and six world-anchored wall rows at fixed wall height');

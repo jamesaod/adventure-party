@@ -108,3 +108,7 @@ See docs/EXPLORATION_EDITOR.md for map authoring. Keep design packs separate fro
 ## Candidate Rev 227 - shared scene presentation
 
 Read docs/SHARED_SCENE_STYLE.md (or SHARED_SCENE_STYLE.md from docs) before changing exploration/combat materials, lighting or projected objects. Six wall courses and four floor slabs are shared authored values. Keep 1:2 tactical footprints separate from 35px wall height and aspect-preserving door/window artwork. The profile supplies ambient, torches and party lantern to both adapters.
+
+## Candidate Rev 228
+
+Door standing spaces use architectural plane collision rather than whole-door-tile blocking. Player-controlled THROUGH DOOR [F] crosses open snapshot doorways for 2 movement points; opening doors in combat is still future work. Preserve the options argument through the r220 movement-awareness wrapper. Shared material changes halve floor slabs in both axes and brick repeat width; six wall courses remain. See EXPLORATION_ENCOUNTERS.md and test-doorway-movement.mjs.

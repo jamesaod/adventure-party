@@ -1108,9 +1108,9 @@ addAreaEffect=function(effect){
   and update to the new location only if it remains visible afterward.
 */
 const r220BaseTryPlayerMove=tryPlayerMove;
-tryPlayerMove=async function(dx,dy){
+tryPlayerMove=async function(dx,dy,options){
   r220ObserveVisibleTargetsForAllMobs();
-  const result=await r220BaseTryPlayerMove(dx,dy);
+  const result=await r220BaseTryPlayerMove(dx,dy,options);
   r220ObserveVisibleTargetsForAllMobs();
   return result;
 };

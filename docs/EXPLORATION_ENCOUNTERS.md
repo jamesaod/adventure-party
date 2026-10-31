@@ -94,3 +94,9 @@ Exploration combat uses warm ambient surface shading, soft-light torch pools ins
 ## Candidate Rev 227 - shared scene style
 
 SHARED_SCENE_STYLE.md supersedes Rev 226 wall texture cropping and separate warm overlays. Six courses occupy the complete 35px face. Shared material/light/object definitions support the 1:2 footprint without stretching door/window artwork. Display-footprint mip filtering, shared hemisphere/torch/lantern exposure and world-anchored exposure caches preserve detail. Perspective torches now cast shadows. Closed broad-face doors use the existing wood texture through the aspect-preserving display contract. Window/prop authoring and open combat door interactions remain future work.
+
+## Candidate Rev 228 - door approaches and crossing
+
+Closed doors no longer mark their entire exploration tile as a wall. Floor hexes on either side are standing spaces; the existing architectural door plane blocks crossing, and core-bisected hexes remain invalid. This fixes the hex immediately in front of a closed door without allowing wall clipping.
+
+For player-controlled units, THROUGH DOOR [F] connects aligned legal standing hexes across an already-open doorway, skipping the intermediate NW/NE corner cells as standing destinations. Cost is two movement points. The existing full-move threshold, occupancy/footprint checks, departure reactions, landing area effects and guard reactions remain in the movement pipeline. No crossing is offered through closed doors, other walls, occupied landings or insufficient movement. Combat opening/closing of doors remains unimplemented; the command uses the exploration door snapshot. Ordinary AI pathfinding retains its normal hex steps.

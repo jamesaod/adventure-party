@@ -1,6 +1,6 @@
 import {validateMap,cellKey} from './exploration-core.mjs?v=R238C211';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C227';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C228';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
