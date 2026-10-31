@@ -110,3 +110,9 @@ The opened-door list is saved into the encounter handoff before mutating combat 
 ## Rev 231 - edge architecture
 
 Version-2 maps project canonical edges into the existing architectural-wall engine. Floor still expands 1:2; wall height remains 35px. Closed door leaves block their actual aperture; stone jambs persist after opening. Windows reuse mode-specific wall openings: movement/volume/projectiles blocked, sight/light transmitted through the opening. Door records carry stable edge identities through open/cross commands and the saved exploration handoff. No whole floor square becomes a wall merely because an edge is blocked. Production footprint/core and transition checks remain authoritative where square edges cross the hex lattice. F remains the two-MP crossing; O remains one MP to open.
+
+## Rev 233 - retain distant edge architecture
+
+Version-2 combat now imports the complete authored map, superseding the five-square entry crop. The old crop could discard an authored thin wall six or more rows from an encounter entry and seal the floor with an artificial crop boundary. Tactical axial bounds now cover the full projected map, including skew, so imported floor and walls remain reachable as units move. Legacy version-1 terrain keeps its existing bounded behavior. Wall height, door widths and LOS rules are unchanged.
+
+Blocked hexes use the same core/segment intersection test, evaluated only near each segment instead of scanning every wall for every map cell. Floor exposure is baked around the viewport rather than allocating a full-map lighting bitmap. test-exploration-combat-bounds.mjs covers the missing-wall coordinates, render visibility, 128-square bounds and collision parity.

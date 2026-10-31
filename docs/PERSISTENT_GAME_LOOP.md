@@ -139,3 +139,5 @@ Rev 230 corrects door presentation: opaque masonry frames and a shared grounded 
 ## Rev 231 - shared edge architecture implemented
 
 Editor floor/void cells plus canonical wall/door/window edges feed exploration rendering, movement/discovery and encounter combat geometry. Encounter regions remain sets of floor squares. Door state uses stable IDs through combat and back to exploration. Existing block maps have a non-destructive editor migration with door-placement notes; old runtime maps remain supported. New floor geometry still expands 1:2 without increasing wall height.
+
+Rev 233 removes the legacy five-square combat crop for edge maps. Full authored floor and architecture now survive the exploration-to-combat handoff; dynamic tactical bounds cover their projection. Lighting work stays near the viewport and collision rebuilding uses segment-local candidates.

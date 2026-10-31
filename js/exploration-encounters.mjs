@@ -125,18 +125,14 @@ export function combatDoorFrame(door,terrain){
 }
 
 export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5){
- const scale=SCENE_STYLE.tacticalHexesPerCell,cellW=hexWidth*scale,cellH=hexRow*scale/(Math.sqrt(3)/2),radius=5;
- const bounds={left:Math.max(0,origin.x-radius),right:Math.min(map.width-1,origin.x+radius),top:Math.max(0,origin.z-radius),bottom:Math.min(map.height-1,origin.z+radius)};
+ const scale=SCENE_STYLE.tacticalHexesPerCell,cellW=hexWidth*scale,cellH=hexRow*scale/(Math.sqrt(3)/2);
+ const bounds={left:0,right:map.width-1,top:0,bottom:map.height-1};
  const project=(x,z)=>({x:(x-origin.x)*cellW,y:(z-origin.z)*cellH}),floor=(x,z)=>x>=bounds.left&&x<=bounds.right&&z>=bounds.top&&z<=bounds.bottom&&map.grid[z]?.[x]==='.';
  const walls=[],spaces=[],doors=[],windows=[];
  const segment=(a,b,id,extra={})=>walls.push({id,a,b,height:35,thickness:3,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[],...extra});
  for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++)if(floor(x,z)){
   const a=project(x-.5,z-.5),b=project(x+.5,z+.5);spaces.push({id:`floor-${x}-${z}`,environment:'indoor',floorColor:'#82745d',polygon:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
-  // The bounded combat crop also needs sealed edges where floor continues outside it.
-  for(const [dx,dz] of [[0,-1],[1,0],[0,1],[-1,0]])if(map.grid[z+dz]?.[x+dx]==='.'&&!floor(x+dx,z+dz)){
-   if(dx)segment(project(x+dx/2,z-.5),project(x+dx/2,z+.5),`crop-x-${x}-${z}-${dx}`);
-   else segment(project(x-.5,z+dz/2),project(x+.5,z+dz/2),`crop-z-${x}-${z}-${dz}`);
-  }
+
  }
  for(const edge of effectiveEdges(map)){
   const g=edgeGeometry(edge);if(g.center.x<bounds.left-.5||g.center.x>bounds.right+.5||g.center.z<bounds.top-.5||g.center.z>bounds.bottom+.5)continue;
@@ -151,5 +147,12 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
   if(!record.open)segment(point(low),point(high),id,{doorLeaf:true});
  }
  const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
- return {walls,spaces,doors,windows,bounds,project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
+ return {walls,spaces,doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
+}
+
+// Cover the projected square map in axial coordinates, including its skew.
+export function tacticalHexBounds(bounds,project,hexWidth,hexRow){
+ const corners=[project(bounds.left-.5,bounds.top-.5),project(bounds.right+.5,bounds.top-.5),project(bounds.right+.5,bounds.bottom+.5),project(bounds.left-.5,bounds.bottom+.5)];
+ const axial=corners.map(p=>({x:p.x/hexWidth-p.y/(2*hexRow),y:p.y/hexRow}));
+ return {minX:Math.floor(Math.min(...axial.map(p=>p.x)))-2,maxX:Math.ceil(Math.max(...axial.map(p=>p.x)))+2,minY:Math.floor(Math.min(...axial.map(p=>p.y)))-2,maxY:Math.ceil(Math.max(...axial.map(p=>p.y)))+2};
 }

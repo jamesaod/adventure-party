@@ -5188,10 +5188,10 @@ const VIEW_RADIUS=20;
 
 const MAP_WIDTH_HEXES=40;
 const MAP_HEIGHT_HEXES=typeof location!=="undefined"&&new URLSearchParams(location.search).get("explorationCombat")==="1"?32:20;
-const MAP_MIN_X=-20;
-const MAP_MAX_X=MAP_MIN_X+MAP_WIDTH_HEXES-1;
-const MAP_MIN_Y=-MAP_HEIGHT_HEXES/2;
-const MAP_MAX_Y=MAP_MIN_Y+MAP_HEIGHT_HEXES-1;
+let MAP_MIN_X=-20;
+let MAP_MAX_X=MAP_MIN_X+MAP_WIDTH_HEXES-1;
+let MAP_MIN_Y=-MAP_HEIGHT_HEXES/2;
+let MAP_MAX_Y=MAP_MIN_Y+MAP_HEIGHT_HEXES-1;
 
 const HEX_DIRS=[
   {x: 1,y: 0,name:"E"},
@@ -5636,6 +5636,8 @@ function screenPointForWorld(point,elevation=0){
 }
 
 function configureArchitecturalWalls(mode){
+  MAP_MIN_X=-20;MAP_MAX_X=MAP_MIN_X+MAP_WIDTH_HEXES-1;
+  MAP_MIN_Y=-MAP_HEIGHT_HEXES/2;MAP_MAX_Y=MAP_MIN_Y+MAP_HEIGHT_HEXES-1;
   architecturalWalls=[];
   architecturalBlockedHexes.clear();
   configureArchitecturalSpaces(mode);
@@ -5980,16 +5982,16 @@ function rebuildArchitecturalBlockedHexes(){
   architecturalBlockedHexes.clear();
   if(!architecturalWalls.length) return;
 
-  for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++){
-    for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++){
-      if(
-        architecturalWalls.some(wall=>
-          wallBlockingSubsegments(wall,"movement")
-            .some(segment=>wallSegmentCutsHexInterior(segment,x,y))
-        )
-      ){
-        architecturalBlockedHexes.add(key(x,y));
-      }
+  // Each segment can intersect only nearby hex cores. Expanding the map
+  // must not turn this into a full map-by-wall Cartesian scan.
+  const radiusX=HEX_W/2*ARCHITECTURAL_HEX_CORE_SCALE,radiusY=HEX_H/2*ARCHITECTURAL_HEX_CORE_SCALE;
+  for(const wall of architecturalWalls)for(const segment of wallBlockingSubsegments(wall,"movement")){
+    const minWorldX=Math.min(segment.a.x,segment.b.x)-radiusX-0.001,maxWorldX=Math.max(segment.a.x,segment.b.x)+radiusX+0.001;
+    const minRow=Math.max(MAP_MIN_Y,Math.ceil((Math.min(segment.a.y,segment.b.y)-radiusY-0.001)/HEX_ROW));
+    const maxRow=Math.min(MAP_MAX_Y,Math.floor((Math.max(segment.a.y,segment.b.y)+radiusY+0.001)/HEX_ROW));
+    for(let y=minRow;y<=maxRow;y++){
+      const minX=Math.max(MAP_MIN_X,Math.ceil(minWorldX/HEX_W-y/2)),maxX=Math.min(MAP_MAX_X,Math.floor(maxWorldX/HEX_W-y/2));
+      for(let x=minX;x<=maxX;x++)if(wallSegmentCutsHexInterior(segment,x,y))architecturalBlockedHexes.add(key(x,y));
     }
   }
 }
