@@ -1,14 +1,17 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
 const explorationFloorImage=new Image(),explorationWallImage=new Image();
 const explorationMaterialTiles=new WeakMap();
+// Match exploration's 3m-wide / 3.5m-high source material tiles, independently
+// of the deliberately short tactical wall geometry. Keep source pixels intact.
+const EXPLORATION_COMBAT_MATERIALS=Object.freeze({tilePixels:512,cellMetres:3,wallMetres:3.5});
 function explorationMaterialTile(image){
   if(!image.complete||!image.naturalWidth)return null;
   if(explorationMaterialTiles.has(image))return explorationMaterialTiles.get(image);
-  // Prefilter once before the pixel-art battlefield samples a small repeat.
+  // Prefilter once before the pixel-art battlefield samples a small repeat, retaining enough detail for battlefield zoom.
   // Progressive reduction removes high-frequency grain instead of aliasing it.
   let tile=image,width=image.naturalWidth,height=image.naturalHeight;
-  while(width>64||height>64){
-    const next=document.createElement('canvas');next.width=Math.max(64,Math.ceil(width/2));next.height=Math.max(64,Math.ceil(height/2));
+  while(width>EXPLORATION_COMBAT_MATERIALS.tilePixels||height>EXPLORATION_COMBAT_MATERIALS.tilePixels){
+    const next=document.createElement('canvas');next.width=Math.max(EXPLORATION_COMBAT_MATERIALS.tilePixels,Math.ceil(width/2));next.height=Math.max(EXPLORATION_COMBAT_MATERIALS.tilePixels,Math.ceil(height/2));
     const target=next.getContext('2d');target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';target.drawImage(tile,0,0,next.width,next.height);
     tile=next;width=next.width;height=next.height;
   }
@@ -26,7 +29,11 @@ function explorationWallPattern(target,wall,height){
   if(!explorationWallImage.complete||!explorationWallImage.naturalWidth)return null;
   const tile=explorationMaterialTile(explorationWallImage),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
   const origin=screenPointForWorld(wall.a);
-  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/tile.width,0,0,height/tile.height,origin.x,origin.y-height]));return pattern;
+  const repeatHeight=explorationTerrain.cellW*EXPLORATION_COMBAT_MATERIALS.wallMetres/EXPLORATION_COMBAT_MATERIALS.cellMetres;
+  // Anchor to the wall's foot and the world X axis: adjacent faces share seams,
+  // camera pans do not slide them, and a 35px wall crops rather than squashes.
+  const worldOrigin=screenPointForWorld({x:0,y:0});
+  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/tile.width,0,0,repeatHeight/tile.height,worldOrigin.x,origin.y-repeatHeight]));return pattern;
 }
 function clipExplorationFloor(){
   ctx.beginPath();for(const space of architecturalSpaces){const points=space.polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();
@@ -55,7 +62,7 @@ function drawExplorationIlluminationLayer(){
     const polygon=wallTestVisibilityPolygonWorld(source,'light');
     if(polygon.length<3)continue;
     const center=hexCenter(source.x,source.y),radius=Math.max(1,Number(source.radiusHexes)||1)*HEX_W;
-    const color=source.color||[255,244,188],alpha=0.18*Math.min(1.25,source.intensity||1);
+    const color=source.color||[255,244,188],alpha=0.55*Math.min(1.25,source.intensity||1);
     ctx.save();
     if(!tracePolygonOnContext(ctx,polygon.map(point=>screenPointForWorld(point)))){ctx.restore();continue;}
     ctx.clip();ctx.translate(center.x,center.y);ctx.scale(1,HEX_ROW/HEX_W/(Math.sqrt(3)/2));
@@ -63,7 +70,8 @@ function drawExplorationIlluminationLayer(){
     gradient.addColorStop(0,`rgba(${color.join(',')},${alpha})`);
     gradient.addColorStop(0.5,`rgba(${color.join(',')},${alpha*0.6})`);
     gradient.addColorStop(1,`rgba(${color.join(',')},0)`);
-    ctx.globalCompositeOperation='lighter';ctx.fillStyle=gradient;ctx.fillRect(-radius,-radius,radius*2,radius*2);ctx.restore();
+    // Soft light warms the stone without bleaching its mortar and surface detail.
+    ctx.globalCompositeOperation='soft-light';ctx.fillStyle=gradient;ctx.fillRect(-radius,-radius,radius*2,radius*2);ctx.restore();
   }
 }
 function drawExplorationTorch(torch){

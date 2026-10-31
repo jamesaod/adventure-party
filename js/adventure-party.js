@@ -6196,12 +6196,13 @@ function drawArchitecturalFloorRegions(){
     ctx.fill();
 
     /*
-      A light neutral veil keeps the source artwork readable under tactical
-      highlights and differentiates the indoor material from outdoor grass.
+      A neutral veil serves standalone indoor maps; exploration uses a warm
+      multiplicative ambient tint that retains source stone contrast.
     */
     ctx.clip();
-    ctx.globalAlpha=explorationTerrain?0.22:0.10;
-    ctx.fillStyle=explorationTerrain?"#181620":"#9a9ca2";
+    ctx.globalAlpha=explorationTerrain?0.32:0.10;
+    if(explorationTerrain)ctx.globalCompositeOperation="multiply";
+    ctx.fillStyle=explorationTerrain?"#b18c5c":"#9a9ca2";
     ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
     ctx.restore();
@@ -6904,7 +6905,7 @@ function drawArchitecturalWallTopOutline(wallsToOutline=architecturalWalls){
 function drawArchitecturalWallSegment(wall){
   const height=Math.max(1,Math.round(wall.height || 35));
   const thickness=Math.max(3,wall.thickness || 9);
-  const capColor=wall.material==="old-wood" ? "#716b61" : "#888b92";
+  const capColor=wall.material==="old-wood" ? "#716b61" : wall.material==="exploration-stone" ? "#8a775d" : "#888b92";
   const solidSegments=wallBlockingSubsegments(wall,"movement");
 
   const layer=document.createElement("canvas");
@@ -6949,6 +6950,14 @@ function drawArchitecturalWallSegment(wall){
     }
   }
 
+  // Warm ambient shading is confined to the painted wall pixels, preserving
+  // transparency around compact faces and the original depth/LOS geometry.
+  if(wall.material==="exploration-stone"){
+    lctx.save();lctx.globalCompositeOperation="source-atop";
+    lctx.fillStyle="rgba(72,49,25,0.32)";
+    lctx.fillRect(0,0,layer.width,layer.height);lctx.restore();
+  }
+
   /*
     R200 source-facing wall light:
     each contribution paints only the half-thickness face on the same side of
@@ -6971,7 +6980,7 @@ function drawArchitecturalWallSegment(wall){
     }
     const source=contribution.source;
     const sourceScreen=hexCenter(source.x,source.y);
-    const sourceLift=source.sourceKind==="unit" ? 20 : 5;
+    const sourceLift=source.sourceKind==="unit" ? 20 : wall.material==="exploration-stone"&&source.sourceKind==="torch" ? 26 : 5;
     const radiusPx=
       (Math.max(1,Number(source.radiusHexes)||1)+0.55)*HEX_W;
     const color=source.color || [255,244,188];
@@ -6980,7 +6989,7 @@ function drawArchitecturalWallSegment(wall){
       Terrain/floor illumination is intentionally unchanged.
     */
     const strength=
-      Math.max(0,Math.min(1.35,contribution.intensity))*0.25;
+      Math.max(0,Math.min(1.35,contribution.intensity))*(wall.material==="exploration-stone"?0.65:0.25);
 
     const gradient=lctx.createRadialGradient(
       sourceScreen.x,
@@ -7012,7 +7021,7 @@ function drawArchitecturalWallSegment(wall){
     const offsetY=normal.y*side*faceOffset;
 
     lctx.save();
-    lctx.globalCompositeOperation="lighter";
+    lctx.globalCompositeOperation=wall.material==="exploration-stone"?"soft-light":"lighter";
     lctx.strokeStyle=gradient;
     lctx.lineWidth=faceWidth;
 
@@ -26537,7 +26546,7 @@ function drawHexFill(x,y){
 }
 
 function drawHexGridLine(x,y){
-  if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.5)";ctx.lineWidth=1;ctx.stroke();return;}
+  if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.28)";ctx.lineWidth=1;ctx.stroke();return;}
   const top=hexScreenVertices(x,y);
   const tileSet=activeCombatTerrainTileSet();
   const outdoorStroke=
