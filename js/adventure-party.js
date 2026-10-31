@@ -26714,7 +26714,7 @@ function drawFloor(){
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
 
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
-  drawTerrainIlluminationLayer(tiles);
+  if(explorationTerrain)drawExplorationIlluminationLayer();else drawTerrainIlluminationLayer(tiles);
 
   for(const tile of tiles){
     drawHexGridLine(tile.x,tile.y);
