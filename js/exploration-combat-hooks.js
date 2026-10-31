@@ -28,9 +28,10 @@ function explorationFloorPatternForView(){
   pattern.setTransform(new DOMMatrix([m.floorWidth/tile.width,0,0,m.floorHeight/tile.height,origin.x-explorationTerrain.cellW/2,origin.y-explorationTerrain.cellH/2]));return pattern;
 }
 function explorationWallPattern(target,wall,height){
-  if(!explorationWallImage.complete||!explorationWallImage.naturalWidth)return null;
+  const image=wall.edgeMaterial==='wood'?explorationDoorImage:explorationWallImage;
+  if(!image.complete||!image.naturalWidth)return null;
   const m=explorationEncounterApi.materialMetrics(explorationTerrain,height),density=explorationMaterialDensity();
-  const tile=explorationMaterialTile(explorationWallImage,m.wallWidth*density,m.wallHeight*density),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
+  const tile=explorationMaterialTile(image,m.wallWidth*density,m.wallHeight*density),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
   const origin=screenPointForWorld(wall.a),worldOrigin=screenPointForWorld({x:0,y:0});
   pattern.setTransform(new DOMMatrix([m.wallWidth/tile.width,0,0,m.wallHeight/tile.height,worldOrigin.x,origin.y-m.wallHeight]));return pattern;
 }
@@ -58,6 +59,7 @@ function drawExplorationCombatDoor(door){
   }
   const a=screenPointForWorld(frame.a),b=screenPointForWorld(frame.b);
   ctx.strokeStyle='#b09a70';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  if(door.edgeId&&Math.abs(p.vx)<.001){ctx.strokeStyle='#855025';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(base.x,base.y-p.height/2);ctx.lineTo(base.x+p.vx,base.y+p.vy-p.height/2);ctx.stroke();ctx.restore();return;}
   ctx.transform(p.vx/p.width,p.vy/p.width,0,1,base.x,base.y-p.height);
   ctx.drawImage(tile,0,0,p.width,p.height);
   for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){ctx.globalCompositeOperation=mode;ctx.fillStyle=`rgb(${color.join(',')})`;ctx.fillRect(0,0,p.width,p.height);}
@@ -65,9 +67,15 @@ function drawExplorationCombatDoor(door){
 }
 function explorationDoorWall(door){
  const {center:c,axis}=door,t=explorationTerrain;
- return {id:`door-${door.x}-${door.z}`,a:axis==='x'?{x:c.x,y:c.y-t.cellH/2}:{x:c.x-t.cellW/2,y:c.y},b:axis==='x'?{x:c.x,y:c.y+t.cellH/2}:{x:c.x+t.cellW/2,y:c.y}};
+ return {id:door.wallId||`door-${door.x}-${door.z}`,edgeMaterial:door.material,a:axis==='x'?{x:c.x,y:c.y-t.cellH/2}:{x:c.x-t.cellW/2,y:c.y},b:axis==='x'?{x:c.x,y:c.y+t.cellH/2}:{x:c.x+t.cellW/2,y:c.y}};
+}
+function drawExplorationEdgeWindow(window){
+ const c=screenPointForWorld(window.center),style=explorationEncounterApi.SCENE_STYLE,width=18,height=style.window.height/style.wallMetres*35,sill=style.window.sill/style.wallMetres*35;
+ ctx.save();ctx.transform(1,.3,0,1,c.x-width/2,c.y-sill-height);ctx.fillStyle='#698d92';ctx.globalAlpha=.85;ctx.fillRect(0,0,width,height);ctx.globalAlpha=1;ctx.strokeStyle='#493b2a';ctx.lineWidth=2;ctx.strokeRect(0,0,width,height);ctx.beginPath();ctx.moveTo(width/2,0);ctx.lineTo(width/2,height);ctx.moveTo(0,height/2);ctx.lineTo(width,height/2);ctx.stroke();ctx.restore();
 }
 function queueExplorationDoors(actors){
+ for(const window of explorationTerrain.windows||[])if(window.axis==='x'&&isArchitecturalWallVisibleToFriendlyParty(explorationDoorWall(window))){const c=screenPointForWorld(window.center);actors.push({sortY:c.y+.3,sortX:c.x,fn:()=>drawExplorationEdgeWindow(window)});}
+
  for(const door of explorationTerrain.doors||[]){
   const wall=explorationDoorWall(door);if(!isArchitecturalWallVisibleToFriendlyParty(wall))continue;
   const p=explorationEncounterApi.combatDoorPresentation(door,explorationTerrain),base=screenPointForWorld(p.base);
@@ -250,10 +258,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C230');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C231');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C231');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
@@ -301,7 +309,7 @@ function tryExplorationOpenDoor(){
  const doors=explorationClosedDoors(unit);
  if(doors.length!==1){log(doors.length?'More than one closed door is in reach. Step closer to the door you want.':'No closed door is within reach.','system');return;}
  if(unit.turnMoves+1>unit.move){log('Opening a door requires 1 movement point.','system');return;}
- const door=doors[0],id=`${door.x},${door.z}`,opened=[...new Set([...explorationEncounter.openDoors,id])];
+ const door=doors[0],id=door.id||`${door.x},${door.z}`,opened=[...new Set([...explorationEncounter.openDoors,id])];
  // Save before altering rules state so storage failure cannot silently lose it.
  try{sessionStorage.setItem(explorationEncounterApi.HANDOFF_KEY,JSON.stringify({...explorationEncounter,openDoors:opened}));}
  catch(error){log('Could not save the opened door: '+error.message,'system');return;}

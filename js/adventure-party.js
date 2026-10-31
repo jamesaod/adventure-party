@@ -6654,6 +6654,10 @@ function wallOpeningScreenMetrics(wall,opening){
     )
   );
 
+  if(opening.edgeWindow){
+    const renderHeight=Number(opening.visualHeight)||14,sill=Number(opening.visualSill)||10,renderWidth=Math.max(4,Number(opening.glassWidthWorld)||1);
+    return {x:base.x-renderWidth/2,y:base.y-sill-renderHeight,width:renderWidth,height:renderHeight,base,center:{x:base.x,y:base.y-sill-renderHeight/2}};
+  }
   const asset=processedWallOpeningAsset("window");
   const sourceRatio=asset
     ? asset.width/asset.height

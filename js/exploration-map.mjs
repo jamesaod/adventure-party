@@ -1,4 +1,5 @@
-import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C211';
+import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C231';
+import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C231';
 
 // The map and first-person view share the same authored grid and live state.
 // North is the top edge; there is no separately authored illustration to drift.
@@ -24,7 +25,13 @@ export function explorationMapMarkup(map, state, discovery) {
       }
     }
   }
-  for (const door of map.doors) {
+  if(map.version===2)for(const edge of effectiveEdges(map)){
+    if(!edgeCells(edge).some(p=>discovery.discovered.has(cellKey(p.x,p.z))))continue;
+    const g=edgeGeometry(edge),a={x:insetX+(g.a.x+.5)*size,y:insetY+(g.a.z+.5)*size},b={x:insetX+(g.b.x+.5)*size,y:insetY+(g.b.z+.5)*size};
+    const open=edge.kind==='door'&&discovery.knownDoors.get(edge.id)===true;
+    parts.push(`<path data-edge="${edge.id}" d="M${a.x} ${a.y}L${b.x} ${b.y}" stroke="${edge.kind==='window'?'#397d87':edge.kind==='door'?'#9a551f':'#684322'}" stroke-width="${edge.kind==='door'?3:2}" ${open?'stroke-dasharray="2 3"':''}/>`);
+  }
+  for (const door of map.version===2?[]:map.doors) {
     const key=cellKey(door.x,door.z);
     if (!discovery.discovered.has(key)) continue;
     const open = discovery.knownDoors.get(key) === true;

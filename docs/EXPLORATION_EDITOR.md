@@ -41,3 +41,13 @@ Save encounter area writes the chosen floor/door squares, color, name, MOB/count
 Remove selected squares from areas trims every touched encounter. Delete selected encounter areas removes entire touched encounters. Removing the last trigger square removes that encounter. Both operations support ordinary editor Undo, as do area creation and edits. Selection itself is transient and does not alter the design. Save maps and Adventure Pack export retain cell sets, identity and color. Painting walls over explicit encounter squares is blocked until those squares are removed from the area. Resizing refuses to crop encounter cells or deployment anchors.
 
 The bounded encounter still extends five exploration squares around entry: keep its enemy anchor within five squares of every trigger square. Each cell triggers the same ID, so retreat survivors and victory clearing apply to the whole area. This is a trigger region, not a room-filling enemy distribution setting.
+
+## Rev 231 - walls on shared square edges
+
+The editor now works on map version 2. Floor and Void / solid area paint square interiors. Wall edge, Door edge, Window edge and Erase edge snap to the nearest side of a square; dragging paints a run of shared edges. Select edge inspects without painting. Keyboard users choose a side in the inspector, then activate a square. Both sides of one boundary refer to one canonical edge. Walls are brown, doors orange, windows cyan; the hovered edge is highlighted.
+
+The inspector changes edge type/material, opening width (40-100% of the edge), door hinge and initial open state. Apply edge settings is undoable, as are painting strokes. Floor/void boundaries are automatically enclosed; extend floor before removing such a boundary. Door/window openings require floor on both sides. Encounter selections, starts, entrances and exits remain square-based. Save/export retain the new edge records. Test Map uses the existing isolated snapshot.
+
+Legacy maps are converted in a working copy on editor load/import. Former wall blocks remain void so room footprints and coordinates are preserved. Former door squares become floor; each old door moves to its north edge (horizontal) or west edge (vertical), keeps its old ID and receives a visible migration note. Review these placements before saving. Existing browser data is not rewritten until Save maps. Legacy version-1 maps remain readable by the runtime.
+
+New edge maps start with usable floor in every square and automatic perimeter walls. Void is an explicit terrain choice; perimeter walls do not consume an outer row of floor. Resizing new maps preserves this distinction.

@@ -297,3 +297,7 @@ Door standing spaces use architectural plane collision rather than whole-door-ti
 ## Candidate Rev 229
 
 Combat door opening and readable edge-on door cutaways are described in EXPLORATION_ENCOUNTERS.md and SHARED_SCENE_STYLE.md. Save handoff state before changing geometry; preserve the existing two-point crossing and shared materials/lighting.
+
+## Candidate Rev 231
+
+Shared edge-map authoring and rendering are documented in EXPLORATION_EDITOR.md, EXPLORATION_ENCOUNTERS.md and SHARED_SCENE_STYLE.md. Require test-exploration-edges.mjs alongside legacy exploration tests. Preserve old saved drafts and explicit migration notes; keep new editor and runtime geometry consistent through exploration-edges.mjs.
