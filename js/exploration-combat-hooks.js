@@ -150,7 +150,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C221');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C222');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -193,4 +193,10 @@ function explorationVisibleWallBoundaries(){
   return architecturalWalls.filter(wall=>wall.borderFloor
     ? contexts.some(context=>explorationVisibleFloorArea(context.polygon,wall.borderFloor)>0.1)
     : isArchitecturalWallVisibleToFriendlyParty(wall));
+}
+
+function drawExplorationWallInterior(interior){
+  ctx.save();ctx.fillStyle='#08080c';
+  if(tracePolygonOnContext(ctx,interior.polygon.map(point=>screenPointForWorld(point,interior.height))))ctx.fill();
+  ctx.restore();
 }

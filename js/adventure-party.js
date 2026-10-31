@@ -30248,6 +30248,15 @@ function draw(){
     });
   }
 
+  if(explorationTerrain){
+    const visibleIds=new Set(sceneWalls.map(w=>w.id));
+    for(const interior of explorationTerrain.wallInteriors||[]){
+      if(!interior.wallIds.some(id=>visibleIds.has(id)))continue;
+      const front=screenPointForWorld(interior.polygon[2]);
+      actors.push({sortY:front.y+0.26,sortX:front.x,fn:()=>drawExplorationWallInterior(interior)});
+    }
+  }
+
   for(const tree of treeDecorations){
     const c=hexCenter(tree.x,tree.y);
     const sortOffset=tree.occupied

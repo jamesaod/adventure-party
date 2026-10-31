@@ -76,3 +76,7 @@ Terrain retains solidBlocks for occupied map cells. Existing floor-facing bounda
 ## Candidate Rev 221 - visible floor boundary walls
 
 Rev 220 solid-block caps and footprint additions are reverted. Walls are only generated along passable-floor boundaries. A face is shown when the party LOS polygon overlaps a positive area of its adjacent floor cell (inset to reject edge-only contact). This avoids hiding whole faces when wall-center rays are blocked near corners. Hidden floor cells reveal no boundary faces; solid interiors stay black. Closed doors retain the existing visibility test. Collision, light blocking and floor LOS are unchanged.
+
+## Candidate Rev 222 - black cutaways and wider corridors
+
+Each exploration square spans two combat hex widths again. Wall height remains 35px. Untextured black cutaway masks cover the upper solid interiors at wall height, depth-sorted after their bordering faces; visible floor-boundary faces still use Rev 221 rules. Masks have no texture or outlines. Movement, LOS and light use the expanded terrain boundaries.

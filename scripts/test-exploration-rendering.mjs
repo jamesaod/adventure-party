@@ -89,3 +89,11 @@ assert.deepEqual(Array.from(boundaryContext.explorationVisibleWallBoundaries(),w
 assert(!source.includes('drawExplorationWallCap'));
 assert(terrain.walls.filter(w=>!w.id.startsWith('door-')).every(w=>w.borderFloor));
 console.log('PASS visible passable floor reveals boundary walls, hidden rooms stay hidden, solid caps removed');
+
+const interiorCalls=[];
+const interiorContext={ctx:{save(){},restore(){},fill(){interiorCalls.push(this.fillStyle);}},screenPointForWorld:(p,h)=>({x:p.x,y:p.y-h}),tracePolygonOnContext:()=>true};
+vm.runInNewContext(hooks.slice(hooks.indexOf('function drawExplorationWallInterior(')),interiorContext);
+interiorContext.drawExplorationWallInterior({height:35,polygon:[{x:0,y:0},{x:10,y:0},{x:10,y:10}]});
+assert.deepEqual(interiorCalls,['#08080c']);
+assert.equal(terrain.cellW,128);assert(terrain.walls.every(w=>w.height===35),'Expanding the floor must not enlarge wall height');
+console.log('PASS black wall-interior cutaways and doubled corridor scale preserve short wall height');
