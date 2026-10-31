@@ -34,12 +34,40 @@ function explorationWallPattern(target,wall,height){
   const origin=screenPointForWorld(wall.a),worldOrigin=screenPointForWorld({x:0,y:0});
   pattern.setTransform(new DOMMatrix([m.wallWidth/tile.width,0,0,m.wallHeight/tile.height,worldOrigin.x,origin.y-m.wallHeight]));return pattern;
 }
-function drawExplorationDoorFace(target,wall,height){
-  if(!wall.id?.startsWith('door-')||Math.abs(wall.b.x-wall.a.x)<Math.abs(wall.b.y-wall.a.y))return;
-  const placement=explorationEncounterApi.projectSceneObject('door',explorationTerrain),size=placement.artwork,density=explorationMaterialDensity();
-  const tile=explorationMaterialTile(explorationDoorImage,size.width*density,size.height*density);if(!tile)return;
-  const center=screenPointForWorld({x:(wall.a.x+wall.b.x)/2,y:(wall.a.y+wall.b.y)/2});
-  target.save();target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';target.drawImage(tile,center.x-size.width/2,center.y-size.height,size.width,size.height);target.restore();
+function drawExplorationCombatDoor(door){
+  const api=explorationEncounterApi,p=api.combatDoorPresentation(door,explorationTerrain),base=screenPointForWorld(p.base),density=explorationMaterialDensity();
+  const tile=explorationMaterialTile(explorationDoorImage,p.width*density,p.height*density);if(!tile)return;
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  // Threshold and jambs stay on the real doorway, making the cutaway explicit.
+  const wall=explorationDoorWall(door),a=screenPointForWorld(wall.a),b=screenPointForWorld(wall.b);
+  ctx.strokeStyle='#b09a70';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  ctx.strokeStyle=explorationWallPattern(ctx,wall,35)||'#8a775d';ctx.lineWidth=4;
+  for(const point of [a,b]){ctx.beginPath();ctx.moveTo(point.x,point.y);ctx.lineTo(point.x,point.y-35);ctx.stroke();}
+  ctx.beginPath();ctx.moveTo(a.x,a.y-35);ctx.lineTo(b.x,b.y-35);ctx.stroke();
+  // The stone surround stays fixed while only the wooden leaf swings.
+  const frame=api.combatDoorPresentation({...door,open:false},explorationTerrain),frameBase=screenPointForWorld(frame.base);
+  ctx.save();ctx.transform(frame.vx/frame.width,frame.vy/frame.width,0,1,frameBase.x,frameBase.y-frame.height);ctx.strokeStyle='#8a775d';ctx.lineWidth=4;ctx.strokeRect(-1,-1,frame.width+2,frame.height+1);ctx.restore();
+  ctx.transform(p.vx/p.width,p.vy/p.width,0,1,base.x,base.y-p.height);
+  ctx.drawImage(tile,0,0,p.width,p.height);
+  const lights=explorationVisualLights(),cell=api.SCENE_STYLE.cellMetres;
+  const observer=game.player?worldPointForHex(game.player.x,game.player.y):door.center;
+  const side=Math.sign(door.axis==='x'?observer.x-door.center.x:observer.y-door.center.y)||1;
+  const normal=door.axis==='x'?{x:side,y:0,z:0}:{x:0,y:0,z:side};
+  const point={x:(explorationEncounter.origin.x+door.center.x/explorationTerrain.cellW)*cell+normal.x*.02,z:(explorationEncounter.origin.z+door.center.y/explorationTerrain.cellH)*cell+normal.z*.02,y:api.SCENE_STYLE.door.height/2};
+  const exposure=explorationSurfaceExposure(point,normal,lights,new Set(explorationEncounter.openDoors));
+  for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){ctx.globalCompositeOperation=mode;ctx.fillStyle=`rgb(${color.join(',')})`;ctx.fillRect(0,0,p.width,p.height);}
+  ctx.globalCompositeOperation='source-over';ctx.strokeStyle='#392c20';ctx.lineWidth=1.5;ctx.strokeRect(0,0,p.width,p.height);ctx.restore();
+}
+function explorationDoorWall(door){
+ const {center:c,axis}=door,t=explorationTerrain;
+ return {id:`door-${door.x}-${door.z}`,a:axis==='x'?{x:c.x,y:c.y-t.cellH/2}:{x:c.x-t.cellW/2,y:c.y},b:axis==='x'?{x:c.x,y:c.y+t.cellH/2}:{x:c.x+t.cellW/2,y:c.y}};
+}
+function queueExplorationDoors(actors){
+ for(const door of explorationTerrain.doors||[]){
+  const wall=explorationDoorWall(door);if(!isArchitecturalWallVisibleToFriendlyParty(wall))continue;
+  const p=explorationEncounterApi.combatDoorPresentation(door,explorationTerrain),base=screenPointForWorld(p.base);
+  actors.push({sortY:Math.max(base.y,base.y+p.vy)+.3,sortX:base.x+p.vx/2,fn:()=>drawExplorationCombatDoor(door)});
+ }
 }
 function clipExplorationFloor(){
   ctx.beginPath();for(const space of architecturalSpaces){const points=space.polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();
@@ -217,7 +245,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C228');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C229');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -250,9 +278,33 @@ function explorationDoorRoutes(unit){
 async function tryExplorationDoorCrossing(){
   if(explorationDoorCrossingBusy||aimMode||classReportOpen||characterSheetOpen||inventoryOpen||spellCastOverlayOpen||spellCastInProgress)return;
   const unit=activePlayerControlledUnit(),routes=explorationDoorRoutes(unit);
-  if(!routes.length){log('No open doorway crossing is available here. Closed doors cannot be opened in combat yet.','system');return;}
+  if(!routes.length){log('No open doorway crossing is available here. Use Open Door [O] beside a closed doorway.','system');return;}
   if(routes.length!==1){log('More than one doorway is in reach. Step closer to the doorway you want.','system');return;}
   explorationDoorCrossingBusy=true;
   try{await tryPlayerMove(routes[0].to.x-unit.x,routes[0].to.y-unit.y,{doorCrossing:routes[0]});}
   finally{explorationDoorCrossingBusy=false;updateUi();}
+}
+
+function explorationDoorOpeningAllowed(unit){
+ return !!(explorationTerrain&&controlledUnitCanAct(unit)&&!combatAwaitingStart&&combatOpeningSpeechDone&&!explorationDoorCrossingBusy&&!aimMode&&!classReportOpen&&!characterSheetOpen&&!inventoryOpen&&!spellCastOverlayOpen&&!spellCastInProgress&&!sweepInProgress&&!mobGuardReactionInProgress&&!freeStrikeInProgress&&!isCombatActionPauseActive());
+}
+function explorationClosedDoors(unit){
+ return unit&&explorationTerrain?explorationEncounterApi.closedDoorsInReach(explorationTerrain,unit,(a,b)=>architecturalWallBlocksWorldLine(a,b,'movement')):[];
+}
+function tryExplorationOpenDoor(){
+ const unit=activePlayerControlledUnit();if(!explorationDoorOpeningAllowed(unit))return;
+ const doors=explorationClosedDoors(unit);
+ if(doors.length!==1){log(doors.length?'More than one closed door is in reach. Step closer to the door you want.':'No closed door is within reach.','system');return;}
+ if(unit.turnMoves+1>unit.move){log('Opening a door requires 1 movement point.','system');return;}
+ const door=doors[0],id=`${door.x},${door.z}`,opened=[...new Set([...explorationEncounter.openDoors,id])];
+ // Save before altering rules state so storage failure cannot silently lose it.
+ try{sessionStorage.setItem(explorationEncounterApi.HANDOFF_KEY,JSON.stringify({...explorationEncounter,openDoors:opened}));}
+ catch(error){log('Could not save the opened door: '+error.message,'system');return;}
+ explorationEncounter.openDoors=opened;
+ unit.turnMoves++;
+ if(!unit.fullMove&&unit.turnMoves>unit.halfMove){unit.fullMove=true;log('Opening the door passes the attack threshold; Full Move activates.','system');}
+ configureExplorationTerrain();
+ if(typeof r220ObserveVisibleTargetsForAllMobs==='function')r220ObserveVisibleTargetsForAllMobs();
+ log(`${unit.name} opens the door (1 movement point; ${unit.turnMoves}/${unit.fullMove?unit.move:unit.halfMove}).`,'system');
+ refreshTurnBanner();updateUi();draw();
 }

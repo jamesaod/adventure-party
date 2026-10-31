@@ -1,5 +1,5 @@
-import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C228';
-export * from './exploration-scene-style.mjs?v=R238C228';
+import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C229';
+export * from './exploration-scene-style.mjs?v=R238C229';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}
@@ -79,4 +79,29 @@ export function doorwayCrossings(terrain,from,canStand,blocksLine){
     }
   }
   return routes;
+}
+
+// Reach the near side of a doorway; stop short of its own blocking plane.
+// Other architectural walls still prevent reaching around a corner.
+export function closedDoorsInReach(terrain,from,blocksLine){
+ const start={x:(from.x+from.y/2)*terrain.hexWidth,y:from.y*terrain.hexRow};
+ return (terrain.doors||[]).filter(door=>{
+  if(door.open)return false;
+  const horizontal=door.axis==='z',dx=start.x-door.center.x,dy=start.y-door.center.y;
+  const normal=horizontal?dy:dx,along=horizontal?dx:dy;
+  const reach=horizontal?terrain.hexRow*1.1:terrain.hexWidth*1.1,span=horizontal?terrain.cellW:terrain.cellH;
+  if(Math.abs(normal)<.001||Math.abs(normal)>reach||Math.abs(along)>span/2-3)return false;
+  const near=horizontal?{x:start.x,y:door.center.y+Math.sign(normal)*.1}:{x:door.center.x+Math.sign(normal)*.1,y:start.y};
+  return !blocksLine(start,near);
+ });
+}
+// Door art uses the same leaf in both orientations. Edge-on leaves are folded
+// into an oblique cutaway elevation; this is presentation, never collision.
+export function combatDoorPresentation(door,terrain){
+ const size=projectSceneObject('door',terrain).artwork,width=size.width*SCENE_STYLE.door.tacticalArtworkWidth;
+ const oblique=door.axis==='x'?!door.open:door.open;
+ const vx=width*(oblique?.72:1),vy=oblique?width*.34:0;
+ const hinge={x:door.center.x-(door.axis==='x'?0:width/2),y:door.center.y-(door.axis==='x'?terrain.cellH*.2:0)};
+ const base=door.open?hinge:{x:door.center.x-vx/2,y:door.center.y-vy/2};
+ return {base,vx,vy,width,height:size.height,open:door.open,oblique};
 }

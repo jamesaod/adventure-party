@@ -6,7 +6,7 @@ export const SCENE_STYLE=Object.freeze({
   ambient:Object.freeze({sky:0xc6b69b,ground:0x69635a,intensity:1.2}),
   lantern:Object.freeze({color:0xffdca1,intensity:12,range:18,decay:1.4,height:1.9,offsetZ:.2,shadowPixels:512,shadowNear:.05}),
   torch:Object.freeze({color:0xffa64d,intensity:8,range:10,decay:1.5,height:2.35,wallOffset:1.25,shadowPixels:256,shadowNear:.05}),
-  door:Object.freeze({width:2.5,height:3.08,depth:.14,frameWidth:.24,frameDepth:.36,lintelHeight:.4,hingeX:-1.25}),
+  door:Object.freeze({tacticalArtworkWidth:2,width:2.5,height:3.08,depth:.14,frameWidth:.24,frameDepth:.36,lintelHeight:.4,hingeX:-1.25}),
   window:Object.freeze({width:1.2,height:1.4,sill:1})
 });
 export function materialMetrics(terrain,height=SCENE_STYLE.tacticalWallPixels){

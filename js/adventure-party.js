@@ -6951,7 +6951,6 @@ function drawArchitecturalWallSegment(wall){
   }
 
   if(wall.material==="exploration-stone"){
-    drawExplorationDoorFace(lctx,wall,height);
     shadeExplorationWall(lctx,wall,height,thickness);
   }
 
@@ -26178,6 +26177,8 @@ function updateUi(){
     !game.over && !preCombatLocked && !isCombatActionPauseActive() &&
     !freeStrikeInProgress && !!activePc && game.active===activePc.id;
 
+  const openDoorButton=document.getElementById('openDoorButton');
+  if(openDoorButton){openDoorButton.hidden=!explorationTerrain;openDoorButton.disabled=!explorationTerrain||!explorationDoorOpeningAllowed(activePc)||!activePc||activePc.turnMoves+1>activePc.move||explorationClosedDoors(activePc).length!==1;}
   const crossingButton=document.getElementById('doorCrossingButton');
   if(crossingButton){
     crossingButton.hidden=!explorationTerrain;
@@ -30256,6 +30257,7 @@ function draw(){
     actors.push({sortY:c.y,sortX:c.x,fn:()=>drawExplorationTorch(torch)});
   }
 
+  if(explorationTerrain)queueExplorationDoors(actors);
   for(const wall of sceneWalls){
     const a=screenPointForWorld(wall.a);
     const b=screenPointForWorld(wall.b);
@@ -30710,6 +30712,7 @@ function handleCombatKey(event){
 
   if(game && game.over) return;
 
+  if(keyLower==="o"&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)tryExplorationOpenDoor();return;}
   if(keyLower==="f"&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)void tryExplorationDoorCrossing();return;}
 
   const dir=directions[code] || arrowAliases[event.key];

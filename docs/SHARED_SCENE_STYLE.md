@@ -43,3 +43,9 @@ Browser QA uses one authored comparison room in both views, containing a torch a
 ## Rev 228 material adjustment
 
 Floor slabs are half their former width and depth: eight slabs per exploration square, with the same source texture. Brick repeat width is halved independently of height; six rows still occupy each compact wall. Shared material settings change both views and the display-footprint filters continue to select anisotropic mips. Movement/door changes are recorded in EXPLORATION_ENCOUNTERS.md.
+
+## Rev 229 — wider combat doors and edge-on cutaways
+
+Combat door leaf artwork is twice its Rev 228 width (50px before zoom), retaining the 30.8px height. This is a tactical presentation override; the shared 2.5m scene leaf and one-square doorway footprint stay coherent with exploration. The broad face uses the original wood/iron texture. Doors on the edge-on axis use an oblique cutaway elevation with the same texture, stone surround and actual doorway threshold. Opening rotates the displayed leaf around a hinge and leaves a visible threshold. These compact elevations do not create extra blocking geometry or alter the 35px wall height. Both closed and open door entries participate in the existing actor depth queue and architectural visibility test.
+
+Open Door rebuilds architectural movement/LOS/light geometry immediately. Lighting keys include the updated open-door list; the floor exposure and wall exposure caches consequently refresh. No separate indoor sun or artificial material glow is added.

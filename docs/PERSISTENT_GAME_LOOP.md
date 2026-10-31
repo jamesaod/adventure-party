@@ -129,3 +129,7 @@ The user rejected Rev 226 as a visual mismatch: compact walls must show six bric
 ## Rev 228 continuation
 
 User identified the blocked standing hex in front of a closed door. Whole-door-tile blocking is removed in favor of the architectural plane. A player-controlled two-point THROUGH DOOR [F] command crosses an open snapshot doorway between aligned standing hexes, skipping intermediate corner cells. Closed-door interaction remains future work. Floor slabs halve in both axes and bricks halve in width; six rows and 35px walls remain.
+
+## Rev 229 - doorway interaction now connected
+
+Exploration combat opens adjacent closed doors (O, 1 MP), immediately updating movement, sight and lighting. Saved handoff state carries opened doors back to exploration. F remains the two-MP crossing. Wider door artwork uses an oblique cutaway on the edge-on axis. Door closing/locks/traps/NPC door use remain missing.
