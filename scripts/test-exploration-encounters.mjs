@@ -20,7 +20,7 @@ const closed=terrainForEncounter(map,{x:3,z:6},new Set());
 const opened=terrainForEncounter(map,{x:3,z:6},new Set(['3,7','3,9']));
 assert.equal(closed.walls.filter(w=>w.id==='door-3-7').length,1);
 assert.equal(opened.walls.filter(w=>w.id==='door-3-7').length,0);
-assert.equal(opened.project(4,6).x-opened.project(3,6).x,64);
+assert.equal(opened.project(4,6).x-opened.project(3,6).x,128);
 assert.equal(opened.walkableHex(0,0),true);
 assert.equal(opened.walkableHex(30,30),false);
 assert.ok(opened.spaces.every(s=>s.environment==='indoor'));
@@ -35,6 +35,13 @@ makeFighter:()=>({id:'player',hp:30,alive:true}),makeLibraryMob:()=>({hp:8,alive
 vm.createContext(sandbox);vm.runInContext(hook,sandbox);
 const roster=sandbox.explorationUnits();assert.equal(roster.player.id,'player','Engine initiative resolves its controlled character by stable player ID');assert.equal(roster.player.controller,'player');assert.equal(roster.enemies.length,1);assert.notEqual(roster.enemies[0].x,roster.player.x);
 console.log('PASS encounter deployment preserves production player identity and non-overlapping opponents');
+sandbox.explorationTerrain.scale=2;
+sandbox.explorationEncounter.previous={enemies:[{hp:7,alive:true,x:1,y:0}]};
+const migrated=sandbox.explorationUnits();assert.equal(migrated.enemies[0].x,2);assert.equal(migrated.enemies[0].hp,7,'Scale migration must retain enemy state');
+sandbox.explorationEncounter.previous.terrainScale=2;
+assert.equal(sandbox.explorationUnits().enemies[0].x,1,'Current-scale snapshots must not be scaled again');
+console.log('PASS legacy encounter positions migrate from 1:1 to 1:2 without resetting survivors');
+
 sandbox.explorationEncounter={map,origin:{x:3,z:6},openDoors:['3,7','3,9']};
 Object.assign(sandbox,{explorationEncounterApi:{terrainForEncounter},HEX_ROW:31.5,MAP_MIN_X:-20,MAP_MAX_X:19,MAP_MIN_Y:-16,MAP_MAX_Y:15,
   walls:new Set(),rebuildArchitecturalBlockedHexes(){},worldPointForHex:(x,y)=>({x:x*64+y*32,y:y*31.5})});

@@ -202,7 +202,9 @@ jobs:
         run: node scripts/test-exploration-authoring.mjs
 
       - name: Exploration encounter integration
-        run: node scripts/test-exploration-encounters.mjs
+        run: |
+          node scripts/test-exploration-encounters.mjs
+          node scripts/test-encounter-areas.mjs
 
       - name: Exploration map sizes
         run: node scripts/test-exploration-sizes.mjs

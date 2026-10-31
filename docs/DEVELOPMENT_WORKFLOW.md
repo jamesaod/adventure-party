@@ -281,3 +281,7 @@ Exploration startup now has explicit loading/recovery UI and versioned navigatio
 - Rev 215: showCombat must await every initial unit appearance promise before uncovering the battlefield. Keep texture prefiltering when changing repeat size. See docs/EXPLORATION_ENCOUNTERS.md and test-exploration-rendering.mjs.
 
 - Rev 216: Share exploration materials and door geometry through exploration-materials.mjs. Combat wall/door snapshots use exploration-combat-scenery.mjs and the existing depth queue. Do not revert to stretched wall-strip textures. See docs/EXPLORATION_ENCOUNTERS.md.
+
+## Candidate Rev 225
+
+See EXPLORATION_EDITOR.md and EXPLORATION_ENCOUNTERS.md for encounter-cell selection, partial/bulk removal and legacy compatibility. The floor conversion is 1:2; wall height stays 35px. Run scripts/test-encounter-areas.mjs for area semantics and production doorway collision.

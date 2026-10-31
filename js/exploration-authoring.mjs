@@ -1,6 +1,6 @@
 import {validateMap,cellKey} from './exploration-core.mjs?v=R238C211';
 
-import {validateEncounters} from './exploration-encounters.mjs?v=R238C224';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C225';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -62,6 +62,7 @@ export function paintCell(map,x,z,tool){
   if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
   if(tool==='torch'){if(map.grid[z][x]!=='.')throw Error('Place torches on floor.');const i=map.torches.findIndex(p=>p.x===x&&p.z===z);if(i<0)map.torches.push({x,z});else map.torches.splice(i,1);return;}
   const cell=tool==='wall'?'#':tool.startsWith('door-')?'D':'.';
+  if(cell==='#'&&(map.encounters||[]).some(e=>Array.isArray(e.cells)&&encounterCells(e).some(p=>p.x===x&&p.z===z)))throw Error('Remove this square from its encounter area before painting a wall.');
   if(cell!=='.'&&[map.start,...map.entrances,...map.exits].some(p=>p.x===x&&p.z===z))throw Error('Move or remove the start, entrance or exit before blocking this square.');
   map.grid[z]=map.grid[z].slice(0,x)+cell+map.grid[z].slice(x+1);
   map.doors=map.doors.filter(d=>d.x!==x||d.z!==z);if(cell==='D')map.doors.push({x,z,axis:tool==='door-x'?'x':'z'});
@@ -92,7 +93,36 @@ export function resizeMap(map,width,height){
   if(![width,height].every(n=>Number.isInteger(n)&&n>=8&&n<=128))throw Error('Width and height must be whole numbers from 8 to 128.');
   const inside=p=>p.x>0&&p.z>0&&p.x<width-1&&p.z<height-1;
   if(![map.start,...map.entrances,...map.exits,...map.doors,...map.torches,...(map.landmarks||[])].every(inside))throw Error('Move or remove starts, entrances, exits, doors, torches and landmarks outside the new boundary before shrinking.');
-  if((map.encounters||[]).some(e=>!inside({x:e.spawnX,z:e.spawnZ})||!inside(e)||e.x+e.width>width-1||e.z+e.height>height-1))throw Error('Move or remove encounters outside the new boundary before shrinking.');
+  if((map.encounters||[]).some(e=>!inside({x:e.spawnX,z:e.spawnZ})||encounterCells(e).some(p=>!inside(p))))throw Error('Move or remove encounters outside the new boundary before shrinking.');
   const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.').join(''));
   Object.assign(map,{width,height,grid});validateMap(map);return map;
+}
+
+// Selection itself is transient; these helpers mutate only explicit author actions.
+export function rectangleSelection(a,b,base=[],mode='replace'){
+  const keys=new Set(mode==='replace'?[]:base);
+  for(let z=Math.min(a.z,b.z);z<=Math.max(a.z,b.z);z++)for(let x=Math.min(a.x,b.x);x<=Math.max(a.x,b.x);x++){
+    const key=`${x},${z}`;if(mode==='subtract')keys.delete(key);else keys.add(key);
+  }
+  return [...keys];
+}
+export function setEncounterArea(map,record,cells){
+  const unique=new Map();for(const p of cells)if(p.x>0&&p.z>0&&p.x<map.width-1&&p.z<map.height-1&&'.D'.includes(map.grid[p.z]?.[p.x]??'#'))unique.set(`${p.x},${p.z}`,{x:p.x,z:p.z});
+  const area=[...unique.values()].sort((a,b)=>a.z-b.z||a.x-b.x);if(!area.length)throw Error('Select floor or door squares for this encounter area.');
+  const next={...record,cells:area};delete next.x;delete next.z;delete next.width;delete next.height;
+  const events=(map.encounters||[]).filter(e=>e.id!==record.id);events.push(next);
+  const issues=validateEncounters({...map,encounters:events});if(issues.length)throw Error(issues.join('\n'));
+  map.encounters=events;return next;
+}
+export function removeEncounterSquares(map,keys){
+  const selected=new Set(keys),remaining=[];
+  for(const event of map.encounters||[]){
+    const old=encounterCells(event),cells=old.filter(p=>!selected.has(`${p.x},${p.z}`));
+    if(cells.length===old.length){remaining.push(event);continue;}
+    if(cells.length){const next={...event,cells:cells.filter(p=>'.D'.includes(map.grid[p.z]?.[p.x]??'#'))};delete next.x;delete next.z;delete next.width;delete next.height;if(next.cells.length)remaining.push(next);}
+  }
+  map.encounters=remaining;
+}
+export function deleteSelectedEncounters(map,keys){
+  const selected=new Set(keys);map.encounters=(map.encounters||[]).filter(e=>!encounterCells(e).some(p=>selected.has(`${p.x},${p.z}`)));
 }

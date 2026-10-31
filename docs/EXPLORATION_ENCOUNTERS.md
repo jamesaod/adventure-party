@@ -76,3 +76,11 @@ Terrain retains solidBlocks for occupied map cells. Existing floor-facing bounda
 ## Candidate Rev 224 - reference LOS baseline
 
 User reference screenshot requires compact floor-facing wall boundaries with black unseen space, without the solid textured top caps introduced in Rev 220. Restored the Rev 219 exploration rendering/terrain path, preserving opaque floor LOS, correct zero-elevation polygon projection, wall-clipped torch illumination, 1:1 scale, encounter persistence and unit-render startup gate. This is a baseline for further user-directed LOS refinement, not final visual approval. Revs 221-223 remain superseded. See PERSISTENT_GAME_LOOP.md for the recovered architecture and remaining campaign work.
+
+## Candidate Rev 225 — area triggers and 1:2 horizontal scale
+
+Explicit encounter cells support irregular trigger areas; legacy x/z/width/height rectangles still load. Shared encounterContains/encounterCells helpers govern editor display, validation and runtime triggers. Stable encounter IDs preserve whole-area victory semantics. Explicit cells, colors and bounds survive pack export/import; overlap and invalid cells are rejected. Existing geometry/encounter-based progress scoping remains unchanged, so editing an area's definition starts a different scoped test/progress record.
+
+One exploration square now spans two tactical hex widths in the floor plane. Projected floor dimensions, wall lengths, closed-door spans, spawn placement and torches use the same scale=2 conversion. Wall height remains 35px and thickness remains 3px; compact wall/LOS rendering from Rev 224 is retained. Ordinary combat dimensions, movement distances and unit scale are unchanged. Production collision tests traverse one-square corridors and both orientations of an open doorway; the same doors block when closed. No full-height wall meshes or solid top caps are reintroduced.
+
+Encounter snapshots now record terrainScale. Existing untagged 1:1 enemy positions are doubled on re-entry; HP, equipment and survivor state remain intact. Newly saved 1:2 positions are not scaled again.
