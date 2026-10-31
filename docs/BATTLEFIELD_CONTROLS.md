@@ -40,3 +40,7 @@ Reproduce with `node scripts/test-combat-info-panel.mjs` and `node scripts/test-
 Closed doors no longer mark their entire exploration tile as a wall. Floor hexes on either side are standing spaces; the existing architectural door plane blocks crossing, and core-bisected hexes remain invalid. This fixes the hex immediately in front of a closed door without allowing wall clipping.
 
 For player-controlled units, THROUGH DOOR [F] connects aligned legal standing hexes across an already-open doorway, skipping the intermediate NW/NE corner cells as standing destinations. Cost is two movement points. The existing full-move threshold, occupancy/footprint checks, departure reactions, landing area effects and guard reactions remain in the movement pipeline. No crossing is offered through closed doors, other walls, occupied landings or insufficient movement. Combat opening/closing of doors remains unimplemented; the command uses the exploration door snapshot. Ordinary AI pathfinding retains its normal hex steps.
+
+## Rev 229 — exploration combat doors
+
+**O / OPEN DOOR** opens one adjacent closed doorway for 1 movement point. **F / THROUGH DOOR** crosses an already-open doorway for 2 movement points. Both buttons show only in exploration-derived combat. Normal turn restrictions and remaining movement apply; keyboard shortcuts ignore text editing, held-key repeats and modified keys. Opening may activate Full Move if it exceeds the half-move attack threshold. Door state returns with the encounter to exploration.

@@ -293,3 +293,7 @@ Read docs/SHARED_SCENE_STYLE.md (or SHARED_SCENE_STYLE.md from docs) before chan
 ## Candidate Rev 228
 
 Door standing spaces use architectural plane collision rather than whole-door-tile blocking. Player-controlled THROUGH DOOR [F] crosses open snapshot doorways for 2 movement points; opening doors in combat is still future work. Preserve the options argument through the r220 movement-awareness wrapper. Shared material changes halve floor slabs in both axes and brick repeat width; six wall courses remain. See EXPLORATION_ENCOUNTERS.md and test-doorway-movement.mjs.
+
+## Candidate Rev 229
+
+Combat door opening and readable edge-on door cutaways are described in EXPLORATION_ENCOUNTERS.md and SHARED_SCENE_STYLE.md. Save handoff state before changing geometry; preserve the existing two-point crossing and shared materials/lighting.
