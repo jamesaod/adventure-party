@@ -64,3 +64,7 @@ assert(restoreStart>0&&restoreEnd>restoreStart);
 const restoreCode=explorationSource.slice(restoreStart,restoreEnd)+';';
 const initialMap=blankEdgeMap('initial-state','Initial state');paintEdge(initialMap,{axis:'h',x:4,z:4},'door',{initialOpen:true});
 for(const saved of [null,'[]']){const state=createExplorationState(initialMap),env={sessionStorage:{getItem:()=>saved},testStateKey:()=>'',context:{},map:initialMap,state,doorKey:d=>d.id};vm.runInNewContext(restoreCode,env);assert.equal(state.openDoors.size,saved===null?1:0);}
+
+const oldWide=blankEdgeMap('width-fix','Width correction');paintEdge(oldWide,{axis:'h',x:4,z:4},'door',{width:.84});paintEdge(oldWide,{axis:'h',x:5,z:4},'window',{width:.84});delete oldWide.doorWidthVersion;
+const corrected=upgradeEdgeMap(oldWide);assert.equal(corrected.doors[0].width,.42);assert.equal(corrected.edges.find(e=>e.kind==='window').width,.84);assert.equal(upgradeEdgeMap(corrected).doors[0].width,.42,'Reload must not halve the door again');assert.equal(oldWide.doors[0].width,.84,'Saved source stays untouched');
+const defaultDoor=blankEdgeMap('default-door','Default door');paintEdge(defaultDoor,{axis:'h',x:4,z:4},'door');assert.equal(defaultDoor.doors[0].width,.42);

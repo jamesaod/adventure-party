@@ -57,3 +57,5 @@ Rev 229 outline-only frames are superseded by opaque, texture-filled masonry pie
 ## Rev 231 - one edge geometry for both views
 
 exploration-edges.mjs owns canonical h/v edge coordinates and geometry, independent of either renderer. Exploration builds thin wall sections around floor squares; doors use the edge opening width and hinge, and windows have shared sill/height plus transparent glass and bars. Combat projects the same endpoints and opening fraction into architectural movement/LOS/light/projectile geometry. Edge door art anchors to the real aperture jamb in both states. The fixed 35px tactical wall height and existing shared material repeats/lighting are retained. Thin side-facing surfaces use readable cutaways; this remains a display choice rather than a blocked-hex conversion.
+
+Rev 232: edge doors are half their Rev 231 width (default 42% of an edge), with unchanged height. Existing Rev 231 door widths halve once on working-copy conversion, marked by doorWidthVersion=2. Windows are unchanged. Both views and physical apertures use the corrected width.

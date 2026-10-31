@@ -1,7 +1,7 @@
-import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C231';
-import {FACINGS} from './exploration-core.mjs?v=R238C231';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C231';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C231';
+import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C232';
+import {FACINGS} from './exploration-core.mjs?v=R238C232';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C232';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C232';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;
@@ -118,7 +118,7 @@ function edgeInspector(){
 function applyEdge(button,event){
  const edge=edgeFromPointer(button,event),id=edgeKey(edge);selectedEdge=edge;selected={x:Number(button.dataset.x),z:Number(button.dataset.z)};
  if(stroke.has(id))return;stroke.add(id);
- if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??.84)*100);$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
+ if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??(record.kind==='door'?.42:.84))*100);$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
  try{paintEdge(map(),edge,tool.slice(5),edgeSettings());dirty=true;tell('Edge updated. Save maps to keep this change.');}catch(error){tell(error.message);}
  grid();inspector();$('undo').disabled=!history.length;
  const issues=packIssues(pack);$('issues').replaceChildren();for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}
