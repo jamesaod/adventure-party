@@ -62,3 +62,9 @@ One exploration square again spans one tactical hex width. The shared terrain pr
 ## Candidate Rev 218 - restore compact combat walls
 
 Reverts the Rev 216 combat scenery presentation to the existing tactical wall renderer (35px height, 3px thickness). The 1:1 terrain projection, filtered exploration textures, torchlight, 50% grid and unit-render loading gate remain. Shared full-height geometry still serves first-person exploration; combat no longer creates the cached 3D wall/door scenery.
+
+## Candidate Rev 219 - light and sight boundaries
+
+Unseen floor is opaque, not a 33-percent tint. Torch floor illumination uses the existing light-mode visibility polygon and projected radial falloff; party LOS is applied afterward. Hidden torch markers are suppressed. Compact walls and 1:1 terrain remain.
+
+Projection callbacks must wrap screenPointForWorld(point): passing it directly to Array.map injects each vertex index into its optional elevation argument and warps LOS/light masks. The regression stub now checks zero elevation.

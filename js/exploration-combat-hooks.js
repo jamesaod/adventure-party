@@ -37,18 +37,34 @@ function drawExplorationDarknessVolumes(){
 }
 function drawExplorationVisibilityMask(){
   const observers=friendlyVisibilityObservers().map(observer=>({observer,context:observerVisibilityContext(observer)})).filter(e=>e.context);
-  if(!observers.length)return;
   const mask=drawExplorationVisibilityMask.canvas||(drawExplorationVisibilityMask.canvas=document.createElement('canvas'));
   if(mask.width!==BATTLEFIELD_LOGICAL_WIDTH||mask.height!==BATTLEFIELD_LOGICAL_HEIGHT){mask.width=BATTLEFIELD_LOGICAL_WIDTH;mask.height=BATTLEFIELD_LOGICAL_HEIGHT;}
-  const target=mask.getContext('2d');target.clearRect(0,0,mask.width,mask.height);target.globalCompositeOperation='source-over';target.fillStyle='rgba(0,0,0,0.33)';target.fillRect(0,0,mask.width,mask.height);
+  const target=mask.getContext('2d');target.clearRect(0,0,mask.width,mask.height);target.globalCompositeOperation='source-over';target.fillStyle='#08080c';target.fillRect(0,0,mask.width,mask.height);
   target.globalCompositeOperation='destination-out';target.fillStyle='#000';
-  for(const entry of observers)if(tracePolygonOnContext(target,entry.context.polygon.map(screenPointForWorld)))target.fill();
+  for(const entry of observers)if(tracePolygonOnContext(target,entry.context.polygon.map(point=>screenPointForWorld(point))))target.fill();
   // Obscuring spell volumes retain their tactical visibility behavior.
   if(hasActiveObscuringLosVolume()){
-    target.globalCompositeOperation='source-over';target.fillStyle='rgba(0,0,0,0.33)';
+    target.globalCompositeOperation='source-over';target.fillStyle='#08080c';
     for(const tile of visibleHexes())if(observers.every(e=>obscuringVolumeBlocksLineBetweenHexes(e.observer,tile))&&tracePolygonOnContext(target,hexScreenVertices(tile.x,tile.y)))target.fill();
   }
   target.globalCompositeOperation='source-over';ctx.drawImage(mask,0,0);
+}
+// Use the production light-blocking polygon, independently of party LOS.
+function drawExplorationIlluminationLayer(){
+  for(const source of illuminationSources()){
+    const polygon=wallTestVisibilityPolygonWorld(source,'light');
+    if(polygon.length<3)continue;
+    const center=hexCenter(source.x,source.y),radius=Math.max(1,Number(source.radiusHexes)||1)*HEX_W;
+    const color=source.color||[255,244,188],alpha=0.18*Math.min(1.25,source.intensity||1);
+    ctx.save();
+    if(!tracePolygonOnContext(ctx,polygon.map(point=>screenPointForWorld(point)))){ctx.restore();continue;}
+    ctx.clip();ctx.translate(center.x,center.y);ctx.scale(1,HEX_ROW/HEX_W/(Math.sqrt(3)/2));
+    const gradient=ctx.createRadialGradient(0,0,0,0,0,radius);
+    gradient.addColorStop(0,`rgba(${color.join(',')},${alpha})`);
+    gradient.addColorStop(0.5,`rgba(${color.join(',')},${alpha*0.6})`);
+    gradient.addColorStop(1,`rgba(${color.join(',')},0)`);
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle=gradient;ctx.fillRect(-radius,-radius,radius*2,radius*2);ctx.restore();
+  }
 }
 function drawExplorationTorch(torch){
   const c=hexCenter(torch.x,torch.y);ctx.save();
