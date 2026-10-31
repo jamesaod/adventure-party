@@ -30710,7 +30710,7 @@ function handleCombatKey(event){
 
   if(game && game.over) return;
 
-  if(keyLower==="f"&&explorationTerrain){event.preventDefault();if(!event.repeat)void tryExplorationDoorCrossing();return;}
+  if(keyLower==="f"&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)void tryExplorationDoorCrossing();return;}
 
   const dir=directions[code] || arrowAliases[event.key];
 
