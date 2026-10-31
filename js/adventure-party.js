@@ -30222,7 +30222,7 @@ function draw(){
     R197: outline the union silhouette once before wall bodies enter the shared
     depth queue. Units/fog can still correctly cover the outline afterward.
   */
-  const sceneWalls=explorationTerrain?explorationVisibleWallBoundaries():architecturalWalls;
+  const sceneWalls=architecturalWalls;
   drawArchitecturalWallShapeOutline(sceneWalls);
   drawArchitecturalWallTopOutline(sceneWalls);
 
@@ -30248,13 +30248,9 @@ function draw(){
     });
   }
 
-  if(explorationTerrain){
-    const visibleIds=new Set(sceneWalls.map(w=>w.id));
-    for(const interior of explorationTerrain.wallInteriors||[]){
-      if(!interior.wallIds.some(id=>visibleIds.has(id)))continue;
-      const front=screenPointForWorld(interior.polygon[2]);
-      actors.push({sortY:front.y+0.26,sortX:front.x,fn:()=>drawExplorationWallInterior(interior)});
-    }
+  if(explorationTerrain)for(const span of explorationWallCapSpans(sceneWalls)){
+    const front=screenPointForWorld(span.polygon[2]);
+    actors.push({sortY:front.y+0.26,sortX:front.x,fn:()=>drawExplorationWallCap(span)});
   }
 
   for(const tree of treeDecorations){

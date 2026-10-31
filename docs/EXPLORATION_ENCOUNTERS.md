@@ -80,3 +80,7 @@ Rev 220 solid-block caps and footprint additions are reverted. Walls are only ge
 ## Candidate Rev 222 - black cutaways and wider corridors
 
 Each exploration square spans two combat hex widths again. Wall height remains 35px. Untextured black cutaway masks cover the upper solid interiors at wall height, depth-sorted after their bordering faces; visible floor-boundary faces still use Rev 221 rules. Masks have no texture or outlines. Movement, LOS and light use the expanded terrain boundaries.
+
+## Candidate Rev 223 - Rev 220 blocks, always visible
+
+Restore Rev 220 stone block caps and wall faces. All blocks and faces in the encounter crop render regardless of party LOS, including block cells without an exposed face. Keep two combat hex widths per exploration square and 35px wall height. Floor/enemy visibility, targeting, movement and torchlight retain their existing LOS rules. This supersedes Rev 221 boundary-face filtering and Rev 222 black upper-interior masks.
