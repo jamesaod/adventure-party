@@ -6,7 +6,7 @@ const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfun
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,adventurePartySun:sun,
+  const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationWallCapSpans:()=>[],adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
     visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
@@ -78,3 +78,17 @@ Object.assign(context,{illuminationSources:()=>[{x:1,y:2,radiusHexes:3}],wallTes
 ctx:{save(){},restore(){},clip(){lightCalls.push('clip');},translate(){},scale(x,y){assert(y<1);},createRadialGradient(){return {addColorStop(){}};},fillRect(){lightCalls.push('fill');}}});
 context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['clip','fill']);
 console.log('PASS opaque unseen floor and projected torch falloff clipped to light-blocking walls');
+
+const capContext={explorationTerrain:{solidBlocks:[
+{x:1,z:1,height:35,wallIds:['a'],polygon:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}]},
+{x:2,z:1,height:35,wallIds:['b'],polygon:[{x:10,y:0},{x:20,y:0},{x:20,y:10},{x:10,y:10}]},
+{x:3,z:1,height:35,wallIds:['hidden'],polygon:[]}
+]}};
+vm.runInNewContext(hooks.slice(hooks.indexOf('function explorationWallCapSpans(')),capContext);
+const caps=capContext.explorationWallCapSpans([{id:'a'},{id:'b'}]);assert.equal(caps.length,1);assert.equal(caps[0].polygon[2].x,20);
+assert.equal(capContext.explorationWallCapSpans([]).length,0);
+const blockMap={width:3,height:3,grid:['...','.#.','...'],doors:[]};
+const blocks=terrainForEncounter(blockMap,{x:1,z:1},new Set());
+assert.equal(blocks.solidBlocks.length,1);assert.equal(blocks.solidBlocks[0].wallIds.length,4);assert.equal(blocks.walkableHex(0,0),false);
+for(const id of blocks.solidBlocks[0].wallIds)assert(blocks.walls.some(w=>w.id===id&&w.blocksLOS));
+console.log('PASS solid footprint blocks movement, keeps four ray boundaries, merges visible caps and hides unseen caps');

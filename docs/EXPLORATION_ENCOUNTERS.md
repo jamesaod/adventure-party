@@ -68,3 +68,7 @@ Reverts the Rev 216 combat scenery presentation to the existing tactical wall re
 Unseen floor is opaque, not a 33-percent tint. Torch floor illumination uses the existing light-mode visibility polygon and projected radial falloff; party LOS is applied afterward. Hidden torch markers are suppressed. Compact walls and 1:1 terrain remain.
 
 Projection callbacks must wrap screenPointForWorld(point): passing it directly to Array.map injects each vertex index into its optional elevation argument and warps LOS/light masks. The regression stub now checks zero elevation.
+
+## Candidate Rev 220 - solid wall footprints
+
+Terrain retains solidBlocks for occupied map cells. Existing floor-facing boundaries remain authoritative for movement/LOS/light; no internal block edges are added. Visible wall boundaries reveal their corresponding stone caps at the existing 35px height. Adjacent visible caps merge into row spans with shared world-anchored texture and no internal outlines, depth-sorted with existing faces and units. Doors remain separate boundaries. Hidden blocks do not reveal caps.
