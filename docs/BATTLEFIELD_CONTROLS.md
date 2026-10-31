@@ -44,3 +44,7 @@ For player-controlled units, THROUGH DOOR [F] connects aligned legal standing he
 ## Rev 229 — exploration combat doors
 
 **O / OPEN DOOR** opens one adjacent closed doorway for 1 movement point. **F / THROUGH DOOR** crosses an already-open doorway for 2 movement points. Both buttons show only in exploration-derived combat. Normal turn restrictions and remaining movement apply; keyboard shortcuts ignore text editing, held-key repeats and modified keys. Opening may activate Full Move if it exceeds the half-move attack threshold. Door state returns with the encounter to exploration.
+
+## Rev 235 - ordinary doorway movement
+
+Walk through open doors with the normal hex movement keys, at 1 movement point per adjacent step. The THROUGH DOOR button and special two-point crossing are removed. O or F operates the adjacent door: open when closed, close when open, costing 1 MP. Closing is refused while any living unit footprint occupies the leaf plane. The button label follows the current door state.

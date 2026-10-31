@@ -272,7 +272,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C234');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C235');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C232');
@@ -295,43 +295,31 @@ async function startExplorationCombat(){
 }
 void startExplorationCombat();
 
-let explorationDoorCrossingBusy=false;
-function explorationDoorRoutes(unit){
-  if(!unit||!explorationTerrain||!explorationEncounterApi)return [];
-  return explorationEncounterApi.doorwayCrossings(explorationTerrain,unit,
-    p=>canUnitStandAt(unit,p.x,p.y)&&!unitTransitionBlocked(unit,unit,p),
-    (a,b)=>architecturalWallBlocksWorldLine(a,b,'movement'));
-}
-async function tryExplorationDoorCrossing(){
-  if(explorationDoorCrossingBusy||aimMode||classReportOpen||characterSheetOpen||inventoryOpen||spellCastOverlayOpen||spellCastInProgress)return;
-  const unit=activePlayerControlledUnit(),routes=explorationDoorRoutes(unit);
-  if(!routes.length){log('No open doorway crossing is available here. Use Open Door [O] beside a closed doorway.','system');return;}
-  if(routes.length!==1){log('More than one doorway is in reach. Step closer to the doorway you want.','system');return;}
-  explorationDoorCrossingBusy=true;
-  try{await tryPlayerMove(routes[0].to.x-unit.x,routes[0].to.y-unit.y,{doorCrossing:routes[0]});}
-  finally{explorationDoorCrossingBusy=false;updateUi();}
-}
-
 function explorationDoorOpeningAllowed(unit){
- return !!(explorationTerrain&&controlledUnitCanAct(unit)&&!combatAwaitingStart&&combatOpeningSpeechDone&&!explorationDoorCrossingBusy&&!aimMode&&!classReportOpen&&!characterSheetOpen&&!inventoryOpen&&!spellCastOverlayOpen&&!spellCastInProgress&&!sweepInProgress&&!mobGuardReactionInProgress&&!freeStrikeInProgress&&!isCombatActionPauseActive());
+ return !!(explorationTerrain&&controlledUnitCanAct(unit)&&!combatAwaitingStart&&combatOpeningSpeechDone&&!aimMode&&!classReportOpen&&!characterSheetOpen&&!inventoryOpen&&!spellCastOverlayOpen&&!spellCastInProgress&&!sweepInProgress&&!mobGuardReactionInProgress&&!freeStrikeInProgress&&!isCombatActionPauseActive());
 }
-function explorationClosedDoors(unit){
- return unit&&explorationTerrain?explorationEncounterApi.closedDoorsInReach(explorationTerrain,unit,(a,b)=>architecturalWallBlocksWorldLine(a,b,'movement')):[];
+function explorationReachableDoors(unit){
+ return unit&&explorationTerrain?explorationEncounterApi.doorsInReach(explorationTerrain,unit,(a,b)=>architecturalWallBlocksWorldLine(a,b,'movement')):[];
 }
-function tryExplorationOpenDoor(){
+function explorationDoorOccupied(door){
+ const wall=explorationDoorWall(door),width=door.width??1,c=door.center;
+ const leaf={...wall,blocksMovement:true,a:{x:c.x+(wall.a.x-c.x)*width,y:c.y+(wall.a.y-c.y)*width},b:{x:c.x+(wall.b.x-c.x)*width,y:c.y+(wall.b.y-c.y)*width}};
+ return [game.player,...(game.allies||[]),...(game.enemies||[])].filter(unit=>unit?.alive&&!unit.fled).some(unit=>occupiedHexes(unit).some(cell=>wallSegmentCutsHexInterior(leaf,cell.x,cell.y)));
+}
+function tryExplorationToggleDoor(){
  const unit=activePlayerControlledUnit();if(!explorationDoorOpeningAllowed(unit))return;
- const doors=explorationClosedDoors(unit);
- if(doors.length!==1){log(doors.length?'More than one closed door is in reach. Step closer to the door you want.':'No closed door is within reach.','system');return;}
- if(unit.turnMoves+1>unit.move){log('Opening a door requires 1 movement point.','system');return;}
- const door=doors[0],id=door.id||`${door.x},${door.z}`,opened=[...new Set([...explorationEncounter.openDoors,id])];
- // Save before altering rules state so storage failure cannot silently lose it.
- try{sessionStorage.setItem(explorationEncounterApi.HANDOFF_KEY,JSON.stringify({...explorationEncounter,openDoors:opened}));}
- catch(error){log('Could not save the opened door: '+error.message,'system');return;}
- explorationEncounter.openDoors=opened;
- unit.turnMoves++;
- if(!unit.fullMove&&unit.turnMoves>unit.halfMove){unit.fullMove=true;log('Opening the door passes the attack threshold; Full Move activates.','system');}
+ const doors=explorationReachableDoors(unit);
+ if(doors.length!==1){log(doors.length?'More than one door is in reach. Step closer to the door you want.':'No door is within reach.','system');return;}
+ if(unit.turnMoves+1>unit.move){log('Opening or closing a door requires 1 movement point.','system');return;}
+ const door=doors[0];if(door.open&&explorationDoorOccupied(door)){log('Cannot close the door: a unit occupies the doorway.','system');return;}
+ const id=door.id||`${door.x},${door.z}`,opened=new Set(explorationEncounter.openDoors);if(door.open)opened.delete(id);else opened.add(id);
+ const next=[...opened];
+ try{sessionStorage.setItem(explorationEncounterApi.HANDOFF_KEY,JSON.stringify({...explorationEncounter,openDoors:next}));}
+ catch(error){log('Could not save the door state: '+error.message,'system');return;}
+ explorationEncounter.openDoors=next;unit.turnMoves++;
+ if(!unit.fullMove&&unit.turnMoves>unit.halfMove){unit.fullMove=true;log('Door interaction passes the attack threshold; Full Move activates.','system');}
  configureExplorationTerrain();
  if(typeof r220ObserveVisibleTargetsForAllMobs==='function')r220ObserveVisibleTargetsForAllMobs();
- log(`${unit.name} opens the door (1 movement point; ${unit.turnMoves}/${unit.fullMove?unit.move:unit.halfMove}).`,'system');
+ log(`${unit.name} ${door.open?'closes':'opens'} the door (1 movement point; ${unit.turnMoves}/${unit.fullMove?unit.move:unit.halfMove}).`,'system');
  refreshTurnBanner();updateUi();draw();
 }

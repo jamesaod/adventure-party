@@ -650,8 +650,7 @@
       <button id="aimButton" class="combat-action" type="button" aria-label="Aim, shortcut A"><span class="shortcut-key">A</span>IM</button>
       <button id="aimCenterButton" class="combat-action" type="button" aria-label="Center camera on current aim hex" hidden>CENTER</button>
       <button id="waitButton" class="combat-action" type="button">WAIT</button>
-      <button id="openDoorButton" class="combat-action" type="button" hidden onclick="tryExplorationOpenDoor()" title="Open an adjacent door for one movement point; shortcut O">OPEN DOOR [O] · 1 MP</button>
-      <button id="doorCrossingButton" class="combat-action" type="button" hidden onclick="void tryExplorationDoorCrossing()" title="Cross an open doorway for two movement points; shortcut F">THROUGH DOOR [F] · 2 MP</button>
+      <button id="openDoorButton" class="combat-action" type="button" hidden onclick="tryExplorationToggleDoor()" title="Open or close an adjacent door for one movement point; O or F">OPEN / CLOSE DOOR [O/F] · 1 MP</button>
         <button id="guardButton" class="combat-action" type="button" aria-label="Guard, shortcut G"><span class="shortcut-key">G</span>UARD</button>
       <button id="quickButton" class="combat-action" type="button" aria-label="Quick Command: Q for active unit, Ctrl+Q for all friendly units" title="Q: active unit; Ctrl+Q: all friendly units; Escape: end Quick"><span class="shortcut-key">Q</span>UICK COMMAND</button>
       <button id="castButton" class="combat-action" type="button" title="Combat-test spell harness; does not change Carl's Fighter class.">CAST</button>
@@ -775,7 +774,7 @@
 
 <script src="js/priest-spells.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
   <script src="js/repository-mobs.mjs?v=R238C204" type="text/plain" data-game-script="module"></script>
-<script src="js/adventure-party.js?v=R238C234" type="text/plain" data-game-script="classic"></script>
+<script src="js/adventure-party.js?v=R238C235" type="text/plain" data-game-script="classic"></script>
 <script src="js/los-wall-boundary-fix.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
 <script src="js/obscuring-volume-los.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
 <script src="js/r218-presentation-audio.js?v=R238C171" type="text/plain" data-game-script="classic"></script>

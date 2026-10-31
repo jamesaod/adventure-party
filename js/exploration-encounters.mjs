@@ -86,14 +86,14 @@ export function doorwayCrossings(terrain,from,canStand,blocksLine){
 
 // Reach the near side of a doorway; stop short of its own blocking plane.
 // Other architectural walls still prevent reaching around a corner.
-export function closedDoorsInReach(terrain,from,blocksLine){
+export function closedDoorsInReach(terrain,from,blocksLine){return doorsInReach(terrain,from,blocksLine).filter(door=>!door.open);}
+export function doorsInReach(terrain,from,blocksLine){
  const start={x:(from.x+from.y/2)*terrain.hexWidth,y:from.y*terrain.hexRow};
  return (terrain.doors||[]).filter(door=>{
-  if(door.open)return false;
   const horizontal=door.axis==='z',dx=start.x-door.center.x,dy=start.y-door.center.y;
   const normal=horizontal?dy:dx,along=horizontal?dx:dy;
   const reach=horizontal?terrain.hexRow*(door.edgeId?1.8:1.1):terrain.hexWidth*(door.edgeId?1.6:1.1),span=horizontal?terrain.cellW:terrain.cellH;
-  if(Math.abs(normal)<.001||Math.abs(normal)>reach||Math.abs(along)>span/2-3)return false;
+  if(Math.abs(normal)>reach||Math.abs(along)>span/2-3)return false;
   const near=horizontal?{x:start.x,y:door.center.y+Math.sign(normal)*.1}:{x:door.center.x+Math.sign(normal)*.1,y:start.y};
   return !blocksLine(start,near);
  });
@@ -143,7 +143,8 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
    windows.push(record);segment(a,b,id,{openings:[{id:id+'-glass',type:'window',edgeWindow:true,visualHeight:SCENE_STYLE.window.height/SCENE_STYLE.wallMetres*35,visualSill:SCENE_STYLE.window.sill/SCENE_STYLE.wallMetres*35,centerT:.5,widthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width,glassWidthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width}]});continue;
   }
   doors.push(record);const low=(1-width)/2,high=(1+width)/2;
-  if(low>1e-6){segment(a,point(low),id+'-jamb-a',{edgeMaterial:edge.material});segment(point(high),b,id+'-jamb-b',{edgeMaterial:edge.material});}
+  const trim=record.open?Math.max(0,((g.axis==='z'?hexWidth:hexRow)-Math.hypot(b.x-a.x,b.y-a.y)*width)/2):0;
+  if(low>1e-6){segment(a,point(low),id+'-jamb-a',{edgeMaterial:edge.material,doorwayJamb:record.open,doorwayTrimEnd:trim});segment(point(high),b,id+'-jamb-b',{edgeMaterial:edge.material,doorwayJamb:record.open,doorwayTrimStart:trim});}
   if(!record.open)segment(point(low),point(high),id,{doorLeaf:true});
  }
  const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
