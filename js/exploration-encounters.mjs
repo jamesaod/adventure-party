@@ -101,7 +101,21 @@ export function combatDoorPresentation(door,terrain){
  const size=projectSceneObject('door',terrain).artwork,width=size.width*SCENE_STYLE.door.tacticalArtworkWidth;
  const oblique=door.axis==='x'?!door.open:door.open;
  const vx=width*(oblique?.72:1),vy=oblique?width*.34:0;
- const hinge={x:door.center.x-(door.axis==='x'?0:width/2),y:door.center.y-(door.axis==='x'?terrain.cellH*.2:0)};
- const base=door.open?hinge:{x:door.center.x-vx/2,y:door.center.y-vy/2};
- return {base,vx,vy,width,height:size.height,open:door.open,oblique};
+ const closedVx=width*(door.axis==='x'?.72:1),closedVy=door.axis==='x'?width*.34:0;
+ // Opening changes the leaf direction, never its grounded hinge position.
+ const hinge={x:door.center.x-closedVx/2,y:door.center.y-closedVy/2};
+ return {base:hinge,vx,vy,width,height:size.height,open:door.open,oblique};
+}
+export function combatDoorFrame(door,terrain){
+ const frame=combatDoorPresentation({...door,open:false},terrain),c=door.center;
+ const a=door.axis==='x'?{x:c.x,y:c.y-terrain.cellH/2}:{x:c.x-terrain.cellW/2,y:c.y};
+ const b=door.axis==='x'?{x:c.x,y:c.y+terrain.cellH/2}:{x:c.x+terrain.cellW/2,y:c.y};
+ const left=frame.base,right={x:left.x+frame.vx,y:left.y+frame.vy},height=SCENE_STYLE.tacticalWallPixels;
+ const up=(p,h)=>({x:p.x,y:p.y-h});
+ // Solid masonry piers and lintel leave only the actual doorway aperture clear.
+ return {a,b,hinge:left,polygons:[
+  [a,left,up(left,height),up(a,height)],
+  [right,b,up(b,height),up(right,height)],
+  [up(left,frame.height),up(right,frame.height),up(right,height),up(left,height)]
+ ]};
 }

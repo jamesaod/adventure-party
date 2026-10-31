@@ -49,3 +49,7 @@ Floor slabs are half their former width and depth: eight slabs per exploration s
 Combat door leaf artwork is twice its Rev 228 width (50px before zoom), retaining the 30.8px height. This is a tactical presentation override; the shared 2.5m scene leaf and one-square doorway footprint stay coherent with exploration. The broad face uses the original wood/iron texture. Doors on the edge-on axis use an oblique cutaway elevation with the same texture, stone surround and actual doorway threshold. Opening rotates the displayed leaf around a hinge and leaves a visible threshold. These compact elevations do not create extra blocking geometry or alter the 35px wall height. Both closed and open door entries participate in the existing actor depth queue and architectural visibility test.
 
 Open Door rebuilds architectural movement/LOS/light geometry immediately. Lighting keys include the updated open-door list; the floor exposure and wall exposure caches consequently refresh. No separate indoor sun or artificial material glow is added.
+
+## Rev 230 - solid frames and grounded hinges
+
+Rev 229 outline-only frames are superseded by opaque, texture-filled masonry piers and lintels. Only the doorway aperture remains clear. The closed leaf base is the canonical hinge for both states, in both orientations; opening changes the projected leaf direction without translating its bottom hinge. This fixes floating open door artwork and floor/grid showing through masonry. Wall height, material repeats, movement/LOS geometry and door interaction costs remain unchanged.

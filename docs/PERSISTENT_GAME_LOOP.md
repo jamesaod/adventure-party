@@ -133,3 +133,5 @@ User identified the blocked standing hex in front of a closed door. Whole-door-t
 ## Rev 229 - doorway interaction now connected
 
 Exploration combat opens adjacent closed doors (O, 1 MP), immediately updating movement, sight and lighting. Saved handoff state carries opened doors back to exploration. F remains the two-MP crossing. Wider door artwork uses an oblique cutaway on the edge-on axis. Door closing/locks/traps/NPC door use remain missing.
+
+Rev 230 corrects door presentation: opaque masonry frames and a shared grounded hinge for the open/closed leaf. Door mechanics remain Rev 229.

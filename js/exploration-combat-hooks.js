@@ -37,24 +37,29 @@ function explorationWallPattern(target,wall,height){
 function drawExplorationCombatDoor(door){
   const api=explorationEncounterApi,p=api.combatDoorPresentation(door,explorationTerrain),base=screenPointForWorld(p.base),density=explorationMaterialDensity();
   const tile=explorationMaterialTile(explorationDoorImage,p.width*density,p.height*density);if(!tile)return;
-  ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-  // Threshold and jambs stay on the real doorway, making the cutaway explicit.
-  const wall=explorationDoorWall(door),a=screenPointForWorld(wall.a),b=screenPointForWorld(wall.b);
-  ctx.strokeStyle='#b09a70';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-  ctx.strokeStyle=explorationWallPattern(ctx,wall,35)||'#8a775d';ctx.lineWidth=4;
-  for(const point of [a,b]){ctx.beginPath();ctx.moveTo(point.x,point.y);ctx.lineTo(point.x,point.y-35);ctx.stroke();}
-  ctx.beginPath();ctx.moveTo(a.x,a.y-35);ctx.lineTo(b.x,b.y-35);ctx.stroke();
-  // The stone surround stays fixed while only the wooden leaf swings.
-  const frame=api.combatDoorPresentation({...door,open:false},explorationTerrain),frameBase=screenPointForWorld(frame.base);
-  ctx.save();ctx.transform(frame.vx/frame.width,frame.vy/frame.width,0,1,frameBase.x,frameBase.y-frame.height);ctx.strokeStyle='#8a775d';ctx.lineWidth=4;ctx.strokeRect(-1,-1,frame.width+2,frame.height+1);ctx.restore();
-  ctx.transform(p.vx/p.width,p.vy/p.width,0,1,base.x,base.y-p.height);
-  ctx.drawImage(tile,0,0,p.width,p.height);
   const lights=explorationVisualLights(),cell=api.SCENE_STYLE.cellMetres;
   const observer=game.player?worldPointForHex(game.player.x,game.player.y):door.center;
   const side=Math.sign(door.axis==='x'?observer.x-door.center.x:observer.y-door.center.y)||1;
   const normal=door.axis==='x'?{x:side,y:0,z:0}:{x:0,y:0,z:side};
   const point={x:(explorationEncounter.origin.x+door.center.x/explorationTerrain.cellW)*cell+normal.x*.02,z:(explorationEncounter.origin.z+door.center.y/explorationTerrain.cellH)*cell+normal.z*.02,y:api.SCENE_STYLE.door.height/2};
   const exposure=explorationSurfaceExposure(point,normal,lights,new Set(explorationEncounter.openDoors));
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  const wall=explorationDoorWall(door),frame=api.combatDoorFrame(door,explorationTerrain);
+  // These are filled masonry surfaces, not an outline laid over the floor.
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle=explorationWallPattern(ctx,wall,35)||'#8a775d';ctx.strokeStyle='#392c20';ctx.lineWidth=1;
+  for(const polygon of frame.polygons){
+    const points=polygon.map(point=>screenPointForWorld(point));ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+    for(const point of points.slice(1))ctx.lineTo(point.x,point.y);ctx.closePath();ctx.fill();
+    ctx.save();ctx.clip();
+    const xs=points.map(p=>p.x),ys=points.map(p=>p.y),left=Math.min(...xs),top=Math.min(...ys);
+    for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){ctx.globalCompositeOperation=mode;ctx.fillStyle=`rgb(${color.join(',')})`;ctx.fillRect(left,top,Math.max(...xs)-left,Math.max(...ys)-top);}
+    ctx.restore();ctx.stroke();
+  }
+  const a=screenPointForWorld(frame.a),b=screenPointForWorld(frame.b);
+  ctx.strokeStyle='#b09a70';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  ctx.transform(p.vx/p.width,p.vy/p.width,0,1,base.x,base.y-p.height);
+  ctx.drawImage(tile,0,0,p.width,p.height);
   for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){ctx.globalCompositeOperation=mode;ctx.fillStyle=`rgb(${color.join(',')})`;ctx.fillRect(0,0,p.width,p.height);}
   ctx.globalCompositeOperation='source-over';ctx.strokeStyle='#392c20';ctx.lineWidth=1.5;ctx.strokeRect(0,0,p.width,p.height);ctx.restore();
 }
@@ -245,7 +250,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C229');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C230');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');

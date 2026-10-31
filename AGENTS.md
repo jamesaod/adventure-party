@@ -116,3 +116,7 @@ Door standing spaces use architectural plane collision rather than whole-door-ti
 ## Candidate Rev 229
 
 Combat OPEN DOOR [O] costs 1 MP and persists the handoff before rebuilding architectural movement/LOS/light geometry. THROUGH DOOR [F] remains 2 MP. Door artwork doubles in width with unchanged footprint/height; edge-on doors use an oblique cutaway. See docs/SHARED_SCENE_STYLE.md and docs/EXPLORATION_ENCOUNTERS.md. Preserve pause/typing guards and existing reaction paths.
+
+## Candidate Rev 230
+
+Door frames use filled masonry piers/lintel, not transparent outlines. Both open and closed door leaves share the same grounded hinge. Preserve these presentation invariants through combatDoorFrame/combatDoorPresentation; movement/LOS and door costs remain Rev 229.
