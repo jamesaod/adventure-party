@@ -10,7 +10,7 @@ const colorFor=e=>e.color||areaColors[[...e.id].reduce((n,c)=>n+c.charCodeAt(0),
 const selectedCells=()=>[...selectionKeys].map(k=>{const [x,z]=k.split(',').map(Number);return {x,z};});
 function selectArea(event){activeEncounterId=event.id;selectionKeys=new Set(encounterCells(event).map(p=>`${p.x},${p.z}`));const first=encounterCells(event)[0];if(first)selected={...first};formKey=null;grid();inspector();}
 function setTool(id){tool=id;for(const b of $('tools').children)b.setAttribute('aria-pressed',String(b.dataset.tool===id));}
-function newArea(){activeEncounterId=null;selectionKeys.clear();formKey=null;setTool('encounter-area');grid();inspector();tell('Drag to select an encounter area. Shift adds; Alt subtracts.');}
+function newArea(){$('selectionMode').value='replace';activeEncounterId=null;selectionKeys.clear();formKey=null;setTool('encounter-area');grid();inspector();tell('Drag to select an encounter area. Shift adds; Alt subtracts.');}
 const map=()=>pack.maps.find(m=>m.id===mapId);
 function tell(text){$('editorStatus').textContent=text;}
 function checkpoint(){history.push(copy(pack));if(history.length>30)history.shift();}
