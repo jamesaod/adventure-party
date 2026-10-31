@@ -1,3 +1,5 @@
+import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C227';
+export * from './exploration-scene-style.mjs?v=R238C227';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}
@@ -37,12 +39,12 @@ export function recordOutcome(progress,id,outcome,player,enemies){
 // Exploration encounters use two tactical hex widths per exploration square (1:2).
 // The engine's projected row scale is applied only at the final coordinate step.
 export function terrainForEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5){
-  const scale=2,cellW=hexWidth*scale,cellH=hexRow*scale/(Math.sqrt(3)/2),radius=5;
+  const scale=SCENE_STYLE.tacticalHexesPerCell,cellW=hexWidth*scale,cellH=hexRow*scale/(Math.sqrt(3)/2),radius=5;
   const bounds={left:Math.max(0,origin.x-radius),right:Math.min(map.width-1,origin.x+radius),top:Math.max(0,origin.z-radius),bottom:Math.min(map.height-1,origin.z+radius)};
   const project=(x,z)=>({x:(x-origin.x)*cellW,y:(z-origin.z)*cellH});
   const floor=(x,z)=>x>=bounds.left&&x<=bounds.right&&z>=bounds.top&&z<=bounds.bottom&&'.D'.includes(map.grid[z]?.[x]??'#');
   const walls=[],spaces=[];
-  const segment=(a,b,id)=>walls.push({id,a,b,height:35,thickness:3,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[]});
+  const segment=(a,b,id)=>walls.push({id,a,b,height:SCENE_STYLE.tacticalWallPixels,thickness:SCENE_STYLE.tacticalWallThickness,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[]});
   for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++){
     if(!floor(x,z))continue;
     const a=project(x-.5,z-.5),b=project(x+.5,z+.5);

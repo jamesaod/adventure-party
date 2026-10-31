@@ -121,3 +121,7 @@ Colored multi-square encounter areas now support partial/bulk removal and Undo. 
 ## Rev 226 continuation
 
 User requested combat material quality, scale and lighting closer to the supplied first-person exploration reference. Combat source detail, wall texture proportions and warm lighting were adjusted while preserving Rev 225 area encounters, 1:2 geometry and compact 35px walls. See EXPLORATION_ENCOUNTERS.md for rendering specifics.
+
+## Rev 227 continuation
+
+The user rejected Rev 226 as a visual mismatch: compact walls must show six brick rows, floor scaling must match authored exploration slabs, and independent combat lighting was inadequate. Rev 227 introduces exploration-scene-style.mjs and the two rendering adapters described in SHARED_SCENE_STYLE.md. Separate tactical footprint from aspect-preserving artwork for doors/windows/props. Preserve 1:2 spacing and compact 35px wall geometry. Shared lighting includes the previously missing combat party lantern.

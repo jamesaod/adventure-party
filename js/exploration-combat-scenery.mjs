@@ -1,5 +1,5 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {CELL,HEIGHT,explorationMaterials,explorationDoor} from './exploration-materials.mjs?v=R238C216';
+import {CELL,HEIGHT,explorationMaterials,explorationDoor,SCENE_STYLE} from './exploration-materials.mjs?v=R238C227';
 
 export function combatSceneryEntries(map,terrain,openDoors){
  const entries=[],b=terrain.bounds;
@@ -24,13 +24,13 @@ export function combatSceneryEntries(map,terrain,openDoors){
 export async function createCombatScenery(map,terrain,openDoors){
  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.outputColorSpace=THREE.SRGBColorSpace;
  const materials=await explorationMaterials(renderer),scene=new THREE.Scene();
- scene.add(new THREE.HemisphereLight(0xc6b69b,0x69635a,1.2));
+ const {ambient,lantern:lamp}=SCENE_STYLE;scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
  const scale=terrain.cellW/CELL,elevation=Math.asin(terrain.cellH/terrain.cellW);
  const width=Math.ceil(terrain.cellW*2.2),height=Math.ceil((HEIGHT*scale+terrain.cellH)*2.2);
  renderer.setSize(width*2,height*2,false);
  const camera=new THREE.OrthographicCamera(-width/scale/2,width/scale/2,height/scale/2,-height/scale/2,.1,200);
  camera.position.set(0,Math.sin(elevation)*100,Math.cos(elevation)*100);camera.lookAt(0,0,0);
- const lantern=new THREE.PointLight(0xffdca1,12,18,1.4);lantern.position.set(0,2,4);scene.add(lantern);
+ const lantern=new THREE.PointLight(lamp.color,lamp.intensity,lamp.range,lamp.decay);lantern.position.set(0,2,4);scene.add(lantern);
  const images=new Map(),entries=combatSceneryEntries(map,terrain,openDoors);
  try{
   for(const entry of entries){

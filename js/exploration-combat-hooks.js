@@ -1,39 +1,45 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
-const explorationFloorImage=new Image(),explorationWallImage=new Image();
+const explorationFloorImage=new Image(),explorationWallImage=new Image(),explorationDoorImage=new Image();
 const explorationMaterialTiles=new WeakMap();
-// Match exploration's 3m-wide / 3.5m-high source material tiles, independently
-// of the deliberately short tactical wall geometry. Keep source pixels intact.
-const EXPLORATION_COMBAT_MATERIALS=Object.freeze({tilePixels:512,cellMetres:3,wallMetres:3.5});
-function explorationMaterialTile(image){
+// Filter to each material's displayed footprint, including anisotropic wall
+// reduction, instead of keeping a grainy large source or a blurred fixed mip.
+function explorationMaterialTile(image,targetWidth=512,targetHeight=512){
   if(!image.complete||!image.naturalWidth)return null;
-  if(explorationMaterialTiles.has(image))return explorationMaterialTiles.get(image);
-  // Prefilter once before the pixel-art battlefield samples a small repeat, retaining enough detail for battlefield zoom.
-  // Progressive reduction removes high-frequency grain instead of aliasing it.
+  const max=explorationEncounterApi.SCENE_STYLE.materials.maxTilePixels;
+  targetWidth=Math.min(max,Math.max(16,Math.ceil(targetWidth)));targetHeight=Math.min(max,Math.max(16,Math.ceil(targetHeight)));
+  let cache=explorationMaterialTiles.get(image);if(!cache){cache=new Map();explorationMaterialTiles.set(image,cache);}
+  const key=`${targetWidth}:${targetHeight}`;if(cache.has(key))return cache.get(key);
   let tile=image,width=image.naturalWidth,height=image.naturalHeight;
-  while(width>EXPLORATION_COMBAT_MATERIALS.tilePixels||height>EXPLORATION_COMBAT_MATERIALS.tilePixels){
-    const next=document.createElement('canvas');next.width=Math.max(EXPLORATION_COMBAT_MATERIALS.tilePixels,Math.ceil(width/2));next.height=Math.max(EXPLORATION_COMBAT_MATERIALS.tilePixels,Math.ceil(height/2));
+  while(width>targetWidth||height>targetHeight){
+    const next=document.createElement('canvas');next.width=Math.max(targetWidth,Math.ceil(width/2));next.height=Math.max(targetHeight,Math.ceil(height/2));
     const target=next.getContext('2d');target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';target.drawImage(tile,0,0,next.width,next.height);
     tile=next;width=next.width;height=next.height;
   }
-  explorationMaterialTiles.set(image,tile);return tile;
+  if(cache.size>=16)cache.delete(cache.keys().next().value);cache.set(key,tile);return tile;
 }
+function explorationMaterialDensity(){return (typeof battlefieldZoom==='number'?battlefieldZoom:1)*(typeof BATTLEFIELD_RENDER_DENSITY==='number'?BATTLEFIELD_RENDER_DENSITY:1);}
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
 function explorationFloorPatternForView(){
   if(!explorationFloorImage.complete||!explorationFloorImage.naturalWidth)return null;
-  const tile=explorationMaterialTile(explorationFloorImage),pattern=ctx.createPattern(tile,'repeat');if(!pattern)return null;
+  const m=explorationEncounterApi.materialMetrics(explorationTerrain),density=explorationMaterialDensity();
+  const tile=explorationMaterialTile(explorationFloorImage,m.floorWidth*density,m.floorHeight*density),pattern=ctx.createPattern(tile,'repeat');if(!pattern)return null;
   const origin=screenPointForWorld({x:0,y:0});
-  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/tile.width,0,0,explorationTerrain.cellH/tile.height,origin.x-explorationTerrain.cellW/2,origin.y-explorationTerrain.cellH/2]));return pattern;
+  pattern.setTransform(new DOMMatrix([m.floorWidth/tile.width,0,0,m.floorHeight/tile.height,origin.x-explorationTerrain.cellW/2,origin.y-explorationTerrain.cellH/2]));return pattern;
 }
 function explorationWallPattern(target,wall,height){
   if(!explorationWallImage.complete||!explorationWallImage.naturalWidth)return null;
-  const tile=explorationMaterialTile(explorationWallImage),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
-  const origin=screenPointForWorld(wall.a);
-  const repeatHeight=explorationTerrain.cellW*EXPLORATION_COMBAT_MATERIALS.wallMetres/EXPLORATION_COMBAT_MATERIALS.cellMetres;
-  // Anchor to the wall's foot and the world X axis: adjacent faces share seams,
-  // camera pans do not slide them, and a 35px wall crops rather than squashes.
-  const worldOrigin=screenPointForWorld({x:0,y:0});
-  pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/tile.width,0,0,repeatHeight/tile.height,worldOrigin.x,origin.y-repeatHeight]));return pattern;
+  const m=explorationEncounterApi.materialMetrics(explorationTerrain,height),density=explorationMaterialDensity();
+  const tile=explorationMaterialTile(explorationWallImage,m.wallWidth*density,m.wallHeight*density),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
+  const origin=screenPointForWorld(wall.a),worldOrigin=screenPointForWorld({x:0,y:0});
+  pattern.setTransform(new DOMMatrix([m.wallWidth/tile.width,0,0,m.wallHeight/tile.height,worldOrigin.x,origin.y-m.wallHeight]));return pattern;
+}
+function drawExplorationDoorFace(target,wall,height){
+  if(!wall.id?.startsWith('door-')||Math.abs(wall.b.x-wall.a.x)<Math.abs(wall.b.y-wall.a.y))return;
+  const placement=explorationEncounterApi.projectSceneObject('door',explorationTerrain),size=placement.artwork,density=explorationMaterialDensity();
+  const tile=explorationMaterialTile(explorationDoorImage,size.width*density,size.height*density);if(!tile)return;
+  const center=screenPointForWorld({x:(wall.a.x+wall.b.x)/2,y:(wall.a.y+wall.b.y)/2});
+  target.save();target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';target.drawImage(tile,center.x-size.width/2,center.y-size.height,size.width,size.height);target.restore();
 }
 function clipExplorationFloor(){
   ctx.beginPath();for(const space of architecturalSpaces){const points=space.polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();
@@ -56,23 +62,74 @@ function drawExplorationVisibilityMask(){
   }
   target.globalCompositeOperation='source-over';ctx.drawImage(mask,0,0);
 }
-// Use the production light-blocking polygon, independently of party LOS.
-function drawExplorationIlluminationLayer(){
-  for(const source of illuminationSources()){
-    const polygon=wallTestVisibilityPolygonWorld(source,'light');
-    if(polygon.length<3)continue;
-    const center=hexCenter(source.x,source.y),radius=Math.max(1,Number(source.radiusHexes)||1)*HEX_W;
-    const color=source.color||[255,244,188],alpha=0.55*Math.min(1.25,source.intensity||1);
-    ctx.save();
-    if(!tracePolygonOnContext(ctx,polygon.map(point=>screenPointForWorld(point)))){ctx.restore();continue;}
-    ctx.clip();ctx.translate(center.x,center.y);ctx.scale(1,HEX_ROW/HEX_W/(Math.sqrt(3)/2));
-    const gradient=ctx.createRadialGradient(0,0,0,0,0,radius);
-    gradient.addColorStop(0,`rgba(${color.join(',')},${alpha})`);
-    gradient.addColorStop(0.5,`rgba(${color.join(',')},${alpha*0.6})`);
-    gradient.addColorStop(1,`rgba(${color.join(',')},0)`);
-    // Soft light warms the stone without bleaching its mortar and surface detail.
-    ctx.globalCompositeOperation='soft-light';ctx.fillStyle=gradient;ctx.fillRect(-radius,-radius,radius*2,radius*2);ctx.restore();
+// The perspective renderer and this canvas adapter read one authored lighting
+// profile, including the party lantern, exact torch mounts and metre falloff.
+function explorationVisualLights(){
+  const api=explorationEncounterApi,cell=api.SCENE_STYLE.cellMetres,p=worldPointForHex(game.player.x,game.player.y),origin=explorationEncounter.origin;
+  const party={x:(origin.x+p.x/explorationTerrain.cellW)*cell,z:(origin.z+p.y/explorationTerrain.cellH)*cell,facing:explorationEncounter.position?.facing||0};
+  const lights=api.sceneLights(explorationEncounter.map,party);
+  for(const source of illuminationSources())if(source.sourceKind!=='torch'){
+    const world=worldPointForHex(source.x,source.y),c=source.color||[255,244,188];
+    lights.push({x:(origin.x+world.x/explorationTerrain.cellW)*cell,z:(origin.z+world.y/explorationTerrain.cellH)*cell,y:api.SCENE_STYLE.lantern.height,
+      color:(c[0]<<16)|(c[1]<<8)|c[2],intensity:(source.intensity||1)*api.SCENE_STYLE.lantern.intensity,range:source.radiusHexes*HEX_W/explorationTerrain.cellW*cell,decay:api.SCENE_STYLE.lantern.decay});
   }
+  return lights;
+}
+function explorationSurfaceExposure(point,normal,lights,opened){
+  const api=explorationEncounterApi;
+  return api.displayExposure(api.surfaceLight(point,normal,lights,(light,p)=>{
+    if(typeof architecturalWallBlocksWorldLine==='function'){
+      const toWorld=v=>({x:(v.x/api.SCENE_STYLE.cellMetres-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(v.z/api.SCENE_STYLE.cellMetres-explorationEncounter.origin.z)*explorationTerrain.cellH});
+      return !architecturalWallBlocksWorldLine(toWorld(light),toWorld(p),'light');
+    }
+    return api.sceneLightVisible(explorationEncounter.map,opened,light,p);
+  }));
+}
+function drawExplorationIlluminationLayer(){
+  const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres,b=explorationTerrain.bounds;
+  const left=(b.left-explorationEncounter.origin.x-.5)*explorationTerrain.cellW,top=(b.top-explorationEncounter.origin.z-.5)*explorationTerrain.cellH;
+  const spanWidth=(b.right-b.left+1)*explorationTerrain.cellW,spanHeight=(b.bottom-b.top+1)*explorationTerrain.cellH,origin=screenPointForWorld({x:left,y:top});
+  const width=Math.ceil(spanWidth/6),height=Math.ceil(spanHeight/6);
+  const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors]);
+  let cache=drawExplorationIlluminationLayer.cache;
+  if(!cache||cache.key!==cacheKey){
+    const layers=[document.createElement('canvas'),document.createElement('canvas')];for(const c of layers){c.width=width;c.height=height;}
+    const contexts=layers.map(c=>c.getContext('2d')),images=contexts.map(c=>c.createImageData(width,height));
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const point={x:(explorationEncounter.origin.x+(left+(x+.5)*spanWidth/width)/explorationTerrain.cellW)*cell,y:0,
+        z:(explorationEncounter.origin.z+(top+(y+.5)*spanHeight/height)/explorationTerrain.cellH)*cell};
+      const value=explorationSurfaceExposure(point,{x:0,y:1,z:0},lights,opened),index=(y*width+x)*4;
+      for(let i=0;i<3;i++){images[0].data[index+i]=value.multiply[i];images[1].data[index+i]=value.boost[i];}images[0].data[index+3]=images[1].data[index+3]=255;
+    }
+    contexts.forEach((c,i)=>c.putImageData(images[i],0,0));cache={key:cacheKey,layers};drawExplorationIlluminationLayer.cache=cache;
+  }
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.globalCompositeOperation='multiply';ctx.drawImage(cache.layers[0],origin.x,origin.y,spanWidth,spanHeight);
+  ctx.globalCompositeOperation='color-dodge';ctx.drawImage(cache.layers[1],origin.x,origin.y,spanWidth,spanHeight);ctx.restore();
+}
+function shadeExplorationWall(target,wall,height,thickness){
+  const api=explorationEncounterApi,cell=api.SCENE_STYLE.cellMetres,lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors);
+  // Edge-on faces have no broad surface; keep their existing thin boundary.
+  if(Math.abs(wall.b.x-wall.a.x)<Math.abs(wall.b.y-wall.a.y))return;
+  const a=screenPointForWorld(wall.a),b=screenPointForWorld(wall.b);
+  const key=JSON.stringify([lights,explorationEncounter.openDoors,height,explorationTerrain.cellW,explorationTerrain.cellH,explorationEncounter.origin]);
+  const wallCache=shadeExplorationWall.cache||(shadeExplorationWall.cache=new WeakMap());
+  let cached=wallCache.get(wall);if(!cached||cached.key!==key){cached={key,rows:[]};wallCache.set(wall,cached);}
+  target.save();target.lineWidth=thickness;
+  for(let y=0;y<height;y++){
+    const gradients=[target.createLinearGradient(a.x,0,b.x,0),target.createLinearGradient(a.x,0,b.x,0)];
+    for(const [sample,t] of [0,.5,1].entries()){
+      const point={x:(explorationEncounter.origin.x+(wall.a.x+(wall.b.x-wall.a.x)*t)/explorationTerrain.cellW)*cell,
+        z:(explorationEncounter.origin.z+(wall.a.y+(wall.b.y-wall.a.y)*t)/explorationTerrain.cellH)*cell+.02,y:y/height*api.SCENE_STYLE.wallMetres};
+      const row=cached.rows[y]||(cached.rows[y]=[]);
+      const value=row[sample]||(row[sample]=explorationSurfaceExposure(point,{x:0,y:0,z:1},lights,opened));
+      gradients[0].addColorStop(t,`rgb(${value.multiply.join(',')})`);gradients[1].addColorStop(t,`rgb(${value.boost.join(',')})`);
+    }
+    for(const [i,mode] of ['multiply','color-dodge'].entries()){
+      target.globalCompositeOperation=mode;target.fillStyle=gradients[i];target.fillRect(Math.min(a.x,b.x)-thickness/2,Math.floor(a.y-y-.5),Math.abs(b.x-a.x)+thickness,1);
+    }
+  }
+  target.restore();
 }
 function drawExplorationTorch(torch){
   const c=hexCenter(torch.x,torch.y);ctx.save();
@@ -160,7 +217,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C225');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C227');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -170,7 +227,8 @@ async function startExplorationCombat(){
     const saved=explorationEncounterApi.readProgress(request.test?sessionStorage:localStorage,request.scope);
     request.previous=saved.encounters[request.event.id]||request.previous;request.player=saved.player||request.player;
     explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';explorationWallImage.src='assets/textures/exploration/wall.png?v=R238C206';
-    await Promise.all([explorationFloorImage.decode(),explorationWallImage.decode()]);
+    explorationDoorImage.src='assets/textures/exploration/door.png?v=R238C206';
+    await Promise.all([explorationFloorImage.decode(),explorationWallImage.decode(),explorationDoorImage.decode()]);
     selectedMobEncounter='custom';combatMobRoster.length=0;
     const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';
