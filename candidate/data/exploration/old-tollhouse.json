@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "id": "old-tollhouse-test",
+  "name": "Old Tollhouse",
+  "width": 16,
+  "height": 16,
+  "cellFeet": 10,
+  "grid": [
+    "################",
+    "#.......########",
+    "#.......########",
+    "#.#...#.########",
+    "#..............#",
+    "#.........#....#",
+    "#............#.#",
+    "#..D.###.......#",
+    "#....######.####",
+    "###D#######D####",
+    "#.....####.....#",
+    "#.....####.....#",
+    "#.......D...#..#",
+    "#.....####.....#",
+    "#.....####.....#",
+    "################"
+  ],
+  "start": {
+    "x": 3,
+    "z": 13,
+    "facing": 0
+  },
+  "doors": [
+    {
+      "x": 3,
+      "z": 9,
+      "axis": "z"
+    },
+    {
+      "x": 3,
+      "z": 7,
+      "axis": "z"
+    },
+    {
+      "x": 11,
+      "z": 9,
+      "axis": "z"
+    },
+    {
+      "x": 8,
+      "z": 12,
+      "axis": "x"
+    }
+  ],
+  "torches": [
+    {
+      "x": 2,
+      "z": 10
+    },
+    {
+      "x": 4,
+      "z": 8
+    },
+    {
+      "x": 1,
+      "z": 4
+    },
+    {
+      "x": 6,
+      "z": 4
+    },
+    {
+      "x": 14,
+      "z": 4
+    },
+    {
+      "x": 11,
+      "z": 10
+    },
+    {
+      "x": 14,
+      "z": 13
+    }
+  ],
+  "landmarks": [
+    {
+      "x": 3,
+      "z": 13,
+      "text": "The entrance hall smells of damp stone. A wooden door stands to the north."
+    },
+    {
+      "x": 3,
+      "z": 5,
+      "text": "You enter the pillared hall. Passages lead deeper into the old tollhouse."
+    },
+    {
+      "x": 11,
+      "z": 6,
+      "text": "Torchlight catches the worn stones of the eastern gallery."
+    },
+    {
+      "x": 11,
+      "z": 12,
+      "text": "An abandoned guardroom. A narrow passage leads west."
+    }
+  ],
+  "party": [
+    {
+      "name": "Carl",
+      "role": "Player character",
+      "ac": 3,
+      "hp": 42,
+      "maxHp": 42
+    },
+    {
+      "name": "Lyra",
+      "role": "Player character",
+      "ac": 5,
+      "hp": 28,
+      "maxHp": 36
+    },
+    {
+      "name": "Orc Scout",
+      "role": "Friendly NPC",
+      "ac": 6,
+      "hp": 12,
+      "maxHp": 16
+    }
+  ],
+  "encounters": [
+    {
+      "id": "tollhouse-orc-patrol",
+      "name": "Orc patrol",
+      "x": 1,
+      "z": 4,
+      "width": 7,
+      "height": 3,
+      "mobId": "orc-male-uniformed",
+      "count": 2,
+      "spawnX": 5,
+      "spawnZ": 2,
+      "enabled": true
+    }
+  ]
+}

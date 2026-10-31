@@ -1,0 +1,75 @@
+/**
+ * Adventure Party action profiles v2.
+ * Extensible data definitions: add profiles without modifying the renderer.
+ * Missing weapon poses resolve to 1H Swing. Falling/Prone use 1H Ready.
+ * Explicit assigned poses always win; null remains null in the stored data.
+ */
+export const ACTION_POSES=Object.freeze(['ready','windup','attack','falling','prone','casting-windup','cast']);
+export const ACTION_POSE_LABELS=Object.freeze({ready:'Ready',windup:'Wind Up',attack:'Attack',falling:'Falling',prone:'Prone','casting-windup':'Casting Wind Up',cast:'Casting'});
+export const DEFAULT_ACTION_PROFILE_IDS=Object.freeze([
+  'one-handed-swing','two-handed-swing','one-handed-thrust','two-handed-thrust',
+  'dual-wield','unarmed','spell-casting','bow','direct-fire','sling','throw','wizard-staff-grip'
+]);
+const DEFINITIONS=Object.freeze([
+  ['one-handed-swing','1H Swing (Slash / Bludgeon)','melee'],
+  ['two-handed-swing','2H Swing (Slash / Bludgeon)','melee'],
+  ['one-handed-thrust','1H Stab (Pierce)','melee'],
+  ['two-handed-thrust','2H Stab (Pierce)','melee'],
+  ['dual-wield','Dual Weapons','melee'],
+  ['unarmed','Bare Handed','melee'],
+  ['spell-casting','Spell Casting','casting'],
+  ['bow','Bow Weapons','ranged'],
+  ['direct-fire','Direct Fire Weapons (Crossbow)','ranged'],
+  ['sling','Slings','ranged'],
+  ['throw','Throw','ranged'],
+  ['wizard-staff-grip','Wooden Staff 1','melee']
+]);
+const validId=id=>typeof id==='string'&&/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id);
+function normalizePose(pose){
+  if(pose==null)return null;
+  if(typeof pose!=='object'||typeof pose.animation!=='string'||!pose.animation.trim()||
+    !Number.isFinite(pose.timeSeconds)||pose.timeSeconds<0)
+    throw new Error('Each assigned pose needs an animation name and nonnegative frame time.');
+  return Object.freeze({animation:pose.animation,sourceId:pose.sourceId||pose.animation,
+    timeSeconds:pose.timeSeconds,gripCorrection:pose.gripCorrection??null});
+}
+export function defineActionProfile({id,label,category='custom',poses={},sharedProne=true,fallbackId=null}){
+  if(!validId(id)||typeof label!=='string'||!label.trim())throw new Error('Invalid action profile ID or label.');
+  if(!poses||typeof poses!=='object'||Object.keys(poses).some(key=>!ACTION_POSES.includes(key)))
+    throw new Error('Unknown action-profile pose name.');
+  if(fallbackId!==null&&!validId(fallbackId))throw new Error('Invalid fallback profile ID');
+  return Object.freeze({id,label,category,sharedProne,fallbackId,
+    poses:Object.freeze(Object.fromEntries(ACTION_POSES.map(pose=>[pose,normalizePose(poses[pose])])))});
+}
+export function createActionProfileCatalog(extraProfiles=[]){
+  const catalog=new Map(DEFINITIONS.map(([id,label,category])=>[id,defineActionProfile({id,label,category,
+    fallbackId:id==='dual-wield'?'one-handed-swing':null})]));
+  for(const profile of extraProfiles){
+    const normalized=defineActionProfile(profile);
+    if(catalog.has(normalized.id))throw new Error('Duplicate action profile: '+normalized.id);
+    catalog.set(normalized.id,normalized);
+  }
+  return catalog;
+}
+export function resolveActionPose(profile,poseName,sharedProne=null,catalog=ACTION_PROFILE_CATALOG){
+  if(!ACTION_POSES.includes(poseName))throw new Error('Unknown pose: '+poseName);
+  const defined=profile?.poses?.[poseName]??null;
+  if(defined)return {source:'profile',pose:defined};
+  // Reuse existing one-handed captures without copying animation assets.
+  // A dual-wield-specific pose assigned later always takes precedence.
+  const visited=new Set([profile?.id]);
+  let current=profile;
+  while(current?.fallbackId && !visited.has(current.fallbackId)){
+    visited.add(current.fallbackId);
+    current=catalog?.get(current.fallbackId);
+    const borrowed=current?.poses?.[poseName];
+    if(borrowed)return {source:'profile-fallback',profileId:current.id,pose:borrowed};
+  }
+  if(poseName==='prone'&&profile?.sharedProne&&sharedProne)
+    return {source:'shared-prone',pose:normalizePose(sharedProne)};
+  const fallbackPose=['ready','windup','attack'].includes(poseName)?poseName:['falling','prone'].includes(poseName)?'ready':null;
+  const borrowed=fallbackPose&&catalog?.get('one-handed-swing')?.poses?.[fallbackPose];
+  if(borrowed)return {source:'profile-fallback',profileId:'one-handed-swing',pose:borrowed};
+  return {source:'fallback-sprite',pose:null};
+}
+export const ACTION_PROFILE_CATALOG=createActionProfileCatalog();

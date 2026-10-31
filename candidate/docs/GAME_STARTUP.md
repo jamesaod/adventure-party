@@ -1,0 +1,15 @@
+# Required game scripts (Candidate Rev 171)
+
+A Studio combat test reported `r226CleanupRadiusInvisibility is not defined` at the first round. The Scale Mail Woman is correctly associated with the Fighter archetype; the model needs no additional MOB factory for this test. The cleanup function is defined in `r226-level3-casts-a.js` and called by the effect-expiry/turn hooks. The published file matched the repository. The original Chrome session could not be inspected, so the precise reason that file was unavailable there was not established.
+
+The failure is reproducible by omitting the casts-a download while allowing the other classic scripts to run. HTML script tags previously continued after a failed download, exposing an incomplete combat engine. Rev 171 preserves the original script order and implementations but makes their tags an inert manifest (`type="text/plain"`, `data-game-script`). `js/game-script-loader.mjs` preloads those files, then executes them in order through normal script elements. The sprite-runtime module remains last. Import maps and build metadata are still ordinary non-executable data tags.
+
+A failed classic-script download is retried once with a fresh query token before any later script executes. Syntax/evaluation errors, module failures and timeouts stop startup instead of replaying possibly partial global declarations/wrappers. Game controls and document keyboard shortcuts remain blocked until all scripts finish and the spell/sprite APIs are present. If startup fails, Reload game performs a full page reload with fresh script requests, preserving model/pose-library/draft query scope and saved browser data. The script manifest uses the current revision token to replace the old shared R238 cache entries.
+
+The optional Studio sprite timeout starts after required game scripts finish, so a slow download/retry does not abandon the scoped Studio draft. The font check runs both before and after DOMContentLoaded because the ordered scripts can execute after that event. Existing spell behavior, turn rules, MOB factories, models, captures and Unit Packages are unchanged.
+
+## Verification
+
+`node scripts/test-game-script-loader.mjs` compiles every classic entry, reproduces the original ReferenceError with the production R226 files, and exercises successful retry, bounded failure, execution-error stop, radius-invisibility behavior, fresh retry URLs and deferred sprite timeout. It runs in Adventure Party Validation.
+
+Browser QA used the Scale Mail Woman's existing captures with one hostile Kobold and successfully started round 1. A separate local server deliberately returned 503 for casts-a's initial URL and 200 only for the retry URL; the launcher recovered. Returning 503 for both attempts showed the reload screen and blocked the R shortcut instead of starting incomplete combat. Test-server fault injection belongs outside the repository/runtime assets. Future QA should also verify an ordinary combat start and the Studio model handoff after changes to this loader.

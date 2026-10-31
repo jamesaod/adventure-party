@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {resolveEquipmentLibrary,equipmentSnapshot,emptyEquipmentLibrary} from '../js/equipment-library-core.mjs?v=R238C204';
+import {sampleGeneration,offHandItems,primaryItems,generationWeaponTypes} from '../js/mob-generation.mjs?v=R238C204';
+import {normalizeMobDefinition} from '../js/mob-definition.mjs?v=R238C204';
+const data=emptyEquipmentLibrary();
+data.items=[{id:'long-sword',overrides:{rules:{damageSM:'2d4'}}},{id:'heirloom',parentId:'long-sword',overrides:{name:'Heirloom',unique:true,enchanted:true,questId:'lost-crown',rules:{magicHitBonus:2,offHandAllowed:true},effects:[{recipient:'target',trigger:'on-hit',kind:'condition',parameter:'slowed',value:'1',chance:25,rounds:3,save:'spell',stacking:'refresh',maxStacks:1}]}},{id:'invisible-heirloom',parentId:'heirloom',overrides:{name:'Invisible heirloom',appearance:null,rules:{poseProfileId:'one-handed-swing'}}}];
+const catalog=resolveEquipmentLibrary(data);
+assert.equal(catalog.heirloom.rules.damageSM,'2d4');assert.equal(catalog.heirloom.rules.magicHitBonus,2);assert.equal(catalog.heirloom.unique,true);assert.equal(catalog.heirloom.enchanted,true);assert.equal(catalog['invisible-heirloom'].appearance,null);
+assert.ok(primaryItems(catalog).some(i=>i.id==='invisible-heirloom'));assert.ok(offHandItems(catalog).some(i=>i.id==='invisible-heirloom'));
+const generation={version:1,kind:'unique',fixed:{classId:'fighter',level:1,primary:'invisible-heirloom',offHand:'none'},alwaysItems:[]};
+assert.equal(sampleGeneration(generation,()=>0,catalog).equipment[0].itemId,'invisible-heirloom');assert.deepEqual(generationWeaponTypes(generation,catalog),['one-handed-swing']);
+const snapshot=equipmentSnapshot(data,['invisible-heirloom']);assert.equal(snapshot.items.length,3);assert.deepEqual(resolveEquipmentLibrary(JSON.parse(JSON.stringify(snapshot)))['invisible-heirloom'],catalog['invisible-heirloom']);
+const mob=JSON.parse(readFileSync(new URL('../data/mobs/orc-male-uniformed.unit-package.json',import.meta.url)));mob.mob.generation=generation;mob.references.equipmentLibrary=snapshot;
+assert.equal(normalizeMobDefinition(JSON.parse(JSON.stringify(mob))).equipment[0].itemId,'invisible-heirloom');
+assert.throws(()=>resolveEquipmentLibrary({...data,items:[...data.items,data.items[0]]}),/duplicate/);
+assert.throws(()=>resolveEquipmentLibrary({...data,items:[{id:'a',parentId:'b',overrides:{}},{id:'b',parentId:'a',overrides:{}}]}),/cycle/);
+assert.throws(()=>resolveEquipmentLibrary({...data,items:[{id:'a',parentId:'missing',overrides:{}}]}),/Missing/);
+const bad=structuredClone(data);bad.items[1].overrides.effects[0].chance=101;assert.throws(()=>resolveEquipmentLibrary(bad),/chance/);
+const two=structuredClone(data);two.items[2].overrides.rules.handsRequired=2;assert.ok(!offHandItems(resolveEquipmentLibrary(two)).some(i=>i.id==='invisible-heirloom'));
+assert.throws(()=>sampleGeneration({...generation,fixed:{...generation.fixed,offHand:'heirloom'}},()=>0,resolveEquipmentLibrary(two)),/Two-handed/);
+assert.equal(resolveEquipmentLibrary()['long-sword'].rules.magicHitBonus,0);
+console.log('Equipment library: inheritance, identity, effects, duplicates, cycles, eligibility and portable MOB round trip passed.');
+
+const spearCatalog=resolveEquipmentLibrary();assert.equal(spearCatalog.spear.rules.handsRequired,1);
+const spearAndShield={version:1,kind:'unique',fixed:{classId:'fighter',level:1,primary:'spear',offHand:'shield-orc'},alwaysItems:[]};
+assert.equal(sampleGeneration(spearAndShield,()=>0,spearCatalog).equipment.length,2);assert.deepEqual(generationWeaponTypes(spearAndShield,spearCatalog),['one-handed-thrust']);

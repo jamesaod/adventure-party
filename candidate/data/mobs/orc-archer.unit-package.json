@@ -1,0 +1,406 @@
+{
+  "schema": "adventure-party.unit-package",
+  "version": 1,
+  "id": "orc-archer",
+  "name": "Orc Archer",
+  "modelId": "orc-leader-male-uniformed",
+  "character": {
+    "classId": null,
+    "level": 1,
+    "abilities": {
+      "str": 10,
+      "dex": 10,
+      "con": 10,
+      "int": 10,
+      "wis": 10,
+      "cha": 10
+    },
+    "rules": {
+      "classRules": "class",
+      "overrideHp": false,
+      "overrideThaco": false,
+      "overrideAttacks": false,
+      "system": "adnd-2e",
+      "hpMode": "rolled",
+      "hitDice": "1d8",
+      "maxHp": 8,
+      "ac": 10,
+      "thaco": 20,
+      "move": 12,
+      "attacksPerRound": 1,
+      "morale": 10,
+      "xpValue": 0
+    }
+  },
+  "actionProfiles": [
+    "bow"
+  ],
+  "equipment": [],
+  "attachments": null,
+  "references": {
+    "poseFallbacks": {
+      "weaponProfile": "one-handed-swing",
+      "falling": "ready",
+      "prone": "ready"
+    },
+    "poseLibrary": {
+      "schema": "adventure-party.pose-library",
+      "version": 2,
+      "id": "orc-archer",
+      "name": "Orc Archer",
+      "bodyFamily": "humanoid",
+      "size": "medium",
+      "revision": 2,
+      "studioAppearance": {
+        "version": 1,
+        "modelId": "orc-leader-male-uniformed",
+        "modelScalePercent": 135,
+        "hexScalePercent": 109,
+        "footprint": "single",
+        "equipment": {
+          "version": 3,
+          "presetRevision": 1,
+          "rightHand": "recurve-bow",
+          "sizePercent": 100,
+          "position": [
+            -0.00230591618749799,
+            0.04860474335201947,
+            0.011500507563605808
+          ],
+          "rotation": [
+            -173.1415653752749,
+            11.464296791598668,
+            -99.78290848757004
+          ],
+          "shaftRollDegrees": 0,
+          "secondaryGripOffsetInches": [
+            0,
+            0,
+            0
+          ]
+        },
+        "offHandEquipment": {
+          "version": 3,
+          "presetRevision": 0,
+          "rightHand": "none",
+          "sizePercent": 100,
+          "position": [
+            0.005,
+            0.065,
+            -0.005
+          ],
+          "rotation": [
+            163,
+            -180,
+            0
+          ],
+          "shaftRollDegrees": 0,
+          "secondaryGripOffsetInches": [
+            0,
+            0,
+            0
+          ]
+        },
+        "shield": {
+          "version": 3,
+          "presetRevision": 0,
+          "leftHandShield": "none",
+          "sizePercent": 100,
+          "position": [
+            0,
+            0,
+            0.04
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "distanceInches": 0,
+          "forearmSlideInches": 0,
+          "forearmRollDegrees": 0
+        },
+        "appearanceRecolor": {
+          "hair": "default",
+          "metal": "default",
+          "debug": "off"
+        },
+        "poseEquipment": {
+          "one-handed-swing": {
+            "ready": {},
+            "windup": {},
+            "attack": {}
+          },
+          "bow": {
+            "ready": {},
+            "windup": {},
+            "attack": {}
+          },
+          "death-prone": {
+            "falling": {},
+            "prone": {}
+          }
+        }
+      },
+      "profiles": {
+        "one-handed-swing": {
+          "ready": {
+            "animation": "Boxing",
+            "sourceId": "uploaded:boxing:0",
+            "timeSeconds": 0
+          },
+          "windup": {
+            "animation": "Boxing",
+            "sourceId": "uploaded:boxing:0",
+            "timeSeconds": 0.4416
+          },
+          "attack": {
+            "animation": "Boxing",
+            "sourceId": "uploaded:boxing:0",
+            "timeSeconds": 0.6549333333333334
+          }
+        },
+        "two-handed-swing": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "one-handed-thrust": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "two-handed-thrust": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "dual-wield": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "unarmed": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "spell-casting": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "bow": {
+          "ready": {
+            "animation": "Standing Idle",
+            "sourceId": "uploaded:standing-idle:0",
+            "timeSeconds": 0
+          },
+          "windup": {
+            "animation": "Standing Aim Recoil",
+            "sourceId": "uploaded:standing-aim-recoil:0",
+            "timeSeconds": 0
+          },
+          "attack": {
+            "animation": "Standing Aim Recoil",
+            "sourceId": "uploaded:standing-aim-recoil:0",
+            "timeSeconds": 0.2555
+          }
+        },
+        "direct-fire": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "sling": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "throw": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        },
+        "wizard-staff-grip": {
+          "ready": null,
+          "windup": null,
+          "attack": null
+        }
+      },
+      "sharedActionGroups": {
+        "magic": {
+          "casting-windup": null,
+          "cast": null
+        },
+        "death-prone": {
+          "falling": {
+            "animation": "Standing Death Forward 01",
+            "sourceId": "uploaded:standing-death-forward-01:0",
+            "timeSeconds": 1.4883333333333333
+          },
+          "prone": {
+            "animation": "Standing Death Forward 01",
+            "sourceId": "uploaded:standing-death-forward-01:0",
+            "timeSeconds": 3.1666666666666665
+          }
+        }
+      }
+    },
+    "studioAppearance": {
+      "version": 1,
+      "modelId": "orc-leader-male-uniformed",
+      "modelScalePercent": 135,
+      "hexScalePercent": 109,
+      "footprint": "single",
+      "equipment": {
+        "version": 3,
+        "presetRevision": 1,
+        "rightHand": "recurve-bow",
+        "sizePercent": 100,
+        "position": [
+          -0.00230591618749799,
+          0.04860474335201947,
+          0.011500507563605808
+        ],
+        "rotation": [
+          -173.1415653752749,
+          11.464296791598668,
+          -99.78290848757004
+        ],
+        "shaftRollDegrees": 0,
+        "secondaryGripOffsetInches": [
+          0,
+          0,
+          0
+        ]
+      },
+      "offHandEquipment": {
+        "version": 3,
+        "presetRevision": 0,
+        "rightHand": "none",
+        "sizePercent": 100,
+        "position": [
+          0.005,
+          0.065,
+          -0.005
+        ],
+        "rotation": [
+          163,
+          -180,
+          0
+        ],
+        "shaftRollDegrees": 0,
+        "secondaryGripOffsetInches": [
+          0,
+          0,
+          0
+        ]
+      },
+      "shield": {
+        "version": 3,
+        "presetRevision": 0,
+        "leftHandShield": "none",
+        "sizePercent": 100,
+        "position": [
+          0,
+          0,
+          0.04
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "distanceInches": 0,
+        "forearmSlideInches": 0,
+        "forearmRollDegrees": 0
+      },
+      "appearanceRecolor": {
+        "hair": "default",
+        "metal": "default",
+        "debug": "off"
+      },
+      "poseEquipment": {
+        "one-handed-swing": {
+          "ready": {},
+          "windup": {},
+          "attack": {}
+        },
+        "bow": {
+          "ready": {},
+          "windup": {},
+          "attack": {}
+        },
+        "death-prone": {
+          "falling": {},
+          "prone": {}
+        }
+      }
+    },
+    "equipmentLibrary": {
+      "schema": "adventure-party.equipment-library",
+      "version": 1,
+      "items": []
+    }
+  },
+  "mob": {
+    "authoringVersion": 1,
+    "spellPreparation": {
+      "mage": {
+        "mode": "prepared",
+        "choices": []
+      },
+      "cleric": {
+        "mode": "prepared",
+        "choices": []
+      }
+    },
+    "generation": {
+      "version": 1,
+      "kind": "template",
+      "alwaysItems": [
+        {
+          "itemId": "shield-orc",
+          "quantity": 1
+        }
+      ],
+      "classLevels": [
+        {
+          "classId": "none",
+          "level": 1,
+          "weight": 75
+        },
+        {
+          "classId": "fighter",
+          "level": 3,
+          "weight": 20
+        },
+        {
+          "classId": "fighter",
+          "level": 4,
+          "weight": 5
+        }
+      ],
+      "primary": [
+        {
+          "itemId": "recurve-bow",
+          "weight": 100
+        }
+      ],
+      "offHand": [
+        {
+          "itemId": "none",
+          "weight": 100
+        }
+      ]
+    },
+    "revision": 0,
+    "species": "Orc",
+    "size": "medium",
+    "footprint": "single",
+    "specialAbilities": [],
+    "spellcasting": null,
+    "notes": "Imported from humanoid-1793293421747.unit-package.json. Authored class probabilities, model, scale, equipment and pose frames preserved."
+  }
+}

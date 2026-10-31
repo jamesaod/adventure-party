@@ -1,0 +1,47 @@
+{
+ "slug": "sling",
+ "triangles": 9512,
+ "texture_px": 2048,
+ "triangles_light": null,
+ "texture_px_light": null,
+ "files": {
+  "glb": {
+   "name": "sling.glb",
+   "bytes": 625144
+  },
+  "blend": {
+   "name": "sling.blend",
+   "bytes": 657407
+  },
+  "fbx": {
+   "name": "sling.fbx",
+   "bytes": 1241948
+  },
+  "obj": {
+   "name": "sling-obj.zip",
+   "bytes": 602237
+  },
+  "usdz": {
+   "name": "sling.usdz",
+   "bytes": 1060359
+  }
+ },
+ "extras": {
+  "license": "CC0-1.0",
+  "source": "grab3d.com",
+  "dimensions_m": "0.603 x 0.065 x 0.045",
+  "triangles": 9512,
+  "textures": "PBR 2048px: base color, roughness, metallic, normal (baked)",
+  "generator": "Created by grab3d",
+  "created": "2026-10-19",
+  "real_size": "sling, 60 cm laid out (pouch 12 cm, stone diameter 4 cm)",
+  "notes": "padded leather pouch with tapering ends and brass eyelets cradling a smooth round pebble, two twisted red cords lying loosely on the ground: one ends in a finger loop with a brass sleeve, the other in a release knot with a short tail; lies flat on the ground (z = 0), long axis = X; no moving parts; no text",
+  "set": "Cozy Weapons & Armor Kit"
+ },
+ "origin": {
+  "method": "procedural",
+  "detail": "Built procedurally with Blender scripts. The scripts were written with the help of an AI coding assistant. No generative AI model produced the geometry or textures directly.",
+  "ai_content": false,
+  "ai_assisted_code": true
+ }
+}

@@ -1,0 +1,87 @@
+# Humanoid rig pipeline
+
+Adventure Party treats a humanoid model's authoring bone names as import data, not as runtime API names.
+
+## Semantic rig roles
+
+The Studio rig adapter maps common skeleton conventions onto stable roles such as:
+
+- `hips`, `spine`, `chest`, `upperChest`, `neck`, `head`
+- `leftShoulder`, `leftUpperArm`, `leftForeArm`, `leftHand`
+- `rightShoulder`, `rightUpperArm`, `rightForeArm`, `rightHand`
+- upper/lower legs and feet on both sides
+- index, middle, ring, pinky and thumb chains on both hands
+
+The first-pass alias set recognizes Mixamo, common Blender/Rigify naming, Unreal-style side suffixes, Bip01/Biped names, and simple generic names. Renderer, equipment, IK and animation code should request semantic roles instead of checking one model's raw bone names.
+
+## New humanoid workflow
+
+1. Load a GLB, glTF or FBX model in **3d studio**.
+2. Studio analyzes the skeleton automatically. The Model summary reports the detected rig family and mapped core-role count.
+3. Correct model orientation and calibrate physical size in T-Pose.
+4. Use **Load animation FBX** to add a humanoid animation. The retargeter maps source and target bones through semantic roles, derives each rig's anatomical right/up/forward basis, converts source bind-pose rotation deltas into the target basis, then applies them to the target bind pose. This allows +Z-forward and -Z-forward humanoids to share the same animation family without mirroring the limbs.
+5. Equip a weapon or shield. Equipment sockets resolve `rightHand` and `leftHand` through the same rig adapter.
+6. For two-handed equipment, the solver resolves the left shoulder, upper arm, forearm, hand, torso and finger chains through semantic roles.
+7. Tune model-specific grip/socket offsets only when anatomy or authored pivots require an artistic correction.
+8. Capture Ready, Attack and Prone poses and test them in combat.
+9. Once approved, preserve the model and any model-specific corrections as catalog/profile data rather than adding renderer-specific code.
+
+## Orc acceptance asset
+
+The first non-Carl acceptance model supplied for this pipeline is **Male Orc Fighter 3D Model.glb**.
+
+Observed source facts:
+
+- SHA-256: `a0b63e9ae67c47779baf9e254660918c073ab1684237f528c43bb9f7e9f9c688`
+- one skin
+- 65 joints
+- complete Mixamo-style body hierarchy
+- five complete finger chains per hand
+- no embedded animation clips in the uploaded GLB
+- repository path: `assets/models/orcs/male-orc-fighter/male-orc-fighter.glb`
+- Studio library ID: `male-orc-fighter`
+
+The rig maps all 20 current core humanoid roles and therefore qualifies for equipment attachment and retargeting experiments. The exact uploaded GLB is repository-backed and selectable as **Male Orc Fighter** from the Studio Model Library. Its source contains no embedded clips and, importantly, its skin bind stance has lowered arms rather than the true T-pose used by Carl and the UAL2 donor. Automatic runtime retargeting produced torso-clipping arm poses, so the raw Orc is kept animationless. A separate **Male Orc Fighter — UAL2 One-Handed Proof** is generated offline with the proven Carl bake, using Carl's T-pose bind rotations as a same-exporter reference while preserving the Orc's own model data.
+
+## Orc skin-weight QA (Candidate Rev 104)
+
+Visual QA of the baked one-handed sword animation identified thigh/skirt geometry
+following a hand during the attack. The uploaded Orc source itself has **544 vertices**
+with both arm and leg influences of at least 5%; one upper-thigh vertex is 70% leg
+and 29% left pinky. The source GLB and the Carl-method baked proof remain unchanged.
+
+The Studio catalog now opts both Orc entries into `skinWeightRepair:
+"cross-limb-components-v1"`. After GLTF loading, before framing and equipment
+setup, `js/studio-skinning.mjs` uses triangle connectivity and dominant anatomical
+bone families to remove cross-limb weights from affected disconnected mesh pieces.
+It renormalizes retained weights and updates the GPU skin-weight attribute. No
+bone hierarchy, animation, inverse bind matrix, material, or equipment socket is
+changed. Carl and other models do not opt into the repair.
+
+The exact uploaded Orc has 7,008 vertices; this profile corrects **750 vertices**
+in 53 disconnected surfaces and reduces the mixed arm/leg count from 544 to zero.
+Use `node scripts/test-orc-skinning.mjs` to verify the repair against the actual
+source GLB and `node scripts/audit-orc-skin-weights.mjs` for detailed diagnostics.
+The Studio's read-only `adventureParty3DStudio.snapshot().skinRepair` exposes
+the applied correction count during QA. The original source SHA-256 is protected
+by regression tests.
+
+**Visual acceptance remains necessary:** in the Model Library choose
+**Male Orc Fighter — UAL2 One-Handed Proof**, equip sword and shield, and scrub
+`UAL2_Sword_Regular_A` across all frames. Inspect both upper legs, skirt,
+shoulders, hands, and equipment sockets. This fix removes anatomically impossible
+arm/leg skin influences but does not claim to repair other model-weight errors
+or guarantee every future character model is clean.
+
+## Current limitations
+
+This is a first pass, not a promise that every humanoid rig will be zero-touch.
+
+- Animation retargeting currently bakes quaternion/rotation tracks. Root-motion and arbitrary bone translation tracks are intentionally not transferred.
+- A skeleton with unusual names that do not match the alias catalog may need a saved model-specific mapping profile.
+- Weapon and shield attachment bones can be found generically, but unusual hand anatomy or asset pivots may still need a small model-specific socket correction.
+- The two-handed solver requires recognizable shoulder/upper-arm/forearm/hand chains. Finger wrapping requires recognizable finger chains.
+- Repository-backed runtime animation families still exist as an experimental path, but a compatible semantic skeleton is not sufficient by itself: the donor and target reference poses must also be compatible. The raw Orc demonstrated this failure because its bind stance is not the donor T-pose.
+- The current production-style proof path is an offline bake: exact UAL donor + untouched target + known-good same-exporter T-pose reference + preservation tests. **Load animation FBX** remains available for ad hoc experiments.
+
+The target architecture is **model + semantic rig profile + generic animation family + equipment profile**, with model-specific corrections stored as data.

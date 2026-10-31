@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adventure Party (working title)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/adventure-party.css?v=R238C168">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./assets/vendor/three/three.module.min.js",
+    "three/addons/": "./assets/vendor/three/addons/"
+  }
+}
+</script>
+</head>
+
+<body>
+<div id="gameStartup" role="status" aria-live="polite" style="position:fixed;inset:0;z-index:2147483647;background:#08080d;color:#7cebed;display:grid;place-content:center;text-align:center;gap:1rem">
+  <p id="gameStartupMessage">Loading Adventure Party…</p>
+  <button id="gameStartupReload" type="button" onclick="location.reload()">Reload game</button>
+</div>
+<script id="buildMetadata" type="application/json">
+{"architecture":"Multi-File Engine","release":"R238","candidateRevision":232,"builtAt":"2026-10-31T15:02:03Z"}
+</script>
+
+<section id="launcherScreen" class="screen active">
+  <div class="launcher-app">
+    <header class="launcher-header chrome">
+      <div class="launcher-brand">
+        <div class="eyebrow">Adventure Party</div>
+        <h1>Adventure Party</h1>
+        <div class="working-title">(working title)</div>
+      </div>
+      <div class="launcher-build-stack">
+        <div class="candidate-label">Candidate Rev 232</div>
+        <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
+        <a href="ATTRIBUTIONS.md" target="_blank" rel="noopener">Asset credits</a>
+      </div>
+    </header>
+
+    <main class="launcher-stage chrome">
+      <section class="launcher-menu-box">
+        <div class="launcher-menu-title">Select Module</div>
+        <nav class="launcher-menu">
+          <button data-screen="combat">Combat System Test</button>
+          <button data-screen="spellbook">Spell Book</button>
+          <button data-screen="spell-preview">Spell Previewer [DEV]</button>
+          <button data-screen="classbook">Class Book</button>
+          <button data-screen="character">Character Generation</button>
+          <button data-screen="mob-catalog">MOB Catalog</button>
+          <button data-screen="mob-creator">MOB Creator</button>
+          <button id="equipmentLibraryLink" onclick="location.href='equipment-library.html'">Equipment Library</button>
+          <button data-screen="pixel">Pixel Editor</button>
+          <button data-screen="exploration-test">Exploration Test</button>
+          <button data-screen="3d-studio">3d studio</button>
+          <button data-screen="world">Map Maker World</button>
+          <button data-screen="explorer">Exploration Map Editor</button>
+          <button data-screen="combat-map">Map Maker Combat</button>
+        </nav>
+      
+      <div class="font-status-row">
+        <span id="fontStatus" class="font-status">FONT: CHECKING EB GARAMOND BOLD…</span>
+      </div>
+</section>
+
+      <div class="launcher-help">
+        <strong>↑ ↓</strong> SELECT &nbsp;&nbsp;
+        <strong>ENTER</strong> CHOOSE
+      </div>
+
+      <div id="launcherAudioStatus" class="launcher-audio-status">
+        AUDIO ON — AWAITS FIRST INPUT
+      </div>
+
+      <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="true">
+        SND:ON
+      </button>
+    </main>
+  </div>
+</section>
+
+
+<section id="spellbookScreen" class="screen">
+  <div class="spellbook-app">
+    <header class="spellbook-header chrome">
+      <div>
+        <div class="small">Adventure Party — AD&amp;D 2nd Edition</div>
+        <h1>Spell Book</h1>
+      </div>
+      <button id="spellbookReturnButton" class="pixel-return-button" type="button">
+        Return to Launcher [Esc]
+      </button>
+    </header>
+
+    <main class="spellbook-stage chrome">
+      <div class="spellbook-intro">
+        Implemented spell entries, organized by spell level.
+      </div>
+
+      <div id="spellbookTabs" class="spellbook-tabs" role="tablist" aria-label="Spell levels"></div>
+      <section id="spellbookContent" class="spellbook-content"></section>
+    </main>
+  </div>
+</section>
+
+
+<section id="classbookScreen" class="screen">
+  <div class="spellbook-app">
+    <header class="spellbook-header chrome">
+      <div>
+        <div class="small">Adventure Party — AD&amp;D 2nd Edition</div>
+        <h1>Class Book</h1>
+      </div>
+      <button id="classbookReturnButton" class="pixel-return-button" type="button">
+        Return to Launcher [Esc]
+      </button>
+    </header>
+
+    <main class="spellbook-stage chrome">
+      <div class="spellbook-intro">
+        Class-specific rules are kept separate from core combat rules. Fighter, Mage, Cleric, and Thief are presented with consistent progression, saving throws, proficiencies, class abilities, and source notes. The Alignment tab defines the shared nine-alignment rules used by class and character systems.
+      </div>
+
+      <div id="classbookTabs" class="spellbook-tabs" role="tablist" aria-label="Character classes"></div>
+      <section id="classbookContent" class="spellbook-content"></section>
+    </main>
+  </div>
+</section>
+
+
+<section id="spellPreviewScreen" class="screen">
+  <div class="spell-preview-app">
+    <header class="spell-preview-header chrome">
+      <div>
+        <div class="small">Adventure Party — Development Tool</div>
+        <h1>Spell Effects Previewer</h1>
+      </div>
+      <div class="spell-preview-header-actions">
+        <span class="spell-preview-candidate">R238</span>
+        <button id="spellPreviewReturnButton" class="pixel-return-button" type="button">
+          Return to Launcher [Esc]
+        </button>
+      </div>
+    </header>
+
+    <main class="spell-preview-main">
+      <aside class="spell-preview-library chrome">
+        <div class="spell-preview-panel-title">Spell Library</div>
+        <div class="spell-preview-note">
+          Every implemented combat spell is preview-ready. Selecting a spell resets the sandbox and automatically plays it using production battlefield VFX/SFX.
+        </div>
+        <div id="spellPreviewLibrary" class="spell-preview-library-list"></div>
+        <div id="spellPreviewCoverage" class="spell-preview-coverage">Loading spell catalog…</div>
+      </aside>
+
+      <section class="spell-preview-center">
+        <div id="spellPreviewArena" class="spell-preview-arena chrome">
+          <div id="spellPreviewArenaPlaceholder" class="spell-preview-arena-placeholder">
+            Battlefield renderer attaches when the previewer opens.
+          </div>
+          <div class="spell-preview-arena-badge">PRODUCTION RENDERER</div>
+        </div>
+
+        <section class="spell-preview-timeline chrome">
+          <div class="spell-preview-timeline-top">
+            <div>
+              <div class="spell-preview-panel-title">Measured Timeline</div>
+              <div id="spellPreviewElapsed" class="spell-preview-elapsed">0.000 s / 0.000 s</div>
+            </div>
+            <div id="spellPreviewRunState" class="spell-preview-run-state">READY</div>
+          </div>
+          <div id="spellPreviewTimelineTrack" class="spell-preview-timeline-track">
+            <div id="spellPreviewTimelineMarkers" class="spell-preview-timeline-markers"></div>
+            <div id="spellPreviewTimelinePlayhead" class="spell-preview-timeline-playhead"></div>
+          </div>
+          <div id="spellPreviewEventLog" class="spell-preview-event-log"></div>
+        </section>
+      </section>
+
+      <aside class="spell-preview-controls chrome">
+        <div class="spell-preview-panel-title">Preview Setup</div>
+        <div id="spellPreviewSpellName" class="spell-preview-spell-name">Magic Missile</div>
+        <div id="spellPreviewSpellMeta" class="spell-preview-spell-meta"></div>
+
+        <label class="spell-preview-field">
+          <span>Caster level</span>
+          <input id="spellPreviewCasterLevel" type="number" min="1" max="20" step="1" value="6">
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Dummy targets</span>
+          <select id="spellPreviewTargetCount">
+            <option value="1">1 target</option>
+            <option value="3">3 targets</option>
+            <option value="5" selected>5 targets</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Outcome</span>
+          <select id="spellPreviewOutcome">
+            <option value="demo" selected>Deterministic demo</option>
+            <option value="save-success">Force successful save</option>
+            <option value="save-failure">Force failed save</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-field">
+          <span>Presentation</span>
+          <select id="spellPreviewMode">
+            <option value="full" selected>Full sequence — VFX + SFX</option>
+            <option value="vfx">VFX only</option>
+            <option value="sfx">SFX only</option>
+          </select>
+        </label>
+
+        <label class="spell-preview-check">
+          <input id="spellPreviewLoop" type="checkbox" checked>
+          Loop preview with 1-second reset gap
+        </label>
+
+        <div class="spell-preview-actions">
+          <button id="spellPreviewPlayButton" class="pixel-action-button primary" type="button">Play</button>
+          <button id="spellPreviewStopButton" class="pixel-action-button" type="button" disabled>Stop</button>
+          <button id="spellPreviewRestartButton" class="pixel-action-button" type="button">Reset Arena</button>
+        </div>
+
+        <section class="spell-preview-dummy-key">
+          <div class="spell-preview-panel-title">Dummy Arena</div>
+          <div><span class="preview-key caster"></span> Caster</div>
+          <div><span class="preview-key hostile"></span> Hostile target</div>
+        </section>
+
+        <section class="electrical-sfx-lab" aria-labelledby="electricalSfxLabHeading">
+          <div class="spell-preview-panel-title" id="electricalSfxLabHeading">Electrical SFX Laboratory [DEV]</div>
+          <div class="spell-preview-note electrical-sfx-lab-note">
+            Procedural Web Audio test bench. Changes here do not alter production spell audio.
+          </div>
+
+          <label class="spell-preview-field">
+            <span>Voice</span>
+            <select id="electricalLabPreset">
+              <option value="zap">Zap</option>
+              <option value="bolt" selected>Lightning Bolt</option>
+              <option value="heavy">Heavy Lightning</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+
+          <div class="electrical-sfx-lab-actions">
+            <button id="electricalLabPlay" class="pixel-action-button primary" type="button">Play SFX</button>
+            <label class="spell-preview-check electrical-repeat-check">
+              <input id="electricalLabRepeat" type="checkbox">
+              Repeat
+            </label>
+            <select id="electricalLabInterval" aria-label="Electrical SFX repeat interval">
+              <option value="500">0.5 s</option>
+              <option value="1000" selected>1.0 s</option>
+              <option value="2000">2.0 s</option>
+            </select>
+          </div>
+
+          <div class="electrical-sfx-slider-grid">
+            <label><span>Master</span><input id="electricalLabMaster" data-electrical-control type="range" min="0.05" max="1.25" step="0.01"><output data-electrical-output="electricalLabMaster"></output></label>
+            <label><span>Snap</span><input id="electricalLabSnap" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabSnap"></output></label>
+            <label><span>Crackle</span><input id="electricalLabCrackle" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabCrackle"></output></label>
+            <label><span>Sizzle</span><input id="electricalLabSizzle" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabSizzle"></output></label>
+            <label><span>Arc tone</span><input id="electricalLabTone" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabTone"></output></label>
+            <label><span>Low body</span><input id="electricalLabBody" data-electrical-control type="range" min="0" max="1" step="0.01"><output data-electrical-output="electricalLabBody"></output></label>
+            <label><span>Micro-arcs</span><input id="electricalLabCrackles" data-electrical-control type="range" min="1" max="14" step="1"><output data-electrical-output="electricalLabCrackles"></output></label>
+            <label><span>Arc start</span><input id="electricalLabArcStart" data-electrical-control type="range" min="300" max="6000" step="50"><output data-electrical-output="electricalLabArcStart" data-unit=" Hz"></output></label>
+            <label><span>Arc end</span><input id="electricalLabArcEnd" data-electrical-control type="range" min="45" max="1800" step="15"><output data-electrical-output="electricalLabArcEnd" data-unit=" Hz"></output></label>
+            <label><span>Tail</span><input id="electricalLabTailMs" data-electrical-control type="range" min="60" max="1400" step="10"><output data-electrical-output="electricalLabTailMs" data-unit=" ms"></output></label>
+          </div>
+
+          <div id="electricalLabStatus" class="electrical-sfx-lab-status" data-state="ready">
+            Lightning Bolt preset loaded.
+          </div>
+        </section>
+
+        <div id="spellPreviewStatus" class="spell-preview-status">
+          Select a preview-ready spell and press Play.
+        </div>
+      </aside>
+    </main>
+  </div>
+</section>
+
+
+<section id="pixelScreen" class="screen">
+  <div class="pixel-app">
+    <header class="pixel-header chrome">
+      <div>
+        <div class="small">Adventure Party — Asset Tools</div>
+        <h1>Pixel Editor</h1>
+      </div>
+      <button id="pixelReturnButton" class="pixel-return-button" type="button">
+        Return to Launcher [Esc]
+      </button>
+    </header>
+
+    <main class="pixel-main">
+      <aside class="pixel-panel chrome">
+        <h2>Sprite Library</h2>
+        <div id="pixelAssetList" class="pixel-asset-list"></div>
+
+        <h2>Scale Test</h2>
+        <button id="koboldScaleTestButton" class="pixel-action-button kobold-scale-test-button" type="button">
+          Kobold Prone Comparison
+        </button>
+
+        <h2>Tools</h2>
+        <div class="pixel-controls">
+          <div class="pixel-tools">
+            <button id="pixelPencilButton" class="pixel-tool-button active" type="button">Pencil</button>
+            <button id="pixelEraserButton" class="pixel-tool-button" type="button">Eraser</button>
+          </div>
+
+          <div class="pixel-control-row">
+            <label for="pixelPalette">VGA 256 Palette</label>
+            <div class="pixel-selected-color">
+              <div id="pixelSelectedColorSwatch" class="pixel-selected-color-swatch" aria-hidden="true"></div>
+              <div id="pixelSelectedColorLabel" class="pixel-selected-color-label">Selected: #FFCC33</div>
+            </div>
+            <div id="pixelPalette" class="pixel-palette" role="grid" aria-label="VGA 256 color palette"></div>
+          </div>
+
+          <div class="pixel-control-row">
+            <label for="pixelZoom">Zoom</label>
+            <select id="pixelZoom">
+              <option value="5">5×</option>
+              <option value="6">6×</option>
+              <option value="8" selected>8×</option>
+              <option value="10">10×</option>
+              <option value="12">12×</option>
+            </select>
+          </div>
+
+          <div class="pixel-control-row pixel-scale-row">
+            <label for="pixelSourceScale">Source Scale</label>
+            <input id="pixelSourceScale" type="range" min="10" max="300" step="5" value="100">
+            <div id="pixelSourceScaleValue" class="pixel-scale-readout">100%</div>
+            <div class="pixel-mini-actions">
+              <button id="pixelFitScaleButton" class="pixel-action-button" type="button">Fit to 64×64</button>
+              <button id="pixelOriginalScaleButton" class="pixel-action-button" type="button">100% Scale</button>
+            </div>
+          </div>
+
+          <label>
+            <input id="pixelGridToggle" type="checkbox" checked>
+            Show pixel grid
+          </label>
+        </div>
+      </aside>
+
+      <section class="pixel-workspace chrome">
+        <div class="pixel-workspace-bar">
+          <span id="pixelAssetTitle">Sprite</span>
+          <span id="pixelAssetSize">—</span>
+        </div>
+        <div id="pixelCanvasShell" class="pixel-canvas-shell">
+          <canvas id="pixelCanvas" width="400" height="400" aria-label="Pixel art editing grid"></canvas>
+        </div>
+      </section>
+
+      <aside class="pixel-panel chrome">
+        <h2>Preview</h2>
+        <div class="pixel-preview-box">
+          <canvas id="pixelPreview" width="220" height="220"></canvas>
+        </div>
+
+        <div id="pixelStatus" class="pixel-status">Choose a sprite.</div>
+
+        <div class="pixel-actions">
+          <button id="pixelApplyButton" class="pixel-action-button primary" type="button">Apply to Game</button>
+          <button id="pixelSaveButton" class="pixel-action-button" type="button">Save PNG</button>
+          <button id="pixelResetButton" class="pixel-action-button" type="button">Reset to Source</button>
+        </div>
+
+        <section class="pixel-properties-panel" aria-labelledby="pixelPropertiesHeading">
+          <h2 id="pixelPropertiesHeading">Sprite Properties</h2>
+          <div class="pixel-properties-grid">
+            <label>
+              Source W
+              <input id="pixelSourceWidth" type="number" readonly>
+            </label>
+            <label>
+              Source H
+              <input id="pixelSourceHeight" type="number" readonly>
+            </label>
+            <label>
+              Workspace W
+              <input id="pixelWorkspaceWidth" type="number" min="16" max="512" step="1">
+            </label>
+            <label>
+              Workspace H
+              <input id="pixelWorkspaceHeight" type="number" min="16" max="512" step="1">
+            </label>
+            <label>
+              Render W
+              <input id="pixelRenderWidth" type="number" min="1" max="4096" step="1">
+            </label>
+            <label>
+              Render H
+              <input id="pixelRenderHeight" type="number" min="1" max="4096" step="1">
+            </label>
+            <label>
+              Anchor X
+              <input id="pixelAnchorX" type="number" min="0" max="512" step="0.5">
+            </label>
+            <label>
+              Anchor Y
+              <input id="pixelAnchorY" type="number" min="0" max="512" step="0.5">
+            </label>
+            <label class="pixel-properties-wide">
+              Import Scale Mode
+              <select id="pixelScaleMode">
+                <option value="fit">Fit to Workspace</option>
+                <option value="actual">Actual Size</option>
+                <option value="custom">Custom Scale</option>
+              </select>
+            </label>
+            <label class="pixel-property-check">
+              <input id="pixelLockAspect" type="checkbox" checked>
+              Lock render aspect ratio
+            </label>
+          </div>
+          <button id="pixelResizeWorkspaceButton" class="pixel-action-button" type="button">Resize Workspace</button>
+          <div class="pixel-properties-note">
+            Source size is the original PNG. Workspace size is the editable canvas. Render size is the in-game display size. Anchor is the workspace pixel placed on the unit's battlefield origin.
+          </div>
+        </section>
+
+        <section class="pixel-submit-panel" aria-labelledby="pixelSubmitHeading">
+          <h2 id="pixelSubmitHeading">Repository Submission</h2>
+          <div class="pixel-submit-grid">
+            <label>
+              Asset Name
+              <input id="pixelSubmitName" type="text" maxlength="80" placeholder="Sprite name">
+            </label>
+            <label>
+              Category
+              <select id="pixelSubmitCategory">
+                <option value="units">Units</option>
+                <option value="combat-fx">Combat FX</option>
+                <option value="environment">Environment</option>
+                <option value="ui">UI</option>
+                <option value="concept">Reference / Concept</option>
+              </select>
+            </label>
+            <label>
+              Submission Type
+              <select id="pixelSubmitType">
+                <option value="new">New Asset</option>
+                <option value="revision">Revision</option>
+                <option value="replacement">Replacement Asset</option>
+                <option value="reference">Reference / Concept</option>
+              </select>
+            </label>
+            <label>
+              Notes
+              <textarea id="pixelSubmitNotes" maxlength="500" placeholder="What should this sprite be used for?"></textarea>
+            </label>
+            <label>
+              Upload Endpoint
+              <input id="pixelSubmitEndpoint" type="url" placeholder="https://your-worker.example.workers.dev/submit">
+            </label>
+            <label>
+              Upload Key
+              <input id="pixelSubmitKey" type="password" autocomplete="off" placeholder="Private submission key">
+            </label>
+          </div>
+          <div class="pixel-submit-help">
+            The endpoint is saved only in this browser. GitHub credentials are never stored in the game HTML.
+          </div>
+          <button id="pixelSubmitButton" class="pixel-action-button primary" type="button">Send to Repository</button>
+          <button id="pixelDownloadSubmissionButton" class="pixel-action-button" type="button">Save Submission Package</button>
+          <div id="pixelSubmitResult" class="pixel-submit-result">Ready.</div>
+        </section>
+      </aside>
+    </main>
+  </div>
+</section>
+
+<div id="koboldScaleTestOverlay" class="kobold-scale-overlay" aria-hidden="true">
+  <section class="kobold-scale-dialog chrome" role="dialog" aria-modal="true" aria-labelledby="koboldScaleTestTitle">
+    <div class="kobold-scale-dialog-bar">
+      <h2 id="koboldScaleTestTitle">Kobold Prone Scale Test</h2>
+      <button id="koboldScaleTestClose" class="pixel-return-button" type="button">Close</button>
+    </div>
+    <div class="small-note">
+      Live references use the current engine scale. Prone Options 1–5 are 14, 15, 16, 17, and 18 px target heights. Current combat prone size remains 20 px until a choice is made.
+    </div>
+    <div class="kobold-scale-canvas-shell">
+      <canvas id="koboldScaleTestCanvas" width="1180" height="430" aria-label="In-engine Kobold prone sprite size comparison"></canvas>
+    </div>
+  </section>
+</div>
+
+
+
+<section id="combatConditionsScreen" class="screen">
+  <div class="combat-conditions-app">
+    <header class="combat-conditions-header chrome">
+      <div>
+        <div class="small">Adventure Party — Combat Setup</div>
+        <h1>Combat Conditions</h1>
+      </div>
+      <button id="combatConditionsReturnButton" class="pixel-return-button" type="button">
+        Return to Launcher [Esc]
+      </button>
+    </header>
+
+    <main class="combat-conditions-stage chrome">
+      <div class="combat-condition-intro">
+        Choose the battlefield conditions for the Combat System Test.
+      </div>
+
+      <div class="combat-battlefield-row" role="radiogroup" aria-label="Battlefield">
+        <span class="combat-setup-label">Battlefield</span>
+        <button id="conditionGrass" class="combat-condition-choice selected" type="button" data-combat-condition="grass" aria-pressed="true">
+          Grassy Battlefield
+        </button>
+        <button id="conditionWall" class="combat-condition-choice" type="button" data-combat-condition="wall" aria-pressed="false">
+          Wall Test
+        </button>
+      </div>
+
+      <section class="combat-roster-placeholder" aria-label="Future combat roster setup">
+        <div class="combat-roster-row">
+          <span class="combat-setup-label">Player Characters</span>
+          <span id="combatPlayerName" class="combat-roster-current">Dungeon Crawler Carl</span>
+          <button class="combat-roster-add" type="button" disabled>+ ADD — COMING SOON</button>
+        </div>
+        <section class="combat-mob-roster" aria-label="MOB encounter roster">
+          <h2>MOBs</h2>
+          <div id="combatMobRows" class="combat-mob-rows" aria-live="polite"></div>
+          <button id="addCombatMobButton" class="combat-roster-add combat-roster-test" type="button">+ Add MOB</button>
+          <p class="small" id="combatMobRosterHint">No MOBs selected. Add as many friendly or hostile groups as you need.</p>
+        </section>
+      </section>
+
+      <div class="combat-condition-actions">
+        <button id="beginBattleButton" class="combat-condition-begin" type="button">Begin Battle</button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section id="xpLootScreen" class="screen">
+  <div class="xp-loot-app">
+    <header class="xp-loot-header chrome">
+      <div>
+        <div class="small">Adventure Party — Battle Resolution</div>
+        <h1>XP &amp; Loot</h1>
+      </div>
+      <div id="xpLootOutcome" class="small">COMBAT COMPLETE</div>
+    </header>
+
+    <main class="xp-loot-stage chrome">
+      <div id="xpLootIntro" class="xp-loot-intro"></div>
+
+      <div class="xp-loot-summary">
+        <div class="xp-loot-card">
+          <div class="label">XP AWARDED</div>
+          <div id="xpLootXp" class="value">0</div>
+        </div>
+        <div class="xp-loot-card">
+          <div class="label">ENEMIES SLAIN</div>
+          <div id="xpLootSlain" class="value">0</div>
+        </div>
+        <div class="xp-loot-card">
+          <div class="label">ENEMIES FLED</div>
+          <div id="xpLootFled" class="value">0</div>
+        </div>
+      </div>
+
+      <section class="xp-loot-section">
+        <h2>Recovered Equipment</h2>
+        <div id="xpLootItems" class="xp-loot-list"></div>
+      </section>
+
+      <div class="xp-loot-note">
+        Loot is recovered only from slain hostile units. Equipment carried away by fleeing enemies is not included.
+      </div>
+
+      <div class="xp-loot-actions">
+        <button id="xpLootAgainButton" class="xp-loot-button" type="button">Combat Conditions</button>
+        <button id="xpLootLauncherButton" class="xp-loot-button" type="button">Return to Launcher</button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section id="combatScreen" class="screen">
+  <div class="combat-app">
+
+    <header class="combat-header chrome">
+      <div class="combat-brand">
+        <div class="small">Adventure Party — AD&amp;D 2nd Edition Rules Test</div>
+        <h1>Combat System Test</h1>
+      </div>
+      <div class="round-box">
+        <div id="roundLabel">ROUND 1</div>
+        <div id="initiativeLabel">INITIATIVE —</div>
+        <div id="battlefieldFontSize" role="status" aria-live="polite" title="Minus reduces text; plus or equals enlarges it. Keypad supported.">TEXT 100% [− / +]</div>
+      </div>
+    </header>
+
+    <section class="combat-main">
+
+      <div class="battle-wrap chrome">
+        <canvas id="battlefield" width="1080" height="600" aria-label="Isometric hex tactical combat battlefield"></canvas>
+        <div id="turnBanner" class="turn-banner">INITIALIZING</div>
+
+        <div id="resultOverlay" class="overlay">
+          <div class="result-box chrome">
+            <h2 id="resultTitle">Victory</h2>
+            <p id="resultText"></p>
+            <button id="restartButton" type="button">Restart Combat [R]</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <section class="panel chrome unit-info-panel">
+          <div id="unitInfoName" class="unit-info-name">—</div>
+          <div id="unitInfoMode" class="unit-info-mode" hidden></div>
+          <div id="unitInfoRows" class="kv"></div>
+          <div id="unitInfoEffects" class="unit-effects" hidden></div>
+          <div id="unitInfoAbilities" class="abilities" hidden aria-hidden="true"></div>
+        </section></aside>
+
+    </section>
+
+    <section class="combat-log-panel chrome">
+      <div class="dice-box">
+        <h2>Last Resolution</h2>
+        <div id="lastRoll">No roll yet.</div>
+      </div>
+      <div id="combatLog" aria-live="polite"></div>
+    </section>
+
+    <footer class="commands chrome">
+      <span id="movementCommand" class="command active"><strong>E W / S D / Z X</strong> HEX MOVE</span>
+      <button id="aimButton" class="combat-action" type="button" aria-label="Aim, shortcut A"><span class="shortcut-key">A</span>IM</button>
+      <button id="aimCenterButton" class="combat-action" type="button" aria-label="Center camera on current aim hex" hidden>CENTER</button>
+      <button id="waitButton" class="combat-action" type="button">WAIT</button>
+      <button id="openDoorButton" class="combat-action" type="button" hidden onclick="tryExplorationOpenDoor()" title="Open an adjacent door for one movement point; shortcut O">OPEN DOOR [O] · 1 MP</button>
+      <button id="doorCrossingButton" class="combat-action" type="button" hidden onclick="void tryExplorationDoorCrossing()" title="Cross an open doorway for two movement points; shortcut F">THROUGH DOOR [F] · 2 MP</button>
+        <button id="guardButton" class="combat-action" type="button" aria-label="Guard, shortcut G"><span class="shortcut-key">G</span>UARD</button>
+      <button id="quickButton" class="combat-action" type="button" aria-label="Quick Command: Q for active unit, Ctrl+Q for all friendly units" title="Q: active unit; Ctrl+Q: all friendly units; Escape: end Quick"><span class="shortcut-key">Q</span>UICK COMMAND</button>
+      <button id="castButton" class="combat-action" type="button" title="Combat-test spell harness; does not change Carl's Fighter class.">CAST</button>
+      <button id="inventoryButton" class="combat-action" type="button" aria-label="Inventory, shortcut I"><span class="shortcut-key">I</span>NVENTORY</button>
+      <button id="sheetButton" class="combat-action" type="button" aria-label="Character, shortcut C"><span class="shortcut-key">C</span>HARACTER</button>
+      <button id="doneButton" class="combat-action" type="button" aria-label="Done, shortcut Space"><span class="shortcut-key">SPACE</span> DONE</button>
+      <button id="weatherTypeButton" class="combat-action weather-test-control" type="button" title="Testing control: cycle battlefield weather">WX: CLEAR</button>
+      <button id="weatherSeverityButton" class="combat-action weather-test-control" type="button" title="Testing control: cycle weather severity">SEV: LIGHT</button>
+      <span class="spacer"></span>
+      <button id="returnButton" class="return-button" type="button">ESC — RETURN TO LAUNCHER</button>
+    </footer>
+
+    <!-- Audio diagnostics remain internal but are no longer part of the combat command bar. -->
+    <span id="sfxStatus" class="command locked" hidden><strong>SFX</strong> LOCKED</span>
+    <button id="testSfxButton" class="sfx-test" type="button" hidden>TEST SFX</button>
+
+  </div>
+
+  <div id="classOverlay" class="class-overlay">
+    <section class="class-report chrome" aria-label="Fighter class report">
+      <h2>Fighter Class Report</h2>
+      <div class="sub">Fighter-specific rules and progression. These class abilities are intentionally separate from the core combat and battlefield rule lists.</div>
+      <div id="classSummary" class="class-summary"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Lvl</th>
+            <th>XP</th>
+            <th>THAC0</th>
+            <th>Hit Dice / Fixed HP</th>
+            <th>Attacks</th>
+            <th>WP</th>
+            <th>NWP</th>
+            <th>Gained / changed at this level</th>
+          </tr>
+        </thead>
+        <tbody id="classTableBody"></tbody>
+      </table>
+      <div class="sub" style="margin-top:10px">
+        Fighter specialization is implemented as a class capability but is not automatically assigned. Sweep is automatic only when the Fighter begins a qualifying melee attack while equipped with a weapon capable of a Slashing (S) attack; Piercing-only, Bludgeoning-only, missile, and unarmed attacks do not Sweep.
+      </div>
+      <div class="report-actions">
+        <button id="closeClassButton" class="combat-action" type="button">CLOSE [ESC]</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="sheetOverlay" class="sheet-overlay">
+    <section class="character-sheet chrome" aria-label="Character sheet">
+      <h2>Character Sheet</h2>
+      <div id="sheetSubtitle" class="sub">Adventure Party — AD&amp;D 2nd Edition</div>
+
+      <div class="sheet-grid">
+        <section class="sheet-section">
+          <h3>Identity &amp; Class</h3>
+          <div id="sheetIdentity" class="sheet-kv"></div>
+        </section>
+
+        <section class="sheet-section">
+          <h3>Combat</h3>
+          <div id="sheetCombat" class="sheet-kv"></div>
+        </section>
+
+        <section class="sheet-section">
+          <h3>Abilities</h3>
+          <div id="sheetAbilities" class="sheet-ability-rows"></div>
+        </section>
+
+        <section class="sheet-section">
+          <h3>Saving Throws</h3>
+          <div id="sheetSaves" class="sheet-kv"></div>
+        </section>
+
+        <section class="sheet-section">
+          <h3>Proficiencies &amp; Class Abilities</h3>
+          <div id="sheetTraining" class="sheet-list"></div>
+        </section>
+
+        <section class="sheet-section">
+          <h3>Magic</h3>
+          <div id="sheetMagic" class="sheet-list"></div>
+        </section>
+
+        <section class="sheet-section">
+          <h3>Status</h3>
+          <div id="sheetStatus" class="sheet-kv"></div>
+        </section>
+      </div>
+
+      <div class="sheet-actions">
+        <button id="closeSheetButton" class="combat-action" type="button">CLOSE [C / ESC]</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="inventoryOverlay" class="sheet-overlay" role="dialog" aria-modal="true" aria-label="Inventory" aria-hidden="true">
+    <section class="character-sheet chrome inventory-window" aria-label="Combat inventory">
+      <h2 id="inventoryTitle">ITEMS</h2>
+      <div class="sub" id="inventorySubtitle">Inventory</div>
+      <div class="inventory-columns" aria-hidden="true"><span>READY</span><span>ITEM</span></div>
+      <div id="inventoryList" class="inventory-list"></div>
+      <div class="sheet-actions">
+        <button id="closeInventoryButton" class="combat-action" type="button">CLOSE [I / ESC]</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="spellCastOverlay" class="sheet-overlay">
+    <section class="character-sheet spell-cast-picker chrome" aria-label="Combat test spell casting">
+      <h2>Cast Spell</h2>
+      <div id="spellCastSubtitle" class="sub">
+        Combat-test harness — caster level 6. This does not grant Dungeon Crawler Carl wizard class abilities.
+      </div>
+      <div id="spellCastList" class="spell-cast-list"></div>
+      <div class="sheet-actions">
+        <button id="closeSpellCastButton" class="combat-action" type="button">CLOSE [ESC]</button>
+      </div>
+    </section>
+  </div>
+</section>
+
+<script src="js/priest-spells.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+  <script src="js/repository-mobs.mjs?v=R238C204" type="text/plain" data-game-script="module"></script>
+<script src="js/adventure-party.js?v=R238C231" type="text/plain" data-game-script="classic"></script>
+<script src="js/los-wall-boundary-fix.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/obscuring-volume-los.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r218-presentation-audio.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r219-combat-presentation.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r220-mob-hazard-awareness.js?v=R238C228" type="text/plain" data-game-script="classic"></script>
+<script src="js/r221-prone-cloud-shapes.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r222-perception-darkness-volume.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r223-los-cloud-aim-effects.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r224-hypnotic-pattern-vfx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r225-universal-por-cast-sfx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+
+<script src="js/r226-level3-catalog.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-helpers.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-systems.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-casts-a.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-casts-b.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-casts-c.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-casts-d.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-dispatch.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-vfx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r227-minute-meteors-core.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r227-minute-meteors-flight.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r227-minute-meteors-resolve.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r227-minute-meteors-hooks.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r227-minute-meteors-ui.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r228-minute-meteor-remainder.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r229-minute-meteor-cast-unlock.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r230-casting-time-core.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r230-casting-time-hooks.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r231-target-at-completion-core.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r231-target-at-completion-hooks.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r232-lightning-reflection-core.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r232-lightning-reflection-cast.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r233-spell-presentation-core.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r233-attack-spell-results.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r233-multi-result-damage.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r233-minute-meteor-illumination.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r233-lightning-result-pacing.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r234-binary-hidden-los.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r235-spell-interruption-notice.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/r236-floating-combat-text.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-aoe-aim-preview-audit.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-combat-beat-sequence.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-casting-interrupted-float.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-outdoor-los-visibility-mask.js?v=R238C214" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-spell-previewer.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev6-gaseous-clouds.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev7-gaseous-clouds.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev8-cloud-tufts.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev9-cloud-union-outline.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev10-dqk-sfx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev12-electrical-sfx-lab.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev14-production-dbm-lightning.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev15-lightning-review-fixes.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev16-elemental-damage-presentation.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+
+<script src="js/candidate-rev31-shocking-grasp-fx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev36-magic-missile-volley.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev38-placeholder-spell-sfx-grease-vfx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/candidate-rev39-replace-default-spell-sfx.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
+<script src="js/sprite-set-runtime.mjs?v=R238C202" type="text/plain" data-game-script="module"></script>
+<script src="js/exploration-combat-hooks.js?v=R238C232" type="text/plain" data-game-script="classic"></script>
+<script type="module" src="js/game-script-loader.mjs?v=R238C213"></script>
+</body>
+</html>
