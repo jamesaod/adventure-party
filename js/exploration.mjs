@@ -3,8 +3,8 @@ import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEI
 import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C211';
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C211';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C211';
-import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C229';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C229';
+import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C230';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C230';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const EYE=SCENE_STYLE.eyeMetres,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;

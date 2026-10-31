@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {terrainForEncounter,doorwayCrossings,closedDoorsInReach,combatDoorPresentation} from '../js/exploration-encounters.mjs';
+import {terrainForEncounter,doorwayCrossings,closedDoorsInReach,combatDoorPresentation,combatDoorFrame} from '../js/exploration-encounters.mjs';
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const names=['worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','isArchitecturalBlockedHex','architecturalWallBlocksWorldLine','architecturalWallBlocksStep'];
 const functions=names.map(name=>{const start=source.indexOf(`function ${name}(`),end=source.indexOf('\nfunction ',start+1);return source.slice(start,end);}).join('\n');
@@ -82,3 +82,13 @@ for(const axis of ['x','z']){
  }
 }
 console.log('PASS production door opening cost/threshold, pause/turn guards, saved state, immediate collision/LOS rebuild, both axes and readable doubled-width cutaways');
+
+for(const axis of ['x','z']){
+ const terrain={cellW:128,cellH:72},door={axis,center:{x:200,y:200}},closed=combatDoorPresentation({...door,open:false},terrain),opened=combatDoorPresentation({...door,open:true},terrain),frame=combatDoorFrame(door,terrain);
+ assert.deepEqual(opened.base,closed.base,'The open leaf must share the exact grounded closed-door hinge on '+axis);
+ assert.deepEqual(frame.hinge,opened.base,'The masonry jamb must meet the leaf hinge');
+ const area=points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p.x*q.y-q.x*p.y;},0)/2);
+ assert(frame.polygons.every(p=>area(p)>0),'Piers and lintel must be solid surfaces, including the edge-on cutaway');
+ assert.equal(frame.polygons.length,3);
+}
+console.log('PASS solid masonry frame polygons and identical grounded hinge anchors in closed/open states on both axes');
