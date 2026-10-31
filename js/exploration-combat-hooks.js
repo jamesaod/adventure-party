@@ -150,7 +150,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C220');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C224');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -171,25 +171,3 @@ async function startExplorationCombat(){
   }catch(error){console.error(error);heading.textContent='Encounter could not start';status.textContent=error.message;retry.hidden=false;}
 }
 void startExplorationCombat();
-
-// Merge adjacent visible caps into row spans: one fill, no internal outlines.
-function explorationWallCapSpans(visibleWalls){
-  const ids=new Set(visibleWalls.map(w=>w.id)),spans=[];
-  for(const block of explorationTerrain.solidBlocks||[]){
-    if(!block.wallIds.some(id=>ids.has(id)))continue;
-    const previous=spans[spans.length-1];
-    if(previous&&previous.z===block.z&&previous.lastX+1===block.x){
-      previous.lastX=block.x;previous.polygon[1]=block.polygon[1];previous.polygon[2]=block.polygon[2];
-    }else spans.push({z:block.z,lastX:block.x,height:block.height,polygon:block.polygon.map(p=>({...p}))});
-  }
-  return spans;
-}
-function drawExplorationWallCap(span){
-  const points=span.polygon.map(p=>screenPointForWorld(p,span.height));
-  ctx.save();
-  const tile=explorationMaterialTile(explorationWallImage),pattern=tile?ctx.createPattern(tile,'repeat'):null;
-  if(pattern){const origin=screenPointForWorld({x:0,y:0},span.height);pattern.setTransform(new DOMMatrix([explorationTerrain.cellW/tile.width,0,0,explorationTerrain.cellH/tile.height,origin.x,origin.y]));}
-  ctx.fillStyle=pattern||'#81796b';
-  if(tracePolygonOnContext(ctx,points))ctx.fill();
-  ctx.restore();
-}

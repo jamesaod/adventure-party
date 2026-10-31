@@ -30248,11 +30248,6 @@ function draw(){
     });
   }
 
-  if(explorationTerrain)for(const span of explorationWallCapSpans(sceneWalls)){
-    const front=screenPointForWorld(span.polygon[2]);
-    actors.push({sortY:front.y+0.26,sortX:front.x,fn:()=>drawExplorationWallCap(span)});
-  }
-
   for(const tree of treeDecorations){
     const c=hexCenter(tree.x,tree.y);
     const sortOffset=tree.occupied

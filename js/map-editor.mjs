@@ -1,5 +1,5 @@
 import {FACINGS} from './exploration-core.mjs?v=R238C211';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps,resizeMap} from './exploration-authoring.mjs?v=R238C220';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps,resizeMap} from './exploration-authoring.mjs?v=R238C224';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let pack,mapId,selected={x:2,z:13},tool='select',dirty=false,history=[],painting=false,stroke=new Set();
