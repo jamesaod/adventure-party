@@ -104,3 +104,7 @@ See docs/EXPLORATION_TEST.md for the standalone 16 x 16 exploration prototype. P
 ## Candidate Rev 209
 
 See docs/EXPLORATION_EDITOR.md for map authoring. Keep design packs separate from test/campaign state and preserve named entrance/exit references.
+
+## Candidate Rev 227 - shared scene presentation
+
+Read docs/SHARED_SCENE_STYLE.md (or SHARED_SCENE_STYLE.md from docs) before changing exploration/combat materials, lighting or projected objects. Six wall courses and four floor slabs are shared authored values. Keep 1:2 tactical footprints separate from 35px wall height and aspect-preserving door/window artwork. The profile supplies ambient, torches and party lantern to both adapters.

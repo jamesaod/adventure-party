@@ -1,4 +1,4 @@
-import {HANDOFF_KEY,progressKey,readProgress,encounterAt} from './exploration-encounters.mjs?v=R238C225';
+import {HANDOFF_KEY,progressKey,readProgress,encounterAt} from './exploration-encounters.mjs?v=R238C227';
 export function createEncounterClient(map,context){
   const storage=context?sessionStorage:localStorage;
   const scope=JSON.stringify([context?.id||'published',map.id,map.grid,map.encounters||[]]);

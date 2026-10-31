@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import * as sceneApi from '../js/exploration-encounters.mjs';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfunction flashAttack('));
@@ -32,7 +33,7 @@ console.log('PASS exploration floor masking precedes single unit pass; ordinary 
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const paths=[],reductions=[],fills=[];
 const maskContext={clearRect(){},fillRect(){fills.push(this.fillStyle);},fill(){}};
-const context={Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
+const context={explorationEncounterApi:sceneApi,Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
   friendlyVisibilityObservers:()=>[{x:0,y:0}],observerVisibilityContext:()=>({polygon:[{x:0,y:0},{x:100,y:0},{x:100,y:100},{x:0,y:100}]}),
   screenPointForWorld:(p,elevation=0)=>{assert.equal(elevation,0,'Polygon indices must not become vertex heights');return p;},tracePolygonOnContext:(_ctx,p)=>{paths.push(p);return true;},hasActiveObscuringLosVolume:()=>false,
   visibleHexes:()=>{throw Error('Architectural floor visibility must not use hex centers');},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,ctx:{drawImage(){}}};
@@ -73,23 +74,29 @@ assert(terrain.walls.every(w=>w.height===35&&w.thickness===3));
 assert(!hooks.includes('createCombatScenery('),'Combat must use compact walls instead of full-height scenery');
 console.log('PASS compact combat wall dimensions and shared exploration door geometry');
 
-const lightCalls=[];
-Object.assign(context,{illuminationSources:()=>[{x:1,y:2,radiusHexes:3}],wallTestVisibilityPolygonWorld:(source,mode)=>{assert.equal(mode,'light');return [{x:0,y:0},{x:10,y:0},{x:0,y:10}];},hexCenter:()=>({x:64,y:63}),HEX_W:64,HEX_ROW:31.5,
-ctx:{save(){},restore(){},clip(){lightCalls.push('clip');},translate(){},scale(x,y){assert(y<1);},createRadialGradient(){return {addColorStop(){}};},fillRect(){lightCalls.push('fill');}}});
-context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['clip','fill']);
-console.log('PASS opaque unseen floor and projected torch falloff clipped to light-blocking walls');
+const lightCalls=[],uploads=[];
+Object.assign(context,{explorationEncounter:{map,origin:{x:3,z:6},openDoors:['3,7'],scope:'qa'},explorationTerrain:terrain,game:{player:{x:0,y:0}},worldPointForHex:(x,y)=>({x:x*64+y*32,y:y*31.5}),illuminationSources:()=>[],HEX_W:64,
+  BATTLEFIELD_LOGICAL_WIDTH:12,BATTLEFIELD_LOGICAL_HEIGHT:12,
+  document:{createElement:()=>({width:0,height:0,getContext(){return {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData:image=>uploads.push(image),drawImage(){}};}})},
+  ctx:{save(){},restore(){},drawImage(){lightCalls.push(this.globalCompositeOperation);}}});
+context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['multiply','color-dodge']);assert.equal(uploads.length,2);
+context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Static lights/camera reuse their exposure map');
+context.game.player.x=1;context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Party lantern movement invalidates the exposure map');
+context.screenPointForWorld=(p,elevation=0)=>{assert.equal(elevation,0);return {x:p.x+100,y:p.y+50};};
+context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Camera pans move the world-anchored exposure map without rebaking it');
+context.screenPointForWorld=(p,elevation=0)=>{assert.equal(elevation,0);return p;};
+console.log('PASS shared hemisphere/torch/lantern exposure preserves material contrast and caches static lighting');
 
-// Compact walls retain physical material scale instead of crushing six courses
-// into a short face; wall segments share a world-anchored horizontal repeat.
+// Compact walls show six authored brick courses across their full face; wall segments share a world-anchored horizontal repeat.
 const transforms=[];
 Object.assign(context,{explorationTerrain:{cellW:128,cellH:128*31.5/64/(Math.sqrt(3)/2)},DOMMatrix:class{constructor(values){transforms.push(values);}},ctx:{createPattern(){return {setTransform(){}};}}});
 vm.runInContext('explorationFloorImage.complete=explorationWallImage.complete=true;explorationFloorImage.naturalWidth=explorationWallImage.naturalWidth=512;explorationFloorImage.naturalHeight=explorationWallImage.naturalHeight=512;explorationFloorImage.width=explorationWallImage.width=512;explorationFloorImage.height=explorationWallImage.height=512;',context);
 const patternTarget={createPattern(){return {setTransform(){}};}};
 context.explorationFloorPatternForView();context.explorationWallPattern(patternTarget,{a:{x:128,y:64}},35);
 const floorTransform=transforms[0],wallTransform=transforms[1];
-assert.equal(floorTransform[0]*512,128);
-assert(Math.abs(wallTransform[3]*512-128*3.5/3)<1e-8,'Wall material uses exploration width/height proportions');
-assert(wallTransform[3]*512>35,'Compact geometry crops material vertically rather than squashing it');
+assert.equal(floorTransform[0]*128,128);
+assert.equal(wallTransform[3],1,'Wall source is filtered to its 35px displayed height');
+assert.equal(sceneApi.materialMetrics(terrain,35).wallHeight,35,'Six source rows occupy the full compact face');
 context.explorationWallPattern(patternTarget,{a:{x:256,y:64}},35);
 assert.equal(transforms[2][4],wallTransform[4],'Adjacent wall faces keep a continuous horizontal texture phase');
-console.log('PASS detailed material cache and world-anchored floor/wall repeats preserve exploration material proportions at fixed wall height');
+console.log('PASS anisotropic filtering, four floor slabs per exploration square and six world-anchored wall rows at fixed wall height');

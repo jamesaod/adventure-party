@@ -36,7 +36,7 @@ const activeSources=[...html.matchAll(/<script\b([^>]*src="[^"]+"[^>]*)>/g)]
 assert.equal(activeSources.length,1,'No game script can bypass ordered startup');
 assert.ok(activeSources[0][1].includes('js/game-script-loader.mjs'));
 for(const entry of entries){
-  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189|190|191|192|194|195|196|197|198|199|200|201|202|203|204|205|206|209|210|211|212|213|214|215|216|217|218|219|220|224|225|226)$/,'Refresh the former shared R238 script cache');
+  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189|190|191|192|194|195|196|197|198|199|200|201|202|203|204|205|206|209|210|211|212|213|214|215|216|217|218|219|220|224|225|226|227)$/,'Refresh the former shared R238 script cache');
   if(entry.type==='classic')new vm.Script(read(pathOf(entry)),{filename:pathOf(entry)});
 }
 

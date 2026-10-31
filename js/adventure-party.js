@@ -6200,10 +6200,10 @@ function drawArchitecturalFloorRegions(){
       multiplicative ambient tint that retains source stone contrast.
     */
     ctx.clip();
-    ctx.globalAlpha=explorationTerrain?0.32:0.10;
-    if(explorationTerrain)ctx.globalCompositeOperation="multiply";
-    ctx.fillStyle=explorationTerrain?"#b18c5c":"#9a9ca2";
-    ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
+    if(!explorationTerrain){
+      ctx.globalAlpha=0.10;ctx.fillStyle="#9a9ca2";
+      ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
+    }
 
     ctx.restore();
   }
@@ -6950,12 +6950,9 @@ function drawArchitecturalWallSegment(wall){
     }
   }
 
-  // Warm ambient shading is confined to the painted wall pixels, preserving
-  // transparency around compact faces and the original depth/LOS geometry.
   if(wall.material==="exploration-stone"){
-    lctx.save();lctx.globalCompositeOperation="source-atop";
-    lctx.fillStyle="rgba(72,49,25,0.32)";
-    lctx.fillRect(0,0,layer.width,layer.height);lctx.restore();
+    drawExplorationDoorFace(lctx,wall,height);
+    shadeExplorationWall(lctx,wall,height,thickness);
   }
 
   /*
@@ -6963,7 +6960,7 @@ function drawArchitecturalWallSegment(wall){
     each contribution paints only the half-thickness face on the same side of
     the wall centerline as its source. The opposite face remains unchanged.
   */
-  const lightContributions=architecturalWallLightContributions(wall);
+  const lightContributions=wall.material==="exploration-stone"?[]:architecturalWallLightContributions(wall);
   const visibleFaceSide=architecturalVisibleWallFaceSide(wall);
 
   for(const contribution of lightContributions){
@@ -6980,7 +6977,7 @@ function drawArchitecturalWallSegment(wall){
     }
     const source=contribution.source;
     const sourceScreen=hexCenter(source.x,source.y);
-    const sourceLift=source.sourceKind==="unit" ? 20 : wall.material==="exploration-stone"&&source.sourceKind==="torch" ? 26 : 5;
+    const sourceLift=source.sourceKind==="unit" ? 20 : 5;
     const radiusPx=
       (Math.max(1,Number(source.radiusHexes)||1)+0.55)*HEX_W;
     const color=source.color || [255,244,188];
@@ -6989,7 +6986,7 @@ function drawArchitecturalWallSegment(wall){
       Terrain/floor illumination is intentionally unchanged.
     */
     const strength=
-      Math.max(0,Math.min(1.35,contribution.intensity))*(wall.material==="exploration-stone"?0.65:0.25);
+      Math.max(0,Math.min(1.35,contribution.intensity))*0.25;
 
     const gradient=lctx.createRadialGradient(
       sourceScreen.x,
@@ -7021,7 +7018,7 @@ function drawArchitecturalWallSegment(wall){
     const offsetY=normal.y*side*faceOffset;
 
     lctx.save();
-    lctx.globalCompositeOperation=wall.material==="exploration-stone"?"soft-light":"lighter";
+    lctx.globalCompositeOperation="lighter";
     lctx.strokeStyle=gradient;
     lctx.lineWidth=faceWidth;
 

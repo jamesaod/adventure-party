@@ -213,4 +213,6 @@ jobs:
         run: node scripts/test-exploration-startup.mjs
 
       - name: Exploration combat rendering
-        run: node scripts/test-exploration-rendering.mjs
+        run: |
+          node scripts/test-exploration-rendering.mjs
+          node scripts/test-exploration-scene-style.mjs
