@@ -219,3 +219,4 @@ jobs:
           node scripts/test-doorway-movement.mjs
           node scripts/test-exploration-edges.mjs
           node scripts/test-exploration-combat-bounds.mjs
+          node scripts/test-combat-visibility-performance.mjs

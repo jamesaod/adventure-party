@@ -2,7 +2,7 @@ import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} fr
 export {upgradeEdgeMap,paintEdge};
 import {validateMap,cellKey} from './exploration-core.mjs?v=R238C232';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C233';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C234';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);

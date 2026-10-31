@@ -1,6 +1,6 @@
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
-import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C232';
-export * from './exploration-scene-style.mjs?v=R238C232';
+import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C234';
+export * from './exploration-scene-style.mjs?v=R238C234';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}

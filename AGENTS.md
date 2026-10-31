@@ -128,3 +128,5 @@ Exploration map v2 uses floor/void cells and canonical shared h/v wall edges in 
 Rev 232 halves default/migrated edge door apertures to 42% of an edge. doorWidthVersion=2 prevents repeated migration; windows are unchanged. Both views and collision still share the authored width.
 
 Rev 233: edge-map combat imports the full authored map, with skew-aware dynamic axial bounds. Never restore the old five-square entry crop for v2 maps. Blocked-hex rebuilding scans segment-local candidates and retains the existing collision oracle. Floor lighting bakes only around the viewport. Legacy v1 encounters retain their earlier crop.
+
+Rev 234: visibility polygons cache by observer position, camera bounds, mode and wall-array identity. Explicit terrain rebuild clears the caches. Light/movement LOS uses a mode-specific segment grid; visibility rays traverse indexed buckets with the same intersection resolver. Preserve exact geometry/mode behavior. Floor lighting samples at 12 screen pixels; material filtering is unchanged. See test-combat-visibility-performance.mjs.
