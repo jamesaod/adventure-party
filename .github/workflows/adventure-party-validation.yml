@@ -217,6 +217,7 @@ jobs:
           node scripts/test-exploration-rendering.mjs
           node scripts/test-exploration-scene-style.mjs
           node scripts/test-doorway-movement.mjs
+          node scripts/test-doorway-navigation.mjs
           node scripts/test-exploration-edges.mjs
           node scripts/test-exploration-combat-bounds.mjs
           node scripts/test-combat-visibility-performance.mjs

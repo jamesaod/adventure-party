@@ -5865,6 +5865,10 @@ function wallOpeningPassesMode(opening,mode){
 
 function wallBlockingSubsegments(wall,mode="movement"){
   if(!wall) return [];
+  if(mode==='movement'&&wall.doorwayJamb){
+    const dx=wall.b.x-wall.a.x,dy=wall.b.y-wall.a.y,length=Math.hypot(dx,dy)||1,start=wall.doorwayTrimStart||0,end=wall.doorwayTrimEnd||0;
+    wall={...wall,a:{x:wall.a.x+dx*start/length,y:wall.a.y+dy*start/length},b:{x:wall.b.x-dx*end/length,y:wall.b.y-dy*end/length}};
+  }
 
   const sightLike=
     mode==="los" ||
@@ -5953,6 +5957,9 @@ function wallBlockingSubsegments(wall,mode="movement"){
 function wallSegmentCutsHexInterior(wall,x,y){
   if(!wall?.blocksMovement) return false;
 
+  // Open door jambs use portal centerline clearance. Expanding their ends
+  // into whole blocked hex cores can seal a narrow opening between hex rows.
+  if(wall.doorwayJamb)return pointOnSegment(wall.a,wall.b,worldPointForHex(x,y));
   const vertices=architecturalHexCoreVertices(x,y);
 
   if(
@@ -19521,8 +19528,7 @@ async function performLeavingHexFreeAttacks(mover,destination){
   );
 }
 
-async function tryPlayerMove(dx,dy,{doorCrossing=null}={}){
-  if(typeof explorationDoorCrossingBusy!=="undefined"&&explorationDoorCrossingBusy&&!doorCrossing)return;
+async function tryPlayerMove(dx,dy){
   const p=activePlayerControlledUnit();
   if(
     game.over || !p || game.active!==p.id || !p.alive ||
@@ -19532,16 +19538,12 @@ async function tryPlayerMove(dx,dy,{doorCrossing=null}={}){
 
   const nx=p.x+dx;
   const ny=p.y+dy;
-  const moveCost=doorCrossing?2:1;
-  if(doorCrossing&&!explorationDoorRoutes(p).some(route=>route.doorId===doorCrossing.doorId&&route.to.x===nx&&route.to.y===ny)){
-    log("That doorway crossing is no longer available.","system");return;
-  }
+  const moveCost=1;
 
   if(isWall(nx,ny) || architecturalWallBlocksStep(p,{x:nx,y:ny})){ log("Movement blocked by wall.","system"); return; }
 
   const enemy=enemyAtHex(nx,ny);
   if(enemy){
-    if(doorCrossing){log("The doorway landing is occupied.","system");return;}
     if(p.fullMove){ log("A full move forfeits the melee attack this round.","system"); return; }
     if(p.turnMoves>p.halfMove){ log("You have moved too far to attack this round.","system"); return; }
 
@@ -19589,7 +19591,7 @@ async function tryPlayerMove(dx,dy,{doorCrossing=null}={}){
   p.x=nx; p.y=ny; p.turnMoves+=moveCost;
   maybeRecenterCamera(p);
   playMoveSound();
-  log(`${p.name} ${doorCrossing?"crosses the doorway (2 movement points) to":"moves to"} hex ${nx},${ny} (${p.turnMoves}/${maxMove}).`);
+  log(`${p.name} moves to hex ${nx},${ny} (${p.turnMoves}/${maxMove}).`);
   updateUi(); draw();
 
   const areaResult=await resolvePersistentAreaMovementStep(p);
@@ -26233,11 +26235,14 @@ function updateUi(){
     !freeStrikeInProgress && !!activePc && game.active===activePc.id;
 
   const openDoorButton=document.getElementById('openDoorButton');
-  if(openDoorButton){openDoorButton.hidden=!explorationTerrain;openDoorButton.disabled=!explorationTerrain||!explorationDoorOpeningAllowed(activePc)||!activePc||activePc.turnMoves+1>activePc.move||explorationClosedDoors(activePc).length!==1;}
-  const crossingButton=document.getElementById('doorCrossingButton');
-  if(crossingButton){
-    crossingButton.hidden=!explorationTerrain;
-    crossingButton.disabled=!explorationTerrain||!playerCanAct||aimMode||spellCastInProgress||sweepInProgress||mobGuardReactionInProgress||explorationDoorCrossingBusy||activePc.turnMoves+2>activePc.move||!explorationDoorRoutes(activePc).length;
+  if(openDoorButton){
+    openDoorButton.hidden=!explorationTerrain;
+    if(explorationTerrain){
+      const nearby=explorationReachableDoors(activePc),door=nearby.length===1?nearby[0]:null,occupied=door?.open&&explorationDoorOccupied(door);
+      openDoorButton.textContent=`${door?(door.open?'CLOSE':'OPEN'):'OPEN / CLOSE'} DOOR [O/F] · 1 MP`;
+      openDoorButton.title=occupied?'Cannot close: a unit occupies the doorway.':'Open or close an adjacent door for one movement point; O or F';
+      openDoorButton.disabled=!explorationDoorOpeningAllowed(activePc)||!activePc||activePc.turnMoves+1>activePc.move||!door||occupied;
+    }
   }
   const spellTargeting=isSpellTargetingMode();
   const aimOnly=aimMode && !spellTargeting;
@@ -30767,8 +30772,8 @@ function handleCombatKey(event){
 
   if(game && game.over) return;
 
-  if(keyLower==="o"&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)tryExplorationOpenDoor();return;}
-  if(keyLower==="f"&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)void tryExplorationDoorCrossing();return;}
+  if((keyLower==="o"||keyLower==="f")&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)tryExplorationToggleDoor();return;}
+
 
   const dir=directions[code] || arrowAliases[event.key];
 
