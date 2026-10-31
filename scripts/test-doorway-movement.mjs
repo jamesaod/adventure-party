@@ -25,50 +25,40 @@ assert.deepEqual(doorwayCrossings(open.terrain,back,open.stand,open.blocked)[0].
 assert.equal(doorwayCrossings(open.terrain,front,()=>false,open.blocked).length,0,'Occupied or oversized landings must not be bypassed');
 assert.equal(doorwayCrossings(open.terrain,front,open.stand,()=>true).length,0,'A crossing cannot skip another wall');
 
-const player={id:'player',alive:true,x:front.x,y:front.y,turnMoves:0,halfMove:5,move:10,fullMove:false};
+
+const player={id:'player',alive:true,...front,turnMoves:0,halfMove:5,move:10,fullMove:false};
 const calls=[],logs=[],noop=()=>{};
-const env={game:{active:'player',over:false},activePlayerControlledUnit:()=>player,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,explorationDoorCrossingBusy:false,isCombatActionPauseActive:()=>false,
- explorationDoorRoutes:()=>routes,isWall:()=>false,architecturalWallBlocksStep:()=>false,enemyAtHex:()=>null,occupiedByAnyUnit:()=>false,unitTransitionBlocked:()=>false,
+const env={game:{active:'player',over:false},activePlayerControlledUnit:()=>player,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,isCombatActionPauseActive:()=>false,
+ isWall:()=>false,architecturalWallBlocksStep:()=>false,enemyAtHex:()=>null,occupiedByAnyUnit:()=>false,unitTransitionBlocked:()=>false,
  log:m=>logs.push(m),performLeavingHexFreeAttacks:async()=>{calls.push('leave');return true;},updateFacingForStep:noop,setUnitActionBanner:noop,maybeRecenterCamera:noop,playMoveSound:noop,updateUi:noop,draw:noop,
  resolvePersistentAreaMovementStep:async()=>{calls.push('area');return {haltMovement:false};},triggerMobGuardsAgainst:async()=>calls.push('guard'),endTurn:noop};
 vm.createContext(env);const start=source.indexOf('async function tryPlayerMove('),end=source.indexOf('\nasync function playerAttackKey(',start);vm.runInContext(source.slice(start,end),env);
-await env.tryPlayerMove(1,-2,{doorCrossing:routes[0]});assert.equal(player.turnMoves,2);assert.equal(player.x,back.x);assert.equal(player.y,back.y);assert.deepEqual(calls,['leave','area','guard']);
-Object.assign(player,{...front,turnMoves:4,move:5,fullMove:true});await env.tryPlayerMove(1,-2,{doorCrossing:routes[0]});assert.equal(player.turnMoves,4);assert.equal(player.y,front.y);assert(logs.at(-1).includes('Not enough movement'));
-Object.assign(player,{turnMoves:0,move:10,fullMove:false});env.explorationDoorRoutes=()=>[];await env.tryPlayerMove(1,-2,{doorCrossing:routes[0]});assert.equal(player.turnMoves,0);
-await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,1,'Ordinary movement still costs one');
-const awareness=readFileSync(new URL('../js/r220-mob-hazard-awareness.js',import.meta.url),'utf8');
-const wrapperStart=awareness.indexOf('const r220BaseTryPlayerMove='),wrapperEnd=awareness.indexOf('const r220BasePathToAdjacent=',wrapperStart);
-let observations=0;env.r220ObserveVisibleTargetsForAllMobs=()=>observations++;
-vm.runInContext(awareness.slice(wrapperStart,wrapperEnd),env);
-Object.assign(player,{...front,turnMoves:0,move:10,fullMove:false});env.explorationDoorRoutes=()=>routes;env.explorationDoorCrossingBusy=true;
-await env.tryPlayerMove(1,-2,{doorCrossing:routes[0]});assert.equal(player.turnMoves,2,'Production awareness wrapper must forward the crossing option');assert.equal(player.y,back.y);assert.equal(observations,2);
-console.log('PASS exact closed-door approach regression, blocked closed plane, open two-point crossing both directions, occupancy/wall/budget checks and existing reaction pipeline');
+await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,1);assert.equal(player.x,front.x+1);assert.deepEqual(calls,['leave','area','guard']);
+Object.assign(player,{...front,turnMoves:5,move:5,fullMove:true});await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,5);assert.equal(player.x,front.x);assert(logs.at(-1).includes('Not enough movement'));
+Object.assign(player,{turnMoves:0,move:10,fullMove:false});env.architecturalWallBlocksStep=()=>true;await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,0,'Closed doors and walls still reject normal movement');env.architecturalWallBlocksStep=()=>false;
+const awareness=readFileSync(new URL('../js/r220-mob-hazard-awareness.js',import.meta.url),'utf8'),wrapperStart=awareness.indexOf('const r220BaseTryPlayerMove='),wrapperEnd=awareness.indexOf('const r220BasePathToAdjacent=',wrapperStart);
+let observations=0;env.r220ObserveVisibleTargetsForAllMobs=()=>observations++;vm.runInContext(awareness.slice(wrapperStart,wrapperEnd),env);await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,1);assert.equal(observations,2);
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');assert(!html.includes('id="doorCrossingButton"'),'There is no separate crossing button');
+console.log('PASS normal one-point movement, closed-wall/budget checks and unchanged reaction/area/awareness pipeline');
 
-// Opening uses the production action and rebuilds geometry immediately.
-const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
-const api=await import('../js/exploration-encounters.mjs');
-const store=new Map(),openLogs=[];
+const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8'),api=await import('../js/exploration-encounters.mjs'),store=new Map(),openLogs=[];
 const openingPlayer={id:'player',name:'Test player',alive:true,...front,turnMoves:0,halfMove:3,move:7,fullMove:false};
-const opening={explorationEncounterApi:api,explorationTerrain:closed.terrain,explorationEncounter:{openDoors:[]},game:{active:'player'},
+const opening={explorationEncounterApi:api,explorationTerrain:closed.terrain,explorationEncounter:{openDoors:[]},game:{active:'player',player:openingPlayer},
  activePlayerControlledUnit:()=>openingPlayer,controlledUnitCanAct:u=>u===openingPlayer,combatAwaitingStart:false,combatOpeningSpeechDone:true,
- explorationDoorCrossingBusy:false,aimMode:false,classReportOpen:false,characterSheetOpen:false,inventoryOpen:false,spellCastOverlayOpen:false,spellCastInProgress:false,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,isCombatActionPauseActive:()=>false,
- architecturalWallBlocksWorldLine:closed.blocked,sessionStorage:{setItem:(key,value)=>store.set(key,value)},log:m=>openLogs.push(m),refreshTurnBanner:noop,updateUi:noop,draw:noop,
- configureExplorationTerrain(){opening.explorationTerrain=geometry(true).terrain;}};
-vm.createContext(opening);vm.runInContext(hooks.slice(hooks.indexOf('function explorationDoorOpeningAllowed(')),opening);
-assert.equal(opening.explorationClosedDoors(openingPlayer).length,1,'Near-side approach reaches the closed door');
-opening.tryExplorationOpenDoor();assert.equal(openingPlayer.turnMoves,1);assert(opening.explorationEncounter.openDoors.includes('4,2'));
-assert(JSON.parse(store.get(api.HANDOFF_KEY)).openDoors.includes('4,2'),'Combat doorway state survives reload/return');
-assert(!opening.explorationTerrain.walls.some(w=>w.id==='door-4-2'),'Opening removes the physical/LOS plane');
-assert.equal(opening.explorationClosedDoors(openingPlayer).length,0,'Already-open doors cannot charge repeatedly');
-opening.tryExplorationOpenDoor();assert.equal(openingPlayer.turnMoves,1);
-Object.assign(opening,{explorationTerrain:closed.terrain,explorationEncounter:{openDoors:[]}});
-openingPlayer.turnMoves=7;opening.tryExplorationOpenDoor();assert.equal(opening.explorationEncounter.openDoors.length,0,'No free opening after movement is exhausted');
-openingPlayer.turnMoves=3;opening.sessionStorage.setItem=()=>{throw Error('quota');};opening.tryExplorationOpenDoor();assert.equal(openingPlayer.turnMoves,3);assert.equal(opening.explorationEncounter.openDoors.length,0,'Failed persistence leaves rules state untouched');
-opening.sessionStorage.setItem=(key,value)=>store.set(key,value);opening.tryExplorationOpenDoor();assert.equal(openingPlayer.turnMoves,4);assert(openingPlayer.fullMove,'Door interaction shares the normal movement attack threshold');
-for(const guard of ['aimMode','combatAwaitingStart','inventoryOpen','freeStrikeInProgress','spellCastInProgress']){
- Object.assign(opening,{explorationTerrain:closed.terrain,explorationEncounter:{openDoors:[]},[guard]:true});openingPlayer.turnMoves=0;
- opening.tryExplorationOpenDoor();assert.equal(openingPlayer.turnMoves,0,guard+' blocks door actions');opening[guard]=false;
-}
+ aimMode:false,classReportOpen:false,characterSheetOpen:false,inventoryOpen:false,spellCastOverlayOpen:false,spellCastInProgress:false,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,isCombatActionPauseActive:()=>false,
+ architecturalWallBlocksWorldLine:closed.blocked,occupiedHexes:u=>[{x:u.x,y:u.y}],wallSegmentCutsHexInterior:closed.ctx.wallSegmentCutsHexInterior,
+ sessionStorage:{setItem:(key,value)=>store.set(key,value)},log:m=>openLogs.push(m),refreshTurnBanner:noop,updateUi:noop,draw:noop,
+ configureExplorationTerrain(){opening.explorationTerrain=geometry(opening.explorationEncounter.openDoors.includes('4,2')).terrain;}};
+vm.createContext(opening);const wallStart=hooks.indexOf('function explorationDoorWall('),wallEnd=hooks.indexOf('\nfunction ',wallStart+1);vm.runInContext(hooks.slice(wallStart,wallEnd)+'\n'+hooks.slice(hooks.indexOf('function explorationDoorOpeningAllowed(')),opening);
+assert.equal(opening.explorationReachableDoors(openingPlayer).length,1);
+opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,1);assert(opening.explorationEncounter.openDoors.includes('4,2'));assert(JSON.parse(store.get(api.HANDOFF_KEY)).openDoors.includes('4,2'));
+Object.assign(openingPlayer,{x:2,y:-5});opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,1,'Cannot close a doorway occupied by a footprint');assert(openLogs.at(-1).includes('occupies'));
+Object.assign(openingPlayer,front);opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,2);assert.equal(opening.explorationEncounter.openDoors.length,0);assert.equal(JSON.parse(store.get(api.HANDOFF_KEY)).openDoors.length,0,'Closed state is saved for return/reload');assert(openLogs.at(-1).includes('closes'));
+openingPlayer.turnMoves=7;opening.tryExplorationToggleDoor();assert.equal(opening.explorationEncounter.openDoors.length,0);
+openingPlayer.turnMoves=3;opening.sessionStorage.setItem=()=>{throw Error('quota');};opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,3);assert.equal(opening.explorationEncounter.openDoors.length,0);
+opening.sessionStorage.setItem=(key,value)=>store.set(key,value);opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,4);assert(openingPlayer.fullMove);
+for(const guard of ['aimMode','combatAwaitingStart','inventoryOpen','freeStrikeInProgress','spellCastInProgress']){opening[guard]=true;openingPlayer.turnMoves=0;opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,0);opening[guard]=false;}
+console.log('PASS open/close toggle cost, occupied-door rejection, state persistence, budget/threshold and pause guards');
 for(const axis of ['x','z']){
  const map={width:9,height:9,grid:axis==='x'?['#########','#...#...#','#...#...#','#...#...#','#...D...#','#...#...#','#...#...#','#...#...#','#########']:['#########','#.......#','#.......#','#.......#','####D####','#.......#','#.......#','#.......#','#########'],doors:[{x:4,z:4,axis}]};
  const terrain=terrainForEncounter(map,{x:4,z:4},new Set()),from=axis==='x'?{x:-1,y:0}:{x:0,y:1};
