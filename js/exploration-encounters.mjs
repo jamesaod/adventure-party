@@ -1,5 +1,5 @@
-import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C227';
-export * from './exploration-scene-style.mjs?v=R238C227';
+import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C228';
+export * from './exploration-scene-style.mjs?v=R238C228';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}
@@ -56,5 +56,27 @@ export function terrainForEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5
   }
   for(const d of map.doors||[]){if(!floor(d.x,d.z)||openDoors.has(`${d.x},${d.z}`))continue;segment(d.axis==='x'?project(d.x,d.z-.5):project(d.x-.5,d.z),d.axis==='x'?project(d.x,d.z+.5):project(d.x+.5,d.z),`door-${d.x}-${d.z}`);}
   const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
-  return {walls,spaces,bounds,project,cellAt,cellW,cellH,scale,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z)&&!(map.grid[p.z][p.x]==='D'&&!openDoors.has(`${p.x},${p.z}`));}};
+  return {walls,spaces,bounds,project,cellAt,cellW,cellH,scale,hexWidth,hexRow,doors:(map.doors||[]).filter(d=>floor(d.x,d.z)).map(d=>({...d,open:openDoors.has(`${d.x},${d.z}`),center:project(d.x,d.z)})),walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
+}
+
+// A straight, two-point crossing joins aligned standing hexes across an OPEN
+// doorway. The intermediate NW/NE hex corners are not standing destinations.
+export function doorwayCrossings(terrain,from,canStand,blocksLine){
+  const world=p=>({x:(p.x+p.y/2)*terrain.hexWidth,y:p.y*terrain.hexRow});
+  const start=world(from),routes=[];
+  for(const door of terrain.doors||[]){
+    if(!door.open)continue;
+    const horizontal=door.axis==='z',normal=p=>horizontal?p.y-door.center.y:p.x-door.center.x,
+      along=p=>horizontal?p.x-door.center.x:p.y-door.center.y;
+    const gateWidth=horizontal?terrain.cellW:terrain.cellH;
+    if(Math.abs(along(start))>gateWidth/2||Math.abs(normal(start))<.001)continue;
+    for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++){
+      if(Math.max(Math.abs(dx),Math.abs(dy),Math.abs(dx+dy))!==2)continue;
+      const target={x:from.x+dx,y:from.y+dy},end=world(target);
+      if(normal(start)*normal(end)>=0||Math.abs(along(end)-along(start))>.001)continue;
+      if(Math.abs(along(end))>gateWidth/2||!canStand(target)||blocksLine(start,end))continue;
+      routes.push({doorId:`${door.x},${door.z}`,from:{x:from.x,y:from.y},to:target,cost:2});
+    }
+  }
+  return routes;
 }

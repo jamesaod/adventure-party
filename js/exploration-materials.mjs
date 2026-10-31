@@ -1,6 +1,6 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C227';
-export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C227';
+import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C228';
+export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C228';
 export const CELL=SCENE_STYLE.cellMetres,HEIGHT=SCENE_STYLE.wallMetres;
 export async function explorationMaterials(renderer){
  const loader=new THREE.TextureLoader();
@@ -8,7 +8,7 @@ export async function explorationMaterials(renderer){
  for(const texture of textures){texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());}
  const m=SCENE_STYLE.materials;
  textures[0].wrapS=textures[0].wrapT=textures[1].wrapS=textures[1].wrapT=THREE.RepeatWrapping;
- textures[0].repeat.set(1,m.wallRows/m.sourceWallRows);textures[1].repeat.set(m.floorSlabs/m.sourceFloorSlabs,m.floorSlabs/m.sourceFloorSlabs);
+ textures[0].repeat.set(1/m.wallWidthScale,m.wallRows/m.sourceWallRows);textures[1].repeat.set(m.floorSlabs/m.sourceFloorSlabs,m.floorSlabs/m.sourceFloorSlabs);
  return {textures,wall:new THREE.MeshLambertMaterial({map:textures[0]}),floor:new THREE.MeshLambertMaterial({map:textures[1]}),wood:new THREE.MeshLambertMaterial({map:textures[2]}),ceiling:new THREE.MeshLambertMaterial({map:textures[0],color:0x777066})};
 }
 export function explorationDoor(wall,wood,open=false){

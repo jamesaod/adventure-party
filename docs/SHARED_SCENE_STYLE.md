@@ -39,3 +39,7 @@ Window defaults and generic prop overrides are projection contracts with regress
 `scripts/test-exploration-scene-style.mjs` covers six courses/four slabs, shared profile values, door geometry, independent footprint/display axes, window sill behavior, generic props, lantern/torch settings, falloff and closed-door occlusion. `test-exploration-rendering.mjs` covers display-footprint filtering, texture phase, exposure caching and camera movement. Existing production collision tests retain open/closed doorway traversal at 1:2 and 35px wall height.
 
 Browser QA uses one authored comparison room in both views, containing a torch and closed door. Confirm six courses, readable slabs without shimmer at normal/enlarged zoom, correct closed-door artwork, warm falloff, darkened distant surfaces, and no light/geometry regression on entry and retreat. The comparison fixture under local `work/` is scratch, not published game content.
+
+## Rev 228 material adjustment
+
+Floor slabs are half their former width and depth: eight slabs per exploration square, with the same source texture. Brick repeat width is halved independently of height; six rows still occupy each compact wall. Shared material settings change both views and the display-footprint filters continue to select anisotropic mips. Movement/door changes are recorded in EXPLORATION_ENCOUNTERS.md.

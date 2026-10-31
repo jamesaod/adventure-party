@@ -5,7 +5,7 @@ assert.deepEqual(materialStyle,style,'Both adapters must use the same scene prof
 const one={cellW:64,cellH:36},two={cellW:128,cellH:72};
 for(const terrain of [one,two]){
   const m=materialMetrics(terrain,35);assert.equal(m.wallHeight,35);assert.equal(style.materials.wallRows,6);
-  assert.equal(m.floorWidth/style.materials.sourceFloorSlabs,terrain.cellW/4,'Slabs have one authored physical size');
+  assert.equal(m.floorWidth/style.materials.sourceFloorSlabs,terrain.cellW/8,'Slabs have one authored physical size');
 }
 for(const kind of ['door','window']){
   const a=projectSceneObject(kind,one),b=projectSceneObject(kind,two);
@@ -30,4 +30,4 @@ const beyond=surfaceLight(point,normal,[{...style.lantern,x:9,z:100,y:2}]);asser
 const exposure=displayExposure([.25,1,4]);assert(exposure.multiply[0]<255);assert.equal(exposure.multiply[1],255);assert.equal(exposure.boost[0],0);assert(exposure.boost[2]>0);
 const doorMap={grid:['#####','#.D.#','#####']},a={x:3,y:1.9,z:3},b={x:9,y:0,z:3};
 assert.equal(sceneLightVisible(doorMap,new Set(),a,b),false);assert.equal(sceneLightVisible(doorMap,new Set(['2,1']),a,b),true);
-console.log('PASS shared six-course/four-slab materials, independent object axes, shared door dimensions, lantern/torch settings, light falloff and closed-door occlusion');
+console.log('PASS shared six-course/eight-slab materials, independent object axes, shared door dimensions, lantern/torch settings, light falloff and closed-door occlusion');

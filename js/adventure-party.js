@@ -19467,7 +19467,8 @@ async function performLeavingHexFreeAttacks(mover,destination){
   );
 }
 
-async function tryPlayerMove(dx,dy){
+async function tryPlayerMove(dx,dy,{doorCrossing=null}={}){
+  if(typeof explorationDoorCrossingBusy!=="undefined"&&explorationDoorCrossingBusy&&!doorCrossing)return;
   const p=activePlayerControlledUnit();
   if(
     game.over || !p || game.active!==p.id || !p.alive ||
@@ -19477,11 +19478,16 @@ async function tryPlayerMove(dx,dy){
 
   const nx=p.x+dx;
   const ny=p.y+dy;
+  const moveCost=doorCrossing?2:1;
+  if(doorCrossing&&!explorationDoorRoutes(p).some(route=>route.doorId===doorCrossing.doorId&&route.to.x===nx&&route.to.y===ny)){
+    log("That doorway crossing is no longer available.","system");return;
+  }
 
   if(isWall(nx,ny) || architecturalWallBlocksStep(p,{x:nx,y:ny})){ log("Movement blocked by wall.","system"); return; }
 
   const enemy=enemyAtHex(nx,ny);
   if(enemy){
+    if(doorCrossing){log("The doorway landing is occupied.","system");return;}
     if(p.fullMove){ log("A full move forfeits the melee attack this round.","system"); return; }
     if(p.turnMoves>p.halfMove){ log("You have moved too far to attack this round.","system"); return; }
 
@@ -19504,13 +19510,14 @@ async function tryPlayerMove(dx,dy){
     return;
   }
 
-  if(!p.fullMove && p.turnMoves>=p.halfMove){
+  if(!p.fullMove && p.turnMoves+moveCost>p.halfMove){
+    if(p.turnMoves+moveCost>p.move){log(`Not enough movement remaining (${moveCost} required).`,"system");return;}
     p.fullMove=true;
     log(`Movement passes the attack threshold; Full Move activates automatically (${p.move} hex maximum).`,"system");
   }
 
   const maxMove=p.fullMove ? p.move : p.halfMove;
-  if(p.turnMoves>=maxMove){ log(`Movement allowance exhausted (${maxMove}).`,"system"); return; }
+  if(p.turnMoves+moveCost>maxMove){ log(`Not enough movement remaining (${moveCost} required, ${Math.max(0,maxMove-p.turnMoves)} left).`,"system"); return; }
 
   const canLeave=await performLeavingHexFreeAttacks(p,{x:nx,y:ny});
   if(!canLeave){
@@ -19525,10 +19532,10 @@ async function tryPlayerMove(dx,dy){
   }
   updateFacingForStep(p,dx,dy);
   setUnitActionBanner(p,"Moving");
-  p.x=nx; p.y=ny; p.turnMoves++;
+  p.x=nx; p.y=ny; p.turnMoves+=moveCost;
   maybeRecenterCamera(p);
   playMoveSound();
-  log(`${p.name} moves to hex ${nx},${ny} (${p.turnMoves}/${maxMove}).`);
+  log(`${p.name} ${doorCrossing?"crosses the doorway (2 movement points) to":"moves to"} hex ${nx},${ny} (${p.turnMoves}/${maxMove}).`);
   updateUi(); draw();
 
   const areaResult=await resolvePersistentAreaMovementStep(p);
@@ -26171,6 +26178,11 @@ function updateUi(){
     !game.over && !preCombatLocked && !isCombatActionPauseActive() &&
     !freeStrikeInProgress && !!activePc && game.active===activePc.id;
 
+  const crossingButton=document.getElementById('doorCrossingButton');
+  if(crossingButton){
+    crossingButton.hidden=!explorationTerrain;
+    crossingButton.disabled=!explorationTerrain||!playerCanAct||aimMode||spellCastInProgress||sweepInProgress||mobGuardReactionInProgress||explorationDoorCrossingBusy||activePc.turnMoves+2>activePc.move||!explorationDoorRoutes(activePc).length;
+  }
   const spellTargeting=isSpellTargetingMode();
   const aimOnly=aimMode && !spellTargeting;
 
@@ -30697,6 +30709,8 @@ function handleCombatKey(event){
   }
 
   if(game && game.over) return;
+
+  if(keyLower==="f"&&explorationTerrain&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target?.isContentEditable&&!["INPUT","TEXTAREA","SELECT"].includes(event.target?.tagName)){event.preventDefault();if(!event.repeat)void tryExplorationDoorCrossing();return;}
 
   const dir=directions[code] || arrowAliases[event.key];
 

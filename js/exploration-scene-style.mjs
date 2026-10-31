@@ -2,7 +2,7 @@
 // are projection choices, never dimensions embedded in artwork or item data.
 export const SCENE_STYLE=Object.freeze({
   cellMetres:3,wallMetres:3.5,eyeMetres:1.65,tacticalWallPixels:35,tacticalWallThickness:3,tacticalHexesPerCell:2,
-  materials:Object.freeze({wallRows:6,sourceWallRows:6,floorSlabs:4,sourceFloorSlabs:4,maxTilePixels:512}),
+  materials:Object.freeze({wallRows:6,sourceWallRows:6,floorSlabs:8,sourceFloorSlabs:4,wallWidthScale:.5,maxTilePixels:512}),
   ambient:Object.freeze({sky:0xc6b69b,ground:0x69635a,intensity:1.2}),
   lantern:Object.freeze({color:0xffdca1,intensity:12,range:18,decay:1.4,height:1.9,offsetZ:.2,shadowPixels:512,shadowNear:.05}),
   torch:Object.freeze({color:0xffa64d,intensity:8,range:10,decay:1.5,height:2.35,wallOffset:1.25,shadowPixels:256,shadowNear:.05}),
@@ -12,7 +12,7 @@ export const SCENE_STYLE=Object.freeze({
 export function materialMetrics(terrain,height=SCENE_STYLE.tacticalWallPixels){
   const m=SCENE_STYLE.materials,floorRepeat=m.sourceFloorSlabs/m.floorSlabs;
   return {floorWidth:terrain.cellW*floorRepeat,floorHeight:terrain.cellH*floorRepeat,
-    wallWidth:terrain.cellW,wallHeight:height*m.sourceWallRows/m.wallRows};
+    wallWidth:terrain.cellW*m.wallWidthScale,wallHeight:height*m.sourceWallRows/m.wallRows};
 }
 export function projectSceneObject(kind,terrain,override={}){
   const object={...SCENE_STYLE[kind],...override};

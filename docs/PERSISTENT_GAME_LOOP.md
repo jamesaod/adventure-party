@@ -125,3 +125,7 @@ User requested combat material quality, scale and lighting closer to the supplie
 ## Rev 227 continuation
 
 The user rejected Rev 226 as a visual mismatch: compact walls must show six brick rows, floor scaling must match authored exploration slabs, and independent combat lighting was inadequate. Rev 227 introduces exploration-scene-style.mjs and the two rendering adapters described in SHARED_SCENE_STYLE.md. Separate tactical footprint from aspect-preserving artwork for doors/windows/props. Preserve 1:2 spacing and compact 35px wall geometry. Shared lighting includes the previously missing combat party lantern.
+
+## Rev 228 continuation
+
+User identified the blocked standing hex in front of a closed door. Whole-door-tile blocking is removed in favor of the architectural plane. A player-controlled two-point THROUGH DOOR [F] command crosses an open snapshot doorway between aligned standing hexes, skipping intermediate corner cells. Closed-door interaction remains future work. Floor slabs halve in both axes and bricks halve in width; six rows and 35px walls remain.

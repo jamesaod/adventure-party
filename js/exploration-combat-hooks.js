@@ -217,7 +217,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C227');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C228');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -239,3 +239,20 @@ async function startExplorationCombat(){
   }catch(error){console.error(error);heading.textContent='Encounter could not start';status.textContent=error.message;retry.hidden=false;}
 }
 void startExplorationCombat();
+
+let explorationDoorCrossingBusy=false;
+function explorationDoorRoutes(unit){
+  if(!unit||!explorationTerrain||!explorationEncounterApi)return [];
+  return explorationEncounterApi.doorwayCrossings(explorationTerrain,unit,
+    p=>canUnitStandAt(unit,p.x,p.y)&&!unitTransitionBlocked(unit,unit,p),
+    (a,b)=>architecturalWallBlocksWorldLine(a,b,'movement'));
+}
+async function tryExplorationDoorCrossing(){
+  if(explorationDoorCrossingBusy||aimMode||classReportOpen||characterSheetOpen||inventoryOpen||spellCastOverlayOpen||spellCastInProgress)return;
+  const unit=activePlayerControlledUnit(),routes=explorationDoorRoutes(unit);
+  if(!routes.length){log('No open doorway crossing is available here. Closed doors cannot be opened in combat yet.','system');return;}
+  if(routes.length!==1){log('More than one doorway is in reach. Step closer to the doorway you want.','system');return;}
+  explorationDoorCrossingBusy=true;
+  try{await tryPlayerMove(routes[0].to.x-unit.x,routes[0].to.y-unit.y,{doorCrossing:routes[0]});}
+  finally{explorationDoorCrossingBusy=false;updateUi();}
+}
