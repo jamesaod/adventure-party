@@ -38,7 +38,7 @@ const context={explorationEncounterApi:sceneApi,Image:class{},document:{createEl
   screenPointForWorld:(p,elevation=0)=>{assert.equal(elevation,0,'Polygon indices must not become vertex heights');return p;},tracePolygonOnContext:(_ctx,p)=>{paths.push(p);return true;},hasActiveObscuringLosVolume:()=>false,
   visibleHexes:()=>{throw Error('Architectural floor visibility must not use hex centers');},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,ctx:{drawImage(){}}};
 vm.createContext(context);vm.runInContext(hooks.slice(0,hooks.indexOf('function configureExplorationTerrain()')),context);
-context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equal(paths[0][1].x,100);assert.equal(fills[0],'#08080c','Unseen floor must be opaque');
+context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equal(paths[0][1].x,100);assert.equal(fills[0],'rgba(8,8,12,0.90)','Unseen room floor remains faintly visible at 10%');
 const image={complete:true,naturalWidth:1024,naturalHeight:1024};
 const tile=context.explorationMaterialTile(image);assert.equal(tile.width,512);assert.deepEqual(reductions,[[512,512]]);
 assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reductions.length,1,'Reuse filtered texture rather than rebuilding it per frame');
