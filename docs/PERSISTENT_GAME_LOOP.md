@@ -117,3 +117,7 @@ The user rejected the Rev 220 visual result and supplied a screenshot showing co
 ## Rev 225 continuation
 
 Colored multi-square encounter areas now support partial/bulk removal and Undo. Exploration-to-combat conversion is 1:2 in the floor plane, keeping compact 35px walls. This supersedes the earlier 1:1 description. Campaign party ownership and rewards remain unfinished.
+
+## Rev 226 continuation
+
+User requested combat material quality, scale and lighting closer to the supplied first-person exploration reference. Combat source detail, wall texture proportions and warm lighting were adjusted while preserving Rev 225 area encounters, 1:2 geometry and compact 35px walls. See EXPLORATION_ENCOUNTERS.md for rendering specifics.

@@ -39,8 +39,8 @@ const context={Image:class{},document:{createElement:()=>({width:0,height:0,getC
 vm.createContext(context);vm.runInContext(hooks.slice(0,hooks.indexOf('function configureExplorationTerrain()')),context);
 context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equal(paths[0][1].x,100);assert.equal(fills[0],'#08080c','Unseen floor must be opaque');
 const image={complete:true,naturalWidth:1024,naturalHeight:1024};
-const tile=context.explorationMaterialTile(image);assert.equal(tile.width,64);assert.deepEqual(reductions,[[512,512],[256,256],[128,128],[64,64]]);
-assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reductions.length,4,'Reuse filtered texture rather than rebuilding it per frame');
+const tile=context.explorationMaterialTile(image);assert.equal(tile.width,512);assert.deepEqual(reductions,[[512,512]]);
+assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reductions.length,1,'Reuse filtered texture rather than rebuilding it per frame');
 const shadows=source.slice(source.indexOf('function drawArchitecturalWallShadows(){'),source.indexOf('\nfunction closestPointOnWorldSegment('));
 vm.runInNewContext(shadows+'\ndrawArchitecturalWallShadows();',{explorationTerrain:{},architecturalWalls:[{}]});
 console.log('PASS wall-edge mask uses room LOS polygons, cached texture prefilter and no indoor test-sun shadows');
@@ -78,3 +78,18 @@ Object.assign(context,{illuminationSources:()=>[{x:1,y:2,radiusHexes:3}],wallTes
 ctx:{save(){},restore(){},clip(){lightCalls.push('clip');},translate(){},scale(x,y){assert(y<1);},createRadialGradient(){return {addColorStop(){}};},fillRect(){lightCalls.push('fill');}}});
 context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['clip','fill']);
 console.log('PASS opaque unseen floor and projected torch falloff clipped to light-blocking walls');
+
+// Compact walls retain physical material scale instead of crushing six courses
+// into a short face; wall segments share a world-anchored horizontal repeat.
+const transforms=[];
+Object.assign(context,{explorationTerrain:{cellW:128,cellH:128*31.5/64/(Math.sqrt(3)/2)},DOMMatrix:class{constructor(values){transforms.push(values);}},ctx:{createPattern(){return {setTransform(){}};}}});
+vm.runInContext('explorationFloorImage.complete=explorationWallImage.complete=true;explorationFloorImage.naturalWidth=explorationWallImage.naturalWidth=512;explorationFloorImage.naturalHeight=explorationWallImage.naturalHeight=512;explorationFloorImage.width=explorationWallImage.width=512;explorationFloorImage.height=explorationWallImage.height=512;',context);
+const patternTarget={createPattern(){return {setTransform(){}};}};
+context.explorationFloorPatternForView();context.explorationWallPattern(patternTarget,{a:{x:128,y:64}},35);
+const floorTransform=transforms[0],wallTransform=transforms[1];
+assert.equal(floorTransform[0]*512,128);
+assert(Math.abs(wallTransform[3]*512-128*3.5/3)<1e-8,'Wall material uses exploration width/height proportions');
+assert(wallTransform[3]*512>35,'Compact geometry crops material vertically rather than squashing it');
+context.explorationWallPattern(patternTarget,{a:{x:256,y:64}},35);
+assert.equal(transforms[2][4],wallTransform[4],'Adjacent wall faces keep a continuous horizontal texture phase');
+console.log('PASS detailed material cache and world-anchored floor/wall repeats preserve exploration material proportions at fixed wall height');
