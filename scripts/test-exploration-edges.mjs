@@ -55,3 +55,12 @@ console.log('PASS edge migration, canonical ownership, atomic paint/settings, bo
 
 const full=blankEdgeMap('full-floor','Full floor');assert(full.grid.every(row=>!row.includes('#')),'New maps use all squares as floor; perimeter edges consume no cell');
 paintCell(full,0,0,'void');paintCell(full,0,0,'floor');resizeMap(full,20,18);assert.equal(full.grid[0][0],'.');assert.equal(full.grid[17][19],'.');validateMap(full);
+
+// A new test visit must retain authored initial-open state. Only an actual
+// saved array (including []) may override it.
+const explorationSource=readFileSync(new URL('../js/exploration.mjs',import.meta.url),'utf8');
+const restoreStart=explorationSource.indexOf('const opened=JSON.parse('),restoreEnd=explorationSource.indexOf(';}}catch',restoreStart);
+assert(restoreStart>0&&restoreEnd>restoreStart);
+const restoreCode=explorationSource.slice(restoreStart,restoreEnd)+';';
+const initialMap=blankEdgeMap('initial-state','Initial state');paintEdge(initialMap,{axis:'h',x:4,z:4},'door',{initialOpen:true});
+for(const saved of [null,'[]']){const state=createExplorationState(initialMap),env={sessionStorage:{getItem:()=>saved},testStateKey:()=>'',context:{},map:initialMap,state,doorKey:d=>d.id};vm.runInNewContext(restoreCode,env);assert.equal(state.openDoors.size,saved===null?1:0);}
