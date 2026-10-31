@@ -1,4 +1,4 @@
-import {validateEdges,syncEdgeDoors,doorKey,edgeBetween,edgeKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C231';
+import {validateEdges,syncEdgeDoors,normalizeDoorWidths,doorKey,edgeBetween,edgeKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C232';
 export const FACINGS=['North','East','South','West'];
 const vectors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const cellKey=(x,z)=>`${x},${z}`;
@@ -6,7 +6,7 @@ export function validateMap(map){
  if(map?.version===2){
   if(![map.width,map.height].every(n=>Number.isInteger(n)&&n>=8&&n<=128)||!Array.isArray(map.grid)||map.grid.length!==map.height||map.grid.some(row=>typeof row!=='string'||row.length!==map.width||/[^#.]/.test(row)))throw Error('Expected an edge map with floor/void grid and width/height 8–128.');
   const s=map.start;if(!Number.isInteger(s?.x)||!Number.isInteger(s?.z)||map.grid[s.z]?.[s.x]!=='.'||!Number.isInteger(s.facing)||s.facing<0||s.facing>3)throw Error('Invalid start.');
-  validateEdges(map);syncEdgeDoors(map);return map;
+  normalizeDoorWidths(map);validateEdges(map);syncEdgeDoors(map);return map;
  }
 
  if(map?.version!==1||![map.width,map.height].every(n=>Number.isInteger(n)&&n>=8&&n<=128)||!Array.isArray(map.grid)||map.grid.length!==map.height||map.grid.some(r=>typeof r!=='string'||r.length!==map.width||/[^#.D]/.test(r)))throw Error('Expected an exploration map with width and height from 8 to 128.');

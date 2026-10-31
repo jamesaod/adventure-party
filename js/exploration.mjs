@@ -1,11 +1,11 @@
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C231';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C231';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C231';
-import {explorationMapMarkup} from './exploration-map.mjs?v=R238C231';
-import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C231';
-import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C231';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C231';
+import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C232';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C232';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C232';
+import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C232';
+import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C232';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C232';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const EYE=SCENE_STYLE.eyeMetres,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;

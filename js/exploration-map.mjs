@@ -1,5 +1,5 @@
-import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C231';
-import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C231';
+import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C232';
+import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C232';
 
 // The map and first-person view share the same authored grid and live state.
 // North is the top edge; there is no separately authored illustration to drift.
