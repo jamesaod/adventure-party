@@ -127,7 +127,17 @@ function explorationSurfaceExposure(point,normal,lights,opened){
   }));
 }
 function drawExplorationIlluminationLayer(){
-  const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres,b=explorationTerrain.bounds;
+  const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
+  const mapBounds=explorationTerrain.bounds;
+  let b=mapBounds;
+  if(explorationTerrain.edgeBased&&typeof camera!=='undefined'){
+    // Bake exposure only around the viewport; distant architecture remains in
+    // the rules map without allocating a full-map lighting bitmap.
+    const world=worldPointForHex(camera.x,camera.y),zoom=typeof battlefieldZoom==='number'?battlefieldZoom:1;
+    const x=Math.floor(explorationEncounter.origin.x+world.x/explorationTerrain.cellW),z=Math.floor(explorationEncounter.origin.z+world.y/explorationTerrain.cellH);
+    const rx=Math.ceil(BATTLEFIELD_LOGICAL_WIDTH/(explorationTerrain.cellW*zoom)*.7)+1,rz=Math.ceil(BATTLEFIELD_LOGICAL_HEIGHT/(explorationTerrain.cellH*zoom)*.7)+1;
+    b={left:Math.max(mapBounds.left,x-rx),right:Math.min(mapBounds.right,x+rx),top:Math.max(mapBounds.top,z-rz),bottom:Math.min(mapBounds.bottom,z+rz)};
+  }
   const left=(b.left-explorationEncounter.origin.x-.5)*explorationTerrain.cellW,top=(b.top-explorationEncounter.origin.z-.5)*explorationTerrain.cellH;
   const spanWidth=(b.right-b.left+1)*explorationTerrain.cellW,spanHeight=(b.bottom-b.top+1)*explorationTerrain.cellH,origin=screenPointForWorld({x:left,y:top});
   const width=Math.ceil(spanWidth/6),height=Math.ceil(spanHeight/6);
@@ -182,6 +192,7 @@ function drawExplorationTorch(torch){
 function configureExplorationTerrain(){
   const request=explorationEncounter;
   explorationTerrain=explorationEncounterApi.terrainForEncounter(request.map,request.origin,new Set(request.openDoors),HEX_W,HEX_ROW);
+  if(explorationTerrain.hexBounds){const b=explorationTerrain.hexBounds;MAP_MIN_X=b.minX;MAP_MAX_X=b.maxX;MAP_MIN_Y=b.minY;MAP_MAX_Y=b.maxY;}
   architecturalWalls=explorationTerrain.walls;
   architecturalSpaces=explorationTerrain.spaces;
   rebuildArchitecturalBlockedHexes();
@@ -258,7 +269,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C232');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C233');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C232');
