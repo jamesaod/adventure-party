@@ -140,7 +140,10 @@ function drawExplorationIlluminationLayer(){
   }
   const left=(b.left-explorationEncounter.origin.x-.5)*explorationTerrain.cellW,top=(b.top-explorationEncounter.origin.z-.5)*explorationTerrain.cellH;
   const spanWidth=(b.right-b.left+1)*explorationTerrain.cellW,spanHeight=(b.bottom-b.top+1)*explorationTerrain.cellH,origin=screenPointForWorld({x:left,y:top});
-  const width=Math.ceil(spanWidth/6),height=Math.ceil(spanHeight/6);
+  // Illumination varies smoothly; keep a bounded screen-space light map.
+  // Material textures and architectural silhouettes retain their full detail.
+  const sampleWorld=12/(typeof battlefieldZoom==='number'?battlefieldZoom:1);
+  const width=Math.ceil(spanWidth/sampleWorld),height=Math.ceil(spanHeight/sampleWorld);
   const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors]);
   let cache=drawExplorationIlluminationLayer.cache;
   if(!cache||cache.key!==cacheKey){
@@ -269,7 +272,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C233');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C234');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C232');
