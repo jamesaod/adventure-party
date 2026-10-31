@@ -150,7 +150,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C223');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C220');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C211');
@@ -172,11 +172,11 @@ async function startExplorationCombat(){
 }
 void startExplorationCombat();
 
-// Show every solid block in the encounter crop, independent of party LOS.
-// Merge adjacent caps into row spans: one fill, no internal outlines.
-function explorationWallCapSpans(){
-  const spans=[];
+// Merge adjacent visible caps into row spans: one fill, no internal outlines.
+function explorationWallCapSpans(visibleWalls){
+  const ids=new Set(visibleWalls.map(w=>w.id)),spans=[];
   for(const block of explorationTerrain.solidBlocks||[]){
+    if(!block.wallIds.some(id=>ids.has(id)))continue;
     const previous=spans[spans.length-1];
     if(previous&&previous.z===block.z&&previous.lastX+1===block.x){
       previous.lastX=block.x;previous.polygon[1]=block.polygon[1];previous.polygon[2]=block.polygon[2];
