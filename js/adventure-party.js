@@ -5979,6 +5979,8 @@ function wallSegmentCutsHexInterior(wall,x,y){
 }
 
 function rebuildArchitecturalBlockedHexes(){
+  if(typeof architecturalWallBlocksWorldLine==='function')architecturalWallBlocksWorldLine.cache=null;
+  if(typeof wallTestVisibilityPolygonWorld==='function')wallTestVisibilityPolygonWorld.cache=null;
   architecturalBlockedHexes.clear();
   if(!architecturalWalls.length) return;
 
@@ -6003,10 +6005,25 @@ function isArchitecturalBlockedHex(x,y){
 function architecturalWallBlocksWorldLine(a,b,mode="movement"){
   if(!architecturalWalls.length) return false;
 
-  return architecturalWalls.some(wall=>
-    wallBlockingSubsegments(wall,mode)
-      .some(segment=>segmentsIntersect(a,b,segment.a,segment.b))
-  );
+  // Geometry is stable between terrain rebuilds. Index mode-specific blocking
+  // segments once instead of allocating/scanning every wall for each light ray.
+  let cache=architecturalWallBlocksWorldLine.cache;
+  if(!cache||cache.walls!==architecturalWalls){cache={walls:architecturalWalls,modes:new Map()};architecturalWallBlocksWorldLine.cache=cache;}
+  let index=cache.modes.get(mode);
+  const size=128,epsilon=.0001;
+  if(!index){
+    index=new Map();cache.modes.set(mode,index);
+    for(const wall of architecturalWalls)for(const segment of wallBlockingSubsegments(wall,mode)){
+      const minX=Math.floor((Math.min(segment.a.x,segment.b.x)-epsilon)/size),maxX=Math.floor((Math.max(segment.a.x,segment.b.x)+epsilon)/size);
+      const minY=Math.floor((Math.min(segment.a.y,segment.b.y)-epsilon)/size),maxY=Math.floor((Math.max(segment.a.y,segment.b.y)+epsilon)/size);
+      for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){const key=x+','+y;let bucket=index.get(key);if(!bucket){bucket=[];index.set(key,bucket);}bucket.push(segment);}
+    }
+  }
+  const minX=Math.floor((Math.min(a.x,b.x)-epsilon)/size),maxX=Math.floor((Math.max(a.x,b.x)+epsilon)/size),minY=Math.floor((Math.min(a.y,b.y)-epsilon)/size),maxY=Math.floor((Math.max(a.y,b.y)+epsilon)/size),seen=new Set();
+  for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(const segment of index.get(x+','+y)||[]){
+    if(seen.has(segment))continue;seen.add(segment);if(segmentsIntersect(a,b,segment.a,segment.b))return true;
+  }
+  return false;
 }
 
 function architecturalWallBlocksStep(from,to){
@@ -12219,8 +12236,8 @@ function cross2d(a,b){
   return (a.x*b.y)-(a.y*b.x);
 }
 
-function raySegmentIntersection(origin,angle,segment){
-  const r={x:Math.cos(angle),y:Math.sin(angle)};
+function raySegmentIntersection(origin,angle,segment,direction=null){
+  const r=direction||{x:Math.cos(angle),y:Math.sin(angle)};
   const s={x:segment.b.x-segment.a.x,y:segment.b.y-segment.a.y};
   const qp={x:segment.a.x-origin.x,y:segment.a.y-origin.y};
   const denom=cross2d(r,s);
@@ -12243,22 +12260,53 @@ function raySegmentIntersection(origin,angle,segment){
 }
 
 function castVisibilityRay(origin,angle,segments){
-  let best=null;
-
-  for(const segment of segments){
-    const hit=raySegmentIntersection(origin,angle,segment);
-    if(!hit) continue;
-    if(!best || hit.t<best.t){
-      best=hit;
+  // Walk only spatial buckets touched by the ray, stopping at the nearest hit.
+  // The exact existing intersection resolver still decides every hit.
+  const size=128,epsilon=.000001;
+  const caches=castVisibilityRay.cache||(castVisibilityRay.cache=new WeakMap());
+  let index=caches.get(segments);
+  if(!index){
+    index={cells:new Map(),left:Infinity,right:-Infinity,top:Infinity,bottom:-Infinity};caches.set(segments,index);
+    for(const segment of segments){
+      const left=Math.min(segment.a.x,segment.b.x)-epsilon,right=Math.max(segment.a.x,segment.b.x)+epsilon,top=Math.min(segment.a.y,segment.b.y)-epsilon,bottom=Math.max(segment.a.y,segment.b.y)+epsilon;
+      index.left=Math.min(index.left,left);index.right=Math.max(index.right,right);index.top=Math.min(index.top,top);index.bottom=Math.max(index.bottom,bottom);
+      for(let x=Math.floor(left/size);x<=Math.floor(right/size);x++)for(let y=Math.floor(top/size);y<=Math.floor(bottom/size);y++){
+        const key=x+','+y;let bucket=index.cells.get(key);if(!bucket){bucket=[];index.cells.set(key,bucket);}bucket.push(segment);
+      }
     }
   }
-
+  if(!segments.length)return null;
+  const direction={x:Math.cos(angle),y:Math.sin(angle)};
+  let enter=0,exit=Infinity;
+  for(const [axis,min,max] of [['x',index.left,index.right],['y',index.top,index.bottom]]){
+    const v=direction[axis],p=origin[axis];
+    if(Math.abs(v)<1e-12){if(p<min||p>max)return null;continue;}
+    const a=(min-p)/v,b=(max-p)/v;enter=Math.max(enter,Math.min(a,b));exit=Math.min(exit,Math.max(a,b));
+  }
+  if(exit<enter)return null;
+  const sx=Math.abs(direction.x)<1e-12?0:Math.sign(direction.x),sy=Math.abs(direction.y)<1e-12?0:Math.sign(direction.y);
+  let x=Math.floor((origin.x+direction.x*(enter+epsilon))/size),y=Math.floor((origin.y+direction.y*(enter+epsilon))/size);
+  let tx=sx?((sx>0?(x+1)*size:x*size)-origin.x)/direction.x:Infinity,ty=sy?((sy>0?(y+1)*size:y*size)-origin.y)/direction.y:Infinity;
+  const dx=sx?size/Math.abs(direction.x):Infinity,dy=sy?size/Math.abs(direction.y):Infinity,seen=new Set();
+  let best=null,t=enter;
+  while(t<=exit+epsilon&&(!best||t<=best.t+epsilon)){
+    for(const segment of index.cells.get(x+','+y)||[]){
+      if(seen.has(segment))continue;seen.add(segment);
+      const hit=raySegmentIntersection(origin,angle,segment,direction);if(hit&&(!best||hit.t<best.t))best=hit;
+    }
+    const next=Math.min(tx,ty);if(!Number.isFinite(next))break;
+    if(tx<=next+1e-10){x+=sx;tx+=dx;}if(ty<=next+1e-10){y+=sy;ty+=dy;}t=next;
+  }
   return best;
 }
 
 function wallTestVisibilityPolygonWorld(observer,mode="los"){
   if(!observer || game?.condition!=="wall") return [];
 
+  let cache=wallTestVisibilityPolygonWorld.cache;
+  if(!cache||cache.walls!==architecturalWalls){cache={walls:architecturalWalls,observers:new WeakMap()};wallTestVisibilityPolygonWorld.cache=cache;}
+  const cacheKey=[observer.x,observer.y,camera.x,camera.y,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT,mode].join(':');
+  const cached=cache.observers.get(observer);if(cached?.key===cacheKey)return cached.polygon;
   const origin=worldPointForHex(observer.x,observer.y);
   const {segments,bounds}=visibilitySegments(mode);
   const epsilon=0.00018;
@@ -12313,6 +12361,7 @@ function wallTestVisibilityPolygonWorld(observer,mode="los"){
     polygon.pop();
   }
 
+  cache.observers.set(observer,{key:cacheKey,polygon});
   return polygon;
 }
 

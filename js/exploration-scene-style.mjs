@@ -36,18 +36,20 @@ export function sceneLights(map,party){
 }
 export const colorChannels=hex=>[(hex>>16)&255,(hex>>8)&255,hex&255];
 const linear=c=>{c/=255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;};
+const ambientSky=colorChannels(SCENE_STYLE.ambient.sky).map(linear),ambientGround=colorChannels(SCENE_STYLE.ambient.ground).map(linear),linearColors=new Map();
+function linearColor(hex){let value=linearColors.get(hex);if(!value){value=colorChannels(hex).map(linear);if(linearColors.size>=128)linearColors.clear();linearColors.set(hex,value);}return value;}
 // Canvas adapter for the shared hemisphere + Lambert point-light definitions.
 // Values remain linear until exposure is converted to display multipliers.
 export function surfaceLight(point,normal,lights,visible=()=>true){
-  const {ambient}=SCENE_STYLE,sky=colorChannels(ambient.sky).map(linear),ground=colorChannels(ambient.ground).map(linear),hemi=(normal.y+1)/2;
+  const {ambient}=SCENE_STYLE,sky=ambientSky,ground=ambientGround,hemi=(normal.y+1)/2;
   const result=sky.map((v,i)=>(v*hemi+ground[i]*(1-hemi))*ambient.intensity/Math.PI);
   for(const light of lights){
     const dx=light.x-point.x,dy=light.y-point.y,dz=light.z-point.z,d=Math.hypot(dx,dy,dz);
-    if(d>=light.range||!visible(light,point))continue;
-    const alignment=Math.max(0,(dx*normal.x+dy*normal.y+dz*normal.z)/Math.max(.01,d));if(!alignment)continue;
+    if(d>=light.range)continue;
+    const alignment=Math.max(0,(dx*normal.x+dy*normal.y+dz*normal.z)/Math.max(.01,d));if(!alignment||!visible(light,point))continue;
     const cutoff=Math.max(0,1-(d/light.range)**4)**2;
     const strength=light.intensity*alignment*cutoff/(Math.PI*Math.max(.01,d**light.decay));
-    const color=colorChannels(light.color).map(linear);for(let i=0;i<3;i++)result[i]+=color[i]*strength;
+    const color=linearColor(light.color);for(let i=0;i<3;i++)result[i]+=color[i]*strength;
   }
   return result;
 }
