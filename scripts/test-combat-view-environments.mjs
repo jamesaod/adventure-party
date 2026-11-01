@@ -42,7 +42,7 @@ Object.assign(state,{camera:{x:0,y:0},VIEW_RADIUS:20,HEX_W:64,HEX_H:42,HEX_ROW:3
 const viewport=state.battlefieldWorldViewport;state.battlefieldWorldViewport=()=>{viewportCalls++;return viewport();};
 vm.runInContext(extract('visibleHexes'),state);assert(state.visibleHexes().length>0);assert.equal(viewportCalls,1,'Compute viewport once per terrain scan, not once per hex');
 
-const geometry={...await import('../js/exploration-combat-geometry.mjs'),...await import('../js/combat-surface-lighting.mjs')};
+const geometry={...await import('../js/exploration-combat-geometry.mjs'),...await import('../js/combat-surface-lighting.mjs'),...await import('../js/wall-light-bands.mjs')};
 const terrain={cellW:128,cellH:128*31.5/64/(Math.sqrt(3)/2)},style=SCENE_STYLE;
 for(const axis of ['x','z'])for(const hinge of ['start','end']){
  const door={center:{x:128,y:75},edgeId:'door',axis,hinge,width:.42,open:false};
@@ -124,7 +124,7 @@ for(let t=0;t<5000;t+=17){const a=torchAnimation(t,42);assert(a.intensity>=.85-1
 assert.deepEqual(torchAnimation(234,42),torchAnimation(234,42));assert.notDeepEqual(torchAnimation(234,42),torchAnimation(234,99));assert.deepEqual(torchAnimation(234,42,true),{intensity:1,height:1,width:1,swayX:0,swayZ:0});
 Object.assign(render,{game:{player:{x:-20,y:0,alive:true}},hexDistance:(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y)),illuminationSources:()=>[],illuminationContributionFromSource:()=>0});
 render.explorationEncounterApi={...render.explorationEncounterApi,tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>0};render.explorationTerrain={...terrain,cellAt:(x,y)=>({x,z:y})};
-facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePaints.some(s=>s==='rgba(0,0,0,0.8)'),'Wall faces receive the same capped distance darkness as floors');const warmAllocations=allocations;render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,warmAllocations,'Wall fading reuses its presentation buffer and static material bake');
+facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePaints.some(s=>s==='rgb(51,51,51)'||s==='rgba(0,0,0,0.8)'),'Wall faces receive the same capped distance darkness as floors');const warmAllocations=allocations;render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,warmAllocations,'Wall fading reuses its presentation buffer and static material bake');
 render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(!facePaints.some(s=>s.startsWith('rgba(0,0,0,')),'Bright ambient cancels wall distance fading without rebuilding base material lighting');
 render.explorationTerrain.torches=[{}];render.matchMedia=()=>({matches:true});assert(!render.hasAnimatedExplorationTorches());render.matchMedia=()=>({matches:false});assert(render.hasAnimatedExplorationTorches());
 console.log('PASS four wall-sconce mounts, shared bounded/seeded flicker and sway, reduced motion, wall distance fading and bright-day cancellation');

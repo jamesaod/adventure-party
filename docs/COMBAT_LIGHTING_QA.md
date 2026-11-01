@@ -16,3 +16,7 @@ Validation: `test-combat-surface-lighting.mjs`, `test-combat-view-environments.m
 Unseen wall/door prisms retain opaque coverage and receive 90% color darkening in a cached presentation. The old 10% alpha compositing allowed underlying floor grid lines to appear through rear wall surfaces. Room visibility masking stays independent.
 
 Combat-only torch emitters sit 0.3048 metres (12 inches) in front of the rendered prism face, accounting for its thickness. Physical floor/wall exposure, glow, shadow origin, distance relief and flicker queries share that unsnapped world position. Flame/sconce artwork and exploration lighting retain their existing placement. The former nearest floor hex is retained only for sconce visibility, never as a light origin.
+
+## Candidate Rev 243 — visible wall lighting joins
+
+Broad wall/door faces compose their static exposure and dynamic fade/flicker/spell light using a single affine light strip per face. Per-hex samples retain their geometry, but integer strip runs cover every texel exactly once. This removes the bright seams caused by adjacent antialiased fragment clips restoring/darkening the same texture at fractional coverage. Material texture coordinates remain continuous; physical wall outlines and cap geometry remain unchanged. One scratch strip is reused across faces and frames.

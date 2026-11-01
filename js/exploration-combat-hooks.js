@@ -35,6 +35,19 @@ function explorationWallPattern(target,wall,height){
   const origin=screenPointForWorld(wall.a),worldOrigin=screenPointForWorld({x:0,y:0});
   pattern.setTransform(new DOMMatrix([m.wallWidth/tile.width,0,0,m.wallHeight/tile.height,worldOrigin.x,origin.y-m.wallHeight]));return pattern;
 }
+// One affine lighting strip per broad face keeps per-hex brightness without
+// repeatedly clipping/restoring the texture along internal hex boundaries.
+function drawExplorationFaceBands(target,face,fragments,colors,mode){
+ const api=explorationEncounterApi;if(face.cap||!api.wallLightBandRuns)return false;
+ const neutral=mode==='multiply'?255:0;if(colors.every(c=>c.every(v=>v===neutral)))return true;
+ const span=Math.hypot(face.screen[2].x-face.screen[3].x,face.screen[2].y-face.screen[3].y);
+ const width=Math.min(2048,Math.max(1,Math.ceil(span*explorationMaterialDensity())));
+ const strip=drawExplorationFaceBands.strip||(drawExplorationFaceBands.strip=document.createElement('canvas'));if(strip.width!==width)strip.width=width;if(strip.height!==1)strip.height=1;
+ const paint=strip.getContext('2d');paint.globalCompositeOperation='source-over';
+ for(const run of api.wallLightBandRuns(face,fragments,width)){paint.fillStyle=`rgb(${colors[run.index].map(v=>Math.round(Math.max(0,Math.min(255,v)))).join(',')})`;paint.fillRect(run.start,0,run.end-run.start,1);}
+ const a=face.screen[3],b=face.screen[2],c=face.screen[0];target.save();target.globalCompositeOperation=mode;target.imageSmoothingEnabled=false;
+ target.transform((b.x-a.x)/width,(b.y-a.y)/width,c.x-a.x,c.y-a.y,a.x,a.y);target.drawImage(strip,0,0);target.restore();return true;
+}
 // Project each solid face independently: ground rotates, vertical edges stay vertical.
 function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).map(face=>({...face,screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
@@ -58,16 +71,21 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
    if(pattern){const a=points[3],b=points[2];pattern.setTransform(new DOMMatrix([(b.x-a.x)/span*repeat/tile.width,(b.y-a.y)/span*repeat/tile.width,0,h/tile.height,a.x,a.y]));target.fillStyle=pattern;}else target.fillStyle=face.material==='door'?'#855025':'#8a775d';
   }else target.fillStyle=face.material==='door'?'#b3844b':'#9c8867';
   target.fillRect(left,top,width,height);
-  for(const fragment of api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW):[face]){
+  const lighting=(api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW):[face]).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
    const point={x:(explorationEncounter.origin.x+mid.x/explorationTerrain.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/explorationTerrain.cellH)*cell};
-   const exposure=explorationSurfaceExposure(point,face.normal,lights,opened);
+   return {...fragment,exposure:explorationSurfaceExposure(point,face.normal,lights,opened)};
+  });
+  if(!face.cap&&api.wallLightBandRuns){
+   drawExplorationFaceBands(target,face,lighting,lighting.map(f=>f.exposure.multiply),'multiply');
+   drawExplorationFaceBands(target,face,lighting,lighting.map(f=>f.exposure.boost),'color-dodge');
+  }else for(const fragment of lighting){
    target.save();const polygon=fragment.points.map(p=>screenPointForWorld(p,p.elevation));target.beginPath();target.moveTo(polygon[0].x,polygon[0].y);for(const p of polygon.slice(1))target.lineTo(p.x,p.y);target.closePath();target.clip();
-   for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){target.globalCompositeOperation=mode;target.fillStyle=`rgb(${color.join(',')})`;target.fillRect(left,top,width,height);}target.restore();
+   for(const [mode,color] of [['multiply',fragment.exposure.multiply],['color-dodge',fragment.exposure.boost]]){target.globalCompositeOperation=mode;target.fillStyle=`rgb(${color.join(',')})`;target.fillRect(left,top,width,height);}target.restore();
   }
   target.restore();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.strokeStyle=face.cap?'#b39a70':'#342b20';target.lineWidth=.6;target.stroke();
  }
- const fragments=faces.flatMap(face=>api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW).map(f=>({...f,screen:f.points.map(p=>screenPointForWorld(p,p.elevation))})):[face]);
+ const fragments=faces.flatMap((face,faceIndex)=>api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW).map(f=>({...f,faceIndex,screen:f.points.map(p=>screenPointForWorld(p,p.elevation))})):[face]);
  const entry={key,layer,left,top,anchor,faces,fragments};cache.set(cacheOwner,entry);
  presentExplorationSolids(entry,left,top,visible);
 }
@@ -113,7 +131,18 @@ function presentExplorationSolids(entry,x,y,visible){
   });
   if(shades.some(s=>s.visibility<1||Math.abs(s.flicker)>.001||s.radiance.some(v=>v>0))){
    layer=entry.present||(entry.present=document.createElement('canvas'));layer.width=entry.layer.width;layer.height=entry.layer.height;const t=layer.getContext('2d');t.drawImage(entry.layer,0,0);t.translate(-entry.left,-entry.top);
+   if(explorationEncounterApi.wallLightBandRuns){
+    for(const [faceIndex,face] of entry.faces.entries()){
+     if(face.cap)continue;
+     const group=shades.filter(s=>s.face.faceIndex===faceIndex);if(!group.length)continue;
+     t.save();const p=face.screen;t.beginPath();t.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))t.lineTo(q.x,q.y);t.closePath();t.clip();
+     t.globalCompositeOperation='source-over';t.drawImage(entry.layer,entry.left,entry.top);
+     const fragments=group.map(s=>s.face),multiply=group.map(s=>Array(3).fill(255*s.visibility*(s.flicker<0?1+s.flicker*.6:1))),add=group.map(s=>s.radiance.map((v,i)=>255*v+([255,172,70][i])*Math.max(0,s.flicker)*.2*s.visibility));
+     drawExplorationFaceBands(t,face,fragments,multiply,'multiply');drawExplorationFaceBands(t,face,fragments,add,'lighter');t.restore();
+    }
+   }
    for(const shade of shades){
+    if(explorationEncounterApi.wallLightBandRuns&&!shade.face.cap&&shade.face.faceIndex!==undefined)continue;
     t.save();const p=shade.face.screen;t.beginPath();t.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))t.lineTo(q.x,q.y);t.closePath();t.clip();
     // Restore the cached surface under each face: overlapping front/back/cap
     // polygons must not multiply distance darkness more than once.
@@ -440,7 +469,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C242');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C243');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C238');
