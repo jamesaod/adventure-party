@@ -124,6 +124,28 @@ function drawExplorationVisibilityMask(){
   }
   target.restore();target.globalCompositeOperation='source-over';ctx.drawImage(mask,left,top);
 }
+// A separate floor-only distance layer. Architecture/creature concealment stays in LOS.
+function drawDistanceVisibilityLayer(tiles){
+ if(!explorationTerrain||!explorationEncounterApi?.tileDistanceVisibility)return;
+ const unit=activeUnit()||game.player;if(!unit?.alive)return;
+ const api=explorationEncounterApi,sources=illuminationSources();
+ ctx.save();
+ // Preserve the separate unseen-room presentation: fade only within party LOS.
+ if(game.condition==='wall'){
+  ctx.beginPath();for(const observer of friendlyVisibilityObservers()){
+   const polygon=observerVisibilityContext(observer)?.polygon;if(!polygon?.length)continue;
+   const points=polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();
+  }ctx.clip();
+ }
+ for(const tile of tiles){
+  const distance=hexDistance(unit,tile);if(distance<api.DISTANCE_VISIBILITY.startHex)continue;
+  const p=explorationTerrain.cellAt(tile.x,tile.y),ambient=api.ambientLightAt(explorationEncounter.map,p.x,p.z);if(ambient>=100)continue;
+  let light=0;for(const source of sources)light+=illuminationContributionFromSource(source,tile.x,tile.y);
+  const visibility=api.tileDistanceVisibility(distance,ambient,light);if(visibility>=1)continue;
+  if(tracePolygonOnContext(ctx,hexScreenVertices(tile.x,tile.y))){ctx.fillStyle=`rgba(0,0,0,${1-visibility})`;ctx.fill();}
+ }
+ ctx.restore();
+}
 // The perspective renderer and this canvas adapter read one authored lighting
 // profile, including the party lantern, exact torch mounts and metre falloff.
 function explorationVisualLights(){
@@ -293,10 +315,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C237');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C238');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C236');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C238');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');

@@ -55,3 +55,9 @@ New edge maps start with usable floor in every square and automatic perimeter wa
 ## Candidate Rev 236 — indoor/outdoor squares
 
 Indoor / ceiling and Outdoor / sky brushes paint environment independently of floor occupancy, encounters and edges. Drag to paint several squares; Undo and Save maps use the existing draft workflow. Outdoor squares have a green tint/border and accessible labels. The optional environment array uses one i/o marker per square; absent data means indoor. Export, editor Test Map, encounter handoff and resizing preserve the markers. New resize cells default indoor. Void cannot be painted as outdoor floor.
+
+## Candidate Rev 238 — painted ambient light
+
+Ambient light brush (%) selects 0–100 in ten-point steps. Choose Ambient light and click/drag floor squares, or select a rectangle and use Apply ambient to selection. Each override has a percentage badge and accessible label. Default ambient removes an override, restoring indoor 0% / outdoor 100%. Undo, Save maps, Adventure Pack export/import, resizing and Test Map use the normal authoring workflow. New resize squares have no override.
+
+Optional ambientLight is a height-by-width array of integer percentages or null (environment default). Ambient relief is independent of occupancy/encounter colors and of the shared material exposure profile; it offsets the new combat distance-darkness pass. A painted indoor 100% square also has no distance fade; outdoor squares may be painted lower for dusk/dark areas. This benchmark does not add time-of-day simulation.

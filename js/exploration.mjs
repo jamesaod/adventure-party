@@ -1,8 +1,8 @@
-import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C236';
+import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C238';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C236';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C236';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C238';
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C232';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C232';
 import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C235';
