@@ -57,3 +57,12 @@ for(const [axis,x,z] of [['h',4,4],['v',5,4],['h',4,5],['v',4,4]]){
 }
 const standing={x:6,z:9,y:2.35,attached:false};const unchanged=combatTorchLightPlacement(standing,terrain,SCENE_STYLE);assert.deepEqual(unchanged.point,standing.attached?{}:{x:6,z:9,y:2.35});
 console.log('PASS four-sided combat torch clearance, variable wall thickness, shared unsnapped source and unchanged exploration/freestanding placement');
+
+const {wallLightBandRuns}=await import('../js/wall-light-bands.mjs');
+const bandFace={points:[{x:0,y:0},{x:120,y:60}]},at=t=>({x:120*t,y:60*t});
+for(const width of [1,7,64,97,256,2048]){
+ const parts=[0,.13,.5,.71,1].slice(1).map((hi,i)=>({points:[at([0,.13,.5,.71][i]),at(hi)]})),coverage=Array(width).fill(0);
+ for(const run of wallLightBandRuns(bandFace,parts,width))for(let x=run.start;x<run.end;x++)coverage[x]++;
+ assert(coverage.every(n=>n===1),'Every strip texel has exactly one owner: no gap, overlap or repeated opacity at a lighting join');
+}
+console.log('PASS seam-free wall light-band coverage at six render resolutions');
