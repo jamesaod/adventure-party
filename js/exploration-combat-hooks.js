@@ -58,13 +58,17 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
    if(pattern){const a=points[3],b=points[2];pattern.setTransform(new DOMMatrix([(b.x-a.x)/span*repeat/tile.width,(b.y-a.y)/span*repeat/tile.width,0,h/tile.height,a.x,a.y]));target.fillStyle=pattern;}else target.fillStyle=face.material==='door'?'#855025':'#8a775d';
   }else target.fillStyle=face.material==='door'?'#b3844b':'#9c8867';
   target.fillRect(left,top,width,height);
-  const mid=face.points.reduce((p,q)=>({x:p.x+q.x/4,y:p.y+q.y/4,h:p.h+q.elevation/4}),{x:0,y:0,h:0});
-  const point={x:(explorationEncounter.origin.x+mid.x/explorationTerrain.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/explorationTerrain.cellH)*cell};
-  const exposure=explorationSurfaceExposure(point,face.normal,lights,opened);
-  for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){target.globalCompositeOperation=mode;target.fillStyle=`rgb(${color.join(',')})`;target.fillRect(left,top,width,height);}
+  for(const fragment of api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW):[face]){
+   const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
+   const point={x:(explorationEncounter.origin.x+mid.x/explorationTerrain.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/explorationTerrain.cellH)*cell};
+   const exposure=explorationSurfaceExposure(point,face.normal,lights,opened);
+   target.save();const polygon=fragment.points.map(p=>screenPointForWorld(p,p.elevation));target.beginPath();target.moveTo(polygon[0].x,polygon[0].y);for(const p of polygon.slice(1))target.lineTo(p.x,p.y);target.closePath();target.clip();
+   for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){target.globalCompositeOperation=mode;target.fillStyle=`rgb(${color.join(',')})`;target.fillRect(left,top,width,height);}target.restore();
+  }
   target.restore();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.strokeStyle=face.cap?'#b39a70':'#342b20';target.lineWidth=.6;target.stroke();
  }
- const entry={key,layer,left,top,anchor,faces};cache.set(cacheOwner,entry);
+ const fragments=faces.flatMap(face=>api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW).map(f=>({...f,screen:f.points.map(p=>screenPointForWorld(p,p.elevation))})):[face]);
+ const entry={key,layer,left,top,anchor,faces,fragments};cache.set(cacheOwner,entry);
  presentExplorationSolids(entry,left,top,visible);
 }
 function explorationTorchAnimation(torch,now=null){
@@ -72,21 +76,37 @@ function explorationTorchAnimation(torch,now=null){
  const reduced=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
  return api.torchAnimation(now??(typeof performance!=='undefined'?performance.now():0),torch.seed||0,reduced);
 }
-function explorationVisibilityAtHex(point,sources=null){
+function explorationRenderLights(){
+ const frame=typeof combatLightingFrame==='number'?combatLightingFrame:null;
+ if(frame!==null&&explorationRenderLights.frame===frame)return explorationRenderLights.sources;
+ const sources=(typeof illuminationSources==='function'?illuminationSources():[]).concat(typeof combatSpellEffectLights==='function'?combatSpellEffectLights():[]);
+ explorationRenderLights.frame=frame;explorationRenderLights.sources=sources;return sources;
+}
+function explorationFloorFragments(tiles){
+ const api=explorationEncounterApi;
+ if(!api?.floorFragmentIndex||!explorationTerrain?.spaces)return tiles.map(tile=>({point:tile,hex:tile,screen:hexScreenVertices(tile.x,tile.y)}));
+ if(explorationFloorFragments.terrain!==explorationTerrain){explorationFloorFragments.terrain=explorationTerrain;explorationFloorFragments.index=api.floorFragmentIndex(explorationTerrain.spaces,HEX_W,HEX_ROW);}
+ if(explorationFloorFragments.tiles===tiles)return explorationFloorFragments.projected;
+ explorationFloorFragments.tiles=tiles;return explorationFloorFragments.projected=tiles.flatMap(tile=>explorationFloorFragments.index(tile).map(f=>({...f,screen:f.polygon.map(p=>screenPointForWorld(p))})));
+}
+function explorationFriendlyDistance(point){
+ const observers=typeof friendlyVisibilityObservers==='function'?friendlyVisibilityObservers():[game?.player].filter(u=>u?.alive&&!u.fled);
+ return observers.length?Math.min(...observers.map(u=>hexDistance(u,point))):0;
+}
+function explorationVisibilityAtHex(point,sources=null,distancePoint=point){
  const api=explorationEncounterApi;if(!api?.tileDistanceVisibility)return 1;
- const unit=typeof activeUnit==='function'?(activeUnit()||game?.player):game?.player;if(!unit?.alive)return 1;
- const distance=hexDistance(unit,point);if(distance<api.DISTANCE_VISIBILITY.startHex)return 1;
+ const distance=explorationFriendlyDistance(distancePoint);if(distance<api.DISTANCE_VISIBILITY.startHex)return 1;
  const p=explorationTerrain.cellAt(point.x,point.y),ambient=api.ambientLightAt(explorationEncounter.map,p.x,p.z);if(ambient>=100)return 1;
- let light=0;for(const source of sources||illuminationSources())light+=illuminationContributionFromSource(source,point.x,point.y)*(source.sourceKind==='torch'?explorationTorchAnimation(source).intensity:1);
+ let light=0;for(const source of sources||explorationRenderLights())light+=illuminationContributionFromSource(source,point.x,point.y)*(source.sourceKind==='torch'?explorationTorchAnimation(source).intensity:1);
  return api.tileDistanceVisibility(distance,ambient,light);
 }
 function presentExplorationSolids(entry,x,y,visible){
  let layer=entry.layer;
  if(visible){
-  const sources=typeof illuminationSources==='function'?illuminationSources():[],torches=explorationTerrain.torches||[];
-  const shades=entry.faces.map(face=>{
-   const p=face.points.reduce((a,b)=>({x:a.x+b.x/4,y:a.y+b.y/4}),{x:0,y:0}),hex={x:p.x/HEX_W-p.y/(2*HEX_ROW),y:p.y/HEX_ROW};
-   const visibility=explorationVisibilityAtHex(hex,sources);let flicker=0;
+  const sources=explorationRenderLights(),torches=explorationTerrain.torches||[];
+  const shades=(entry.fragments||entry.faces).map(face=>{
+   const n=face.points.length,p=face.points.reduce((a,b)=>({x:a.x+b.x/n,y:a.y+b.y/n}),{x:0,y:0}),hex=face.point||{x:p.x/HEX_W-p.y/(2*HEX_ROW),y:p.y/HEX_ROW};
+   const visibility=explorationVisibilityAtHex(hex,sources,face.hex||hex);let flicker=0;
    for(const torch of torches){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    const radiance=typeof explorationSpellRadianceAtHex==='function'?explorationSpellRadianceAtHex(hex,sources):[0,0,0];
    return {face,visibility,radiance,flicker:Math.max(-.15,Math.min(.15,flicker))};
@@ -109,19 +129,35 @@ function presentExplorationSolids(entry,x,y,visible){
 }
 function explorationSpellRadianceAtHex(point,sources=null){
  const api=explorationEncounterApi;if(!api?.spellSurfaceRadiance)return [0,0,0];
- return api.spellSurfaceRadiance(point,sources||illuminationSources(),(source,p)=>illuminationContributionFromSource(source,p.x,p.y));
+ return api.spellSurfaceRadiance(point,sources||explorationRenderLights(),(source,p)=>illuminationContributionFromSource(source,p.x,p.y));
+}
+// Clip each emitter continuously. A floor sliver remains lit even if its hex
+// center is behind a wall; closed doors/windows use the production light mode.
+function clipExplorationEmitter(source){
+ if(game?.condition!=='wall'||typeof wallTestVisibilityPolygonWorld!=='function')return;
+ const polygon=wallTestVisibilityPolygonWorld(source,'light');
+ if(polygon?.length&&tracePolygonOnContext(ctx,polygon.map(p=>screenPointForWorld(p))))ctx.clip();
+}
+function explorationUnblockedContribution(source,point){
+ const distance=hexDistance(source,point),radius=Math.max(1,source.radiusHexes||1);
+ if(distance>radius||typeof hasObscuringMagicAtHex==='function'&&hasObscuringMagicAtHex(point.x,point.y))return 0;
+ return Math.max(0,source.intensity||0)*(1-Math.min(1,distance/(radius+.45))**2);
 }
 function drawExplorationSpellLighting(tiles){
  if(!explorationTerrain||!explorationEncounterApi?.spellSurfaceRadiance)return;
- const sources=illuminationSources().filter(s=>s.sourceKind!=='torch');if(!sources.length)return;
+ const sources=explorationRenderLights().filter(s=>s.sourceKind!=='torch');if(!sources.length)return;
+ const fragments=explorationFloorFragments(tiles);
  ctx.save();ctx.globalCompositeOperation='lighter';
- for(const tile of tiles){
-  const rgb=explorationSpellRadianceAtHex(tile,sources);if(!rgb.some(v=>v>0))continue;
-  if(tracePolygonOnContext(ctx,hexScreenVertices(tile.x,tile.y))){ctx.fillStyle=`rgb(${rgb.map(v=>Math.round(Math.min(1,v)*255)).join(',')})`;ctx.fill();}
+ for(const source of sources){
+  ctx.save();clipExplorationEmitter(source);
+  for(const fragment of fragments){
+   const rgb=explorationEncounterApi.spellSurfaceRadiance(fragment.point,[source],(s,p)=>explorationUnblockedContribution(s,p));if(!rgb.some(v=>v>0))continue;
+   if(tracePolygonOnContext(ctx,fragment.screen)){ctx.fillStyle=`rgb(${rgb.map(v=>Math.round(Math.min(1,v)*255)).join(',')})`;ctx.fill();}
+  }ctx.restore();
  }ctx.restore();
 }
 function hasAnimatedExplorationTorches(){
- return !!(explorationTerrain?.torches?.length)&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+ return !!(explorationTerrain&&(explorationTerrain.torches?.length||(game?.areaEffects||[]).some(e=>e.type==='flaming-sphere')))&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 function drawExplorationWallPrism(wall){
  if(wall.doorLeaf)return; // The wooden solid owns the closed-door leaf artwork.
@@ -186,8 +222,7 @@ function drawExplorationVisibilityMask(){
 // A separate floor-only distance layer. Architecture/creature concealment stays in LOS.
 function drawDistanceVisibilityLayer(tiles){
  if(!explorationTerrain||!explorationEncounterApi?.tileDistanceVisibility)return;
- const unit=activeUnit()||game.player;if(!unit?.alive)return;
- const api=explorationEncounterApi,sources=illuminationSources();
+ const api=explorationEncounterApi,sources=explorationRenderLights();
  ctx.save();
  // Preserve the separate unseen-room presentation: fade only within party LOS.
  if(game.condition==='wall'){
@@ -196,11 +231,11 @@ function drawDistanceVisibilityLayer(tiles){
    const points=polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();
   }ctx.clip();
  }
- for(const tile of tiles){
-  const distance=hexDistance(unit,tile);if(distance<api.DISTANCE_VISIBILITY.startHex)continue;
+ for(const fragment of explorationFloorFragments(tiles)){
+  const tile=fragment.point,distance=explorationFriendlyDistance(fragment.hex);if(distance<api.DISTANCE_VISIBILITY.startHex)continue;
   const p=explorationTerrain.cellAt(tile.x,tile.y),ambient=api.ambientLightAt(explorationEncounter.map,p.x,p.z);if(ambient>=100)continue;
-  const visibility=explorationVisibilityAtHex(tile,sources);if(visibility>=1)continue;
-  if(tracePolygonOnContext(ctx,hexScreenVertices(tile.x,tile.y))){ctx.fillStyle=`rgba(0,0,0,${1-visibility})`;ctx.fill();}
+  const visibility=explorationVisibilityAtHex(tile,sources,fragment.hex);if(visibility>=1)continue;
+  if(tracePolygonOnContext(ctx,fragment.screen)){ctx.fillStyle=`rgba(0,0,0,${1-visibility})`;ctx.fill();}
  }
  ctx.restore();
 }
@@ -287,8 +322,8 @@ function drawExplorationTorchFloorGlow(tiles){
  ctx.save();
  for(const torch of explorationTerrain.torches){
   const a=explorationTorchAnimation(torch),c=screenPointForWorld(torch.world),radius=HEX_W*(torch.radiusHexes||3);
-  ctx.save();ctx.beginPath();let any=false;
-  for(const tile of tiles)if(hexDistance(torch,tile)<torch.radiusHexes&&illuminationContributionFromSource(torch,tile.x,tile.y)>0){const p=hexScreenVertices(tile.x,tile.y);ctx.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))ctx.lineTo(q.x,q.y);ctx.closePath();any=true;}
+  ctx.save();clipExplorationEmitter(torch);ctx.beginPath();let any=false;
+  for(const fragment of explorationFloorFragments(tiles))if(hexDistance(torch,fragment.point)<torch.radiusHexes){const p=fragment.screen;ctx.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))ctx.lineTo(q.x,q.y);ctx.closePath();any=true;}
   if(any){ctx.clip();const glow=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,radius);glow.addColorStop(0,`rgba(255,145,42,${.09*a.intensity})`);glow.addColorStop(1,'rgba(255,145,42,0)');ctx.globalCompositeOperation='lighter';ctx.fillStyle=glow;ctx.fillRect(c.x-radius,c.y-radius,radius*2,radius*2);}ctx.restore();
  }ctx.restore();
 }
@@ -391,7 +426,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C240');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C241');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C238');

@@ -6443,7 +6443,7 @@ function architecturalWallLightContributions(wall){
   const normalY=dx/len;
   const contributions=[];
 
-  for(const source of illuminationSources()){
+  for(const source of illuminationSources().concat(combatSpellEffectLights())){
     const sourceWorld=worldPointForHex(source.x,source.y);
     const nearest=closestPointOnWorldSegment(
       sourceWorld,
@@ -7454,6 +7454,8 @@ let deathActionPauseUntil=0;
 
 /* Short-lived missile projectile overlay. */
 let projectileFx=null;
+let combatLightingFrame=0;
+let spellSurfaceFlashFx=null;
 
 /* Generic one-at-a-time spell damage indicator retained for non-Fireball AoE spells. */
 let areaDamageFx=null;
@@ -11508,6 +11510,15 @@ function illuminationAreaEffects(){
   );
 }
 
+function combatSpellEffectLights(){
+ const api=globalThis.adventurePartySurfaceLighting||(typeof explorationEncounterApi!=='undefined'?explorationEncounterApi:null);
+ if(!api?.spellEffectLightSources)return [];
+ if(combatSpellEffectLights.frame===combatLightingFrame)return combatSpellEffectLights.sources;
+ combatSpellEffectLights.frame=combatLightingFrame;
+ const lightning=typeof r226LightningFx!=='undefined'?r226LightningFx:null;
+ const lightningFx=lightning?{...lightning,points:lightning.points||lightning.segments?.flatMap(s=>[s.fromWorld,s.toWorld].map(p=>api.worldHex(p,HEX_W,HEX_ROW)))}:null;
+ return combatSpellEffectLights.sources=api.spellEffectLightSources({projectileFx,spellSurfaceFlashFx,volleyLights:globalThis.AdventurePartyMagicMissileVolley?.surfaceLights?.()||[],fireballExplosionFx,castingGlowFx,fireDamageFx,magicEffectFx,colorSprayFx,dragonBreathFx,lightningFx,shockingGraspFx:globalThis.AdventurePartyShockingGraspFx?.active?.(),areaEffects:game?.areaEffects,hypnoticPatterns:typeof r224HypnoticVisualStore==='function'?r224HypnoticVisualStore():[]},performance.now(),getUnitById);
+}
 function illuminationSources(){
   if(!game) return [];
 
@@ -11767,7 +11778,7 @@ function architecturalLightShadowPolygonWorld(sourceWorld,blocker){
 function drawTerrainIlluminationLayer(tiles){
   if(!game) return;
 
-  const sources=illuminationSources();
+  const sources=illuminationSources().concat(combatSpellEffectLights());
   if(!sources.length) return;
 
   const lightCanvas=
@@ -12754,6 +12765,7 @@ function drawVisibleArchitecturalWallsOverLOS(){
     foreground.push({
       sortY:Math.max(a.y,b.y)+0.25,
       sortX:(a.x+b.x)/2,
+      wall,
       fn:()=>drawArchitecturalWallSegment(wall)
     });
   }
@@ -20286,7 +20298,7 @@ async function animateMagicMissile(attacker,defender,index,total){
     const elapsed=performance.now()-started;
     const t=Math.min(1,elapsed/duration);
 
-    projectileFx={kind:"magic-missile",start,end,t,arcHeight:0};
+    projectileFx={lightPath:{from:{x:attacker.x,y:attacker.y},to:{x:defender.x,y:defender.y}},kind:"magic-missile",start,end,t,arcHeight:0};
     draw();
 
     if(t>=1) break;
@@ -20354,7 +20366,7 @@ async function animateElementalArrowProjectile(
         elapsed/duration
       );
 
-    projectileFx={
+    projectileFx={lightPath:{from:{x:attacker.x,y:attacker.y},to:{x:defender.x,y:defender.y}},
       kind,
       start,
       end,
@@ -20562,7 +20574,7 @@ async function animateFireballProjectile(caster,targetHex){
     const elapsed=performance.now()-started;
     const t=Math.min(1,elapsed/duration);
 
-    projectileFx={
+    projectileFx={lightPath:{from:{x:caster.x,y:caster.y},to:{x:targetHex.x,y:targetHex.y}},
       kind:"fireball",
       start,
       end,
@@ -21857,6 +21869,11 @@ async function resolveAoeDamageSpell({
   }
 }
 
+async function animateSpellSurfaceFlash(cells,color=[255,128,35]){
+ const duration=450,started=performance.now();spellSurfaceFlashFx={cells,started,duration,color};
+ try{while(performance.now()-started<duration){draw();await sleep(16);}}
+ finally{spellSurfaceFlashFx=null;draw();}
+}
 async function castBurningHandsSpell(action,targetHex){
   const caster=spellCasterForAction(action);
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -21900,6 +21917,7 @@ async function castBurningHandsSpell(action,targetHex){
     );
   }
 
+  await animateSpellSurfaceFlash(blastCells);
   await resolveAoeDamageSpell({
     caster,
     spellName:"Burning Hands",
@@ -30262,6 +30280,7 @@ function drawUnitBarks(){
 }
 
 function draw(){
+  combatLightingFrame++;
   if(!game) return;
 
   ensureFogAnimationLoop();
@@ -30313,6 +30332,7 @@ function draw(){
     actors.push({
       sortY:Math.max(a.y,b.y)+0.25,
       sortX:(a.x+b.x)/2,
+      wall,
       fn:()=>drawArchitecturalWallSegment(wall)
     });
   }
@@ -30374,7 +30394,7 @@ function draw(){
     actors.push({
       sortY:c.y,
       sortX:c.x,
-      unit:true,
+      unit:true,entity:game.player,
       fn:()=>drawFighter(game.player)
     });
   }
@@ -30387,7 +30407,7 @@ function draw(){
     actors.push({
       sortY:c.y,
       sortX:c.x,
-      unit:true,
+      unit:true,entity:ally,
       fn:()=>
         ally.type==="mage"
           ? drawFriendlyMage(ally)
@@ -30404,7 +30424,7 @@ function draw(){
     actors.push({
       sortY:depth.y,
       sortX:depth.x,
-      unit:true,
+      unit:true,entity:enemy,
       fn:()=>
         unitPoseDefinition(enemy)?.spriteLayout
           ? drawStudioSpriteMob(enemy)
@@ -30429,7 +30449,7 @@ function draw(){
     (a,b)=>a.sortY-b.sortY || a.sortX-b.sortX
   );
 
-  for(const actor of actors){
+  for(const actor of explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors){
     actor.fn();
   }
 

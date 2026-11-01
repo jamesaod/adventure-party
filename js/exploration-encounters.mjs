@@ -1,4 +1,5 @@
-export {spellSurfaceRadiance} from './spell-illumination.mjs?v=R238C240';
+export * from './combat-surface-lighting.mjs?v=R238C241';
+export {spellSurfaceRadiance,spellEffectLightSources} from './spell-illumination.mjs?v=R238C241';
 export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './distance-visibility.mjs?v=R238C238';
 export {ambientLightAt} from './exploration-environment.mjs?v=R238C238';
 export {solidPrism,combatDoorSolids} from './exploration-combat-geometry.mjs?v=R238C237';
