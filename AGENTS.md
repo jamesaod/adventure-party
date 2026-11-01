@@ -150,3 +150,5 @@ Rev 242: combat torch light origins use combatTorchLightPlacement at 0.3048m fro
 Rev 243: broad wall/door lighting uses one affine strip per face with exactly-once integer texel coverage. Do not reintroduce adjacent antialiased clip/restore loops along internal hex light boundaries; they leave bright grid-like seams. Keep texture geometry continuous and reuse the scratch strip.
 
 Rev 244: experimental sprite brightness follows hex ground lighting/distance/spell radiance. Apply only inside drawSpriteFacing body/mirror image draws; preserve source PNGs, alpha, emissive glows, HP bars/selection UI and the separate ground-shadow pass. See docs/COMBAT_LIGHTING_QA.md.
+
+Rev 245: portal-daylight.mjs derives diffuse sky apertures and attenuated indoor fill from existing environment/ambient paint and edge/door state. Floors, solid faces, sprite shading, distance relief and tactical illumination share the field. Preserve closed-room occlusion, cached transport/query fast paths and magical Darkness precedence; natural daylight never joins magical Light cancellation sources. See docs/COMBAT_LIGHTING_QA.md.
