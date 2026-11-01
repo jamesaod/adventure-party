@@ -33,7 +33,7 @@ console.log('PASS exploration floor masking precedes single unit pass; ordinary 
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const paths=[],reductions=[],fills=[];
 const maskContext={save(){},restore(){},translate(){},clearRect(){},fillRect(){fills.push(this.fillStyle);},fill(){}};
-const context={battlefieldViewportBounds:()=>({left:-50,top:-50,right:150,bottom:150}),explorationEncounterApi:sceneApi,Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
+const context={battlefieldProjectVector:p=>p,battlefieldViewportBounds:()=>({left:-50,top:-50,right:150,bottom:150}),explorationEncounterApi:sceneApi,Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
   friendlyVisibilityObservers:()=>[{x:0,y:0}],observerVisibilityContext:()=>({polygon:[{x:0,y:0},{x:100,y:0},{x:100,y:100},{x:0,y:100}]}),
   screenPointForWorld:(p,elevation=0)=>{assert.equal(elevation,0,'Polygon indices must not become vertex heights');return p;},tracePolygonOnContext:(_ctx,p)=>{paths.push(p);return true;},hasActiveObscuringLosVolume:()=>false,
   visibleHexes:()=>{throw Error('Architectural floor visibility must not use hex centers');},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,ctx:{drawImage(){}}};
@@ -78,7 +78,7 @@ const lightCalls=[],uploads=[];
 Object.assign(context,{explorationEncounter:{map,origin:{x:3,z:6},openDoors:['3,7'],scope:'qa'},explorationTerrain:terrain,game:{player:{x:0,y:0}},worldPointForHex:(x,y)=>({x:x*64+y*32,y:y*31.5}),illuminationSources:()=>[],HEX_W:64,
   BATTLEFIELD_LOGICAL_WIDTH:12,BATTLEFIELD_LOGICAL_HEIGHT:12,
   document:{createElement:()=>({width:0,height:0,getContext(){return {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData:image=>uploads.push(image),drawImage(){}};}})},
-  ctx:{save(){},restore(){},drawImage(){lightCalls.push(this.globalCompositeOperation);}}});
+  ctx:{save(){},restore(){},transform(){},drawImage(){lightCalls.push(this.globalCompositeOperation);}}});
 context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['multiply','color-dodge']);assert.equal(uploads.length,2);
 context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Static lights/camera reuse their exposure map');
 context.game.player.x=1;context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Party lantern movement invalidates the exposure map');
