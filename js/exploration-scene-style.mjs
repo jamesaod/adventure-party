@@ -7,7 +7,7 @@ export const SCENE_STYLE=Object.freeze({
   materials:Object.freeze({wallRows:6,sourceWallRows:6,floorSlabs:8,sourceFloorSlabs:4,wallWidthScale:.5,maxTilePixels:512}),
   ambient:Object.freeze({sky:0xc6b69b,ground:0x69635a,intensity:1.2}),
   lantern:Object.freeze({color:0xffdca1,intensity:12,range:18,decay:1.4,height:1.9,offsetZ:.2,shadowPixels:512,shadowNear:.05}),
-  torch:Object.freeze({color:0xffa64d,intensity:8,range:10,decay:1.5,height:2.35,wallOffset:1.25,shadowPixels:256,shadowNear:.05}),
+  torch:Object.freeze({color:0xffa64d,intensity:8,range:10,decay:1.5,height:2.35,wallOffset:1.25,plateWidth:.22,plateHeight:.48,plateDepth:.06,stemHeight:.65,stemBottom:1.575,cupRadius:.16,shadowPixels:256,shadowNear:.05}),
   door:Object.freeze({tacticalArtworkWidth:2,width:2.5,height:3.08,depth:.09,frameWidth:.24,frameDepth:.36,lintelHeight:.4,hingeX:-1.25}),
   window:Object.freeze({width:1.2,height:1.4,sill:1})
 });
@@ -25,12 +25,20 @@ export function projectSceneObject(kind,terrain,override={}){
     sill:(object.sill||0)/SCENE_STYLE.wallMetres*SCENE_STYLE.tacticalWallPixels,
     artwork:{width:height*object.width/object.height,height}};
 }
-export function torchPlacement(map,point){
-  const edges=map.version===2?new Set(effectiveEdges(map).map(edgeKey)):null;
-  const direction=[[0,-1,'n'],[1,0,'e'],[0,1,'s'],[-1,0,'w']].find(([dx,dz,side])=>edges?edges.has(edgeKey(edgeAtSide(point.x,point.z,side))):map.grid[point.z+dz]?.[point.x+dx]==='#')||[0,0];
-  return {x:point.x*SCENE_STYLE.cellMetres+direction[0]*SCENE_STYLE.torch.wallOffset,
-    z:point.z*SCENE_STYLE.cellMetres+direction[1]*SCENE_STYLE.torch.wallOffset,y:SCENE_STYLE.torch.height};
+export function torchSeed(point){return point.x*19+point.z*31;}
+export function torchAnimation(now,seed=0,reduced=false){
+ if(reduced)return {intensity:1,height:1,width:1,swayX:0,swayZ:0};
+ const t=now/1000,phase=seed*.73;
+ return {intensity:1+.1*Math.sin(t*8.3+phase)+.05*Math.sin(t*17.1+phase*1.7),height:1+.12*Math.sin(t*11.7+phase),width:1+.08*Math.sin(t*9.1+phase),swayX:.035*Math.sin(t*6.1+phase),swayZ:.025*Math.sin(t*7.7+phase)};
 }
+export function torchPlacement(map,point){
+ const edges=map.version===2?new Set(effectiveEdges(map).filter(e=>e.kind==='wall').map(edgeKey)):null;
+ const direction=[[0,-1,'n'],[1,0,'e'],[0,1,'s'],[-1,0,'w']].find(([dx,dz,side])=>edges?edges.has(edgeKey(edgeAtSide(point.x,point.z,side))):map.grid[point.z+dz]?.[point.x+dx]==='#')||[0,0];
+ const [dx,dz]=direction,cell=SCENE_STYLE.cellMetres;
+ return {x:point.x*cell+dx*SCENE_STYLE.torch.wallOffset,z:point.z*cell+dz*SCENE_STYLE.torch.wallOffset,y:SCENE_STYLE.torch.height,
+  wallX:point.x*cell+dx*cell/2,wallZ:point.z*cell+dz*cell/2,plateX:point.x*cell+dx*(cell/2-SCENE_STYLE.wallDepthMetres/2-SCENE_STYLE.torch.plateDepth/2-.005),plateZ:point.z*cell+dz*(cell/2-SCENE_STYLE.wallDepthMetres/2-SCENE_STYLE.torch.plateDepth/2-.005),dx,dz,attached:!!(dx||dz),seed:torchSeed(point)};
+}
+
 export function sceneLights(map,party){
   return [...(map.torches||[]).map(t=>({...SCENE_STYLE.torch,...torchPlacement(map,t),kind:'torch'})),
     {...SCENE_STYLE.lantern,x:party.x-Math.sin((party.facing||0)*Math.PI/2)*SCENE_STYLE.lantern.offsetZ,z:party.z+Math.cos((party.facing||0)*Math.PI/2)*SCENE_STYLE.lantern.offsetZ,y:SCENE_STYLE.lantern.height,kind:'lantern'}];
