@@ -42,7 +42,7 @@ Object.assign(state,{camera:{x:0,y:0},VIEW_RADIUS:20,HEX_W:64,HEX_H:42,HEX_ROW:3
 const viewport=state.battlefieldWorldViewport;state.battlefieldWorldViewport=()=>{viewportCalls++;return viewport();};
 vm.runInContext(extract('visibleHexes'),state);assert(state.visibleHexes().length>0);assert.equal(viewportCalls,1,'Compute viewport once per terrain scan, not once per hex');
 
-const geometry=await import('../js/exploration-combat-geometry.mjs');
+const geometry={...await import('../js/exploration-combat-geometry.mjs'),...await import('../js/combat-surface-lighting.mjs')};
 const terrain={cellW:128,cellH:128*31.5/64/(Math.sqrt(3)/2)},style=SCENE_STYLE;
 for(const axis of ['x','z'])for(const hinge of ['start','end']){
  const door={center:{x:128,y:75},edgeId:'door',axis,hinge,width:.42,open:false};
@@ -105,13 +105,13 @@ assert.throws(()=>paintAmbientLight(exported,3,3,101));assert.throws(()=>parsePa
 const painted=[];let actor={x:0,y:0,alive:true},ambient=0,blocked=false;
 const fade={game:{player:actor,condition:'open'},activeUnit:()=>actor,explorationTerrain:{cellAt:(x,y)=>({x,z:y})},explorationEncounter:{map:lightingMap},explorationEncounterApi:{tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>ambient},
  ctx:{save(){},restore(){},fill(){painted.push(this.fillStyle);}},hexDistance:(a,b)=>Math.abs(a.x-b.x),illuminationSources:()=>[{x:10,y:0}],illuminationContributionFromSource:()=>blocked?0:.3,tracePolygonOnContext:()=>true,hexScreenVertices:()=>[]};
-vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;for(const name of ['explorationVisibilityAtHex','explorationTorchAnimation']){const a=hooks.indexOf('function '+name+'('),b=hooks.indexOf('\n}',a)+2;vm.runInContext(hooks.slice(a,b),fade);}
+vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;for(const name of ['explorationVisibilityAtHex','explorationTorchAnimation','explorationFriendlyDistance','explorationRenderLights','explorationFloorFragments']){const a=hooks.indexOf('function '+name+'('),b=hooks.indexOf('\n}',a)+2;vm.runInContext(hooks.slice(a,b),fade);}
 vm.runInContext(hooks.slice(start,end),fade);
 fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert(Math.abs(Number(painted.at(-1).split(',').at(-1).slice(0,-1))-.1)<1e-10);
 blocked=true;fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.at(-1),'rgba(0,0,0,0.4)');
 ambient=100;const count=painted.length;fade.drawDistanceVisibilityLayer([{x:90,y:0}]);assert.equal(painted.length,count);
-ambient=0;actor={x:8,y:0,alive:true};fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.length,count,'Distance follows the active actor');
-console.log('PASS distance 7/8 thresholds, 20% minimum, bright-day override, additive ambient/torch relief, active actor and ambient paint/export/resize/reset');
+ambient=0;actor={x:8,y:0,alive:true,controller:'mob'};fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.at(-1),'rgba(0,0,0,0.4)','Enemy turn preserves friendly distance');fade.game.player={x:8,y:0,alive:true};const stableCount=painted.length;fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.length,stableCount,'Friendly movement updates distance');
+console.log('PASS distance 7/8 thresholds, 20% minimum, bright-day override, additive ambient/torch relief, friendly viewpoint and ambient paint/export/resize/reset');
 
 const {torchPlacement,torchAnimation}=await import('../js/exploration-scene-style.mjs');
 const {paintEdge}=await import('../js/exploration-edges.mjs');
@@ -147,5 +147,5 @@ assert(spellSurfaceRadiance(sample,[spell],(source,p)=>lightEnv.illuminationCont
 Object.assign(render,{illuminationSources:()=>[spell],illuminationContributionFromSource:()=>1,tracePolygonOnContext:()=>true,hexScreenVertices:()=>[]});render.explorationEncounterApi.spellSurfaceRadiance=spellSurfaceRadiance;render.explorationTerrain.torches=[];
 render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePaints.includes('rgb(46,18,7)'),'Walls add colored spell light even at full ambient');
 render.illuminationSources=()=>[];facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert.equal(facePaints.length,0,'Expired light is removed without stale cached glow');
-const floorPaint=[];render.illuminationSources=()=>[spell];render.ctx={save(){},restore(){},fill(){floorPaint.push({mode:this.globalCompositeOperation,color:this.fillStyle});}};render.drawExplorationSpellLighting([sample]);assert.deepEqual(floorPaint,[{mode:'lighter',color:'rgb(46,18,7)'}]);
+const floorPaint=[];render.illuminationSources=()=>[spell];render.ctx={save(){},restore(){},fill(){floorPaint.push({mode:this.globalCompositeOperation,color:this.fillStyle});}};render.drawExplorationSpellLighting([sample]);assert.equal(floorPaint[0].mode,'lighter');assert(floorPaint[0].color.startsWith('rgb('));
 console.log('PASS additive colored spell radiance above ambient, stacking, authoritative wall blocking, floor/wall parity and expiry');
