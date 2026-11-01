@@ -125,7 +125,15 @@ function presentExplorationSolids(entry,x,y,visible){
    }
   }
  }
- ctx.save();ctx.globalAlpha=visible?1:.1;ctx.drawImage(layer,x,y);ctx.restore();
+ if(!visible){
+  // Darkness is a color treatment, not transparency: otherwise the floor
+  // grid behind a solid rear wall is visible through the masonry.
+  if(!entry.hidden){
+   const hidden=entry.hidden=document.createElement('canvas');hidden.width=entry.layer.width;hidden.height=entry.layer.height;
+   const t=hidden.getContext('2d');t.drawImage(entry.layer,0,0);t.globalCompositeOperation='source-atop';t.fillStyle='rgba(0,0,0,.9)';t.fillRect(0,0,hidden.width,hidden.height);
+  }layer=entry.hidden;
+ }
+ ctx.save();ctx.globalAlpha=1;ctx.drawImage(layer,x,y);ctx.restore();
 }
 function explorationSpellRadianceAtHex(point,sources=null){
  const api=explorationEncounterApi;if(!api?.spellSurfaceRadiance)return [0,0,0];
@@ -169,7 +177,7 @@ function drawExplorationWallPrism(wall){
   make(wall.a,at(lo));make(at(hi),wall.b);make(at(lo),at(hi),sill);make(at(lo),at(hi),height,head);
  }else for(const part of wallBlockingSubsegments(wall,'los'))make(part.a,part.b);
  drawExplorationSolids(solids,wall,isArchitecturalWallVisibleToFriendlyParty(wall));
- for(const torch of explorationTerrain.torches||[])if(torch.mountWallId===wall.id&&isHexVisibleToFriendlyParty(torch.x,torch.y)){
+ for(const torch of explorationTerrain.torches||[])if(torch.mountWallId===wall.id&&isHexVisibleToFriendlyParty((torch.visibilityHex||torch).x,(torch.visibilityHex||torch).y)){
   const mount=screenPointForWorld(torch.world),plate=screenPointForWorld(torch.wallPlaneWorld||torch.plateWorld);if(mount.y>=plate.y-.01)drawExplorationTorch(torch);
  }
 }
@@ -244,7 +252,12 @@ function drawDistanceVisibilityLayer(tiles){
 function explorationVisualLights(){
   const api=explorationEncounterApi,cell=api.SCENE_STYLE.cellMetres,p=worldPointForHex(game.player.x,game.player.y),origin=explorationEncounter.origin;
   const party={x:(origin.x+p.x/explorationTerrain.cellW)*cell,z:(origin.z+p.y/explorationTerrain.cellH)*cell,facing:explorationEncounter.position?.facing||0};
-  const lights=api.sceneLights(explorationEncounter.map,party);
+  const lights=api.sceneLights(explorationEncounter.map,party).map((light,index)=>{
+   if(light.kind!=='torch')return light;
+   const torch=explorationTerrain.torches?.find(t=>t.sourceIndex===index);
+   const position=torch?.lightPosition||api.combatTorchLightPlacement?.(light,explorationTerrain,api.SCENE_STYLE).point;
+   return position?{...light,...position}:light;
+  });
 
   return lights;
 }
@@ -321,7 +334,7 @@ function drawExplorationTorchFloorGlow(tiles){
  if(!explorationTerrain?.torches?.length)return;
  ctx.save();
  for(const torch of explorationTerrain.torches){
-  const a=explorationTorchAnimation(torch),c=screenPointForWorld(torch.world),radius=HEX_W*(torch.radiusHexes||3);
+  const a=explorationTorchAnimation(torch),c=screenPointForWorld(torch.lightWorld||torch.world),radius=HEX_W*(torch.radiusHexes||3);
   ctx.save();clipExplorationEmitter(torch);ctx.beginPath();let any=false;
   for(const fragment of explorationFloorFragments(tiles))if(hexDistance(torch,fragment.point)<torch.radiusHexes){const p=fragment.screen;ctx.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))ctx.lineTo(q.x,q.y);ctx.closePath();any=true;}
   if(any){ctx.clip();const glow=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,radius);glow.addColorStop(0,`rgba(255,145,42,${.09*a.intensity})`);glow.addColorStop(1,'rgba(255,145,42,0)');ctx.globalCompositeOperation='lighter';ctx.fillStyle=glow;ctx.fillRect(c.x-radius,c.y-radius,radius*2,radius*2);}ctx.restore();
@@ -358,7 +371,8 @@ function configureExplorationTerrain(){
     const placement=explorationEncounterApi.torchPlacement(request.map,t),cell=explorationEncounterApi.SCENE_STYLE.cellMetres,world=explorationTerrain.project(placement.x/cell,placement.z/cell),wallPlaneWorld=explorationTerrain.project(placement.wallX/cell,placement.wallZ/cell),plateWorld={x:wallPlaneWorld.x-placement.dx*1.6,y:wallPlaneWorld.y-placement.dz*1.6*explorationTerrain.cellH/explorationTerrain.cellW},sourceWorld=explorationTerrain.project(t.x,t.z),nearest=floor.reduce((best,p)=>!best||Math.hypot(p.world.x-sourceWorld.x,p.world.y-sourceWorld.y)<Math.hypot(best.world.x-sourceWorld.x,best.world.y-sourceWorld.y)?p:best,null);
     if(!nearest||Math.hypot(nearest.world.x-world.x,nearest.world.y-world.y)>HEX_W)return [];
     const mountWall=placement.attached?architecturalWalls.find(w=>{const vx=w.b.x-w.a.x,vy=w.b.y-w.a.y,len=vx*vx+vy*vy,t=len?((wallPlaneWorld.x-w.a.x)*vx+(wallPlaneWorld.y-w.a.y)*vy)/len:-1;return t>=0&&t<=1&&Math.hypot(w.a.x+vx*t-wallPlaneWorld.x,w.a.y+vy*t-wallPlaneWorld.y)<.1;}):null;
-    return [{world,wallPlaneWorld,plateWorld,mountWallId:mountWall?.id,attached:placement.attached,dx:placement.dx,dz:placement.dz,seed:placement.seed,elevation:placement.y/explorationEncounterApi.SCENE_STYLE.wallMetres*35,id:'exploration-torch-'+i,sourceKind:'torch',sourceName:'Torch',x:nearest.x,y:nearest.y,radiusHexes:3,intensity:1.2,color:[255,166,77]}];
+    const light=explorationEncounterApi.combatTorchLightPlacement(placement,explorationTerrain,explorationEncounterApi.SCENE_STYLE,mountWall?.thickness||explorationEncounterApi.SCENE_STYLE.tacticalWallThickness,HEX_W,HEX_ROW);
+    return [{sourceIndex:i,lightWorld:light.world,lightPosition:light.point,visibilityHex:{x:nearest.x,y:nearest.y},world,wallPlaneWorld,plateWorld,mountWallId:mountWall?.id,attached:placement.attached,dx:placement.dx,dz:placement.dz,seed:placement.seed,elevation:placement.y/explorationEncounterApi.SCENE_STYLE.wallMetres*35,id:'exploration-torch-'+i,sourceKind:'torch',sourceName:'Torch',x:light.hex.x,y:light.hex.y,radiusHexes:3,intensity:1.2,color:[255,166,77]}];
   });
 }
 function explorationUnits(){
@@ -426,7 +440,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C241');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C242');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C238');
