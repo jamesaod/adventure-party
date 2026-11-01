@@ -11637,7 +11637,7 @@ function illuminationAtHex(x,y){
     return 0;
   }
 
-  const ambient=ambientIlluminationLevel();
+  const ambient=typeof explorationTerrain!=='undefined'&&explorationTerrain&&typeof explorationAmbientIlluminationAtHex==='function'?explorationAmbientIlluminationAtHex(x,y):ambientIlluminationLevel();
   const dynamic=dynamicIlluminationAtHex(x,y);
 
   return Math.max(
