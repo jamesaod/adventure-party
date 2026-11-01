@@ -26765,7 +26765,6 @@ function visibleHexes(){
         continue;
       }
 
-      const viewport=battlefieldViewportBounds();
       if(
         c.x < viewport.left-HEX_W ||
         c.x > viewport.right+HEX_W ||

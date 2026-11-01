@@ -35,3 +35,8 @@ assert(spellEnv.commitSpellCast(caster,{},null,1800,{x:2,y:-1}));assert.equal(fa
 spellEnv.commitSpellCast(caster,{},null,1800,{x:0,y:0});assert.equal(facing.length,1,'Self cast preserves facing');
 spellEnv.commitSpellCast({...caster,alive:false},{},null,1800,{x:1,y:0});assert.equal(facing.length,1,'Rejected cast does not turn');
 console.log('PASS environment paint/export/resize/legacy defaults, local ambient, half-wall door thickness, 18 rotated input transforms, rotation wrapping and committed spell facing');
+
+let viewportCalls=0;
+Object.assign(state,{camera:{x:0,y:0},VIEW_RADIUS:20,HEX_W:64,HEX_H:42,HEX_ROW:31.5,inside:()=>true,hexCenter:(x,y)=>({x:493.5+x*64+y*32,y:342+y*31.5})});
+const viewport=state.battlefieldViewportBounds;state.battlefieldViewportBounds=()=>{viewportCalls++;return viewport();};
+vm.runInContext(extract('visibleHexes'),state);assert(state.visibleHexes().length>0);assert.equal(viewportCalls,1,'Compute viewport once per terrain scan, not once per hex');
