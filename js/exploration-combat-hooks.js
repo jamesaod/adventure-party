@@ -94,6 +94,9 @@ function presentExplorationSolids(entry,x,y,visible){
    layer=entry.present||(entry.present=document.createElement('canvas'));layer.width=entry.layer.width;layer.height=entry.layer.height;const t=layer.getContext('2d');t.drawImage(entry.layer,0,0);t.translate(-entry.left,-entry.top);
    for(const shade of shades){
     t.save();const p=shade.face.screen;t.beginPath();t.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))t.lineTo(q.x,q.y);t.closePath();t.clip();
+    // Restore the cached surface under each face: overlapping front/back/cap
+    // polygons must not multiply distance darkness more than once.
+    t.globalCompositeOperation='source-over';t.drawImage(entry.layer,entry.left,entry.top);
     const darkness=1-shade.visibility;if(darkness>0){t.fillStyle=`rgba(0,0,0,${darkness})`;t.fillRect(entry.left,entry.top,layer.width,layer.height);}
     if(shade.flicker<0){t.fillStyle=`rgba(0,0,0,${-shade.flicker*.6})`;t.fillRect(entry.left,entry.top,layer.width,layer.height);}else if(shade.flicker>0){t.globalCompositeOperation='lighter';t.fillStyle=`rgba(255,172,70,${shade.flicker*.2*shade.visibility})`;t.fillRect(entry.left,entry.top,layer.width,layer.height);}t.restore();
    }

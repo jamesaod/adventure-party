@@ -128,3 +128,10 @@ facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePa
 render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(!facePaints.some(s=>s.startsWith('rgba(0,0,0,')),'Bright ambient cancels wall distance fading without rebuilding base material lighting');
 render.explorationTerrain.torches=[{}];render.matchMedia=()=>({matches:true});assert(!render.hasAnimatedExplorationTorches());render.matchMedia=()=>({matches:false});assert(render.hasAnimatedExplorationTorches());
 console.log('PASS four wall-sconce mounts, shared bounded/seeded flicker and sway, reduced motion, wall distance fading and bright-day cancellation');
+
+// Worst-case overlapping prism faces: distance darkness must apply only once.
+let pixel=1,shown=0;const paint={save(){},restore(){},translate(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},clip(){},drawImage(){pixel=1;},fillRect(){const m=/rgba\(0,0,0,([.\d]+)\)/.exec(this.fillStyle);if(m)pixel*=1-Number(m[1]);}};
+const overlap={...render,document:{createElement:()=>({getContext:()=>paint})},ctx:{save(){},restore(){},drawImage(){shown=pixel;}},explorationTerrain:{...render.explorationTerrain,torches:[]},illuminationSources:()=>[],explorationVisibilityAtHex:()=>.2,HEX_W:64,HEX_ROW:31.5};
+vm.createContext(overlap);const presentStart=hooks.indexOf('function presentExplorationSolids('),presentEnd=hooks.indexOf('\n}',presentStart)+2;vm.runInContext(hooks.slice(presentStart,presentEnd),overlap);
+const face={points:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}],screen:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}]};
+overlap.presentExplorationSolids({layer:{width:10,height:10},left:0,top:0,faces:Array(5).fill(face)},0,0,true);assert(Math.abs(shown-.2)<1e-9,'Overlapping solid faces retain the 20% distance visibility floor');
