@@ -7145,6 +7145,7 @@ const CAMERA_EDGE_HEXES=4;
 
 // Battlefield presentation zoom: visual only, independent of map/hex rules.
 let battlefieldZoom=1;
+let battlefieldRotation=0; // Experimental view-only rotation; rules stay in world coordinates.
 const BATTLEFIELD_ZOOM_MIN=0.6;
 const BATTLEFIELD_ZOOM_MAX=1.8;
 const BATTLEFIELD_ZOOM_STEP=0.1;
@@ -7154,13 +7155,18 @@ function battlefieldZoomAnchor(){
 }
 
 function battlefieldViewportBounds(){
-  const a=battlefieldZoomAnchor();
-  return {
-    left:a.x-a.x/battlefieldZoom,
-    top:a.y-a.y/battlefieldZoom,
-    right:a.x+(BATTLEFIELD_LOGICAL_WIDTH-a.x)/battlefieldZoom,
-    bottom:a.y+(BATTLEFIELD_LOGICAL_HEIGHT-a.y)/battlefieldZoom
-  };
+  const a=battlefieldZoomAnchor(),angle=-battlefieldRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle);
+  const points=[[0,0],[BATTLEFIELD_LOGICAL_WIDTH,0],[BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT],[0,BATTLEFIELD_LOGICAL_HEIGHT]].map(([x,y])=>{
+    x=(x-a.x)/battlefieldZoom;y=(y-a.y)/battlefieldZoom;
+    return {x:a.x+x*c-y*s,y:a.y+x*s+y*c};
+  });
+  return {left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};
+}
+function rotateBattlefield(direction){
+  battlefieldRotation=(battlefieldRotation+direction+6)%6;hoverHex=null;
+  const rose=document.getElementById('combatCompassRose');if(rose)rose.style.transform=`rotate(${battlefieldRotation*60}deg)`;
+  const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${battlefieldRotation*60}°`;
+  draw();
 }
 
 function changeBattlefieldZoom(direction){
@@ -10866,7 +10872,8 @@ function speakSpellIncantation(caster,spell,durationMs=1800){
   return true;
 }
 
-function commitSpellCast(caster,spell,action,durationMs=1800){
+function commitSpellCast(caster,spell,action,durationMs=1800,targetHex=null){
+  targetHex=action?.castTargetHex||targetHex;
   if(!caster?.alive || !spell) return false;
 
   if(action?.type==='priest-spell'&&!action.spellCommitted){
@@ -10906,6 +10913,7 @@ function commitSpellCast(caster,spell,action,durationMs=1800){
     breakInvisibility(caster,`casting ${spell.name}`);
   }
 
+  if(targetHex&&(targetHex.x!==caster.x||targetHex.y!==caster.y))faceEntityToward(caster,targetHex);
   speakSpellIncantation(caster,spell,durationMs);
   return true;
 }
@@ -12196,10 +12204,11 @@ function isHexCenterInsideObserverLosCone(observer,x,y,context=null){
 function visibilityWorldBounds(){
   const cameraWorld=worldPointForHex(camera.x,camera.y);
   const margin=140;
-  const left=cameraWorld.x-(BATTLEFIELD_LOGICAL_WIDTH*0.47)-margin;
-  const top=cameraWorld.y-(BATTLEFIELD_LOGICAL_HEIGHT*0.57)-margin;
-  const right=left+BATTLEFIELD_LOGICAL_WIDTH+(margin*2);
-  const bottom=top+BATTLEFIELD_LOGICAL_HEIGHT+(margin*2);
+  const v=battlefieldViewportBounds(),anchor=battlefieldZoomAnchor();
+  const left=cameraWorld.x+v.left-anchor.x-margin;
+  const top=cameraWorld.y+v.top-anchor.y-margin;
+  const right=cameraWorld.x+v.right-anchor.x+margin;
+  const bottom=cameraWorld.y+v.bottom-anchor.y+margin;
 
   return {
     left,
@@ -12312,7 +12321,7 @@ function wallTestVisibilityPolygonWorld(observer,mode="los"){
 
   let cache=wallTestVisibilityPolygonWorld.cache;
   if(!cache||cache.walls!==architecturalWalls){cache={walls:architecturalWalls,observers:new WeakMap()};wallTestVisibilityPolygonWorld.cache=cache;}
-  const cacheKey=[observer.x,observer.y,camera.x,camera.y,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT,mode].join(':');
+  const cacheKey=[observer.x,observer.y,camera.x,camera.y,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT,battlefieldZoom,battlefieldRotation,mode].join(':');
   const cached=cache.observers.get(observer);if(cached?.key===cacheKey)return cached.polygon;
   const origin=worldPointForHex(observer.x,observer.y);
   const {segments,bounds}=visibilitySegments(mode);
@@ -12626,10 +12635,9 @@ function drawWallTestLineOfSightMask(){
   const maskCanvas=drawWallTestLineOfSightMask.maskCanvas ||
     (drawWallTestLineOfSightMask.maskCanvas=document.createElement("canvas"));
 
-  if(maskCanvas.width!==BATTLEFIELD_LOGICAL_WIDTH || maskCanvas.height!==BATTLEFIELD_LOGICAL_HEIGHT){
-    maskCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
-    maskCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
-  }
+  const v=battlefieldViewportBounds(),left=Math.floor(v.left)-2,top=Math.floor(v.top)-2;
+  const width=Math.ceil(v.right-left)+2,height=Math.ceil(v.bottom-top)+2;
+  if(maskCanvas.width!==width || maskCanvas.height!==height){maskCanvas.width=width;maskCanvas.height=height;}
 
   const maskCtx=maskCanvas.getContext("2d");
   maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height);
@@ -12644,6 +12652,7 @@ function drawWallTestLineOfSightMask(){
     cells. The continuous LOS polygon decides only whether a HEX CENTER is in
     sight. Every qualifying hex is then punched completely out of the blackout.
   */
+  maskCtx.save();maskCtx.translate(-left,-top);
   maskCtx.globalCompositeOperation="destination-out";
   maskCtx.fillStyle="rgba(0,0,0,1)";
 
@@ -12675,7 +12684,7 @@ function drawWallTestLineOfSightMask(){
 
   ctx.save();
   ctx.globalCompositeOperation="source-over";
-  ctx.drawImage(maskCanvas,0,0);
+  maskCtx.restore();ctx.drawImage(maskCanvas,left,top);
   ctx.restore();
 }
 
@@ -20407,7 +20416,7 @@ async function castMagicMissileFromScroll(action,target){
 
   if(shield){
     spellCastInProgress=true;
-    if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+    if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
     pendingAimAction=null;
     exitAimMode(false,false);
 
@@ -20444,7 +20453,7 @@ async function castMagicMissileFromScroll(action,target){
   let imageHits=0;
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   updateUi();
@@ -20810,7 +20819,7 @@ async function castFireballFromScroll(action,targetHex){
   const friendlyTargets=affected.filter(unit=>unit.faction===caster.faction);
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   updateUi();
@@ -21497,7 +21506,7 @@ async function castCharmPersonSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Charm Person");
@@ -21552,7 +21561,7 @@ async function castArmorSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -21651,7 +21660,7 @@ async function castEnlargeSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -21712,7 +21721,7 @@ async function castProtectionFromEvilSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -21748,7 +21757,7 @@ async function castLightSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -21886,7 +21895,7 @@ async function castBurningHandsSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Burning Hands");
@@ -21947,7 +21956,7 @@ async function castColorSpraySpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Color Spray");
@@ -22044,7 +22053,7 @@ async function castGreaseSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22096,7 +22105,7 @@ async function castSleepSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Sleep");
@@ -22182,7 +22191,7 @@ async function castSpookSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22224,7 +22233,7 @@ async function castTauntSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22297,7 +22306,7 @@ async function castShockingGraspSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22361,7 +22370,7 @@ async function castWallOfFogSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,getSpellEntry(action?.spellId),action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22418,7 +22427,7 @@ async function castBlindnessSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22478,7 +22487,7 @@ async function castContinualLightSpell(action,targetHex,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22566,7 +22575,7 @@ async function castDarknessSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22601,7 +22610,7 @@ async function castDeafnessSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22669,7 +22678,7 @@ async function castFlamingSphereSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22705,7 +22714,7 @@ async function castFogCloudSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22744,7 +22753,7 @@ async function castGlitterdustSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22799,7 +22808,7 @@ async function castHypnoticPatternSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22852,7 +22861,7 @@ async function castInvisibilitySpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -22887,7 +22896,7 @@ async function castMelfsAcidArrowSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Melf's Acid Arrow");
@@ -22995,7 +23004,7 @@ async function castPyrotechnicsSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23043,7 +23052,7 @@ async function castRayOfEnfeeblementSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23083,7 +23092,7 @@ async function castScareSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23179,7 +23188,7 @@ async function castStinkingCloudSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23224,7 +23233,7 @@ async function castStrengthSpell(action,target){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,target)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23274,7 +23283,7 @@ async function castTashasHideousLaughterSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23342,7 +23351,7 @@ async function castWebSpell(action,targetHex){
   }
 
   spellCastInProgress=true;
-  if(!commitSpellCast(caster,spell,action)){ return await finishFailedSpellCommit(caster,action); }
+  if(!commitSpellCast(caster,spell,action,1800,targetHex)){ return await finishFailedSpellCommit(caster,action); }
   pendingAimAction=null;
   exitAimMode(false,false);
 
@@ -23401,7 +23410,7 @@ async function castPriestCombatSpell(action,hex,target){
    if(spell.targetMode==='hostile-creature'&&friendly)return false;
  }
  spellCastInProgress=true;
- if(!commitSpellCast(caster,spell,action)){
+ if(!commitSpellCast(caster,spell,action,1800,target)){
    return await finishFailedSpellCommit(caster,action);
  }
  pendingAimAction=null;exitAimMode(false,false);
@@ -23461,6 +23470,7 @@ async function castPreparedCombatSpell(action,targetHex,targetUnit){
   const spell=getSpellEntry(action?.spellId);
   if(!spell) return false;
 
+  action={...action,castTargetHex:targetHex};
   if(action?.type==='priest-spell')return castPriestCombatSpell(action,targetHex,targetUnit);
   switch(spell.id){
     case "magic-missile": return await castMagicMissileFromScroll(action,targetUnit);
@@ -26744,8 +26754,11 @@ function visibleHexes(){
   const baseX=Math.floor(camera.x);
   const baseY=Math.floor(camera.y);
 
-  for(let x=baseX-VIEW_RADIUS;x<=baseX+VIEW_RADIUS;x++){
-    for(let y=baseY-VIEW_RADIUS;y<=baseY+VIEW_RADIUS;y++){
+  const viewport=battlefieldViewportBounds(),a=battlefieldZoomAnchor();
+  const corners=[[viewport.left,viewport.top],[viewport.right,viewport.top],[viewport.right,viewport.bottom],[viewport.left,viewport.bottom]].map(([x,y])=>({x:camera.x+(x-a.x)/HEX_W-(y-a.y)/(2*HEX_ROW),y:camera.y+(y-a.y)/HEX_ROW}));
+  const minX=Math.floor(Math.min(...corners.map(p=>p.x)))-2,maxX=Math.ceil(Math.max(...corners.map(p=>p.x)))+2,minY=Math.floor(Math.min(...corners.map(p=>p.y)))-2,maxY=Math.ceil(Math.max(...corners.map(p=>p.y)))+2;
+  for(let x=minX;x<=maxX;x++){
+    for(let y=minY;y<=maxY;y++){
       const c=hexCenter(x,y);
 
       if(!inside(x,y)){
@@ -30291,6 +30304,7 @@ function draw(){
     density*anchor.x*(1-battlefieldZoom),
     density*anchor.y*(1-battlefieldZoom)
   );
+  ctx.translate(anchor.x,anchor.y);ctx.rotate(battlefieldRotation*Math.PI/3);ctx.translate(-anchor.x,-anchor.y);
   drawFloor();
   drawWallTestFloorPlan();
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
@@ -30485,7 +30499,8 @@ function draw(){
     drawDeathFx() still performs its own wall-test visibility check.
   */
   drawDeathFx();
-  drawCombatMessageBox();
+  ctx.save();ctx.translate(anchor.x,anchor.y);ctx.rotate(-battlefieldRotation*Math.PI/3);ctx.translate(-anchor.x,-anchor.y);
+  drawCombatMessageBox();ctx.restore();
 
   /*
     R125: white battlefield text is a dedicated final foreground pass.
@@ -30886,10 +30901,8 @@ function canvasEventPoint(event){
   const x=(event.clientX-rect.left)*(BATTLEFIELD_LOGICAL_WIDTH/rect.width);
   const y=(event.clientY-rect.top)*(BATTLEFIELD_LOGICAL_HEIGHT/rect.height);
   const anchor=battlefieldZoomAnchor();
-  return {
-    x:anchor.x+(x-anchor.x)/battlefieldZoom,
-    y:anchor.y+(y-anchor.y)/battlefieldZoom
-  };
+  const dx=(x-anchor.x)/battlefieldZoom,dy=(y-anchor.y)/battlefieldZoom,angle=-battlefieldRotation*Math.PI/3;
+  return {x:anchor.x+dx*Math.cos(angle)-dy*Math.sin(angle),y:anchor.y+dx*Math.sin(angle)+dy*Math.cos(angle)};
 }
 
 canvas.addEventListener("mousemove",(event)=>{
@@ -31205,3 +31218,7 @@ window.adventurePartyGameStartup?.ready.then(()=>{
  }
  showCombatConditions();
 });
+
+// Isolated experimental view controls: no turn, movement or door-state mutation.
+document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotateBattlefield(-1));
+document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
