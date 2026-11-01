@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {encounterAt,validateEncounters,terrainForEncounter,recordOutcome,readProgress,progressKey,torchPlacement,SCENE_STYLE} from '../js/exploration-encounters.mjs';
+import {encounterAt,validateEncounters,terrainForEncounter,recordOutcome,readProgress,progressKey,torchPlacement,combatTorchLightPlacement,sceneLights,SCENE_STYLE} from '../js/exploration-encounters.mjs';
 const map=JSON.parse(readFileSync(new URL('../data/exploration/old-tollhouse.json',import.meta.url)));
 const initial={encounters:{},player:null},event=map.encounters[0];
 assert.deepEqual(validateEncounters(map),[]);
@@ -47,13 +47,14 @@ assert.equal(sandbox.explorationUnits().enemies[0].x,1,'Current-scale snapshots 
 console.log('PASS legacy encounter positions migrate from 1:1 to 1:2 without resetting survivors');
 
 sandbox.explorationEncounter={map,origin:{x:3,z:6},openDoors:['3,7','3,9']};
-Object.assign(sandbox,{explorationEncounterApi:{terrainForEncounter,torchPlacement,SCENE_STYLE},HEX_ROW:31.5,MAP_MIN_X:-20,MAP_MAX_X:19,MAP_MIN_Y:-16,MAP_MAX_Y:15,
+Object.assign(sandbox,{explorationEncounterApi:{terrainForEncounter,torchPlacement,combatTorchLightPlacement,sceneLights,SCENE_STYLE},HEX_ROW:31.5,MAP_MIN_X:-20,MAP_MAX_X:19,MAP_MIN_Y:-16,MAP_MAX_Y:15,
   walls:new Set(),rebuildArchitecturalBlockedHexes(){},worldPointForHex:(x,y)=>({x:x*64+y*32,y:y*31.5})});
 sandbox.isWall=(x,y)=>sandbox.walls.has(`${x},${y}`);
 sandbox.configureExplorationTerrain();
 assert(sandbox.explorationTerrain.torches.length>0);
-for(const torch of sandbox.explorationTerrain.torches){assert.equal(sandbox.isWall(torch.x,torch.y),false);assert.equal(torch.sourceKind,'torch');assert.equal(torch.radiusHexes,3);}
+for(const torch of sandbox.explorationTerrain.torches){assert.equal(sandbox.isWall(torch.visibilityHex.x,torch.visibilityHex.y),false);assert.equal(torch.sourceKind,'torch');assert.equal(torch.radiusHexes,3);}
 assert(sandbox.explorationTerrain.torches.length<map.torches.length,'Exclude torches beyond the bounded encounter');
+sandbox.game={player:{x:0,y:0}};const physicalLights=sandbox.explorationVisualLights();for(const torch of sandbox.explorationTerrain.torches){const light=physicalLights[torch.sourceIndex];assert.equal(light.x,torch.lightPosition.x);assert.equal(light.z,torch.lightPosition.z);}
 console.log('PASS map torches project onto valid encounter floor and remain crop bounded');
 
 // Fresh encounter facing is chosen before checking a rotating two-hex footprint.

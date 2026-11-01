@@ -37,3 +37,23 @@ assert(spellEffectLightSources({shockingGraspFx:{...fx,casterId:'caster',targetI
 const sphere={id:'sphere',type:'flaming-sphere',cells:[{x:1,y:1}]};lights=spellEffectLightSources({areaEffects:[sphere]},500,lookup);sphere.cells=[{x:9,y:2}];assert.equal(spellEffectLightSources({areaEffects:[sphere]},600,lookup)[0].x,9);assert.equal(spellEffectLightSources({},600,lookup).length,0);
 assert(spellSurfaceRadiance({x:1,y:1},lights,()=>1)[0]>0);assert.deepEqual(spellSurfaceRadiance({x:1,y:1},lights,()=>0),[0,0,0]);
 console.log('PASS split-hex floor coverage/slivers/cache, wall hex segmentation, six-angle unit/wall depth, luminous spell families, world projectile paths, mobile sphere and expired flashes');
+
+const {combatTorchLightPlacement,COMBAT_TORCH_LIGHT_WALL_DISTANCE_METRES}=await import('../js/combat-torch-light.mjs');
+const {SCENE_STYLE,torchPlacement}=await import('../js/exploration-scene-style.mjs');
+const {blankEdgeMap}=await import('../js/exploration-authoring.mjs');
+const {paintEdge}=await import('../js/exploration-edges.mjs');
+assert.equal(COMBAT_TORCH_LIGHT_WALL_DISTANCE_METRES,.3048);
+const cellW=128,cellH=128*.568,terrain={cellW,cellH,project:(x,z)=>({x:(x-3)*cellW,y:(z-7)*cellH})};
+for(const [axis,x,z] of [['h',4,4],['v',5,4],['h',4,5],['v',4,4]]){
+ const map=blankEdgeMap('torch-clearance','Torch clearance');paintEdge(map,{axis,x,z},'wall');const placement=torchPlacement(map,{x:4,z:4}),before={...placement};
+ for(const depth of [3,6]){
+  const light=combatTorchLightPlacement(placement,terrain,SCENE_STYLE,depth),plane=terrain.project(placement.wallX/3,placement.wallZ/3);
+  const metres=Math.hypot(light.world.x-plane.x,(light.world.y-plane.y)/(cellH/cellW))/cellW*3-depth/2/cellW*3;
+  assert(Math.abs(metres-.3048)<1e-10,'Exactly 12 inches from the rendered face, on all four mounts');
+  assert.deepEqual(placement,before,'Exploration flame and sconce artwork stay unchanged');
+  assert(Math.abs((light.hex.x+light.hex.y/2)*64-light.world.x)<1e-9);assert(Math.abs(light.hex.y*31.5-light.world.y)<1e-9,'No hex-center snapping');
+  assert(Math.abs(terrain.project(light.point.x/3,light.point.z/3).x-light.world.x)<1e-9);assert(Math.abs(terrain.project(light.point.x/3,light.point.z/3).y-light.world.y)<1e-9,'Physical exposure and supplemental light share one position');
+ }
+}
+const standing={x:6,z:9,y:2.35,attached:false};const unchanged=combatTorchLightPlacement(standing,terrain,SCENE_STYLE);assert.deepEqual(unchanged.point,standing.attached?{}:{x:6,z:9,y:2.35});
+console.log('PASS four-sided combat torch clearance, variable wall thickness, shared unsnapped source and unchanged exploration/freestanding placement');
