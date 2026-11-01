@@ -16821,12 +16821,12 @@ function deployConfiguredCombatMobs(condition,player){
         const db=Math.abs(hexDistance(b,player)-preferredRadius);
         return da-db || a.y-b.y || a.x-b.x;
       });
-      const placement=candidates.find(pos=>occupiedHexesAt(mob,pos.x,pos.y,mob.facingHex||0)
+      const placement=candidates.find(pos=>occupiedHexesAt(mob,pos.x,pos.y,hexDirectionIndexToward(pos,player))
         .every(cell=>inside(cell.x,cell.y)&&!isWall(cell.x,cell.y)&&!occupied.has(key(cell.x,cell.y))));
       if(!placement)throw new Error("Not enough free battlefield hexes for the configured MOB roster.");
       mob.x=placement.x;mob.y=placement.y;
       mob.facingHex=hexDirectionIndexToward(placement,player);
-      mob.facing=placement.x>=player.x?"left":"right";
+      mob.facing=(player.x-placement.x)+(player.y-placement.y)*.5>=0?"right":"left";
       occupiedHexes(mob).forEach(cell=>occupied.add(key(cell.x,cell.y)));
       (friendly?allies:enemies).push(mob);index++;
     }
@@ -16871,6 +16871,7 @@ function newGame(condition=selectedCombatCondition){
     studioSpriteTest:selectedMobEncounter==="studio-kobold",
     condition,
     player,
+    partyStart:{x:player.x,y:player.y},
     allies,
     enemies,
     order:[],
@@ -26780,7 +26781,7 @@ function drawFloor(){
 
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
   if(explorationTerrain)drawExplorationIlluminationLayer();else drawTerrainIlluminationLayer(tiles);
-  if(explorationTerrain){drawExplorationTorchFloorGlow(tiles);drawDistanceVisibilityLayer(tiles);}
+  if(explorationTerrain){drawExplorationTorchFloorGlow(tiles);drawDistanceVisibilityLayer(tiles);drawExplorationSpellLighting(tiles);}
 
   for(const tile of tiles){
     drawHexGridLine(tile.x,tile.y);

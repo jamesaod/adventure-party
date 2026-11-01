@@ -135,3 +135,17 @@ const overlap={...render,document:{createElement:()=>({getContext:()=>paint})},c
 vm.createContext(overlap);const presentStart=hooks.indexOf('function presentExplorationSolids('),presentEnd=hooks.indexOf('\n}',presentStart)+2;vm.runInContext(hooks.slice(presentStart,presentEnd),overlap);
 const face={points:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}],screen:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}]};
 overlap.presentExplorationSolids({layer:{width:10,height:10},left:0,top:0,faces:Array(5).fill(face)},0,0,true);assert(Math.abs(shown-.2)<1e-9,'Overlapping solid faces retain the 20% distance visibility floor');
+
+const {spellSurfaceRadiance}=await import('../js/spell-illumination.mjs');
+const spell={sourceKind:'unit',x:0,y:0,radiusHexes:6,intensity:1,color:[255,100,40]},sample={x:1,y:0};
+const oneLight=spellSurfaceRadiance(sample,[spell],()=>1),twoLights=spellSurfaceRadiance(sample,[spell,spell],()=>1);
+assert(oneLight.every(v=>v>0));assert(twoLights.every((v,i)=>v===2*oneLight[i]));assert.deepEqual(spellSurfaceRadiance(sample,[spell],()=>0),[0,0,0]);assert.deepEqual(spellSurfaceRadiance(sample,[{...spell,sourceKind:'torch'}],()=>1),[0,0,0]);
+assert(oneLight[0]>oneLight[1]&&oneLight[1]>oneLight[2]);assert(spellSurfaceRadiance(sample,Array(10).fill(spell),()=>1)[0]>1,'Radiance is not clamped to ambient or visibility=100%');
+const coreLightNames=['illuminationSourceReachesHex','illuminationContributionFromSource'];const lightEnv={game:{condition:'wall'},inside:()=>true,hexDistance:(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y)),lightBlockedBetweenHexes:()=>false};vm.createContext(lightEnv);vm.runInContext(coreLightNames.map(extract).join('\n'),lightEnv);
+assert(spellSurfaceRadiance(sample,[spell],(source,p)=>lightEnv.illuminationContributionFromSource(source,p.x,p.y))[0]>0);lightEnv.lightBlockedBetweenHexes=()=>true;assert.deepEqual(spellSurfaceRadiance(sample,[spell],(source,p)=>lightEnv.illuminationContributionFromSource(source,p.x,p.y)),[0,0,0]);
+// Both production presentation paths add the same RGB radiance at full ambient.
+Object.assign(render,{illuminationSources:()=>[spell],illuminationContributionFromSource:()=>1,tracePolygonOnContext:()=>true,hexScreenVertices:()=>[]});render.explorationEncounterApi.spellSurfaceRadiance=spellSurfaceRadiance;render.explorationTerrain.torches=[];
+render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePaints.includes('rgb(46,18,7)'),'Walls add colored spell light even at full ambient');
+render.illuminationSources=()=>[];facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert.equal(facePaints.length,0,'Expired light is removed without stale cached glow');
+const floorPaint=[];render.illuminationSources=()=>[spell];render.ctx={save(){},restore(){},fill(){floorPaint.push({mode:this.globalCompositeOperation,color:this.fillStyle});}};render.drawExplorationSpellLighting([sample]);assert.deepEqual(floorPaint,[{mode:'lighter',color:'rgb(46,18,7)'}]);
+console.log('PASS additive colored spell radiance above ambient, stacking, authoritative wall blocking, floor/wall parity and expiry');
