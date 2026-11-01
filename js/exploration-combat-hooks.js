@@ -141,11 +141,11 @@ function drawExplorationIlluminationLayer(){
   if(explorationTerrain.edgeBased&&typeof camera!=='undefined'){
     // Bake exposure only around the viewport; distant architecture remains in
     // the rules map without allocating a full-map lighting bitmap.
-    const world=worldPointForHex(camera.x,camera.y),zoom=typeof battlefieldZoom==='number'?battlefieldZoom:1;
-    const x=Math.floor(explorationEncounter.origin.x+world.x/explorationTerrain.cellW),z=Math.floor(explorationEncounter.origin.z+world.y/explorationTerrain.cellH);
-    const v=battlefieldViewportBounds();
-    const rx=Math.ceil((v.right-v.left)/explorationTerrain.cellW)+1,rz=Math.ceil((v.bottom-v.top)/explorationTerrain.cellH)+1;
-    b={left:Math.max(mapBounds.left,x-rx),right:Math.min(mapBounds.right,x+rx),top:Math.max(mapBounds.top,z-rz),bottom:Math.min(mapBounds.bottom,z+rz)};
+    const world=worldPointForHex(camera.x,camera.y),v=battlefieldViewportBounds(),anchor=battlefieldZoomAnchor(),origin=explorationEncounter.origin;
+    b={left:Math.max(mapBounds.left,Math.floor(origin.x+(world.x+v.left-anchor.x)/explorationTerrain.cellW)-1),
+      right:Math.min(mapBounds.right,Math.ceil(origin.x+(world.x+v.right-anchor.x)/explorationTerrain.cellW)+1),
+      top:Math.max(mapBounds.top,Math.floor(origin.z+(world.y+v.top-anchor.y)/explorationTerrain.cellH)-1),
+      bottom:Math.min(mapBounds.bottom,Math.ceil(origin.z+(world.y+v.bottom-anchor.y)/explorationTerrain.cellH)+1)};
   }
   const left=(b.left-explorationEncounter.origin.x-.5)*explorationTerrain.cellW,top=(b.top-explorationEncounter.origin.z-.5)*explorationTerrain.cellH;
   const spanWidth=(b.right-b.left+1)*explorationTerrain.cellW,spanHeight=(b.bottom-b.top+1)*explorationTerrain.cellH,origin=screenPointForWorld({x:left,y:top});
