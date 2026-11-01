@@ -10,3 +10,9 @@
 - These additional emitters are presentation data. They do not become tactical Light effects or cancel Darkness. Surface radiance remains additive above painted ambient and expires with its effect.
 
 Validation: `test-combat-surface-lighting.mjs`, `test-combat-view-environments.mjs`, `test-exploration-rendering.mjs`, and the full Adventure Party Validation workflow. Private exported maps and browser fixtures remain outside the commit in `work/`.
+
+## Candidate Rev 242 — solid unseen walls and combat torch clearance
+
+Unseen wall/door prisms retain opaque coverage and receive 90% color darkening in a cached presentation. The old 10% alpha compositing allowed underlying floor grid lines to appear through rear wall surfaces. Room visibility masking stays independent.
+
+Combat-only torch emitters sit 0.3048 metres (12 inches) in front of the rendered prism face, accounting for its thickness. Physical floor/wall exposure, glow, shadow origin, distance relief and flicker queries share that unsnapped world position. Flame/sconce artwork and exploration lighting retain their existing placement. The former nearest floor hex is retained only for sconce visibility, never as a light origin.

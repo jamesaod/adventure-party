@@ -60,7 +60,7 @@ for(const axis of ['x','z'])for(const hinge of ['start','end']){
   const footprint=new Set(solid.faces.flatMap(f=>f.points).map(p=>`${p.x},${p.y}`));assert.equal(footprint.size,4,'Leaf is a solid rectangle, never a plane');
  }
 }
-// Production renderer: unseen architecture is composited once at .1 opacity;
+// Production renderer: unseen architecture stays opaque with 90% darkening;
 // stationary/camera-pan redraws reuse pixels rather than relighting each face.
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 let allocations=0,drawAlpha=[];
@@ -72,11 +72,11 @@ vm.createContext(render);vm.runInContext(hooks.slice(0,hooks.indexOf('function c
 render.explorationVisualLights=()=>[];render.explorationSurfaceExposure=()=>({multiply:[255,255,255],boost:[0,0,0]});
 render.explorationMaterialTile=()=>null;
 const wall={a:{x:0,y:0},b:{x:64,y:0}},solids=[geometry.solidPrism(wall.a,wall.b,3,35,0,terrain.cellH/terrain.cellW)];
-render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,1);assert.equal(drawAlpha.at(-1),.1);
-render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,1);assert.equal(drawAlpha.at(-1),1);
-render.camera.x++;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,1,'Camera pans reuse geometry lighting');
-render.battlefieldRotation=(render.battlefieldRotation+1)%6;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,2,'Azimuth changes rebuild projected faces');
-console.log('PASS solid door front/back/end/top geometry, stable hinges, vertical height at six azimuths, unseen wall opacity and bounded render caching');
+render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,2);assert.equal(drawAlpha.at(-1),1);assert(facePaints.includes('rgba(0,0,0,.9)'));
+render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,2);assert.equal(drawAlpha.at(-1),1);
+render.camera.x++;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,2,'Camera pans reuse geometry lighting');
+render.battlefieldRotation=(render.battlefieldRotation+1)%6;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,4,'Azimuth changes rebuild projected faces');
+console.log('PASS solid door front/back/end/top geometry, stable hinges, vertical height at six azimuths, opaque dark unseen walls and bounded render caching');
 
 const names=['E','NE','NW','W','SW','SE'],frames=Object.fromEntries(names.map(name=>[name,{image:{complete:true,naturalWidth:10,naturalHeight:10},assetId:name}]));
 Object.assign(state,{HEX_DIRS:names.map(name=>({name})),facingDirectionIndex:u=>u.facingHex,unitPoseDefinition:()=>({directionalSprites:{stand:frames},defaultPose:'stand'}),activeUnitPoseName:()=> 'stand'});

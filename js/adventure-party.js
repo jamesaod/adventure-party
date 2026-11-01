@@ -30320,7 +30320,7 @@ function draw(){
   const tileSet=activeCombatTerrainTileSet();
 
   if(explorationTerrain)for(const torch of explorationTerrain.torches||[]){
-    if(torch.mountWallId||!isHexVisibleToFriendlyParty(torch.x,torch.y))continue;
+    if(torch.mountWallId||!isHexVisibleToFriendlyParty((torch.visibilityHex||torch).x,(torch.visibilityHex||torch).y))continue;
     const c=screenPointForWorld(torch.world||worldPointForHex(torch.x,torch.y));
     actors.push({sortY:c.y+.4,sortX:c.x,fn:()=>drawExplorationTorch(torch)});
   }
