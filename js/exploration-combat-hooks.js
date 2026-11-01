@@ -1,5 +1,5 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
-const explorationFloorImage=new Image(),explorationWallImage=new Image(),explorationDoorImage=new Image();
+const explorationFloorImage=new Image(),explorationWallImage=new Image(),explorationDoorImage=new Image(),explorationGrassImage=new Image();
 const explorationMaterialTiles=new WeakMap();
 // Filter to each material's displayed footprint, including anisotropic wall
 // reduction, instead of keeping a grainy large source or a blurred fixed mip.
@@ -20,10 +20,11 @@ function explorationMaterialTile(image,targetWidth=512,targetHeight=512){
 function explorationMaterialDensity(){return (typeof battlefieldZoom==='number'?battlefieldZoom:1)*(typeof BATTLEFIELD_RENDER_DENSITY==='number'?BATTLEFIELD_RENDER_DENSITY:1);}
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
-function explorationFloorPatternForView(){
-  if(!explorationFloorImage.complete||!explorationFloorImage.naturalWidth)return null;
-  const m=explorationEncounterApi.materialMetrics(explorationTerrain),density=explorationMaterialDensity();
-  const tile=explorationMaterialTile(explorationFloorImage,m.floorWidth*density,m.floorHeight*density),pattern=ctx.createPattern(tile,'repeat');if(!pattern)return null;
+function explorationFloorPatternForView(outdoor=false){
+  const image=outdoor?explorationGrassImage:explorationFloorImage;
+  if(!image.complete||!image.naturalWidth)return null;
+  const m=outdoor?explorationEncounterApi.grassMaterialMetrics(explorationTerrain):explorationEncounterApi.materialMetrics(explorationTerrain),density=explorationMaterialDensity();
+  const tile=explorationMaterialTile(image,m.floorWidth*density,m.floorHeight*density),pattern=ctx.createPattern(tile,'repeat');if(!pattern)return null;
   const origin=screenPointForWorld({x:-explorationTerrain.cellW/2,y:-explorationTerrain.cellH/2}),u=battlefieldProjectVector({x:m.floorWidth,y:0}),v=battlefieldProjectVector({x:0,y:m.floorHeight});
   pattern.setTransform(new DOMMatrix([u.x/tile.width,u.y/tile.width,v.x/tile.height,v.y/tile.height,origin.x,origin.y]));return pattern;
 }
@@ -499,7 +500,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C245');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C246');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C238');
@@ -510,7 +511,9 @@ async function startExplorationCombat(){
     request.previous=saved.encounters[request.event.id]||request.previous;request.player=saved.player||request.player;
     explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';explorationWallImage.src='assets/textures/exploration/wall.png?v=R238C206';
     explorationDoorImage.src='assets/textures/exploration/door.png?v=R238C206';
-    await Promise.all([explorationFloorImage.decode(),explorationWallImage.decode(),explorationDoorImage.decode()]);
+    const images=[explorationFloorImage,explorationWallImage,explorationDoorImage];
+    if(explorationEncounterApi.hasOutdoorGrass(request.map)){explorationGrassImage.src=explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246';images.push(explorationGrassImage);}
+    await Promise.all(images.map(image=>image.decode()));
     selectedMobEncounter='custom';combatMobRoster.length=0;
     const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';

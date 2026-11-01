@@ -1,15 +1,18 @@
+import {GRASS_TEXTURES} from './exploration-ground.mjs?v=R238C246';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C239';
 export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C239';
 export const CELL=SCENE_STYLE.cellMetres,HEIGHT=SCENE_STYLE.wallMetres;
-export async function explorationMaterials(renderer){
+export async function explorationMaterials(renderer,{outdoor=false}={}){
  const loader=new THREE.TextureLoader();
  const textures=await Promise.all(['wall','floor','door'].map(name=>loader.loadAsync(new URL(`../assets/textures/exploration/${name}.png?v=R238C206`,import.meta.url).href)));
+ if(outdoor)textures.push(await loader.loadAsync(new URL('../'+GRASS_TEXTURES.short+'?v=R238C246',import.meta.url).href));
  for(const texture of textures){texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());}
  const m=SCENE_STYLE.materials;
  textures[0].wrapS=textures[0].wrapT=textures[1].wrapS=textures[1].wrapT=THREE.RepeatWrapping;
  textures[0].repeat.set(1/m.wallWidthScale,m.wallRows/m.sourceWallRows);textures[1].repeat.set(m.floorSlabs/m.sourceFloorSlabs,m.floorSlabs/m.sourceFloorSlabs);
- return {textures,wall:new THREE.MeshLambertMaterial({map:textures[0]}),floor:new THREE.MeshLambertMaterial({map:textures[1]}),wood:new THREE.MeshLambertMaterial({map:textures[2]}),ceiling:new THREE.MeshLambertMaterial({map:textures[0],color:0x777066})};
+ if(textures[3]){textures[3].wrapS=textures[3].wrapT=THREE.RepeatWrapping;textures[3].repeat.set(1,1);}
+ return {textures,grass:textures[3]?new THREE.MeshLambertMaterial({map:textures[3]}):null,wall:new THREE.MeshLambertMaterial({map:textures[0]}),floor:new THREE.MeshLambertMaterial({map:textures[1]}),wood:new THREE.MeshLambertMaterial({map:textures[2]}),ceiling:new THREE.MeshLambertMaterial({map:textures[0],color:0x777066})};
 }
 export function explorationDoor(wall,wood,open=false,options={}){
  const root=new THREE.Group();

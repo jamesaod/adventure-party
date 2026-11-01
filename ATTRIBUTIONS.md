@@ -64,3 +64,7 @@ Modified: normalized grip orientation, reduced geometry and 256px textures. Repo
 ## Shield, Orc
 
 User-supplied `SM_Wep_Shield_Set_54.fbx` and `Shield_Optimised_01.png` (2026-10-29). Red/black design selected by the repository owner. Original author/license metadata was not supplied. Modified: atlas crop and front UV remap, plain wood/iron backing materials, normalized shared shield frame and 256px runtime texture; 622 triangles preserved. See docs/SHIELD_ORC.md.
+
+## Outdoor grass test textures (Rev 246)
+
+`assets/textures/exploration/grass-short-v1.png` and `grass-worn-v1.png` were generated for this project with the built-in image_gen tool on 2026-11-01. Original generated PNGs are preserved without pixel edits. Exact prompts, dimensions and SHA-256 checksums are recorded in `assets/textures/exploration/grass-generation-v1.json`. Short grass is the experimental Outdoor / sky floor material; worn grass is retained for comparison.
