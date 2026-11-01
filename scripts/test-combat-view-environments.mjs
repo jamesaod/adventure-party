@@ -85,3 +85,29 @@ for(let azimuth=0;azimuth<6;azimuth++)for(let facing=0;facing<6;facing++){
  state.battlefieldRotation=azimuth;const unit={facingHex:facing};assert.equal(state.directionalUnitPoseFrame(unit).facing,names[(facing-azimuth+6)%6]);assert.equal(unit.facingHex,facing);
 }
 console.log('PASS all 36 view-relative sprite facings without mutating tactical facing');
+
+const {tileDistanceVisibility,distanceDarkness}=await import('../js/distance-visibility.mjs');
+const {ambientLightAt,paintAmbientLight}=await import('../js/exploration-environment.mjs');
+assert.equal(tileDistanceVisibility(6),1);assert.equal(tileDistanceVisibility(7),.9);assert.equal(tileDistanceVisibility(8),.8);
+for(let distance=0;distance<100;distance++){
+ assert(tileDistanceVisibility(distance)>=.2);assert.equal(tileDistanceVisibility(distance,100),1);
+ assert(Math.abs(tileDistanceVisibility(distance,10)-Math.min(1,1-Math.max(0,distanceDarkness(distance)-.1)))<1e-10);
+}
+assert.equal(tileDistanceVisibility(30,0,1),1);assert.equal(tileDistanceVisibility(30),.2);
+const lightingMap=blankEdgeMap('ambient-test','Ambient test');assert.equal(ambientLightAt(lightingMap,3,3),0);
+paintCell(lightingMap,3,3,'outdoor');assert.equal(ambientLightAt(lightingMap,3,3),100);
+paintAmbientLight(lightingMap,3,3,40);assert.equal(ambientLightAt(lightingMap,3,3),40);
+const exported=parsePack(JSON.stringify(seedPack(lightingMap))).maps[0];assert.equal(ambientLightAt(exported,3,3),40);
+resizeMap(exported,20,18);assert.equal(ambientLightAt(exported,3,3),40);assert.equal(ambientLightAt(exported,19,17),0);
+paintCell(exported,3,3,'ambient-default');assert.equal(ambientLightAt(exported,3,3),100);
+assert.throws(()=>paintAmbientLight(exported,3,3,101));assert.throws(()=>parsePack(JSON.stringify(seedPack({...lightingMap,ambientLight:[[200]]}))));
+// Exercise the production layer: active actor, ambient overrides and wall-blocked lights.
+const painted=[];let actor={x:0,y:0,alive:true},ambient=0,blocked=false;
+const fade={game:{player:actor,condition:'open'},activeUnit:()=>actor,explorationTerrain:{cellAt:(x,y)=>({x,z:y})},explorationEncounter:{map:lightingMap},explorationEncounterApi:{tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>ambient},
+ ctx:{save(){},restore(){},fill(){painted.push(this.fillStyle);}},hexDistance:(a,b)=>Math.abs(a.x-b.x),illuminationSources:()=>[{x:10,y:0}],illuminationContributionFromSource:()=>blocked?0:.3,tracePolygonOnContext:()=>true,hexScreenVertices:()=>[]};
+vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;vm.runInContext(hooks.slice(start,end),fade);
+fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert(Math.abs(Number(painted.at(-1).split(',').at(-1).slice(0,-1))-.1)<1e-10);
+blocked=true;fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.at(-1),'rgba(0,0,0,0.4)');
+ambient=100;const count=painted.length;fade.drawDistanceVisibilityLayer([{x:90,y:0}]);assert.equal(painted.length,count);
+ambient=0;actor={x:8,y:0,alive:true};fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.length,count,'Distance follows the active actor');
+console.log('PASS distance 7/8 thresholds, 20% minimum, bright-day override, additive ambient/torch relief, active actor and ambient paint/export/resize/reset');

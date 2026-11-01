@@ -26779,6 +26779,7 @@ function drawFloor(){
 
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
   if(explorationTerrain)drawExplorationIlluminationLayer();else drawTerrainIlluminationLayer(tiles);
+  if(explorationTerrain)drawDistanceVisibilityLayer(tiles);
 
   for(const tile of tiles){
     drawHexGridLine(tile.x,tile.y);

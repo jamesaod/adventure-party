@@ -148,3 +148,13 @@ exploration-combat-geometry.mjs describes solid rectangular wall/door footprints
 All map walls stay in the architecture pass. Walls, frames and leaves outside party LOS are rendered into an opaque local layer and then composited once at ten-percent visibility; overlapping faces do not accidentally accumulate full brightness. Hidden units retain the existing visibility guard. Full authored geometry is still used for collision and LOS.
 
 Solid layers cache by owner identity, azimuth, display density, light/door state and texture readiness. Camera translation reuses the cached pixels. Viewport rejection happens before canvas allocation; distant walls do not allocate full-screen layers. Regression tests cover solid faces/hinges on both axes and both hinge ends, six azimuths, vertical height, inverse picking at three zoom levels, unseen compositing, cache reuse and invalidation.
+
+## Candidate Rev 238 — distance visibility benchmark
+
+A separate floor pass follows the active unit (player fallback before initiative). Hex distance 0–6 adds no darkness; distance 7 adds 10%, 8 adds 20%, and subsequent hexes add ten percentage points up to 80%. Minimum visibility from this pass is 20%, per the user's corrected benchmark.
+
+Let D = min(0.8, max(0, (distance - 6) * 0.1)). Let L = clamp(paintedAmbient / 100 + wallBlockedDynamicLight, 0, 1). Visibility = clamp(1 - max(0, D - L), 0.2, 1). Existing illuminationContributionFromSource supplies torch and light-spell falloff and wall/closed-door blocking. Ambient defaults indoor0/outdoor100; authored overrides take precedence. Bright-day ambient100 always removes distance fading, even at arbitrarily large distances.
+
+The pass draws after shared floor exposure and before grid/actors, using current projected hex polygons. It clips to the existing friendly LOS union, preserving the separate ten-percent unseen-room/wall presentation instead of multiplying it down to two percent. It grants no new creature visibility, targeting, movement or sight through walls. The 20% floor applies to this additional distance layer, not the pre-existing physical material illumination or out-of-LOS mask.
+
+Tests cover thresholds/cap, ambient and torch relief, bright-day override at all ranges, active-actor changes, paint/export/resize/default reset and the existing production renderer/projection/LOS checks.

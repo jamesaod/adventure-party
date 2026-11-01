@@ -1,3 +1,5 @@
+export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './distance-visibility.mjs?v=R238C238';
+export {ambientLightAt} from './exploration-environment.mjs?v=R238C238';
 export {solidPrism,combatDoorSolids} from './exploration-combat-geometry.mjs?v=R238C237';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
 import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C236';
