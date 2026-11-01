@@ -1318,9 +1318,22 @@
   }
 
 
+  function r241VolleySurfaceLights(){
+    const lights=[],now=performance.now();
+    if(r36VolleyFx){
+      const t=Math.max(0,Math.min(1,(now-r36VolleyFx.started)/r36VolleyFx.duration));
+      for(const missile of r36VolleyFx.missiles){
+        const head=r36QuadraticPoint(missile.start,missile.control,missile.end,t),world=battlefieldWorldAtScreen({x:head.x,y:head.y+20-5*t});
+        lights.push({id:'magic-missile:'+missile.index,sourceKind:'spell-fx',x:world.x/HEX_W-world.y/(2*HEX_ROW),y:world.y/HEX_ROW,radiusHexes:2,intensity:.8,color:[125,190,255]});
+      }
+    }
+    for(const fx of r36ImpactFx){const unit=getUnitById(fx.targetId),t=(now-fx.started)/fx.duration;if(unit&&t>=0&&t<1)lights.push({id:'missile-impact:'+fx.targetId,sourceKind:'spell-fx',x:unit.x,y:unit.y,radiusHexes:2,intensity:.8*(1-t),color:[125,190,255]});}
+    return lights;
+  }
   window.AdventurePartyMagicMissileVolley={
     release:"Candidate Rev 36",
     active:()=>!!r36VolleyFx,
+    surfaceLights:r241VolleySurfaceLights,
     impactCount:()=>r36ImpactFx.length,
     targetSummary:r36TargetSummary
   };
