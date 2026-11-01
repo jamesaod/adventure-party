@@ -2,7 +2,7 @@ import {isOutdoor} from './exploration-environment.mjs?v=R238C236';
 import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C232';
 import {FACINGS} from './exploration-core.mjs?v=R238C236';
 import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C236';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C236';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C237';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;

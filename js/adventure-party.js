@@ -2881,7 +2881,7 @@ function directionalUnitPoseFrame(unit,poseName=null){
   const poses=definition?.directionalSprites;
   if(!poses) return null;
 
-  const facing=HEX_DIRS[facingDirectionIndex(unit)].name;
+  const facing=HEX_DIRS[((facingDirectionIndex(unit)-(typeof battlefieldRotation==='number'?battlefieldRotation:0))%6+6)%6].name;
   const requestedPose=poseName || activeUnitPoseName(unit) || definition.defaultPose || "stand";
   const defaultPose=definition.defaultPose || "stand";
   const loaded=frame=>frame?.image?.complete &&
@@ -5628,11 +5628,20 @@ function worldPointForHex(x,y){
 }
 
 function screenPointForWorld(point,elevation=0){
-  const cameraWorld=worldPointForHex(camera.x,camera.y);
-  return {
-    x:(BATTLEFIELD_LOGICAL_WIDTH*0.47)+(point.x-cameraWorld.x),
-    y:(BATTLEFIELD_LOGICAL_HEIGHT*0.57)+(point.y-cameraWorld.y)-elevation
-  };
+  const cameraWorld=worldPointForHex(camera.x,camera.y),v=battlefieldProjectVector({x:point.x-cameraWorld.x,y:point.y-cameraWorld.y});
+  return {x:BATTLEFIELD_LOGICAL_WIDTH*.47+v.x,y:BATTLEFIELD_LOGICAL_HEIGHT*.57+v.y-elevation};
+}
+function battlefieldProjectVector(point,inverse=false){
+  const angle=(typeof battlefieldRotation==='number'?battlefieldRotation:0)*Math.PI/3*(inverse?-1:1),c=Math.cos(angle),s=Math.sin(angle),squash=HEX_ROW/(HEX_W*Math.sqrt(3)/2);
+  return {x:point.x*c-point.y/squash*s,y:point.x*s*squash+point.y*c};
+}
+function battlefieldWorldAtScreen(point){
+  const a=battlefieldZoomAnchor(),v=battlefieldProjectVector({x:point.x-a.x,y:point.y-a.y},true),c=worldPointForHex(camera.x,camera.y);
+  return {x:c.x+v.x,y:c.y+v.y};
+}
+function battlefieldWorldViewport(){
+  const v=battlefieldViewportBounds(),corners=[[v.left,v.top],[v.right,v.top],[v.right,v.bottom],[v.left,v.bottom]].map(([x,y])=>battlefieldWorldAtScreen({x,y}));
+  return {left:Math.min(...corners.map(p=>p.x)),right:Math.max(...corners.map(p=>p.x)),top:Math.min(...corners.map(p=>p.y)),bottom:Math.max(...corners.map(p=>p.y)),corners};
 }
 
 function configureArchitecturalWalls(mode){
@@ -6933,6 +6942,7 @@ function drawArchitecturalWallTopOutline(wallsToOutline=architecturalWalls){
 
 
 function drawArchitecturalWallSegment(wall){
+  if(wall.material==="exploration-stone")return drawExplorationWallPrism(wall);
   const height=Math.max(1,Math.round(wall.height || 35));
   const thickness=Math.max(3,wall.thickness || 9);
   const capColor=wall.material==="old-wood" ? "#716b61" : wall.material==="exploration-stone" ? "#8a775d" : "#888b92";
@@ -7145,7 +7155,7 @@ const CAMERA_EDGE_HEXES=4;
 
 // Battlefield presentation zoom: visual only, independent of map/hex rules.
 let battlefieldZoom=1;
-let battlefieldRotation=0; // Experimental view-only rotation; rules stay in world coordinates.
+let battlefieldRotation=0; // Ground-plane view azimuth; world coordinates and rules never rotate.
 const BATTLEFIELD_ZOOM_MIN=0.6;
 const BATTLEFIELD_ZOOM_MAX=1.8;
 const BATTLEFIELD_ZOOM_STEP=0.1;
@@ -7155,16 +7165,16 @@ function battlefieldZoomAnchor(){
 }
 
 function battlefieldViewportBounds(){
-  const a=battlefieldZoomAnchor(),angle=-battlefieldRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle);
-  const points=[[0,0],[BATTLEFIELD_LOGICAL_WIDTH,0],[BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT],[0,BATTLEFIELD_LOGICAL_HEIGHT]].map(([x,y])=>{
-    x=(x-a.x)/battlefieldZoom;y=(y-a.y)/battlefieldZoom;
-    return {x:a.x+x*c-y*s,y:a.y+x*s+y*c};
-  });
-  return {left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};
+  const a=battlefieldZoomAnchor();
+  return {left:a.x-a.x/battlefieldZoom,right:a.x+(BATTLEFIELD_LOGICAL_WIDTH-a.x)/battlefieldZoom,top:a.y-a.y/battlefieldZoom,bottom:a.y+(BATTLEFIELD_LOGICAL_HEIGHT-a.y)/battlefieldZoom};
 }
 function rotateBattlefield(direction){
   battlefieldRotation=(battlefieldRotation+direction+6)%6;hoverHex=null;
-  const rose=document.getElementById('combatCompassRose');if(rose)rose.style.transform=`rotate(${battlefieldRotation*60}deg)`;
+  const rose=document.getElementById('combatCompassRose');
+  if(rose){
+    const squash=HEX_ROW/(HEX_W*Math.sqrt(3)/2),directions={N:{x:0,y:-squash},S:{x:0,y:squash},E:{x:1,y:0},W:{x:-1,y:0}};
+    rose.style.transform='';for(const label of rose.children){const v=battlefieldProjectVector(directions[label.textContent.trim()]),length=Math.hypot(v.x,v.y)||1;Object.assign(label.style,{left:`${46+v.x/length*36}px`,top:`${46+v.y/length*36}px`,right:'auto',bottom:'auto',transform:'translate(-50%,-50%)'});}
+  }
   const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${battlefieldRotation*60}°`;
   draw();
 }
@@ -7742,26 +7752,12 @@ async function focusRangedMissTarget(target,settleMs=150){
 }
 
 function hexCenter(x,y,elevation=0){
-  const dx=x-camera.x;
-  const dy=y-camera.y;
-
-  return {
-    x:(BATTLEFIELD_LOGICAL_WIDTH*0.47) + dx*HEX_W + dy*(HEX_W/2),
-    y:(BATTLEFIELD_LOGICAL_HEIGHT*0.57) + dy*HEX_ROW - elevation
-  };
+  return screenPointForWorld(worldPointForHex(x,y),elevation);
 }
 
 function hexScreenVertices(x,y,elevation=0){
-  const c=hexCenter(x,y,elevation);
-
-  return [
-    {x:c.x,         y:c.y-HEX_H/2},
-    {x:c.x+HEX_W/2, y:c.y-HEX_H/4},
-    {x:c.x+HEX_W/2, y:c.y+HEX_H/4},
-    {x:c.x,         y:c.y+HEX_H/2},
-    {x:c.x-HEX_W/2, y:c.y+HEX_H/4},
-    {x:c.x-HEX_W/2, y:c.y-HEX_H/4}
-  ];
+  const c=worldPointForHex(x,y);
+  return [[0,-HEX_H/2],[HEX_W/2,-HEX_H/4],[HEX_W/2,HEX_H/4],[0,HEX_H/2],[-HEX_W/2,HEX_H/4],[-HEX_W/2,-HEX_H/4]].map(([x,y])=>screenPointForWorld({x:c.x+x,y:c.y+y},elevation));
 }
 
 function roundAxial(q,r){
@@ -7789,13 +7785,8 @@ function roundAxial(q,r){
 }
 
 function hexAtCanvasPoint(px,py){
-  const relR=(py-(BATTLEFIELD_LOGICAL_HEIGHT*0.57))/HEX_ROW;
-  const relQ=(px-(BATTLEFIELD_LOGICAL_WIDTH*0.47)-relR*(HEX_W/2))/HEX_W;
-
-  return roundAxial(
-    relQ+camera.x,
-    relR+camera.y
-  );
+  const p=battlefieldWorldAtScreen({x:px,y:py}),r=p.y/HEX_ROW;
+  return roundAxial(p.x/HEX_W-r/2,r);
 }
 
 const RULESET={
@@ -12202,26 +12193,8 @@ function isHexCenterInsideObserverLosCone(observer,x,y,context=null){
 }
 
 function visibilityWorldBounds(){
-  const cameraWorld=worldPointForHex(camera.x,camera.y);
-  const margin=140;
-  const v=battlefieldViewportBounds(),anchor=battlefieldZoomAnchor();
-  const left=cameraWorld.x+v.left-anchor.x-margin;
-  const top=cameraWorld.y+v.top-anchor.y-margin;
-  const right=cameraWorld.x+v.right-anchor.x+margin;
-  const bottom=cameraWorld.y+v.bottom-anchor.y+margin;
-
-  return {
-    left,
-    top,
-    right,
-    bottom,
-    corners:[
-      {x:left,y:top},
-      {x:right,y:top},
-      {x:right,y:bottom},
-      {x:left,y:bottom}
-    ]
-  };
+  const v=battlefieldWorldViewport(),margin=140,left=v.left-margin,right=v.right+margin,top=v.top-margin,bottom=v.bottom+margin;
+  return {left,right,top,bottom,corners:[{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}]};
 }
 
 function visibilitySegments(mode="los"){
@@ -26754,8 +26727,8 @@ function visibleHexes(){
   const baseX=Math.floor(camera.x);
   const baseY=Math.floor(camera.y);
 
-  const viewport=battlefieldViewportBounds(),a=battlefieldZoomAnchor();
-  const corners=[[viewport.left,viewport.top],[viewport.right,viewport.top],[viewport.right,viewport.bottom],[viewport.left,viewport.bottom]].map(([x,y])=>({x:camera.x+(x-a.x)/HEX_W-(y-a.y)/(2*HEX_ROW),y:camera.y+(y-a.y)/HEX_ROW}));
+  const viewport=battlefieldViewportBounds(),world=battlefieldWorldViewport();
+  const corners=world.corners.map(p=>({x:p.x/HEX_W-p.y/(2*HEX_ROW),y:p.y/HEX_ROW}));
   const minX=Math.floor(Math.min(...corners.map(p=>p.x)))-2,maxX=Math.ceil(Math.max(...corners.map(p=>p.x)))+2,minY=Math.floor(Math.min(...corners.map(p=>p.y)))-2,maxY=Math.ceil(Math.max(...corners.map(p=>p.y)))+2;
   for(let x=minX;x<=maxX;x++){
     for(let y=minY;y<=maxY;y++){
@@ -27050,7 +27023,9 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   const isDirectionalImage=directionalPoses && Object.values(directionalPoses).some(
     frames=>Object.values(frames).some(frame=>frame?.image===image)
   );
-  const shouldFlip=!isDirectionalImage && facing!==nativeFacing;
+  let viewFacing=facing;
+  if(entity&&typeof battlefieldRotation==='number'&&battlefieldRotation){const dir=HEX_DIRS[facingDirectionIndex(entity)],v=battlefieldProjectVector(worldPointForHex(dir.x,dir.y));viewFacing=v.x<0?'left':'right';}
+  const shouldFlip=!isDirectionalImage && viewFacing!==nativeFacing;
   // Studio captures retain their native alpha and full source resolution.
   // Only legacy pixel-art sprites use the binary-alpha crisp cache.
   const renderSource=isDirectionalImage ? image : (image._crispRenderSource || image);
@@ -30303,7 +30278,6 @@ function draw(){
     density*anchor.x*(1-battlefieldZoom),
     density*anchor.y*(1-battlefieldZoom)
   );
-  ctx.translate(anchor.x,anchor.y);ctx.rotate(battlefieldRotation*Math.PI/3);ctx.translate(-anchor.x,-anchor.y);
   drawFloor();
   drawWallTestFloorPlan();
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
@@ -30314,9 +30288,8 @@ function draw(){
     R197: outline the union silhouette once before wall bodies enter the shared
     depth queue. Units/fog can still correctly cover the outline afterward.
   */
-  const sceneWalls=explorationTerrain?architecturalWalls.filter(w=>isArchitecturalWallVisibleToFriendlyParty(w)):architecturalWalls;
-  drawArchitecturalWallShapeOutline(sceneWalls);
-  drawArchitecturalWallTopOutline(sceneWalls);
+  const sceneWalls=architecturalWalls;
+  if(!explorationTerrain){drawArchitecturalWallShapeOutline(sceneWalls);drawArchitecturalWallTopOutline(sceneWalls);}
 
   drawSpellAreaEffects();
 
@@ -30498,8 +30471,7 @@ function draw(){
     drawDeathFx() still performs its own wall-test visibility check.
   */
   drawDeathFx();
-  ctx.save();ctx.translate(anchor.x,anchor.y);ctx.rotate(-battlefieldRotation*Math.PI/3);ctx.translate(-anchor.x,-anchor.y);
-  drawCombatMessageBox();ctx.restore();
+  drawCombatMessageBox();
 
   /*
     R125: white battlefield text is a dedicated final foreground pass.
@@ -30896,12 +30868,9 @@ document.addEventListener("keydown",(event)=>{
 
 
 function canvasEventPoint(event){
-  const rect=canvas.getBoundingClientRect();
-  const x=(event.clientX-rect.left)*(BATTLEFIELD_LOGICAL_WIDTH/rect.width);
-  const y=(event.clientY-rect.top)*(BATTLEFIELD_LOGICAL_HEIGHT/rect.height);
-  const anchor=battlefieldZoomAnchor();
-  const dx=(x-anchor.x)/battlefieldZoom,dy=(y-anchor.y)/battlefieldZoom,angle=-battlefieldRotation*Math.PI/3;
-  return {x:anchor.x+dx*Math.cos(angle)-dy*Math.sin(angle),y:anchor.y+dx*Math.sin(angle)+dy*Math.cos(angle)};
+  const rect=canvas.getBoundingClientRect(),a=battlefieldZoomAnchor();
+  return {x:a.x+((event.clientX-rect.left)*BATTLEFIELD_LOGICAL_WIDTH/rect.width-a.x)/battlefieldZoom,
+    y:a.y+((event.clientY-rect.top)*BATTLEFIELD_LOGICAL_HEIGHT/rect.height-a.y)/battlefieldZoom};
 }
 
 canvas.addEventListener("mousemove",(event)=>{

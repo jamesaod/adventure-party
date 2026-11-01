@@ -138,3 +138,13 @@ Indoor/outdoor markers travel with the source map. Combat exposure selects the s
 Successful spell commits face the caster toward the selected hex before incantation/action animation. Invalid/uncommitted and self-targeted casts preserve facing. Both the player dispatcher and direct targeted NPC/scroll resolvers use the common commit path.
 
 Validation: test-combat-view-environments covers environment export/resize/defaults, local ambient, shared thickness, all six rotations at three zoom levels, inverse mouse targeting and spell commit facing. Visibility performance tests retain exact indexed/oracle parity and stationary reuse.
+
+## Candidate Rev 237 — isometric azimuth and solid architecture
+
+Supersedes Rev 236 flat image rotation. The existing ground plane is uncompressed, rotated in sixty-degree increments, then projected with the original vertical compression. Vertical height is subtracted after projection, keeping walls, doors, units and labels upright. Hex coordinates, footprints, facing rules and movement costs remain in world space. Six-direction artwork resolves view-relative facings; two-direction legacy sprites mirror to their visible side. Camera, world viewport, mouse picking and LOS use matching inverse transforms. Floor textures and baked illumination use the same affine projection. Compass labels remain readable and indicate projected cardinal directions.
+
+exploration-combat-geometry.mjs describes solid rectangular wall/door footprints with independent elevation. Every leaf has two broad faces, two end faces and a top face. Open doors rotate ninety degrees about the same grounded hinge and preserve their physical width/height; depth is half the wall depth. Existing jamb geometry and a solid lintel surround the aperture. Closed-door collision remains authoritative, while its artwork is owned by the wooden leaf rather than a duplicate masonry block. Windows retain physical openings, projected glass and bars.
+
+All map walls stay in the architecture pass. Walls, frames and leaves outside party LOS are rendered into an opaque local layer and then composited once at ten-percent visibility; overlapping faces do not accidentally accumulate full brightness. Hidden units retain the existing visibility guard. Full authored geometry is still used for collision and LOS.
+
+Solid layers cache by owner identity, azimuth, display density, light/door state and texture readiness. Camera translation reuses the cached pixels. Viewport rejection happens before canvas allocation; distant walls do not allocate full-screen layers. Regression tests cover solid faces/hinges on both axes and both hinge ends, six azimuths, vertical height, inverse picking at three zoom levels, unseen compositing, cache reuse and invalidation.

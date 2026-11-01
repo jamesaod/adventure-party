@@ -3,7 +3,7 @@ import {blankEdgeMap} from '../js/exploration-authoring.mjs';import {paintEdge} 
 const map=blankEdgeMap('performance-regression','Performance regression');
 for(let x=2;x<14;x++)for(let z=2;z<14;z++)if((x+z)%4===0)paintEdge(map,{axis:(x+z)%8?'v':'h',x,z},x%5===0?'window':x%3===0?'door':'wall');
 const terrain=terrainForEncounter(map,{x:3,z:13},new Set()),source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
-const names=['battlefieldZoomAnchor','battlefieldViewportBounds','worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','architecturalWallWorldVertices','wallPolygonSegments','architecturalWallBlocksWorldLine','visibilityWorldBounds','visibilitySegments','cross2d','raySegmentIntersection','castVisibilityRay','wallTestVisibilityPolygonWorld','observerVisibilityContext'];
+const names=['battlefieldProjectVector','battlefieldWorldAtScreen','battlefieldWorldViewport','battlefieldZoomAnchor','battlefieldViewportBounds','worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','architecturalWallWorldVertices','wallPolygonSegments','architecturalWallBlocksWorldLine','visibilityWorldBounds','visibilitySegments','cross2d','raySegmentIntersection','castVisibilityRay','wallTestVisibilityPolygonWorld','observerVisibilityContext'];
 const code=names.map(name=>{const start=source.indexOf(`function ${name}(`),end=source.indexOf('\nfunction ',start+1);return source.slice(start,end);}).join('\n');
 const env={battlefieldZoom:1,battlefieldRotation:0,game:{condition:'wall'},HEX_W:64,HEX_H:42,HEX_ROW:31.5,ARCHITECTURAL_HEX_CORE_SCALE:.9,MAP_MIN_X:-2,MAP_MAX_X:2,MAP_MIN_Y:-2,MAP_MAX_Y:2,architecturalBlockedHexes:new Set(),key:(x,y)=>`${x},${y}`,camera:{x:0,y:0},BATTLEFIELD_LOGICAL_WIDTH:1050,BATTLEFIELD_LOGICAL_HEIGHT:600,architecturalWalls:terrain.walls};vm.createContext(env);vm.runInContext(code,env);
 let seed=6731;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296),point=()=>({x:(random()-.5)*2400,y:(random()-.7)*1500});
@@ -31,9 +31,9 @@ console.log(`PASS cached visibility invalidation, ${baselineChecks} -> ${rayChec
 
 for(const zoom of [.6,1,1.8])for(let rotation=0;rotation<6;rotation++){
  env.battlefieldZoom=zoom;env.battlefieldRotation=rotation;
- const bounds=env.visibilityWorldBounds(),v=env.battlefieldViewportBounds(),a=env.battlefieldZoomAnchor(),c=env.worldPointForHex(env.camera.x,env.camera.y);
- assert(bounds.left<=c.x+v.left-a.x&&bounds.right>=c.x+v.right-a.x);
- assert(bounds.top<=c.y+v.top-a.y&&bounds.bottom>=c.y+v.bottom-a.y);
+ const bounds=env.visibilityWorldBounds(),v=env.battlefieldWorldViewport();
+ assert(bounds.left<=v.left&&bounds.right>=v.right);
+ assert(bounds.top<=v.top&&bounds.bottom>=v.bottom);
  const prior=env.wallTestVisibilityPolygonWorld(observer);env.battlefieldZoom=zoom+.001;
  assert.notEqual(env.wallTestVisibilityPolygonWorld(observer),prior,'Zoom invalidates LOS');
 }

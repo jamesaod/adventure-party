@@ -1,3 +1,4 @@
+export {solidPrism,combatDoorSolids} from './exploration-combat-geometry.mjs?v=R238C237';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
 import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C236';
 export * from './exploration-scene-style.mjs?v=R238C236';
