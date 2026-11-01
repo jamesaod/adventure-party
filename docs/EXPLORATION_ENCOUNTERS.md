@@ -168,3 +168,11 @@ Combat torches retain shared physical mount/height metadata instead of drawing a
 The shared deterministic animation makes flames waver and flicker in both views. Combat modulates local wall brightness and adds a clipped, wall-blocked warm floor glow while reusing the stable illumination bake. The existing fog/weather loop carries animated scenery; torches alone redraw at ten frames per second, fog/weather keep their established cadence, and reduced-motion/hidden-page/exit/game-over handling prevents unnecessary redraws.
 
 Validation covers all four mount directions, shared elevation and geometry, seeded/bounded animation and reduced motion, wall distance cap/bright ambient cancellation, presentation-buffer reuse, and unchanged encounter/source navigation tests. Browser QA compares the same scene in both adapters and checks changing animation frames.
+
+## Candidate Rev 240 — initial facing and additive spell light
+
+Fresh encounter MOBs face the deployed player-party start anchor. Placement validates the rotating footprint using that final facing, then reserves exactly those cells. Both six-direction facingHex and legacy left/right artwork agree with the world direction. Standard combat roster placement uses the same intended orientation during collision checks. Saved encounters retain their current facing instead of being reset on return. game.partyStart captures the initial party anchor independently of later movement.
+
+Spell illumination has a shared additive RGB radiance pass for floor tiles and solid wall/door faces. It is separate from distance-visibility relief and the static physical ambient/torch/lantern bake. At painted ambient100, spell sources can still increase brightness; multiple sources add until the display saturates. Production illuminationContributionFromSource supplies source intensity, color, falloff and architectural/window blocking. The same unit-attached and area sources feed both surfaces. Removing, moving or expiring a light updates the next draw without retaining cached glow; hidden units and LOS concealment remain unchanged. Existing ordinary-combat additive floor/wall illumination is preserved.
+
+Tests cover all six initial facings, final-orientation two-hex footprints, saved facing, additive source color/stacking above full ambient, production light-blocking delegation, floor/wall parity and expiry.
