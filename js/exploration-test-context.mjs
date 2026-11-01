@@ -1,4 +1,4 @@
-import {TEST_KEY,parsePack,destination} from './exploration-authoring.mjs?v=R238C243';
+import {TEST_KEY,parsePack,destination} from './exploration-authoring.mjs?v=R238C244';
 export function testContext(search,storage){
   const query=new URLSearchParams(search);if(query.get('test')!=='1')return null;
   const snapshot=JSON.parse(storage.getItem(TEST_KEY)||'null');

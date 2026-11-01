@@ -27021,6 +27021,11 @@ function runtimeAnchorForAsset(id){
   return {x:0.5,y:1};
 }
 
+function combatSpriteBrightness(unit){
+ if(!unit||!game)return 1;
+ if(explorationTerrain&&typeof explorationUnitSpriteBrightness==='function')return explorationUnitSpriteBrightness(unit);
+ return Math.max(.02,Math.min(1,illuminationAtHex(unit.x,unit.y)));
+}
 function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity=null,anchor=null){
   if(
     !image ||
@@ -27063,6 +27068,8 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
       anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip,pose:activeUnitPoseName(entity)});
     ctx.restore();return;
   }
+  const brightness=typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
+  const spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
   ctx.translate(c.x,c.y);
 
   if(shouldFlip){
@@ -27084,6 +27091,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
 
     ctx.save();
     ctx.globalAlpha=inheritedAlpha*0.45;
+    if(spriteFilter)ctx.filter=spriteFilter;
     for(const offset of visualMirrorOffsets(Math.min(4,imageCount))){
       try{
         ctx.drawImage(
@@ -27113,6 +27121,8 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     );
   }
 
+  ctx.save();
+  if(spriteFilter)ctx.filter=spriteFilter;
   try{
     ctx.drawImage(
       renderSource,
@@ -27123,7 +27133,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     );
   }catch(error){
     console.error("Sprite draw skipped because the image source is invalid.",error);
-  }
+  }finally{ctx.restore();}
 
   ctx.restore();
 }
