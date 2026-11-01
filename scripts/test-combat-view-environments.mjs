@@ -64,7 +64,7 @@ for(const axis of ['x','z'])for(const hinge of ['start','end']){
 // stationary/camera-pan redraws reuse pixels rather than relighting each face.
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 let allocations=0,drawAlpha=[];
-const target=new Proxy({},{get:()=>()=>{},set:()=>true});
+const facePaints=[];const target=new Proxy({},{get:()=>()=>{},set:(o,key,value)=>{if(key==='fillStyle')facePaints.push(value);return true;}});
 const render={...state,Image:class{},DOMMatrix:class{},explorationEncounterApi:{...geometry,materialMetrics,SCENE_STYLE:style},explorationTerrain:terrain,explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
  document:{createElement:()=>{allocations++;return {getContext:()=>target};}},ctx:{save(){},restore(){},drawImage(){drawAlpha.push(this.globalAlpha);}},
  explorationVisualLights:()=>[],explorationSurfaceExposure:()=>({multiply:[255,255,255],boost:[0,0,0]}),isArchitecturalWallVisibleToFriendlyParty:()=>false};
@@ -105,9 +105,33 @@ assert.throws(()=>paintAmbientLight(exported,3,3,101));assert.throws(()=>parsePa
 const painted=[];let actor={x:0,y:0,alive:true},ambient=0,blocked=false;
 const fade={game:{player:actor,condition:'open'},activeUnit:()=>actor,explorationTerrain:{cellAt:(x,y)=>({x,z:y})},explorationEncounter:{map:lightingMap},explorationEncounterApi:{tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>ambient},
  ctx:{save(){},restore(){},fill(){painted.push(this.fillStyle);}},hexDistance:(a,b)=>Math.abs(a.x-b.x),illuminationSources:()=>[{x:10,y:0}],illuminationContributionFromSource:()=>blocked?0:.3,tracePolygonOnContext:()=>true,hexScreenVertices:()=>[]};
-vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;vm.runInContext(hooks.slice(start,end),fade);
+vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;for(const name of ['explorationVisibilityAtHex','explorationTorchAnimation']){const a=hooks.indexOf('function '+name+'('),b=hooks.indexOf('\n}',a)+2;vm.runInContext(hooks.slice(a,b),fade);}
+vm.runInContext(hooks.slice(start,end),fade);
 fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert(Math.abs(Number(painted.at(-1).split(',').at(-1).slice(0,-1))-.1)<1e-10);
 blocked=true;fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.at(-1),'rgba(0,0,0,0.4)');
 ambient=100;const count=painted.length;fade.drawDistanceVisibilityLayer([{x:90,y:0}]);assert.equal(painted.length,count);
 ambient=0;actor={x:8,y:0,alive:true};fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.length,count,'Distance follows the active actor');
 console.log('PASS distance 7/8 thresholds, 20% minimum, bright-day override, additive ambient/torch relief, active actor and ambient paint/export/resize/reset');
+
+const {torchPlacement,torchAnimation}=await import('../js/exploration-scene-style.mjs');
+const {paintEdge}=await import('../js/exploration-edges.mjs');
+for(const [axis,x,z,dx,dz] of [['h',4,4,0,-1],['v',5,4,1,0],['h',4,5,0,1],['v',4,4,-1,0]]){
+ const room=blankEdgeMap('sconce','Sconce');paintEdge(room,{axis,x,z},'wall');const mount=torchPlacement(room,{x:4,z:4});
+ assert(mount.attached);assert.equal(mount.dx,dx);assert.equal(mount.dz,dz);assert.equal(mount.x,12+dx*1.25);assert.equal(mount.z,12+dz*1.25);assert.equal(mount.wallX,12+dx*1.5);assert.equal(mount.wallZ,12+dz*1.5);assert.equal(mount.y,SCENE_STYLE.torch.height);
+}
+assert(!torchPlacement(blankEdgeMap('open','Open'),{x:4,z:4}).attached);
+for(let t=0;t<5000;t+=17){const a=torchAnimation(t,42);assert(a.intensity>=.85-1e-9&&a.intensity<=1.15+1e-9);assert(Math.abs(a.swayX)<=.035);assert(Math.abs(a.swayZ)<=.025);assert(a.height>=.88-1e-9&&a.height<=1.12+1e-9);}
+assert.deepEqual(torchAnimation(234,42),torchAnimation(234,42));assert.notDeepEqual(torchAnimation(234,42),torchAnimation(234,99));assert.deepEqual(torchAnimation(234,42,true),{intensity:1,height:1,width:1,swayX:0,swayZ:0});
+Object.assign(render,{game:{player:{x:-20,y:0,alive:true}},hexDistance:(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y)),illuminationSources:()=>[],illuminationContributionFromSource:()=>0});
+render.explorationEncounterApi={...render.explorationEncounterApi,tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>0};render.explorationTerrain={...terrain,cellAt:(x,y)=>({x,z:y})};
+facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePaints.some(s=>s==='rgba(0,0,0,0.8)'),'Wall faces receive the same capped distance darkness as floors');const warmAllocations=allocations;render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,warmAllocations,'Wall fading reuses its presentation buffer and static material bake');
+render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(!facePaints.some(s=>s.startsWith('rgba(0,0,0,')),'Bright ambient cancels wall distance fading without rebuilding base material lighting');
+render.explorationTerrain.torches=[{}];render.matchMedia=()=>({matches:true});assert(!render.hasAnimatedExplorationTorches());render.matchMedia=()=>({matches:false});assert(render.hasAnimatedExplorationTorches());
+console.log('PASS four wall-sconce mounts, shared bounded/seeded flicker and sway, reduced motion, wall distance fading and bright-day cancellation');
+
+// Worst-case overlapping prism faces: distance darkness must apply only once.
+let pixel=1,shown=0;const paint={save(){},restore(){},translate(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},clip(){},drawImage(){pixel=1;},fillRect(){const m=/rgba\(0,0,0,([.\d]+)\)/.exec(this.fillStyle);if(m)pixel*=1-Number(m[1]);}};
+const overlap={...render,document:{createElement:()=>({getContext:()=>paint})},ctx:{save(){},restore(){},drawImage(){shown=pixel;}},explorationTerrain:{...render.explorationTerrain,torches:[]},illuminationSources:()=>[],explorationVisibilityAtHex:()=>.2,HEX_W:64,HEX_ROW:31.5};
+vm.createContext(overlap);const presentStart=hooks.indexOf('function presentExplorationSolids('),presentEnd=hooks.indexOf('\n}',presentStart)+2;vm.runInContext(hooks.slice(presentStart,presentEnd),overlap);
+const face={points:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}],screen:[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}]};
+overlap.presentExplorationSolids({layer:{width:10,height:10},left:0,top:0,faces:Array(5).fill(face)},0,0,true);assert(Math.abs(shown-.2)<1e-9,'Overlapping solid faces retain the 20% distance visibility floor');
