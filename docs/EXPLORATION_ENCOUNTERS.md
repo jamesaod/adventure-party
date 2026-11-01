@@ -126,3 +126,15 @@ Floor illumination uses a 12-screen-pixel sampling grid with smooth interpolatio
 Rev 235: unseen room floors retain 10% visibility under a 90% dark mask. Unit visibility and opaque magical obscuration are unchanged.
 
 Rev 235 doorway update: normal adjacent movement now passes open edge doors without a crossing command or surcharge. Full-hex core inflation no longer seals open jambs; movement clearance provides a minimum one-hex lane to account for square/hex alignment. Physical artwork and LOS/light/projectile apertures remain authored. Open/close uses O/F, saves both states and rebuilds terrain/caches; occupied doorways cannot be closed. Regression tests cover both axes at 18 different grid alignments, using the production movement pipeline at 1 MP per step.
+
+## Candidate Rev 236 — environment and experimental view controls
+
+Combat compass N/W/E/S sits at the bottom of the right panel. Rotate Left/Right rotates the entire tactical view in sixty-degree steps about the camera anchor; six steps return to the original view. This is an isolated experimental canvas presentation, including scenery and sprite artwork, rather than new three-dimensional camera geometry. Unit/hex coordinates, movement keys, doors and tactical rules retain world directions; mouse targeting inversely transforms the rotated view. The compass follows world north. Rotation is temporary for the page and can be removed independently.
+
+LOS boundary polygons, cache keys, terrain culling and both blackout canvases use the inverse-transformed zoom/rotation viewport. Hidden exploration floors retain ten-percent visibility, with hidden units still excluded. Door leaf top/end faces show depth equal to half the compact wall thickness; shared perspective geometry also uses half the thin-wall depth. Height, width, hinge anchors and ordinary one-point passage are preserved.
+
+Indoor/outdoor markers travel with the source map. Combat exposure selects the shared indoor or daylight ambient profile per sampled map square, retaining wall-blocked torches and lanterns. Outdoor exploration squares omit ceiling tiles and expose the procedural sky background; their floor receives local daylight without brightening every indoor room. No weather/time simulation is introduced.
+
+Successful spell commits face the caster toward the selected hex before incantation/action animation. Invalid/uncommitted and self-targeted casts preserve facing. Both the player dispatcher and direct targeted NPC/scroll resolvers use the common commit path.
+
+Validation: test-combat-view-environments covers environment export/resize/defaults, local ambient, shared thickness, all six rotations at three zoom levels, inverse mouse targeting and spell commit facing. Visibility performance tests retain exact indexed/oracle parity and stationary reuse.

@@ -51,3 +51,7 @@ The inspector changes edge type/material, opening width (40-100% of the edge), d
 Legacy maps are converted in a working copy on editor load/import. Former wall blocks remain void so room footprints and coordinates are preserved. Former door squares become floor; each old door moves to its north edge (horizontal) or west edge (vertical), keeps its old ID and receives a visible migration note. Review these placements before saving. Existing browser data is not rewritten until Save maps. Legacy version-1 maps remain readable by the runtime.
 
 New edge maps start with usable floor in every square and automatic perimeter walls. Void is an explicit terrain choice; perimeter walls do not consume an outer row of floor. Resizing new maps preserves this distinction.
+
+## Candidate Rev 236 — indoor/outdoor squares
+
+Indoor / ceiling and Outdoor / sky brushes paint environment independently of floor occupancy, encounters and edges. Drag to paint several squares; Undo and Save maps use the existing draft workflow. Outdoor squares have a green tint/border and accessible labels. The optional environment array uses one i/o marker per square; absent data means indoor. Export, editor Test Map, encounter handoff and resizing preserve the markers. New resize cells default indoor. Void cannot be painted as outdoor floor.
