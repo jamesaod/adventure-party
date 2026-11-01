@@ -1,13 +1,14 @@
+import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C236';
 import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C232';
 // Authored scene units are metres; tactical cells and compact display heights
 // are projection choices, never dimensions embedded in artwork or item data.
 export const SCENE_STYLE=Object.freeze({
-  cellMetres:3,wallMetres:3.5,eyeMetres:1.65,tacticalWallPixels:35,tacticalWallThickness:3,tacticalHexesPerCell:2,
+  cellMetres:3,wallMetres:3.5,wallDepthMetres:.18,eyeMetres:1.65,tacticalWallPixels:35,tacticalWallThickness:3,tacticalHexesPerCell:2,
   materials:Object.freeze({wallRows:6,sourceWallRows:6,floorSlabs:8,sourceFloorSlabs:4,wallWidthScale:.5,maxTilePixels:512}),
   ambient:Object.freeze({sky:0xc6b69b,ground:0x69635a,intensity:1.2}),
   lantern:Object.freeze({color:0xffdca1,intensity:12,range:18,decay:1.4,height:1.9,offsetZ:.2,shadowPixels:512,shadowNear:.05}),
   torch:Object.freeze({color:0xffa64d,intensity:8,range:10,decay:1.5,height:2.35,wallOffset:1.25,shadowPixels:256,shadowNear:.05}),
-  door:Object.freeze({tacticalArtworkWidth:2,width:2.5,height:3.08,depth:.14,frameWidth:.24,frameDepth:.36,lintelHeight:.4,hingeX:-1.25}),
+  door:Object.freeze({tacticalArtworkWidth:2,width:2.5,height:3.08,depth:.09,frameWidth:.24,frameDepth:.36,lintelHeight:.4,hingeX:-1.25}),
   window:Object.freeze({width:1.2,height:1.4,sill:1})
 });
 export function materialMetrics(terrain,height=SCENE_STYLE.tacticalWallPixels){
@@ -40,8 +41,9 @@ const ambientSky=colorChannels(SCENE_STYLE.ambient.sky).map(linear),ambientGroun
 function linearColor(hex){let value=linearColors.get(hex);if(!value){value=colorChannels(hex).map(linear);if(linearColors.size>=128)linearColors.clear();linearColors.set(hex,value);}return value;}
 // Canvas adapter for the shared hemisphere + Lambert point-light definitions.
 // Values remain linear until exposure is converted to display multipliers.
-export function surfaceLight(point,normal,lights,visible=()=>true){
-  const {ambient}=SCENE_STYLE,sky=ambientSky,ground=ambientGround,hemi=(normal.y+1)/2;
+export function ambientForCell(map,x,z){return isOutdoor(map,x,z)?OUTDOOR_AMBIENT:SCENE_STYLE.ambient;}
+export function surfaceLight(point,normal,lights,visible=()=>true,ambient=SCENE_STYLE.ambient){
+  const sky=ambient===SCENE_STYLE.ambient?ambientSky:linearColor(ambient.sky),ground=ambient===SCENE_STYLE.ambient?ambientGround:linearColor(ambient.ground),hemi=(normal.y+1)/2;
   const result=sky.map((v,i)=>(v*hemi+ground[i]*(1-hemi))*ambient.intensity/Math.PI);
   for(const light of lights){
     const dx=light.x-point.x,dy=light.y-point.y,dz=light.z-point.z,d=Math.hypot(dx,dy,dz);

@@ -2477,3 +2477,15 @@ button, input, select, textarea {
 .combat-mob-editor-row .combat-roster-add{padding:8px}
 #addCombatMobButton{justify-self:start;min-width:150px}
 @media(max-width:680px){.combat-mob-editor-row{grid-template-columns:1fr 1fr;}.combat-mob-editor-row .combat-setup-label{grid-column:1 / -1}}
+
+/* Experimental compass stays at the foot of the right combat view. */
+.unit-info-panel {display:flex;flex-direction:column;}
+#combatCompass {margin-top:auto;padding-top:12px;text-align:center;color:var(--cyan);flex-shrink:0;}
+#combatCompassRose {position:relative;width:92px;height:92px;margin:0 auto 8px;}
+#combatCompassRose span {position:absolute;}
+#combatCompassRose .north {top:0;left:42%;}
+#combatCompassRose .south {bottom:0;left:42%;}
+#combatCompassRose .west {left:0;top:38%;}
+#combatCompassRose .east {right:0;top:38%;}
+#combatCompass button {font-size:14px;margin:2px;}
+#combatCompassStatus {display:block;}

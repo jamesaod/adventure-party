@@ -8,7 +8,7 @@ for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
   const context={game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,adventurePartySun:sun,
-    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
+    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
     queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
     drawFighter:()=>calls.push(sun.drawingGround?'player shadow':'player'),drawStudioSpriteMob:()=>calls.push(sun.drawingGround?'orc shadow':'orc')};
@@ -32,8 +32,8 @@ console.log('PASS exploration floor masking precedes single unit pass; ordinary 
 
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const paths=[],reductions=[],fills=[];
-const maskContext={clearRect(){},fillRect(){fills.push(this.fillStyle);},fill(){}};
-const context={explorationEncounterApi:sceneApi,Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
+const maskContext={save(){},restore(){},translate(){},clearRect(){},fillRect(){fills.push(this.fillStyle);},fill(){}};
+const context={battlefieldViewportBounds:()=>({left:-50,top:-50,right:150,bottom:150}),explorationEncounterApi:sceneApi,Image:class{},document:{createElement:()=>({width:0,height:0,getContext(){return {...maskContext,drawImage:(_image,_x,_y,w,h)=>reductions.push([w,h])};}})},
   friendlyVisibilityObservers:()=>[{x:0,y:0}],observerVisibilityContext:()=>({polygon:[{x:0,y:0},{x:100,y:0},{x:100,y:100},{x:0,y:100}]}),
   screenPointForWorld:(p,elevation=0)=>{assert.equal(elevation,0,'Polygon indices must not become vertex heights');return p;},tracePolygonOnContext:(_ctx,p)=>{paths.push(p);return true;},hasActiveObscuringLosVolume:()=>false,
   visibleHexes:()=>{throw Error('Architectural floor visibility must not use hex centers');},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,ctx:{drawImage(){}}};

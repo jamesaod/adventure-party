@@ -1,5 +1,5 @@
 import {edgeLineBlocked,doorKey,edgeCells} from './exploration-edges.mjs?v=R238C232';
-import {cellKey} from './exploration-core.mjs?v=R238C232';
+import {cellKey} from './exploration-core.mjs?v=R238C236';
 
 export const discoveryKey = map => `adventure-party:explored:${map.id}:${JSON.stringify([map.version,map.grid,map.doors,map.edges])}`;
 const opaque = (map,state,x,z) => !map.grid[z]?.[x] || map.grid[z][x]==='#' || (map.grid[z][x]==='D'&&!state.openDoors.has(cellKey(x,z)));

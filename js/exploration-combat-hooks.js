@@ -59,7 +59,14 @@ function drawExplorationCombatDoor(door){
   }
   const a=screenPointForWorld(frame.a),b=screenPointForWorld(frame.b);
   ctx.strokeStyle='#b09a70';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-  if(door.edgeId&&Math.abs(p.vx)<.001){ctx.strokeStyle='#855025';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(base.x,base.y-p.height/2);ctx.lineTo(base.x+p.vx,base.y+p.vy-p.height/2);ctx.stroke();ctx.restore();return;}
+  if(door.edgeId&&Math.abs(p.vx)<.001){ctx.strokeStyle='#855025';ctx.lineWidth=api.SCENE_STYLE.tacticalWallThickness/2;ctx.beginPath();ctx.moveTo(base.x,base.y-p.height/2);ctx.lineTo(base.x+p.vx,base.y+p.vy-p.height/2);ctx.stroke();ctx.restore();return;}
+  // Extrude the leaf by half the architectural wall thickness; keep the grounded hinge.
+  const depth=api.SCENE_STYLE.tacticalWallThickness/2,length=Math.hypot(p.vx,p.vy)||1,dx=-p.vy/length*depth,dy=p.vx/length*depth;
+  const face=points=>{ctx.beginPath();ctx.moveTo(...points[0]);for(const point of points.slice(1))ctx.lineTo(...point);ctx.closePath();ctx.fill();ctx.stroke();};
+  ctx.fillStyle='#8b6036';ctx.strokeStyle='#392c20';ctx.lineWidth=.5;
+  face([[base.x,base.y-p.height],[base.x+p.vx,base.y+p.vy-p.height],[base.x+p.vx+dx,base.y+p.vy-p.height+dy],[base.x+dx,base.y-p.height+dy]]);
+  ctx.fillStyle='#50351e';
+  face([[base.x+p.vx,base.y+p.vy],[base.x+p.vx,base.y+p.vy-p.height],[base.x+p.vx+dx,base.y+p.vy-p.height+dy],[base.x+p.vx+dx,base.y+p.vy+dy]]);
   ctx.transform(p.vx/p.width,p.vy/p.width,0,1,base.x,base.y-p.height);
   ctx.drawImage(tile,0,0,p.width,p.height);
   for(const [mode,color] of [['multiply',exposure.multiply],['color-dodge',exposure.boost]]){ctx.globalCompositeOperation=mode;ctx.fillStyle=`rgb(${color.join(',')})`;ctx.fillRect(0,0,p.width,p.height);}
@@ -92,16 +99,17 @@ function drawExplorationDarknessVolumes(){
 function drawExplorationVisibilityMask(){
   const observers=friendlyVisibilityObservers().map(observer=>({observer,context:observerVisibilityContext(observer)})).filter(e=>e.context);
   const mask=drawExplorationVisibilityMask.canvas||(drawExplorationVisibilityMask.canvas=document.createElement('canvas'));
-  if(mask.width!==BATTLEFIELD_LOGICAL_WIDTH||mask.height!==BATTLEFIELD_LOGICAL_HEIGHT){mask.width=BATTLEFIELD_LOGICAL_WIDTH;mask.height=BATTLEFIELD_LOGICAL_HEIGHT;}
+  const v=battlefieldViewportBounds(),left=Math.floor(v.left)-2,top=Math.floor(v.top)-2,width=Math.ceil(v.right-left)+2,height=Math.ceil(v.bottom-top)+2;
+  if(mask.width!==width||mask.height!==height){mask.width=width;mask.height=height;}
   const target=mask.getContext('2d');target.clearRect(0,0,mask.width,mask.height);target.globalCompositeOperation='source-over';target.fillStyle='rgba(8,8,12,0.90)';target.fillRect(0,0,mask.width,mask.height);
-  target.globalCompositeOperation='destination-out';target.fillStyle='#000';
+  target.save();target.translate(-left,-top);target.globalCompositeOperation='destination-out';target.fillStyle='#000';
   for(const entry of observers)if(tracePolygonOnContext(target,entry.context.polygon.map(point=>screenPointForWorld(point))))target.fill();
   // Obscuring spell volumes retain their tactical visibility behavior.
   if(hasActiveObscuringLosVolume()){
     target.globalCompositeOperation='source-over';target.fillStyle='#08080c';
     for(const tile of visibleHexes())if(observers.every(e=>obscuringVolumeBlocksLineBetweenHexes(e.observer,tile))&&tracePolygonOnContext(target,hexScreenVertices(tile.x,tile.y)))target.fill();
   }
-  target.globalCompositeOperation='source-over';ctx.drawImage(mask,0,0);
+  target.restore();target.globalCompositeOperation='source-over';ctx.drawImage(mask,left,top);
 }
 // The perspective renderer and this canvas adapter read one authored lighting
 // profile, including the party lantern, exact torch mounts and metre falloff.
@@ -124,7 +132,7 @@ function explorationSurfaceExposure(point,normal,lights,opened){
       return !architecturalWallBlocksWorldLine(toWorld(light),toWorld(p),'light');
     }
     return api.sceneLightVisible(explorationEncounter.map,opened,light,p);
-  }));
+  },api.ambientForCell(explorationEncounter.map,Math.floor(point.x/api.SCENE_STYLE.cellMetres+.5),Math.floor(point.z/api.SCENE_STYLE.cellMetres+.5))));
 }
 function drawExplorationIlluminationLayer(){
   const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
@@ -135,7 +143,8 @@ function drawExplorationIlluminationLayer(){
     // the rules map without allocating a full-map lighting bitmap.
     const world=worldPointForHex(camera.x,camera.y),zoom=typeof battlefieldZoom==='number'?battlefieldZoom:1;
     const x=Math.floor(explorationEncounter.origin.x+world.x/explorationTerrain.cellW),z=Math.floor(explorationEncounter.origin.z+world.y/explorationTerrain.cellH);
-    const rx=Math.ceil(BATTLEFIELD_LOGICAL_WIDTH/(explorationTerrain.cellW*zoom)*.7)+1,rz=Math.ceil(BATTLEFIELD_LOGICAL_HEIGHT/(explorationTerrain.cellH*zoom)*.7)+1;
+    const v=battlefieldViewportBounds();
+    const rx=Math.ceil((v.right-v.left)/explorationTerrain.cellW)+1,rz=Math.ceil((v.bottom-v.top)/explorationTerrain.cellH)+1;
     b={left:Math.max(mapBounds.left,x-rx),right:Math.min(mapBounds.right,x+rx),top:Math.max(mapBounds.top,z-rz),bottom:Math.min(mapBounds.bottom,z+rz)};
   }
   const left=(b.left-explorationEncounter.origin.x-.5)*explorationTerrain.cellW,top=(b.top-explorationEncounter.origin.z-.5)*explorationTerrain.cellH;
@@ -272,10 +281,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C235');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C236');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C232');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C236');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');

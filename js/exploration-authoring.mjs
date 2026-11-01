@@ -1,8 +1,9 @@
+import {paintEnvironment} from './exploration-environment.mjs?v=R238C236';
 import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C232';
 export {upgradeEdgeMap,paintEdge};
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C232';
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C236';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C235';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C236';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -66,6 +67,7 @@ export function paintCell(map,x,z,tool){
  if(map.version===2&&tool==='void')tool='wall';
 
   if(map.version===2?(x<0||x>=map.width||z<0||z>=map.height):(x<1||x>map.width-2||z<1||z>map.height-2))throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+  if(tool==='indoor'||tool==='outdoor'){paintEnvironment(map,x,z,tool==='outdoor');return;}
   if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
   if(tool==='torch'){if(map.grid[z][x]!=='.')throw Error('Place torches on floor.');const i=map.torches.findIndex(p=>p.x===x&&p.z===z);if(i<0)map.torches.push({x,z});else map.torches.splice(i,1);return;}
   const cell=tool==='wall'?'#':tool.startsWith('door-')?'D':'.';
@@ -105,7 +107,8 @@ export function resizeMap(map,width,height){
   if((map.encounters||[]).some(e=>!inside({x:e.spawnX,z:e.spawnZ})||encounterCells(e).some(p=>!inside(p))))throw Error('Move or remove encounters outside the new boundary before shrinking.');
   if(map.version===2&&(map.edges||[]).some(e=>e.x>=(e.axis==='h'?width:width+1)||e.z>=(e.axis==='h'?height+1:height)))throw Error('Move or remove wall edges outside the new boundary before shrinking.');
   const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.version===2?(map.grid[z]?.[x]||'.'):(x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.')).join(''));
-  validateMap({...map,width,height,grid});Object.assign(map,{width,height,grid});return map;
+  const environment=map.environment?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.environment[z]?.[x]||'i').join('')):undefined;
+  validateMap({...map,width,height,grid,environment});Object.assign(map,{width,height,grid,...(environment?{environment}:{})});return map;
 }
 
 // Selection itself is transient; these helpers mutate only explicit author actions.

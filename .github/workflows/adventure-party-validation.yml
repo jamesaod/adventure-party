@@ -221,3 +221,4 @@ jobs:
           node scripts/test-exploration-edges.mjs
           node scripts/test-exploration-combat-bounds.mjs
           node scripts/test-combat-visibility-performance.mjs
+          node scripts/test-combat-view-environments.mjs

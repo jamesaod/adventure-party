@@ -1,7 +1,8 @@
+import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C236';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C234';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C232';
+import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C236';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C236';
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C232';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C232';
 import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C235';
@@ -20,21 +21,28 @@ async function start(){
  if(context){map=context.map;spawn=context.spawn;$('returnLink').href='map-editor.html?map='+encodeURIComponent(context.map.id);$('returnLink').textContent='Return to editor';$('mapSaveStatus').textContent='Test discovery is separate from your saved design.';document.querySelector('.notes').hidden=true;document.querySelector('footer').textContent='Editor test - gold rings are exits - Esc returns to editor - design remains unchanged';}else{const response=await fetch('data/exploration/old-tollhouse.json?v=R238C210');if(!response.ok)throw Error('Map could not load.');map=await response.json();spawn=map.start;}
  state=createExplorationState(map);Object.assign(state,spawn);state.visited=new Set([cellKey(state.x,state.z)]);let saved=null;try{saved=(context?sessionStorage:localStorage).getItem(context?testStateKey(context,'discovery'):discoveryKey(map));if(context){const opened=JSON.parse(sessionStorage.getItem(testStateKey(context,'doors'))||'null');if(Array.isArray(opened))state.openDoors=new Set(opened.filter(key=>map.doors.some(d=>doorKey(d)===key)));}}catch{}discovery=restoreDiscovery(map,saved);if(map.encounters?.length){encounterClient=createEncounterClient(map,context);returnMessage=encounterClient.restore(state);map.party=encounterClient.roster();}
  renderer=new THREE.WebGLRenderer({canvas,antialias:false});renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
- scene=new THREE.Scene();scene.background=new THREE.Color('#1b1815');scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
+ scene=new THREE.Scene();const skyCanvas=document.createElement('canvas');skyCanvas.width=512;skyCanvas.height=256;
+ const skyContext=skyCanvas.getContext('2d'),skyGradient=skyContext.createLinearGradient(0,0,0,256);skyGradient.addColorStop(0,'#346da7');skyGradient.addColorStop(.5,'#9dc7e6');skyGradient.addColorStop(1,'#dbe3df');skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,512,256);
+ skyContext.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<16;i++){skyContext.beginPath();skyContext.ellipse((i*137)%512,35+(i*31)%85,35+i%4*8,7+i%3*3,0,0,Math.PI*2);skyContext.fill();}
+ const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
  const {wall,floor,wood,ceiling}=await explorationMaterials(renderer);
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
  scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
  const lantern=new THREE.PointLight(lamp.color,lamp.intensity,lamp.range,lamp.decay);lantern.position.set(0,lamp.height-EYE,lamp.offsetZ);lantern.castShadow=true;lantern.shadow.mapSize.set(lamp.shadowPixels,lamp.shadowPixels);lantern.shadow.bias=-.002;lantern.shadow.camera.near=lamp.shadowNear;camera.add(lantern);
  const wallCells=[],floorCells=[];for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)(map.grid[z][x]==='#'?wallCells:floorCells).push({x,z});
  const tiles=(cells,height,y,material)=>{if(!cells.length)return;const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(CELL,height,CELL),material,cells.length),matrix=new THREE.Matrix4();cells.forEach((p,i)=>mesh.setMatrixAt(i,matrix.makeTranslation(p.x*CELL,y,p.z*CELL)));mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);};
- if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);tiles(floorCells,.12,-.06,floor);tiles(floorCells,.12,HEIGHT+.06,ceiling);
+ if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);tiles(floorCells,.12,-.06,floor);tiles(floorCells.filter(p=>!isOutdoor(map,p.x,p.z)),.12,HEIGHT+.06,ceiling);
+ // Local sky illumination lights only authored outdoor floor surfaces.
+ const sky=OUTDOOR_AMBIENT;
+ const outdoorFloor=floor.clone();outdoorFloor.emissive=new THREE.Color(sky.sky);outdoorFloor.emissiveIntensity=.28;
+ tiles(floorCells.filter(p=>isOutdoor(map,p.x,p.z)),.015,.008,outdoorFloor);
  $('mapDimensions').textContent=`${map.width} × ${map.height} · North up`;
  for(const d of map.doors){const {root,hinge}=explorationDoor(d.material==='wood'?wood:wall,wood,state.openDoors.has(doorKey(d)),map.version===2?{width:d.width*CELL,hinge:d.hinge}:{});root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);doors.set(doorKey(d),hinge);}
  if(map.version===2)for(const edge of effectiveEdges(map)){
   if(edge.kind==='door')continue;
   const g=edgeGeometry(edge),root=new THREE.Group(),material=edge.material==='wood'?wood:wall;
   root.position.set(g.center.x*CELL,0,g.center.z*CELL);root.rotation.y=g.axis==='x'?Math.PI/2:0;scene.add(root);
-  if(edge.kind==='wall'){box(CELL,HEIGHT,.18,material,0,HEIGHT/2,0,root);continue;}
+  if(edge.kind==='wall'){box(CELL,HEIGHT,SCENE_STYLE.wallDepthMetres,material,0,HEIGHT/2,0,root);continue;}
   const width=edge.width*CELL,sill=SCENE_STYLE.window.sill,height=SCENE_STYLE.window.height,side=(CELL-width)/2;
   for(const sign of [-1,1])box(side,HEIGHT,.18,material,sign*(width/2+side/2),HEIGHT/2,0,root);
   box(width,sill,.18,material,0,sill/2,0,root);box(width,HEIGHT-sill-height,.18,material,0,(HEIGHT+sill+height)/2,0,root);
