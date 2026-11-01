@@ -290,6 +290,14 @@ function explorationVisualLights(){
 
   return lights;
 }
+function explorationUnitSpriteBrightness(unit){
+ const api=explorationEncounterApi;if(!explorationTerrain||!api?.spriteSurfaceBrightness)return 1;
+ const world=worldPointForHex(unit.x,unit.y),cell=api.SCENE_STYLE.cellMetres;
+ const point={x:(explorationEncounter.origin.x+world.x/explorationTerrain.cellW)*cell,y:0,z:(explorationEncounter.origin.z+world.y/explorationTerrain.cellH)*cell};
+ const exposure=explorationSurfaceExposure(point,{x:0,y:1,z:0},explorationVisualLights(),new Set(explorationEncounter.openDoors));
+ const sources=explorationRenderLights();
+ return api.spriteSurfaceBrightness(exposure,explorationVisibilityAtHex(unit,sources),explorationSpellRadianceAtHex(unit,sources));
+}
 function explorationSurfaceExposure(point,normal,lights,opened){
   const api=explorationEncounterApi;
   return api.displayExposure(api.surfaceLight(point,normal,lights,(light,p)=>{
@@ -469,7 +477,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C243');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C244');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C238');

@@ -148,3 +148,5 @@ Rev 241: see docs/COMBAT_LIGHTING_QA.md. Preserve floor/hex intersections, conti
 Rev 242: combat torch light origins use combatTorchLightPlacement at 0.3048m from the rendered wall face. Physical exposure and fractional-hex light/glow queries share that origin; the visibility proxy is not a light source. Unseen solid wall/door surfaces are opaque and darkened 90%, preventing floor-grid bleed through transparent rear faces. See docs/COMBAT_LIGHTING_QA.md.
 
 Rev 243: broad wall/door lighting uses one affine strip per face with exactly-once integer texel coverage. Do not reintroduce adjacent antialiased clip/restore loops along internal hex light boundaries; they leave bright grid-like seams. Keep texture geometry continuous and reuse the scratch strip.
+
+Rev 244: experimental sprite brightness follows hex ground lighting/distance/spell radiance. Apply only inside drawSpriteFacing body/mirror image draws; preserve source PNGs, alpha, emissive glows, HP bars/selection UI and the separate ground-shadow pass. See docs/COMBAT_LIGHTING_QA.md.

@@ -66,3 +66,21 @@ for(const width of [1,7,64,97,256,2048]){
  assert(coverage.every(n=>n===1),'Every strip texel has exactly one owner: no gap, overlap or repeated opacity at a lighting join');
 }
 console.log('PASS seam-free wall light-band coverage at six render resolutions');
+
+const {spriteSurfaceBrightness}=await import('../js/sprite-surface-lighting.mjs');
+const full={multiply:[255,255,255],boost:[0,0,0]},dim={multiply:[128,128,128],boost:[0,0,0]};
+assert.equal(spriteSurfaceBrightness(full,1),1);assert(Math.abs(spriteSurfaceBrightness(dim,1)-128/255)<1e-10);
+assert(Math.abs(spriteSurfaceBrightness(dim,.2)-128/255*.2)<1e-10,'Sprite combines material exposure with the hex distance fade');
+assert(spriteSurfaceBrightness(dim,.2,[.3,.3,.3])>spriteSurfaceBrightness(dim,.2),'Spell light offsets sprite darkness');
+assert.equal(spriteSurfaceBrightness({multiply:[255,255,255],boost:[250,250,250]},1),1,'Bright torches never overexpose pre-rendered art');
+console.log('PASS sprite surface brightness matches exposure/distance, responds to spell light and preserves bright artwork');
+
+const {readFileSync}=await import('node:fs'),vm=await import('node:vm');
+const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8'),drawStart=engine.indexOf('function drawSpriteFacing('),drawEnd=engine.indexOf('\nfunction clearCombatMessage(',drawStart),draws=[],stack=[];
+const context={filter:'none',globalAlpha:1,save(){stack.push({filter:this.filter,globalAlpha:this.globalAlpha});},restore(){Object.assign(this,stack.pop());},translate(){},scale(){},drawImage(image){draws.push({image,filter:this.filter,alpha:this.globalAlpha});}};
+const sprite={complete:true,naturalWidth:40,naturalHeight:50},unit={x:2,y:3};
+const sandbox={ctx:context,unitPoseDefinition:()=>null,activeUnitPoseName:()=> 'stand',enlargeVisualScale:()=>1,combatSpriteBrightness:()=>.35,getUnitEffect:(u,id)=>id==='mirror-image'?{data:{images:1}}:null,visualMirrorOffsets:()=>[{x:3,y:0}],activeEnlargeTransitionFx:()=>null,activeCastingGlowFx:()=>({}),drawCastingGlowSilhouette:()=>assert.equal(context.filter,'none','Casting glow stays emissive'),adventurePartySun:{drawingGround:false,draw(){assert.equal(context.filter,'none','Ground shadow is not sprite-filtered');}},console};
+vm.createContext(sandbox);vm.runInContext(engine.slice(drawStart,drawEnd),sandbox);sandbox.drawSpriteFacing(sprite,{x:0,y:0},40,50,'right','right',unit);
+assert.equal(draws.length,2);assert(draws.every(d=>d.image===sprite&&d.filter==='brightness(0.35)'),'Main sprite and mirror copies use brightness without altering the source');assert.equal(context.filter,'none','Later HP bars/UI retain their original brightness');assert.equal(stack.length,0);
+sandbox.adventurePartySun.drawingGround=true;sandbox.drawSpriteFacing(sprite,{x:0,y:0},40,50,'right','right',unit);assert.equal(draws.length,2);
+console.log('PASS production sprite-only filter, mirror copies, unfiltered casting glow/ground shadow, source preservation and restored UI context');
