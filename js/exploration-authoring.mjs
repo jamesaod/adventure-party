@@ -1,9 +1,9 @@
-import {paintEnvironment} from './exploration-environment.mjs?v=R238C236';
+import {paintEnvironment,paintAmbientLight} from './exploration-environment.mjs?v=R238C238';
 import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C232';
 export {upgradeEdgeMap,paintEdge};
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C236';
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C238';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C237';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C238';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -62,11 +62,12 @@ export function parsePack(text){
   if(text.length>2_000_000)throw Error('Adventure Pack is too large (2 MB maximum).');
   const pack=JSON.parse(text),issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));return pack;
 }
-export function paintCell(map,x,z,tool){
+export function paintCell(map,x,z,tool,ambientPercent=0){
  if(map.version===2&&['wall','door-x','door-z'].includes(tool))throw Error('Choose an edge to place a wall or opening.');
  if(map.version===2&&tool==='void')tool='wall';
 
   if(map.version===2?(x<0||x>=map.width||z<0||z>=map.height):(x<1||x>map.width-2||z<1||z>map.height-2))throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+  if(tool==='ambient'||tool==='ambient-default'){paintAmbientLight(map,x,z,tool==='ambient-default'?null:ambientPercent);return;}
   if(tool==='indoor'||tool==='outdoor'){paintEnvironment(map,x,z,tool==='outdoor');return;}
   if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
   if(tool==='torch'){if(map.grid[z][x]!=='.')throw Error('Place torches on floor.');const i=map.torches.findIndex(p=>p.x===x&&p.z===z);if(i<0)map.torches.push({x,z});else map.torches.splice(i,1);return;}
@@ -108,7 +109,8 @@ export function resizeMap(map,width,height){
   if(map.version===2&&(map.edges||[]).some(e=>e.x>=(e.axis==='h'?width:width+1)||e.z>=(e.axis==='h'?height+1:height)))throw Error('Move or remove wall edges outside the new boundary before shrinking.');
   const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.version===2?(map.grid[z]?.[x]||'.'):(x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.')).join(''));
   const environment=map.environment?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.environment[z]?.[x]||'i').join('')):undefined;
-  validateMap({...map,width,height,grid,environment});Object.assign(map,{width,height,grid,...(environment?{environment}:{})});return map;
+  const ambientLight=map.ambientLight?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.ambientLight[z]?.[x]??null)):undefined;
+  validateMap({...map,width,height,grid,environment,ambientLight});Object.assign(map,{width,height,grid,...(environment?{environment}:{}),...(ambientLight?{ambientLight}:{})});return map;
 }
 
 // Selection itself is transient; these helpers mutate only explicit author actions.

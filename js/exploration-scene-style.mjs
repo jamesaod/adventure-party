@@ -1,4 +1,4 @@
-import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C236';
+import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C238';
 import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C232';
 // Authored scene units are metres; tactical cells and compact display heights
 // are projection choices, never dimensions embedded in artwork or item data.

@@ -1,4 +1,4 @@
-import {validateEnvironment} from './exploration-environment.mjs?v=R238C236';
+import {validateEnvironment} from './exploration-environment.mjs?v=R238C238';
 import {validateEdges,syncEdgeDoors,normalizeDoorWidths,doorKey,edgeBetween,edgeKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C232';
 export const FACINGS=['North','East','South','West'];
 const vectors=[[0,-1],[1,0],[0,1],[-1,0]];
