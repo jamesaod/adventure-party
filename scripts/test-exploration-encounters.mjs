@@ -32,8 +32,12 @@ import vm from 'node:vm';
 const hook=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const sandbox={location:{search:''},URLSearchParams,structuredClone,Image:class{},window:{},explorationEncounter:{event:{mobId:'orc',count:1,spawnX:1,spawnZ:0},position:{x:0,z:0}},explorationTerrain:{project:(x,y)=>({x:x*64,y:y*32})},HEX_W:64,MAP_MIN_X:0,MAP_MAX_X:2,MAP_MIN_Y:0,MAP_MAX_Y:0,
 makeFighter:()=>({id:'player',hp:30,alive:true}),makeLibraryMob:()=>({hp:8,alive:true}),isWall:()=>false,key:(x,y)=>`${x},${y}`,inside:(x,y)=>x>=0&&x<=2&&y===0,worldPointForHex:(x,y)=>({x:x*64,y:y*32}),occupiedHexesAt:(u,x,y)=>[{x,y}],occupiedHexes:u=>[{x:u.x,y:u.y}],architecturalWallBlocksStep:()=>false};
-vm.createContext(sandbox);vm.runInContext(hook,sandbox);
+const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const facingStart=engine.indexOf('function hexDirectionIndexToward('),facingEnd=engine.indexOf('\n}',facingStart)+2;
+sandbox.HEX_DIRS=[{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:0},{x:-1,y:1},{x:0,y:1}];sandbox.hexDistance=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y));
+vm.createContext(sandbox);vm.runInContext(engine.slice(facingStart,facingEnd),sandbox);vm.runInContext(hook,sandbox);
 const roster=sandbox.explorationUnits();assert.equal(roster.player.id,'player','Engine initiative resolves its controlled character by stable player ID');assert.equal(roster.player.controller,'player');assert.equal(roster.enemies.length,1);assert.notEqual(roster.enemies[0].x,roster.player.x);
+assert.equal(roster.enemies[0].facingHex,sandbox.hexDirectionIndexToward(roster.enemies[0],roster.player));assert.equal(roster.enemies[0].facing,'left');
 console.log('PASS encounter deployment preserves production player identity and non-overlapping opponents');
 sandbox.explorationTerrain.scale=2;
 sandbox.explorationEncounter.previous={enemies:[{hp:7,alive:true,x:1,y:0}]};
@@ -51,3 +55,16 @@ assert(sandbox.explorationTerrain.torches.length>0);
 for(const torch of sandbox.explorationTerrain.torches){assert.equal(sandbox.isWall(torch.x,torch.y),false);assert.equal(torch.sourceKind,'torch');assert.equal(torch.radiusHexes,3);}
 assert(sandbox.explorationTerrain.torches.length<map.torches.length,'Exclude torches beyond the bounded encounter');
 console.log('PASS map torches project onto valid encounter floor and remain crop bounded');
+
+// Fresh encounter facing is chosen before checking a rotating two-hex footprint.
+for(const dir of sandbox.HEX_DIRS){
+ const spawn={x:dir.x*3,z:dir.y*3},checks=[];
+ const env={...sandbox,MAP_MIN_X:-6,MAP_MAX_X:6,MAP_MIN_Y:-6,MAP_MAX_Y:6,explorationEncounter:{event:{mobId:'orc',count:1,spawnX:spawn.x,spawnZ:spawn.z},position:{x:0,z:0}},
+ explorationTerrain:{scale:2,project:(x,y)=>({x:x*64+y*32,y:y*31.5})},inside:(x,y)=>x>=-6&&x<=6&&y>=-6&&y<=6,isWall:()=>false,makeLibraryMob:()=>({alive:true,facingHex:0}),
+ occupiedHexesAt:(u,x,y,facing=u.facingHex||0)=>{if(u.id!=='player')checks.push({x,y,facing});return u.id==='player'?[{x,y}]:[{x,y},{x:x+sandbox.HEX_DIRS[facing].x,y:y+sandbox.HEX_DIRS[facing].y}];}};
+ env.occupiedHexes=u=>env.occupiedHexesAt(u,u.x,u.y,u.facingHex||0);vm.createContext(env);vm.runInContext(hook,env);
+ const deployed=env.explorationUnits(),enemy=deployed.enemies[0],wanted=sandbox.hexDirectionIndexToward(enemy,deployed.player);assert.equal(enemy.facingHex,wanted);assert(checks.some(c=>c.x===enemy.x&&c.y===enemy.y&&c.facing===wanted));
+ const footprint=env.occupiedHexes(enemy);assert(footprint.every(c=>env.inside(c.x,c.y)&&!(c.x===deployed.player.x&&c.y===deployed.player.y)));
+ env.explorationEncounter.previous={terrainScale:2,enemies:[{...enemy,facingHex:(wanted+1)%6}]};const resumed=env.explorationUnits();assert.equal(resumed.enemies[0].facingHex,(wanted+1)%6,'Resuming preserves the saved tactical facing');
+}
+console.log('PASS all six initial MOB facings, final-orientation footprint checks and saved encounter facing');
