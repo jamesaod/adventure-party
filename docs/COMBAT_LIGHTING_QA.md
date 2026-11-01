@@ -24,3 +24,17 @@ Broad wall/door faces compose their static exposure and dynamic fade/flicker/spe
 ## Candidate Rev 244 — sprite shading experiment
 
 Pre-rendered unit images now receive a brightness filter from their hex ground exposure, friendly-anchored distance fade and spell radiance. Brightness caps at the original artwork brightness. Ordinary combat uses its existing hex illumination query. Mirror images share the body filter; HP bars, selection markers, casting glows and the separate terrain-shadow pass remain unaffected. Original PNGs, pose/frame caches and sprite alpha are preserved. This is presentation-only and changes no detection or targeting rules.
+
+## Candidate Rev 245 — indoor/outdoor daylight through openings
+
+The existing Indoor / ceiling and Outdoor / sky brushes define local environments. Outdoor ambient paint sets sky strength (default 100%); indoor paint sets the authored room base (default 0% ambient relief). No new map format or authoring controls are required.
+
+Open doors, windows, and unwalled indoor/outdoor transitions become daylight apertures. Three samples across each aperture supply occluded, distance-faded diffuse sky light. Walls and closed doors block it. Nearby indoor floor/wall surfaces receive a weaker sky-colored fill propagated through connected indoor cells, attenuated by distance and additional doors/windows. Sealed rooms receive no leaked fill. This first pass uses diffuse sky and approximate room bounce; directional sun shafts are a later layer.
+
+Physical floor/wall/door exposure, sprite brightness, distance-fade relief and the tactical hex illumination query share the field. This natural light is not a magical Light source and cannot cancel magical Darkness. Outdoor ambient is not added a second time. Painted indoor base remains independent of the added daylight.
+
+Fields cache by map/grid/edge/environment/ambient/door-state snapshots. Aperture queries are spatially bounded and cached; zero-aperture legacy maps take the fast path. Changing doors or paint invalidates floor/wall exposure caches. Unit initiative, camera rotation and torch flicker do not rebuild the daylight transport field.
+
+To test in the editor: paint floor on both sides of a wall, mark one side Outdoor / sky and the other Indoor / ceiling, and place a Door edge between them. Keep outdoor ambient at its default 100% and indoor at 0% for contrast. Add an indoor encounter and use Test Map. Open/close the door in combat; optionally add a Window edge or another room behind a second door to compare incoming sky light and attenuation.
+
+Validation includes aperture blocking, door close/reopen, windows, roof transitions, painted sky strength, indoor ambient base, sealed/connected adjacent rooms, wall-facing response, query reuse, production field invalidation, legacy defaults and magical Darkness precedence. The isolated editor import -> Test Map -> encounter -> open/close door path was exercised with a local QA pack; private fixtures remain excluded from commits.

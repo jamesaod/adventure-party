@@ -55,7 +55,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  const left=Math.floor(Math.min(...all.map(p=>p.x)))-2,top=Math.floor(Math.min(...all.map(p=>p.y)))-2,width=Math.ceil(Math.max(...all.map(p=>p.x))-left)+2,height=Math.ceil(Math.max(...all.map(p=>p.y))-top)+2,v=battlefieldViewportBounds();
  if(left+width<v.left||left>v.right||top+height<v.top||top>v.bottom)return;
  const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=api.SCENE_STYLE.cellMetres,squash=explorationTerrain.cellH/explorationTerrain.cellW;
- const cache=drawExplorationSolids.cache||(drawExplorationSolids.cache=new WeakMap()),key=JSON.stringify([typeof battlefieldRotation==='number'?battlefieldRotation:0,explorationMaterialDensity(),lights,explorationEncounter.openDoors,explorationFloorImage.naturalWidth,explorationWallImage.naturalWidth,explorationDoorImage.naturalWidth]);
+ const cache=drawExplorationSolids.cache||(drawExplorationSolids.cache=new WeakMap()),key=JSON.stringify([typeof battlefieldRotation==='number'?battlefieldRotation:0,explorationMaterialDensity(),lights,explorationDaylight()?.revision||0,explorationEncounter.openDoors,explorationFloorImage.naturalWidth,explorationWallImage.naturalWidth,explorationDoorImage.naturalWidth]);
  const anchor=screenPointForWorld(solids[0].a),prior=cache.get(cacheOwner);
  if(prior?.key===key){presentExplorationSolids(prior,prior.left+anchor.x-prior.anchor.x,prior.top+anchor.y-prior.anchor.y,visible);return;}
  const layer=document.createElement('canvas');layer.width=width;layer.height=height;const target=layer.getContext('2d');target.translate(-left,-top);target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';
@@ -115,7 +115,7 @@ function explorationVisibilityAtHex(point,sources=null,distancePoint=point){
  const api=explorationEncounterApi;if(!api?.tileDistanceVisibility)return 1;
  const distance=explorationFriendlyDistance(distancePoint);if(distance<api.DISTANCE_VISIBILITY.startHex)return 1;
  const p=explorationTerrain.cellAt(point.x,point.y),ambient=api.ambientLightAt(explorationEncounter.map,p.x,p.z);if(ambient>=100)return 1;
- let light=0;for(const source of sources||explorationRenderLights())light+=illuminationContributionFromSource(source,point.x,point.y)*(source.sourceKind==='torch'?explorationTorchAnimation(source).intensity:1);
+ let light=typeof explorationDaylightAtHex==='function'?explorationDaylightAtHex(point):0;for(const source of sources||explorationRenderLights())light+=illuminationContributionFromSource(source,point.x,point.y)*(source.sourceKind==='torch'?explorationTorchAnimation(source).intensity:1);
  return api.tileDistanceVisibility(distance,ambient,light);
 }
 function presentExplorationSolids(entry,x,y,visible){
@@ -298,16 +298,38 @@ function explorationUnitSpriteBrightness(unit){
  const sources=explorationRenderLights();
  return api.spriteSurfaceBrightness(exposure,explorationVisibilityAtHex(unit,sources),explorationSpellRadianceAtHex(unit,sources));
 }
-function explorationSurfaceExposure(point,normal,lights,opened){
-  const api=explorationEncounterApi;
-  return api.displayExposure(api.surfaceLight(point,normal,lights,(light,p)=>{
-    if(typeof architecturalWallBlocksWorldLine==='function'){
-      const toWorld=v=>({x:(v.x/api.SCENE_STYLE.cellMetres-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(v.z/api.SCENE_STYLE.cellMetres-explorationEncounter.origin.z)*explorationTerrain.cellH});
-      return !architecturalWallBlocksWorldLine(toWorld(light),toWorld(p),'light');
-    }
-    return api.sceneLightVisible(explorationEncounter.map,opened,light,p);
-  },api.ambientForCell(explorationEncounter.map,Math.floor(point.x/api.SCENE_STYLE.cellMetres+.5),Math.floor(point.z/api.SCENE_STYLE.cellMetres+.5))));
+function explorationDaylight(){
+ const api=explorationEncounterApi;if(!api?.buildDaylightField||!explorationEncounter?.map)return null;
+ const map=explorationEncounter.map,doors=explorationEncounter.openDoors,old=explorationDaylight.cache;
+ if(old&&old.map===map&&old.environment===map.environment&&old.ambient===map.ambientLight&&old.edges===map.edges&&old.grid===map.grid&&old.doors===doors)return old;
+ const field=api.buildDaylightField(map,new Set(doors));
+ return explorationDaylight.cache={map,environment:map.environment,ambient:map.ambientLight,edges:map.edges,grid:map.grid,doors,field,revision:(old?.revision||0)+1};
 }
+function explorationDaylightVisible(light,point){
+ const api=explorationEncounterApi;
+ if(typeof architecturalWallBlocksWorldLine==='function'){
+  const toWorld=v=>({x:(v.x/api.SCENE_STYLE.cellMetres-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(v.z/api.SCENE_STYLE.cellMetres-explorationEncounter.origin.z)*explorationTerrain.cellH});
+  return !architecturalWallBlocksWorldLine(toWorld(light),toWorld(point),'light');
+ }
+ return api.sceneLightVisible(explorationEncounter.map,new Set(explorationEncounter.openDoors),light,point);
+}
+function explorationAmbientIlluminationAtHex(x,y){
+ const api=explorationEncounterApi,p=explorationTerrain.cellAt(x,y),map=explorationEncounter.map,amount=api.ambientLightAt(map,p.x,p.z)/100;
+ const base=api.isOutdoor(map,p.x,p.z)?Math.max(.02,amount):ILLUMINATION_RULES.indoorAmbient+(1-ILLUMINATION_RULES.indoorAmbient)*amount;
+ return Math.min(1,base+explorationDaylightAtHex({x,y}));
+}
+function explorationDaylightAtHex(hex){
+ const field=explorationDaylight()?.field;if(!field)return 0;
+ const p=worldPointForHex(hex.x,hex.y),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
+ return field.sample({x:(explorationEncounter.origin.x+p.x/explorationTerrain.cellW)*cell,y:0,z:(explorationEncounter.origin.z+p.y/explorationTerrain.cellH)*cell},{x:0,y:1,z:0},explorationDaylightVisible).relief;
+}
+function explorationSurfaceExposure(point,normal,lights,opened){
+ const api=explorationEncounterApi,field=explorationDaylight()?.field,cell=api.SCENE_STYLE.cellMetres,x=Math.floor(point.x/cell+.5),z=Math.floor(point.z/cell+.5);
+ const ambient=field?field.ambientAt(x,z):api.ambientForCell(explorationEncounter.map,x,z);
+ const base=api.surfaceLight(point,normal,lights,explorationDaylightVisible,ambient),day=field?.sample(point,normal,explorationDaylightVisible);
+ return api.displayExposure(day?.rgb.some(v=>v>0)?base.map((v,i)=>v+day.rgb[i]):base);
+}
+
 function drawExplorationIlluminationLayer(){
   const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
   const mapBounds=explorationTerrain.bounds;
@@ -324,7 +346,7 @@ function drawExplorationIlluminationLayer(){
   // Material textures and architectural silhouettes retain their full detail.
   const sampleWorld=12/(typeof battlefieldZoom==='number'?battlefieldZoom:1);
   const width=Math.ceil(spanWidth/sampleWorld),height=Math.ceil(spanHeight/sampleWorld);
-  const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors]);
+  const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors,explorationDaylight()?.revision||0]);
   let cache=drawExplorationIlluminationLayer.cache;
   if(!cache||cache.key!==cacheKey){
     const layers=[document.createElement('canvas'),document.createElement('canvas')];for(const c of layers){c.width=width;c.height=height;}
@@ -477,7 +499,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C244');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C245');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C238');
