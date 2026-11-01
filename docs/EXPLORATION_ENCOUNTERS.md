@@ -158,3 +158,13 @@ Let D = min(0.8, max(0, (distance - 6) * 0.1)). Let L = clamp(paintedAmbient / 1
 The pass draws after shared floor exposure and before grid/actors, using current projected hex polygons. It clips to the existing friendly LOS union, preserving the separate ten-percent unseen-room/wall presentation instead of multiplying it down to two percent. It grants no new creature visibility, targeting, movement or sight through walls. The 20% floor applies to this additional distance layer, not the pre-existing physical material illumination or out-of-LOS mask.
 
 Tests cover thresholds/cap, ambient and torch relief, bright-day override at all ranges, active-actor changes, paint/export/resize/default reset and the existing production renderer/projection/LOS checks.
+
+## Candidate Rev 239 — wall distance fading and mounted sconces
+
+Visible solid wall and door faces now sample the same active-unit distance visibility, painted ambient percentage and wall-blocked dynamic-light relief as floor tiles. The distance floor remains 20%; existing out-of-LOS architecture stays in its separate ten-percent presentation. A reusable presentation copy darkens face brightness without making visible walls transparent or rebuilding cached material lighting. Bright ambient removes distance fading from walls as well as floors.
+
+Combat torches retain shared physical mount/height metadata instead of drawing a ground icon at their proxy hex. Wall-mounted fixtures include the backplate, bracket, stem, cup, flame/core and glow. Attached sconces render with their host wall to avoid being overwritten by long diagonal segments; the wall hides fixtures on its back face. Legacy nearest-floor light/LOS proxy coordinates remain intact, so source mapping does not silently shift across a wall.
+
+The shared deterministic animation makes flames waver and flicker in both views. Combat modulates local wall brightness and adds a clipped, wall-blocked warm floor glow while reusing the stable illumination bake. The existing fog/weather loop carries animated scenery; torches alone redraw at ten frames per second, fog/weather keep their established cadence, and reduced-motion/hidden-page/exit/game-over handling prevents unnecessary redraws.
+
+Validation covers all four mount directions, shared elevation and geometry, seeded/bounded animation and reduced motion, wall distance cap/bright ambient cancellation, presentation-buffer reuse, and unchanged encounter/source navigation tests. Browser QA compares the same scene in both adapters and checks changing animation frames.

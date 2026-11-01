@@ -1,6 +1,6 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C236';
-export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C236';
+import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C239';
+export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C239';
 export const CELL=SCENE_STYLE.cellMetres,HEIGHT=SCENE_STYLE.wallMetres;
 export async function explorationMaterials(renderer){
  const loader=new THREE.TextureLoader();

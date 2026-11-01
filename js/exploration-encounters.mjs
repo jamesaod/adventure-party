@@ -2,8 +2,8 @@ export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './dis
 export {ambientLightAt} from './exploration-environment.mjs?v=R238C238';
 export {solidPrism,combatDoorSolids} from './exploration-combat-geometry.mjs?v=R238C237';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
-import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C236';
-export * from './exploration-scene-style.mjs?v=R238C236';
+import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C239';
+export * from './exploration-scene-style.mjs?v=R238C239';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}

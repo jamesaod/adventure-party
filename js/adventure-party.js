@@ -1770,7 +1770,7 @@ function fogAnimationTick(now){
     currentScreen!=="combat" ||
     !game ||
     game.over ||
-    !hasAnimatedFogSpell()
+    (!hasAnimatedFogSpell() && !(typeof hasAnimatedExplorationTorches==="function"&&hasAnimatedExplorationTorches()))
   ){
     fogAnimationFrame=null;
     fogLastFrame=0;
@@ -1788,7 +1788,8 @@ function fogAnimationTick(now){
 
   if(
     !weatherOwnsRedraw &&
-    (!fogLastFrame || now-fogLastFrame>=32)
+    !(typeof document!=="undefined"&&document.hidden) &&
+    (!fogLastFrame || now-fogLastFrame>=(hasAnimatedFogSpell()?32:100))
   ){
     fogLastFrame=now;
     draw();
@@ -1803,7 +1804,7 @@ function ensureFogAnimationLoop(){
     currentScreen!=="combat" ||
     !game ||
     game.over ||
-    !hasAnimatedFogSpell()
+    (!hasAnimatedFogSpell() && !(typeof hasAnimatedExplorationTorches==="function"&&hasAnimatedExplorationTorches()))
   ){
     return false;
   }
@@ -26779,7 +26780,7 @@ function drawFloor(){
 
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
   if(explorationTerrain)drawExplorationIlluminationLayer();else drawTerrainIlluminationLayer(tiles);
-  if(explorationTerrain)drawDistanceVisibilityLayer(tiles);
+  if(explorationTerrain){drawExplorationTorchFloorGlow(tiles);drawDistanceVisibilityLayer(tiles);}
 
   for(const tile of tiles){
     drawHexGridLine(tile.x,tile.y);
@@ -30299,9 +30300,9 @@ function draw(){
   const tileSet=activeCombatTerrainTileSet();
 
   if(explorationTerrain)for(const torch of explorationTerrain.torches||[]){
-    if(!isHexVisibleToFriendlyParty(torch.x,torch.y))continue;
-    const c=hexCenter(torch.x,torch.y);
-    actors.push({sortY:c.y,sortX:c.x,fn:()=>drawExplorationTorch(torch)});
+    if(torch.mountWallId||!isHexVisibleToFriendlyParty(torch.x,torch.y))continue;
+    const c=screenPointForWorld(torch.world||worldPointForHex(torch.x,torch.y));
+    actors.push({sortY:c.y+.4,sortX:c.x,fn:()=>drawExplorationTorch(torch)});
   }
 
   if(explorationTerrain)queueExplorationDoors(actors);

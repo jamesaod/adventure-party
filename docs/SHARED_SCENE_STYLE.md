@@ -63,3 +63,9 @@ Rev 232: edge doors are half their Rev 231 width (default 42% of an edge), with 
 ## Rev 237 — projection-aware solid doors and walls
 
 Rev 236 screen-space door edge decoration and planar canvas rotation are superseded. Exploration combat draws solid prisms from independent ground-plane coordinates and vertical elevations. Broad wood/stone faces use filtered material tiles; top and end faces belong to the same solid and hinge transform. Door leaf depth is exactly half the compact wall depth; 35px wall height and authored apertures stay intact. The camera rotates ground coordinates before applying vertical compression, and heights remain vertical. Floor texture/exposure matrices share that projection. Existing shared perspective materials and physical thin-wall/half-depth leaf dimensions are unchanged.
+
+## Rev 239 — shared sconces and flame animation
+
+Torch placement now carries flame XYZ, wall-plane position, front-offset backplate position, wall direction, attachment flag and a stable map-coordinate seed. Both renderers use the shared plate/stem/cup dimensions and the same bounded torchAnimation waveform (intensity, height, width and two-axis sway). Perspective backplates sit in front of the thin wall surface; brackets join the plate to the stem/cup. Combat projects the mounted floor position with a separate 23.5px flame elevation, preserving isometric rotation. Authored torches without an adjacent solid wall retain a freestanding support rather than inventing a wall. Door/window openings are not mounting surfaces.
+
+Exploration uses the waveform for flame shape/position and point-light intensity. Combat uses it for flame/core/halo, local wall brightness and a wall-occluded floor glow. Existing baked physical floor exposure stays stable; no whole-floor bake occurs per animation tick. Shadow geometry stays fixed while the flame and light intensity animate. Reduced motion freezes the waveform in both views.
