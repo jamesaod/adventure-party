@@ -1,3 +1,4 @@
+export * from './wall-light-bands.mjs?v=R238C243';
 export * from './combat-torch-light.mjs?v=R238C242';
 export * from './combat-surface-lighting.mjs?v=R238C241';
 export {spellSurfaceRadiance,spellEffectLightSources} from './spell-illumination.mjs?v=R238C241';
