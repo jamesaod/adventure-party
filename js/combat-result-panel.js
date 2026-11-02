@@ -41,7 +41,15 @@ function combatResultLines(beat){
   return baseRun(beat);
  };
  const baseUpdate=updateUnitInfoPanel;
- updateUnitInfoPanel=function(){if(shownGame&&shownGame!==game)clear();return baseUpdate();};
+ updateUnitInfoPanel=function(){
+  if(shownGame&&shownGame!==game)clear();
+  const following=result.scrollTop+result.clientHeight>=result.scrollHeight-4;
+  const answer=baseUpdate();
+  // Switching between units with different equipment changes the feed height.
+  // Keep the latest result visible without disturbing someone reading above.
+  if(following&&!result.hidden)result.scrollTop=result.scrollHeight;
+  return answer;
+ };
  // Source identity is retained across physical wind-up / projectile awaits.
  function physical(base){return async function(attacker,target,...args){
   const combat=game,previous=sources.get(target);if(target){sources.set(target,attacker);outcomes.delete(target);}
