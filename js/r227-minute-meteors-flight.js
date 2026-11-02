@@ -126,10 +126,10 @@ function r227DrawMeteorVolleyFx(){
 }
 
 async function r227AnimateMeteorVolley(caster,results){
-  r227MeteorVolleyFx={
+  const ownedFx=r227MeteorVolleyFx={
     casterId:caster.id,
     started:performance.now(),
-    duration:330,
+    duration:combatEffectDuration(330),
     meteors:r227MeteorFlightGeometry(caster,results)
   };
 
@@ -137,9 +137,10 @@ async function r227AnimateMeteorVolley(caster,results){
 
   while(true){
     const elapsed=performance.now()-r227MeteorVolleyFx.started;
-    draw();
+    await presentCombatFrame();
+    if(r227MeteorVolleyFx!==ownedFx)return false;
     if(elapsed>=r227MeteorVolleyFx.duration) break;
-    await sleep(16);
+
   }
 
   r227MeteorVolleyFx=null;

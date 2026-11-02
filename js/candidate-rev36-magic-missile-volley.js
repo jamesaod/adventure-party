@@ -873,12 +873,12 @@
 
       if(r36ImpactFx.length){
         r36ImpactFrame=
-          requestAnimationFrame(tick);
+          requestCombatAnimationTick(tick);
       }
     };
 
     r36ImpactFrame=
-      requestAnimationFrame(tick);
+      requestCombatAnimationTick(tick);
   }
 
   function r36StartImpactFx(targetIds){
@@ -899,8 +899,8 @@
           targetId,
           count,
           started:now,
-          duration:280,
-          until:now+280
+          duration:combatEffectDuration(280),
+          until:now+combatEffectDuration(280)
         }));
 
     r36EnsureImpactLoop();
@@ -921,9 +921,9 @@
       return false;
     }
 
-    r36VolleyFx={
+    const ownedFx=r36VolleyFx={
       missiles:flight.missiles,
-      duration:flight.duration,
+      duration:combatEffectDuration(flight.duration),
       started:performance.now()
     };
 
@@ -934,13 +934,14 @@
         performance.now()-
         r36VolleyFx.started;
 
-      draw();
+      await presentCombatFrame();
+      if(r36VolleyFx!==ownedFx)return false;
 
       if(elapsed>=r36VolleyFx.duration){
         break;
       }
 
-      await sleep(16);
+
     }
 
     r36VolleyFx=null;
@@ -1053,10 +1054,10 @@
       "Casting Magic Missile"
     );
 
-    await r36AnimateVolley(
+    if(!await r36AnimateVolley(
       caster,
       targetIds
-    );
+    ))return false;
 
     /*
       Resolve every missile after the shared flight. All missile impact sounds
@@ -1307,7 +1308,7 @@
       r36ImpactFx=[];
 
       if(r36ImpactFrame!==null){
-        cancelAnimationFrame(
+        cancelCombatAnimationTick(
           r36ImpactFrame
         );
         r36ImpactFrame=null;

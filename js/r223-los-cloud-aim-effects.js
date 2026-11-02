@@ -462,9 +462,9 @@ drawDragonBreathFx=function(){
 
   const now=performance.now();
   const elapsed=Math.max(0,now-fx.started);
-  const frameMs=58;
+  const frameMs=1000/30;
   const frame=Math.floor(elapsed/frameMs);
-  const steppedElapsed=Math.min(fx.duration,frame*frameMs);
+  const steppedElapsed=Math.min(fx.duration,elapsed);
   const t=Math.max(0,Math.min(1,steppedElapsed/Math.max(1,fx.duration)));
 
   const growthEnd=0.58;

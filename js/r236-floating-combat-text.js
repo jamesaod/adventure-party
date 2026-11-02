@@ -433,7 +433,7 @@ function r236FloatingCombatTextTick(now){
   draw();
 
   r236FloatingCombatTextFrame=
-    requestAnimationFrame(
+    requestCombatAnimationTick(
       r236FloatingCombatTextTick
     );
 }
@@ -450,7 +450,7 @@ function r236EnsureFloatingCombatTextLoop(){
   }
 
   r236FloatingCombatTextFrame=
-    requestAnimationFrame(
+    requestCombatAnimationTick(
       r236FloatingCombatTextTick
     );
 

@@ -648,11 +648,11 @@
       return false;
     }
 
-    const duration=420;
+    const duration=combatEffectDuration(420);
     const started=
       performance.now();
 
-    shockingGraspFx={
+    const ownedFx=shockingGraspFx={
       casterId:caster.id,
       targetId:target.id,
       throughHand:!!throughHand,
@@ -673,8 +673,8 @@
       started<
       duration
     ){
-      draw();
-      await sleep(16);
+      await presentCombatFrame();
+      if(shockingGraspFx!==ownedFx)return false;
     }
 
     shockingGraspFx=null;

@@ -512,6 +512,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
     clearTimeout(timer) { timer.active = false; }, clearInterval() {},
     stopTitleMusic() {}, stopWeatherAudio() {}, updateAudioIndicators() {}, updateCombatConditionSelection() {}, updateCombatMobSelection() {},
     fitBattleCanvas() {}, requestAnimationFrame() {}, draw() {}, syncWeatherAudio() {},
+    presentCombatFrame:async()=>{},
     ensureCombatRenderer:async()=>{if(waitForGraphics)await graphicsWait.promise;},
     combatRenderingPanel:()=>({finish(){},fail(error){throw error;}}),
     classReportOpen: false, characterSheetOpen: false, spellCastOverlayOpen: false,
