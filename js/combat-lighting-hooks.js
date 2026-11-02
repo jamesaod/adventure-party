@@ -2,6 +2,8 @@
  * A bounded atlas carries silhouettes, never precomputed color/falloff. */
 let explorationGpuLighting=null;
 function prepareExplorationGpuLighting(){
+ const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  explorationGpuLighting=null;
  if(!combatGpu?.setLighting||!explorationTerrain||new URLSearchParams(location.search).get('combatLighting')==='cpu')return;
  const api=explorationEncounterApi,t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres,origin=explorationEncounter.origin;
@@ -51,6 +53,8 @@ function explorationGpuPoint(p){
 // Sprite bodies stay upright billboards; sample their standing hex, leaving
 // health bars, casting silhouettes, contact shadows and text independent.
 function drawExplorationGpuSprite(source,entity,x,y,width,height){
+ const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(!explorationGpuLighting||!entity)return false;
  const world=worldPointForHex(entity.x,entity.y),point=explorationGpuPoint(world),exposure=explorationSurfaceExposure({x:point[0],y:0,z:point[2]},{x:0,y:1,z:0},[],new Set(explorationEncounter.openDoors));
  const transform=ctx.getTransform(),sx=BATTLEFIELD_LOGICAL_WIDTH/canvas.width,sy=BATTLEFIELD_LOGICAL_HEIGHT/canvas.height;

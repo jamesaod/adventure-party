@@ -1,4 +1,5 @@
 var explorationEncounter=null,explorationTerrain=null,explorationEncounterApi=null;
+var combatSceneContext=null,combatSceneTerrain=null;
 "use strict";
 const PRIEST_SPELLS=window.AdventurePartyPriestSpells||{};
 
@@ -385,15 +386,8 @@ async function showCombat(condition=selectedCombatCondition){
   updateAudioIndicators();
 
   try{
-    await ensureCombatRenderer();
-    if(request.cancelled||currentScreen!=="combat"){rendering.finish();return false;}
-    newGame(selectedCombatCondition);
-    fitBattleCanvas();
-    let renderTimer;
-    try{
-      await Promise.race([waitForCombatUnitRenders([game.player,...game.allies,...game.enemies]),new Promise((_,reject)=>{renderTimer=setTimeout(()=>reject(Error('Unit rendering timed out. Please retry.')),120000);})]);
-    }finally{clearTimeout(renderTimer);}
-    await presentCombatFrame();
+    const started=await startCombatSession({condition:selectedCombatCondition,source:explorationEncounter?'exploration':'combat-test'},{isCurrent:()=>!request.cancelled&&currentScreen==='combat'});
+    if(!started){rendering.finish();return false;}
     rendering.finish();
     syncWeatherAudio();
   }catch(error){
@@ -6240,6 +6234,7 @@ function stoneFloorPatternForCurrentView(){
 }
 
 function drawArchitecturalFloorRegions(){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(!architecturalSpaces.length) return;
 
   for(const space of architecturalSpaces){
@@ -6379,6 +6374,7 @@ const ARCHITECTURAL_WALL_SHADOW={
 };
 
 function drawArchitecturalWallShadows(){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if((typeof explorationTerrain!=="undefined"&&explorationTerrain) || !architecturalWalls.length) return; // Indoor encounters have torchlight, not the test sun.
 
   ctx.save();
@@ -6980,7 +6976,7 @@ function drawArchitecturalWallTopOutline(wallsToOutline=architecturalWalls){
 
 
 function drawArchitecturalWallSegment(wall){
-  if(wall.material==="exploration-stone")return drawExplorationWallPrism(wall);
+  if(typeof combatSceneTerrain!=='undefined'&&combatSceneTerrain)return drawExplorationWallPrism(wall);
   const height=Math.max(1,Math.round(wall.height || 35));
   const thickness=Math.max(3,wall.thickness || 9);
   const capColor=wall.material==="old-wood" ? "#716b61" : wall.material==="exploration-stone" ? "#8a775d" : "#888b92";
@@ -12774,6 +12770,7 @@ function isFogCellArchitecturallyVisibleToFriendlyParty(cell){
 }
 
 function drawVisibleArchitecturalWallsOverLOS(){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(game?.condition!=="wall" || !architecturalWalls.length) return;
 
   /*
@@ -16884,7 +16881,7 @@ function deployConfiguredCombatMobs(condition,player){
   return {allies,enemies};
 }
 
-function newGame(condition=selectedCombatCondition){
+function newGame(condition=selectedCombatCondition,scenario={}){
   window.AdventurePartyCombatBeats?.clear();
   battlefieldRotation=5;
   if(aiTimer){
@@ -16897,10 +16894,12 @@ function newGame(condition=selectedCombatCondition){
     R186: configure terrain before encounter placement so a large footprint can
     validate every occupied cell against architectural walls at spawn time.
   */
+  if(scenario.source&&scenario.source!=='exploration'){explorationEncounter=null;explorationTerrain=null;}
   configureArchitecturalWalls(condition);
   if(typeof explorationEncounter!=='undefined'&&explorationEncounter)configureExplorationTerrain();
+  else if(typeof configureStandaloneCombatScene==='function')configureStandaloneCombatScene(condition);
 
-  const explorationRoster=typeof explorationEncounter!=='undefined'&&explorationEncounter?explorationUnits():null;
+  const explorationRoster=scenario.roster||(typeof explorationEncounter!=='undefined'&&explorationEncounter?explorationUnits():null);
   const player=explorationRoster?.player || libraryTestPlayer() || (selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter());
   if(selectedMobEncounter!=="studio-kobold"){
     delete player.studioSpriteTest;
@@ -16915,42 +16914,7 @@ function newGame(condition=selectedCombatCondition){
   camera.x=player.x;
   camera.y=player.y;
 
-  game={
-    round:0,
-    over:false,
-    // Capture the encounter's route now; later setup selections cannot change it.
-    studioSpriteTest:selectedMobEncounter==="studio-kobold",
-    condition,
-    player,
-    partyStart:{x:player.x,y:player.y},
-    allies,
-    enemies,
-    order:[],
-    turnIndex:0,
-    active:null,
-    xpAwarded:false,
-    xpPool:0,
-    areaEffects:[],
-
-    /*
-      R136 Monstrous Manual Kobold morale applies only to the Kobold encounter.
-      Large-MOB test encounters use per-unit morale and do not share this group
-      state.
-    */
-    enemyGroupMorale:groupKobolds.length
-      ? {
-          id:"kobold-group",
-          label:"Kobold group",
-          baseMorale:groupKobolds[0]?.morale ?? 9,
-          moraleLabel:"Average (8-10)",
-          initialCount:groupKobolds.length,
-          manualRatioThreshold:1.5,
-          manualRatioChecked:false,
-          broken:false,
-          checks:0
-        }
-      : null
-  };
+  game=createCombatGame(condition,{player,allies,enemies},{...scenario,source:scenario.source||(explorationEncounter?'exploration':'combat-test'),studioSpriteTest:!scenario.roster&&selectedMobEncounter==='studio-kobold'});
 
   for(const unit of [player,...allies,...enemies]){
     if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
@@ -17116,14 +17080,14 @@ function newGame(condition=selectedCombatCondition){
     The combat screen immediately waits for the player's Space input.
   */
   combatOpeningSpeechDone=true;
-  combatAwaitingStart=true;
+  combatAwaitingStart=!scenario.autoStart;
   rotateBattlefield(0);
   // Ordinary battles render their equipped appearance at combat start.
   // A Studio combat test already has an exact 18-frame native battlefield
   // capture. Keep those approved frames unchanged until an actual gear change
   // instead of asynchronously replacing them with a lower-detail render.
-  for(const unit of [player,...allies,...enemies])if(unit.repositoryMobId&&!unit.studioSpriteTest)markMobAppearanceDirty(unit,{reason:"repository-mob-spawn"});
-  if(!player.studioSpriteTest && typeof markMobAppearanceDirty==="function"){
+  for(const unit of scenario.prepareAppearance===false?[]:[player,...allies,...enemies])if(unit.repositoryMobId&&!unit.studioSpriteTest)markMobAppearanceDirty(unit,{reason:"repository-mob-spawn"});
+  if(scenario.prepareAppearance!==false&&!player.studioSpriteTest && typeof markMobAppearanceDirty==="function"){
     markMobAppearanceDirty(player,{reason:"combat-start"});
   }
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
@@ -17146,7 +17110,7 @@ function rollInitiative(){
   const rolls=[];
 
   for(const unit of allUnits()){
-    if(!unit.alive || unit.fled) continue;
+    if(!unit.alive || unit.fled || game.session?.controlledActorId&&unit.id!==game.session.controlledActorId) continue;
 
     rolls.push({
       id:unit.id,
@@ -17386,6 +17350,8 @@ function endTurn(){
   updateUi();
   draw();
 
+  if(game.session?.pauseAfterAction){game.session.actionComplete=true;return;}
+  const combat=game;
   const delay=Math.max(
     180,
     combatActionPauseRemaining()
@@ -17393,7 +17359,7 @@ function endTurn(){
 
   aiTimer=setTimeout(()=>{
     aiTimer=null;
-    beginTurn();
+    if(game===combat)beginTurn();
   },delay);
 }
 
@@ -25420,6 +25386,7 @@ function showXpLootScreen(title,text,xpAwarded=0){
 
 function scheduleCombatFinish(title,text){
   const combat=game;
+  if(combat?.session?.holdResults){combat.session.result={title,text};return;}
   const hasResultBeats=typeof candidateCombatBeatRemaining==='function'&&(candidateCombatBeatRemaining()>0||[...candidateCombatBeatGroups.values()].some(group=>group.gameRef===combat&&group.pending.length));
   if(isStudioTestCombat(combat)&&!hasResultBeats){finishCombat(title,text);return;}
   const finish=()=>{
@@ -26610,6 +26577,7 @@ function drawGrassDetails(x,y){
 }
 
 function drawHexFill(x,y){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(explorationTerrain)return; // Exact room polygons supply the floor, never whole boundary hexes.
   const top=hexScreenVertices(x,y);
   const c=hexCenter(x,y);
@@ -26675,6 +26643,7 @@ function drawHexFill(x,y){
 }
 
 function drawHexGridLine(x,y){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.28)";ctx.lineWidth=1;ctx.stroke();return;}
   const top=hexScreenVertices(x,y);
   const tileSet=activeCombatTerrainTileSet();
@@ -26742,6 +26711,7 @@ function hoverHighlightCells(){
 }
 
 function drawFloor(){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   const tileSet=activeCombatTerrainTileSet();
 
   ctx.fillStyle="#08080c";
@@ -26837,6 +26807,7 @@ function visibleHexes(){
 }
 
 function drawFloor(){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   const tileSet=activeCombatTerrainTileSet();
 
   ctx.fillStyle="#08080c";
@@ -27080,6 +27051,7 @@ function runtimeAnchorForAsset(id){
 }
 
 function combatSpriteBrightness(unit){
+ const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  if(!unit||!game)return 1;
  if(explorationTerrain&&typeof explorationUnitSpriteBrightness==='function')return explorationUnitSpriteBrightness(unit);
  return Math.max(.02,Math.min(1,illuminationAtHex(unit.x,unit.y)));
@@ -30273,6 +30245,7 @@ function drawUnitBarks(){
 }
 
 function draw(){
+  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(typeof combatFrames!=="undefined"&&combatFrames&&!combatFrames.rendering){combatFrames.request();return;}
   combatLightingFrame++;
   if(!game) return;
