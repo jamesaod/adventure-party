@@ -1,13 +1,14 @@
+import {hasOutdoorGrass} from './exploration-ground.mjs?v=R238C246';
 import {torchAnimation} from './exploration-scene-style.mjs?v=R238C239';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C238';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C232';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C239';
+import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C246';
 import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C238';
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C232';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C232';
-import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C245';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C245';
+import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C246';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C246';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const EYE=SCENE_STYLE.eyeMetres,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;
@@ -26,7 +27,7 @@ async function start(){
  const skyContext=skyCanvas.getContext('2d'),skyGradient=skyContext.createLinearGradient(0,0,0,256);skyGradient.addColorStop(0,'#346da7');skyGradient.addColorStop(.5,'#9dc7e6');skyGradient.addColorStop(1,'#dbe3df');skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,512,256);
  skyContext.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<16;i++){skyContext.beginPath();skyContext.ellipse((i*137)%512,35+(i*31)%85,35+i%4*8,7+i%3*3,0,0,Math.PI*2);skyContext.fill();}
  const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
- const {wall,floor,wood,ceiling}=await explorationMaterials(renderer);
+ const {wall,floor,grass,wood,ceiling}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map)});
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
  scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
  const lantern=new THREE.PointLight(lamp.color,lamp.intensity,lamp.range,lamp.decay);lantern.position.set(0,lamp.height-EYE,lamp.offsetZ);lantern.castShadow=true;lantern.shadow.mapSize.set(lamp.shadowPixels,lamp.shadowPixels);lantern.shadow.bias=-.002;lantern.shadow.camera.near=lamp.shadowNear;camera.add(lantern);
@@ -35,7 +36,7 @@ async function start(){
  if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);tiles(floorCells,.12,-.06,floor);tiles(floorCells.filter(p=>!isOutdoor(map,p.x,p.z)),.12,HEIGHT+.06,ceiling);
  // Local sky illumination lights only authored outdoor floor surfaces.
  const sky=OUTDOOR_AMBIENT;
- const outdoorFloor=floor.clone();outdoorFloor.emissive=new THREE.Color(sky.sky);outdoorFloor.emissiveIntensity=.28;
+ const outdoorFloor=(grass||floor).clone();outdoorFloor.emissive=new THREE.Color(sky.sky);outdoorFloor.emissiveIntensity=.28;if(grass)outdoorFloor.emissiveMap=grass.map;
  tiles(floorCells.filter(p=>isOutdoor(map,p.x,p.z)),.015,.008,outdoorFloor);
  $('mapDimensions').textContent=`${map.width} × ${map.height} · North up`;
  for(const d of map.doors){const {root,hinge}=explorationDoor(d.material==='wood'?wood:wall,wood,state.openDoors.has(doorKey(d)),map.version===2?{width:d.width*CELL,hinge:d.hinge}:{});root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);doors.set(doorKey(d),hinge);}
