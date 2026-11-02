@@ -1,4 +1,4 @@
-import {quarterAt,quarterPoints} from './quarter-walls.mjs?v=R238C263';
+import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C263';
 import {groundKind} from './exploration-ground.mjs?v=R238C262';
 import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
 import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C263';
@@ -79,9 +79,10 @@ function grid(){
     b.setAttribute('aria-pressed',String(selectionKeys.has(`${x},${z}`)));
     b.textContent=labels.join('')||(door?(door.axis==='x'?'│':'─'):'');
     b.setAttribute('aria-label',`Column ${x+1}, row ${z+1}: ${cell==='#'?(m.version===2?'void / solid area':'wall'):cell==='D'?'door':'floor'}${labels.length?', '+labels.join(', '):''}${area?', encounter '+area.event.name:''}${isOutdoor(m,x,z)?', outdoor / sky':', indoor / ceiling'}, ambient light ${ambientLightAt(m,x,z)}%, ${groundKind(m,x,z)} ground`);
+    if(m.ceiling?.[z]?.[x]){b.title+=(b.title?' · ':'')+ceilingKind(m,x,z)+' ceiling';b.setAttribute('aria-label',b.getAttribute('aria-label')+', '+ceilingKind(m,x,z)+' ceiling');}
     if(selectionKeys.has(`${x},${z}`))b.classList.add('selected');
     for(const side of ['n','e','s','w']){const edge=edgeAtSide(x,z,side),record=edges.get(edgeKey(edge)),mark=document.createElement('span');mark.className=`edge-mark edge-${side} ${record?.kind||'empty'}`;mark.dataset.edge=edgeKey(edge);mark.setAttribute('aria-hidden','true');b.append(mark);}
-    const quarter=quarterAt(m,x,z);if(quarter){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS('http://www.w3.org/2000/svg','polyline');svg.setAttribute('viewBox','0 0 100 100');svg.classList.add('quarter-mark');path.setAttribute('points',quarterPoints(quarter).map(p=>`${(p.x-x+.5)*100},${(p.z-z+.5)*100}`).join(' '));path.setAttribute('fill','none');path.setAttribute('stroke',quarter.material==='wood'?'#9b551e':'#563d25');path.setAttribute('stroke-width','5');svg.append(path);b.append(svg);b.title+=(b.title?' · ':'')+`Quarter-round ${quarter.corner.toUpperCase()}`;b.setAttribute('aria-label',b.getAttribute('aria-label')+`, quarter-round ${quarter.corner}`);}
+    const quarter=quarterAt(m,x,z);if(quarter){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS('http://www.w3.org/2000/svg','polyline');svg.setAttribute('viewBox','0 0 100 100');svg.classList.add('quarter-mark');const cutout=document.createElementNS('http://www.w3.org/2000/svg','path');cutout.setAttribute('d','M0 0H100V100H0Z M'+quarterFloor(quarter).map(p=>`${(p.x-x+.5)*100} ${(p.z-z+.5)*100}`).join('L')+'Z');cutout.setAttribute('fill-rule','evenodd');cutout.setAttribute('fill','#947348');cutout.setAttribute('opacity','.65');svg.append(cutout);path.setAttribute('points',quarterPoints(quarter).map(p=>`${(p.x-x+.5)*100},${(p.z-z+.5)*100}`).join(' '));path.setAttribute('fill','none');path.setAttribute('stroke',quarter.material==='wood'?'#9b551e':'#563d25');path.setAttribute('stroke-width','5');svg.append(path);b.append(svg);b.title+=(b.title?' · ':'')+`Quarter-round ${quarter.corner.toUpperCase()}`;b.setAttribute('aria-label',b.getAttribute('aria-label')+`, quarter-round ${quarter.corner}`);}
     fragment.append(b);
   }
   $('editorGrid').replaceChildren(fragment);

@@ -407,9 +407,9 @@ function explorationDaylight(){
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi;if(!api?.buildDaylightField||!explorationEncounter?.map||explorationEncounter.synthetic)return null;
  const map=explorationEncounter.map,doors=explorationEncounter.openDoors,old=explorationDaylight.cache;
- if(old&&old.map===map&&old.environment===map.environment&&old.ambient===map.ambientLight&&old.edges===map.edges&&old.grid===map.grid&&old.doors===doors)return old;
+ if(old&&old.map===map&&old.environment===map.environment&&old.ambient===map.ambientLight&&old.edges===map.edges&&old.quarters===map.quarterWalls&&old.grid===map.grid&&old.doors===doors)return old;
  const field=api.buildDaylightField(map,new Set(doors));
- return explorationDaylight.cache={map,environment:map.environment,ambient:map.ambientLight,edges:map.edges,grid:map.grid,doors,field,revision:(old?.revision||0)+1};
+ return explorationDaylight.cache={map,environment:map.environment,ambient:map.ambientLight,edges:map.edges,quarters:map.quarterWalls,grid:map.grid,doors,field,revision:(old?.revision||0)+1};
 }
 function explorationDaylightVisible(light,point){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
