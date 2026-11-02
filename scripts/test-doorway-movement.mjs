@@ -43,12 +43,12 @@ console.log('PASS normal one-point movement, closed-wall/budget checks and uncha
 
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8'),api=await import('../js/exploration-encounters.mjs'),store=new Map(),openLogs=[];
 const openingPlayer={id:'player',name:'Test player',alive:true,...front,turnMoves:0,halfMove:3,move:7,fullMove:false};
-const opening={explorationEncounterApi:api,explorationTerrain:closed.terrain,explorationEncounter:{openDoors:[]},game:{active:'player',player:openingPlayer},
+const opening={combatSceneContext:null,explorationEncounterApi:api,explorationTerrain:closed.terrain,explorationEncounter:{openDoors:[]},game:{active:'player',player:openingPlayer},
  activePlayerControlledUnit:()=>openingPlayer,controlledUnitCanAct:u=>u===openingPlayer,combatAwaitingStart:false,combatOpeningSpeechDone:true,
  aimMode:false,classReportOpen:false,characterSheetOpen:false,inventoryOpen:false,spellCastOverlayOpen:false,spellCastInProgress:false,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,isCombatActionPauseActive:()=>false,
  architecturalWallBlocksWorldLine:closed.blocked,occupiedHexes:u=>[{x:u.x,y:u.y}],wallSegmentCutsHexInterior:closed.ctx.wallSegmentCutsHexInterior,
  sessionStorage:{setItem:(key,value)=>store.set(key,value)},log:m=>openLogs.push(m),refreshTurnBanner:noop,updateUi:noop,draw:noop,
- configureExplorationTerrain(){opening.explorationTerrain=geometry(opening.explorationEncounter.openDoors.includes('4,2')).terrain;}};
+ configureCombatMap(){opening.explorationTerrain=geometry(opening.explorationEncounter.openDoors.includes('4,2')).terrain;}};
 vm.createContext(opening);const wallStart=hooks.indexOf('function explorationDoorWall('),wallEnd=hooks.indexOf('\nfunction ',wallStart+1);vm.runInContext(hooks.slice(wallStart,wallEnd)+'\n'+hooks.slice(hooks.indexOf('function explorationDoorOpeningAllowed(')),opening);
 assert.equal(opening.explorationReachableDoors(openingPlayer).length,1);
 opening.tryExplorationToggleDoor();assert.equal(openingPlayer.turnMoves,1);assert(opening.explorationEncounter.openDoors.includes('4,2'));assert(JSON.parse(store.get(api.HANDOFF_KEY)).openDoors.includes('4,2'));
