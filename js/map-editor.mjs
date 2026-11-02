@@ -1,9 +1,9 @@
 import {groundKind} from './exploration-ground.mjs?v=R238C258';
 import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C238';
-import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C232';
-import {FACINGS} from './exploration-core.mjs?v=R238C258';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C258';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C258';
+import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C259';
+import {FACINGS} from './exploration-core.mjs?v=R238C259';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C259';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C259';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;
@@ -14,7 +14,7 @@ const areaColors=['#638bdb','#cf789a','#5d9f70','#b98839','#9274be','#44a3a3'];
 const colorFor=e=>e.color||areaColors[[...e.id].reduce((n,c)=>n+c.charCodeAt(0),0)%areaColors.length];
 const selectedCells=()=>[...selectionKeys].map(k=>{const [x,z]=k.split(',').map(Number);return {x,z};});
 function selectArea(event){activeEncounterId=event.id;selectionKeys=new Set(encounterCells(event).map(p=>`${p.x},${p.z}`));const first=encounterCells(event)[0];if(first)selected={...first};formKey=null;grid();inspector();}
-function setTool(id){tool=id;$('editorGrid').dataset.mode=isEdgeTool()?'edge':'cell';for(const b of $('tools').children)b.setAttribute('aria-pressed',String(b.dataset.tool===id));}
+function setTool(id){if(id==='edge-window'&&Number($('openingWidth').value)<40)$('openingWidth').value=84;tool=id;$('editorGrid').dataset.mode=isEdgeTool()?'edge':'cell';for(const b of $('tools').children)b.setAttribute('aria-pressed',String(b.dataset.tool===id));}
 function newArea(){$('selectionMode').value='replace';activeEncounterId=null;selectionKeys.clear();formKey=null;setTool('encounter-area');grid();inspector();tell('Drag to select an encounter area. Shift adds; Alt subtracts.');}
 const map=()=>pack.maps.find(m=>m.id===mapId);
 function tell(text){$('editorStatus').textContent=text;}
@@ -122,7 +122,7 @@ function edgeInspector(){
 function applyEdge(button,event){
  const edge=edgeFromPointer(button,event),id=edgeKey(edge);selectedEdge=edge;selected={x:Number(button.dataset.x),z:Number(button.dataset.z)};
  if(stroke.has(id))return;stroke.add(id);
- if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??(record.kind==='door'?.42:.84))*100);$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
+ if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??(record.kind==='door'?.375:.84))*1000)/10;$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
  try{paintEdge(map(),edge,tool.slice(5),edgeSettings());dirty=true;tell('Edge updated. Save maps to keep this change.');}catch(error){tell(error.message);}
  grid();inspector();$('undo').disabled=!history.length;
  const issues=packIssues(pack);$('issues').replaceChildren();for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}

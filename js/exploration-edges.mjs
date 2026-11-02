@@ -22,18 +22,23 @@ export function effectiveEdges(map){
  const value=[...all.values()];edgeCache.set(map,{grid:map.grid,edges:map.edges,value});return value;
 }
 export function normalizeDoorWidths(map){
- if(map.version===2&&map.doorWidthVersion!==2){map.edges=(map.edges||[]).map(e=>e.kind==='door'?{...e,width:(e.width??.84)/2}:e);map.doorWidthVersion=2;}
+ if(map.version!==2)return map;
+ if(![2,3].includes(map.doorWidthVersion))map.edges=(map.edges||[]).map(e=>e.kind==='door'?{...e,width:(e.width??.84)/2}:e);
+ // Update the former standard opening; keep deliberately authored wide gates.
+ if(map.doorWidthVersion!==3)map.edges=(map.edges||[]).map(e=>e.kind==='door'&&[.42,.5].some(w=>Math.abs((e.width??.42)-w)<1e-8)?{...e,width:.375}:e);
+ map.doorWidthVersion=3;
  return map;
 }
+
 export function syncEdgeDoors(map){
  if(map.version!==2)return map;
- map.doors=(map.edges||[]).filter(e=>e.kind==='door').map(e=>{const g=edgeGeometry(e);return {...g.center,id:e.id||edgeKey(e),edgeId:edgeKey(e),axis:g.axis,material:e.material||'stone',width:e.width??.42,hinge:e.hinge||'start',initialOpen:!!e.initialOpen};});return map;
+ map.doors=(map.edges||[]).filter(e=>e.kind==='door').map(e=>{const g=edgeGeometry(e);return {...g.center,id:e.id||edgeKey(e),edgeId:edgeKey(e),axis:g.axis,material:e.material||'stone',width:e.width??.375,hinge:e.hinge||'start',initialOpen:!!e.initialOpen};});return map;
 }
 export function upgradeEdgeMap(input){
  const map=structuredClone(input);if(map.version===2)return syncEdgeDoors(normalizeDoorWidths(map));
- const oldDoors=map.doors||[];map.version=2;map.doorWidthVersion=2;map.grid=map.grid.map(row=>row.replaceAll('D','.'));map.edges=[];
+ const oldDoors=map.doors||[];map.version=2;map.doorWidthVersion=3;map.grid=map.grid.map(row=>row.replaceAll('D','.'));map.edges=[];
  map.migrationNotes=oldDoors.map(d=>`Door ${d.x+1},${d.z+1} moved to its ${d.axis==='z'?'north':'west'} edge; former door square remains floor. Review its placement.`);
- for(const d of oldDoors)map.edges.push({axis:d.axis==='z'?'h':'v',x:d.x,z:d.z,id:`${d.x},${d.z}`,kind:'door',material:'stone',width:.42,hinge:'start',initialOpen:false});
+ for(const d of oldDoors)map.edges.push({axis:d.axis==='z'?'h':'v',x:d.x,z:d.z,id:`${d.x},${d.z}`,kind:'door',material:'stone',width:.375,hinge:'start',initialOpen:false});
  return syncEdgeDoors(map);
 }
 export function validateEdges(map){
@@ -59,7 +64,7 @@ export function paintEdge(map,edge,kind,settings={}){
  if(kind==='erase'&&edgeCells(edge).some(p=>!floor(map,p)))throw Error('This boundary encloses void. Paint floor on its other side first.');
  const key=edgeKey(edge),old=(map.edges||[]).find(e=>edgeKey(e)===key),next=structuredClone(map);
  next.edges=next.edges.filter(e=>edgeKey(e)!==key);
- if(kind!=='erase')next.edges.push({...edge,id:old?.id||key,kind,material:settings.material||old?.material||'stone',...(kind!=='wall'?{width:settings.width??old?.width??(kind==='door'?.42:.84),hinge:settings.hinge||old?.hinge||'start',initialOpen:settings.initialOpen??old?.initialOpen??false}:{})});
+ if(kind!=='erase')next.edges.push({...edge,id:old?.id||key,kind,material:settings.material||old?.material||'stone',...(kind!=='wall'?{width:settings.width??Math.max(kind==='door'?.2:.4,old?.width??(kind==='door'?.375:.84)),hinge:settings.hinge||old?.hinge||'start',initialOpen:settings.initialOpen??old?.initialOpen??false}:{})});
  syncEdgeDoors(next);validateEdges(next);map.edges=next.edges;map.doors=next.doors;
 }
 export function blockingEdgeSegments(map,opened,mode='movement'){

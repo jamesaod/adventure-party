@@ -53,7 +53,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const batches=[];
  for(const face of faces){
   const a=face.points[0],b=face.points[1],dx=b.x-a.x,dy=(b.y-a.y)/(t.cellH/t.cellW),span=Math.hypot(dx,dy),low=Math.min(...face.points.map(p=>p.elevation)),high=Math.max(...face.points.map(p=>p.elevation));
-  const wood=face.material==='door'||wall?.edgeMaterial==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
+  const doorTop=face.cap&&face.material==='door',wood=face.material==='door'||wall?.edgeMaterial==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
   const faceKey=JSON.stringify(face.points);let fragments=cached.faces.get(faceKey);
   if(!fragments){fragments=api.faceLightFragments(face,HEX_W,HEX_ROW).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
@@ -64,11 +64,11 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
    let flicker=0;if(visible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    flicker=Math.max(-.15,Math.min(.15,flicker));
    const radiance=visible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[179,132,75]:[156,136,103];
-   return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
-    multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
+   return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
+    multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap&&!doorTop?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
   });
-  const image=face.cap?white:wood?explorationDoorImage:explorationWallImage,last=batches.at(-1);
+  const image=face.cap&&!doorTop?white:wood?explorationDoorImage:explorationWallImage,last=batches.at(-1);
   if(last?.image===image)last.surfaces.push(...surfaces);else batches.push({image,surfaces});
  }
  for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image,{dynamicLighting});
@@ -560,10 +560,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C258');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C259');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C258');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C259');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
