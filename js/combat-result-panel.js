@@ -122,7 +122,7 @@ function combatResultLines(beat){
  const baseSpellDamage=applySpellDamage;
  applySpellDamage=function(source,target,...args){
   if(!target)return baseSpellDamage(source,target,...args);
-  const previous=sources.get(target),previousAction=actions.get(target);sources.set(target,source);actions.set(target,{id:++actionSequence});
+  const previous=sources.get(target),previousAction=actions.get(target);sources.set(target,source);actions.set(target,previousAction||{id:++actionSequence});
   try{return baseSpellDamage(source,target,...args);}finally{if(previous)sources.set(target,previous);else sources.delete(target);if(previousAction)actions.set(target,previousAction);else actions.delete(target);}
  };
  const baseDeath=triggerDeathFx;
@@ -134,7 +134,14 @@ function combatResultLines(beat){
   if(unit&&deaths.get(unit)===game&&candidateCombatBeatPresentationEnabled())return;
   return baseDeath(unit);
  };
- window.AdventurePartyCombatResults={beginTurn(actorId){
+ window.AdventurePartyCombatResults={withTarget(caster,target,resolve){
+  const previous=sources.get(target),previousAction=actions.get(target);
+  sources.set(target,caster);actions.set(target,{id:++actionSequence,spellTarget:true});
+  try{return resolve();}finally{
+   if(previous)sources.set(target,previous);else sources.delete(target);
+   if(previousAction)actions.set(target,previousAction);else actions.delete(target);
+  }
+ },beginTurn(actorId){
   const key=`${game?.round}:${game?.turnIndex}:${actorId}`;
   if(turnGame!==game||turnKey!==key){clear();turnGame=game;turnKey=key;}
  }};

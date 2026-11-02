@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-function harness(){
+export function harness(){
  let now=0,id=0;const timers=new Map(),micro=[],history=[],cues=[];
  let result;const classes=[];
  class Element{
