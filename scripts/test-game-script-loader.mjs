@@ -30,8 +30,8 @@ assert.equal(pathOf(entries[1]),'js/repository-mobs.mjs');
 assert.equal(pathOf(entries[2]),'js/adventure-party.js');
 assert.equal(pathOf(entries.at(-3)),'js/sprite-set-runtime.mjs');
 assert.equal(entries.at(-3).type,'module');
-assert.equal(pathOf(entries.at(-2)),'js/exploration-combat-hooks.js');
-assert.equal(pathOf(entries.at(-1)),'js/combat-lighting-hooks.js');
+assert.equal(pathOf(entries.at(-1)),'js/exploration-combat-hooks.js');
+assert.equal(pathOf(entries.at(-2)),'js/combat-lighting-hooks.js');
 const activeSources=[...html.matchAll(/<script\b([^>]*src="[^"]+"[^>]*)>/g)]
   .filter(([,attributes])=>!attributes.includes('type="text/plain"'));
 assert.equal(activeSources.length,1,'No game script can bypass ordered startup');
