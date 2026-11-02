@@ -80,3 +80,19 @@ receive the same final presentation hold before returning.
 Rev 252 completes live QA: legacy sling misses return no structured result.
 The panel adapter captures the production flashAttack outcome for those paths;
 structured results still take priority, and no hit/damage rules are changed.
+
+## Rev 253: reference-style persistent combat information
+
+This supersedes the temporary-summary behavior in Rev 251. Unit information
+stays visible throughout combat. Messages append in order and remain in a
+scrollable history until the battle is reset/exited; a one-second beat controls
+when the next message arrives, never when the previous message disappears.
+
+Blocks follow the supplied reference: uppercase stacked lines, cyan attacker,
+green ATTACKS / HITTING FOR X / POINTS OF DAMAGE, yellow target, and a red
+unit name above green GOES DOWN / AND IS DYING. Other effects/statuses append
+matching blocks. Press Start 2P is self-hosted for pixel lettering, with its
+OFL license and attribution bundled. Existing unit-summary typography stays.
+
+The history follows new messages when already at the bottom. Scrolling up to
+read older results keeps the reader's position. The compass remains available.

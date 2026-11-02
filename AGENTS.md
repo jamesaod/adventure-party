@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 253 supersedes the temporary Rev 251 result panel: unit information remains visible and messages append persistently for the battle, using stacked uppercase, cyan attacker / yellow target / green actions / red downed name. One-second beats control arrival only; never auto-clear or replace earlier messages.
+
 - Rev 251: Combat starts at -60 degrees (rotation index 5). The right summary temporarily presents globally serialized one-second damage, elemental, buff/debuff and downed beats. Preserve the production beat queue and final hold before victory/defeat; see docs/BATTLEFIELD_CONTROLS.md.
 
 - Rev 250: Exploration combat point-light color/falloff runs in shaders on floors, solids and sprite bodies. CPU silhouettes, daylight, ambient and distance rules remain authoritative. Read docs/COMBAT_GPU_LIGHTING.md; preserve the 32-emitter complete CPU fallback, sprite hue/alpha, and shared frame scheduler.

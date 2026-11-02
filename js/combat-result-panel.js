@@ -1,30 +1,35 @@
-/* One readable result channel, using the production damage/effect beat queue. */
+/* Persistent, reference-style result blocks; production beats own timing. */
+function combatResultLines(beat){
+ const m=beat.meta||{},target=m.targetName||beat.unit?.name||'Unit';
+ const line=(text,role='action')=>({text:String(text).replace(/\.$/,'').toUpperCase(),role});
+ if(beat.category==='death')return [line(target,'downed'),line('Goes down'),line('And is dying')];
+ if(beat.category==='direct-damage')return [line(m.attackerName||'An effect','actor'),line('Attacks'),line(target,'target'),line(`Hitting for ${m.amount}`),line('Points of damage')];
+ if(beat.category==='direct-result')return [line(m.attackerName||'An effect','actor'),line('Attacks'),line(target,'target'),line(m.outcome==='mirror-image'?'Strikes a Mirror Image':'Misses')];
+ if(beat.category==='secondary-damage')return [line(target,'target'),line(`Takes ${m.amount} ${m.damageType||'additional'}`),line('Points of damage')];
+ return [line(target,'target'),line(beat.text)];
+}
 (()=>{
  const sources=new WeakMap(),deaths=new WeakMap(),outcomes=new WeakMap();
  const baseFlash=flashAttack;
  flashAttack=function(attacker,target,hit){if(target)outcomes.set(target,{attacker,gameRef:game,hit});return baseFlash(attacker,target,hit);};
- let shownGame=null,clearTimer=null,token=0;
+ let shownGame=null;
  const panel=document.querySelector('.unit-info-panel');
  const result=document.createElement('div');result.id='combatResult';result.hidden=true;
- result.setAttribute('role','status');result.setAttribute('aria-live','polite');result.setAttribute('aria-atomic','true');panel.prepend(result);
+ result.setAttribute('role','log');result.setAttribute('aria-label','Combat results');result.setAttribute('aria-live','polite');result.setAttribute('aria-relevant','additions');panel.insertBefore(result,document.getElementById('combatCompass'));
  function clear(){
-  token++;clearTimeout(clearTimer);clearTimer=null;shownGame=null;
-  panel.classList.remove('showing-result');result.hidden=true;result.replaceChildren();
+  shownGame=null;result.hidden=true;result.replaceChildren();
  }
  function show(beat){
-  const meta=beat.meta||{},target=meta.targetName||beat.unit.name;
-  let text;
-  if(beat.category==='death')text=`${target} goes down and is dying.`;
-  else if(meta.fullText)text=beat.text;
-  else if(beat.category==='direct-damage')text=`${meta.attackerName||'An effect'} attacks ${target}, hitting for ${meta.amount} points of damage.`;
-  else if(beat.category==='secondary-damage')text=`${target} takes ${meta.amount} points of ${meta.damageType||'additional'} damage.`;
-  else if(beat.category==='buff'||beat.category==='debuff')text=`${target}: ${beat.text}.`;
-  else text=`${target}: ${beat.text}.`;
-  shownGame=game;panel.classList.add('showing-result');result.hidden=false;
-  result.dataset.category=beat.category;result.textContent=text;
-  const id=++token;clearTimeout(clearTimer);
-  clearTimer=setTimeout(()=>{if(id!==token)return;clear();if(game===beat.gameRef)updateUnitInfoPanel();},1000);
+  if(shownGame&&shownGame!==game)clear();
+  const follow=result.scrollTop+result.clientHeight>=result.scrollHeight-4;
+  const entry=document.createElement('div');entry.className='combat-result-entry';entry.dataset.category=beat.category;
+  for(const {text,role} of combatResultLines(beat)){
+   const row=document.createElement('div');row.className='combat-result-line combat-result-'+role;row.textContent=text+'\n';entry.append(row);
+  }
+  shownGame=game;result.hidden=false;result.append(entry);
+  if(follow)result.scrollTop=result.scrollHeight;
  }
+
  const baseQueue=candidateQueueCombatBeat;
  candidateQueueCombatBeat=function(unit,spec={}){
   const source=sources.get(unit);
@@ -43,7 +48,7 @@
   try{
    const answer=await base(attacker,target,...args);
    const event=outcomes.get(target),resolution=answer||(event?.gameRef===combat&&event.attacker===attacker?event:null);
-   if(game===combat&&resolution?.hit===false&&!resolution.interrupted&&!resolution.blockedByWall&&!resolution.blockedByObstacle&&target&&candidateCombatBeatPresentationEnabled())candidateQueueCombatBeat(target,{category:'direct-result',text:`${attacker.name} attacks ${target.name}, ${resolution.mirrorImage?'striking a Mirror Image':'missing'}.`,show:()=>{},meta:{fullText:true}});
+   if(game===combat&&resolution?.hit===false&&!resolution.interrupted&&!resolution.blockedByWall&&!resolution.blockedByObstacle&&target&&candidateCombatBeatPresentationEnabled())candidateQueueCombatBeat(target,{category:'direct-result',text:`${attacker.name} attacks ${target.name}, ${resolution.mirrorImage?'striking a Mirror Image':'missing'}.`,show:()=>{},meta:{fullText:true,outcome:resolution.mirrorImage?'mirror-image':'miss'}});
    return answer;
   }finally{if(target){if(previous)sources.set(target,previous);else sources.delete(target);}}
  };}
