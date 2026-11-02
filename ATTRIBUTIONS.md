@@ -68,3 +68,11 @@ User-supplied `SM_Wep_Shield_Set_54.fbx` and `Shield_Optimised_01.png` (2026-10-
 ## Outdoor grass test textures (Rev 246)
 
 `assets/textures/exploration/grass-short-v1.png` and `grass-worn-v1.png` were generated for this project with the built-in image_gen tool on 2026-11-01. Original generated PNGs are preserved without pixel edits. Exact prompts, dimensions and SHA-256 checksums are recorded in `assets/textures/exploration/grass-generation-v1.json`. Short grass is the experimental Outdoor / sky floor material; worn grass is retained for comparison.
+
+## Combat result pixel font
+
+Press Start 2P, Copyright 2012 The Press Start 2P Project Authors
+(cody@zone38.net), Reserved Font Name "Press Start 2P".
+Vendored unmodified from https://github.com/google/fonts/tree/main/ofl/pressstart2p
+and distributed under SIL Open Font License 1.1. The complete copyright/license
+is included at assets/fonts/press-start-2p-OFL.txt.
