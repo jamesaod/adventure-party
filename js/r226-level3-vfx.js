@@ -27,7 +27,7 @@ function r226DrawUnitStatusGlyph(unit,label,fill,stroke="rgba(12,10,18,0.90)"){
   const t=performance.now()/1000;
   const bob=Math.sin(t*3+unit.x+unit.y)*2;
   ctx.save();
-  ctx.font='700 11px "EB Garamond", Georgia, serif';
+  ctx.font='400 11px "Press Start 2P", "Courier New", monospace';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.lineWidth=2.5;

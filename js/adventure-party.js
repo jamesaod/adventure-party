@@ -16,33 +16,33 @@ async function verifyWebUIFont(){
 
   try{
     if(document.fonts){
-      await document.fonts.load('700 18px "EB Garamond"');
+      await document.fonts.load('400 16px "Press Start 2P"');
       await document.fonts.ready;
 
-      if(!document.fonts.check('700 18px "EB Garamond"')){
-        throw new Error("EB Garamond Bold web font did not load.");
+      if(!document.fonts.check('400 16px "Press Start 2P"')){
+        throw new Error("Press Start 2P web font did not load.");
       }
     }
 
     if(status){
-      status.textContent="FONT: EB GARAMOND BOLD — WEB FONT";
+      status.textContent="FONT: PRESS START 2P — WEB FONT";
       status.classList.remove("font-missing");
       status.classList.add("font-ok");
     }
 
-    document.documentElement.dataset.uiFont="eb-garamond-bold";
+    document.documentElement.dataset.uiFont="press-start-2p";
 
     if(game && typeof draw==="function"){
       draw();
     }
   }catch(error){
     if(status){
-      status.textContent="FONT: EB GARAMOND UNAVAILABLE — SERIF FALLBACK";
+      status.textContent="FONT: PRESS START 2P UNAVAILABLE — MONOSPACE FALLBACK";
       status.classList.remove("font-ok");
       status.classList.add("font-missing");
     }
 
-    document.documentElement.dataset.uiFont="serif-fallback";
+    document.documentElement.dataset.uiFont="monospace-fallback";
   }
 }
 
@@ -4054,7 +4054,7 @@ function drawScaleTestHex(ctx,cx,cy,w=122,h=92){
 
 function drawScaleTestLabel(ctx,textValue,x,y,color="#f0d978"){
   ctx.save();
-  ctx.font='700 12px "EB Garamond", Georgia, "Times New Roman", serif';
+  ctx.font='400 12px "Press Start 2P", "Courier New", monospace';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.lineWidth=3;
@@ -4097,7 +4097,7 @@ function renderKoboldScaleTest(){
   ctx.imageSmoothingEnabled=false;
 
   ctx.save();
-  ctx.font='700 18px "EB Garamond", Georgia, "Times New Roman", serif';
+  ctx.font='400 16px "Press Start 2P", "Courier New", monospace';
   ctx.textAlign="left";
   ctx.textBaseline="middle";
   ctx.fillStyle="#f0d978";
@@ -4194,7 +4194,7 @@ function renderKoboldScaleTest(){
 
   ctx.save();
   ctx.fillStyle="#7ee7ff";
-  ctx.font='700 13px "EB Garamond", Georgia, "Times New Roman", serif';
+  ctx.font='400 13px "Press Start 2P", "Courier New", monospace';
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   ctx.fillText(
@@ -7249,7 +7249,7 @@ function applyBattlefieldFontSize(){
   if(status)status.textContent=`TEXT ${battlefieldFontPercent}% [− / +]`;
 }
 function battlefieldTextFont(basePixels){
-  return `700 ${basePixels*battlefieldFontPercent/100}px "EB Garamond", Georgia, "Times New Roman", serif`;
+  return `400 ${basePixels*battlefieldFontPercent/100}px "Press Start 2P", "Courier New", monospace`;
 }
 function changeBattlefieldFontSize(direction){
   const next=Math.max(BATTLEFIELD_FONT_MIN,Math.min(BATTLEFIELD_FONT_MAX,
@@ -17322,6 +17322,7 @@ async function beginTurn(){
   }
 
   game.active=actorId;
+  if(typeof beginCombatResultTurn==="function")beginCombatResultTurn(actorId);
 
   /*
     R137: an unseen hostile no longer gives away its position merely by becoming

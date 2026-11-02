@@ -1,8 +1,4 @@
-/*
-  R214 — global UI font
-  EB Garamond Bold (700) is loaded as a hosted web font from Google Fonts
-  in index.html. No local font installation or project TTF is required.
-*/
+/* Default font is the self-hosted Press Start 2P declared by game-font.css. */
 :root {
   color-scheme: dark;
   --silver:#b5b2c4;
@@ -18,7 +14,7 @@
   --panel2:#08080d;
   --divider:#514c67;
   --ground:#555352;
-  --ui-font:"EB Garamond",Georgia,"Times New Roman",serif;
+  --ui-font:"Press Start 2P","Courier New",monospace;
 
   font-family:var(--ui-font);
   font-weight:700;

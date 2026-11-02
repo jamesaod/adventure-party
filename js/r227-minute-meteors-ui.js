@@ -65,7 +65,7 @@ function r227DrawMeteorSelectionMarkers(){
     if(!unit?.alive || !shouldRenderUnitUnderPartyVisibility(unit)) continue;
     const c=hexCenter(unit.x,unit.y);
     ctx.save();
-    ctx.font='700 12px "EB Garamond", Georgia, serif';
+    ctx.font='400 12px "Press Start 2P", "Courier New", monospace';
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.lineWidth=3;

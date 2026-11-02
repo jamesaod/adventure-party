@@ -99,3 +99,24 @@ read older results keeps the reader's position. The compass remains available.
 
 Rev 254 keeps the feed at its newest result when a change in the unit summary
 resizes its viewport, while retaining the position of readers browsing above.
+
+## Rev 255: pixel default and turn-scoped results
+
+Press Start 2P is the default self-hosted font across game pages and editors,
+including battlefield Canvas text. The result font increases from 12 to 16 px.
+Pixel-aware sizes keep unit names, equipment, controls and headers within their
+existing panels; the battlefield +/- preference continues to scale the text.
+
+Result blocks remain visible during the current unit turn only. beginTurn
+clears that area after previous action beats finish and before the new unit's
+information is shown. The token includes round, initiative slot and actor ID,
+so consecutive turns by the same unit still clear while duplicate same-turn
+refreshes and temporary initiative gaps do not. Unit information stays visible.
+The lower full combat log remains available for earlier events.
+
+Reference viewed: https://www.youtube.com/watch?v=z82nvmnt1jw
+AD&D Pool of Radiance Combat Scene - Low Level Party vs Trolls and Ogres,
+dfortae - Game Reviews. Sampled at 1:33 (Ogre details and magic-damage text)
+and 2:11 (Dain's turn, unit details retained and lower result area cleared).
+The compact status/action split and per-unit message reset guide this pass;
+Adventure Party retains its requested one-second sequence between consequences.

@@ -25,6 +25,7 @@ assert.equal(h.style.get('--combat-font-scale'),'1.3');
 assert.equal(h.draws(),3,'Font changes redraw even before round one and while aiming');
 h.context.drawWhiteBattlefieldText('Speech',10,20,{fontSize:14});
 assert.match(h.canvas.font,/18.2px/,'Canvas speech uses the same 130% scale as panels');
+assert(h.canvas.font.includes('Press Start 2P'),'Battlefield canvas uses the same default pixel font as the UI');
 assert.equal(h.key('-','Minus'),true);assert.equal(h.key('-','NumpadSubtract'),true);
 assert.equal(h.style.get('--combat-font-scale'),'1.1');
 for(const extra of [{ctrlKey:true},{metaKey:true},{altKey:true},{isComposing:true},{defaultPrevented:true},...['INPUT','TEXTAREA','SELECT'].map(tagName=>({target:{tagName}})),{target:{tagName:'DIV',isContentEditable:true}}]){
