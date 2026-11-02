@@ -1,4 +1,4 @@
-import {isOutdoor} from './exploration-environment.mjs?v=R238C238';
+import {isOutdoor} from './exploration-environment.mjs?v=R238C262';
 export const GRASS_TEXTURES=Object.freeze({short:'assets/textures/exploration/grass-short-v1.png',worn:'assets/textures/exploration/grass-worn-v1.png'});
 export const GROUND_TEXTURES=Object.freeze({dirt:'assets/textures/exploration/dirt-path-v1.png',fringe:'assets/textures/exploration/grass-fringe-v1.png'});
 export function groundKind(map,x,z){return ({g:'grass',d:'dirt',s:'stone'})[map.ground?.[z]?.[x]]||(isOutdoor(map,x,z)?'grass':'stone');}
