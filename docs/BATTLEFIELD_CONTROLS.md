@@ -76,3 +76,7 @@ Each next beat is timed from the actual previous presentation, so a stalled
 frame cannot fast-forward several overdue messages. Studio inspection exits
 remain immediate when there are no queued results; resolved Studio attacks
 receive the same final presentation hold before returning.
+
+Rev 252 completes live QA: legacy sling misses return no structured result.
+The panel adapter captures the production flashAttack outcome for those paths;
+structured results still take priority, and no hit/damage rules are changed.
