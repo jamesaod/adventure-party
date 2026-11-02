@@ -48,3 +48,31 @@ For player-controlled units, THROUGH DOOR [F] connects aligned legal standing he
 ## Rev 235 - ordinary doorway movement
 
 Walk through open doors with the normal hex movement keys, at 1 movement point per adjacent step. The THROUGH DOOR button and special two-point crossing are removed. O or F operates the adjacent door: open when closed, close when open, costing 1 MP. Closing is refused while any living unit footprint occupies the leaf plane. The button label follows the current door state.
+
+## Candidate Rev 251: starting angle and ordered result panel
+
+Each new combat starts one counterclockwise rotation from the original view,
+index 5 / -60 degrees. The compass and picking use that same azimuth. Rotation
+buttons retain six 60-degree steps; labels show signed angles.
+
+The right-hand summary temporarily shows the production action results, with
+one second for each: primary hit (attacker, target, direct damage), each rider
+such as fire/acid, buffs, debuffs, other conditions, then downed/dying status.
+Misses also receive a result. The compass remains available; the current unit
+summary returns after the final second. Combat log and floating results remain.
+
+The existing candidate-combat-beat-sequence.js queue is shared with the panel.
+Pending consequences sort by semantic category, then original insertion order.
+Targets serialize globally so area attacks cannot overwrite one another in the
+single panel. Simulation damage, saves and status application still resolve
+normally; action progression and victory/defeat wait for presentation to finish.
+A new game clears pending messages/timers and resets the angle. Beat callbacks
+check game identity, and UI updates cannot replace an active result message.
+
+Run node scripts/test-combat-result-panel.mjs for exact fake-clock boundaries,
+order, multi-target serialization, death-before-victory hold, misses and cleanup.
+
+Each next beat is timed from the actual previous presentation, so a stalled
+frame cannot fast-forward several overdue messages. Studio inspection exits
+remain immediate when there are no queued results; resolved Studio attacks
+receive the same final presentation hold before returning.

@@ -2489,3 +2489,10 @@ button, input, select, textarea {
 #combatCompassRose .east {right:0;top:38%;}
 #combatCompass button {font-size:14px;margin:2px;}
 #combatCompassStatus {display:block;}
+
+/* Ordered action results temporarily own the unit summary; compass stays. */
+.unit-info-panel.showing-result > :not(#combatResult):not(#combatCompass) {display:none !important;}
+#combatResult {color:var(--green);font-size:calc(27px * var(--combat-font-scale, 1));line-height:1.3;overflow-wrap:anywhere;}
+#combatResult[data-category="death"] {color:#ff7979;}
+#combatResult[data-category="secondary-damage"] {color:#ffb45a;}
+#combatResult[hidden] {display:none;}
