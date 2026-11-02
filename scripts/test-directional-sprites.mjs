@@ -513,6 +513,9 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
     stopTitleMusic() {}, stopWeatherAudio() {}, updateAudioIndicators() {}, updateCombatConditionSelection() {}, updateCombatMobSelection() {},
     fitBattleCanvas() {}, requestAnimationFrame() {}, draw() {}, syncWeatherAudio() {},
     presentCombatFrame:async()=>{},
+    prepareCombatSession:async()=>context.ensureCombatRenderer(),
+    allUnits:()=>[context.game.player,...context.game.allies,...context.game.enemies],
+    canvas:{dataset:{}},explorationEncounter:null,
     ensureCombatRenderer:async()=>{if(waitForGraphics)await graphicsWait.promise;},
     combatRenderingPanel:()=>({finish(){},fail(error){throw error;}}),
     classReportOpen: false, characterSheetOpen: false, spellCastOverlayOpen: false,
@@ -554,6 +557,8 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
       "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);
+  const sharedSource=fs.readFileSync(new URL('../js/combat-runtime.js',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
+  vm.runInContext('let combatSessionGeneration=0;\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
   context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
   context.api = {
     select: context.selectStudioSpriteSet,

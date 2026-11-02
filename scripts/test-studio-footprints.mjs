@@ -10,11 +10,12 @@ const allLayoutPresets = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRES
 // Run the game's actual footprint, movement, factory, and rendering functions.
 const source = fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
 function productionFunction(name) {
-  const start = source.indexOf(`function ${name}(`);
+  const code = name==='createCombatGame'?fs.readFileSync(new URL('../js/combat-runtime.js',import.meta.url),'utf8'):source;
+  const start = code.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function ${name}`);
-  const end = source.indexOf('\n}', start);
+  const end = code.indexOf('\n}', start);
   assert.ok(end > start, `Unterminated production function ${name}`);
-  return source.slice(source.slice(start - 6, start) === 'async ' ? start - 6 : start, end + 2);
+  return code.slice(code.slice(start - 6, start) === 'async ' ? start - 6 : start, end + 2);
 }
 function productionDeclaration(name, endMarker = '\n};') {
   const start = source.indexOf(`const ${name}=`);
@@ -72,7 +73,7 @@ const functions = [
   'conHpAdjustment', 'strengthMods', 'syncFighterEquipment', 'syncRepositoryMissileEquipment', 'calculateArmorClass', 'dexterityAdjustments',
   'getMissileCatalogEntry', 'getWeaponCatalogEntry', 'getArmorCatalogEntry', 'getSpellEntry',
   'applyFighterClassRules', 'fighterLevelData', 'warriorSavingThrows',
-  'newGame', 'allUnits', 'livingPartyMembers', 'isPlayerControlledUnit', 'isKoboldUnit',
+  'createCombatGame', 'newGame', 'allUnits', 'livingPartyMembers', 'isPlayerControlledUnit', 'isKoboldUnit',
   'studioSpriteTestUnits', 'inspectStudioSpritePose', 'beginCombatFromPrompt', 'startRound',
   'rollInitiative', 'getUnitById', 'activeEnemies', 'fighterAttacksThisRound',
   'fighterBaseAttacksThisRound', 'fighterSpecialistAttacksThisRound', 'isStudioTestCombat', 'studioReturnUrl', 'returnToStudioFromCombat', 'checkCombatVictory', 'renderStudioTestCharacterSheet', 'renderCharacterSheet', 'canUseSweep',
@@ -217,7 +218,7 @@ for (const mob of SPRITE_MOBS) {
 // well as newly cloned fighters, without replacing the real roster factories.
 const studioReturns = [];
 Object.assign(sandbox, {
-  aiTimer: null, selectedMobEncounter: 'studio-kobold', currentScreen: 'combat',
+  explorationEncounter:null, aiTimer: null, selectedMobEncounter: 'studio-kobold', currentScreen: 'combat',
   configureArchitecturalWalls() {}, rotateBattlefield() {}, camera: {}, aimCursor: {},
   quickCommandUnitIds: new Set(), quickCommandGeneration: 0,
   deathFxTimer: null, unitBarkClearTimer: null, activityDetectedClearTimer: null, transientUnitFxFrame: null,
