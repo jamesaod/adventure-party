@@ -2490,9 +2490,14 @@ button, input, select, textarea {
 #combatCompass button {font-size:14px;margin:2px;}
 #combatCompassStatus {display:block;}
 
-/* Ordered action results temporarily own the unit summary; compass stays. */
-.unit-info-panel.showing-result > :not(#combatResult):not(#combatCompass) {display:none !important;}
-#combatResult {color:var(--green);font-size:calc(27px * var(--combat-font-scale, 1));line-height:1.3;overflow-wrap:anywhere;}
-#combatResult[data-category="death"] {color:#ff7979;}
-#combatResult[data-category="secondary-damage"] {color:#ffb45a;}
+/* Persistent result history; unit summary and compass remain visible. */
+@font-face {font-family:"Combat Pixel";src:url('../assets/fonts/press-start-2p.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+#combatResult {flex:1 1 120px;min-height:70px;overflow:auto;margin:12px 0 0;color:#82e15b;font-family:"Combat Pixel","Courier New",monospace;font-size:calc(12px * var(--combat-font-scale, 1));line-height:1.5;overflow-wrap:anywhere;scrollbar-width:thin;}
 #combatResult[hidden] {display:none;}
+.combat-result-entry {margin:0 0 18px;}
+.combat-result-entry:last-child {margin-bottom:0;}
+.combat-result-line {color:#82e15b;}
+.combat-result-actor {color:#71e5ed;}
+.combat-result-target {color:#f3e879;}
+.combat-result-downed {color:#f76c62;}
+.unit-info-panel > :not(#combatResult) {flex-shrink:0;}
