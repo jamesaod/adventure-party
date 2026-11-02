@@ -1,9 +1,10 @@
+import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C263';
 import {groundKind} from './exploration-ground.mjs?v=R238C262';
 import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
-import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C259';
-import {FACINGS} from './exploration-core.mjs?v=R238C262';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C262';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C262';
+import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C263';
+import {FACINGS} from './exploration-core.mjs?v=R238C263';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C263';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C263';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;
@@ -14,13 +15,14 @@ const areaColors=['#638bdb','#cf789a','#5d9f70','#b98839','#9274be','#44a3a3'];
 const colorFor=e=>e.color||areaColors[[...e.id].reduce((n,c)=>n+c.charCodeAt(0),0)%areaColors.length];
 const selectedCells=()=>[...selectionKeys].map(k=>{const [x,z]=k.split(',').map(Number);return {x,z};});
 function selectArea(event){$('encounterPanel').open=true;activeEncounterId=event.id;selectionKeys=new Set(encounterCells(event).map(p=>`${p.x},${p.z}`));const first=encounterCells(event)[0];if(first)selected={...first};formKey=null;grid();inspector();}
-const toolLabels={'select':'Select squares','encounter-area':'Encounter area','floor':'Create floor','void':'Void / solid area','ground-dirt':'Dirt path','ground-grass':'Grass','ground-stone':'Stone floor','ground-auto':'Automatic floor','indoor':'Indoor / ceiling','outdoor':'Outdoor / sky','ambient':'Ambient light','ambient-default':'Default ambient','torch':'Toggle wall sconce','edge-select':'Select edge','edge-wall':'Paint wall','edge-door':'Paint door','edge-window':'Paint window','edge-erase':'Erase edge','start':'Start position'};
+const toolLabels={'curve-nw':'Quarter-round NW','curve-ne':'Quarter-round NE','curve-se':'Quarter-round SE','curve-sw':'Quarter-round SW','curve-erase':'Remove quarter-round','ceiling-wood':'Wooden ceiling','ceiling-stone':'Stone ceiling','ceiling-auto':'Automatic ceiling','select':'Select squares','encounter-area':'Encounter area','floor':'Create floor','void':'Void / solid area','ground-dirt':'Dirt path','ground-grass':'Grass','ground-stone':'Stone floor','ground-auto':'Automatic floor','indoor':'Indoor / ceiling','outdoor':'Outdoor / sky','ambient':'Ambient light','ambient-default':'Default ambient','torch':'Toggle wall sconce','edge-select':'Select edge','edge-wall':'Paint wall','edge-door':'Paint door','edge-window':'Paint window','edge-erase':'Erase edge','start':'Start position'};
 function setTool(id){
  if(id==='edge-window'&&Number($('openingWidth').value)<40)$('openingWidth').value=84;
  tool=id;$('editorGrid').dataset.mode=isEdgeTool()?'edge':'cell';
  $('selectTool').setAttribute('aria-pressed',String(id==='select'));
  $('activeTool').textContent='Current tool: '+(toolLabels[id]||id)+(id==='edge-wall'?' ('+$('edgeMaterial').value+')':'');
  if(isEdgeTool())$('edgePanel').open=true;
+ if(id.startsWith('curve-'))$('curvePanel').open=true;
  if(['ambient','ambient-default','indoor','outdoor','torch'].includes(id))$('lightingPanel').open=true;
  if(id==='encounter-area')$('encounterPanel').open=true;
  if(id==='start')$('squarePanel').open=true;
@@ -77,8 +79,10 @@ function grid(){
     b.setAttribute('aria-pressed',String(selectionKeys.has(`${x},${z}`)));
     b.textContent=labels.join('')||(door?(door.axis==='x'?'│':'─'):'');
     b.setAttribute('aria-label',`Column ${x+1}, row ${z+1}: ${cell==='#'?(m.version===2?'void / solid area':'wall'):cell==='D'?'door':'floor'}${labels.length?', '+labels.join(', '):''}${area?', encounter '+area.event.name:''}${isOutdoor(m,x,z)?', outdoor / sky':', indoor / ceiling'}, ambient light ${ambientLightAt(m,x,z)}%, ${groundKind(m,x,z)} ground`);
+    if(m.ceiling?.[z]?.[x]){b.title+=(b.title?' · ':'')+ceilingKind(m,x,z)+' ceiling';b.setAttribute('aria-label',b.getAttribute('aria-label')+', '+ceilingKind(m,x,z)+' ceiling');}
     if(selectionKeys.has(`${x},${z}`))b.classList.add('selected');
     for(const side of ['n','e','s','w']){const edge=edgeAtSide(x,z,side),record=edges.get(edgeKey(edge)),mark=document.createElement('span');mark.className=`edge-mark edge-${side} ${record?.kind||'empty'}`;mark.dataset.edge=edgeKey(edge);mark.setAttribute('aria-hidden','true');b.append(mark);}
+    const quarter=quarterAt(m,x,z);if(quarter){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS('http://www.w3.org/2000/svg','polyline');svg.setAttribute('viewBox','0 0 100 100');svg.classList.add('quarter-mark');const cutout=document.createElementNS('http://www.w3.org/2000/svg','path');cutout.setAttribute('d','M0 0H100V100H0Z M'+quarterFloor(quarter).map(p=>`${(p.x-x+.5)*100} ${(p.z-z+.5)*100}`).join('L')+'Z');cutout.setAttribute('fill-rule','evenodd');cutout.setAttribute('fill','#947348');cutout.setAttribute('opacity','.65');svg.append(cutout);path.setAttribute('points',quarterPoints(quarter).map(p=>`${(p.x-x+.5)*100},${(p.z-z+.5)*100}`).join(' '));path.setAttribute('fill','none');path.setAttribute('stroke',quarter.material==='wood'?'#9b551e':'#563d25');path.setAttribute('stroke-width','5');svg.append(path);b.append(svg);b.title+=(b.title?' · ':'')+`Quarter-round ${quarter.corner.toUpperCase()}`;b.setAttribute('aria-label',b.getAttribute('aria-label')+`, quarter-round ${quarter.corner}`);}
     fragment.append(b);
   }
   $('editorGrid').replaceChildren(fragment);
@@ -112,7 +116,7 @@ function applySquare(button,event){
   const x=Number(button.dataset.x),z=Number(button.dataset.z);selected={x,z};selectionKeys=new Set([`${x},${z}`]);activeEncounterId=null;
   if(tool!=='select'){
     const key=`${x},${z}`;if(stroke.has(key))return;stroke.add(key);
-    try{paintCell(map(),x,z,tool,Number($('ambientPercent').value));dirty=true;tell('Unsaved changes.');}catch(e){tell(e.message);}
+    try{paintCell(map(),x,z,tool,Number($('ambientPercent').value),{material:$('curveMaterial').value});dirty=true;tell('Unsaved changes.');}catch(e){tell(e.message);}
   }
   grid();inspector();refreshValidation();$('undo').disabled=!history.length;
 }
@@ -150,7 +154,7 @@ async function start(){
   pack.maps=pack.maps.map(upgradeEdgeMap);
   if(pack.maps.some(m=>m.migrationNotes?.length))loadNotice+=' Converted legacy door squares to north/west edges. Review highlighted migration notes; stored maps are unchanged until Save maps.';
   mapId=pack.maps.find(m=>m.id===new URLSearchParams(location.search).get('map'))?.id||pack.maps[0].id;selected={x:map().start.x,z:map().start.z};
-  for(const [menu,ids] of [['floorTool',['ground-dirt','ground-grass','ground-stone','ground-auto']],['lightingTool',['ambient','ambient-default','indoor','outdoor','torch']],['functionTool',['select','floor','void','encounter-area','edge-select','edge-wall','edge-door','edge-window','edge-erase','start']]]){
+  for(const [menu,ids] of [['floorTool',['ground-dirt','ground-grass','ground-stone','ground-auto']],['ceilingTool',['ceiling-wood','ceiling-stone','ceiling-auto']],['lightingTool',['ambient','ambient-default','indoor','outdoor','torch']],['functionTool',['select','floor','void','encounter-area','edge-select','edge-wall','edge-door','edge-window','edge-erase','start','curve-nw','curve-ne','curve-se','curve-sw','curve-erase']]]){
    for(const id of ids)option($(menu),id,toolLabels[id]);
    $(menu).addEventListener('change',()=>{if($(menu).value)setTool($(menu).value);});
   }
@@ -203,6 +207,7 @@ async function start(){
     $(id).addEventListener('focus',checkpoint);
     $(id).addEventListener('input',()=>{if(id==='packName')pack.name=$(id).value.trim()||'My adventure';else map().name=$(id).value.trim()||'Untitled map';dirty=true;selectOptions($('mapSelect'),pack.maps.map(m=>[m.id,m.name]),mapId);selectOptions($('targetMap'),pack.maps.map(m=>[m.id,m.name]),$('targetMap').value);$('undo').disabled=false;tell('Unsaved changes.');});
   }
+  action('towerSample',()=>mutate(()=>{if(pack.maps.length>=100)throw Error('This pack already has 100 maps.');const m=quarterTowerSample(newId('tower'));m.party=copy(starter.party);pack.maps.push(m);mapId=m.id;selected={x:m.start.x,z:m.start.z};}));
   action('terrainSample',()=>mutate(()=>{if(pack.maps.length>=100)throw Error('This pack already has 100 maps.');const m=terrainTransitionSample(newId('terrain'));m.party=copy(starter.party);pack.maps.push(m);mapId=m.id;selected={x:m.start.x,z:m.start.z};}));
   action('newMap',()=>mutate(()=>{if(pack.maps.length>=100)throw Error('This pack already has 100 maps.');const m=blankEdgeMap(newId('map'),`New map ${pack.maps.length+1}`);m.party=copy(starter.party);pack.maps.push(m);mapId=m.id;selected={x:m.start.x,z:m.start.z};}));
   action('duplicateMap',()=>mutate(()=>{if(pack.maps.length>=100)throw Error('This pack already has 100 maps.');const m=copy(map());m.id=newId('map');m.name=`${m.name} copy`.slice(0,100);m.exits=[];pack.maps.push(m);mapId=m.id;}));
