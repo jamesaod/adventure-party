@@ -9,6 +9,7 @@ import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=R238C247';
 const canvas=document.querySelector('canvas'),raster=document.createElement('canvas'),result=document.querySelector('#result'),details=document.querySelector('#details');
 raster.width=raster.height=64;
 let backend,lossCount=0,restores=0,lossExtension;
+const stone=new Image();stone.crossOrigin='anonymous';stone.src='../../assets/terrain/stone-floor-pamnawi.png?v=R238C248';
 const check=(test,message)=>{if(!test)throw Error(message);};
 const fail=error=>{result.textContent='FAIL: '+error.message;console.error(error);};
 function image(color){const c=document.createElement('canvas');c.width=c.height=1;c.getContext('2d').fillStyle=color;c.getContext('2d').fillRect(0,0,1,1);return c;}
@@ -17,6 +18,13 @@ const view={width:64,height:64,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]};
 const face=(left=0,right=64)=>[{points:[{x:left,y:0},{x:right,y:0},{x:right,y:64},{x:left,y:64}],uv:[[0,1],[1,1],[1,0],[0,0]]}];
 const pixel=(x,y)=>{const value=new Uint8Array(4);canvas.getContext('webgl2').readPixels(x,63-y,1,1,canvas.getContext('webgl2').RGBA,canvas.getContext('webgl2').UNSIGNED_BYTE,value);return [...value];};
 function run(){
+ // Reproduce standalone Wall Test -> exploration mesh -> standalone grass.
+ // Use the production stone PNG, not a synthetic origin-clean substitute.
+ backend.begin(view);backend.context.drawImage(stone,0,0,64,64);backend.end();
+ check(pixel(32,32).slice(0,3).some(v=>v>10),'Standalone stone frame must upload to WebGL');
+ backend.begin(view);backend.surface(face(),green);backend.end();
+ backend.begin(view);backend.context.fillStyle='#008000';backend.context.fillRect(0,0,64,64);backend.end();
+ check(Math.abs(pixel(32,32)[1]-128)<=2,'A prior stone map must not poison later raster-only maps');
  backend.begin(view);backend.surface(face(),red,{lightMap:{left:0,top:0,spanWidth:64,spanHeight:64,layers:[multiply,boost]}});backend.end();
  check(Math.abs(pixel(32,32)[0]-64)<=2,'GPU light-map exposure must multiply display RGB once');
  backend.begin(view);backend.surface(face(),red);
@@ -37,6 +45,7 @@ function run(){
  document.querySelector('#loss').disabled=false;
 }
 try{
+ await stone.decode();
  backend=createCombatRenderer(canvas,raster,{onLost(){lossCount++;result.textContent='Context lost; recovering…';setTimeout(()=>lossExtension?.restoreContext(),150);},onRestored(){restores++;try{run();}catch(e){fail(e);}}});
  run();
  document.querySelector('#loss').onclick=()=>{const extension=canvas.getContext('webgl2').getExtension('WEBGL_lose_context');if(!extension){result.textContent='SKIP: context-loss test extension unavailable';return;}lossExtension=extension;extension.loseContext();};
