@@ -5,7 +5,7 @@ import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R23
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C246';
 import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C238';
-import {explorationMapMarkup} from './exploration-map.mjs?v=R238C232';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C255';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C232';
 import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C246';
 import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C246';

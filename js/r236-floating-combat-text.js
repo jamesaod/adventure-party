@@ -366,9 +366,9 @@ function r236DrawFloatingCombatText(){
     ctx.save();
 
     ctx.font=
-      '700 '+
+      '400 '+
       style.fontSize+
-      'px "EB Garamond", Georgia, "Times New Roman", serif';
+      'px "Press Start 2P", "Courier New", monospace';
 
     ctx.textAlign="center";
     ctx.textBaseline="middle";
