@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>Combat WebGL 2 validation</title>
+<style>body{background:#15151c;color:#cff;font:18px monospace}canvas{width:256px;height:256px;image-rendering:pixelated}button{padding:12px}</style>
+<h1>Combat WebGL 2 validation</h1><p id="result" role="status">Running…</p>
+<canvas id="output" width="64" height="64"></canvas>
+<button id="loss" disabled>Test graphics context recovery</button>
+<pre id="details"></pre>
+<script type="module">
+import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=R238C247';
+const canvas=document.querySelector('canvas'),raster=document.createElement('canvas'),result=document.querySelector('#result'),details=document.querySelector('#details');
+raster.width=raster.height=64;
+let backend,lossCount=0,restores=0,lossExtension;
+const check=(test,message)=>{if(!test)throw Error(message);};
+const fail=error=>{result.textContent='FAIL: '+error.message;console.error(error);};
+function image(color){const c=document.createElement('canvas');c.width=c.height=1;c.getContext('2d').fillStyle=color;c.getContext('2d').fillRect(0,0,1,1);return c;}
+const red=image('#800000'),green=image('#008000'),multiply=image('#808080'),boost=image('#000000');
+const view={width:64,height:64,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]};
+const face=(left=0,right=64)=>[{points:[{x:left,y:0},{x:right,y:0},{x:right,y:64},{x:left,y:64}],uv:[[0,1],[1,1],[1,0],[0,0]]}];
+const pixel=(x,y)=>{const value=new Uint8Array(4);canvas.getContext('webgl2').readPixels(x,63-y,1,1,canvas.getContext('webgl2').RGBA,canvas.getContext('webgl2').UNSIGNED_BYTE,value);return [...value];};
+function run(){
+ backend.begin(view);backend.surface(face(),red,{lightMap:{left:0,top:0,spanWidth:64,spanHeight:64,layers:[multiply,boost]}});backend.end();
+ check(Math.abs(pixel(32,32)[0]-64)<=2,'GPU light-map exposure must multiply display RGB once');
+ backend.begin(view);backend.surface(face(),red);
+ const ctx=backend.context;ctx.fillStyle='rgba(0,0,255,.5)';ctx.fillRect(0,0,64,64);
+ backend.surface(face(0,32),green);backend.end();
+ let p=pixel(48,32);check(Math.abs(p[0]-64)<=2&&Math.abs(p[2]-128)<=2,'Transparent sprite/VFX adapter must composite above preceding geometry');
+ p=pixel(16,32);check(p[0]===0&&Math.abs(p[1]-128)<=2&&p[2]===0,'Later wall geometry must occlude the overlay');
+ backend.begin(view);backend.surface(face(),red);backend.prepareOverlay();
+ ctx.save();ctx.beginPath();ctx.rect(0,0,32,64);ctx.clip();ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(0,0,255,.5)';ctx.fillRect(0,0,64,64);ctx.restore();backend.end();
+ p=pixel(16,32);check(Math.abs(p[0]-128)<=2&&Math.abs(p[2]-128)<=2,'Additive spell light must retain the destination GPU surface');
+ p=pixel(48,32);check(Math.abs(p[0]-128)<=2&&p[2]===0,'Local VFX clipping must preserve the rest of the GPU scene');
+ // Draw a much smaller next scene repeatedly: buffer and exposure resources
+ // must remain bounded rather than accumulating after door/viewport changes.
+ for(let i=0;i<30;i++){backend.begin(view);backend.surface(i%2?[...face(0,32),...face(32,64)]:face(),red);backend.end();}
+ const metrics=backend.diagnostics();check(metrics.geometries<=3&&metrics.textures<=4,'GPU resources grew across scene replacement');
+ result.textContent=`PASS: shader lighting, alpha/order, resource reuse${restores?', context restored without losing renderer':''}`;
+ details.textContent=JSON.stringify({...metrics,lossCount,restores},null,2);
+ document.querySelector('#loss').disabled=false;
+}
+try{
+ backend=createCombatRenderer(canvas,raster,{onLost(){lossCount++;result.textContent='Context lost; recovering…';setTimeout(()=>lossExtension?.restoreContext(),150);},onRestored(){restores++;try{run();}catch(e){fail(e);}}});
+ run();
+ document.querySelector('#loss').onclick=()=>{const extension=canvas.getContext('webgl2').getExtension('WEBGL_lose_context');if(!extension){result.textContent='SKIP: context-loss test extension unavailable';return;}lossExtension=extension;extension.loseContext();};
+}catch(error){fail(error);}
+</script>

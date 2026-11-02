@@ -46,3 +46,8 @@ Outdoor / sky painted floor squares use `grass-short-v1.png` in both first-perso
 Each grass texture repeat covers one authored three-metre square; it is independent of hex subdivision, wall height and stone-slab density. Combat uses the existing anisotropic material prefilter and world-projected repeat; exploration uses sRGB, repeating textures and anisotropic/mipmap filtering. Grass is fetched only for maps with outdoor floor. Daylight, torches, spells, distance fading and sprite lighting use the existing lighting pipeline without baked illumination in the new assets.
 
 The original generated PNGs, exact built-in image_gen prompts, dimensions and checksums are recorded under `assets/textures/exploration/grass-generation-v1.json`. Source images were copied without pixel edits. Test with the existing Outdoor / sky brush and Test Map.
+
+
+## Candidate Rev 247 - WebGL 2 combat backend
+
+Combat now presents through Three.js/WebGL 2, with real GPU floor/wall/door geometry for exploration encounters and ordered sprite/VFX overlays. Exposure and occlusion queries remain shared CPU calculations. See [Combat WebGL](COMBAT_WEBGL.md) for architecture, limitations and GPU/recovery validation. Recheck door daylight, distance fading, spell radiance and split-hex lighting when changing surface shaders.

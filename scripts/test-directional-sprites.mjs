@@ -492,7 +492,7 @@ function deferred() {
 async function flushStartup() {
   for (let i = 0; i < 16; i++) await Promise.resolve();
 }
-function startupHarness({ repository = [], draft = false, fetchError = false } = {}) {
+function startupHarness({ repository = [], draft = false, fetchError = false, waitForGraphics = false } = {}) {
   const callbacks = [], messages = [], newGames = [];
   const button = { textContent: "Begin Battle", disabled: false, handlers: {},
     addEventListener(type, listener) { this.handlers[type] = listener; }, setAttribute() {}, removeAttribute() {} };
@@ -500,7 +500,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
   const mobButton = { ...button, handlers: {}, dataset: { mobEncounter: "orcs" } };
   const screen = () => ({ classList: { add() {}, remove() {} } });
   const repositoryWaits = new Map(repository.map(id => [id, deferred()]));
-  const draftWait = deferred();
+  const draftWait = deferred(), graphicsWait = deferred();
   const context = {
     currentScreen: "combat-conditions", pendingCombatStart: null, studioDraftAutoSelect: true,
     selectedCombatCondition: "grass", selectedMobEncounter: "kobolds", selectedStudioSpriteSetId: "studio-kobold",
@@ -512,6 +512,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
     clearTimeout(timer) { timer.active = false; }, clearInterval() {},
     stopTitleMusic() {}, stopWeatherAudio() {}, updateAudioIndicators() {}, updateCombatConditionSelection() {}, updateCombatMobSelection() {},
     fitBattleCanvas() {}, requestAnimationFrame() {}, draw() {}, syncWeatherAudio() {},
+    ensureCombatRenderer:async()=>{if(waitForGraphics)await graphicsWait.promise;},
     combatRenderingPanel:()=>({finish(){},fail(error){throw error;}}),
     classReportOpen: false, characterSheetOpen: false, spellCastOverlayOpen: false,
     quickCommandUnitIds: new Set(), quickCommandActive: false, quickCommandUnitId: null, quickCommandGeneration: 0, quickCommandRunning: false,
@@ -564,7 +565,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false } =
   const bindingEnd = source.indexOf('document.getElementById("combatConditionsReturnButton")', bindingStart);
   assert.ok(bindingStart >= 0 && bindingEnd > bindingStart);
   vm.runInContext(source.slice(bindingStart, bindingEnd), context);
-  return { context, button, conditionButton, mobButton, newGames, messages, repositoryWaits, draftWait,
+  return { context, button, conditionButton, mobButton, newGames, messages, repositoryWaits, draftWait, graphicsWait,
     boot: () => vm.runInContext(runtimeSource.slice(runtimeSource.lastIndexOf("start().catch(")), context),
     enter: () => context.handleCombatConditionsKey({ key: "Enter", preventDefault() {} }),
     timeout: () => { assert.equal(callbacks[0].delay, 15000); callbacks[0].callback(); }
@@ -661,3 +662,16 @@ assert.equal(sandbox.activeUnitPoseName(fallCheck),'falling');
 assert.equal(sandbox.directionalUnitPoseFrame(fallCheck).image,images['falling-e.png']);
 now+=300;
 assert.equal(sandbox.activeUnitPoseName(fallCheck),'prone');
+
+// Lazy GPU initialization is another asynchronous startup boundary. Double
+// starts must share it, and leaving during initialization must cancel safely.
+{
+ const test=startupHarness({waitForGraphics:true});test.context.studioSpriteLoading.finish();
+ const start=test.enter();await flushStartup();
+ assert.equal(test.newGames.length,0);assert(test.context.pendingCombatStart);
+ await test.enter();assert.equal(test.newGames.length,0);
+ test.context.showLauncher();test.graphicsWait.resolve();await start;await flushStartup();
+ assert.equal(test.newGames.length,0,'Cancelled graphics startup must not create a hidden combat');
+ assert.equal(test.context.pendingCombatStart,null);
+}
+console.log('PASS lazy graphics startup remains deduplicated and cancellable');
