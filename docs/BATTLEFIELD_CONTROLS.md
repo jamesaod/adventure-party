@@ -96,3 +96,6 @@ OFL license and attribution bundled. Existing unit-summary typography stays.
 
 The history follows new messages when already at the bottom. Scrolling up to
 read older results keeps the reader's position. The compass remains available.
+
+Rev 254 keeps the feed at its newest result when a change in the unit summary
+resizes its viewport, while retaining the position of readers browsing above.
