@@ -1,3 +1,11 @@
+# Exploration Map Editor - Candidate Rev 262
+
+Tools are grouped into Floor textures, Wall textures, Lighting and Map functions dropdowns. The current brush is always shown. Choosing a tool opens its relevant settings. Select squares and Undo remain one-click actions. The right inspector folds square/start, edge, encounter, entrance, exit and validation settings into separate panels. Map size/name and file-management actions have their own dropdown sections. Existing saved packs, selection gestures, test snapshots and Undo behavior are preserved.
+
+Ambient paint accepts integer percentages from 0 to 1000. 100% retains normal bright-day meaning; higher values increase physical brightness. Distance visibility is capped at 100%, independent of exposure. Combat uses the shared ambient/daylight profile; first-person exploration samples painted indirect lighting per square on materials, preserving direct torch and lantern light. Legacy default values are unchanged.
+
+## Existing authoring workflow
+
 # Exploration Map Editor — Candidate Rev 209
 
 Open **Exploration Map Editor** from the title menu. The first visit copies the Old Tollhouse into an editable Adventure Pack. Published exploration data is never overwritten by browser editing.

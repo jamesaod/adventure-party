@@ -1,19 +1,19 @@
-export {createGroundTileBank} from './terrain-transition.mjs?v=R238C258';
-import {groundKind} from './exploration-ground.mjs?v=R238C258';
-export * from './exploration-ground.mjs?v=R238C258';
-export * from './portal-daylight.mjs?v=R238C259';
+export {createGroundTileBank} from './terrain-transition.mjs?v=R238C262';
+import {groundKind} from './exploration-ground.mjs?v=R238C262';
+export * from './exploration-ground.mjs?v=R238C262';
+export * from './portal-daylight.mjs?v=R238C262';
 export * from './sprite-surface-lighting.mjs?v=R238C244';
 export * from './wall-light-bands.mjs?v=R238C243';
 export * from './combat-torch-light.mjs?v=R238C242';
 export * from './combat-surface-lighting.mjs?v=R238C241';
 export {spellSurfaceRadiance,spellEffectLightSources} from './spell-illumination.mjs?v=R238C241';
 export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './distance-visibility.mjs?v=R238C238';
-import {isOutdoor} from './exploration-environment.mjs?v=R238C238';
-export {ambientLightAt,isOutdoor} from './exploration-environment.mjs?v=R238C238';
+import {isOutdoor} from './exploration-environment.mjs?v=R238C262';
+export {ambientLightAt,isOutdoor} from './exploration-environment.mjs?v=R238C262';
 export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C259';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C259';
-import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C259';
-export * from './exploration-scene-style.mjs?v=R238C259';
+import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C262';
+export * from './exploration-scene-style.mjs?v=R238C262';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}

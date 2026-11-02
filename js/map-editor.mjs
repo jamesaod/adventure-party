@@ -1,9 +1,9 @@
-import {groundKind} from './exploration-ground.mjs?v=R238C258';
-import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C238';
+import {groundKind} from './exploration-ground.mjs?v=R238C262';
+import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
 import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C259';
-import {FACINGS} from './exploration-core.mjs?v=R238C259';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C261';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C261';
+import {FACINGS} from './exploration-core.mjs?v=R238C262';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C262';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C262';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;
@@ -13,8 +13,20 @@ let selectionKeys=new Set(),activeEncounterId=null,selectionMapId=null,selection
 const areaColors=['#638bdb','#cf789a','#5d9f70','#b98839','#9274be','#44a3a3'];
 const colorFor=e=>e.color||areaColors[[...e.id].reduce((n,c)=>n+c.charCodeAt(0),0)%areaColors.length];
 const selectedCells=()=>[...selectionKeys].map(k=>{const [x,z]=k.split(',').map(Number);return {x,z};});
-function selectArea(event){activeEncounterId=event.id;selectionKeys=new Set(encounterCells(event).map(p=>`${p.x},${p.z}`));const first=encounterCells(event)[0];if(first)selected={...first};formKey=null;grid();inspector();}
-function setTool(id){if(id==='edge-window'&&Number($('openingWidth').value)<40)$('openingWidth').value=84;tool=id;$('editorGrid').dataset.mode=isEdgeTool()?'edge':'cell';for(const b of $('tools').children)b.setAttribute('aria-pressed',String(b.dataset.tool===id));}
+function selectArea(event){$('encounterPanel').open=true;activeEncounterId=event.id;selectionKeys=new Set(encounterCells(event).map(p=>`${p.x},${p.z}`));const first=encounterCells(event)[0];if(first)selected={...first};formKey=null;grid();inspector();}
+const toolLabels={'select':'Select squares','encounter-area':'Encounter area','floor':'Create floor','void':'Void / solid area','ground-dirt':'Dirt path','ground-grass':'Grass','ground-stone':'Stone floor','ground-auto':'Automatic floor','indoor':'Indoor / ceiling','outdoor':'Outdoor / sky','ambient':'Ambient light','ambient-default':'Default ambient','torch':'Toggle wall sconce','edge-select':'Select edge','edge-wall':'Paint wall','edge-door':'Paint door','edge-window':'Paint window','edge-erase':'Erase edge','start':'Start position'};
+function setTool(id){
+ if(id==='edge-window'&&Number($('openingWidth').value)<40)$('openingWidth').value=84;
+ tool=id;$('editorGrid').dataset.mode=isEdgeTool()?'edge':'cell';
+ $('selectTool').setAttribute('aria-pressed',String(id==='select'));
+ $('activeTool').textContent='Current tool: '+(toolLabels[id]||id)+(id==='edge-wall'?' ('+$('edgeMaterial').value+')':'');
+ if(isEdgeTool())$('edgePanel').open=true;
+ if(['ambient','ambient-default','indoor','outdoor','torch'].includes(id))$('lightingPanel').open=true;
+ if(id==='encounter-area')$('encounterPanel').open=true;
+ if(id==='start')$('squarePanel').open=true;
+ for(const menu of document.querySelectorAll('[data-tool-menu]'))menu.value='';
+}
+
 function newArea(){$('selectionMode').value='replace';activeEncounterId=null;selectionKeys.clear();formKey=null;setTool('encounter-area');grid();inspector();tell('Drag to select an encounter area. Shift adds; Alt subtracts.');}
 const map=()=>pack.maps.find(m=>m.id===mapId);
 function tell(text){$('editorStatus').textContent=text;}
@@ -74,6 +86,12 @@ function grid(){
     const button=document.createElement('button');button.type='button';button.textContent=`C${i+1} · ${event.name} · ${encounterCells(event).filter(p=>'.D'.includes(m.grid[p.z]?.[p.x]??'#')).length} squares`;button.style.setProperty('--area-color',colorFor(event));button.className='area-legend';button.setAttribute('aria-pressed',String(event.id===activeEncounterId));button.addEventListener('click',()=>{setTool('select');selectArea(event);});$('encounterAreas').append(button);
   }
 }
+function refreshValidation(){
+ const issues=packIssues(pack);$('issues').replaceChildren();
+ for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}
+ $('validationSummary').textContent=issues.length?`Map validation (${issues.length} issues)`:'Map validation — ready';
+ $('testMap').disabled=$('exportPack').disabled=issues.length>0;
+}
 function render(){
   if(!pack.maps.some(m=>m.id===mapId))mapId=pack.maps[0].id;
   if(selectionMapId!==mapId){selectionMapId=mapId;selectedEdge=null;selectionKeys=new Set([`${selected.x},${selected.z}`]);activeEncounterId=null;formKey=null;}
@@ -84,8 +102,7 @@ function render(){
   selectOptions($('mapSelect'),pack.maps.map(m=>[m.id,m.name]),mapId);
   const current=$('testEntrance').value;selectOptions($('testEntrance'),[['','Map start'],...map().entrances.map(e=>[e.id,e.name])],current);
   grid();inspector();$('undo').disabled=!history.length;$('deleteMap').disabled=pack.maps.length<2;
-  const issues=packIssues(pack);$('issues').replaceChildren();for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}
-  $('testMap').disabled=issues.length>0;$('exportPack').disabled=issues.length>0;
+  refreshValidation();
 }
 function action(id,fn){$(id).addEventListener('click',()=>{try{fn();}catch(e){tell(e.message);}});}
 function mutate(fn){const before=copy(pack);try{fn();history.push(before);if(history.length>30)history.shift();changed();}catch(e){pack=before;throw e;}}
@@ -97,8 +114,7 @@ function applySquare(button,event){
     const key=`${x},${z}`;if(stroke.has(key))return;stroke.add(key);
     try{paintCell(map(),x,z,tool,Number($('ambientPercent').value));dirty=true;tell('Unsaved changes.');}catch(e){tell(e.message);}
   }
-  grid();inspector();const issues=packIssues(pack);$('testMap').disabled=!!issues.length;$('exportPack').disabled=!!issues.length;
-  $('issues').replaceChildren();for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}$('undo').disabled=!history.length;
+  grid();inspector();refreshValidation();$('undo').disabled=!history.length;
 }
 function edgeSettings(){return {material:$('edgeMaterial').value,width:Number($('openingWidth').value)/100,hinge:$('doorHinge').value,initialOpen:$('doorInitialOpen').checked};}
 function edgeFromPointer(button,event){
@@ -125,8 +141,7 @@ function applyEdge(button,event){
  if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??(record.kind==='door'?.375:.84))*1000)/10;$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
  try{paintEdge(map(),edge,tool.slice(5),edgeSettings());dirty=true;tell('Edge updated. Save maps to keep this change.');}catch(error){tell(error.message);}
  grid();inspector();$('undo').disabled=!history.length;
- const issues=packIssues(pack);$('issues').replaceChildren();for(const text of issues.length?issues:['Ready to test and export.']){const li=document.createElement('li');li.textContent=text;$('issues').append(li);}
- $('testMap').disabled=!!issues.length;$('exportPack').disabled=!!issues.length;
+ refreshValidation();
 }
 async function start(){
   const response=await fetch('data/exploration/old-tollhouse.json?v=R238C210');if(!response.ok)throw Error('Could not load the starter map.');const starter=await response.json();
@@ -135,9 +150,13 @@ async function start(){
   pack.maps=pack.maps.map(upgradeEdgeMap);
   if(pack.maps.some(m=>m.migrationNotes?.length))loadNotice+=' Converted legacy door squares to north/west edges. Review highlighted migration notes; stored maps are unchanged until Save maps.';
   mapId=pack.maps.find(m=>m.id===new URLSearchParams(location.search).get('map'))?.id||pack.maps[0].id;selected={x:map().start.x,z:map().start.z};
-  for(const [id,label] of [['select','Select'],['encounter-area','Encounter area'],['floor','Floor'],['ground-dirt','Dirt path'],['ground-grass','Grass ground'],['ground-stone','Stone ground'],['ground-auto','Automatic ground'],['indoor','Indoor / ceiling'],['outdoor','Outdoor / sky'],['ambient','Ambient light'],['ambient-default','Default ambient'],['void','Void / solid area'],['edge-select','Select edge'],['edge-wall','Wall edge'],['edge-door','Door edge'],['edge-window','Window edge'],['edge-erase','Erase edge'],['torch','Toggle torch'],['start','Start position']]){
-    const b=document.createElement('button');b.textContent=label;b.dataset.tool=id;b.setAttribute('aria-pressed',String(id===tool));b.addEventListener('click',()=>{setTool(id);});$('tools').append(b);
+  for(const [menu,ids] of [['floorTool',['ground-dirt','ground-grass','ground-stone','ground-auto']],['lightingTool',['ambient','ambient-default','indoor','outdoor','torch']],['functionTool',['select','floor','void','encounter-area','edge-select','edge-wall','edge-door','edge-window','edge-erase','start']]]){
+   for(const id of ids)option($(menu),id,toolLabels[id]);
+   $(menu).addEventListener('change',()=>{if($(menu).value)setTool($(menu).value);});
   }
+  $('selectTool').addEventListener('click',()=>setTool('select'));
+  $('wallTexture').addEventListener('change',()=>{if($('wallTexture').value){$('edgeMaterial').value=$('wallTexture').value;setTool('edge-wall');}});
+  $('edgeMaterial').addEventListener('change',()=>{if(tool==='edge-wall')setTool(tool);});
   const point=b=>({x:Number(b.dataset.x),z:Number(b.dataset.z)});
   function updateSelection(p){
     const drag=selectionDrag;if(!drag)return;drag.last=p;drag.moved||=p.x!==drag.start.x||p.z!==drag.start.z;
@@ -175,6 +194,7 @@ async function start(){
   });
   action('applyEdgeSettings',()=>{if(!selectedEdge)throw Error('Select an edge first.');mutate(()=>paintEdge(map(),selectedEdge,$('edgeKind').value,edgeSettings()));});
   action('newEncounterArea',newArea);
+  $('ambientPercent').addEventListener('input',()=>{if($('ambientPercent').checkValidity())setTool('ambient');});
   action('applyAmbientSelection',()=>mutate(()=>{const value=Number($('ambientPercent').value);for(const p of selectedCells())if('.D'.includes(map().grid[p.z]?.[p.x]??'#'))paintAmbientLight(map(),p.x,p.z,value);}));
   action('clearSelection',()=>{selectionKeys.clear();activeEncounterId=null;formKey=null;grid();inspector();});
   $('mapSelect').addEventListener('change',()=>{mapId=$('mapSelect').value;selected={x:map().start.x,z:map().start.z};render();});

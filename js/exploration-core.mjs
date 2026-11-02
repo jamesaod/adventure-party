@@ -1,5 +1,5 @@
-import {validateGround} from './exploration-ground.mjs?v=R238C258';
-import {validateEnvironment} from './exploration-environment.mjs?v=R238C238';
+import {validateGround} from './exploration-ground.mjs?v=R238C262';
+import {validateEnvironment} from './exploration-environment.mjs?v=R238C262';
 import {validateEdges,syncEdgeDoors,normalizeDoorWidths,doorKey,edgeBetween,edgeKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C259';
 export const FACINGS=['North','East','South','West'];
 const vectors=[[0,-1],[1,0],[0,1],[-1,0]];

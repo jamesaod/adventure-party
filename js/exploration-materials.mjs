@@ -1,7 +1,7 @@
-import {GRASS_TEXTURES,GROUND_TEXTURES} from './exploration-ground.mjs?v=R238C258';
+import {GRASS_TEXTURES,GROUND_TEXTURES} from './exploration-ground.mjs?v=R238C262';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C259';
-export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C259';
+import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C262';
+export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C262';
 export const CELL=SCENE_STYLE.cellMetres,HEIGHT=SCENE_STYLE.wallMetres;
 export async function explorationMaterials(renderer,{outdoor=false,dirt=false}={}){
  const loader=new THREE.TextureLoader();
