@@ -550,6 +550,10 @@ function spellPreviewDrawDevelopmentLabels(){
     return;
   }
 
+  if(combatGpu)combatGpu.prepareOverlay();
+  ctx.save();
+  const anchor=battlefieldZoomAnchor(),density=BATTLEFIELD_RENDER_DENSITY;
+  ctx.setTransform(density*battlefieldZoom,0,0,density*battlefieldZoom,density*anchor.x*(1-battlefieldZoom),density*anchor.y*(1-battlefieldZoom));
   const labels=[
     {
       unit:spellPreviewCaster,
@@ -589,6 +593,8 @@ function spellPreviewDrawDevelopmentLabels(){
       }
     );
   }
+  ctx.restore();
+  if(combatGpu)combatGpu.presentOverlay();
 }
 
 
@@ -3261,6 +3267,9 @@ async function showSpellPreviewer(){
   */
   GRASS_OUTDOORS_TILESET.treeCoverageRatio=0;
 
+  try{await ensureCombatRenderer();}
+  catch(error){spellPreviewSetStatus("Combat graphics unavailable: "+error.message);return;}
+  if(!spellPreviewActive||currentScreen!=="spell-preview")return;
   spellPreviewMoveCanvasIntoArena();
   fitBattleCanvas();
 
