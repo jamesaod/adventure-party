@@ -76,3 +76,8 @@ Press Start 2P, Copyright 2012 The Press Start 2P Project Authors
 Vendored unmodified from https://github.com/google/fonts/tree/main/ofl/pressstart2p
 and distributed under SIL Open Font License 1.1. The complete copyright/license
 is included at assets/fonts/press-start-2p-OFL.txt.
+
+
+## Dirt paths and grass fringe (Rev 258)
+
+`assets/textures/exploration/dirt-path-v1.png` and `grass-fringe-v1.png` were generated for this project with the built-in image_gen tool on 2026-11-02. Original PNGs are preserved, including the fringe alpha channel. Generation prompts, dimensions and checksums are in `assets/textures/exploration/terrain-transition-generation-v1.json`. A shared runtime alpha mask composes these with the existing short grass material; it is generated from neighbouring terrain rather than baked into each hex.

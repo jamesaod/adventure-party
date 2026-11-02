@@ -1,5 +1,6 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
-const explorationFloorImage=new Image(),explorationWallImage=new Image(),explorationDoorImage=new Image(),explorationGrassImage=new Image();
+const explorationFloorImage=new Image(),explorationWallImage=new Image(),explorationDoorImage=new Image(),explorationGrassImage=new Image(),explorationDirtImage=new Image(),explorationFringeImage=new Image();
+let explorationGroundBank=null;
 const explorationMaterialTiles=new WeakMap();
 // Filter to each material's displayed footprint, including anisotropic wall
 // reduction, instead of keeping a grainy large source or a blurred fixed mip.
@@ -21,17 +22,21 @@ function explorationMaterialDensity(){return (typeof battlefieldZoom==='number'?
 // GPU surfaces retain authored world geometry. Tactical masks, grid and VFX
 // remain ordered Canvas overlays, rather than becoming a single screenshot.
 function drawExplorationGpuFloor(tiles){
- const api=explorationEncounterApi,groups=[[],[]],t=explorationTerrain;
+ const api=explorationEncounterApi,groups=new Map(),t=explorationTerrain,map=explorationEncounter.map;
  for(const fragment of explorationFloorFragments(tiles)){
-  const cell=t.cellAt(fragment.point.x,fragment.point.y),grass=api.groundKind(explorationEncounter.map,cell.x,cell.z)==='grass';
-  const m=grass?api.grassMaterialMetrics(t):api.materialMetrics(t);
-  groups[grass?1:0].push({points:fragment.polygon,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
+  const cell=t.cellAt(fragment.point.x,fragment.point.y),kind=api.groundKind(map,cell.x,cell.z);
+  const image=kind==='grass'?explorationGrassImage:kind==='dirt'?explorationGroundBank.get(api.grassNeighborMask(map,cell.x,cell.z)):explorationFloorImage;
+  const m=kind==='stone'?api.materialMetrics(t):api.grassMaterialMetrics(t);
+  if(!groups.has(image))groups.set(image,[]);
+  groups.get(image).push({points:fragment.polygon,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
  }
  const lightMap=drawExplorationIlluminationLayer(true),dynamicLighting=!!explorationGpuLighting;
- for(const group of groups)for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
- combatGpu.surface(groups[0],explorationFloorImage,{lightMap,dynamicLighting});
- combatGpu.surface(groups[1],explorationGrassImage,{lightMap,dynamicLighting});
+ for(const [image,group] of groups){
+  for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
+  combatGpu.surface(group,image,{lightMap,dynamicLighting});
+ }
 }
+
 function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const api=explorationEncounterApi,view=battlefieldViewportBounds();
  const faces=solids.flatMap(s=>s.faces);
@@ -555,10 +560,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C246');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C258');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C238');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C258');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
@@ -567,8 +572,12 @@ async function startExplorationCombat(){
     explorationEncounter=request;explorationFloorImage.src='assets/textures/exploration/floor.png?v=R238C206';explorationWallImage.src='assets/textures/exploration/wall.png?v=R238C206';
     explorationDoorImage.src='assets/textures/exploration/door.png?v=R238C206';
     const images=[explorationFloorImage,explorationWallImage,explorationDoorImage];
-    if(explorationEncounterApi.hasOutdoorGrass(request.map)){explorationGrassImage.src=explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246';images.push(explorationGrassImage);}
+    if(explorationEncounterApi.hasOutdoorGrass(request.map)||explorationEncounterApi.hasDirtGround(request.map)){explorationGrassImage.src=explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246';images.push(explorationGrassImage);}
+    if(explorationEncounterApi.hasDirtGround(request.map)){
+      explorationDirtImage.src=explorationEncounterApi.GROUND_TEXTURES.dirt+'?v=R238C258';explorationFringeImage.src=explorationEncounterApi.GROUND_TEXTURES.fringe+'?v=R238C258';images.push(explorationDirtImage,explorationFringeImage);
+    }
     await Promise.all(images.map(image=>image.decode()));
+    explorationGroundBank=explorationEncounterApi.hasDirtGround(request.map)?explorationEncounterApi.createGroundTileBank({grass:explorationGrassImage,dirt:explorationDirtImage,fringe:explorationFringeImage}):null;
     selectedMobEncounter='custom';combatMobRoster.length=0;
     const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';
