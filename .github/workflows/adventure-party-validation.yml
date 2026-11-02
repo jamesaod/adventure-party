@@ -225,3 +225,4 @@ jobs:
           node scripts/test-combat-surface-lighting.mjs
           node scripts/test-portal-daylight.mjs
           node scripts/test-outdoor-grass.mjs
+          node scripts/test-combat-webgl.mjs

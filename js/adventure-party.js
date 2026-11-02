@@ -336,7 +336,7 @@ function combatRenderingPanel(){
   const label=document.createElement('strong');label.textContent='Please wait, rendering Units';panel.append(label);document.body.append(panel);
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   return {finish(){combatScreen.inert=wasInert;panel.remove();window.removeEventListener('keydown',block,true);},fail(error){
-    label.textContent='Unit rendering could not finish';const detail=document.createElement('p');detail.textContent=error.message;
+    label.textContent='Combat could not start';const detail=document.createElement('p');detail.textContent=error.message;
     const retry=document.createElement('button');retry.textContent='Retry';retry.onclick=()=>location.reload();panel.append(detail,retry);
   }};
 }
@@ -366,6 +366,7 @@ async function showCombat(condition=selectedCombatCondition){
     }
   }
   if(request.cancelled || currentScreen!==request.screen) return false;
+  pendingCombatStart=request;
   const rendering=combatRenderingPanel();
   selectedCombatCondition=condition || "grass";
   currentScreen="combat";
@@ -383,6 +384,8 @@ async function showCombat(condition=selectedCombatCondition){
   updateAudioIndicators();
 
   try{
+    await ensureCombatRenderer();
+    if(request.cancelled||currentScreen!=="combat"){rendering.finish();return false;}
     newGame(selectedCombatCondition);
     fitBattleCanvas();
     let renderTimer;
@@ -411,7 +414,7 @@ async function showCombat(condition=selectedCombatCondition){
       line.textContent="Initialization error: "+(error?.message || String(error));
       logBox.appendChild(line);
     }
-  }
+  }finally{if(pendingCombatStart===request)pendingCombatStart=null;}
 }
 
 function showSpellBook(){
@@ -1701,7 +1704,21 @@ window.addEventListener("keydown",()=>{
    ============================================================ */
 
 const canvas=document.getElementById("battlefield");
-const ctx=canvas.getContext("2d");
+const combatRaster=document.createElement("canvas");
+let ctx=combatRaster.getContext("2d");
+let combatGpu=null;
+let combatGpuReady=null;
+async function ensureCombatRenderer(){
+ if(!combatGpuReady)combatGpuReady=import("./combat-webgl.mjs?v=R238C247").then(({createCombatRenderer})=>{
+  const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
+  status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
+  status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
+  canvas.parentElement.append(status);
+  combatGpu=createCombatRenderer(canvas,combatRaster,{onLost:()=>{canvas.parentElement.append(status);status.hidden=false;status.style.display="grid";},onRestored:()=>{status.hidden=true;status.style.display="none";draw();}});
+  ctx=combatGpu.context;return combatGpu;
+ }).catch(error=>{combatGpuReady=null;throw error;});
+ return combatGpuReady;
+}
 // Keep tactical geometry in its original 1080x600 coordinate system, while
 // drawing to a denser backing store. Saved sprite images are untouched.
 const BATTLEFIELD_LOGICAL_WIDTH=canvas.width;
@@ -1709,6 +1726,7 @@ const BATTLEFIELD_LOGICAL_HEIGHT=canvas.height;
 const BATTLEFIELD_RENDER_DENSITY=Math.min(2,Math.max(1.5,window.devicePixelRatio||1));
 canvas.width=Math.round(BATTLEFIELD_LOGICAL_WIDTH*BATTLEFIELD_RENDER_DENSITY);
 canvas.height=Math.round(BATTLEFIELD_LOGICAL_HEIGHT*BATTLEFIELD_RENDER_DENSITY);
+combatRaster.width=canvas.width;combatRaster.height=canvas.height;
 
 
 /* ============================================================
@@ -26784,7 +26802,7 @@ function drawFloor(){
   const tileSet=activeCombatTerrainTileSet();
 
   ctx.fillStyle="#08080c";
-  ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
+  if(!(explorationTerrain&&combatGpu))ctx.fillRect(0,0,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT);
 
   const tiles=visibleHexes();
 
@@ -26793,12 +26811,14 @@ function drawFloor(){
   }
 
   /* R123: continuous indoor floors overlay and split the outdoor hex textures. */
-  drawArchitecturalFloorRegions();
+  if(explorationTerrain&&combatGpu)drawExplorationGpuFloor(tiles);
+  else drawArchitecturalFloorRegions();
 
+  if(explorationTerrain&&combatGpu)combatGpu.prepareOverlay();
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
 
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
-  if(explorationTerrain)drawExplorationIlluminationLayer();else drawTerrainIlluminationLayer(tiles);
+  if(explorationTerrain){if(!combatGpu)drawExplorationIlluminationLayer();}else drawTerrainIlluminationLayer(tiles);
   if(explorationTerrain){drawExplorationTorchFloorGlow(tiles);drawDistanceVisibilityLayer(tiles);drawExplorationSpellLighting(tiles);}
 
   for(const tile of tiles){
@@ -30297,12 +30317,17 @@ function draw(){
 
   const tiles=visibleHexes();
 
+  if(combatGpu){
+    if(!combatGpu.available)return;
+    const p=screenPointForWorld({x:0,y:0}),u=battlefieldProjectVector({x:1,y:0}),v=battlefieldProjectVector({x:0,y:1});
+    if(!combatGpu.begin({width:BATTLEFIELD_LOGICAL_WIDTH,height:BATTLEFIELD_LOGICAL_HEIGHT,zoom:battlefieldZoom,anchor:battlefieldZoomAnchor(),matrix:[u.x,u.y,v.x,v.y,p.x,p.y]}))return;
+  }
   // Clear in physical canvas coordinates before installing the view transform.
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle="#08080c";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(!(explorationTerrain&&combatGpu))ctx.fillRect(0,0,canvas.width,canvas.height);
   const anchor=battlefieldZoomAnchor();
   const density=BATTLEFIELD_RENDER_DENSITY;
   ctx.setTransform(
@@ -30342,7 +30367,7 @@ function draw(){
     actors.push({
       sortY:Math.max(a.y,b.y)+0.25,
       sortX:(a.x+b.x)/2,
-      wall,
+      wall,gpuScenery:!!explorationTerrain,
       fn:()=>drawArchitecturalWallSegment(wall)
     });
   }
@@ -30460,9 +30485,11 @@ function draw(){
   );
 
   for(const actor of explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors){
+    if(combatGpu&&!actor.gpuScenery)combatGpu.prepareOverlay();
     actor.fn();
   }
 
+  if(combatGpu)combatGpu.prepareOverlay();
   drawPersistentLightSpellFx();
   drawPersistentShieldSpellFx();
   drawPersistentSleepStatusFx();
@@ -30515,6 +30542,7 @@ function draw(){
   drawActivityDetectedFx();
   drawAimFriendlyFireWarning();
   ctx.restore();
+  if(combatGpu)combatGpu.end();
 }
 
 function flashAttack(attacker,defender,hit){

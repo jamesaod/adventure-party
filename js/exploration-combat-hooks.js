@@ -18,6 +18,54 @@ function explorationMaterialTile(image,targetWidth=512,targetHeight=512){
   if(cache.size>=16)cache.delete(cache.keys().next().value);cache.set(key,tile);return tile;
 }
 function explorationMaterialDensity(){return (typeof battlefieldZoom==='number'?battlefieldZoom:1)*(typeof BATTLEFIELD_RENDER_DENSITY==='number'?BATTLEFIELD_RENDER_DENSITY:1);}
+// GPU surfaces retain authored world geometry. Tactical masks, grid and VFX
+// remain ordered Canvas overlays, rather than becoming a single screenshot.
+function drawExplorationGpuFloor(tiles){
+ const api=explorationEncounterApi,groups=[[],[]],t=explorationTerrain;
+ for(const fragment of explorationFloorFragments(tiles)){
+  const cell=t.cellAt(fragment.point.x,fragment.point.y),grass=api.groundKind(explorationEncounter.map,cell.x,cell.z)==='grass';
+  const m=grass?api.grassMaterialMetrics(t):api.materialMetrics(t);
+  groups[grass?1:0].push({points:fragment.polygon,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
+ }
+ const lightMap=drawExplorationIlluminationLayer(true);
+ combatGpu.surface(groups[0],explorationFloorImage,{lightMap});
+ combatGpu.surface(groups[1],explorationGrassImage,{lightMap});
+}
+function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
+ const api=explorationEncounterApi,view=battlefieldViewportBounds();
+ const faces=solids.flatMap(s=>s.faces);
+ const all=faces.flatMap(f=>f.points.map(p=>screenPointForWorld(p,p.elevation)));
+ if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
+ const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
+ const key=JSON.stringify([lights,explorationEncounter.openDoors,explorationDaylight()?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial]);
+ const cache=drawExplorationGpuSolids.cache||(drawExplorationGpuSolids.cache=new WeakMap());
+ let cached=cache.get(cacheOwner);if(cached?.key!==key){cached={key,faces:new Map()};cache.set(cacheOwner,cached);}
+ const white=drawExplorationGpuSolids.white||(drawExplorationGpuSolids.white=document.createElement('canvas'));
+ if(!drawExplorationGpuSolids.whiteReady){white.width=white.height=1;const c=white.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,1,1);drawExplorationGpuSolids.whiteReady=true;}
+ faces.sort((a,b)=>Math.max(...a.points.map(p=>screenPointForWorld(p).y))-Math.max(...b.points.map(p=>screenPointForWorld(p).y))||Number(a.cap)-Number(b.cap));
+ const batches=[];
+ for(const face of faces){
+  const a=face.points[0],b=face.points[1],dx=b.x-a.x,dy=(b.y-a.y)/(t.cellH/t.cellW),span=Math.hypot(dx,dy),low=Math.min(...face.points.map(p=>p.elevation)),high=Math.max(...face.points.map(p=>p.elevation));
+  const wood=face.material==='door'||wall?.edgeMaterial==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
+  const faceKey=JSON.stringify(face.points);let fragments=cached.faces.get(faceKey);
+  if(!fragments){fragments=api.faceLightFragments(face,HEX_W,HEX_ROW).map(fragment=>{
+   const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
+   const exposure=explorationSurfaceExposure({x:(explorationEncounter.origin.x+mid.x/t.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/t.cellH)*cell},face.normal,lights,opened);
+   return {...fragment,exposure};});cached.faces.set(faceKey,fragments);}
+  const surfaces=fragments.map(fragment=>{
+   const exposure=fragment.exposure,hex=fragment.point,visibility=visible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
+   let flicker=0;if(visible)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
+   flicker=Math.max(-.15,Math.min(.15,flicker));
+   const radiance=visible?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[179,132,75]:[156,136,103];
+   return {points:fragment.points,uv:fragment.points.map(p=>face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
+    multiply:exposure.multiply.map((v,i)=>v/255*visibility*(flicker<0?1+flicker*.6:1)*(face.cap?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
+    add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
+  });
+  const image=face.cap?white:wood?explorationDoorImage:explorationWallImage,last=batches.at(-1);
+  if(last?.image===image)last.surfaces.push(...surfaces);else batches.push({image,surfaces});
+ }
+ for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image);
+}
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
 function explorationFloorPatternForView(outdoor=false){
@@ -51,6 +99,7 @@ function drawExplorationFaceBands(target,face,fragments,colors,mode){
 }
 // Project each solid face independently: ground rotates, vertical edges stay vertical.
 function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
+ if(typeof combatGpu!=="undefined"&&combatGpu)return drawExplorationGpuSolids(solids,wall,visible,cacheOwner);
  const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).map(face=>({...face,screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
  const all=faces.flatMap(f=>f.screen);if(!all.length)return;
  const left=Math.floor(Math.min(...all.map(p=>p.x)))-2,top=Math.floor(Math.min(...all.map(p=>p.y)))-2,width=Math.ceil(Math.max(...all.map(p=>p.x))-left)+2,height=Math.ceil(Math.max(...all.map(p=>p.y))-top)+2,v=battlefieldViewportBounds();
@@ -232,7 +281,7 @@ function queueExplorationDoors(actors){
 
  for(const door of explorationTerrain.doors||[]){
   const p=explorationEncounterApi.combatDoorSolids(door,explorationTerrain,explorationEncounterApi.SCENE_STYLE),a=screenPointForWorld(p.hinge),b=screenPointForWorld(p.end);
-  actors.push({sortY:Math.max(a.y,b.y)+.3,sortX:(a.x+b.x)/2,fn:()=>drawExplorationCombatDoor(door)});
+  actors.push({gpuScenery:true,sortY:Math.max(a.y,b.y)+.3,sortX:(a.x+b.x)/2,fn:()=>drawExplorationCombatDoor(door)});
  }
 }
 function clipExplorationFloor(){
@@ -331,7 +380,7 @@ function explorationSurfaceExposure(point,normal,lights,opened){
  return api.displayExposure(day?.rgb.some(v=>v>0)?base.map((v,i)=>v+day.rgb[i]):base);
 }
 
-function drawExplorationIlluminationLayer(){
+function drawExplorationIlluminationLayer(gpuOnly=false){
   const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
   const mapBounds=explorationTerrain.bounds;
   let b=mapBounds;
@@ -360,6 +409,7 @@ function drawExplorationIlluminationLayer(){
     }
     contexts.forEach((c,i)=>c.putImageData(images[i],0,0));cache={key:cacheKey,layers};drawExplorationIlluminationLayer.cache=cache;
   }
+  if(gpuOnly)return {...cache,left,top,spanWidth,spanHeight};
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const u=battlefieldProjectVector({x:spanWidth,y:0}),v=battlefieldProjectVector({x:0,y:spanHeight});
   ctx.transform(u.x/width,u.y/width,v.x/height,v.y/height,origin.x,origin.y);
@@ -401,6 +451,7 @@ function drawExplorationTorchFloorGlow(tiles){
  }ctx.restore();
 }
 function drawExplorationTorch(torch){
+ if(typeof combatGpu!=="undefined"&&combatGpu)combatGpu.prepareOverlay();
  const api=explorationEncounterApi,style=api.SCENE_STYLE,scale=style.tacticalWallPixels/style.wallMetres,a=explorationTorchAnimation(torch),world=torch.world||worldPointForHex(torch.x,torch.y),mount=screenPointForWorld(world),top=screenPointForWorld(world,torch.elevation??style.torch.height*scale);
  ctx.save();
  if(torch.attached){
