@@ -1,5 +1,6 @@
-import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C259';
-import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C262';
+import {quarterAt,quarterFloor,quarterSegments} from './quarter-walls.mjs?v=R238C263';
+import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C263';
+import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C263';
 
 // The map and first-person view share the same authored grid and live state.
 // North is the top edge; there is no separately authored illustration to drift.
@@ -9,15 +10,17 @@ export function explorationMapMarkup(map, state, discovery) {
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${map.width*size+32} ${map.height*size+36}" role="img" aria-label="Exploration, ${map.width} by ${map.height} map. Party at column ${state.x + 1}, row ${state.z + 1}, facing ${FACINGS[state.facing]}.">`,
     '<defs><pattern id="mapWallHatch" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 5L5 0M4 6L6 4" stroke="#80572f" stroke-width=".45" opacity=".4"/></pattern></defs>',
-    `<g fill="#654224" font-family="'Press Start 2P', monospace" font-size="10" text-anchor="middle"><text x="${map.width*size/2+16}" y="13">N ↑</text><text x="24" y="22">1</text><text x="${map.width*size+8}" y="22">${map.width}</text></g>`
+    `<g fill="#654224" font-family="Georgia, serif" font-size="10" text-anchor="middle"><text x="${map.width*size/2+16}" y="13">N ↑</text><text x="24" y="22">1</text><text x="${map.width*size+8}" y="22">${map.width}</text></g>`
   ];
   for (let z = 0; z < map.height; z++) {
     for (let x = 0; x < map.width; x++) {
       if (!discovery.discovered.has(cellKey(x,z))) continue;
       const px = insetX + x * size, py = insetY + z * size;
       const wall = map.grid[z][x] === '#';
-      parts.push(`<rect data-cell="${x},${z}" data-kind="${wall ? 'wall' : 'floor'}" x="${px}" y="${py}" width="${size}" height="${size}" fill="${wall ? 'url(#mapWallHatch)' : '#fff0ca'}" fill-opacity="${wall ? '1' : '.45'}" stroke="#987345" stroke-opacity=".32" stroke-width=".5"/>`);
-      if (!wall) {
+      const quarter=quarterAt(map,x,z);
+      if(quarter)parts.push(`<polygon data-cell="${x},${z}" data-kind="floor" points="${quarterFloor(quarter).map(p=>`${insetX+(p.x+.5)*size},${insetY+(p.z+.5)*size}`).join(' ')}" fill="#fff0ca" fill-opacity=".45"/>`);
+      else parts.push(`<rect data-cell="${x},${z}" data-kind="${wall ? 'wall' : 'floor'}" x="${px}" y="${py}" width="${size}" height="${size}" fill="${wall ? 'url(#mapWallHatch)' : '#fff0ca'}" fill-opacity="${wall ? '1' : '.45'}" stroke="#987345" stroke-opacity=".32" stroke-width=".5"/>`);
+      if (!wall&&!quarter) {
         // Ink the actual room/corridor perimeter, including isolated pillars.
         for (const [dx, dz, a, b, c, d] of [[0,-1,0,0,16,0],[1,0,16,0,16,16],[0,1,0,16,16,16],[-1,0,0,0,0,16]]) {
           if (map.grid[z + dz]?.[x + dx] === '#' && discovery.discovered.has(cellKey(x+dx,z+dz))) parts.push(`<path d="M${px+a} ${py+b}L${px+c} ${py+d}" stroke="#684322" stroke-width="1.8"/>`);
@@ -31,6 +34,7 @@ export function explorationMapMarkup(map, state, discovery) {
     const open=edge.kind==='door'&&discovery.knownDoors.get(edge.id)===true;
     parts.push(`<path data-edge="${edge.id}" d="M${a.x} ${a.y}L${b.x} ${b.y}" stroke="${edge.kind==='window'?'#397d87':edge.kind==='door'?'#9a551f':'#684322'}" stroke-width="${edge.kind==='door'?3:2}" ${open?'stroke-dasharray="2 3"':''}/>`);
   }
+  for(const q of quarterSegments(map)){if(!discovery.discovered.has(cellKey(q.quarter.x,q.quarter.z)))continue;parts.push(`<path data-curve="${q.id}" d="M${insetX+(q.a.x+.5)*size} ${insetY+(q.a.z+.5)*size}L${insetX+(q.b.x+.5)*size} ${insetY+(q.b.z+.5)*size}" stroke="#684322" stroke-width="2"/>`);}
   for (const door of map.version===2?[]:map.doors) {
     const key=cellKey(door.x,door.z);
     if (!discovery.discovered.has(key)) continue;

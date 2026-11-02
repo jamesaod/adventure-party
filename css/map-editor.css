@@ -25,3 +25,5 @@ label{display:grid;gap:6px;font-size:12px}input,select{font:inherit;color:#83e7e
 #editorGrid button.floor[data-ground="dirt"]{background-color:#ad855b;}
 #editorGrid button.floor[data-ground="grass"]{background-color:#a4c285;}
 #editorGrid button.floor[data-ground="stone"]{background-color:#b5ada0;}
+
+#editorGrid .quarter-mark{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}

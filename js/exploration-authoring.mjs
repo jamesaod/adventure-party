@@ -1,10 +1,11 @@
+import {paintQuarter,paintCeiling} from './quarter-walls.mjs?v=R238C263';
 import {paintGround} from './exploration-ground.mjs?v=R238C262';
 import {paintEnvironment,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
-import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C259';
+import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C263';
 export {upgradeEdgeMap,paintEdge};
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C262';
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C263';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C262';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C263';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -77,11 +78,13 @@ export function parsePack(text){
   if(text.length>2_000_000)throw Error('Adventure Pack is too large (2 MB maximum).');
   const pack=JSON.parse(text),issues=packIssues(pack);if(issues.length)throw Error(issues.join('\n'));return pack;
 }
-export function paintCell(map,x,z,tool,ambientPercent=0){
+export function paintCell(map,x,z,tool,ambientPercent=0,settings={}){
  if(map.version===2&&['wall','door-x','door-z'].includes(tool))throw Error('Choose an edge to place a wall or opening.');
  if(map.version===2&&tool==='void')tool='wall';
 
   if(map.version===2?(x<0||x>=map.width||z<0||z>=map.height):(x<1||x>map.width-2||z<1||z>map.height-2))throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+  if(tool.startsWith('curve-')){paintQuarter(map,x,z,tool.slice(6),settings.material||'stone');return;}
+  if(tool.startsWith('ceiling-')){paintCeiling(map,x,z,tool.slice(8));return;}
   if(tool.startsWith('ground-')){paintGround(map,x,z,tool.slice(7));return;}
   if(tool==='ambient'||tool==='ambient-default'){paintAmbientLight(map,x,z,tool==='ambient-default'?null:ambientPercent);return;}
   if(tool==='indoor'||tool==='outdoor'){paintEnvironment(map,x,z,tool==='outdoor');return;}
@@ -92,6 +95,7 @@ export function paintCell(map,x,z,tool,ambientPercent=0){
   if(cell!=='.'&&[map.start,...map.entrances,...map.exits].some(p=>p.x===x&&p.z===z))throw Error('Move or remove the start, entrance or exit before blocking this square.');
   if(map.version===2)map.grid=[...map.grid];
   map.grid[z]=map.grid[z].slice(0,x)+cell+map.grid[z].slice(x+1);
+  if(cell==='#')map.quarterWalls=(map.quarterWalls||[]).filter(q=>q.x!==x||q.z!==z);
   map.doors=map.doors.filter(d=>d.x!==x||d.z!==z);if(cell==='D')map.doors.push({x,z,axis:tool==='door-x'?'x':'z'});
   if(cell!=='.')map.torches=map.torches.filter(t=>t.x!==x||t.z!==z);
   if(map.version===2){map.edges=map.edges.filter(e=>edgeCells(e).every(p=>map.grid[p.z]?.[p.x]==='.')||e.kind==='wall'&&edgeCells(e).some(p=>map.grid[p.z]?.[p.x]==='.'));syncEdgeDoors(map);}
@@ -123,11 +127,13 @@ export function resizeMap(map,width,height){
   if(![map.start,...map.entrances,...map.exits,...map.doors,...map.torches,...(map.landmarks||[])].every(inside))throw Error('Move or remove starts, entrances, exits, doors, torches and landmarks outside the new boundary before shrinking.');
   if((map.encounters||[]).some(e=>!inside({x:e.spawnX,z:e.spawnZ})||encounterCells(e).some(p=>!inside(p))))throw Error('Move or remove encounters outside the new boundary before shrinking.');
   if(map.version===2&&(map.edges||[]).some(e=>e.x>=(e.axis==='h'?width:width+1)||e.z>=(e.axis==='h'?height+1:height)))throw Error('Move or remove wall edges outside the new boundary before shrinking.');
+  if((map.quarterWalls||[]).some(q=>q.x>=width||q.z>=height))throw Error('Remove quarter-round walls beyond the new boundary first.');
   const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.version===2?(map.grid[z]?.[x]||'.'):(x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.')).join(''));
   const environment=map.environment?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.environment[z]?.[x]||'i').join('')):undefined;
   const ground=map.ground?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.ground[z]?.[x]||'a').join('')):undefined;
   const ambientLight=map.ambientLight?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.ambientLight[z]?.[x]??null)):undefined;
-  validateMap({...map,width,height,grid,environment,ground,ambientLight});Object.assign(map,{width,height,grid,...(environment?{environment}:{}),...(ground?{ground}:{}),...(ambientLight?{ambientLight}:{})});return map;
+  const ceiling=map.ceiling?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.ceiling[z]?.[x]||'a').join('')):undefined;
+  validateMap({...map,width,height,grid,environment,ground,ambientLight,ceiling});Object.assign(map,{width,height,grid,...(environment?{environment}:{}),...(ground?{ground}:{}),...(ambientLight?{ambientLight}:{}),...(ceiling?{ceiling}:{})});return map;
 }
 
 // Selection itself is transient; these helpers mutate only explicit author actions.
@@ -157,4 +163,10 @@ export function removeEncounterSquares(map,keys){
 }
 export function deleteSelectedEncounters(map,keys){
   const selected=new Set(keys);map.encounters=(map.encounters||[]).filter(e=>!encounterCells(e).some(p=>selected.has(`${p.x},${p.z}`)));
+}
+
+export function quarterTowerSample(id='quarter-tower'){
+ const m=blankEdgeMap(id,'Wooden round tower');m.grid=Array.from({length:16},()=> '#'.repeat(16));m.edges=[];
+ for(const [x,z,corner] of [[7,7,'nw'],[8,7,'ne'],[8,8,'se'],[7,8,'sw']]){m.grid[z]=m.grid[z].slice(0,x)+'.'+m.grid[z].slice(x+1);paintQuarter(m,x,z,corner,'wood');paintCeiling(m,x,z,'wood');paintAmbientLight(m,x,z,100);}
+ m.start={x:7,z:8,facing:0};m.entrances=[{id:'entry',name:'Tower floor',...m.start}];m.encounters=[{id:'tower-patrol',name:'Tower patrol',mobId:'orc-male-uniformed',count:1,spawnX:8,spawnZ:7,cells:[{x:7,z:7}],trigger:'enter',repeatable:false}];return m;
 }

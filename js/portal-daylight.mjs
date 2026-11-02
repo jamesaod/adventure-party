@@ -1,6 +1,6 @@
-import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C259';
+import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C263';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
-import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C262';
+import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C263';
 export const DAYLIGHT=Object.freeze({rangeCells:5,portalIntensity:1.15,roomFill:.22,fillStep:.78,doorTransmission:.45,windowTransmission:.25});
 const ZERO=Object.freeze({rgb:Object.freeze([0,0,0]),relief:0,direct:0,bounce:0});
 const key=(x,z)=>x+','+z,dirs=[[1,0],[-1,0],[0,1],[0,-1]],sky=[.72,.84,1];
@@ -14,6 +14,7 @@ export function buildDaylightField(map,opened=new Set()){
   if(!floor(a.x,a.z)||!floor(b.x,b.z))return null;
   if(!edges){if(legacyClosed(a)||legacyClosed(b))return null;return {width:1,transmission:map.grid[a.z][a.x]==='D'||map.grid[b.z][b.x]==='D'?DAYLIGHT.doorTransmission:1,kind:'open'};}
   const edge=edges.get(edgeKey(edgeBetween(a,b)));
+  if(!edge&&edgeLineBlocked(map,opened,a,b,'light'))return null;
   if(!edge)return {width:1,transmission:1,kind:'open'};
   if(edge.kind==='wall'||edge.kind==='door'&&!opened.has(edge.id))return null;
   return {edge,width:edge.width??1,kind:edge.kind,transmission:edge.kind==='door'?DAYLIGHT.doorTransmission:DAYLIGHT.windowTransmission};

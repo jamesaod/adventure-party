@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 263: Real generated oak wall/ceiling textures replace door artwork for wood walls. Optional map.ceiling rows (a/s/w) and map.quarterWalls records (x,z,corner nw/ne/se/sw, material stone/wood) persist through authoring. Four one-cell quarters form a 2x2 tower. quarter-walls.mjs supplies editor/first-person/map/movement/LOS/light/combat geometry. Arc outer straight edges are replaced; doors/windows stay on straight edges. Add tower sample creates an unsaved test map. The queued non-combat font revert is DONE; only combat uses the pixel face. Painted ambient also binds actual Lambert materials.
+
 - Rev 262: Movement reactions require current melee eligibility AND a destination outside that same attacker's melee reach. Circling adjacent hexes, entering reach and non-movement actions do not provoke; evaluate each attacker and the mover footprint separately.
 
 - Rev 262: Editor tools are grouped into floor/wall/lighting/function dropdowns; selection settings, file actions and help are collapsible. All original control IDs and authoring behavior remain. Ambient paint supports 0-1000%, survives import/export/resize, increases combat exposure beyond 100 and modifies only indirect light in first-person exploration via exploration-painted-ambient.mjs. Distance visibility remains capped at 100%. The user queued reverting non-combat fonts for the NEXT pass; do not include that font change in this cleanup.

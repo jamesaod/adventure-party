@@ -1,5 +1,6 @@
+import {quarterAt,quarterPoints} from './quarter-walls.mjs?v=R238C263';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
-import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C259';
+import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C263';
 // Authored scene units are metres; tactical cells and compact display heights
 // are projection choices, never dimensions embedded in artwork or item data.
 export const SCENE_STYLE=Object.freeze({
@@ -33,10 +34,16 @@ export function torchAnimation(now,seed=0,reduced=false){
 }
 export function torchPlacement(map,point){
  const edges=map.version===2?new Set(effectiveEdges(map).filter(e=>e.kind==='wall').map(edgeKey)):null;
- const direction=[[0,-1,'n'],[1,0,'e'],[0,1,'s'],[-1,0,'w']].find(([dx,dz,side])=>edges?edges.has(edgeKey(edgeAtSide(point.x,point.z,side))):map.grid[point.z+dz]?.[point.x+dx]==='#')||[0,0];
- const [dx,dz]=direction,cell=SCENE_STYLE.cellMetres;
- return {x:point.x*cell+dx*SCENE_STYLE.torch.wallOffset,z:point.z*cell+dz*SCENE_STYLE.torch.wallOffset,y:SCENE_STYLE.torch.height,
-  wallX:point.x*cell+dx*cell/2,wallZ:point.z*cell+dz*cell/2,plateX:point.x*cell+dx*(cell/2-SCENE_STYLE.wallDepthMetres/2-SCENE_STYLE.torch.plateDepth/2-.005),plateZ:point.z*cell+dz*(cell/2-SCENE_STYLE.wallDepthMetres/2-SCENE_STYLE.torch.plateDepth/2-.005),dx,dz,attached:!!(dx||dz),seed:torchSeed(point)};
+ let [dx,dz]=[[0,-1,'n'],[1,0,'e'],[0,1,'s'],[-1,0,'w']].find(([dx,dz,side])=>edges?edges.has(edgeKey(edgeAtSide(point.x,point.z,side))):map.grid[point.z+dz]?.[point.x+dx]==='#')||[0,0];
+ const cell=SCENE_STYLE.cellMetres;let wallX=(point.x+dx/2)*cell,wallZ=(point.z+dz/2)*cell,curved=false;
+ const quarter=quarterAt(map,point.x,point.z);
+ if(!dx&&!dz&&quarter){const points=quarterPoints(quarter);let best;
+  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],vx=b.x-a.x,vz=b.z-a.z,t=Math.max(0,Math.min(1,((point.x-a.x)*vx+(point.z-a.z)*vz)/(vx*vx+vz*vz))),x=a.x+vx*t,z=a.z+vz*t,d=Math.hypot(x-point.x,z-point.z);if(!best||d<best.d)best={x,z,d};}
+  dx=(best.x-point.x)/best.d;dz=(best.z-point.z)/best.d;wallX=best.x*cell;wallZ=best.z*cell;curved=true;
+ }
+ const gap=cell/2-SCENE_STYLE.torch.wallOffset,plateGap=SCENE_STYLE.wallDepthMetres/2+SCENE_STYLE.torch.plateDepth/2+.005;
+ return {x:dx||dz?wallX-dx*gap:point.x*cell,z:dx||dz?wallZ-dz*gap:point.z*cell,y:SCENE_STYLE.torch.height,
+  wallX,wallZ,plateX:wallX-dx*plateGap,plateZ:wallZ-dz*plateGap,dx,dz,curved,attached:!!(dx||dz),seed:torchSeed(point)};
 }
 
 export function sceneLights(map,party){

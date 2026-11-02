@@ -1,4 +1,4 @@
-/* Default font is the self-hosted Press Start 2P declared by game-font.css. */
+/* Original UI typography; game-font.css scopes the pixel face to combat. */
 :root {
   color-scheme: dark;
   --silver:#b5b2c4;
@@ -14,7 +14,7 @@
   --panel2:#08080d;
   --divider:#514c67;
   --ground:#555352;
-  --ui-font:"Press Start 2P","Courier New",monospace;
+  --ui-font:Georgia,"Times New Roman",serif;
 
   font-family:var(--ui-font);
   font-weight:700;

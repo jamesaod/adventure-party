@@ -1,0 +1,9 @@
+# Wooden materials and quarter-round walls - Candidate Rev 263
+
+Wood walls use assets/textures/exploration/wood-wall.png. Wood ceilings use wood-ceiling.png in the same directory. Both were generated with the built-in image_gen tool. Generation prompts, source output names, runtime dimensions and checksums are in wood-materials.generated.json. Door leaves retain door.png. Runtime images are 512px material copies; generated originals remain intact.
+
+The editor offers four quarter-round orientations under Map functions, with stone/timber selection in Quarter-round walls settings. NW / NE above SW / SE makes a closed circle across a 2x2 group of floor squares. Each quarter has radius one authored square. Outer straight edges are replaced; floor and ceiling corners outside the circle are clipped. Doors/windows remain straight-edge objects; curved openings are not introduced. Remove quarter-round restores the square floor/boundary behavior. Adventure & map actions includes an unsaved wooden tower sample with an encounter for Test Map review.
+
+Optional map.quarterWalls stores x, z, corner and material. Optional map.ceiling contains a/s/w string rows. Geometry comes from quarter-walls.mjs: 16 chords per quarter, shared by rendering, collision, LOS and light transport. Four quarters join at exact endpoints. Combat floors clip against the same convex sectors; tactical movement uses those sectors and wall segments. Curves block daylight and can mount sconces. Validation rejects duplicate quarter records and straight walls/openings on curved outer sides. Import/export and resize preserve authored records.
+
+Non-combat screens return to their previous fonts. The battle retains Press Start 2P and result-panel sizing. First-person painted ambient applies to the actual Lambert materials, including wood.
