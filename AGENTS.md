@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 257 supersedes simultaneous spell damage presentation: finish shared spell graphics first, then center and resolve each target completely (damage/effects/death beats) before the next. Fireball, split Magic Missile volleys, Burning Hands/area damage and Lightning Bolt share combat-spell-results.js; preserve target allocations, saves, friendly fire, full death holds and cancellation. Do not finish a battle midway through a captured target list.
+
 - Rev 256: Results reset on each new attack (including multiple attacks per turn); consequences of one attack retain one-second beats. Damage/effect sounds accompany their messages; death sound and skull wait for the death beat. Right unit details/results are uppercase at the same size. The yellow map message strip and visible bottom combat log are removed; hidden diagnostics and message hold APIs remain.
 
 - Rev 255 supersedes battle-long message history: Press Start 2P is the default UI/canvas font; results use 16px text and persist only within the current turn. Clear the result area at beginTurn, including consecutive turns by the same unit. Keep unit information visible and one-second beat arrivals.

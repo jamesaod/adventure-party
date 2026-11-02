@@ -228,4 +228,5 @@ jobs:
           node scripts/test-combat-webgl.mjs
           node scripts/test-combat-gpu-lighting.mjs
           node scripts/test-combat-result-panel.mjs
+          node scripts/test-spell-target-results.mjs
           node scripts/test-combat-frame-pacing.mjs

@@ -127,3 +127,10 @@ Adventure Party retains its requested one-second sequence between consequences.
 Each new attack replaces the previous attack's results when its first beat is presented, including repeated attacks by one unit. Consequences within an attack remain stacked in semantic order, one second apart. Turn boundaries still clear the panel. All unit details and results use uppercase Press Start 2P at the unit-name size (18px, 15px on narrow layouts, respecting the font scale preference).
 
 Physical impact and secondary elemental sounds accompany their result messages. Death sound and skull are deferred until the death message; mechanics still resolve immediately. Cancelled encounters discard deferred cues. The yellow battlefield strip and visible Last Resolution/combat log are removed; message timing and hidden diagnostics remain for engine compatibility.
+
+
+### Candidate Rev 257: spells resolve one target at a time
+
+Finish the shared projectile/explosion/discharge (including Magic Missile impact glows) before any target HP changes. Center on each affected target, present its primary damage, secondary effects and death with the existing one-second beats, then advance to the next target. A new target starts a fresh result block. Fireball keeps one blast roll and individual saves; Magic Missile combines allocations per target in first-allocation order. Immune, Shield and Mirror Image results remain readable. Burning Hands uses the same area-result path; Lightning Bolt retains its reflected exposure order.
+
+The shared helper in `js/combat-spell-results.js` waits for actual beat completion, not a fixed estimate, and guards game identity plus a cancellation generation across awaits. Explicit encounter/Previewer resets cancel remaining target damage and cues. Battle outcome checks are deferred within a target batch so captured enemies and allies all resolve before victory/defeat. Target HP/death is applied at that target's step; this explicitly supersedes the former simultaneous HP batch for these spells. Resource consumption, damage rolls, saves, LOS, targeting and the shared 30 FPS scheduler retain their established rules.

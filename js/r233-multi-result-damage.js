@@ -308,6 +308,7 @@ castMagicMissileFromScroll=async function(action,target){
 
 
 castFireballFromScroll=async function(action,targetHex){
+  const resultSession=captureSpellTargetResults();
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry(action?.spellId);
 
@@ -407,7 +408,7 @@ castFireballFromScroll=async function(action,targetHex){
 
       1. projectile
       2. impact sound + explosion
-      3. simultaneous save/damage/fire-reaction presentation
+      3. centered damage/fire/death results, one target at a time
       4. death/morale follow-through
 
     The Previewer no longer maintains a second Fireball implementation.
@@ -498,131 +499,28 @@ castFireballFromScroll=async function(action,targetHex){
     blastCells
   );
 
-  /*
-    Match the approved Previewer behavior: damage numbers and victim-side fire
-    reactions begin together only AFTER the explosion presentation completes.
-    No victim-by-victim camera walk or duplicate result-card sequence.
-  */
-  for(const result of results){
-    if(result.damage<=0){
-      continue;
-    }
-
-    result.unit.hp=
-      Math.max(
-        0,
-        result.unit.hp-result.damage
-      );
-
-    if(
-      typeof candidateWithDamageBeatContext===
-        "function"
-    ){
-      candidateWithDamageBeatContext(
-        {
-          category:"direct-damage",
-          damageType:"fire",
-          source:"Fireball"
-        },
-        ()=>
-          onUnitDamaged(
-            result.unit,
-            result.damage
-          )
-      );
-    }else{
-      onUnitDamaged(
-        result.unit,
-        result.damage
-      );
-    }
-
-    /*
-      Starts the same 720 ms flame reaction used by other fire impacts. Because
-      it begins here, it is visible with the floating damage just as it is in
-      the approved Previewer sequence.
-    */
-    registerElementalDamageFx(
-      result.unit,
-      "fire",
-      result.damage
-    );
-
-    result.killed=
-      result.unit.hp<=0;
-  }
-
-  updateUi();
-  draw();
-
   let koboldCasualties=0;
-
-  for(const result of results){
-    const unit=result.unit;
-
-    if(result.immune){
-      log(
-        unit.name+
-        " is immune to fire and takes no Fireball damage.",
-        "system"
-      );
-      continue;
+  if(!await presentSpellTargetResults(caster,results,result=>{
+    const {unit,damage,immune,save}=result;
+    if(immune||damage<=0){
+      candidateQueueCombatBeat(unit,{category:'condition',text:immune?'Immune to fire':'Takes no Fireball damage',sound:()=>{}});
+      log(unit.name+(immune?' is immune to fire.':' takes no Fireball damage.'),'system');
+      return;
     }
-
-    log(
-      unit.name+
-      ": save vs. spell "+
-      result.save.modifiedRoll+
-      " vs "+
-      result.save.targetNumber+
-      " — "+
-      (
-        result.save.success
-          ? "success, half damage"
-          : "failure, full damage"
-      )+
-      "; "+
-      result.damage+
-      " damage.",
-      result.save.success
-        ? "system"
-        : "bad"
-    );
-  }
-
-  /*
-    Lethal results begin while their fire-reaction beat is still active. Death
-    markers remain sequential because the tactical foreground currently has one
-    shared death-marker channel.
-  */
-  for(const result of results){
-    const unit=result.unit;
-
-    if(
-      !result.killed ||
-      !unit.alive
-    ){
-      continue;
-    }
-
-    unit.alive=false;
-
-    playAgonySound(unit);
-    playDeathSound(unit);
-    triggerDeathFx(unit);
-
-    if(unit.controller==="mob"){
-      markEnemyNeutralized(unit);
-
-      if(isKoboldUnit(unit)){
-        koboldCasualties++;
+    unit.hp=Math.max(0,unit.hp-damage);
+    candidateWithDamageBeatContext({category:'direct-damage',damageType:'fire',source:'Fireball'},()=>onUnitDamaged(unit,damage));
+    registerElementalDamageFx(unit,'fire',damage);
+    result.killed=unit.hp<=0;
+    log(`${unit.name}: save vs. spell ${save.modifiedRoll} vs ${save.targetNumber} — ${save.success?'success, half damage':'failure, full damage'}; ${damage} damage.`,save.success?'system':'bad');
+    if(result.killed){
+      unit.alive=false;
+      playAgonySound(unit);playDeathSound(unit);triggerDeathFx(unit);
+      if(unit.controller==='mob'){
+        markEnemyNeutralized(unit);
+        if(isKoboldUnit(unit))koboldCasualties++;
       }
     }
-
-    updateUi();
-    draw();
-    await waitForDeathActionPause();
-  }
+  },resultSession))return false;
 
   if(
     koboldCasualties>0 &&
