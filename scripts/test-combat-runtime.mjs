@@ -7,8 +7,8 @@ import {floorFragmentIndex,polygonArea} from '../js/combat-surface-lighting.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi');
 function fixture(){
- const events=[],images=Array.from({length:4},()=>({src:'',decode:async()=>{events.push('image');}}));
- const c={sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],game:null,isKoboldUnit:()=>false,
+ const events=[],images=Array.from({length:5},()=>({src:'',decode:async()=>{events.push('image');}}));
+ const c={sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],game:null,isKoboldUnit:()=>false,
   newGame:(condition,scenario)=>{events.push('new');c.game=c.createCombatGame(condition,scenario.roster,scenario);},allUnits:()=>[c.game.player,...c.game.allies,...c.game.enemies],fitBattleCanvas:()=>events.push('fit'),waitForCombatUnitRenders:async()=>events.push('sprites'),presentCombatFrame:async()=>events.push('frame'),startRound:()=>{events.push('round');c.game.round++;},canvas:{dataset:{}},setTimeout,clearTimeout,HEX_W:64,HEX_ROW:31.5,MAP_MIN_X:-8,MAP_MAX_X:8,MAP_MIN_Y:-8,MAP_MAX_Y:8,WALL_TEST_ROOM:{left:-64,right:128,top:-63,bottom:63},worldPointForHex:(x,y)=>({x:(x+y/2)*64,y:y*31.5})};
  vm.createContext(c);vm.runInContext(source,c);return {c,events};
 }
@@ -20,7 +20,7 @@ for(const entry of ['combat-test','exploration','spell-preview']){
  assert(events.indexOf('renderer')<events.indexOf('new'));assert(events.indexOf('sprites')<events.indexOf('frame'));
  if(scenario.autoStart)assert(events.indexOf('sprites')<events.indexOf('round')&&events.indexOf('round')<events.indexOf('frame'));
  assert.equal(c.canvas.dataset.combatPipeline,'shared');
- const resets=await c.startCombatSession(scenario);assert.notEqual(resets,result);assert.equal(events.filter(x=>x==='image').length,4,'Every entry uses the same cached material dependency gate');
+ const resets=await c.startCombatSession(scenario);assert.notEqual(resets,result);assert.equal(events.filter(x=>x==='image').length,5,'Every entry uses the same cached material dependency gate');
 }
 const cancelled=fixture();let release;
 cancelled.c.ensureCombatRenderer=()=>new Promise(r=>release=r);

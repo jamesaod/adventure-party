@@ -16,7 +16,7 @@ export function installPaintedAmbient(THREE,scene,map,cellMetres){
  if(!map.ambientLight)return;
  const texture=new THREE.DataTexture(ambientTextureData(map),map.width,map.height,THREE.RGBAFormat);
  texture.minFilter=texture.magFilter=THREE.NearestFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
- const materials=new Set();scene.traverse(object=>{for(const material of Array.isArray(object.material)?object.material:[object.material])if(material?.isMeshStandardMaterial)materials.add(material);});
+ const materials=new Set();scene.traverse(object=>{for(const material of Array.isArray(object.material)?object.material:[object.material])if((material?.isMeshStandardMaterial||material?.isMeshLambertMaterial))materials.add(material);});
  for(const material of materials){
   const before=material.onBeforeCompile;
   material.onBeforeCompile=function(shader,renderer){

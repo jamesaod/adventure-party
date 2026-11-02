@@ -26,7 +26,7 @@ async function verifyWebUIFont(){
     }
 
     if(status){
-      status.textContent="FONT: PRESS START 2P — WEB FONT";
+      status.textContent="COMBAT FONT: PRESS START 2P — WEB FONT";
       status.classList.remove("font-missing");
       status.classList.add("font-ok");
     }
@@ -38,7 +38,7 @@ async function verifyWebUIFont(){
     }
   }catch(error){
     if(status){
-      status.textContent="FONT: PRESS START 2P UNAVAILABLE — MONOSPACE FALLBACK";
+      status.textContent="COMBAT FONT: PRESS START 2P UNAVAILABLE — MONOSPACE FALLBACK";
       status.classList.remove("font-ok");
       status.classList.add("font-missing");
     }

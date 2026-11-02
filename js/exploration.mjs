@@ -1,13 +1,14 @@
-import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C262';
+import {quarterAt,quarterFloor,quarterSegments,ceilingKind} from './quarter-walls.mjs?v=R238C263';
+import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C263';
 import {createGroundTileBank} from './terrain-transition.mjs?v=R238C262';
 import {hasOutdoorGrass,hasDirtGround,groundKind,grassNeighborMask} from './exploration-ground.mjs?v=R238C262';
-import {torchAnimation} from './exploration-scene-style.mjs?v=R238C262';
+import {torchAnimation} from './exploration-scene-style.mjs?v=R238C263';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C259';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C263';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C262';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C262';
-import {explorationMapMarkup} from './exploration-map.mjs?v=R238C262';
+import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C263';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C263';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C263';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C262';
 import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C262';
 import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C262';
@@ -29,13 +30,20 @@ async function start(){
  const skyContext=skyCanvas.getContext('2d'),skyGradient=skyContext.createLinearGradient(0,0,0,256);skyGradient.addColorStop(0,'#346da7');skyGradient.addColorStop(.5,'#9dc7e6');skyGradient.addColorStop(1,'#dbe3df');skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,512,256);
  skyContext.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<16;i++){skyContext.beginPath();skyContext.ellipse((i*137)%512,35+(i*31)%85,35+i%4*8,7+i%3*3,0,0,Math.PI*2);skyContext.fill();}
  const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
- const {wall,floor,grass,wood,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map)});
+ const {wall,floor,grass,wood,woodWall,woodCeiling,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map)});
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
  scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
  const lantern=new THREE.PointLight(lamp.color,lamp.intensity,lamp.range,lamp.decay);lantern.position.set(0,lamp.height-EYE,lamp.offsetZ);lantern.castShadow=true;lantern.shadow.mapSize.set(lamp.shadowPixels,lamp.shadowPixels);lantern.shadow.bias=-.002;lantern.shadow.camera.near=lamp.shadowNear;camera.add(lantern);
  const wallCells=[],floorCells=[];for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)(map.grid[z][x]==='#'?wallCells:floorCells).push({x,z});
- const tiles=(cells,height,y,material)=>{if(!cells.length)return;const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(CELL,height,CELL),material,cells.length),matrix=new THREE.Matrix4();cells.forEach((p,i)=>mesh.setMatrixAt(i,matrix.makeTranslation(p.x*CELL,y,p.z*CELL)));mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);};
- if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);tiles(floorCells.filter(p=>!isOutdoor(map,p.x,p.z)),.12,HEIGHT+.06,ceiling);
+ const tiles=(cells,height,y,material)=>{
+  const curved=cells.filter(p=>quarterAt(map,p.x,p.z)),flat=cells.filter(p=>!quarterAt(map,p.x,p.z));
+  if(flat.length){const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(CELL,height,CELL),material,flat.length),matrix=new THREE.Matrix4();flat.forEach((p,i)=>mesh.setMatrixAt(i,matrix.makeTranslation(p.x*CELL,y,p.z*CELL)));mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);}
+  for(const p of curved){const poly=quarterFloor(quarterAt(map,p.x,p.z)),positions=[],uv=[],ceilingFace=y>0,surface=ceilingFace?y-height/2:y+height/2;
+   for(let i=1;i<poly.length-1;i++)for(const q of ceilingFace?[poly[0],poly[i],poly[i+1]]:[poly[0],poly[i+1],poly[i]]){positions.push(q.x*CELL,surface,q.z*CELL);uv.push(q.x,q.z);}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);
+  }
+ };
+ if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);for(const kind of ['stone','wood'])tiles(floorCells.filter(p=>!isOutdoor(map,p.x,p.z)&&ceilingKind(map,p.x,p.z)===kind),.12,HEIGHT+.06,kind==='wood'?woodCeiling:ceiling);
  // Ground is independent of ceiling/sky. Both views use the same composed
  // alpha-mask tiles, with one repeat per authored square (never per hex).
  const sky=OUTDOOR_AMBIENT,bank=hasDirtGround(map)?createGroundTileBank(groundImages):null;
@@ -55,10 +63,10 @@ async function start(){
  }
  for(const [key,cells] of groundGroups)tiles(cells,.12,-.06,groundMaterials.get(key));
  $('mapDimensions').textContent=`${map.width} × ${map.height} · North up`;
- for(const d of map.doors){const {root,hinge}=explorationDoor(d.material==='wood'?wood:wall,wood,state.openDoors.has(doorKey(d)),map.version===2?{width:d.width*CELL,hinge:d.hinge}:{});root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);doors.set(doorKey(d),hinge);}
+ for(const d of map.doors){const {root,hinge}=explorationDoor(d.material==='wood'?woodWall:wall,wood,state.openDoors.has(doorKey(d)),map.version===2?{width:d.width*CELL,hinge:d.hinge}:{});root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);doors.set(doorKey(d),hinge);}
  if(map.version===2)for(const edge of effectiveEdges(map)){
   if(edge.kind==='door')continue;
-  const g=edgeGeometry(edge),root=new THREE.Group(),material=edge.material==='wood'?wood:wall;
+  const g=edgeGeometry(edge),root=new THREE.Group(),material=edge.material==='wood'?woodWall:wall;
   root.position.set(g.center.x*CELL,0,g.center.z*CELL);root.rotation.y=g.axis==='x'?Math.PI/2:0;scene.add(root);
   if(edge.kind==='wall'){box(CELL,HEIGHT,SCENE_STYLE.wallDepthMetres,material,0,HEIGHT/2,0,root);continue;}
   const width=edge.width*CELL,sill=SCENE_STYLE.window.sill,height=SCENE_STYLE.window.height,side=(CELL-width)/2;
@@ -67,12 +75,18 @@ async function start(){
   const glass=new THREE.MeshLambertMaterial({color:0x8eafb0,transparent:true,opacity:.28});box(width,height,.025,glass,0,sill+height/2,0,root).castShadow=false;
   for(const x of [-width/2,0,width/2])box(.055,height,.08,wood,x,sill+height/2,0,root);
  }
+ for(const segment of quarterSegments(map)){
+  const dx=(segment.b.x-segment.a.x)*CELL,dz=(segment.b.z-segment.a.z)*CELL,length=Math.hypot(dx,dz),g=new THREE.BoxGeometry(length+.008,HEIGHT,SCENE_STYLE.wallDepthMetres),uv=g.getAttribute('uv');
+  for(let i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)*length/CELL+segment.offset);
+  const mesh=new THREE.Mesh(g,segment.quarter.material==='wood'?woodWall:wall);mesh.position.set((segment.a.x+segment.b.x)*CELL/2,HEIGHT/2,(segment.a.z+segment.b.z)*CELL/2);mesh.rotation.y=-Math.atan2(dz,dx);mesh.castShadow=mesh.receiveShadow=true;scene.add(mesh);
+ }
  for(const exit of map.exits||[]){const ring=new THREE.Mesh(new THREE.RingGeometry(.45,.65,24),new THREE.MeshBasicMaterial({color:0xd6b265,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(exit.x*CELL,.015,exit.z*CELL);scene.add(ring);}
  const iron=new THREE.MeshLambertMaterial({color:0x3c3025});
  for(const t of map.torches||[]){
   const placement=torchPlacement(map,t),{x,z,plateX:wallX,plateZ:wallZ,dx,dz}=placement;
   if(placement.attached){
-   box(dx?torchLight.plateDepth:torchLight.plateWidth,torchLight.plateHeight,dz?torchLight.plateDepth:torchLight.plateWidth,iron,wallX,1.9,wallZ);
+   if(placement.curved){const plate=box(torchLight.plateWidth,torchLight.plateHeight,torchLight.plateDepth,iron,wallX,1.9,wallZ);plate.rotation.y=Math.atan2(dx,dz);}
+   else box(dx?torchLight.plateDepth:torchLight.plateWidth,torchLight.plateHeight,dz?torchLight.plateDepth:torchLight.plateWidth,iron,wallX,1.9,wallZ);
    box(Math.abs(wallX-x)+.08,.09,Math.abs(wallZ-z)+.08,iron,(wallX+x)/2,1.75,(wallZ+z)/2);
   }else box(.12,1.75,.12,iron,x,.875,z);
   box(.13,torchLight.stemHeight,.13,iron,x,torchLight.stemBottom+torchLight.stemHeight/2,z);

@@ -1,3 +1,4 @@
+import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C263';
 // Canonical shared edges: h(x,z) is the north edge of cell x,z;
 // v(x,z) is its west edge. Coordinates are independent of any renderer.
 export const edgeKey=e=>`${e.axis}:${e.x},${e.z}`;
@@ -13,13 +14,14 @@ export function edgeGeometry(e){
 const floor=(map,p)=>map.grid[p.z]?.[p.x]==='.';
 const edgeCache=new WeakMap(),segmentCache=new WeakMap();
 export function effectiveEdges(map){
- const cached=edgeCache.get(map);if(cached?.grid===map.grid&&cached.edges===map.edges)return cached.value;
+ const cached=edgeCache.get(map);if(cached?.grid===map.grid&&cached.edges===map.edges&&cached.quarters===map.quarterWalls)return cached.value;
  const all=new Map();
  for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)if(floor(map,{x,z}))for(const side of ['n','e','s','w']){
+  const q=quarterAt(map,x,z);if(q&&quarterSides(q).includes(side))continue;
   const e=edgeAtSide(x,z,side);if(edgeCells(e).some(p=>!floor(map,p)))all.set(edgeKey(e),{...e,id:edgeKey(e),kind:'wall',material:'stone',boundary:true});
  }
  for(const e of map.edges||[])all.set(edgeKey(e),e);
- const value=[...all.values()];edgeCache.set(map,{grid:map.grid,edges:map.edges,value});return value;
+ const value=[...all.values()];edgeCache.set(map,{grid:map.grid,edges:map.edges,quarters:map.quarterWalls,value});return value;
 }
 export function normalizeDoorWidths(map){
  if(map.version!==2)return map;
@@ -42,11 +44,14 @@ export function upgradeEdgeMap(input){
  return syncEdgeDoors(map);
 }
 export function validateEdges(map){
+ validateQuarterWalls(map);
  if(!Array.isArray(map.edges)||map.edges.length>2*map.width*map.height+map.width+map.height)throw Error('Invalid edge list.');
  const keys=new Set(),ids=new Set();
  for(const e of map.edges){
   if(!['h','v'].includes(e.axis)||!Number.isInteger(e.x)||!Number.isInteger(e.z)||e.x<0||e.z<0||e.x>(e.axis==='h'?map.width-1:map.width)||e.z>(e.axis==='h'?map.height:map.height-1))throw Error('Wall edge lies outside the map.');
-  const key=edgeKey(e);if(keys.has(key)||typeof e.id!=='string'||!e.id||!/^[a-zA-Z0-9_:,.-]{1,120}$/.test(e.id)||ids.has(e.id))throw Error('Duplicate or missing wall edge identity.');keys.add(key);ids.add(e.id);
+  const key=edgeKey(e);
+  for(const q of map.quarterWalls||[])for(const side of quarterSides(q))if(edgeKey(edgeAtSide(q.x,q.z,side))===key)throw Error('Remove the quarter-round wall before placing a straight wall or opening on its outer sides.');
+  if(keys.has(key)||typeof e.id!=='string'||!e.id||!/^[a-zA-Z0-9_:,.-]{1,120}$/.test(e.id)||ids.has(e.id))throw Error('Duplicate or missing wall edge identity.');keys.add(key);ids.add(e.id);
   if(!['wall','door','window'].includes(e.kind)||!['stone','wood'].includes(e.material||'stone'))throw Error('Invalid wall edge type or material.');
   const cells=edgeCells(e);if(!cells.some(p=>floor(map,p)))throw Error('Place wall edges beside floor.');
   if(e.kind!=='wall'){
@@ -69,7 +74,7 @@ export function paintEdge(map,edge,kind,settings={}){
 }
 export function blockingEdgeSegments(map,opened,mode='movement'){
  const edges=effectiveEdges(map),key=mode+':'+[...opened].sort().join('|');let cache=segmentCache.get(map);if(cache?.edges!==edges){cache={edges,values:new Map()};segmentCache.set(map,cache);}if(cache.values.has(key))return cache.values.get(key);
- const result=[];
+ const result=quarterSegments(map).map(s=>({...s,edge:{id:s.id,kind:'wall',material:s.quarter.material,curve:true}}));
  for(const edge of edges){
   const g=edgeGeometry(edge),canPass=edge.kind==='door'&&opened.has(edge.id)||edge.kind==='window'&&['los','light'].includes(mode);
   const intervals=canPass?[[0,(1-edge.width)/2],[(1+edge.width)/2,1]]:[[0,1]];
