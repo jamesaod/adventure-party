@@ -144,7 +144,7 @@ records['combat-workspace']=matching;
 
 const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const renderer=readFileSync(new URL('../js/combat-mob-renderer.mjs',import.meta.url),'utf8');
-assert.ok(game.includes('if(!player.studioSpriteTest && typeof markMobAppearanceDirty'),
+assert.ok(game.includes('if(scenario.prepareAppearance!==false&&!player.studioSpriteTest && typeof markMobAppearanceDirty'),
   'Entering Studio combat must display its original captured frames without an automatic re-render');
 assert.ok(game.includes('fromCombat=!!unit.studioSpriteTest'), 'Gear swaps must use the paired Studio capture');
 assert.ok(game.includes('markMobAppearanceDirty(fighter)'), 'Equipment changes still regenerate sprites');
