@@ -76,21 +76,18 @@ const SPELL_PREVIEW_SPECIAL_PROFILES=Object.freeze({
     spellId:"sleep",
     nominalMs:4700,
     label:"Multi-target status / application / persistent VFX",
-    run:spellPreviewRunSleep
   },
 
   "wall-of-fog":{
     spellId:"wall-of-fog",
     nominalMs:5600,
     label:"Persistent animated area / depth sorting",
-    run:spellPreviewRunWallOfFog
   },
 
   "lightning-bolt":{
     spellId:"lightning-bolt",
     nominalMs:3900,
     label:"Directional ray / collision / damage",
-    run:spellPreviewRunLightningBolt
   }
 });
 
@@ -138,12 +135,12 @@ const SPELL_PREVIEW_PROFILES=Object.freeze(
       .filter(spell=>spell?.combatImplemented)
       .map(spell=>[
         spell.id,
-        SPELL_PREVIEW_SPECIAL_PROFILES[spell.id] || {
+        ({...SPELL_PREVIEW_SPECIAL_PROFILES[spell.id],
           spellId:spell.id,
           nominalMs:spellPreviewGenericNominalMs(spell),
           label:spellPreviewGenericProfileLabel(spell),
           run:spellPreviewRunProductionSpell
-        }
+        })
       ])
   )
 );
@@ -315,7 +312,7 @@ function spellPreviewMakeCaster(level){
       name:"Preview Caster",
       type:"mage",
       faction:"player",
-      controller:"npc",
+      controller:"player",
       x:-4,
       y:0
     }),
@@ -425,7 +422,7 @@ function spellPreviewClearTransientPresentation(){
 }
 
 
-function spellPreviewResetArena(){
+async function spellPreviewResetArena(){
   const level=
     clamp(
       Number(
@@ -445,10 +442,6 @@ function spellPreviewResetArena(){
           spellPreviewUi.targetCount.value
         )
       : 5;
-
-  configureArchitecturalWalls(
-    "grass"
-  );
 
   spellPreviewClearTransientPresentation();
 
@@ -479,27 +472,9 @@ function spellPreviewResetArena(){
           )
       );
 
-  game={
-    round:1,
-    over:false,
-    condition:"grass",
-    player:observer,
-    allies:[
-      spellPreviewCaster
-    ],
-    enemies:
-      spellPreviewHostiles,
-    order:[],
-    turnIndex:0,
-    active:
-      spellPreviewCaster.id,
-    xpAwarded:false,
-    xpPool:0,
-    areaEffects:[],
-    enemyGroupMorale:null,
-    r230Castings:{},
-    r230InitiativeByUnit:{}
-  };
+  const token=spellPreviewRunToken;
+  const started=await startCombatSession({source:'spell-preview',condition:'grass',roster:{player:observer,allies:[spellPreviewCaster],enemies:spellPreviewHostiles},controlledActorId:spellPreviewCaster.id,pauseAfterAction:true,holdResults:true,prepareAppearance:false,autoStart:true},{isCurrent:()=>spellPreviewActive&&currentScreen==='spell-preview'&&token===spellPreviewRunToken});
+  if(!started)return false;
 
   lastPlayerVisibilityObserverId=null;
 
@@ -535,6 +510,7 @@ function spellPreviewResetArena(){
   spellPreviewSetStatus(
     "Arena reset. Production renderer, VFX and SFX are ready."
   );
+  return game;
 }
 
 
@@ -1208,7 +1184,7 @@ async function spellPreviewStartRun(){
       break;
     }
 
-    spellPreviewResetArena();
+    if(!await spellPreviewResetArena())return;
     spellPreviewResetTimeline();
 
     spellPreviewTimelineDurationMs=
@@ -1410,7 +1386,7 @@ async function spellPreviewSelectSpell(spellId){
   }
 
   spellPreviewResetTimeline();
-  spellPreviewResetArena();
+  if(!await spellPreviewResetArena())return;
 
   spellPreviewSetStatus(
     (
@@ -1453,7 +1429,7 @@ async function spellPreviewRestartCurrent({
   }
 
   spellPreviewResetTimeline();
-  spellPreviewResetArena();
+  if(!await spellPreviewResetArena())return;
 
   if(autoplay){
     spellPreviewLaunchRun();
@@ -1469,88 +1445,6 @@ async function spellPreviewRestartCurrent({
 
 function spellPreviewPrimaryTarget(){
   return spellPreviewHostiles[0] || null;
-}
-
-
-function spellPreviewDamageValue(
-  fullDamage
-){
-  const outcome=
-    spellPreviewUi.outcome?.value ||
-    "demo";
-
-  if(outcome==="save-success"){
-    return Math.max(
-      1,
-      Math.floor(
-        fullDamage/2
-      )
-    );
-  }
-
-  return fullDamage;
-}
-
-
-function spellPreviewApplyDamage(
-  units,
-  amount,
-  {
-    damageType=null
-  }={}
-){
-  const flags=
-    spellPreviewPresentationFlags();
-
-  if(!flags.visuals){
-    return;
-  }
-
-  for(const unit of units){
-    if(
-      !unit?.alive ||
-      unit.fled
-    ){
-      continue;
-    }
-
-    const actual=
-      Math.min(
-        Math.max(
-          0,
-          Number(amount)||0
-        ),
-        Math.max(
-          0,
-          unit.hp-1
-        )
-      );
-
-    if(actual<=0){
-      continue;
-    }
-
-    unit.hp=
-      Math.max(
-        1,
-        unit.hp-actual
-      );
-
-    onUnitDamaged(
-      unit,
-      actual
-    );
-
-    if(damageType){
-      registerElementalDamageFx(
-        unit,
-        damageType,
-        actual
-      );
-    }
-  }
-
-  draw();
 }
 
 
@@ -1633,54 +1527,6 @@ function spellPreviewVisualsSuppressed(){
     !spellPreviewPresentationFlags().visuals
   );
 }
-
-
-const spellPreviewBaseEndTurn=
-  endTurn;
-
-endTurn=function(){
-  if(
-    spellPreviewActive &&
-    currentScreen==="spell-preview"
-  ){
-    spellCastInProgress=false;
-    updateUi();
-    draw();
-    return;
-  }
-
-  return spellPreviewBaseEndTurn();
-};
-
-
-const spellPreviewBaseCheckCombatVictory=
-  checkCombatVictory;
-
-checkCombatVictory=function(){
-  if(
-    spellPreviewActive &&
-    currentScreen==="spell-preview"
-  ){
-    return false;
-  }
-
-  return spellPreviewBaseCheckCombatVictory();
-};
-
-
-const spellPreviewBaseCheckPartyDefeat=
-  checkPartyDefeat;
-
-checkPartyDefeat=function(){
-  if(
-    spellPreviewActive &&
-    currentScreen==="spell-preview"
-  ){
-    return false;
-  }
-
-  return spellPreviewBaseCheckPartyDefeat();
-};
 
 
 const spellPreviewBaseWaitForCombatActionPause=
@@ -2819,378 +2665,6 @@ async function spellPreviewRunProductionSpell(
 */
 
 /* ============================================================
-   SLEEP
-   ============================================================ */
-
-async function spellPreviewRunSleep(
-  token
-){
-  const spell=
-    getSpellEntry(
-      "sleep"
-    );
-
-  if(!spell){
-    return;
-  }
-
-  await spellPreviewCastCue(
-    spell,
-    token
-  );
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  const flags=
-    spellPreviewPresentationFlags();
-
-  const targetHex={
-    x:2,
-    y:0
-  };
-
-  const cells=
-    hexesWithinRadius(
-      targetHex,
-      1
-    );
-
-  const targets=
-    livingUnitsInAreaCells(
-      cells
-    )
-      .filter(
-        unit=>
-          unit.id!==
-          spellPreviewCaster.id
-      )
-      .slice(
-        0,
-        Math.max(
-          1,
-          Number(
-            spellPreviewUi.targetCount?.value
-          ) || 1
-        )
-      );
-
-  spellPreviewMark(
-    "Sleep application: "+
-    targets.length+
-    " target"+
-    (
-      targets.length===1
-        ? ""
-        : "s"
-    )
-  );
-
-  if(flags.visuals){
-    for(const unit of targets){
-      addUnitEffect(
-        unit,
-        {
-          id:"sleep",
-          name:"Magical Sleep",
-          kind:"debuff",
-          expiresRound:99,
-          detail:"Preview: persistent magical sleep",
-          data:{
-            sourceUnitId:
-              spellPreviewCaster.id
-          }
-        }
-      );
-    }
-
-    await animateMagicEffectOnUnits(
-      targets,
-      "sleep",
-      {
-        playSound:
-          flags.sounds
-      }
-    );
-  }else{
-    if(flags.sounds){
-      targets.forEach(
-        (unit,index)=>
-          playMagicEffectSound(
-            "sleep",
-            index
-          )
-      );
-    }
-
-    await spellPreviewWait(
-      700,
-      token
-    );
-  }
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  spellPreviewMark(
-    "Persistent Sleep VFX observation"
-  );
-
-  await spellPreviewWait(
-    1900,
-    token
-  );
-}
-
-
-/* ============================================================
-   WALL OF FOG
-   ============================================================ */
-
-async function spellPreviewRunWallOfFog(
-  token
-){
-  const spell=
-    getSpellEntry(
-      "wall-of-fog"
-    );
-
-  if(!spell){
-    return;
-  }
-
-  await spellPreviewCastCue(
-    spell,
-    token
-  );
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  const flags=
-    spellPreviewPresentationFlags();
-
-  if(flags.sounds){
-    playMagicEffectSound(
-      "wall-of-fog"
-    );
-  }
-
-  const targetHex={
-    x:1,
-    y:0
-  };
-
-  const level=
-    clamp(
-      Number(
-        spellPreviewUi.casterLevel?.value
-      ) || 6,
-      1,
-      20
-    );
-
-  const cells=
-    createWallOfFogCells(
-      spellPreviewCaster,
-      targetHex,
-      level,
-      0
-    );
-
-  spellPreviewMark(
-    "Wall of Fog forms: "+
-    cells.length+
-    " hexes"
-  );
-
-  if(flags.visuals){
-    addAreaEffect({
-      id:"spell-preview-wall-of-fog",
-      type:"fog",
-      name:"Wall of Fog",
-      cells,
-      visualHeightPx:HEX_W,
-      expiresRound:99,
-      sourceUnitId:
-        spellPreviewCaster.id
-    });
-  }
-
-  draw();
-
-  spellPreviewMark(
-    "Persistent fog observation"
-  );
-
-  await spellPreviewWait(
-    3300,
-    token
-  );
-}
-
-
-/* ============================================================
-   LIGHTNING BOLT
-   ============================================================ */
-
-async function spellPreviewRunLightningBolt(
-  token
-){
-  const spell=
-    getSpellEntry(
-      "lightning-bolt"
-    );
-
-  if(!spell){
-    return;
-  }
-
-  await spellPreviewCastCue(
-    spell,
-    token
-  );
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  const flags=
-    spellPreviewPresentationFlags();
-
-  const targetHex={
-    x:6,
-    y:0
-  };
-
-  const trace=
-    r232TraceLightningBolt(
-      spellPreviewCaster,
-      targetHex
-    );
-
-  spellPreviewMark(
-    "Lightning discharge: "+
-    trace.segments.length+
-    " segment"+
-    (
-      trace.segments.length===1
-        ? ""
-        : "s"
-    )
-  );
-
-  if(flags.sounds){
-    playMagicEffectSound(
-      "lightning"
-    );
-  }
-
-  if(flags.visuals){
-    r226LightningFx={
-      r232Trace:true,
-      segments:
-        trace.segments,
-      collisions:
-        trace.collisions,
-      started:
-        performance.now(),
-      duration:combatEffectDuration(650)
-    };
-  }
-
-  await spellPreviewWait(
-    combatEffectDuration(650),
-    token
-  );
-
-  if(
-    typeof r226LightningFx!=="undefined"
-  ){
-    r226LightningFx=null;
-  }
-
-  if(!spellPreviewTokenActive(token)){
-    return;
-  }
-
-  let struck=
-    r232UnitOccurrencesAlongTrace(
-      trace,
-      spellPreviewCaster
-    )
-      .map(
-        occurrence=>
-          occurrence.unit
-      )
-      .filter(
-        (
-          unit,
-          index,
-          array
-        )=>
-          array.findIndex(
-            candidate=>
-              candidate.id===
-              unit.id
-          )===index
-      );
-
-  if(!struck.length){
-    struck=[
-      spellPreviewPrimaryTarget()
-    ].filter(Boolean);
-  }
-
-  const level=
-    clamp(
-      Number(
-        spellPreviewUi.casterLevel?.value
-      ) || 6,
-      1,
-      20
-    );
-
-  const damage=
-    spellPreviewDamageValue(
-      Math.min(
-        10,
-        level
-      )*3
-    );
-
-  spellPreviewMark(
-    "Lightning damage: "+
-    damage+
-    " to "+
-    struck.length+
-    " target"+
-    (
-      struck.length===1
-        ? ""
-        : "s"
-    )
-  );
-
-  spellPreviewApplyDamage(
-    struck,
-    damage,
-    {
-      damageType:"lightning"
-    }
-  );
-
-  await spellPreviewWait(
-    1150,
-    token
-  );
-}
-
-
-/* ============================================================
    CONTINUOUS RENDER LOOP
    ============================================================ */
 
@@ -3271,7 +2745,7 @@ async function showSpellPreviewer(){
   */
   GRASS_OUTDOORS_TILESET.treeCoverageRatio=0;
 
-  try{await ensureCombatRenderer();}
+  try{await prepareCombatSession();}
   catch(error){spellPreviewSetStatus("Combat graphics unavailable: "+error.message);return;}
   if(!spellPreviewActive||currentScreen!=="spell-preview")return;
   spellPreviewMoveCanvasIntoArena();
@@ -3279,7 +2753,7 @@ async function showSpellPreviewer(){
 
   spellPreviewRenderLibrary();
   spellPreviewResetTimeline();
-  spellPreviewResetArena();
+  if(!await spellPreviewResetArena())return;
   spellPreviewUpdateControls();
   spellPreviewEnsureRenderLoop();
 
