@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 262: Movement reactions require current melee eligibility AND a destination outside that same attacker's melee reach. Circling adjacent hexes, entering reach and non-movement actions do not provoke; evaluate each attacker and the mover footprint separately.
+
 - Rev 262: Editor tools are grouped into floor/wall/lighting/function dropdowns; selection settings, file actions and help are collapsible. All original control IDs and authoring behavior remain. Ambient paint supports 0-1000%, survives import/export/resize, increases combat exposure beyond 100 and modifies only indirect light in first-person exploration via exploration-painted-ambient.mjs. Distance visibility remains capped at 100%. The user queued reverting non-combat fonts for the NEXT pass; do not include that font change in this cleanup.
 
 - Rev 261 supersedes the Rev 260 legacy synthetic scene adapter: Combat Test/Previewer generate editor-format maps in combat-test-map.mjs and call the same configureCombatMap/terrainForEncounter as exploration. Continuous floor LOS and 10% unseen-area presentation apply to every authored combat scene. Test door state is session-only; exploration campaign persistence stays separate. Lighting appearance is rolled back to the complete CPU reference/per-hex effect presentation by default; WebGL meshes and effects remain. Shader lighting is an explicit ?combatLighting=gpu experiment until visual parity is approved.

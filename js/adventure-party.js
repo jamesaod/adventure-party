@@ -19443,13 +19443,22 @@ function unitCanMakeLeavingHexFreeAttack(attacker,mover){
     : unitDistance(attacker,mover)<=reach;
 }
 
-function leavingHexFreeAttackers(mover){
+function movementLeavesMeleeReach(attacker,mover,destination){
+  if(!destination||!Number.isFinite(destination.x)||!Number.isFinite(destination.y))return false;
+  if(destination.x===mover.x&&destination.y===mover.y)return false;
+  if(destination.escape)return true;
+  const projected={...mover,x:destination.x,y:destination.y};
+  if(unitFootprintDefinition(mover).rotates)projected.facingHex=hexDirectionIndexToward(mover,destination);
+  return unitDistance(attacker,projected)>Math.max(1,Number(attacker.meleeRange)||1);
+}
+function leavingHexFreeAttackers(mover,destination){
   if(!game || !mover) return [];
 
   return allUnits()
     .filter(unit=>
       unit.id!==mover.id &&
-      unitCanMakeLeavingHexFreeAttack(unit,mover)
+      unitCanMakeLeavingHexFreeAttack(unit,mover) &&
+      movementLeavesMeleeReach(unit,mover,destination)
     )
     .sort((a,b)=>a.id.localeCompare(b.id));
 }
@@ -19468,7 +19477,7 @@ async function performLeavingHexFreeAttacks(mover,destination){
     );
   }
 
-  const attackers=leavingHexFreeAttackers(mover);
+  const attackers=leavingHexFreeAttackers(mover,destination);
 
   if(!attackers.length){
     return true;
@@ -19486,12 +19495,12 @@ async function performLeavingHexFreeAttacks(mover,destination){
         break;
       }
 
-      if(!unitCanMakeLeavingHexFreeAttack(attacker,mover)){
+      if(!unitCanMakeLeavingHexFreeAttack(attacker,mover)||!movementLeavesMeleeReach(attacker,mover,destination)){
         continue;
       }
 
       log(
-        `${mover.name} leaves a threatened hex — ${attacker.name} gets a free attack.`,
+        `${mover.name} leaves melee reach — ${attacker.name} gets a free attack.`,
         attacker.faction==="player" ? "good" : "bad"
       );
 
