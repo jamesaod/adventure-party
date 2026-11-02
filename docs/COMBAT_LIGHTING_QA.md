@@ -38,3 +38,11 @@ Fields cache by map/grid/edge/environment/ambient/door-state snapshots. Aperture
 To test in the editor: paint floor on both sides of a wall, mark one side Outdoor / sky and the other Indoor / ceiling, and place a Door edge between them. Keep outdoor ambient at its default 100% and indoor at 0% for contrast. Add an indoor encounter and use Test Map. Open/close the door in combat; optionally add a Window edge or another room behind a second door to compare incoming sky light and attenuation.
 
 Validation includes aperture blocking, door close/reopen, windows, roof transitions, painted sky strength, indoor ambient base, sealed/connected adjacent rooms, wall-facing response, query reuse, production field invalidation, legacy defaults and magical Darkness precedence. The isolated editor import -> Test Map -> encounter -> open/close door path was exercised with a local QA pack; private fixtures remain excluded from commits.
+
+## Candidate Rev 246 — experimental outdoor grass textures
+
+Outdoor / sky painted floor squares use `grass-short-v1.png` in both first-person exploration and combat. Indoor floors retain the existing stone material. This is a test mapping from environment to ground material, not a new terrain authoring schema. `grass-worn-v1.png` is a separate generated variant retained for visual comparison.
+
+Each grass texture repeat covers one authored three-metre square; it is independent of hex subdivision, wall height and stone-slab density. Combat uses the existing anisotropic material prefilter and world-projected repeat; exploration uses sRGB, repeating textures and anisotropic/mipmap filtering. Grass is fetched only for maps with outdoor floor. Daylight, torches, spells, distance fading and sprite lighting use the existing lighting pipeline without baked illumination in the new assets.
+
+The original generated PNGs, exact built-in image_gen prompts, dimensions and checksums are recorded under `assets/textures/exploration/grass-generation-v1.json`. Source images were copied without pixel edits. Test with the existing Outdoor / sky brush and Test Map.

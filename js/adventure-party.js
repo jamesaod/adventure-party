@@ -6224,7 +6224,7 @@ function drawArchitecturalFloorRegions(){
       overlay and does not define the material seams.
     */
     if(explorationTerrain){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";}
-    const floorPattern=explorationTerrain?explorationFloorPatternForView():stoneFloorPatternForCurrentView();
+    const floorPattern=explorationTerrain?explorationFloorPatternForView(space.ground==='grass'):stoneFloorPatternForCurrentView();
     ctx.fillStyle=
       floorPattern ||
       space.floorColor ||
