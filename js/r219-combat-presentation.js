@@ -96,14 +96,14 @@ animateMagicEffectOnUnits=async function(units,kind="generic",options={}){
   const targets=(units || []).filter(unit=>unit?.alive && !unit.fled);
   if(!targets.length) return;
 
-  const staggerMs=Math.min(
+  const staggerMs=combatEffectDuration(Math.min(
     240,
     Math.max(140,720/Math.max(1,targets.length))
-  );
-  const effectDuration=680;
+  ));
+  const effectDuration=combatEffectDuration(680);
   const started=performance.now();
 
-  magicEffectFx=targets.map((unit,index)=>({
+  const ownedFx=magicEffectFx=targets.map((unit,index)=>({
     unitId:unit.id,
     kind,
     started:started+index*staggerMs,
@@ -139,13 +139,14 @@ animateMagicEffectOnUnits=async function(units,kind="generic",options={}){
       }
     });
 
-    draw();
+    await presentCombatFrame();
+    if(magicEffectFx!==ownedFx)return;
 
     if(now-started>=totalDuration){
       break;
     }
 
-    await sleep(16);
+
   }
 
   magicEffectFx=[];

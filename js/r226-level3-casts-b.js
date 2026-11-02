@@ -28,12 +28,12 @@ async function r226CastGustOfWind(action,targetHex){
     });
   }
 
-  r226GustFx={
+  const ownedFx=r226GustFx={
     points:[{x:caster.x,y:caster.y},...cells],
-    started:performance.now(),duration:520
+    started:performance.now(),duration:combatEffectDuration(520)
   };
-  const until=performance.now()+520;
-  while(performance.now()<until){ draw(); await sleep(16); }
+  const until=performance.now()+combatEffectDuration(520);
+  while(performance.now()<until){ await presentCombatFrame();if(r226GustFx!==ownedFx)return false; }
   r226GustFx=null;
   draw();
 

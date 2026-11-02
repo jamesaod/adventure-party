@@ -28,10 +28,10 @@ async function r226CastLightningBolt(action,targetHex){
     results.push({unit,save,damage});
   }
 
-  r226LightningFx={points:[{x:caster.x,y:caster.y},...cells],started:performance.now(),duration:650};
+  const ownedFx=r226LightningFx={points:[{x:caster.x,y:caster.y},...cells],started:performance.now(),duration:combatEffectDuration(650)};
   playMagicEffectSound("lightning");
-  const until=performance.now()+650;
-  while(performance.now()<until){ draw(); await sleep(16); }
+  const until=performance.now()+combatEffectDuration(650);
+  while(performance.now()<until){ await presentCombatFrame();if(r226LightningFx!==ownedFx)return false; }
   r226LightningFx=null;
 
   for(const result of results){

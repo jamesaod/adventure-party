@@ -891,7 +891,7 @@
     draw();
 
     greaseFrame=
-      requestAnimationFrame(
+      requestCombatAnimationTick(
         r38GreaseTick
       );
   }
@@ -906,7 +906,7 @@
     }
 
     greaseFrame=
-      requestAnimationFrame(
+      requestCombatAnimationTick(
         r38GreaseTick
       );
   }
@@ -939,7 +939,7 @@
     spellPreviewClearTransientPresentation=
     function(){
       if(greaseFrame!==null){
-        cancelAnimationFrame(
+        cancelCombatAnimationTick(
           greaseFrame
         );
         greaseFrame=null;

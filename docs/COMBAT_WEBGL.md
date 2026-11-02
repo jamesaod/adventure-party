@@ -80,3 +80,7 @@ API baseline cannot certify every device.
 ## Candidate Rev 248 - standalone material origin
 
 The standalone Wall Test previously fetched PamNawi stone from OpenGameArt without CORS. Drawing it tainted the shared Canvas staging layer, which WebGL refuses to upload. A Wall Test failure could then affect Grassy Battlefield in the same session. The exact original PNG is now vendored with attribution and loaded same-origin with anonymous CORS. Both entry points still use the same combat rules and renderer; only their map providers differ. The browser fixture exercises the actual floor asset and raster-only -> mesh -> raster-only transitions.
+
+## Candidate Rev 249 - shared presentation cadence
+
+Combat and the Previewer now coalesce invalidations through one 30 FPS scheduler. Finite missile/magic visuals run at half speed with continuous geometry sampling. Lighting and shadow transport remain unchanged. See [Combat frame pacing](COMBAT_FRAME_PACING.md) for lifecycle, profiling and verification.

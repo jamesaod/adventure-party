@@ -266,10 +266,10 @@ r227AnimateMeteorVolley=async function(caster,results){
     );
   }
 
-  r227MeteorVolleyFx={
+  const ownedFx=r227MeteorVolleyFx={
     casterId:caster.id,
     started:performance.now(),
-    duration:420,
+    duration:combatEffectDuration(420),
     meteors:
       r233MeteorGeometry(
         caster,
@@ -319,7 +319,8 @@ r227AnimateMeteorVolley=async function(caster,results){
         })
       );
 
-    draw();
+    await presentCombatFrame();
+    if(r227MeteorVolleyFx!==ownedFx)return false;
 
     if(
       elapsed>=
@@ -328,7 +329,7 @@ r227AnimateMeteorVolley=async function(caster,results){
       break;
     }
 
-    await sleep(16);
+
   }
 
   r233MinuteMeteorLights=[];
