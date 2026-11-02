@@ -227,6 +227,7 @@ jobs:
           node scripts/test-outdoor-grass.mjs
           node scripts/test-terrain-transitions.mjs
           node scripts/test-combat-webgl.mjs
+          node scripts/test-combat-runtime.mjs
           node scripts/test-combat-gpu-lighting.mjs
           node scripts/test-combat-result-panel.mjs
           node scripts/test-spell-target-results.mjs

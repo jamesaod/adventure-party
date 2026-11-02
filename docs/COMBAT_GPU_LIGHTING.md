@@ -1,4 +1,6 @@
-# Combat point lighting — Candidate Rev 250
+# Combat point lighting — Candidate Rev 260
+
+Rev 260 extends this same pipeline to Combat Test and the Spell Previewer through the shared combat runtime. See [COMBAT_RUNTIME.md](COMBAT_RUNTIME.md). The original implementation details below remain applicable, except the former standalone-terrain CPU-only limitation.
 
 Exploration encounters now evaluate torch/lantern Lambert response, linear RGB,
 metre falloff and cutoff in the WebGL fragment shader. Spell emitters use the
@@ -34,10 +36,9 @@ invalidates the corresponding silhouette. Flicker/color alone do not.
 
 32 emitters fit the guaranteed WebGL 2 fragment-uniform budget. If a frame
 contains more, the entire frame uses the complete existing CPU light route;
-no source is silently dropped. Legacy standalone Grass/Wall Test and the
-standalone Spell Previewer also retain their reference terrain-light route.
+no source is silently dropped. Standalone Grass/Wall Test and the Spell Previewer use the same shader route.
 The production effect sources, durations and shared 30 FPS scheduler remain
-common to these modes. A future legacy terrain mesh pass can adopt this shader.
+common to these modes. Legacy terrain is adapted to the same floor/solid meshes and shader.
 
 `?combatLighting=cpu` selects the reference route for development comparisons.
 `#battlefield[data-gpu-stats]` reports `lighting` and `shaderLights`; existing
