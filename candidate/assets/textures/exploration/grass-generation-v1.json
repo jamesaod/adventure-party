@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-11-01",
+  "mode": "built-in image_gen",
+  "purpose": "Experimental outdoor grass materials; short grass is the outdoor default and worn grass is retained for comparison. Original generated PNGs copied without pixel edits.",
+  "assets": [
+    {
+      "file": "grass-short-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: seamless repeating ground albedo texture for the outdoor squares of an isometric fantasy dungeon RPG, Adventure Party. Generate ONE square full-bleed 1024 by 1024 grass texture, viewed exactly straight down orthographically. This tile represents about three metres of ground. Short closely packed natural grass blades 3-8 cm long, in muted moss/olive greens with subtle straw and tiny earth hints. Slightly painterly realistic material detail, compatible with weathered stone dungeon textures and pre-rendered character sprites. Moderate fine detail that stays readable after downscaling; no grainy noise, no oversharpening. Completely even neutral diffuse lighting, no baked sunlight, no directional shadows, no highlights, no vignette or gradient. Seamlessly tileable horizontally AND vertically: opposite edges match in color, density and pattern. Uniform overall coverage with small irregular natural variation, no distinctive focal clumps or repeated large motifs. No flowers, rocks, bushes, trees, footprints, paths, grid, hex outlines, text, labels, border or watermark. Opaque RGB material texture only; no perspective, horizon or illustrated scene.",
+      "bytes": 4713202,
+      "sha256": "120e46a40b78b065a112735885fd449c018ae20e8de39b9805af38c6a3e8d6f9",
+      "width": 1254,
+      "height": 1254,
+      "repeatMetres": 3
+    },
+    {
+      "file": "grass-worn-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: seamless grass ground material texture for an isometric fantasy RPG. Generate ONE opaque square full-bleed 1024x1024 surface texture viewed exactly from straight above, orthographic, no perspective. A three-metre patch of worn courtyard grass: short muted olive and moss-green blades interspersed with a subtle irregular scattering of thin dry straw and a little soft brown earth showing between blades. Mostly continuous grass, about 85% cover, low contrast and no large dirt patches or paths. Slightly painterly naturalistic old-school pre-rendered RPG material; soft readable medium-scale detail that will reduce cleanly to a 128px game tile without speckled noise. Make ALL opposite edges match seamlessly horizontally and vertically. Very even neutral diffuse albedo lighting only; no baked shadows, sunlight, highlights, vignette or directional shading. No flowers, stones, trees, bushes, characters, footprints, geometric patterns, grid, hexes, text, borders or watermark. This is a repeatable material sample, not a landscape or composed illustration.",
+      "bytes": 4181341,
+      "sha256": "814164c73575db5b39013551bcb9a8fe57910dc376211ad01da6577aa232fecb",
+      "width": 1254,
+      "height": 1254,
+      "repeatMetres": 3
+    }
+  ]
+}

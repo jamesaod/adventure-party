@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "sets": [
+    {
+      "id": "dungeon-crawler-carl",
+      "manifest": "assets/sprites/dungeon-crawler-carl/manifest.json",
+      "revision": "11b799da8095411aebfde5d46fa290cc1c2388b812dd04fe96a695a9e5e6faa2",
+      "defaultFor": "fighter"
+    }
+  ]
+}

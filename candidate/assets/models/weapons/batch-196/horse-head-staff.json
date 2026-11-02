@@ -1,0 +1,39 @@
+{
+  "id": "horse-head-staff",
+  "sourceTriangles": 449994,
+  "triangles": 4800,
+  "bytes": 595680,
+  "sha256": "bd3328677f6d501b4b9a0d5879225422c8d064ed3a913614d3f15922afae2e6f",
+  "textureResolution": 256,
+  "sourceAxis": [
+    -0.9995362935164958,
+    -0.020358223271049723,
+    0.022643778142175768
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "tmk_21816kp14913_shamaanin_sauva_-_shaman_staff.zip",
+  "sourceArchiveSha256": "0c5bf03c7dc3705330054f4ca08b3f691a745d4f2c236f8fe79c5ac1aa5971cc",
+  "sourceSha256": "0f709f34a12cafa02073bb89c36ca8d86365e1b7288c17045c9a1ca808c5ab42",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        105.94186890125275,
+        85.9909029006958,
+        55.60391193628311
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "outputMean": [
+        105.94476318359375,
+        85.9925537109375,
+        55.60597229003906
+      ]
+    }
+  }
+}

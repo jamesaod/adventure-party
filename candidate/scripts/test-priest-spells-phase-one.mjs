@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+const fs=readFileSync('js/priest-spells.js','utf8');
+const js=readFileSync('js/adventure-party.js','utf8');
+const html=readFileSync('index.html','utf8');
+const ids=[...fs.matchAll(/'priest-[a-z-]+':priest\(/g)].map(x=>x[0].split(':')[0].slice(1,-1));
+assert.equal(ids.length,20);
+for(const l of [1,2,3])assert.ok(fs.includes(','+l+','));
+assert.ok(html.indexOf('js/priest-spells.js')<html.indexOf('js/adventure-party.js'));
+for(const token of ['beginClericCombatSpell','castPriestCombatSpell','priest-spell','clericConsumePreparedSpell','clericCanCastPreparedSpell','priest-cure-light-wounds','priest-hold-person','priest-prayer'])assert.ok(js.includes(token),token);
+assert.ok(!js.includes("import { PRIEST_SPELLS }"));
+console.log('PASS Cleric 20 priest spell catalog entries and combat routing');

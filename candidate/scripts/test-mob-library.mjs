@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createAuthoringStore} from '../js/authoring-store.mjs';
+import {createMobLibrary,encounterReadiness} from '../js/mob-library.mjs';
+import {normalizeMobDefinition} from '../js/mob-definition.mjs';
+import {calibratedMobScale} from '../js/repository-mob-frame.mjs';
+import {createRepositoryMob} from '../js/repository-mobs.mjs';
+const read=p=>JSON.parse(readFileSync(new URL(p,import.meta.url)));
+const catalog=read('../data/studio-models.json'),seed=read('../data/mobs/orc-archer.unit-package.json');seed.mob.encounterEnabled=true;
+const data=new Map(),storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};
+const store=createAuthoringStore(storage,'/candidate/'),library=createMobLibrary(store,[normalizeMobDefinition(seed)],catalog);
+assert.equal(library.records().length,1);assert.equal(library.available().length,1);
+let edit=library.get(seed.id);edit.name='Edited Archer';edit.mob.heightInches=78;edit.mob.encounterEnabled=false;edit=library.save(edit);
+assert.equal(library.records().length,1,'Local override does not duplicate repository entry');assert.equal(library.available().length,0);
+assert.equal(normalizeMobDefinition(JSON.parse(JSON.stringify(edit))).mob.heightInches,78);
+const stale=structuredClone(edit);edit.mob.encounterEnabled=true;edit=library.save(edit);assert.equal(library.available().length,1);assert.throws(()=>library.save(stale),/another tab/);
+const api=createRepositoryMob(edit,catalog),unit=api.apply({},()=>0);assert.equal(api.recipe(unit).renderSettings.heightInches,78);
+library.delete(edit);assert.equal(library.records().length,0);assert.equal(library.available().length,0);assert.throws(()=>store.saveMob(edit),/deleted/);
+library.restore(edit);assert.equal(library.records().length,1);assert.equal(library.available().length,1);
+const bad=structuredClone(edit);bad.id='missing-model';bad.modelId='missing-model';assert.equal(encounterReadiness(bad,catalog).ready,false);assert.throws(()=>library.save(bad),/Model|model/);
+const missing=structuredClone(edit);for(const key of Object.keys(missing.references.poseLibrary.profiles))missing.references.poseLibrary.profiles[key]={};missing.references.poseLibrary.sharedActionGroups={};assert.equal(encounterReadiness(missing,catalog).ready,false);
+for(const frameHeight of [3,4,5]){const small=calibratedMobScale(60,2,frameHeight,60,109),large=calibratedMobScale(120,2,frameHeight,60,109);assert.equal(large.factor,small.factor*2);const recovered=2*small.factor/(64*frameHeight/(60*10));assert.ok(Math.abs(recovered-5)<1e-9,'Height matches Studio feet-per-hex relation');}
+const other=createAuthoringStore(storage,'/stable/');assert.equal(other.mobs().length,0,'Candidate and stable remain isolated');
+console.log('PASS unified MOB records, no duplicates, local overrides, availability, height, stale save protection, delete/restore, missing data and scope isolation');
+
+// Execute actual encounter-choice and generic character-sheet branches.
+const vm=await import('node:vm');
+const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const fn=name=>{const start=game.indexOf('function '+name+'(');return game.slice(start,game.indexOf('\n}',start)+2);};
+const context={window:{adventurePartyRepositoryMobs:{choices:()=>library.available().map(m=>['mob:'+m.id,m.name]),managedTypes:['orc-archer']}},COMBAT_MOB_CHOICES:[['orc-archer','Old archer'],['kobold','Kobold']]};
+vm.runInNewContext(fn('availableCombatMobChoices'),context);
+assert.equal(context.availableCombatMobChoices().length,2);
+let disabled=library.get(edit.id);disabled.mob.encounterEnabled=false;library.save(disabled);
+assert.equal(context.availableCombatMobChoices().length,1,'OFF removes the authored MOB from actual encounter choices');
+const blocks=new Map();const sheet={fighter:unit,formatMobHeight:n=>String(n),document:{getElementById:id=>{if(!blocks.has(id))blocks.set(id,{});return blocks.get(id);}}};
+const start=game.indexOf('  if(fighter.repositoryMobId){',game.indexOf('function renderCharacterSheet('));
+const body=game.slice(start,game.indexOf('\n  syncFighterEquipment(fighter);',start));
+vm.runInNewContext('(function(){'+body+'})()',sheet);
+assert.match(blocks.get('sheetIdentity').innerHTML,/Edited Archer/);
+assert.equal(blocks.get('sheetMagic').textContent,'No prepared spells.');
+console.log('PASS actual encounter filtering and generated-MOB character sheet without fighter-only fields');

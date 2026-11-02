@@ -1,0 +1,113 @@
+{
+  "schema": "adventure-party.sprite-set",
+  "version": 1,
+  "id": "dungeon-crawler-carl",
+  "label": "Dungeon Crawler Carl",
+  "frame": {
+    "width": 320,
+    "height": 400,
+    "renderWidth": 91.56,
+    "renderHeight": 114.45,
+    "anchorX": 160,
+    "anchorY": 264.02889936721095
+  },
+  "facings": [
+    "E",
+    "NE",
+    "NW",
+    "W",
+    "SW",
+    "SE"
+  ],
+  "poses": {
+    "ready": {
+      "clip": "box_02",
+      "time": 1.4684167084693909,
+      "frames": {
+        "E": "ready-e.png",
+        "NE": "ready-ne.png",
+        "NW": "ready-nw.png",
+        "W": "ready-w.png",
+        "SW": "ready-sw.png",
+        "SE": "ready-se.png"
+      }
+    },
+    "attack": {
+      "clip": "box_02",
+      "time": 2.252875064134598,
+      "frames": {
+        "E": "attack-e.png",
+        "NE": "attack-ne.png",
+        "NW": "attack-nw.png",
+        "W": "attack-w.png",
+        "SW": "attack-sw.png",
+        "SE": "attack-se.png"
+      }
+    },
+    "prone": {
+      "clip": "fall",
+      "time": 2.685,
+      "frames": {
+        "E": "prone-e.png",
+        "NE": "prone-ne.png",
+        "NW": "prone-nw.png",
+        "W": "prone-w.png",
+        "SW": "prone-sw.png",
+        "SE": "prone-se.png"
+      }
+    }
+  },
+  "sheet": {
+    "file": "sheet.png",
+    "columns": 6,
+    "rows": 3,
+    "poses": [
+      "ready",
+      "attack",
+      "prone"
+    ],
+    "facings": [
+      "E",
+      "NE",
+      "NW",
+      "W",
+      "SW",
+      "SE"
+    ]
+  },
+  "render": {
+    "model": "stylized+character+3d+model.glb",
+    "heading": 0,
+    "upAxis": "Y",
+    "cameraElevation": 34.63379577659358,
+    "frameHeight": 10.58668090609295,
+    "center": [
+      0,
+      2.0595906310059133,
+      0
+    ],
+    "framingMode": "animations",
+    "modelScalePercent": 175,
+    "lighting": {
+      "ambientIntensity": 3,
+      "ambientColor": "#abc7d4",
+      "keyIntensity": 4.85,
+      "keyColor": "#eeedc3",
+      "keyElevation": 90,
+      "keyDirection": "SW"
+    },
+    "brightness": 1.22,
+    "contrast": 0.94,
+    "hue": 0,
+    "saturation": 1.97,
+    "outline": 0,
+    "palette": "Adventure Party VGA 256"
+  },
+  "layout": {
+    "id": "single",
+    "resolutionPercent": 200
+  },
+  "mobType": "fighter",
+  "modelScalePercent": 175,
+  "hexScalePercent": 109
+}
