@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {combatProjection,triangulateSurfaces,createCombatRenderer} from '../js/combat-webgl.mjs';
 import {solidPrism} from '../js/exploration-combat-geometry.mjs';
 import {faceLightFragments} from '../js/combat-surface-lighting.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+// A single non-CORS external bitmap permanently taints the shared raster
+// canvas, preventing all later WebGL uploads, even on a different test map.
+const stoneUrl=engine.match(/const STONE_FLOOR_TEXTURE_SRC=\s*'([^']+)'/)[1];
+assert.equal(stoneUrl.split('?')[0],'assets/terrain/stone-floor-pamnawi.png');
+const stoneBytes=readFileSync(new URL('../'+stoneUrl.split('?')[0],import.meta.url));
+assert.equal(stoneBytes.subarray(1,4).toString(),'PNG');
+assert.equal(createHash('sha256').update(stoneBytes).digest('hex'),'ffcbaaf76efd87964b165e3c6078f9e1de7da5fb96222d64aaa540dc6f075ba0');
+assert(engine.indexOf('stoneFloorTexture.crossOrigin="anonymous"')<engine.indexOf('stoneFloorTexture.src=STONE_FLOOR_TEXTURE_SRC'));
+console.log('PASS standalone stone artwork is byte-identical, same-origin and configured for CORS before loading');
 const extract=name=>{const start=engine.indexOf(`function ${name}(`);return engine.slice(start,engine.indexOf('\n}',start)+2);};
 const state={HEX_W:64,HEX_ROW:31.5,camera:{x:4,y:-3},battlefieldRotation:0,BATTLEFIELD_LOGICAL_WIDTH:1080,BATTLEFIELD_LOGICAL_HEIGHT:600};
 vm.createContext(state);vm.runInContext(['worldPointForHex','screenPointForWorld','battlefieldProjectVector'].map(extract).join('\n'),state);
