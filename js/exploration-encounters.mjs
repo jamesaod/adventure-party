@@ -8,6 +8,7 @@ export * from './combat-torch-light.mjs?v=R238C242';
 export * from './combat-surface-lighting.mjs?v=R238C241';
 export {spellSurfaceRadiance,spellEffectLightSources} from './spell-illumination.mjs?v=R238C241';
 export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './distance-visibility.mjs?v=R238C238';
+import {isOutdoor} from './exploration-environment.mjs?v=R238C238';
 export {ambientLightAt,isOutdoor} from './exploration-environment.mjs?v=R238C238';
 export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C259';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C259';
@@ -63,7 +64,7 @@ export function terrainForEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5
   for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++){
     if(!floor(x,z))continue;
     const a=project(x-.5,z-.5),b=project(x+.5,z+.5);
-    spaces.push({id:`floor-${x}-${z}`,environment:'indoor',ground:groundKind(map,x,z),floorColor:'#82745d',polygon:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
+    spaces.push({id:`floor-${x}-${z}`,environment:isOutdoor(map,x,z)?'outdoor':'indoor',ground:groundKind(map,x,z),floorColor:'#82745d',polygon:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
     if(!floor(x,z-1))segment(a,{x:b.x,y:a.y},`n-${x}-${z}`);
     if(!floor(x+1,z))segment({x:b.x,y:a.y},b,`e-${x}-${z}`);
     if(!floor(x,z+1))segment(b,{x:a.x,y:b.y},`s-${x}-${z}`);
@@ -143,7 +144,7 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
  const walls=[],spaces=[],doors=[],windows=[];
  const segment=(a,b,id,extra={})=>walls.push({id,a,b,height:35,thickness:3,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[],...extra});
  for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++)if(floor(x,z)){
-  const a=project(x-.5,z-.5),b=project(x+.5,z+.5);spaces.push({id:`floor-${x}-${z}`,environment:'indoor',ground:groundKind(map,x,z),floorColor:'#82745d',polygon:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
+  const a=project(x-.5,z-.5),b=project(x+.5,z+.5);spaces.push({id:`floor-${x}-${z}`,environment:isOutdoor(map,x,z)?'outdoor':'indoor',ground:groundKind(map,x,z),floorColor:'#82745d',polygon:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
 
  }
  for(const edge of effectiveEdges(map)){
