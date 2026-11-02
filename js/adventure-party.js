@@ -27318,71 +27318,7 @@ function setCriticalRollNotification(attacker,defender,rawRoll,damage=null,kille
 }
 
 function drawCombatMessageBox(){
-  if(!game || !combatMessageText){
-    return;
-  }
-
-  ctx.save();
-
-  /*
-    Full-width combat notification strip, flush with the bottom
-    edge of the tactical battlefield.
-  */
-  const boxW=BATTLEFIELD_LOGICAL_WIDTH;
-  const boxH=44;
-  const x=0;
-  const y=BATTLEFIELD_LOGICAL_HEIGHT-boxH;
-
-  const flashPhase=
-    Math.floor(performance.now()/CRITICAL_FLASH_INTERVAL_MS)%2===0;
-
-  let background="rgba(5,5,9,0.92)";
-  let border="#e5cd83";
-  let lettering="#fff19a";
-
-  if(combatMessageTone==="critical-hit"){
-    background=flashPhase
-      ? "rgba(10,62,24,0.96)"
-      : "rgba(4,25,10,0.96)";
-    border=flashPhase ? "#7dff91" : "#31a94d";
-    lettering=flashPhase ? "#d8ffde" : "#73f58a";
-  }else if(combatMessageTone==="critical-miss"){
-    background=flashPhase
-      ? "rgba(78,12,16,0.96)"
-      : "rgba(31,5,8,0.96)";
-    border=flashPhase ? "#ff7f88" : "#bd3946";
-    lettering=flashPhase ? "#ffe1e3" : "#ff727e";
-  }else if(combatMessageTone==="player-damage"){
-    background="rgba(62,8,12,0.96)";
-    border="#d94a57";
-    lettering="#ff9aa2";
-  }
-
-  ctx.fillStyle=background;
-  ctx.fillRect(x,y,boxW,boxH);
-
-  ctx.strokeStyle=border;
-  ctx.lineWidth=2;
-  ctx.strokeRect(
-    x+1,
-    y+1,
-    boxW-2,
-    boxH-2
-  );
-
-  ctx.font=battlefieldTextFont(18);
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  ctx.fillStyle=lettering;
-
-  ctx.fillText(
-    combatMessageText,
-    BATTLEFIELD_LOGICAL_WIDTH/2,
-    y+boxH/2,
-    boxW-28
-  );
-
-  ctx.restore();
+  // Results are presented in the right panel. Keep message/hold APIs intact.
 }
 
 async function beginCombatFromPrompt(){

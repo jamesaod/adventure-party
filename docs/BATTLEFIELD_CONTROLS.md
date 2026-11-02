@@ -120,3 +120,10 @@ dfortae - Game Reviews. Sampled at 1:33 (Ogre details and magic-damage text)
 and 2:11 (Dain's turn, unit details retained and lower result area cleared).
 The compact status/action split and per-unit message reset guide this pass;
 Adventure Party retains its requested one-second sequence between consequences.
+
+
+### Candidate Rev 256: result presentation
+
+Each new attack replaces the previous attack's results when its first beat is presented, including repeated attacks by one unit. Consequences within an attack remain stacked in semantic order, one second apart. Turn boundaries still clear the panel. All unit details and results use uppercase Press Start 2P at the unit-name size (18px, 15px on narrow layouts, respecting the font scale preference).
+
+Physical impact and secondary elemental sounds accompany their result messages. Death sound and skull are deferred until the death message; mechanics still resolve immediately. Cancelled encounters discard deferred cues. The yellow battlefield strip and visible Last Resolution/combat log are removed; message timing and hidden diagnostics remain for engine compatibility.
