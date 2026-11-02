@@ -76,3 +76,7 @@ Developer diagnostics are the battlefield canvas's `data-combat-renderer` and
 Chromium browser QA is available in the development environment. Firefox, Linux,
 other drivers and integrated GPUs still need hardware/browser QA; selecting an
 API baseline cannot certify every device.
+
+## Candidate Rev 248 - standalone material origin
+
+The standalone Wall Test previously fetched PamNawi stone from OpenGameArt without CORS. Drawing it tainted the shared Canvas staging layer, which WebGL refuses to upload. A Wall Test failure could then affect Grassy Battlefield in the same session. The exact original PNG is now vendored with attribution and loaded same-origin with anonymous CORS. Both entry points still use the same combat rules and renderer; only their map providers differ. The browser fixture exercises the actual floor asset and raster-only -> mesh -> raster-only transitions.

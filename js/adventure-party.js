@@ -2476,7 +2476,7 @@ const OLD_WOOD_WINDOW_SRC='assets/terrain/wall-window-old-wood.png?v=R209';
   Full attribution lives in ATTRIBUTIONS.md.
 */
 const STONE_FLOOR_TEXTURE_SRC=
-  'https://opengameart.org/sites/default/files/StoneFloorTexture.png';
+  'assets/terrain/stone-floor-pamnawi.png?v=R238C248';
 
 /* R108: user-supplied dagger Kobold sprites. The prior Kobold art is retained below for Body Guards. */
 const KOBOLD_NORMAL_SPRITE_SRC='assets/sprites/kobold-stand.png';
@@ -2567,7 +2567,9 @@ for(const image of [
   });
 }
 
-stoneFloorTexture.referrerPolicy="no-referrer";
+// WebGL uploads require an origin-clean staging canvas. Keep this material
+// same-origin; anonymous CORS also prevents a future remote source from tainting it.
+stoneFloorTexture.crossOrigin="anonymous";
 
 stoneFloorTexture.addEventListener("error",()=>{
   console.warn(
