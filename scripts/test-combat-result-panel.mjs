@@ -7,6 +7,8 @@ function harness(){
  let result;const classes=[];
  class Element{
   constructor(){this.children=[];this.dataset={};this.hidden=false;this.scrollTop=0;this.clientHeight=100;this.scrollHeight=0;this.attributes={};this.classList={add:v=>classes.push(v),remove(){}};}
+  set scrollTop(v){this.top=Math.max(0,Math.min(v,Math.max(0,(this.scrollHeight||0)-(this.clientHeight||0))));}
+  get scrollTop(){return this.top||0;}
   setAttribute(k,v){this.attributes[k]=v;}
   append(node){this.children.push(node);this.scrollHeight+=50;if(this===result)history.push({at:now,text:node.textContent.trim()});}
   insertBefore(node,before){this.children.splice(this.children.indexOf(before),0,node);}
@@ -19,7 +21,7 @@ function harness(){
  const a={id:'player',name:'Carl'},b={id:'orc',name:'Orc'},c={id:'gnoll',name:'Gnoll'},units=[a,b,c];
  const state={window:{},document:{querySelector:()=>panel,getElementById:()=>compass,createElement:()=>{const node=new Element();if(!result)result=node;return node;}},performance:{now:()=>now},setTimeout:(fn,ms)=>{timers.set(++id,{fn,at:now+ms});return id;},clearTimeout:id=>timers.delete(id),queueMicrotask:fn=>micro.push(fn),
  isStudioTestCombat:()=>false,game:{player:a,enemies:[b,c]},currentScreen:'combat',combatAwaitingStart:false,activeUnit:()=>a,getUnitById:id=>units.find(u=>u.id===id),R236_FLOAT_RISE_PX:20,
- flashAttack(){},r236QueueFloatingCombatText(){},r236ShowDamageText(){},r236FloatingTextStyle(){},addUnitEffect:(u,e)=>e,combatActionPauseRemaining:()=>0,updateUnitInfoPanel(){},triggerDeathFx(){},applySpellDamage(){},longbowAttack:async()=>({hit:false}),slingAttack:async function(a,b){state.flashAttack(a,b,false);},
+ flashAttack(){},r236QueueFloatingCombatText(){},r236ShowDamageText(){},r236FloatingTextStyle(){},addUnitEffect:(u,e)=>e,combatActionPauseRemaining:()=>0,updateUnitInfoPanel(){state.summaryUpdated?.();},triggerDeathFx(){},applySpellDamage(){},longbowAttack:async()=>({hit:false}),slingAttack:async function(a,b){state.flashAttack(a,b,false);},
  attack:async function(attacker,target){state.candidateWithDamageBeatContext({category:'secondary-damage',damageType:'fire'},()=>state.r236ShowDamageText(target,3));state.r236ShowDamageText(target,7);state.addUnitEffect(target,{id:'weak',name:'Weakened',kind:'debuff'});state.addUnitEffect(target,{id:'bless',name:'Blessed',kind:'buff'});state.triggerDeathFx(target);return {hit:true};},deathFx:{},finishCombat:()=>history.push({at:now,finished:true})};
  vm.createContext(state);vm.runInContext(read('js/candidate-combat-beat-sequence.js'),state);vm.runInContext(read('js/combat-result-panel.js'),state);
  const engine=read('js/adventure-party.js'),start=engine.indexOf('function scheduleCombatFinish(');vm.runInContext(engine.slice(start,engine.indexOf('\nfunction finishCombat(',start)),state);
@@ -34,6 +36,7 @@ h.advance(999);assert.equal(h.history.length,1);h.advance(1000);assert.equal(h.h
 h.advance(2000);assert.equal(h.history[2].text,'ORC\nBLESSED');h.advance(3000);assert.equal(h.history[3].text,'ORC\nWEAKENED');h.advance(4000);assert.equal(h.history[4].text,'ORC\nGOES DOWN\nAND IS DYING');
 h.advance(4999);assert(!h.history.some(e=>e.finished));h.advance(5000);assert(!h.result.hidden);assert.equal(h.result.children.length,5);assert.equal(h.panel.children[0],h.summary);assert.equal(h.panel.children[1],h.result);assert.equal(h.panel.children[2],h.compass);assert.equal(h.classes.length,0);h.advance(5016);assert(h.history.some(e=>e.finished&&e.at>=5000&&e.at<=5016));
 assert.equal(h.result.children[0].children[0].className,'combat-result-line combat-result-actor');assert.equal(h.result.children[0].children[2].className,'combat-result-line combat-result-target');assert.equal(h.result.children[4].children[0].className,'combat-result-line combat-result-downed');assert.equal(h.result.attributes.role,'log');h.advance(10000);assert.equal(h.result.children.length,5,'Messages do not expire after their one-second beat');
+const resized=harness();resized.s.r236ShowDamageText(resized.b,2);resized.advance(0);resized.result.scrollHeight=300;resized.result.clientHeight=100;resized.result.scrollTop=200;resized.s.summaryUpdated=()=>{resized.result.clientHeight=50;};resized.s.updateUnitInfoPanel();assert.equal(resized.result.scrollTop,250,'A taller unit summary must keep the newest result in view');resized.result.scrollTop=50;resized.s.summaryUpdated=()=>{resized.result.clientHeight=25;};resized.s.updateUnitInfoPanel();assert.equal(resized.result.scrollTop,50,'Keep an older-history reader in place');
 const multi=harness();multi.s.r236ShowDamageText(multi.b,2);multi.s.r236ShowDamageText(multi.c,4);multi.advance(0);assert.equal(multi.history.length,1);multi.advance(1000);assert.equal(multi.history.length,2);assert(multi.history[1].text.includes('GNOLL'));
 multi.s.window.AdventurePartyCombatBeats.clear();assert(multi.result.hidden);multi.advance(5000);assert.equal(multi.history.length,2);
 const stale=harness();stale.s.r236ShowDamageText(stale.b,2);stale.advance(0);stale.s.game={};stale.s.updateUnitInfoPanel();assert(stale.result.hidden);stale.advance(3000);assert.equal(stale.history.length,1);
