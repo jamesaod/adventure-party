@@ -1,4 +1,8 @@
-# Combat point lighting — Candidate Rev 260
+# Combat point lighting - Candidate Rev 261
+
+Rev 261 restores the earlier lighting appearance by default using the complete CPU reference route. WebGL still renders map meshes and spell effects. The per-pixel direct-light implementation below is retained as an opt-in experiment using ?combatLighting=gpu; ?combatLighting=cpu and no parameter both use the restored appearance. Test scenes now use authored exploration maps and the same LOS mask.
+
+Rev 260
 
 Rev 260 extends this same pipeline to Combat Test and the Spell Previewer through the shared combat runtime. See [COMBAT_RUNTIME.md](COMBAT_RUNTIME.md). The original implementation details below remain applicable, except the former standalone-terrain CPU-only limitation.
 
