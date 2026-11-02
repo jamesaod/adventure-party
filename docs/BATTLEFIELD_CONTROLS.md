@@ -134,3 +134,10 @@ Physical impact and secondary elemental sounds accompany their result messages. 
 Finish the shared projectile/explosion/discharge (including Magic Missile impact glows) before any target HP changes. Center on each affected target, present its primary damage, secondary effects and death with the existing one-second beats, then advance to the next target. A new target starts a fresh result block. Fireball keeps one blast roll and individual saves; Magic Missile combines allocations per target in first-allocation order. Immune, Shield and Mirror Image results remain readable. Burning Hands uses the same area-result path; Lightning Bolt retains its reflected exposure order.
 
 The shared helper in `js/combat-spell-results.js` waits for actual beat completion, not a fixed estimate, and guards game identity plus a cancellation generation across awaits. Explicit encounter/Previewer resets cancel remaining target damage and cues. Battle outcome checks are deferred within a target batch so captured enemies and allies all resolve before victory/defeat. Target HP/death is applied at that target's step; this explicitly supersedes the former simultaneous HP batch for these spells. Resource consumption, damage rolls, saves, LOS, targeting and the shared 30 FPS scheduler retain their established rules.
+
+
+### Candidate Rev 259: door proportions
+
+Standard door openings use 37.5% of an authored square, or three-quarters of a tactical hex width. Width version 3 adjusts the former standard 42%/50% settings once; custom openings remain configurable. Matching leaf/frame/navigation widths come from the same authored opening. Leaves are twice as thick as before (full tactical wall thickness; physical door depth 0.18m). Door top faces use the same wood image as the leaf, with UVs following the hinge-to-latch direction through rotations/opening. Wall height is unchanged.
+
+Per user instruction, this pass receives targeted geometry/navigation checks and required CI, with visual acceptance left to the user.
