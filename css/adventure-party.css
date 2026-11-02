@@ -738,7 +738,7 @@ button, input, select, textarea {
   width:100%;
   height:100%;
   display:grid;
-  grid-template-rows:minmax(62px,auto) minmax(0,1fr) calc(106px * var(--combat-font-scale, 1)) minmax(48px,auto);
+  grid-template-rows:minmax(62px,auto) minmax(0,1fr) minmax(48px,auto);
   gap:5px;
 }
 
@@ -2497,3 +2497,5 @@ button, input, select, textarea {
 .combat-result-target {color:#f3e879;}
 .combat-result-downed {color:#f76c62;}
 .unit-info-panel > :not(#combatResult) {flex-shrink:0;}
+
+.combat-log-panel[hidden]{display:none;}

@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 256: Results reset on each new attack (including multiple attacks per turn); consequences of one attack retain one-second beats. Damage/effect sounds accompany their messages; death sound and skull wait for the death beat. Right unit details/results are uppercase at the same size. The yellow map message strip and visible bottom combat log are removed; hidden diagnostics and message hold APIs remain.
+
 - Rev 255 supersedes battle-long message history: Press Start 2P is the default UI/canvas font; results use 16px text and persist only within the current turn. Clear the result area at beginTurn, including consecutive turns by the same unit. Keep unit information visible and one-second beat arrivals.
 
 - Rev 253 supersedes the temporary Rev 251 result panel: unit information remains visible and messages append persistently for the battle, using stacked uppercase, cyan attacker / yellow target / green actions / red downed name. One-second beats control arrival only; never auto-clear or replace earlier messages.

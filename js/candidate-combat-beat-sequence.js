@@ -225,7 +225,11 @@ function candidateFlushCombatBeats(){
     if(group.gameRef!==game){group.pending.length=0;continue;}
     pending.push(...group.pending.splice(0));
   }
-  pending.sort((a,b)=>a.priority-b.priority||a.id-b.id);
+  // Keep every consequence of an attack together when several resolve in
+  // the same microtask (multi-attack or reactions). Sort within each action.
+  const first=new Map();
+  for(const beat of pending){const key=beat.meta?.actionId??null;if(!first.has(key))first.set(key,beat.id);}
+  pending.sort((a,b)=>first.get(a.meta?.actionId??null)-first.get(b.meta?.actionId??null)||a.priority-b.priority||a.id-b.id);
   candidateCombatBeatReady.push(...pending);
   if(!pending.length)return;
   let startsAt=Math.max(now,candidateCombatBeatHoldUntil);
