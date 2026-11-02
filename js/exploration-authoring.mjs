@@ -1,9 +1,10 @@
+import {paintGround} from './exploration-ground.mjs?v=R238C258';
 import {paintEnvironment,paintAmbientLight} from './exploration-environment.mjs?v=R238C238';
 import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C232';
 export {upgradeEdgeMap,paintEdge};
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C238';
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C258';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C246';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C258';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -20,6 +21,20 @@ export function blankMap(id,name){
 }
 
 export function blankEdgeMap(id,name){const map=upgradeEdgeMap(blankMap(id,name));map.grid=Array.from({length:map.height},()=>'.'.repeat(map.width));return map;}
+
+export function terrainTransitionSample(id='terrain-path-sample'){
+ const map=blankEdgeMap(id,'Grass and dirt paths');map.edges=[];map.doors=[];
+ map.environment=Array.from({length:16},()=> 'o'.repeat(16));
+ map.ground=Array.from({length:16},()=> 'g'.repeat(16));
+ for(let z=1;z<=8;z++)paintGround(map,6,z,'dirt');
+ for(let x=6;x<=11;x++)paintGround(map,x,8,'dirt');
+ for(let z=8;z<16;z++)paintGround(map,11,z,'dirt');
+ for(let x=2;x<=6;x++)paintGround(map,x,4,'dirt');
+ for(let x=11;x<=14;x++)paintGround(map,x,11,'dirt');
+ map.start={x:11,z:13,facing:0};map.entrances=[{id:'entry',name:'Path entrance',...map.start}];
+ map.encounters=[{id:'path-patrol',name:'Path patrol',mobId:'orc-male-uniformed',count:2,spawnX:8,spawnZ:8,cells:[{x:11,z:10}],trigger:'enter',repeatable:false}];
+ return map;
+}
 
 // Invalid drafts may be edited, but only complete, linked packs can be tested/exported.
 export function packIssues(pack){
@@ -67,6 +82,7 @@ export function paintCell(map,x,z,tool,ambientPercent=0){
  if(map.version===2&&tool==='void')tool='wall';
 
   if(map.version===2?(x<0||x>=map.width||z<0||z>=map.height):(x<1||x>map.width-2||z<1||z>map.height-2))throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
+  if(tool.startsWith('ground-')){paintGround(map,x,z,tool.slice(7));return;}
   if(tool==='ambient'||tool==='ambient-default'){paintAmbientLight(map,x,z,tool==='ambient-default'?null:ambientPercent);return;}
   if(tool==='indoor'||tool==='outdoor'){paintEnvironment(map,x,z,tool==='outdoor');return;}
   if(tool==='start'){if(map.grid[z][x]!=='.')throw Error('The start must be on floor.');map.start={x,z,facing:map.start.facing};return;}
@@ -109,8 +125,9 @@ export function resizeMap(map,width,height){
   if(map.version===2&&(map.edges||[]).some(e=>e.x>=(e.axis==='h'?width:width+1)||e.z>=(e.axis==='h'?height+1:height)))throw Error('Move or remove wall edges outside the new boundary before shrinking.');
   const grid=Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.version===2?(map.grid[z]?.[x]||'.'):(x===0||z===0||x===width-1||z===height-1?'#':map.grid[z]?.[x]||'.')).join(''));
   const environment=map.environment?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.environment[z]?.[x]||'i').join('')):undefined;
+  const ground=map.ground?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.ground[z]?.[x]||'a').join('')):undefined;
   const ambientLight=map.ambientLight?Array.from({length:height},(_,z)=>Array.from({length:width},(_,x)=>map.ambientLight[z]?.[x]??null)):undefined;
-  validateMap({...map,width,height,grid,environment,ambientLight});Object.assign(map,{width,height,grid,...(environment?{environment}:{}),...(ambientLight?{ambientLight}:{})});return map;
+  validateMap({...map,width,height,grid,environment,ground,ambientLight});Object.assign(map,{width,height,grid,...(environment?{environment}:{}),...(ground?{ground}:{}),...(ambientLight?{ambientLight}:{})});return map;
 }
 
 // Selection itself is transient; these helpers mutate only explicit author actions.
