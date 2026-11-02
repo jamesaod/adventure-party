@@ -141,3 +141,7 @@ The shared helper in `js/combat-spell-results.js` waits for actual beat completi
 Standard door openings use 37.5% of an authored square, or three-quarters of a tactical hex width. Width version 3 adjusts the former standard 42%/50% settings once; custom openings remain configurable. Matching leaf/frame/navigation widths come from the same authored opening. Leaves are twice as thick as before (full tactical wall thickness; physical door depth 0.18m). Door top faces use the same wood image as the leaf, with UVs following the hinge-to-latch direction through rotations/opening. Wall height is unchanged.
 
 Per user instruction, this pass receives targeted geometry/navigation checks and required CI, with visual acceptance left to the user.
+
+## Rev 262 - leaving melee reach
+
+Movement reactions occur only when the moving unit begins within an eligible enemy's melee reach and its destination leaves that enemy's reach. Moving between adjacent hexes around the same enemy does not provoke. Reach weapons and occupied footprints are respected; each nearby enemy is evaluated separately. The reaction resolves before the movement, and a lethal reaction cancels the step.

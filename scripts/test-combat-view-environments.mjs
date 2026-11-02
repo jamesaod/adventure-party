@@ -101,7 +101,7 @@ paintAmbientLight(lightingMap,3,3,40);assert.equal(ambientLightAt(lightingMap,3,
 const exported=parsePack(JSON.stringify(seedPack(lightingMap))).maps[0];assert.equal(ambientLightAt(exported,3,3),40);
 resizeMap(exported,20,18);assert.equal(ambientLightAt(exported,3,3),40);assert.equal(ambientLightAt(exported,19,17),0);
 paintCell(exported,3,3,'ambient-default');assert.equal(ambientLightAt(exported,3,3),100);
-assert.throws(()=>paintAmbientLight(exported,3,3,101));assert.throws(()=>parsePack(JSON.stringify(seedPack({...lightingMap,ambientLight:[[200]]}))));
+assert.throws(()=>paintAmbientLight(exported,3,3,1001));assert.throws(()=>parsePack(JSON.stringify(seedPack({...lightingMap,ambientLight:[[200]]}))));
 // Exercise the production layer: active actor, ambient overrides and wall-blocked lights.
 const painted=[];let actor={x:0,y:0,alive:true},ambient=0,blocked=false;
 const fade={game:{player:actor,condition:'open'},activeUnit:()=>actor,explorationTerrain:{cellAt:(x,y)=>({x,z:y})},explorationEncounter:{map:lightingMap},explorationEncounterApi:{tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>ambient},
@@ -150,3 +150,10 @@ render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render
 render.illuminationSources=()=>[];facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert.equal(facePaints.length,0,'Expired light is removed without stale cached glow');
 const floorPaint=[];render.illuminationSources=()=>[spell];render.ctx={save(){},restore(){},fill(){floorPaint.push({mode:this.globalCompositeOperation,color:this.fillStyle});}};render.drawExplorationSpellLighting([sample]);assert.equal(floorPaint[0].mode,'lighter');assert(floorPaint[0].color.startsWith('rgb('));
 console.log('PASS additive colored spell radiance above ambient, stacking, authoritative wall blocking, floor/wall parity and expiry');
+
+const brightMap=blankEdgeMap('bright-test','Bright ambient');paintAmbientLight(brightMap,3,3,250);
+const brightExport=parsePack(JSON.stringify(seedPack(brightMap))).maps[0];resizeMap(brightExport,20,18);assert.equal(ambientLightAt(brightExport,3,3),250);
+const {buildDaylightField}=await import('../js/portal-daylight.mjs');const brightProfile=buildDaylightField(brightExport,new Set()).ambientAt(3,3);paintAmbientLight(brightExport,3,3,100);assert(brightProfile.intensity>buildDaylightField(brightExport,new Set()).ambientAt(3,3).intensity);assert.equal(tileDistanceVisibility(90,250),1);
+const {ambientTextureData,ambientMultiplier}=await import('../js/exploration-painted-ambient.mjs');paintAmbientLight(brightExport,3,3,1000);const texels=ambientTextureData(brightExport),offset=(3*brightExport.width+3)*4;assert(Math.abs((texels[offset]*256+texels[offset+1])/2048-ambientMultiplier(brightExport,3,3))<.001);
+console.log('PASS above-100 ambient export/resize, brighter combat exposure, capped visibility and exploration texture encoding');
+paintCell(brightExport,3,3,'outdoor');const outdoorTex=ambientTextureData(brightExport);assert(Math.abs((outdoorTex[offset]*256+outdoorTex[offset+1])/2048-ambientMultiplier(brightExport,3,3))<.001,'Outdoor 1000% must not overflow the packed ambient texture');
