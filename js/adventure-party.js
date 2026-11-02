@@ -392,9 +392,8 @@ async function showCombat(condition=selectedCombatCondition){
     try{
       await Promise.race([waitForCombatUnitRenders([game.player,...game.allies,...game.enemies]),new Promise((_,reject)=>{renderTimer=setTimeout(()=>reject(Error('Unit rendering timed out. Please retry.')),120000);})]);
     }finally{clearTimeout(renderTimer);}
-    draw();
+    await presentCombatFrame();
     rendering.finish();
-    requestAnimationFrame(draw);
     syncWeatherAudio();
   }catch(error){
     rendering.fail(error);
@@ -1708,14 +1707,31 @@ const combatRaster=document.createElement("canvas");
 let ctx=combatRaster.getContext("2d");
 let combatGpu=null;
 let combatGpuReady=null;
+let combatFrames=null;
+// Half-speed presentation only: no change to initiative, durations in rounds,
+// damage dice, or unit movement timing.
+function combatEffectDuration(milliseconds){return Math.max(0,Number(milliseconds)||0)*2;}
+function requestCombatAnimationTick(callback){
+ return combatFrames?{owner:combatFrames,id:combatFrames.requestTick(callback)}:{native:requestAnimationFrame(callback)};
+}
+function cancelCombatAnimationTick(handle){
+ if(handle?.owner)handle.owner.cancelTick(handle.id);else cancelAnimationFrame(handle?.native??handle);
+}
+async function presentCombatFrame(){
+ if(combatFrames){if(!await combatFrames.nextFrame())await sleep(1000/30);}
+ else{draw();await sleep(1000/30);}
+}
+addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=import("./combat-webgl.mjs?v=R238C247").then(({createCombatRenderer})=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C247"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
   canvas.parentElement.append(status);
   combatGpu=createCombatRenderer(canvas,combatRaster,{onLost:()=>{canvas.parentElement.append(status);status.hidden=false;status.style.display="grid";},onRestored:()=>{status.hidden=true;status.style.display="none";draw();}});
-  ctx=combatGpu.context;return combatGpu;
+  ctx=combatGpu.context;
+  combatFrames=createCombatFrameScheduler({render:()=>{draw();canvas.dataset.frameStats=JSON.stringify(combatFrames.diagnostics());},enabled:()=>!!game&&["combat","spell-preview"].includes(currentScreen)});
+  return combatGpu;
  }).catch(error=>{combatGpuReady=null;throw error;});
  return combatGpuReady;
 }
@@ -1807,13 +1823,13 @@ function fogAnimationTick(now){
   if(
     !weatherOwnsRedraw &&
     !(typeof document!=="undefined"&&document.hidden) &&
-    (!fogLastFrame || now-fogLastFrame>=(hasAnimatedFogSpell()?32:100))
+    (!fogLastFrame || now-fogLastFrame>=(hasAnimatedFogSpell()?(combatFrames?0:32):100))
   ){
     fogLastFrame=now;
     draw();
   }
 
-  fogAnimationFrame=requestAnimationFrame(fogAnimationTick);
+  fogAnimationFrame=requestCombatAnimationTick(fogAnimationTick);
 }
 
 function ensureFogAnimationLoop(){
@@ -1827,7 +1843,7 @@ function ensureFogAnimationLoop(){
     return false;
   }
 
-  fogAnimationFrame=requestAnimationFrame(fogAnimationTick);
+  fogAnimationFrame=requestCombatAnimationTick(fogAnimationTick);
   return true;
 }
 
@@ -2204,19 +2220,19 @@ function weatherAnimationTick(now){
     weatherLastFrame=0;
     return;
   }
-  if(!weatherLastFrame || now-weatherLastFrame>=32){
+  if(!weatherLastFrame || now-weatherLastFrame>=(combatFrames?0:32)){
     weatherLastFrame=now;
     if(game && document.getElementById("combatScreen")?.classList.contains("active")){
       draw();
     }
   }
-  weatherAnimationFrame=requestAnimationFrame(weatherAnimationTick);
+  weatherAnimationFrame=requestCombatAnimationTick(weatherAnimationTick);
 }
 
 function syncWeatherAnimation(){
   if(currentWeatherType().id==="clear"){
     if(weatherAnimationFrame!==null){
-      cancelAnimationFrame(weatherAnimationFrame);
+      cancelCombatAnimationTick(weatherAnimationFrame);
       weatherAnimationFrame=null;
     }
     weatherLastFrame=0;
@@ -2224,7 +2240,7 @@ function syncWeatherAnimation(){
     return;
   }
   if(weatherAnimationFrame===null){
-    weatherAnimationFrame=requestAnimationFrame(weatherAnimationTick);
+    weatherAnimationFrame=requestCombatAnimationTick(weatherAnimationTick);
   }
   if(game) draw();
 }
@@ -10719,7 +10735,7 @@ function transientUnitFxTick(){
   }
 
   draw();
-  transientUnitFxFrame=requestAnimationFrame(transientUnitFxTick);
+  transientUnitFxFrame=requestCombatAnimationTick(transientUnitFxTick);
 }
 
 function ensureTransientUnitFxLoop(){
@@ -10733,7 +10749,7 @@ function ensureTransientUnitFxLoop(){
     return false;
   }
 
-  transientUnitFxFrame=requestAnimationFrame(transientUnitFxTick);
+  transientUnitFxFrame=requestCombatAnimationTick(transientUnitFxTick);
   return true;
 }
 
@@ -10741,8 +10757,8 @@ function triggerCastingGlow(caster,durationMs=1000){
   if(!caster?.id || !caster.alive || caster.fled) return false;
 
   const started=performance.now();
-  /* R147: casting glow always runs one clean 1-second rise/fall cycle. */
-  const duration=1000;
+  /* One clean rise/fall cycle at the shared visual playback rate. */
+  const duration=combatEffectDuration(1000);
 
   castingGlowFx=castingGlowFx.filter(fx=>fx.unitId!==caster.id);
   castingGlowFx.push({
@@ -10777,7 +10793,7 @@ function triggerEnlargeTransition(
   if(!unit?.id || !unit.alive || unit.fled) return false;
 
   const started=performance.now();
-  const duration=Math.max(1,Number(durationMs)||1000);
+  const duration=combatEffectDuration(Math.max(1,Number(durationMs)||1000));
 
   enlargeTransitionFx=enlargeTransitionFx.filter(fx=>fx.unitId!==unit.id);
   enlargeTransitionFx.push({
@@ -10840,7 +10856,7 @@ function triggerFireDamageFx(unit,damage=1){
   if(!unit?.id || Number(damage)<=0) return false;
 
   const started=performance.now();
-  const duration=720;
+  const duration=combatEffectDuration(720);
   const existing=fireDamageFx.find(fx=>fx.unitId===unit.id && started<fx.until);
 
   if(existing){
@@ -16980,7 +16996,7 @@ function newGame(condition=selectedCombatCondition){
   castingGlowFx=[];
   fireDamageFx=[];
   if(transientUnitFxFrame!==null){
-    cancelAnimationFrame(transientUnitFxFrame);
+    cancelCombatAnimationTick(transientUnitFxFrame);
     transientUnitFxFrame=null;
   }
   deathActionPauseUntil=0;
@@ -17438,18 +17454,19 @@ async function animateArrowProjectile(attacker,defender,hit){
     endPoint.y-startPoint.y
   );
 
-  const duration=Math.max(
+  const duration=combatEffectDuration(Math.max(
     130,
     Math.min(300,100+distance*0.22)
-  );
+  ));
 
   const started=performance.now();
 
+  let ownedFx=null;
   while(true){
     const elapsed=performance.now()-started;
     const t=Math.min(1,elapsed/duration);
 
-    projectileFx={
+    projectileFx=ownedFx={
       kind:"arrow",
       start:startPoint,
       end:endPoint,
@@ -17457,14 +17474,15 @@ async function animateArrowProjectile(attacker,defender,hit){
       arcHeight:Math.max(7,Math.min(18,distance*0.035))
     };
 
-    draw();
+    await presentCombatFrame();
+    if(projectileFx!==ownedFx)return;
 
     if(t>=1) break;
-    await sleep(16);
+
   }
 
   projectileFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 async function longbowAttack(attacker,defender){
@@ -18534,15 +18552,16 @@ async function animateSlingProjectile(attacker,defender,hit){
     : slingMissEndpoint(attacker,defender);
 
   const distance=Math.hypot(endPoint.x-startPoint.x,endPoint.y-startPoint.y);
-  const duration=Math.max(150,Math.min(320,110+distance*0.28));
+  const duration=combatEffectDuration(Math.max(150,Math.min(320,110+distance*0.28)));
   const arcHeight=Math.max(18,Math.min(34,12+distance*0.08));
   const started=performance.now();
 
+  let ownedFx=null;
   while(true){
     const elapsed=performance.now()-started;
     const t=Math.min(1,elapsed/duration);
 
-    projectileFx={
+    projectileFx=ownedFx={
       kind:"rock",
       start:startPoint,
       end:endPoint,
@@ -18550,15 +18569,16 @@ async function animateSlingProjectile(attacker,defender,hit){
       arcHeight
     };
 
-    draw();
+    await presentCombatFrame();
+    if(projectileFx!==ownedFx)return;
 
     if(t>=1) break;
 
-    await sleep(16);
+
   }
 
   projectileFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 async function slingAttack(attacker,defender){
@@ -20311,22 +20331,24 @@ async function animateMagicMissile(attacker,defender,index,total){
 
   const start={x:from.x+sideOffset,y:from.y-20};
   const end={x:to.x+sideOffset*0.5,y:to.y-15};
-  const duration=190;
+  const duration=combatEffectDuration(190);
   const started=performance.now();
 
+  let ownedFx=null;
   while(true){
     const elapsed=performance.now()-started;
     const t=Math.min(1,elapsed/duration);
 
-    projectileFx={lightPath:{from:{x:attacker.x,y:attacker.y},to:{x:defender.x,y:defender.y}},kind:"magic-missile",start,end,t,arcHeight:0};
-    draw();
+    projectileFx=ownedFx={lightPath:{from:{x:attacker.x,y:attacker.y},to:{x:defender.x,y:defender.y}},kind:"magic-missile",start,end,t,arcHeight:0};
+    await presentCombatFrame();
+    if(projectileFx!==ownedFx)return;
 
     if(t>=1) break;
-    await sleep(16);
+
   }
 
   projectileFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 async function animateElementalArrowProjectile(
@@ -20364,18 +20386,18 @@ async function animateElementalArrowProjectile(
       end.y-start.y
     );
 
-  const duration=
-    Math.max(
+  const duration=combatEffectDuration(Math.max(
       170,
       Math.min(
         300,
         125+
         distance*0.24
       )
-    );
+    ));
 
   const started=performance.now();
 
+  let ownedFx=null;
   while(true){
     const elapsed=
       performance.now()-started;
@@ -20386,7 +20408,7 @@ async function animateElementalArrowProjectile(
         elapsed/duration
       );
 
-    projectileFx={lightPath:{from:{x:attacker.x,y:attacker.y},to:{x:defender.x,y:defender.y}},
+    projectileFx=ownedFx={lightPath:{from:{x:attacker.x,y:attacker.y},to:{x:defender.x,y:defender.y}},
       kind,
       start,
       end,
@@ -20394,14 +20416,15 @@ async function animateElementalArrowProjectile(
       arcHeight:0
     };
 
-    draw();
+    await presentCombatFrame();
+    if(projectileFx!==ownedFx)return;
 
     if(t>=1) break;
-    await sleep(16);
+
   }
 
   projectileFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 
@@ -20587,14 +20610,15 @@ async function animateFireballProjectile(caster,targetHex){
     y:endCenter.y-7
   };
 
-  const duration=280;
+  const duration=combatEffectDuration(280);
   const started=performance.now();
 
+  let ownedFx=null;
   while(true){
     const elapsed=performance.now()-started;
     const t=Math.min(1,elapsed/duration);
 
-    projectileFx={lightPath:{from:{x:caster.x,y:caster.y},to:{x:targetHex.x,y:targetHex.y}},
+    projectileFx=ownedFx={lightPath:{from:{x:caster.x,y:caster.y},to:{x:targetHex.x,y:targetHex.y}},
       kind:"fireball",
       start,
       end,
@@ -20602,14 +20626,15 @@ async function animateFireballProjectile(caster,targetHex){
       arcHeight:0
     };
 
-    draw();
+    await presentCombatFrame();
+    if(projectileFx!==ownedFx)return;
 
     if(t>=1) break;
-    await sleep(16);
+
   }
 
   projectileFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 /*
@@ -20620,13 +20645,13 @@ async function animateFireballProjectile(caster,targetHex){
   Damage itself is still applied simultaneously before this visual beat.
 */
 async function animateFireballExplosion(targetHex,radiusHexes,blastCells=null){
-  const duration=820;
+  const duration=combatEffectDuration(820);
   const started=performance.now();
   const radius=Math.max(1,Number(radiusHexes)||1);
   const cells=(blastCells?.length ? blastCells : fireballBlastCells(targetHex))
     .map(cell=>({...cell}));
 
-  fireballExplosionFx={
+  const ownedFx=fireballExplosionFx={
     x:targetHex.x,
     y:targetHex.y,
     radiusHexes:radius,
@@ -20645,13 +20670,14 @@ async function animateFireballExplosion(targetHex,radiusHexes,blastCells=null){
 
   while(true){
     const elapsed=performance.now()-started;
-    draw();
+    await presentCombatFrame();
+    if(fireballExplosionFx!==ownedFx)return;
     if(elapsed>=duration) break;
-    await sleep(16);
+
   }
 
   fireballExplosionFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 
@@ -20664,10 +20690,10 @@ async function animateFireballExplosion(targetHex,radiusHexes,blastCells=null){
   modern particle cloud.
 */
 async function animateColorSprayEffect(caster,targetHex,cells){
-  const duration=1500;
+  const duration=combatEffectDuration(1500);
   const started=performance.now();
 
-  colorSprayFx={
+  const ownedFx=colorSprayFx={
     casterId:caster.id,
     targetHex:{x:targetHex.x,y:targetHex.y},
     cells:(cells || []).map(cell=>({x:cell.x,y:cell.y})),
@@ -20679,13 +20705,14 @@ async function animateColorSprayEffect(caster,targetHex,cells){
 
   while(true){
     const elapsed=performance.now()-started;
-    draw();
+    await presentCombatFrame();
+    if(colorSprayFx!==ownedFx)return;
     if(elapsed>=duration) break;
-    await sleep(16);
+
   }
 
   colorSprayFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 /*
@@ -20698,11 +20725,11 @@ async function animateMagicEffectOnUnits(units,kind="generic",options={}){
   const targets=(units || []).filter(unit=>unit?.alive && !unit.fled);
   if(!targets.length) return;
 
-  const staggerMs=Math.min(55,Math.max(24,260/Math.max(1,targets.length)));
-  const effectDuration=680;
+  const staggerMs=combatEffectDuration(Math.min(55,Math.max(24,260/Math.max(1,targets.length))));
+  const effectDuration=combatEffectDuration(680);
   const started=performance.now();
 
-  magicEffectFx=targets.map((unit,index)=>({
+  const ownedFx=magicEffectFx=targets.map((unit,index)=>({
     unitId:unit.id,
     kind,
     started:started+index*staggerMs,
@@ -20724,13 +20751,14 @@ async function animateMagicEffectOnUnits(units,kind="generic",options={}){
       }
     });
 
-    draw();
+    await presentCombatFrame();
+    if(magicEffectFx!==ownedFx)return;
     if(now-started>=totalDuration) break;
-    await sleep(16);
+
   }
 
   magicEffectFx=[];
-  draw();
+  await presentCombatFrame();
 }
 
 async function showAreaEffectUnitResolution({
@@ -21890,9 +21918,9 @@ async function resolveAoeDamageSpell({
 }
 
 async function animateSpellSurfaceFlash(cells,color=[255,128,35]){
- const duration=450,started=performance.now();spellSurfaceFlashFx={cells,started,duration,color};
- try{while(performance.now()-started<duration){draw();await sleep(16);}}
- finally{spellSurfaceFlashFx=null;draw();}
+ const duration=combatEffectDuration(450),started=performance.now();const ownedFx=spellSurfaceFlashFx={cells,started,duration,color};
+ try{while(performance.now()-started<duration){await presentCombatFrame();if(spellSurfaceFlashFx!==ownedFx)return;}}
+ finally{if(spellSurfaceFlashFx===ownedFx){spellSurfaceFlashFx=null;await presentCombatFrame();}}
 }
 async function castBurningHandsSpell(action,targetHex){
   const caster=spellCasterForAction(action);
@@ -24644,11 +24672,11 @@ function bestDragonBreathPlan(dragon){
 }
 
 async function animateDragonBreath(dragon,plan){
-  const duration=1050;
+  const duration=combatEffectDuration(1050);
   const started=performance.now();
   const source=dragonBreathSourceHex(dragon,plan.target);
 
-  dragonBreathFx={
+  const ownedFx=dragonBreathFx={
     dragonId:dragon.id,
     source,
     directionIndex:source.directionIndex,
@@ -24662,13 +24690,14 @@ async function animateDragonBreath(dragon,plan){
 
   while(true){
     const elapsed=performance.now()-started;
-    draw();
+    await presentCombatFrame();
+    if(dragonBreathFx!==ownedFx)return;
     if(elapsed>=duration) break;
-    await sleep(16);
+
   }
 
   dragonBreathFx=null;
-  draw();
+  await presentCombatFrame();
 }
 
 async function juvenileRedDragonBreathAttack(dragon,plan){
@@ -28260,9 +28289,9 @@ function drawDragonBreathFx(){
 
   const now=performance.now();
   const elapsed=Math.max(0,now-fx.started);
-  const frameMs=58;
+  const frameMs=1000/30;
   const frame=Math.floor(elapsed/frameMs);
-  const steppedElapsed=Math.min(fx.duration,frame*frameMs);
+  const steppedElapsed=Math.min(fx.duration,elapsed);
   const t=Math.max(0,Math.min(1,steppedElapsed/Math.max(1,fx.duration)));
 
   const growthEnd=0.58;
@@ -28769,12 +28798,12 @@ function drawFireballExplosionFx(){
   /*
     R138 Fireball opacity experiment: the volumetric cloud still uses
     overlapping spherical flame lobes, but all drawn Fireball pixels are opaque.
-    Motion remains lightly stepped so the effect still belongs beside retro art,
+    Motion uses continuous elapsed time on the shared presentation frames,
     but the actual volume is intentionally organic and continuous.
   */
-  const frameMs=58;
+  const frameMs=1000/30;
   const frame=Math.floor(elapsed/frameMs);
-  const steppedElapsed=Math.min(fx.duration,frame*frameMs);
+  const steppedElapsed=Math.min(fx.duration,elapsed);
   const t=Math.max(0,Math.min(1,steppedElapsed/fx.duration));
 
   const growthEnd=0.58;
@@ -29137,8 +29166,8 @@ function drawColorSprayFx(){
   if(!caster || !caster.alive || caster.fled) return;
 
   const elapsed=Math.max(0,performance.now()-fx.started);
-  const frameMs=38;
-  const steppedElapsed=Math.floor(elapsed/frameMs)*frameMs;
+  const frameMs=1000/30;
+  const steppedElapsed=elapsed;
   const steppedT=Math.max(
     0,
     Math.min(1,steppedElapsed/Math.max(1,fx.duration))
@@ -29146,8 +29175,8 @@ function drawColorSprayFx(){
 
   const growth=Math.min(1,steppedT/0.32);
 
-  const sustainMs=750;
-  const fadeMs=750;
+  const sustainMs=combatEffectDuration(750);
+  const fadeMs=combatEffectDuration(750);
   const fadeStart=Math.min(1,sustainMs/Math.max(1,fx.duration));
   const fadeEnd=Math.min(1,(sustainMs+fadeMs)/Math.max(1,fx.duration));
   const inFade=steppedT>=fadeStart;
@@ -30032,7 +30061,7 @@ function persistentStatusFxTick(){
   }
 
   draw();
-  persistentStatusFxFrame=requestAnimationFrame(persistentStatusFxTick);
+  persistentStatusFxFrame=requestCombatAnimationTick(persistentStatusFxTick);
 }
 
 function ensurePersistentStatusFxLoop(){
@@ -30046,7 +30075,7 @@ function ensurePersistentStatusFxLoop(){
     return false;
   }
 
-  persistentStatusFxFrame=requestAnimationFrame(persistentStatusFxTick);
+  persistentStatusFxFrame=requestCombatAnimationTick(persistentStatusFxTick);
   return true;
 }
 
@@ -30312,6 +30341,7 @@ function drawUnitBarks(){
 }
 
 function draw(){
+  if(typeof combatFrames!=="undefined"&&combatFrames&&!combatFrames.rendering){combatFrames.request();return;}
   combatLightingFrame++;
   if(!game) return;
 
@@ -30543,6 +30573,7 @@ function draw(){
   drawUnitBarks();
   drawActivityDetectedFx();
   drawAimFriendlyFireWarning();
+  if(currentScreen==="spell-preview"&&typeof spellPreviewDrawDevelopmentLabels==="function")spellPreviewDrawDevelopmentLabels();
   ctx.restore();
   if(combatGpu)combatGpu.end();
 }

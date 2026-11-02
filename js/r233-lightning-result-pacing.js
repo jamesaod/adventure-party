@@ -77,12 +77,12 @@ r226CastLightningBolt=async function(action,targetHex){
     120
   );
 
-  r226LightningFx={
+  const ownedFx=r226LightningFx={
     r232Trace:true,
     segments:trace.segments,
     collisions:trace.collisions,
     started:performance.now(),
-    duration:975
+    duration:combatEffectDuration(975)
   };
 
   playMagicEffectSound(
@@ -90,11 +90,10 @@ r226CastLightningBolt=async function(action,targetHex){
   );
 
   const until=
-    performance.now()+975;
+    performance.now()+combatEffectDuration(975);
 
   while(performance.now()<until){
-    draw();
-    await sleep(16);
+    await presentCombatFrame();if(r226LightningFx!==ownedFx)return false;
   }
 
   r226LightningFx=null;

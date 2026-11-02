@@ -530,7 +530,7 @@ function spellPreviewResetArena(){
   }
 
   draw();
-  spellPreviewDrawDevelopmentLabels();
+
   spellPreviewUpdateSpellMeta();
   spellPreviewSetStatus(
     "Arena reset. Production renderer, VFX and SFX are ready."
@@ -910,6 +910,7 @@ function spellPreviewMark(label){
   }
 
   spellPreviewRenderTimelineEvents();
+  spellPreviewUpdateTimelineClock();
 }
 
 
@@ -1111,6 +1112,7 @@ function spellPreviewStop({
     ?.clear?.();
 
   spellPreviewClearTransientPresentation();
+  draw();
 
   spellPreviewSetRunState(
     "STOPPED",
@@ -1191,6 +1193,7 @@ async function spellPreviewStartRun(){
   }
 
   spellPreviewRunning=true;
+  spellPreviewEnsureRenderLoop();
   const token=
     ++spellPreviewRunToken;
 
@@ -3095,12 +3098,12 @@ async function spellPreviewRunLightningBolt(
         trace.collisions,
       started:
         performance.now(),
-      duration:650
+      duration:combatEffectDuration(650)
     };
   }
 
   await spellPreviewWait(
-    650,
+    combatEffectDuration(650),
     token
   );
 
@@ -3196,6 +3199,7 @@ function spellPreviewRenderTick(){
 
   if(
     !spellPreviewActive ||
+    !spellPreviewRunning ||
     currentScreen!=="spell-preview"
   ){
     return;
@@ -3203,13 +3207,13 @@ function spellPreviewRenderTick(){
 
   if(game){
     draw();
-    spellPreviewDrawDevelopmentLabels();
+
   }
 
   spellPreviewUpdateTimelineClock();
 
   spellPreviewRenderFrame=
-    requestAnimationFrame(
+    requestCombatAnimationTick(
       spellPreviewRenderTick
     );
 }
@@ -3223,7 +3227,7 @@ function spellPreviewEnsureRenderLoop(){
   }
 
   spellPreviewRenderFrame=
-    requestAnimationFrame(
+    requestCombatAnimationTick(
       spellPreviewRenderTick
     );
 }
@@ -3324,7 +3328,7 @@ async function hideSpellPreviewer(){
   }
 
   if(spellPreviewRenderFrame!==null){
-    cancelAnimationFrame(
+    cancelCombatAnimationTick(
       spellPreviewRenderFrame
     );
     spellPreviewRenderFrame=null;

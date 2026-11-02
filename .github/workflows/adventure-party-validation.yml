@@ -226,3 +226,4 @@ jobs:
           node scripts/test-portal-daylight.mjs
           node scripts/test-outdoor-grass.mjs
           node scripts/test-combat-webgl.mjs
+          node scripts/test-combat-frame-pacing.mjs
