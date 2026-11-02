@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 255 supersedes battle-long message history: Press Start 2P is the default UI/canvas font; results use 16px text and persist only within the current turn. Clear the result area at beginTurn, including consecutive turns by the same unit. Keep unit information visible and one-second beat arrivals.
+
 - Rev 253 supersedes the temporary Rev 251 result panel: unit information remains visible and messages append persistently for the battle, using stacked uppercase, cyan attacker / yellow target / green actions / red downed name. One-second beats control arrival only; never auto-clear or replace earlier messages.
 
 - Rev 251: Combat starts at -60 degrees (rotation index 5). The right summary temporarily presents globally serialized one-second damage, elemental, buff/debuff and downed beats. Preserve the production beat queue and final hold before victory/defeat; see docs/BATTLEFIELD_CONTROLS.md.

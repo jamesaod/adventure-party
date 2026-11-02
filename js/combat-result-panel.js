@@ -1,4 +1,5 @@
 /* Persistent, reference-style result blocks; production beats own timing. */
+function beginCombatResultTurn(actorId){window.AdventurePartyCombatResults?.beginTurn(actorId);}
 function combatResultLines(beat){
  const m=beat.meta||{},target=m.targetName||beat.unit?.name||'Unit';
  const line=(text,role='action')=>({text:String(text).replace(/\.$/,'').toUpperCase(),role});
@@ -12,12 +13,12 @@ function combatResultLines(beat){
  const sources=new WeakMap(),deaths=new WeakMap(),outcomes=new WeakMap();
  const baseFlash=flashAttack;
  flashAttack=function(attacker,target,hit){if(target)outcomes.set(target,{attacker,gameRef:game,hit});return baseFlash(attacker,target,hit);};
- let shownGame=null;
+ let shownGame=null,turnGame=null,turnKey=null;
  const panel=document.querySelector('.unit-info-panel');
  const result=document.createElement('div');result.id='combatResult';result.hidden=true;
  result.setAttribute('role','log');result.setAttribute('aria-label','Combat results');result.setAttribute('aria-live','polite');result.setAttribute('aria-relevant','additions');panel.insertBefore(result,document.getElementById('combatCompass'));
  function clear(){
-  shownGame=null;result.hidden=true;result.replaceChildren();
+  shownGame=null;turnGame=null;turnKey=null;result.hidden=true;result.replaceChildren();
  }
  function show(beat){
   if(shownGame&&shownGame!==game)clear();
@@ -74,6 +75,10 @@ function combatResultLines(beat){
   }
   return baseDeath(unit);
  };
+ window.AdventurePartyCombatResults={beginTurn(actorId){
+  const key=`${game?.round}:${game?.turnIndex}:${actorId}`;
+  if(turnGame!==game||turnKey!==key){clear();turnGame=game;turnKey=key;}
+ }};
  const baseClear=window.AdventurePartyCombatBeats.clear;
  window.AdventurePartyCombatBeats.clear=()=>{clear();return baseClear();};
 })();
