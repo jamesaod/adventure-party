@@ -3,7 +3,7 @@
   ====================================================
   One resolved action may now present several consequences in a readable series.
 
-  Beat order per affected unit:
+  Beat order in the shared result channel:
     1. direct / primary damage
     2. secondary / rider damage
     3. buffs
@@ -21,10 +21,12 @@ const CANDIDATE_COMBAT_BEAT_MS=1000;
 
 const CANDIDATE_COMBAT_BEAT_PRIORITY=Object.freeze({
   "direct-damage":10,
+  "direct-result":10,
   "secondary-damage":20,
   "buff":30,
   "debuff":40,
-  "condition":50
+  "condition":50,
+  "death":60
 });
 
 let candidateCombatBeatSequence=0;
@@ -33,6 +35,8 @@ let candidateDamageBeatContext=null;
 const candidateCombatBeatGroups=new Map();
 let candidateCombatBeatFlushQueued=false;
 const candidateCombatBeatTimers=new Set();
+const candidateCombatBeatReady=[];
+let candidateCombatBeatActive=false;
 
 
 /* ============================================================
@@ -55,7 +59,7 @@ function candidateCombatBeatKey(unit){
 
 function candidateCombatBeatRemaining(){
   return Math.max(
-    0,
+    candidateCombatBeatActive ? 1 : 0,
     Math.ceil(
       candidateCombatBeatHoldUntil-
       performance.now()
@@ -205,65 +209,29 @@ function candidateRunCombatBeat(beat){
 }
 
 
+function candidateStartNextCombatBeat(){
+  const beat=candidateCombatBeatReady.shift();
+  if(!beat){candidateCombatBeatActive=false;candidateCombatBeatHoldUntil=0;return;}
+  candidateCombatBeatHoldUntil=performance.now()+(candidateCombatBeatReady.length+1)*CANDIDATE_COMBAT_BEAT_MS;
+  candidateRunCombatBeat(beat);
+  // Chain from the actual presentation, so a slow/hidden tab cannot collapse
+  // several overdue results into one unreadable frame after a stall.
+  const timer=setTimeout(()=>{candidateCombatBeatTimers.delete(timer);candidateStartNextCombatBeat();},CANDIDATE_COMBAT_BEAT_MS);
+  candidateCombatBeatTimers.add(timer);
+}
 function candidateFlushCombatBeats(){
-  const now=performance.now();
-
+  const now=performance.now(),pending=[];
   for(const group of candidateCombatBeatGroups.values()){
-    if(!group.pending.length){
-      continue;
-    }
-
-    /*
-      Calls made in one synchronous combat-resolution stack are sorted by
-      semantic priority, not by incidental function-call order. This is what
-      lets casting interruption be queued by the damage hook first but still
-      appear AFTER both direct and rider damage.
-    */
-    group.pending.sort((a,b)=>
-      a.priority-b.priority ||
-      a.id-b.id
-    );
-
-    let startsAt=
-      Math.max(
-        now,
-        Number(group.nextAvailableAt)||0
-      );
-
-    const pending=
-      group.pending.splice(
-        0,
-        group.pending.length
-      );
-
-    for(const beat of pending){
-      const delay=
-        Math.max(
-          0,
-          startsAt-now
-        );
-
-      const timer=
-        setTimeout(
-          ()=>{
-            candidateCombatBeatTimers.delete(timer);
-            candidateRunCombatBeat(beat);
-          },
-          delay
-        );
-
-      candidateCombatBeatTimers.add(timer);
-
-      startsAt+=beat.durationMs;
-    }
-
-    group.nextAvailableAt=startsAt;
-    candidateCombatBeatHoldUntil=
-      Math.max(
-        candidateCombatBeatHoldUntil,
-        startsAt
-      );
+    if(group.gameRef!==game){group.pending.length=0;continue;}
+    pending.push(...group.pending.splice(0));
   }
+  pending.sort((a,b)=>a.priority-b.priority||a.id-b.id);
+  candidateCombatBeatReady.push(...pending);
+  if(!pending.length)return;
+  let startsAt=Math.max(now,candidateCombatBeatHoldUntil);
+  for(const beat of pending){startsAt+=CANDIDATE_COMBAT_BEAT_MS;candidateCombatBeatGroupFor(beat.unit).nextAvailableAt=startsAt;}
+  candidateCombatBeatHoldUntil=startsAt;
+  if(!candidateCombatBeatActive){candidateCombatBeatActive=true;candidateStartNextCombatBeat();}
 }
 
 
@@ -539,7 +507,7 @@ function candidateQueuePhysicalConditionBeat(
 
 window.AdventurePartyCombatBeats={
   channel:"candidate",
-  candidateRevision:2,
+  candidateRevision:251,
   beatMs:CANDIDATE_COMBAT_BEAT_MS,
   order:[
     "direct-damage",
@@ -561,6 +529,8 @@ window.AdventurePartyCombatBeats={
     }
     candidateCombatBeatTimers.clear();
     candidateCombatBeatGroups.clear();
+    candidateCombatBeatReady.length=0;
+    candidateCombatBeatActive=false;
     candidateCombatBeatHoldUntil=0;
     candidateCombatBeatFlushQueued=false;
     return true;
