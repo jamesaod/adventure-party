@@ -6357,6 +6357,7 @@ function drawDoorwayThresholds(){
 }
 
 function drawWallTestFloorPlan(){
+  if(typeof combatSceneTerrain!=="undefined"&&combatSceneTerrain)return;
   /*
     R205: doorway gaps get a dark-grey threshold across the complete wall
     depth. This is presentation-only: movement/LOS/projectile opening mechanics
@@ -16895,7 +16896,7 @@ function newGame(condition=selectedCombatCondition,scenario={}){
     validate every occupied cell against architectural walls at spawn time.
   */
   if(scenario.source&&scenario.source!=='exploration'){explorationEncounter=null;explorationTerrain=null;}
-  configureArchitecturalWalls(condition);
+  configureArchitecturalWalls(typeof configureStandaloneCombatScene==='function'?'grass':condition);
   if(typeof explorationEncounter!=='undefined'&&explorationEncounter)configureExplorationTerrain();
   else if(typeof configureStandaloneCombatScene==='function')configureStandaloneCombatScene(condition);
 

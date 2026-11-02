@@ -338,13 +338,16 @@ function drawExplorationDarknessVolumes(){
   for(const effect of game.areaEffects||[])if(effect?.type==='darkness')r222DrawDarknessVolume(effect);
 }
 function drawExplorationVisibilityMask(){
-  const observers=friendlyVisibilityObservers().map(observer=>({observer,context:observerVisibilityContext(observer)})).filter(e=>e.context);
+  const architectural=typeof game==='undefined'||game?.condition==='wall';
+  if(!architectural&&!hasActiveObscuringLosVolume())return;
+  const observers=friendlyVisibilityObservers().map(observer=>({observer,context:observerVisibilityContext(observer)})).filter(e=>e.context||!architectural);
   const mask=drawExplorationVisibilityMask.canvas||(drawExplorationVisibilityMask.canvas=document.createElement('canvas'));
   const v=battlefieldViewportBounds(),left=Math.floor(v.left)-2,top=Math.floor(v.top)-2,width=Math.ceil(v.right-left)+2,height=Math.ceil(v.bottom-top)+2;
   if(mask.width!==width||mask.height!==height){mask.width=width;mask.height=height;}
   const target=mask.getContext('2d');target.clearRect(0,0,mask.width,mask.height);target.globalCompositeOperation='source-over';target.fillStyle='rgba(8,8,12,0.90)';target.fillRect(0,0,mask.width,mask.height);
   target.save();target.translate(-left,-top);target.globalCompositeOperation='destination-out';target.fillStyle='#000';
-  for(const entry of observers)if(tracePolygonOnContext(target,entry.context.polygon.map(point=>screenPointForWorld(point))))target.fill();
+  if(!architectural)target.fillRect(left,top,width,height);
+  else for(const entry of observers)if(tracePolygonOnContext(target,entry.context.polygon.map(point=>screenPointForWorld(point))))target.fill();
   // Obscuring spell volumes retain their tactical visibility behavior.
   if(hasActiveObscuringLosVolume()){
     target.globalCompositeOperation='source-over';target.fillStyle='#08080c';
@@ -537,7 +540,9 @@ function drawExplorationTorch(torch){
 }
 
 function configureExplorationTerrain(){
-  const request=explorationEncounter;
+ configureCombatMap(explorationEncounter);
+}
+function configureCombatMap(request){
   explorationTerrain=explorationEncounterApi.terrainForEncounter(request.map,request.origin,new Set(request.openDoors),HEX_W,HEX_ROW);
   if(explorationTerrain.hexBounds){const b=explorationTerrain.hexBounds;MAP_MIN_X=b.minX;MAP_MAX_X=b.maxX;MAP_MIN_Y=b.minY;MAP_MAX_Y=b.maxY;}
   architecturalWalls=explorationTerrain.walls;
@@ -621,7 +626,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C259');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C261');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C259');
@@ -659,18 +664,19 @@ function explorationDoorOccupied(door){
  return [game.player,...(game.allies||[]),...(game.enemies||[])].filter(unit=>unit?.alive&&!unit.fled).some(unit=>occupiedHexes(unit).some(cell=>wallSegmentCutsHexInterior(leaf,cell.x,cell.y)));
 }
 function tryExplorationToggleDoor(){
+ const request=combatSceneContext||explorationEncounter;
  const unit=activePlayerControlledUnit();if(!explorationDoorOpeningAllowed(unit))return;
  const doors=explorationReachableDoors(unit);
  if(doors.length!==1){log(doors.length?'More than one door is in reach. Step closer to the door you want.':'No door is within reach.','system');return;}
  if(unit.turnMoves+1>unit.move){log('Opening or closing a door requires 1 movement point.','system');return;}
  const door=doors[0];if(door.open&&explorationDoorOccupied(door)){log('Cannot close the door: a unit occupies the doorway.','system');return;}
- const id=door.id||`${door.x},${door.z}`,opened=new Set(explorationEncounter.openDoors);if(door.open)opened.delete(id);else opened.add(id);
+ const id=door.id||`${door.x},${door.z}`,opened=new Set(request.openDoors);if(door.open)opened.delete(id);else opened.add(id);
  const next=[...opened];
- try{sessionStorage.setItem(explorationEncounterApi.HANDOFF_KEY,JSON.stringify({...explorationEncounter,openDoors:next}));}
+ try{if(!request.standalone)sessionStorage.setItem(explorationEncounterApi.HANDOFF_KEY,JSON.stringify({...request,openDoors:next}));}
  catch(error){log('Could not save the door state: '+error.message,'system');return;}
- explorationEncounter.openDoors=next;unit.turnMoves++;
+ request.openDoors=next;unit.turnMoves++;
  if(!unit.fullMove&&unit.turnMoves>unit.halfMove){unit.fullMove=true;log('Door interaction passes the attack threshold; Full Move activates.','system');}
- configureExplorationTerrain();
+ configureCombatMap(request);
  if(typeof r220ObserveVisibleTargetsForAllMobs==='function')r220ObserveVisibleTargetsForAllMobs();
  log(`${unit.name} ${door.open?'closes':'opens'} the door (1 movement point; ${unit.turnMoves}/${unit.fullMove?unit.move:unit.halfMove}).`,'system');
  refreshTurnBanner();updateUi();draw();

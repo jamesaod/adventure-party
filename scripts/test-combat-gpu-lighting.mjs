@@ -18,7 +18,7 @@ assert.deepEqual(mesh.lightPoint,[1,2,3,2,2,3,1,2,4]);assert.deepEqual(mesh.ligh
 const hooks=read('js/combat-lighting-hooks.js');let transferred;
 const target={save(){},restore(){},setTransform(){},clearRect(){},beginPath(){},rect(){},clip(){},translate(){},scale(){},fillRect(){}};
 const mask={width:0,height:0,getContext:()=>target};
-const state={URLSearchParams,location:{search:''},combatGpu:{setLighting:v=>{transferred=v;}},explorationTerrain:{cellW:128,cellH:72,torches:[]},explorationEncounterApi:{SCENE_STYLE:{cellMetres:3}},explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
+const state={URLSearchParams,location:{search:'?combatLighting=gpu'},combatGpu:{setLighting:v=>{transferred=v;}},explorationTerrain:{cellW:128,cellH:72,torches:[]},explorationEncounterApi:{SCENE_STYLE:{cellMetres:3}},explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
  explorationVisualLights:()=>Array(33).fill(light),explorationRenderLights:()=>[],document:{createElement:()=>mask},game:{condition:'grass',areaEffects:[]},HEX_W:64,HEX_ROW:31.5,camera:{x:0,y:0},battlefieldZoom:1,battlefieldRotation:0};
 vm.createContext(state);vm.runInContext(hooks,state);vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred,undefined);
 state.explorationVisualLights=()=>[light];vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred.lights.length,1);const revision=transferred.maskRevision;
@@ -26,5 +26,5 @@ vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferre
 light.intensity=9;vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred.maskRevision,revision,'Flicker updates shader intensity without rebuilding silhouettes');
 light.x+=1;vm.runInContext('prepareExplorationGpuLighting()',state);assert(transferred.maskRevision>revision,'Moving a light invalidates its silhouette');
 state.explorationEncounter.openDoors=['open'];vm.runInContext('prepareExplorationGpuLighting()',state);assert(transferred.maskRevision>revision,'Opening a door invalidates visibility transport');
-state.location.search='?combatLighting=cpu';transferred=undefined;vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred,undefined);
+state.location.search='';transferred=undefined;vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred,undefined);
 console.log('PASS GPU light units/colors, per-surface samples, explicit overflow/reference routes, static silhouette reuse and door invalidation');

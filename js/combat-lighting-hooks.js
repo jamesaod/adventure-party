@@ -5,7 +5,7 @@ function prepareExplorationGpuLighting(){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  explorationGpuLighting=null;
- if(!combatGpu?.setLighting||!explorationTerrain||new URLSearchParams(location.search).get('combatLighting')==='cpu')return;
+ if(!combatGpu?.setLighting||!explorationTerrain||new URLSearchParams(location.search).get('combatLighting')!=='gpu')return;
  const api=explorationEncounterApi,t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres,origin=explorationEncounter.origin;
  const toWorld=p=>({x:(p.x/cell-origin.x)*t.cellW,y:(p.z/cell-origin.z)*t.cellH});
  const axial=p=>({x:p.x/HEX_W-p.y/(2*HEX_ROW),y:p.y/HEX_ROW});

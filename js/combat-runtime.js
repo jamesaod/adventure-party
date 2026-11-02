@@ -1,10 +1,12 @@
 /* All launchers supply scenarios to one combat initializer and render pipeline. */
 let combatSessionGeneration=0;
 let combatSceneAssets=null;
+let combatTestMapFactory=null;
 async function prepareCombatSession(){
  await ensureCombatRenderer();
  if(!combatSceneAssets)combatSceneAssets=(async()=>{
-  explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C259');
+  explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C261');
+  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C261')).createCombatTestMap;
   const sources=[[explorationFloorImage,'assets/textures/exploration/floor.png?v=R238C206'],[explorationWallImage,'assets/textures/exploration/wall.png?v=R238C206'],[explorationDoorImage,'assets/textures/exploration/door.png?v=R238C206'],[explorationGrassImage,explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246']];
   await Promise.all(sources.map(async([image,url])=>{if(!image.src)image.src=url;await image.decode();}));
  })().catch(error=>{combatSceneAssets=null;throw error;});
@@ -29,20 +31,12 @@ async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  canvas.dataset.combatPipeline='shared';
  return combat;
 }
-// Renderer-only adapter for legacy test layouts. CPU walls, bounds, LOS and
-// deployment remain authoritative; this does not replace their rules geometry.
+// Combat Test and Previewer author maps, then use the exploration converter.
 function configureStandaloneCombatScene(condition){
- const cellW=HEX_W*2,cellH=HEX_ROW*2/(Math.sqrt(3)/2),project=(x,z)=>({x:x*cellW,y:z*cellH});
- const corners=[[MAP_MIN_X,MAP_MIN_Y],[MAP_MAX_X,MAP_MIN_Y],[MAP_MAX_X,MAP_MAX_Y],[MAP_MIN_X,MAP_MAX_Y]].map(([x,y])=>worldPointForHex(x,y));
- const bounds={left:Math.floor(Math.min(...corners.map(p=>p.x))/cellW)-1,right:Math.ceil(Math.max(...corners.map(p=>p.x))/cellW)+1,top:Math.floor(Math.min(...corners.map(p=>p.y))/cellH)-1,bottom:Math.ceil(Math.max(...corners.map(p=>p.y))/cellH)+1};
- const left=(bounds.left-.5)*cellW,right=(bounds.right+.5)*cellW,top=(bounds.top-.5)*cellH,bottom=(bounds.bottom+.5)*cellH,spaces=[];
- const rect=(l,t,r,b)=>{if(r>l&&b>t)spaces.push({polygon:[{x:l,y:t},{x:r,y:t},{x:r,y:b},{x:l,y:b}]});};
- if(condition==='wall'){
-  const room=WALL_TEST_ROOM;
-  rect(left,top,room.left,bottom);rect(room.right,top,right,bottom);rect(room.left,top,room.right,room.top);rect(room.left,room.bottom,room.right,bottom);rect(room.left,room.top,room.right,room.bottom);
- }else rect(left,top,right,bottom);
- combatSceneContext={synthetic:true,source:condition,origin:{x:0,z:0},openDoors:[],scope:'standalone:'+condition,map:{version:2,width:bounds.right-bounds.left+1,height:bounds.bottom-bounds.top+1,grid:[],torches:[]}};
- combatSceneTerrain={bounds,spaces,cellW,cellH,project,scale:2,torches:[],doors:[],windows:[],edgeBased:true,cellAt:(q,s)=>({x:Math.floor((q+s/2)/2+.5),z:Math.floor(s*HEX_ROW/cellH+.5)})};
+ const map=combatTestMapFactory(condition),origin={...map.start};
+ const request={standalone:true,map,origin,position:origin,openDoors:map.doors.filter(d=>d.initialOpen).map(d=>d.id),scope:'combat-test:'+condition};
+ configureCombatMap(request);
+
 }
 function combatRenderAmbientAtHex(point){
  if(combatSceneContext?.synthetic)return isIndoorWorldPoint(worldPointForHex(point.x,point.y))?0:100;
