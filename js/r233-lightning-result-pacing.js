@@ -126,6 +126,9 @@ r226CastLightningBolt=async function(action,targetHex){
       );
 
     if(immune){
+      if(!await presentSpellTargetResults(caster,[{unit}],()=>{
+        candidateQueueCombatBeat(unit,{category:'condition',text:'Immune to Lightning Bolt',sound:()=>{}});
+      }))return false;
       setCombatMessage(
         unit.name+
         " is immune to Lightning Bolt.",
@@ -151,14 +154,10 @@ r226CastLightningBolt=async function(action,targetHex){
         ? Math.floor(rolled/2)
         : rolled;
 
-    const result=
-      applySpellDamage(
-        caster,
-        unit,
-        damage,
-        "Lightning Bolt",
-        "lightning"
-      );
+    let result;
+    if(!await presentSpellTargetResults(caster,[{unit}],()=>{
+      result=applySpellDamage(caster,unit,damage,'Lightning Bolt','lightning');
+    }))return false;
 
     log(
       unit.name+

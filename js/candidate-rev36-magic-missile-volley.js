@@ -911,6 +911,7 @@
     caster,
     targetIds
   ){
+    const combat=game;
     const flight=
       r36BuildFlight(
         caster,
@@ -947,6 +948,11 @@
     r36VolleyFx=null;
     r36StartImpactFx(targetIds);
     draw();
+    // Complete the impact glow before beginning the centered result walk.
+    while(r36ImpactFx.length){
+      await presentCombatFrame();
+      if(game!==combat)return false;
+    }
     return true;
   }
 
@@ -958,6 +964,7 @@
   */
   castMagicMissileFromScroll=
   async function(action,target){
+    const resultSession=captureSpellTargetResults();
     const caster=
       spellCasterForAction(action);
 
@@ -1060,8 +1067,8 @@
     ))return false;
 
     /*
-      Resolve every missile after the shared flight. All missile impact sounds
-      are scheduled in this same synchronous beat.
+      Roll every missile after the shared flight and impact graphics. Each
+      target's combined damage, impact sound and death are presented below.
     */
     const damageByTarget=new Map();
     const rollsByTarget=new Map();
@@ -1111,7 +1118,7 @@
 
       actualHits++;
 
-      playMagicMissileHitSound(index);
+      // Impact audio is played with this target's damage message below.
 
       damageByTarget.set(
         targetId,
@@ -1130,42 +1137,29 @@
         .push(damage);
     }
 
-    /*
-      Apply each target's combined missile damage in one synchronous batch.
-      This gives one readable floating damage number per creature while all
-      target HP changes still happen together.
-    */
-    const killedTargets=[];
-
-    for(
-      const [targetId,damage] of
-      damageByTarget.entries()
-    ){
-      const target=
-        getUnitById(targetId);
-
-      if(
-        !target?.alive ||
-        damage<=0
-      ){
-        continue;
+    let koboldCasualties=0;
+    const results=[...new Set(targetIds)].map(id=>({unit:getUnitById(id),damage:damageByTarget.get(id)||0}));
+    if(!await presentSpellTargetResults(caster,results,({unit,damage})=>{
+      if(damage<=0){
+        candidateQueueCombatBeat(unit,{category:'condition',text:getUnitEffect(unit,'shield')?'Shield negates Magic Missile':'Mirror Images absorb Magic Missile',sound:()=>{}});
+        return;
       }
-
-      target.hp=
-        Math.max(
-          0,
-          target.hp-damage
-        );
-
-      onUnitDamaged(
-        target,
-        damage
-      );
-
-      if(target.hp<=0){
-        killedTargets.push(target);
+      unit.hp=Math.max(0,unit.hp-damage);
+      candidateWithDamageBeatContext({category:'direct-damage',damageType:'magic',source:'Magic Missile'},()=>onUnitDamaged(unit,damage));
+      // Attach the established missile cue to the primary result, avoiding a
+      // generic weapon hit or every target sounding at once after the volley.
+      const pending=candidateCombatBeatGroupFor(unit).pending;
+      const beat=[...pending].reverse().find(b=>b.category==='direct-damage');
+      if(beat)beat.meta.action.impact=()=>playMagicMissileHitSound(0);
+      if(unit.hp<=0){
+        unit.alive=false;
+        playAgonySound(unit);playDeathSound(unit);triggerDeathFx(unit);
+        if(unit.controller==='mob'){
+          markEnemyNeutralized(unit);
+          if(isKoboldUnit(unit))koboldCasualties++;
+        }
       }
-    }
+    },resultSession))return false;
 
     if(action.itemName){
       removeOneInventoryItem(
@@ -1234,31 +1228,6 @@
       "good"
     );
 
-    let koboldCasualties=0;
-
-    for(const unit of killedTargets){
-      if(!unit.alive){
-        continue;
-      }
-
-      unit.alive=false;
-
-      playAgonySound(unit);
-      playDeathSound(unit);
-      triggerDeathFx(unit);
-
-      if(unit.controller==="mob"){
-        markEnemyNeutralized(unit);
-
-        if(isKoboldUnit(unit)){
-          koboldCasualties++;
-        }
-      }
-
-      updateUi();
-      draw();
-      await waitForDeathActionPause();
-    }
 
     if(
       koboldCasualties>0 &&

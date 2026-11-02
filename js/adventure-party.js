@@ -21971,14 +21971,14 @@ async function castBurningHandsSpell(action,targetHex){
   }
 
   await animateSpellSurfaceFlash(blastCells);
-  await resolveAoeDamageSpell({
+  if(!await resolveAoeDamageSpell({
     caster,
     spellName:"Burning Hands",
     targets,
     damage,
     saveForHalf:true,
     damageType:"fire"
-  });
+  }))return false;
 
   if(!targets.length){
     setCombatMessage("Burning Hands scorches empty ground.",COMBAT_MESSAGE_MIN_HOLD_MS);
