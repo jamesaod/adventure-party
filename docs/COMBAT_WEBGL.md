@@ -1,5 +1,9 @@
 # Combat rendering — Candidate Rev 247
 
+Rev 250 adds shader point lighting for exploration encounters; see
+[COMBAT_GPU_LIGHTING.md](COMBAT_GPU_LIGHTING.md) for the current boundary.
+The original baseline below describes the initial hybrid renderer.
+
 Combat requires WebGL 2 and presents through the repository's existing Three.js
 distribution. The battlefield DOM canvas belongs exclusively to WebGLRenderer;
 it never acquires a Canvas 2D context. Initialization finishes before combat is

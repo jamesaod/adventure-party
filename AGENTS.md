@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 250: Exploration combat point-light color/falloff runs in shaders on floors, solids and sprite bodies. CPU silhouettes, daylight, ambient and distance rules remain authoritative. Read docs/COMBAT_GPU_LIGHTING.md; preserve the 32-emitter complete CPU fallback, sprite hue/alpha, and shared frame scheduler.
+
 - Rev 249: Battlefield draw() is asynchronous invalidation through one shared 30 FPS scheduler. Animation producers use requestCombatAnimationTick/cancelCombatAnimationTick, finite effects await presentCombatFrame, and combatEffectDuration doubles visual durations only. Preserve casting/turn rules and production Previewer parity. Read docs/COMBAT_FRAME_PACING.md before animation changes; do not reintroduce independent world redraw loops or 58/38 ms geometry stepping.
 
 - Rev 248: Standalone combat stone is vendored at assets/terrain/stone-floor-pamnawi.png. Never draw non-CORS cross-origin images into the shared combat staging canvas: one tainted material makes subsequent WebGL uploads fail across both test modes. Preserve PamNawi attribution and run the production browser fixture with real stone plus raster/mesh/raster transitions.

@@ -27,16 +27,18 @@ function drawExplorationGpuFloor(tiles){
   const m=grass?api.grassMaterialMetrics(t):api.materialMetrics(t);
   groups[grass?1:0].push({points:fragment.polygon,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
  }
- const lightMap=drawExplorationIlluminationLayer(true);
- combatGpu.surface(groups[0],explorationFloorImage,{lightMap});
- combatGpu.surface(groups[1],explorationGrassImage,{lightMap});
+ const lightMap=drawExplorationIlluminationLayer(true),dynamicLighting=!!explorationGpuLighting;
+ for(const group of groups)for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
+ combatGpu.surface(groups[0],explorationFloorImage,{lightMap,dynamicLighting});
+ combatGpu.surface(groups[1],explorationGrassImage,{lightMap,dynamicLighting});
 }
 function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const api=explorationEncounterApi,view=battlefieldViewportBounds();
  const faces=solids.flatMap(s=>s.faces);
  const all=faces.flatMap(f=>f.points.map(p=>screenPointForWorld(p,p.elevation)));
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
- const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
+ const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
+ const lights=dynamicLighting?[]:explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
  const key=JSON.stringify([lights,explorationEncounter.openDoors,explorationDaylight()?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial]);
  const cache=drawExplorationGpuSolids.cache||(drawExplorationGpuSolids.cache=new WeakMap());
  let cached=cache.get(cacheOwner);if(cached?.key!==key){cached={key,faces:new Map()};cache.set(cacheOwner,cached);}
@@ -54,17 +56,17 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
    return {...fragment,exposure};});cached.faces.set(faceKey,fragments);}
   const surfaces=fragments.map(fragment=>{
    const exposure=fragment.exposure,hex=fragment.point,visibility=visible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
-   let flicker=0;if(visible)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
+   let flicker=0;if(visible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    flicker=Math.max(-.15,Math.min(.15,flicker));
-   const radiance=visible?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[179,132,75]:[156,136,103];
-   return {points:fragment.points,uv:fragment.points.map(p=>face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
-    multiply:exposure.multiply.map((v,i)=>v/255*visibility*(flicker<0?1+flicker*.6:1)*(face.cap?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
+   const radiance=visible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[179,132,75]:[156,136,103];
+   return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
+    multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
   });
   const image=face.cap?white:wood?explorationDoorImage:explorationWallImage,last=batches.at(-1);
   if(last?.image===image)last.surfaces.push(...surfaces);else batches.push({image,surfaces});
  }
- for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image);
+ for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image,{dynamicLighting});
 }
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
@@ -231,6 +233,7 @@ function explorationUnblockedContribution(source,point){
  return Math.max(0,source.intensity||0)*(1-Math.min(1,distance/(radius+.45))**2);
 }
 function drawExplorationSpellLighting(tiles){
+ if(typeof explorationGpuLighting!=='undefined'&&explorationGpuLighting)return;
  if(!explorationTerrain||!explorationEncounterApi?.spellSurfaceRadiance)return;
  const sources=explorationRenderLights().filter(s=>s.sourceKind!=='torch');if(!sources.length)return;
  const fragments=explorationFloorFragments(tiles);
@@ -381,7 +384,7 @@ function explorationSurfaceExposure(point,normal,lights,opened){
 }
 
 function drawExplorationIlluminationLayer(gpuOnly=false){
-  const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
+  const lights=gpuOnly&&explorationGpuLighting?[]:explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
   const mapBounds=explorationTerrain.bounds;
   let b=mapBounds;
   if(explorationTerrain.edgeBased&&typeof camera!=='undefined'){
@@ -441,6 +444,7 @@ function shadeExplorationWall(target,wall,height,thickness){
   target.restore();
 }
 function drawExplorationTorchFloorGlow(tiles){
+ if(typeof explorationGpuLighting!=='undefined'&&explorationGpuLighting)return;
  if(!explorationTerrain?.torches?.length)return;
  ctx.save();
  for(const torch of explorationTerrain.torches){

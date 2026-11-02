@@ -1723,7 +1723,7 @@ async function presentCombatFrame(){
 }
 addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C247"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C250"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
@@ -27119,7 +27119,8 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
       anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip,pose:activeUnitPoseName(entity)});
     ctx.restore();return;
   }
-  const brightness=typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
+  const gpuSprite=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
+  const brightness=!gpuSprite&&typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
   const spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
   ctx.translate(c.x,c.y);
 
@@ -27145,13 +27146,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     if(spriteFilter)ctx.filter=spriteFilter;
     for(const offset of visualMirrorOffsets(Math.min(4,imageCount))){
       try{
-        ctx.drawImage(
-          renderSource,
-          baseX+offset.x,
-          baseY+offset.y,
-          visualDrawW,
-          visualDrawH
-        );
+        if(!gpuSprite||!drawExplorationGpuSprite(renderSource,entity,baseX+offset.x,baseY+offset.y,visualDrawW,visualDrawH))ctx.drawImage(renderSource,baseX+offset.x,baseY+offset.y,visualDrawW,visualDrawH);
       }catch(error){
         console.error("Mirror Image sprite draw skipped.",error);
       }
@@ -27175,13 +27170,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   ctx.save();
   if(spriteFilter)ctx.filter=spriteFilter;
   try{
-    ctx.drawImage(
-      renderSource,
-      -Math.round(visualDrawW*spriteAnchor.x),
-      -Math.round(visualDrawH*spriteAnchor.y),
-      visualDrawW,
-      visualDrawH
-    );
+    if(!gpuSprite||!drawExplorationGpuSprite(renderSource,entity,-Math.round(visualDrawW*spriteAnchor.x),-Math.round(visualDrawH*spriteAnchor.y),visualDrawW,visualDrawH))ctx.drawImage(renderSource,-Math.round(visualDrawW*spriteAnchor.x),-Math.round(visualDrawH*spriteAnchor.y),visualDrawW,visualDrawH);
   }catch(error){
     console.error("Sprite draw skipped because the image source is invalid.",error);
   }finally{ctx.restore();}
@@ -30353,6 +30342,7 @@ function draw(){
     if(!combatGpu.available)return;
     const p=screenPointForWorld({x:0,y:0}),u=battlefieldProjectVector({x:1,y:0}),v=battlefieldProjectVector({x:0,y:1});
     if(!combatGpu.begin({width:BATTLEFIELD_LOGICAL_WIDTH,height:BATTLEFIELD_LOGICAL_HEIGHT,zoom:battlefieldZoom,anchor:battlefieldZoomAnchor(),matrix:[u.x,u.y,v.x,v.y,p.x,p.y]}))return;
+    if(typeof prepareExplorationGpuLighting==="function")prepareExplorationGpuLighting();
   }
   // Clear in physical canvas coordinates before installing the view transform.
   ctx.save();
