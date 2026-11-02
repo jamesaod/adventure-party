@@ -69,3 +69,14 @@ draws.length=0;gpuState.drawExplorationGpuSolids([prism],owner,false);
 assert(Math.abs(draws[0].surfaces[0].multiply[0]-200/255*.1)<1e-8);assert.deepEqual(Array.from(draws[0].surfaces[0].add),[0,0,0]);
 gpuState.explorationEncounter.openDoors=['changed'];gpuState.drawExplorationGpuSolids([prism],owner,true);assert(samples>firstSamples,'Door changes invalidate physical wall light');
 console.log('PASS production GPU wall adapter preserves batched solid geometry, cached transport, dynamic fade/radiance, hidden-wall opacity and door invalidation');
+
+// On the shader route the adapter must send ambient/daylight only, with direct
+// visibility/tint separate from the exposure decoded by the fragment shader.
+gpuState.explorationGpuLighting={};gpuState.explorationGpuPoint=p=>[p.x/128*3,(p.elevation||0)/10,p.y/72.746*3];
+gpuState.explorationSurfaceExposure=(p,n,lights)=>{assert.equal(lights.length,0);return {multiply:[200,180,160],boost:[0,0,0]};};
+gpuState.explorationSpellRadianceAtHex=()=>{throw Error('CPU spell color/falloff was still evaluated');};
+draws.length=0;gpuState.drawExplorationGpuSolids([prism],{},true);
+assert(Math.abs(draws[0].surfaces[0].multiply[0]-200/255)<1e-8);
+assert.equal(draws[0].surfaces[0].visibility,.2);assert.deepEqual(Array.from(draws[0].surfaces[0].add),[0,0,0]);
+assert(draws.every(d=>d.surfaces.every(s=>s.lightPoints.flat().every(Number.isFinite))));
+console.log('PASS shader wall route transports base exposure/geometry without CPU point-light or spell shading');
