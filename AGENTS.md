@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 259: Standard door openings are 37.5% of an authored square (three-quarters of a combat hex). Door width version 3 updates former standard 42%/50% openings once, preserving custom wide gates. Leaf thickness is doubled to full wall thickness; GPU door tops sample the door wood texture with continuous plank UVs instead of flat cap color. User requested minimal QA and will perform visual review; targeted geometry/navigation checks and required CI only.
+
 - Rev 258: Ground material is independent of indoor/outdoor lighting. Optional map.ground string rows use a/g/d/s (automatic/grass/dirt/stone). The editor paints ground and can add an unsaved terrain sample. terrain-transition.mjs composes cached 256px dirt/grass alpha-mask tiles plus transparent tufts from the eight neighbouring cells; exploration and GPU combat share the same artwork, mask and one-authored-square repeat scale. Keep stone/void boundaries hard and preserve legacy defaults, map import/resize and 1:2 combat geometry.
 
 - Rev 257 supersedes simultaneous spell damage presentation: finish shared spell graphics first, then center and resolve each target completely (damage/effects/death beats) before the next. Fireball, split Magic Missile volleys, Burning Hands/area damage and Lightning Bolt share combat-spell-results.js; preserve target allocations, saves, friendly fire, full death holds and cancellation. Do not finish a battle midway through a captured target list.

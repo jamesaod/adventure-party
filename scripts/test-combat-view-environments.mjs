@@ -13,8 +13,8 @@ paintCell(roundtrip,3,3,'indoor');assert(!isOutdoor(roundtrip,3,3));
 assert.throws(()=>validateEnvironment({...map,environment:['o']}));
 const point={x:0,y:0,z:0},normal={x:0,y:1,z:0};
 const indoor=surfaceLight(point,normal,[],()=>true,ambientForCell(map,2,3)),outdoor=surfaceLight(point,normal,[],()=>true,ambientForCell(map,3,3));assert(outdoor.every((n,i)=>n>indoor[i]));
-assert.equal(SCENE_STYLE.door.depth,SCENE_STYLE.wallDepthMetres/2);
-assert.equal(explorationDoor().hinge.children[0].geometry.parameters.depth,SCENE_STYLE.wallDepthMetres/2);
+assert.equal(SCENE_STYLE.door.depth,SCENE_STYLE.wallDepthMetres);
+assert.equal(explorationDoor().hinge.children[0].geometry.parameters.depth,SCENE_STYLE.wallDepthMetres);
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 function extract(name){const start=source.indexOf(`function ${name}(`),end=source.indexOf('\n}',start)+2;return source.slice(start,end);}
 const state={HEX_W:64,HEX_H:42,HEX_ROW:31.5,camera:{x:0,y:0},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_LOGICAL_WIDTH:1050,BATTLEFIELD_LOGICAL_HEIGHT:600,canvas:{getBoundingClientRect:()=>({left:0,top:0,width:1050,height:600})},hoverHex:null,document:{getElementById:()=>null},draw(){}};
@@ -35,7 +35,7 @@ const spellEnv={faceEntityToward:(c,t)=>facing.push(t),speakSpellIncantation(){}
 assert(spellEnv.commitSpellCast(caster,{},null,1800,{x:2,y:-1}));assert.equal(facing.length,1);
 spellEnv.commitSpellCast(caster,{},null,1800,{x:0,y:0});assert.equal(facing.length,1,'Self cast preserves facing');
 spellEnv.commitSpellCast({...caster,alive:false},{},null,1800,{x:1,y:0});assert.equal(facing.length,1,'Rejected cast does not turn');
-console.log('PASS environment paint/export/resize/legacy defaults, local ambient, half-wall door thickness, 18 rotated input transforms, rotation wrapping and committed spell facing');
+console.log('PASS environment paint/export/resize/legacy defaults, local ambient, full-wall door thickness, 18 rotated input transforms, rotation wrapping and committed spell facing');
 
 let viewportCalls=0;
 Object.assign(state,{camera:{x:0,y:0},VIEW_RADIUS:20,HEX_W:64,HEX_H:42,HEX_ROW:31.5,inside:()=>true,hexCenter:(x,y)=>({x:493.5+x*64+y*32,y:342+y*31.5})});
@@ -45,10 +45,11 @@ vm.runInContext(extract('visibleHexes'),state);assert(state.visibleHexes().lengt
 const geometry={...await import('../js/exploration-combat-geometry.mjs'),...await import('../js/combat-surface-lighting.mjs'),...await import('../js/wall-light-bands.mjs')};
 const terrain={cellW:128,cellH:128*31.5/64/(Math.sqrt(3)/2)},style=SCENE_STYLE;
 for(const axis of ['x','z'])for(const hinge of ['start','end']){
- const door={center:{x:128,y:75},edgeId:'door',axis,hinge,width:.42,open:false};
+ const door={center:{x:128,y:75},edgeId:'door',axis,hinge,width:.375,open:false};
  const closed=geometry.combatDoorSolids(door,terrain,style),opened=geometry.combatDoorSolids({...door,open:true},terrain,style);
- assert.deepEqual(closed.hinge,opened.hinge);assert.equal(closed.leaf.depth,style.tacticalWallThickness/2);
+ assert(Math.abs(Math.hypot(closed.end.x-closed.hinge.x,(closed.end.y-closed.hinge.y)/(terrain.cellH/terrain.cellW))-terrain.cellW/2*.75)<1e-8,'Standard door is three-quarters of a hex wide');assert.deepEqual(closed.hinge,opened.hinge);assert.equal(closed.leaf.depth,style.tacticalWallThickness);
  for(const solid of [closed.leaf,opened.leaf]){
+  const cap=solid.faces.find(f=>f.cap),uv=cap.points.map(p=>geometry.doorCapUv(cap,p));assert(Math.max(...uv.map(p=>p[0]))-Math.min(...uv.map(p=>p[0]))>.99,'Top spans the same wood planks as the door face');assert(Math.max(...uv.map(p=>p[1]))-Math.min(...uv.map(p=>p[1]))>0,'Top has a textured thickness');
   assert.equal(solid.faces.length,5,'Two broad faces, two ends and a top');
   for(let angle=0;angle<6;angle++){
    state.battlefieldRotation=angle;
