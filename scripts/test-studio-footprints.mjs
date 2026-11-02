@@ -218,7 +218,7 @@ for (const mob of SPRITE_MOBS) {
 const studioReturns = [];
 Object.assign(sandbox, {
   aiTimer: null, selectedMobEncounter: 'studio-kobold', currentScreen: 'combat',
-  configureArchitecturalWalls() {}, camera: {}, aimCursor: {},
+  configureArchitecturalWalls() {}, rotateBattlefield() {}, camera: {}, aimCursor: {},
   quickCommandUnitIds: new Set(), quickCommandGeneration: 0,
   deathFxTimer: null, unitBarkClearTimer: null, activityDetectedClearTimer: null, transientUnitFxFrame: null,
   combatMessageClearTimer: null, combatMessageFlashTimer: null, combatMessageSequence: 0,

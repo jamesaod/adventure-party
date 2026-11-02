@@ -275,6 +275,7 @@ function returnToStudioFromCombat(){
 }
 
 function exitCombat(){
+  window.AdventurePartyCombatBeats?.clear();
   if(typeof returnFromExplorationCombat==='function'&&returnFromExplorationCombat("retreat"))return;
   if(!returnToStudioFromCombat()) showLauncher();
 }
@@ -7192,7 +7193,7 @@ const CAMERA_EDGE_HEXES=4;
 
 // Battlefield presentation zoom: visual only, independent of map/hex rules.
 let battlefieldZoom=1;
-let battlefieldRotation=0; // Ground-plane view azimuth; world coordinates and rules never rotate.
+let battlefieldRotation=5; // Ground-plane view azimuth; world coordinates and rules never rotate.
 const BATTLEFIELD_ZOOM_MIN=0.6;
 const BATTLEFIELD_ZOOM_MAX=1.8;
 const BATTLEFIELD_ZOOM_STEP=0.1;
@@ -7212,7 +7213,7 @@ function rotateBattlefield(direction){
     const squash=HEX_ROW/(HEX_W*Math.sqrt(3)/2),directions={N:{x:0,y:-squash},S:{x:0,y:squash},E:{x:1,y:0},W:{x:-1,y:0}};
     rose.style.transform='';for(const label of rose.children){const v=battlefieldProjectVector(directions[label.textContent.trim()]),length=Math.hypot(v.x,v.y)||1;Object.assign(label.style,{left:`${46+v.x/length*36}px`,top:`${46+v.y/length*36}px`,right:'auto',bottom:'auto',transform:'translate(-50%,-50%)'});}
   }
-  const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${battlefieldRotation*60}°`;
+  const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${(battlefieldRotation>3?battlefieldRotation-6:battlefieldRotation)*60}°`;
   draw();
 }
 
@@ -16884,6 +16885,8 @@ function deployConfiguredCombatMobs(condition,player){
 }
 
 function newGame(condition=selectedCombatCondition){
+  window.AdventurePartyCombatBeats?.clear();
+  battlefieldRotation=5;
   if(aiTimer){
     clearTimeout(aiTimer);
     aiTimer=null;
@@ -17114,6 +17117,7 @@ function newGame(condition=selectedCombatCondition){
   */
   combatOpeningSpeechDone=true;
   combatAwaitingStart=true;
+  rotateBattlefield(0);
   // Ordinary battles render their equipped appearance at combat start.
   // A Studio combat test already has an exact 18-frame native battlefield
   // capture. Keep those approved frames unchanged until an actual gear change
@@ -25415,14 +25419,16 @@ function showXpLootScreen(title,text,xpAwarded=0){
 
 function scheduleCombatFinish(title,text){
   const combat=game;
-  if(isStudioTestCombat(combat)){
+  const hasResultBeats=typeof candidateCombatBeatRemaining==='function'&&(candidateCombatBeatRemaining()>0||[...candidateCombatBeatGroups.values()].some(group=>group.gameRef===combat&&group.pending.length));
+  if(isStudioTestCombat(combat)&&!hasResultBeats){finishCombat(title,text);return;}
+  const finish=()=>{
+    if(game!==combat||currentScreen!=="combat")return;
+    const remaining=combatActionPauseRemaining();
+    if(remaining>0){setTimeout(finish,Math.max(16,remaining));return;}
     finishCombat(title,text);
-    return;
-  }
-  setTimeout(()=>{
-    // A previous battle must not open rewards over a new battle or the launcher.
-    if(game===combat && currentScreen==="combat") finishCombat(title,text);
-  },deathFx ? 1000 : 100);
+  };
+  // Let synchronous damage/status/death beats flush before scheduling results.
+  setTimeout(finish,deathFx?1000:100);
 }
 
 function finishCombat(title,text){
