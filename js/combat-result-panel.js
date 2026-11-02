@@ -1,6 +1,8 @@
 /* One readable result channel, using the production damage/effect beat queue. */
 (()=>{
- const sources=new WeakMap(),deaths=new WeakMap();
+ const sources=new WeakMap(),deaths=new WeakMap(),outcomes=new WeakMap();
+ const baseFlash=flashAttack;
+ flashAttack=function(attacker,target,hit){if(target)outcomes.set(target,{attacker,gameRef:game,hit});return baseFlash(attacker,target,hit);};
  let shownGame=null,clearTimer=null,token=0;
  const panel=document.querySelector('.unit-info-panel');
  const result=document.createElement('div');result.id='combatResult';result.hidden=true;
@@ -37,10 +39,11 @@
  updateUnitInfoPanel=function(){if(shownGame&&shownGame!==game)clear();return baseUpdate();};
  // Source identity is retained across physical wind-up / projectile awaits.
  function physical(base){return async function(attacker,target,...args){
-  const combat=game,previous=sources.get(target);if(target)sources.set(target,attacker);
+  const combat=game,previous=sources.get(target);if(target){sources.set(target,attacker);outcomes.delete(target);}
   try{
    const answer=await base(attacker,target,...args);
-   if(game===combat&&answer?.hit===false&&!answer.interrupted&&!answer.blockedByWall&&!answer.blockedByObstacle&&target&&candidateCombatBeatPresentationEnabled())candidateQueueCombatBeat(target,{category:'direct-result',text:`${attacker.name} attacks ${target.name}, ${answer.mirrorImage?'striking a Mirror Image':'missing'}.`,show:()=>{},meta:{fullText:true}});
+   const event=outcomes.get(target),resolution=answer||(event?.gameRef===combat&&event.attacker===attacker?event:null);
+   if(game===combat&&resolution?.hit===false&&!resolution.interrupted&&!resolution.blockedByWall&&!resolution.blockedByObstacle&&target&&candidateCombatBeatPresentationEnabled())candidateQueueCombatBeat(target,{category:'direct-result',text:`${attacker.name} attacks ${target.name}, ${resolution.mirrorImage?'striking a Mirror Image':'missing'}.`,show:()=>{},meta:{fullText:true}});
    return answer;
   }finally{if(target){if(previous)sources.set(target,previous);else sources.delete(target);}}
  };}
