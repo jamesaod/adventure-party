@@ -26831,6 +26831,8 @@ function drawFloor(){
     drawHexFill(tile.x,tile.y);
   }
 
+  if(explorationTerrain)drawExplorationBlackoutFloor();
+
   /* R123: continuous indoor floors overlay and split the outdoor hex textures. */
   if(explorationTerrain&&combatGpu)drawExplorationGpuFloor(tiles);
   else drawArchitecturalFloorRegions();

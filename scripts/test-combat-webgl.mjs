@@ -56,7 +56,7 @@ const gpuState={explorationEncounterApi:sceneApi,explorationTerrain:{cellW:128,c
  explorationVisibilityAtHex:()=>visibility,explorationSpellRadianceAtHex:()=>[.3,.1,0],
  HEX_W:64,HEX_ROW:31.5,explorationDoorImage:{id:'door'},explorationWallImage:{id:'wall'},
  document:{createElement:()=>({tagName:'CANVAS',getContext:()=>({fillRect(){}})})},
- combatGpu:{surface:(surfaces,image)=>draws.push({surfaces,image})}};
+ combatGpu:{surface:(surfaces,image,options)=>draws.push({surfaces,image,options})}};
 vm.createContext(gpuState);const faceStart=hooks.indexOf('function explorationFaceRenderable('),faceEnd=hooks.indexOf('\n}',faceStart)+2;vm.runInContext(hooks.slice(faceStart,faceEnd),gpuState);vm.runInContext(hooks.slice(start,end),gpuState);
 const owner={};gpuState.drawExplorationGpuSolids([prism],owner,true);
 assert.equal(draws.length,1,'Door faces and textured wood cap share the door artwork in painter order');
@@ -80,3 +80,12 @@ assert(Math.abs(draws[0].surfaces[0].multiply[0]-200/255)<1e-8);
 assert.equal(draws[0].surfaces[0].visibility,.2);assert.deepEqual(Array.from(draws[0].surfaces[0].add),[0,0,0]);
 assert(draws.every(d=>d.surfaces.every(s=>s.lightPoints.flat().every(Number.isFinite))));
 console.log('PASS shader wall route transports base exposure/geometry without CPU point-light or spell shading');
+
+// Sealed surfaces stay opaque black even under the shader lighting route and full LOS.
+gpuState.explorationTerrain.isRenderablePoint=p=>p.y<0;visibility=1;draws.length=0;
+gpuState.drawExplorationGpuSolids([solidPrism({x:-40,y:0},{x:40,y:0},3,35)],{},true);
+const blackout=draws.filter(d=>d.options.dynamicLighting===false),outside=draws.filter(d=>d.options.dynamicLighting===true);
+assert(blackout.length>=3&&outside.length,'Keep visible exterior masonry beside black inward faces/caps/ends');
+for(const d of blackout)for(const s of d.surfaces){assert.deepEqual(Array.from(s.multiply),[0,0,0]);assert.deepEqual(Array.from(s.boost),[0,0,0]);assert(!s.lightPoints,'Sealed faces never receive shader light');}
+assert(outside.some(d=>d.surfaces.some(s=>s.multiply.some(v=>v>0))));
+console.log('PASS opaque sealed inward/end/cap faces override full LOS and shader lighting while exterior masonry remains');
