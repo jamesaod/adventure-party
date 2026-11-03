@@ -214,6 +214,7 @@ jobs:
 
       - name: Exploration combat rendering
         run: |
+          node scripts/test-exploration-wall-relief.mjs
           node scripts/test-exploration-rendering.mjs
           node scripts/test-exploration-scene-style.mjs
           node scripts/test-doorway-movement.mjs

@@ -13,11 +13,11 @@ export function ambientTextureData(map,density=1){
  }
  return data;
 }
-export function installPaintedAmbient(THREE,scene,map,cellMetres){
+export function installPaintedAmbient(THREE,scene,map,cellMetres,additionalMaterials=[]){
  if(!map.ambientLight)return;
  const density=map.quarterWalls?.length?8:1,texture=new THREE.DataTexture(ambientTextureData(map,density),map.width*density,map.height*density,THREE.RGBAFormat);
  texture.minFilter=texture.magFilter=THREE.NearestFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
- const materials=new Set();scene.traverse(object=>{for(const material of Array.isArray(object.material)?object.material:[object.material])if((material?.isMeshStandardMaterial||material?.isMeshLambertMaterial))materials.add(material);});
+ const materials=new Set(additionalMaterials.filter(Boolean));scene.traverse(object=>{for(const material of Array.isArray(object.material)?object.material:[object.material])if((material?.isMeshStandardMaterial||material?.isMeshLambertMaterial||material?.isMeshPhongMaterial))materials.add(material);});
  for(const material of materials){
   const before=material.onBeforeCompile;
   material.onBeforeCompile=function(shader,renderer){
