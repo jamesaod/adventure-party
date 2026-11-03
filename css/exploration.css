@@ -2,3 +2,6 @@
 
 /* The actual level is drawn in ink below the compact party roster. */
 aside{max-height:none;overflow:visible}.view{align-self:start}table{margin:10px 0}td{padding:6px 3px}.parchment-map{margin:14px 0;padding:10px 6px 8px;color:#654224;border:1px solid #a27b42;box-shadow:inset 0 0 22px #92632966,0 2px 5px #0008;background:radial-gradient(ellipse at 20% 10%,#fff1cd88,transparent 65%),repeating-linear-gradient(25deg,#c59b6020 0 1px,transparent 1px 4px),#e5c997}.parchment-map figcaption{text-align:center;font-size:17px}.parchment-map svg{display:block;width:100%;height:auto}.parchment-map p{text-align:center;margin:3px 0;font-size:11px;line-height:1.4}.map-key{font-weight:normal}.notes summary{cursor:pointer;color:#edcf79}.notes h3{display:none}
+
+/* First-person stone material comparison only. */
+aside .wall-appearance{display:grid;gap:6px;margin:12px 0 0}#wallAppearance{font:inherit;color:#80e6e7;background:#252435;border:1px solid #9492a8;padding:7px;max-width:100%}#wallAppearance:focus-visible{outline:2px solid #edcf79;outline-offset:3px}#viewTiming{font-size:12px;color:#bab9ce}

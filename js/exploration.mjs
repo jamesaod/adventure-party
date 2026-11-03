@@ -1,14 +1,15 @@
+import {stoneReliefSwitch} from './exploration-wall-relief.mjs?v=R238C271';
 import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C270';
 import {wallFaceMaterial,quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C270';
 import {quarterAt,quarterFloor,quarterSegments,ceilingKind} from './quarter-walls.mjs?v=R238C270';
-import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C270';
+import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C271';
 import {createGroundTileBank} from './terrain-transition.mjs?v=R238C270';
 import {hasOutdoorGrass,hasDirtGround,groundKind,grassNeighborMask} from './exploration-ground.mjs?v=R238C270';
 import {torchAnimation} from './exploration-scene-style.mjs?v=R238C270';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C270';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,explorationDoorWidth,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C270';
+import {explorationMaterials,explorationDoor,explorationDoorWidth,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C271';
 import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C270';
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C270';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C270';
@@ -32,7 +33,7 @@ async function start(){
  const skyContext=skyCanvas.getContext('2d'),skyGradient=skyContext.createLinearGradient(0,0,0,256);skyGradient.addColorStop(0,'#346da7');skyGradient.addColorStop(.5,'#9dc7e6');skyGradient.addColorStop(1,'#dbe3df');skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,512,256);
  skyContext.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<16;i++){skyContext.beginPath();skyContext.ellipse((i*137)%512,35+(i*31)%85,35+i%4*8,7+i%3*3,0,0,Math.PI*2);skyContext.fill();}
  const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
- const {wall,floor,grass,wood,woodWall,woodCeiling,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map)});
+ const {wall,wallEnhanced,floor,grass,wood,woodWall,woodCeiling,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map),wallRelief:true});
  const faceMaterials=(record,reverse=false)=>{const base=wallFaceMaterial(record)==='wood'?woodWall:wall,a=wallFaceMaterial(record,'a')==='wood'?woodWall:wall,b=wallFaceMaterial(record,'b')==='wood'?woodWall:wall;return [base,base,base,base,reverse?b:a,reverse?a:b];};
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
  scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
@@ -108,8 +109,19 @@ async function start(){
  $('pixelView').addEventListener('change',resize);resizeObserver=new ResizeObserver(resize);resizeObserver.observe(viewport);resize();status();$('loading').hidden=true;if(returnMessage)message(returnMessage);message(context?'Editor test: step onto a gold floor ring to travel to its connected map.':'You enter the old tollhouse. Move with W A S D; turn with Q / E.');
  const keys={w:'forward',ArrowUp:'forward',s:'back',ArrowDown:'back',a:'strafeLeft',d:'strafeRight',q:'left',ArrowLeft:'left',e:'right',ArrowRight:'right',f:'door'};
  document.addEventListener('keydown',event=>{if(event.ctrlKey||event.metaKey||event.altKey||/INPUT|SELECT|TEXTAREA/.test(event.target.tagName))return;if(event.key==='Escape'){location.assign(context?$('returnLink').href:'index.html');return;}const action=keys[event.key.length===1?event.key.toLowerCase():event.key];if(action){event.preventDefault();if(action!=='door'||!event.repeat)command(action);}});
- installPaintedAmbient(THREE,scene,map,CELL);
- function render(now){frame=requestAnimationFrame(render);if(document.hidden)return;if(motion?.old||[...doors.entries()].some(([key,hinge])=>Math.abs(hinge.rotation.y-(state.openDoors.has(key)?hinge.userData.openAngle:0))>.001))renderer.shadowMap.needsUpdate=true;if(motion?.old){const t=Math.min(1,(now-motion.start)/motion.duration),s=t*t*(3-2*t);camera.position.x=THREE.MathUtils.lerp(motion.old.x,motion.x,s);camera.position.z=THREE.MathUtils.lerp(motion.old.z,motion.z,s);camera.rotation.y=THREE.MathUtils.lerp(motion.old.yaw,motion.yaw,s);if(t===1)motion=null;}doors.forEach((hinge,key)=>{const target=state.openDoors.has(key)?hinge.userData.openAngle:0;hinge.rotation.y=THREE.MathUtils.lerp(hinge.rotation.y,target,reduced?1:.2);});flames.forEach(({flame,light,placement})=>{const a=torchAnimation(now,placement.seed,reduced);flame.scale.set(a.width,a.height,a.width);flame.position.set(placement.x+a.swayX,placement.y,placement.z+a.swayZ);flame.rotation.z=a.swayX*2;light.intensity=torchLight.intensity*a.intensity;});renderer.render(scene,camera);}frame=requestAnimationFrame(render);
+ installPaintedAmbient(THREE,scene,map,CELL,[wallEnhanced]);
+ const wallSwitch=stoneReliefSwitch(scene,wall,wallEnhanced),appearance=$('wallAppearance'),timing=$('viewTiming');
+ const preference='adventure-party:exploration-wall-relief:v1:'+location.pathname;
+ try{appearance.value=localStorage.getItem(preference)==='original'?'original':'enhanced';}catch{appearance.value='enhanced';}
+ let timingStart=0,timingFrames=0,timingWarmupUntil=0;
+ const applyAppearance=()=>{wallSwitch.setEnhanced(appearance.value==='enhanced');canvas.dataset.wallAppearance=wallSwitch.enhanced?'enhanced':'original';timingStart=0;timingFrames=0;timingWarmupUntil=performance.now()+1500;timing.textContent='Measuring view frame rate...';};
+ applyAppearance();appearance.disabled=false;
+ appearance.addEventListener('change',()=>{applyAppearance();try{localStorage.setItem(preference,appearance.value);}catch{}});
+ function render(now){frame=requestAnimationFrame(render);if(document.hidden)return;if(motion?.old||[...doors.entries()].some(([key,hinge])=>Math.abs(hinge.rotation.y-(state.openDoors.has(key)?hinge.userData.openAngle:0))>.001))renderer.shadowMap.needsUpdate=true;if(motion?.old){const t=Math.min(1,(now-motion.start)/motion.duration),s=t*t*(3-2*t);camera.position.x=THREE.MathUtils.lerp(motion.old.x,motion.x,s);camera.position.z=THREE.MathUtils.lerp(motion.old.z,motion.z,s);camera.rotation.y=THREE.MathUtils.lerp(motion.old.yaw,motion.yaw,s);if(t===1)motion=null;}doors.forEach((hinge,key)=>{const target=state.openDoors.has(key)?hinge.userData.openAngle:0;hinge.rotation.y=THREE.MathUtils.lerp(hinge.rotation.y,target,reduced?1:.2);});flames.forEach(({flame,light,placement})=>{const a=torchAnimation(now,placement.seed,reduced);flame.scale.set(a.width,a.height,a.width);flame.position.set(placement.x+a.swayX,placement.y,placement.z+a.swayZ);flame.rotation.z=a.swayX*2;light.intensity=torchLight.intensity*a.intensity;});renderer.render(scene,camera);
+ if(now<timingWarmupUntil){timingStart=0;timingFrames=0;}
+ else if(!timingStart||now-timingStart>3000){timingStart=now;timingFrames=0;}
+ else if(++timingFrames&&now-timingStart>=1000){const interval=(now-timingStart)/timingFrames;timing.textContent=`${Math.round(1000/interval)} FPS - ${interval.toFixed(1)} ms/frame`;timingStart=now;timingFrames=0;}
+ }frame=requestAnimationFrame(render);
 }
 start().catch(error=>{$('loading').textContent=`Exploration could not start: ${error.message} Reload to retry. WebGL is required.`;console.error(error);});
 addEventListener('pagehide',()=>{cancelAnimationFrame(frame);resizeObserver?.disconnect();renderer?.dispose();});

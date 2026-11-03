@@ -1,10 +1,11 @@
+import {createStoneReliefMaterial} from './exploration-wall-relief.mjs?v=R238C271';
 import {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C270';
 import {GRASS_TEXTURES,GROUND_TEXTURES} from './exploration-ground.mjs?v=R238C270';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C270';
 export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C270';
 export const CELL=SCENE_STYLE.cellMetres,HEIGHT=SCENE_STYLE.wallMetres;
-export async function explorationMaterials(renderer,{outdoor=false,dirt=false}={}){
+export async function explorationMaterials(renderer,{outdoor=false,dirt=false,wallRelief=false}={}){
  const loader=new THREE.TextureLoader();
  const textures=await Promise.all(['wall','floor','door'].map(name=>loader.loadAsync(new URL(`../assets/textures/exploration/${name}.png?v=R238C206`,import.meta.url).href)));
  if(outdoor||dirt)textures.push(await loader.loadAsync(new URL('../'+GRASS_TEXTURES.short+'?v=R238C246',import.meta.url).href));
@@ -16,7 +17,9 @@ export async function explorationMaterials(renderer,{outdoor=false,dirt=false}={
  textures[0].wrapS=textures[0].wrapT=textures[1].wrapS=textures[1].wrapT=THREE.RepeatWrapping;
  textures[0].repeat.set(1/m.wallWidthScale,m.wallRows/m.sourceWallRows);textures[1].repeat.set(m.floorSlabs/m.sourceFloorSlabs,m.floorSlabs/m.sourceFloorSlabs);
  if(textures[3]){textures[3].wrapS=textures[3].wrapT=THREE.RepeatWrapping;textures[3].repeat.set(1,1);}
- return {textures:[...textures,...timber],woodWall:new THREE.MeshLambertMaterial({map:timber[0]}),woodCeiling:new THREE.MeshLambertMaterial({map:timber[1],color:0xaaa099}),groundImages:{grass:textures[3]?.image,dirt:textures[4]?.image,fringe:textures[5]?.image},grass:textures[3]?new THREE.MeshLambertMaterial({map:textures[3]}):null,wall:new THREE.MeshLambertMaterial({map:textures[0]}),floor:new THREE.MeshLambertMaterial({map:textures[1]}),wood:new THREE.MeshLambertMaterial({map:textures[2]}),ceiling:new THREE.MeshLambertMaterial({map:textures[0],color:0x777066})};
+ const wallNormal=wallRelief?await loader.loadAsync(new URL('../assets/textures/exploration/wall-normal.png?v=R238C271',import.meta.url).href):null;
+ const wallEnhanced=wallNormal?createStoneReliefMaterial(textures[0],wallNormal):null;
+ return {wallEnhanced,textures:[...textures,...timber,...(wallNormal?[wallNormal]:[])],woodWall:new THREE.MeshLambertMaterial({map:timber[0]}),woodCeiling:new THREE.MeshLambertMaterial({map:timber[1],color:0xaaa099}),groundImages:{grass:textures[3]?.image,dirt:textures[4]?.image,fringe:textures[5]?.image},grass:textures[3]?new THREE.MeshLambertMaterial({map:textures[3]}):null,wall:new THREE.MeshLambertMaterial({map:textures[0]}),floor:new THREE.MeshLambertMaterial({map:textures[1]}),wood:new THREE.MeshLambertMaterial({map:textures[2]}),ceiling:new THREE.MeshLambertMaterial({map:textures[0],color:0x777066})};
 }
 // This is a first-person presentation size, never authored/combat geometry.
 export const explorationDoorWidth=door=>Math.abs((door.width??.375)-.375)<1e-8?.5625:door.width;
