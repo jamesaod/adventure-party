@@ -202,7 +202,8 @@ function buildTree(mature){
   };
   for(let i=3;i<oak.nodes.length;i++){
     const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
-    wood(oak.nodes[p.parent],p,r*(mature?1.4:1.18),r*.76);
+    const parentRadius=Math.max(.16,Math.sqrt(oak.mass[p.parent])*.24);
+    wood(oak.nodes[p.parent],p,mature?Math.min(parentRadius,r*1.18):r*1.18,mature?r:r*.76);
   }
   const rootAngles=Array.from({length:6},(_,i)=>({
     angle:i*Math.PI/3+(barkRandom()-.5)*.5,
@@ -246,8 +247,23 @@ function buildTree(mature){
       const base={x:-1,y:0,z:14};
       const elbow={x:Math.cos(angle)*19,y:Math.sin(angle)*19,z:23+(i%2)*3};
       const end={x:Math.cos(angle)*39,y:Math.sin(angle)*39,z:30+(i%3)*4};
-      wood(base,elbow,3.7,2.3);
-      wood(elbow,end,2.3,.75);
+      const curve=new THREE.CatmullRomCurve3([base,elbow,end].map(p=>new THREE.Vector3(p.x,p.z,p.y)));
+      const steps=18,sides=12;
+      const tube=new THREE.TubeGeometry(curve,steps,1,sides,false);
+      const positions=tube.attributes.position;
+      for(let step=0;step<=steps;step++){
+        const t=step/steps,center=curve.getPointAt(t);
+        const radius=3.4*Math.pow(1-t,1.15)+.55;
+        for(let side=0;side<=sides;side++){
+          const index=step*(sides+1)+side;
+          const point=new THREE.Vector3().fromBufferAttribute(positions,index).sub(center).multiplyScalar(radius).add(center);
+          positions.setXYZ(index,point.x,point.y,point.z);
+        }
+      }
+      tube.computeVertexNormals();
+      const limb=new THREE.Mesh(tube,bark);
+      limb.castShadow=limb.receiveShadow=true;
+      group.add(limb);
     }
   }
   const leaves=new THREE.InstancedMesh(geometry,foliageMaterial,oak.leaves.length);
