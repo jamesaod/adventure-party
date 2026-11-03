@@ -1,12 +1,12 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoorWidth,CELL,HEIGHT,SCENE_STYLE} from './exploration-materials.mjs?v=R238C268';
-import {terrainForEncounter,combatDoorSolids,solidPrism,hexPolygon,floorFragmentIndex,worldHex} from './exploration-encounters.mjs?v=R238C268';
-import {joinedWallPrism} from './wall-joins.mjs?v=R238C268';
-import {surfaceAt,wallFaceMaterial} from './wall-surfaces.mjs?v=R238C268';
-import {grassNeighborMask} from './exploration-ground.mjs?v=R238C268';
-import {createGroundTileBank} from './terrain-transition.mjs?v=R238C268';
-import {torchPlacement} from './exploration-scene-style.mjs?v=R238C268';
-import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C268';
+import {explorationMaterials,explorationDoorWidth,CELL,HEIGHT,SCENE_STYLE} from './exploration-materials.mjs?v=R238C269';
+import {terrainForEncounter,combatDoorSolids,solidPrism,hexPolygon,floorFragmentIndex,worldHex} from './exploration-encounters.mjs?v=R238C269';
+import {joinedWallPrism} from './wall-joins.mjs?v=R238C269';
+import {surfaceAt,wallFaceMaterial} from './wall-surfaces.mjs?v=R238C269';
+import {grassNeighborMask} from './exploration-ground.mjs?v=R238C269';
+import {createGroundTileBank} from './terrain-transition.mjs?v=R238C269';
+import {torchPlacement} from './exploration-scene-style.mjs?v=R238C269';
+import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C269';
 // A static overview of the production map conversion, not a second combat loop.
 export function previewTerrain(map,mode){const sceneMap=structuredClone(map);if(mode==='exploration')sceneMap.edges=sceneMap.edges.map(e=>e.kind==='door'?{...e,width:explorationDoorWidth(e)}:e);return terrainForEncounter(sceneMap,{x:0,z:0},new Set(sceneMap.edges.filter(e=>e.kind==='door'&&e.initialOpen).map(e=>e.id)));}
 export function createMapPreview(canvas,status,title,toggle){

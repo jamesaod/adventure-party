@@ -26,12 +26,12 @@ export const combatLightGLSL=`
     if(d>=shape.x)continue;
     float alignment=max(0.,dot(delta,normal)/max(.01,d));
     float cutoff=pow(max(0.,1.-pow(d/shape.x,4.)),2.);
-    linearBase+=color.rgb*color.a*alignment*cutoff/(3.14159265359*max(.01,pow(d,shape.y)));
+    linearBase+=color.rgb*color.a*alignment*cutoff*(shape.z>.5?combatShadow(int(shape.z)-1,point,normal):1.)/(3.14159265359*max(.01,pow(d,shape.y)));
    }else{
     vec2 axial=vec2(world.x/64.-world.y/63.,world.y/31.5)-source.xy;
     float d=max(max(abs(axial.x),abs(axial.y)),abs(axial.x+axial.y));
     if(d>shape.x)continue;
-    radiance+=color.rgb*color.a*.18*(1.-pow(clamp(d/(shape.x+.45),0.,1.),2.));
+    radiance+=color.rgb*color.a*.18*(shape.z>.5?combatShadow(int(shape.z)-1,point,normal):1.)*(1.-pow(clamp(d/(shape.x+.45),0.,1.),2.));
    }
   }
  }
@@ -46,7 +46,7 @@ export function packCombatLights(lights){
   const spell=l.kind==='spell';
   position.set(spell?[l.x,l.y,0,1]:[l.x,l.y,l.z,0],i*4);
   color.set([...(spell?l.color.map(v=>v/255):linearLightColor(l.color)),l.intensity],i*4);
-  shape.set([l.range,l.decay||1,0,0],i*4);bounds.set(l.bounds,i*4);
+  shape.set([l.range,l.decay||1,(l.shadowSlot??-1)+1,0],i*4);bounds.set(l.bounds,i*4);
  });
  return {position,color,shape,bounds};
 }

@@ -1718,7 +1718,7 @@ async function presentCombatFrame(){
 }
 addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C250"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C269"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
@@ -14835,12 +14835,10 @@ function calculateArmorClass(unit){
   );
 
   const armor=
-    armorItem ? {...getArmorCatalogEntry(armorItem.catalogArmorId),...armorItem} : null;
+    armorItem ? window.adventurePartyArmorRules.resolveArmorItem(armorItem,getArmorCatalogEntry) : null;
 
   const shield=
-    getArmorCatalogEntry(shieldItem?.catalogArmorId) ||
-    shieldItem ||
-    null;
+    window.adventurePartyArmorRules.resolveArmorItem(shieldItem,getArmorCatalogEntry);
 
   /*
     AD&D 2e:
@@ -14893,12 +14891,10 @@ function armorClassBreakdown(unit){
   );
 
   const armor=
-    armorItem ? {...getArmorCatalogEntry(armorItem.catalogArmorId),...armorItem} : null;
+    armorItem ? window.adventurePartyArmorRules.resolveArmorItem(armorItem,getArmorCatalogEntry) : null;
 
   const shield=
-    getArmorCatalogEntry(shieldItem?.catalogArmorId) ||
-    shieldItem ||
-    null;
+    window.adventurePartyArmorRules.resolveArmorItem(shieldItem,getArmorCatalogEntry);
 
   const armorBaseAc=
     Number.isFinite(armor?.baseArmorClass)

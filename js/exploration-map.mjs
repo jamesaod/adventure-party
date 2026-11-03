@@ -1,6 +1,6 @@
-import {quarterAt,quarterSegments} from './quarter-walls.mjs?v=R238C268';
-import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C268';
-import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C268';
+import {quarterAt,quarterSegments} from './quarter-walls.mjs?v=R238C269';
+import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C269';
+import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C269';
 
 // The map and first-person view share the same authored grid and live state.
 // North is the top edge; there is no separately authored illustration to drift.

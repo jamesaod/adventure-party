@@ -35,10 +35,3 @@ The editor View controls relevant Tools and Selection settings. Paintbrush and E
 The upper-right overview switches Exploration Map / Combat Map. It uses shared production terrain, prism/door geometry, actual textures and ambient material injection, with full-height exploration and compact combat walls/hexes. Explorer doorway sizing remains view-only. It is a static, debounced cutaway overview with ceilings hidden, not an encounter or a separate gameplay engine. Maps are cloned for preview and never saved or mutated by rendering.
 
 wall-joins.mjs welds display extrusion endpoints at shared joins and removes internal end caps. Actual CPU segments remain unchanged. Top-cap color no longer produces bright decorative highlights; CPU outlines do not add bright cap strokes. These fixes apply to every production combat entry.
-
-
-## Rev 268 unseen terrain and corner precision
-
-Out-of-LOS terrain now uses one-quarter of its configured ambient illumination (100% to 25%, 200% to 50%). Exposure is computed with the reduced ambient profile rather than a flat 90% black overlay. Direct lantern, torch and spell-light source strengths stay independent; normal player LOS still governs units and targeting. Obscuring spells retain their opaque masks; sealed interiors remain pure black. Floor light-map and wall exposure cache keys include friendly LOS geometry so moving the party or opening a door refreshes the presentation. Enemy turns never become the viewpoint.
-
-Shared miter vertices and final wall-fragment vertices are snapped to the same precision before GPU float32 conversion, preventing adjacent surfaces from choosing different pixel-edge positions. CPU movement/LOS centerlines remain unchanged. User is performing visual QA.
