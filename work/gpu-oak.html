@@ -3,11 +3,11 @@
 <style>body{background:#1b211c;color:#edf0e7;font:16px system-ui;max-width:980px;margin:2rem auto;padding:0 1rem}canvas{display:block;width:100%;height:auto}label,button{margin-right:1rem}a{color:#c2dfad}</style>
 <h1>GPU oak lighting test</h1>
 <p><label>Sun <input id="sun" type="range" min="0" max="360" value="55"></label>
-<label>Unit position <input id="walk" type="range" min="-105" max="105" value="-85"></label>
+<label>View <select id="viewpoint"><option value="ground">Near ground</option><option value="combat">Combat</option></select></label>
 <label>Camera <input id="orbit" type="range" min="0" max="360" value="33"></label>
 <label>Wind <input id="wind" type="range" min="0" max="100" value="35"></label>
 <button id="play">Animate</button><label><input id="shadows" type="checkbox" checked> Shadows</label></p>
-<div id="view"></div><p id="status"></p><a href="white-oak-grove.html">Canvas grove baseline</a>
+<div style="display:flex;justify-content:space-around"><strong>Current oak</strong><strong>Broad mature oak</strong></div><div id="view"></div><p id="status"></p><a href="white-oak-grove.html">Canvas grove baseline</a>
 <script type="module">
 import * as THREE from "../assets/vendor/three/three.module.min.js";
 function randomFor(seed){
@@ -110,19 +110,20 @@ function growFullOak(seed,species="oak"){
   return oak;
 }
 
-const oak=growFullOak(113), view=document.querySelector("#view");
-const sun=document.querySelector("#sun"), walk=document.querySelector("#walk");
+const view=document.querySelector("#view");
+const sun=document.querySelector("#sun"), viewpoint=document.querySelector("#viewpoint");
 const play=document.querySelector("#play"), shadows=document.querySelector("#shadows");
 const status=document.querySelector("#status");
 const orbit=document.querySelector("#orbit"), wind=document.querySelector("#wind");
 const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(960,540);
+renderer.setSize(960,440);
+renderer.setScissorTest(true);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFShadowMap;
 view.append(renderer.domElement);
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x354538);
-const camera=new THREE.OrthographicCamera(-145,145,81.56,-81.56,1,600);
+scene.background=new THREE.Color(0xa9d7ec);
+const camera=new THREE.OrthographicCamera(-93,93,85.25,-85.25,1,600);
 camera.position.set(110,120,170);
 camera.lookAt(0,32,0);
 scene.add(new THREE.HemisphereLight(0xe0edff,0x657450,1.5));
@@ -133,8 +134,7 @@ Object.assign(light.shadow.camera,{left:-135,right:135,top:135,bottom:-135,near:
 light.shadow.bias=-.0005;
 light.shadow.normalBias=.22;
 scene.add(light,light.target);
-const loader=new THREE.TextureLoader();
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(290,220),new THREE.MeshStandardMaterial({color:0x596f40}));
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),new THREE.MeshStandardMaterial({color:0x596f40}));
 ground.rotation.x=-Math.PI/2;
 ground.receiveShadow=true;
 scene.add(ground);
@@ -154,109 +154,135 @@ const barkTexture=new THREE.CanvasTexture(barkCanvas);
 barkTexture.colorSpace=THREE.SRGBColorSpace;
 const barkHeight=new THREE.CanvasTexture(barkCanvas);
 const bark=new THREE.MeshStandardMaterial({map:barkTexture,bumpMap:barkHeight,bumpScale:.7,roughness:1});
-const wood=(from,to,bottom,top)=>{
-  const a=new THREE.Vector3(from.x,from.z,from.y),b=new THREE.Vector3(to.x,to.z,to.y);
-  const delta=b.clone().sub(a);
-  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,delta.length(),7),bark);
-  mesh.position.copy(a).lerp(b,.5);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());
-  mesh.castShadow=mesh.receiveShadow=true;
-  scene.add(mesh);
-};
-for(let i=3;i<oak.nodes.length;i++){
-  const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
-  wood(oak.nodes[p.parent],p,i===1?5.6:r*1.18,r*.76);
-}
-const rootAngles=Array.from({length:6},(_,i)=>({
-  angle:i*Math.PI/3+(barkRandom()-.5)*.5,
-  reach:6+barkRandom()*7
-}));
-const trunkPositions=[],trunkUV=[],trunkIndices=[];
-const rings=[[0,5.5,1],[1.4,5.1,.72],[4,4.3,.34],[8,3.6,.09],[13,3.05,0],[20,2.65,0],[27,2.34,0],[33,2.05,0]];
-const sides=72;
-for(const [height,radius,flare] of rings){
-  for(let i=0;i<=sides;i++){
-    const angle=(i%sides)*2*Math.PI/sides;
-    const roots=rootAngles.reduce((sum,root)=>sum+Math.max(0,Math.cos(angle-root.angle))**26*root.reach,0);
-    const r=radius+flare*roots+.19*Math.sin(angle*11)+.12*Math.cos(angle*17);
-    trunkPositions.push(Math.cos(angle)*r+height/33,height,Math.sin(angle)*r);
-    trunkUV.push(i/sides,height/33);
-  }
-}
-for(let row=0;row<rings.length-1;row++)for(let i=0;i<sides;i++){
-  const a=row*(sides+1)+i,b=a+sides+1;
-  trunkIndices.push(a,b,a+1,a+1,b,b+1);
-}
-const trunkGeometry=new THREE.BufferGeometry();
-trunkGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trunkPositions,3));
-trunkGeometry.setAttribute("uv",new THREE.Float32BufferAttribute(trunkUV,2));
-trunkGeometry.setIndex(trunkIndices);
-trunkGeometry.computeVertexNormals();
-const normals=trunkGeometry.attributes.normal;
-for(let row=0;row<rings.length;row++){
-  const first=row*(sides+1),last=first+sides;
-  const normal=new THREE.Vector3().fromBufferAttribute(normals,first)
-    .add(new THREE.Vector3().fromBufferAttribute(normals,last)).normalize();
-  for(const i of [first,last])normals.setXYZ(i,normal.x,normal.y,normal.z);
-}
-const trunk=new THREE.Mesh(trunkGeometry,bark);
-trunk.castShadow=trunk.receiveShadow=true;
-scene.add(trunk);
 const leafShape=new THREE.Shape();
 leafShape.moveTo(0,-1);
 for(const [x,y] of [[.2,-.66],[.52,-.47],[.25,-.31],[.66,-.08],[.3,.07],[.58,.31],[.24,.38],[.32,.68],[0,1],[-.32,.68],[-.24,.38],[-.58,.31],[-.3,.07],[-.66,-.08],[-.25,-.31],[-.52,-.47],[-.2,-.66]])leafShape.lineTo(x,y);
 leafShape.closePath();
 const geometry=new THREE.ShapeGeometry(leafShape);
 geometry.rotateX(-Math.PI/2);
-const leaves=new THREE.InstancedMesh(geometry,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.85}),oak.leaves.length);
 const dummy=new THREE.Object3D();
-leaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-leaves.frustumCulled=false;
-for(const [i,p] of oak.leaves.entries()){
-  dummy.position.set(p.x,p.z,p.y);
-  dummy.rotation.set(0,i*2.39996,0);
-  dummy.scale.set(p.r*.72,1,p.r);
-  dummy.updateMatrix();
-  leaves.setMatrixAt(i,dummy.matrix);
-  leaves.setColorAt(i,new THREE.Color().setHSL(.24+p.color*.011,.42,.22+p.color*.035));
+const foliageMaterial=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.85});
+function buildTree(mature){
+  const oak=growFullOak(113);
+  const group=new THREE.Group();
+  if(mature){
+    const matureLeaves=[];
+    const rng=randomFor(27113);
+    for(const p of oak.leaves){
+      p.r*=.76;
+      matureLeaves.push(p,{...p,x:p.x+(rng()-.5)*6,y:p.y+(rng()-.5)*6,z:p.z+(rng()-.5)*6});
+    }
+    oak.leaves=matureLeaves;
+    for(const p of [...oak.nodes,...oak.leaves]){
+      const angle=Math.atan2(p.y,p.x), radius=Math.hypot(p.x,p.y);
+      const spread=1.48+.23*Math.cos(angle*5+.6)+.12*Math.sin(angle*3);
+      p.x=p.x*spread-p.z*.05;
+      p.y*=spread;
+      p.z=p.z*.84-9-Math.min(8,radius*.19);
+    }
+    oak.nodes[2]={...oak.nodes[2],x:-33*.075,y:0,z:33*.68};
+  }
+  const wood=(from,to,bottom,top)=>{
+    const a=new THREE.Vector3(from.x,from.z,from.y),b=new THREE.Vector3(to.x,to.z,to.y);
+    const delta=b.clone().sub(a);
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,delta.length(),7),bark);
+    mesh.position.copy(a).lerp(b,.5);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());
+    mesh.castShadow=mesh.receiveShadow=true;
+    group.add(mesh);
+  };
+  for(let i=3;i<oak.nodes.length;i++){
+    const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
+    wood(oak.nodes[p.parent],p,r*(mature?1.4:1.18),r*.76);
+  }
+  const rootAngles=Array.from({length:6},(_,i)=>({
+    angle:i*Math.PI/3+(barkRandom()-.5)*.5,
+    reach:6+barkRandom()*7
+  }));
+  const trunkPositions=[],trunkUV=[],trunkIndices=[];
+  const rings=[[0,5.5,1],[1.4,5.1,.72],[4,4.3,.34],[8,3.6,.09],[13,3.05,0],[20,2.65,0],[27,2.34,0],[33,2.05,0]];
+  const sides=72;
+  for(const [height,radius,flare] of rings){
+    for(let i=0;i<=sides;i++){
+      const angle=(i%sides)*2*Math.PI/sides;
+      const roots=rootAngles.reduce((sum,root)=>sum+Math.max(0,Math.cos(angle-root.angle))**26*root.reach,0);
+      const r=radius+flare*roots*(mature?.72:1)+.19*Math.sin(angle*11)+.12*Math.cos(angle*17);
+      const width=mature?1.4:1;
+      trunkPositions.push(Math.cos(angle)*r*width+(mature?-height*.075:height/33),height*(mature?.68:1),Math.sin(angle)*r*width);
+      trunkUV.push(i/sides,height/33);
+    }
+  }
+  for(let row=0;row<rings.length-1;row++)for(let i=0;i<sides;i++){
+    const a=row*(sides+1)+i,b=a+sides+1;
+    trunkIndices.push(a,b,a+1,a+1,b,b+1);
+  }
+  const trunkGeometry=new THREE.BufferGeometry();
+  trunkGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trunkPositions,3));
+  trunkGeometry.setAttribute("uv",new THREE.Float32BufferAttribute(trunkUV,2));
+  trunkGeometry.setIndex(trunkIndices);
+  trunkGeometry.computeVertexNormals();
+  const normals=trunkGeometry.attributes.normal;
+  for(let row=0;row<rings.length;row++){
+    const first=row*(sides+1),last=first+sides;
+    const normal=new THREE.Vector3().fromBufferAttribute(normals,first)
+      .add(new THREE.Vector3().fromBufferAttribute(normals,last)).normalize();
+    for(const i of [first,last])normals.setXYZ(i,normal.x,normal.y,normal.z);
+  }
+  const trunk=new THREE.Mesh(trunkGeometry,bark);
+  trunk.castShadow=trunk.receiveShadow=true;
+  group.add(trunk);
+  if(mature){
+    for(let i=0;i<5;i++){
+      const angle=.4+i*Math.PI*2/5;
+      const base={x:-1,y:0,z:14};
+      const elbow={x:Math.cos(angle)*19,y:Math.sin(angle)*19,z:23+(i%2)*3};
+      const end={x:Math.cos(angle)*39,y:Math.sin(angle)*39,z:30+(i%3)*4};
+      wood(base,elbow,3.7,2.3);
+      wood(elbow,end,2.3,.75);
+    }
+  }
+  const leaves=new THREE.InstancedMesh(geometry,foliageMaterial,oak.leaves.length);
+  leaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  leaves.frustumCulled=false;
+  for(const [i,p] of oak.leaves.entries()){
+    const outer=Math.min(1,Math.hypot(p.x,p.y,(p.z-38)*.8)/58);
+    const color=mature?new THREE.Color().setHSL(.255-.08*outer,.55,.14+.18*outer+p.color*.018):
+      new THREE.Color().setHSL(.24+p.color*.011,.42,.22+p.color*.035);
+    leaves.setColorAt(i,color);
+  }
+  leaves.castShadow=leaves.receiveShadow=true;
+  group.add(leaves);
+  scene.add(group);
+  return {oak,group,leaves,mature};
 }
-leaves.castShadow=leaves.receiveShadow=true;
-scene.add(leaves);
-const unitMaterial=new THREE.MeshStandardMaterial({transparent:false,alphaTest:.45,side:THREE.DoubleSide});
-const unit=new THREE.Mesh(new THREE.PlaneGeometry(24,31),unitMaterial);
-unit.receiveShadow=true;
-unit.visible=false;
-scene.add(unit);
-loader.load("../assets/sprites/studio-kobold-ready-se.png",texture=>{
-  texture.colorSpace=THREE.SRGBColorSpace;
-  texture.magFilter=THREE.NearestFilter;
-  unitMaterial.map=texture;
-  unitMaterial.needsUpdate=true;
-  unit.visible=true;
-  draw();
-},undefined,()=>{status.textContent="Could not load the unit sprite.";});
+const trees=[buildTree(false),buildTree(true)];
 function draw(time=0){
   const heading=Number(orbit.value)*Math.PI/180;
-  camera.position.set(202*Math.sin(heading),120,202*Math.cos(heading));
-  camera.lookAt(0,32,0);
+  camera.position.set(202*Math.sin(heading),viewpoint.value==="ground"?61:120,202*Math.cos(heading));
+  camera.lookAt(0,34,0);
   const strength=Number(wind.value)/100;
-  for(const [i,p] of oak.leaves.entries()){
-    const gust=Math.sin(time*2+p.y*.085)*strength;
-    dummy.position.set(p.x+gust*2,p.z+gust*.7,p.y);
-    dummy.rotation.set(gust*.22,i*2.39996,gust*.12);
-    dummy.scale.set(p.r*.72,1,p.r);
-    dummy.updateMatrix();
-    leaves.setMatrixAt(i,dummy.matrix);
-  }
-  leaves.instanceMatrix.needsUpdate=true;
   const a=Number(sun.value)*Math.PI/180;
   light.position.set(115*Math.cos(a),115,115*Math.sin(a));
   renderer.shadowMap.enabled=shadows.checked;
-  unit.position.set(Number(walk.value),15.5,9);
-  unit.rotation.y=Math.atan2(camera.position.x,camera.position.z);
-  renderer.render(scene,camera);
+  for(const [panel,tree] of trees.entries()){
+    const {oak,leaves,mature}=tree;
+    for(const [i,p] of oak.leaves.entries()){
+      const gust=Math.sin(time*2+p.y*.085)*strength;
+      const tilt=mature?.75*Math.sin(i*1.83):0;
+      dummy.position.set(p.x+gust*2,p.z+gust*.7,p.y);
+      dummy.rotation.set(tilt+gust*.22,i*2.39996,tilt*.55+gust*.12);
+      dummy.scale.set(p.r*.72,1,p.r);
+      dummy.updateMatrix();
+      leaves.setMatrixAt(i,dummy.matrix);
+    }
+    leaves.instanceMatrix.needsUpdate=true;
+    for(const other of trees)other.group.visible=other===tree;
+    renderer.setViewport(panel*480,0,480,440);
+    renderer.setScissor(panel*480,0,480,440);
+    renderer.render(scene,camera);
+  }
 }
-for(const control of [sun,walk,shadows,orbit,wind])control.addEventListener("input",()=>draw());
+for(const control of [sun,viewpoint,shadows,orbit,wind])control.addEventListener("input",()=>draw());
 let running=false,animation;
 play.addEventListener("click",()=>{
   running=!running;
@@ -266,7 +292,6 @@ play.addEventListener("click",()=>{
   function tick(now){
     const elapsed=(now-start)/1000;
     sun.value=(55+elapsed*24)%360;
-    walk.value=85*Math.sin(elapsed*.9-1.57);
     draw(elapsed);
     animation=requestAnimationFrame(tick);
   }
