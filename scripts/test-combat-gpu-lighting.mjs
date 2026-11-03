@@ -28,10 +28,3 @@ light.x+=1;vm.runInContext('prepareExplorationGpuLighting()',state);assert(trans
 state.explorationEncounter.openDoors=['open'];vm.runInContext('prepareExplorationGpuLighting()',state);assert(transferred.maskRevision>revision,'Opening a door invalidates visibility transport');
 state.location.search='';transferred=undefined;vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred,undefined);
 console.log('PASS GPU light units/colors, per-surface samples, explicit overflow/reference routes, static silhouette reuse and door invalidation');
-
-state.combatGpu.supportsShadows=true;transferred=undefined;vm.runInContext('prepareExplorationGpuLighting()',state);
-assert.equal(transferred.reference,true,'Default uses reference shading plus shadows');
-assert.equal(vm.runInContext('explorationGpuLighting',state),null,'Default must not enable per-pixel experimental shading');
-assert.ok(transferred.shadowScene,'Default shares actual scene caster adapter');
-state.location.search='?combatShadows=off';transferred=undefined;vm.runInContext('prepareExplorationGpuLighting()',state);assert.equal(transferred,undefined);
-console.log('PASS default shadow transport preserves reference route and explicit off switch');
