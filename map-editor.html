@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exploration Map Editor — Adventure Party</title><link rel="stylesheet" href="css/exploration.css?v=R238C207"><link rel="stylesheet" href="css/map-editor.css?v=R238C269"><link rel="preload" href="assets/fonts/press-start-2p.ttf" as="font" type="font/ttf" crossorigin>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exploration Map Editor — Adventure Party</title><link rel="stylesheet" href="css/exploration.css?v=R238C207"><link rel="stylesheet" href="css/map-editor.css?v=R238C270"><link rel="preload" href="assets/fonts/press-start-2p.ttf" as="font" type="font/ttf" crossorigin>
 </head>
 <body><main>
-<header class="chrome"><div><p class="eyebrow">ADVENTURE PARTY · CANDIDATE REV 269</p><h1>Exploration Map Editor</h1></div><a href="index.html">Return to title</a></header>
+<header class="chrome"><div><p class="eyebrow">ADVENTURE PARTY · CANDIDATE REV 270</p><h1>Exploration Map Editor</h1></div><a href="index.html">Return to title</a></header>
 <section class="chrome toolbar" aria-label="Adventure and map controls">
 <label>Adventure name <input id="packName" maxlength="100"></label><label>Map <select id="mapSelect"></select></label><button id="savePack">Save maps</button>
 <details class="file-menu"><summary>Adventure &amp; map actions</summary><div class="action-grid"><button id="newMap">New map</button><button id="duplicateMap">Duplicate</button><button id="deleteMap">Delete</button><button id="towerSample" type="button">Add tower sample</button><button id="terrainSample" type="button">Add terrain sample</button><button id="exportPack">Export Adventure Pack</button><label class="import-button">Import Adventure Pack<input id="importPack" type="file" accept=".json,application/json"></label></div></details></section>
@@ -27,4 +27,4 @@
 <details id="entrancePanel"><summary>Entrances</summary><label>Entrance name <input id="entranceName" maxlength="80" placeholder="e.g. West gate"></label><button id="setEntrance">Add / update entrance</button><button id="removeEntrance">Remove entrance</button></details>
 <details id="exitPanel"><summary>Exit connections</summary><label>Destination map <select id="targetMap"></select></label><label>Arrival entrance <select id="targetEntrance"></select></label><label class="check"><input id="returnLink" type="checkbox"> Create return connection</label><button id="setExit">Connect this square</button><button id="removeExit">Remove exit</button><p id="connectionInfo" class="muted"></p></details>
 <details id="validationPanel"><summary id="validationSummary">Map validation</summary><ul id="issues"></ul></details>
-</section></div><footer>Save maps stores this adventure in this browser. Export Adventure Pack makes a portable backup. Test Map uses a separate snapshot and keeps your design unchanged.</footer></main><script type="module" src="js/map-editor.mjs?v=R238C269"></script></body></html>
+</section></div><footer>Save maps stores this adventure in this browser. Export Adventure Pack makes a portable backup. Test Map uses a separate snapshot and keeps your design unchanged.</footer></main><script type="module" src="js/map-editor.mjs?v=R238C270"></script></body></html>
