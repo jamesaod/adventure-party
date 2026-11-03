@@ -1,11 +1,11 @@
-import {wallFaceMaterial,wallFaceLabels,outsideSurface} from './wall-surfaces.mjs?v=R238C265';
-import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C265';
-import {groundKind} from './exploration-ground.mjs?v=R238C265';
+import {wallFaceMaterial,wallFaceLabels,outsideSurface} from './wall-surfaces.mjs?v=R238C266';
+import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C266';
+import {groundKind} from './exploration-ground.mjs?v=R238C266';
 import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
-import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C265';
-import {FACINGS} from './exploration-core.mjs?v=R238C265';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C265';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C265';
+import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C266';
+import {FACINGS} from './exploration-core.mjs?v=R238C266';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C266';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C266';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;
@@ -145,7 +145,7 @@ function edgeInspector(){
 function applyEdge(button,event){
  const edge=edgeFromPointer(button,event),id=edgeKey(edge);selectedEdge=edge;selected={x:Number(button.dataset.x),z:Number(button.dataset.z)};
  if(stroke.has(id))return;stroke.add(id);
- if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??(record.kind==='door'?.5625:.84))*10000)/100;$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
+ if(tool==='edge-select'){const record=effectiveEdges(map()).find(e=>edgeKey(e)===id);if(record){$('edgeMaterial').value=record.material||'stone';$('openingWidth').value=Math.round((record.width??(record.kind==='door'?.375:.84))*10000)/100;$('doorHinge').value=record.hinge||'start';$('doorInitialOpen').checked=!!record.initialOpen;}grid();inspector();return;}
  try{paintEdge(map(),edge,tool.slice(5),edgeSettings());dirty=true;tell('Edge updated. Save maps to keep this change.');}catch(error){tell(error.message);}
  grid();inspector();$('undo').disabled=!history.length;
  refreshValidation();

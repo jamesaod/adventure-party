@@ -1,5 +1,5 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {CELL,HEIGHT,explorationMaterials,explorationDoor,SCENE_STYLE} from './exploration-materials.mjs?v=R238C265';
+import {CELL,HEIGHT,explorationMaterials,explorationDoor,SCENE_STYLE} from './exploration-materials.mjs?v=R238C266';
 
 export function combatSceneryEntries(map,terrain,openDoors){
  const entries=[],b=terrain.bounds;

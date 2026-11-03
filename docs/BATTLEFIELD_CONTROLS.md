@@ -148,3 +148,6 @@ Movement reactions occur only when the moving unit begins within an eligible ene
 
 
 Candidate Rev 265 supersedes the former 37.5% standard door opening: standard openings are 56.25% of an authored square, 50% wider. doorWidthVersion 4 migrates the old default once; custom gates keep their authored width. Editor paint, first-person doorway/leaf, combat geometry and navigation share that width. Door height and thickness remain unchanged. First-person jamb/lintel UVs use physical wall coordinates, preserving the surrounding masonry scale instead of compressing one full texture into each frame piece.
+
+
+Candidate Rev 266 corrects the scope of Rev 265: the 50% enlargement applies only to the first-person explorer doorway. Authored and combat openings return to 37.5%; doorWidthVersion 5 restores Rev 265 standard 56.25% openings once, preserving other custom widths. explorationDoorWidth returns 56.25% for the standard first-person frame/leaf only. Combat geometry, movement and LOS continue using authored widths. The first-person frame UV fix remains.
