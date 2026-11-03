@@ -1,4 +1,4 @@
-import {syncEdgeDoors} from './exploration-edges.mjs?v=R238C272';
+import {syncEdgeDoors} from './exploration-edges.mjs?v=R238C273';
 // Ordinary editor-format maps: the production converter owns all geometry.
 export function createCombatTestMap(condition='wall'){
  const size=24,room=condition==='wall',inside=(x,z)=>room&&x>=9&&x<=15&&z>=9&&z<=15;

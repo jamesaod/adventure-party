@@ -224,6 +224,7 @@ jobs:
           node scripts/test-wall-surfaces.mjs
           node scripts/test-sealed-interiors.mjs
           node scripts/test-visibility-solar-qa.mjs
+          node scripts/test-wall-ground-shadows.mjs
           node scripts/test-editor-qa.mjs
           node scripts/test-exploration-combat-bounds.mjs
           node scripts/test-combat-visibility-performance.mjs

@@ -1,7 +1,7 @@
-import {quarterAt,quarterFloor,quarterContains} from './quarter-walls.mjs?v=R238C272';
-import {quarterOutsidePolygons} from './wall-surfaces.mjs?v=R238C272';
-import {effectiveEdges,edgeGeometry} from './exploration-edges.mjs?v=R238C272';
-import {quarterSegments} from './quarter-walls.mjs?v=R238C272';
+import {quarterAt,quarterFloor,quarterContains} from './quarter-walls.mjs?v=R238C273';
+import {quarterOutsidePolygons} from './wall-surfaces.mjs?v=R238C273';
+import {effectiveEdges,edgeGeometry} from './exploration-edges.mjs?v=R238C273';
+import {quarterSegments} from './quarter-walls.mjs?v=R238C273';
 const cache=new WeakMap(),key=p=>`${Math.round(p.x*1e8)},${Math.round(p.z*1e8)}`,edgeKey=(a,b)=>[key(a),key(b)].sort().join('|');
 // Presentation connectivity treats every openable door as a passage, even when
 // closed. Curves split their cells into actual inside/outside floor regions.

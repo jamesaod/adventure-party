@@ -307,10 +307,10 @@ function hasAnimatedExplorationTorches(){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  return !!(explorationTerrain&&(explorationTerrain.torches?.length||(game?.areaEffects||[]).some(e=>e.type==='flaming-sphere')))&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
-function drawExplorationWallPrism(wall){
+function explorationWallGroundSolids(wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- if(wall.doorLeaf)return; // The wooden solid owns the closed-door leaf artwork.
+ if(wall.doorLeaf)return []; // The wooden solid owns the closed-door leaf artwork.
  const api=explorationEncounterApi,squash=explorationTerrain.cellH/explorationTerrain.cellW,depth=wall.thickness||3,height=wall.height||35,solids=[];
  const make=(a,b,h=height,bottom=0)=>solids.push(api.joinedWallPrism?api.joinedWallPrism(wall,explorationTerrain.walls||[wall],a,b,depth,h,bottom,squash):api.solidPrism(a,b,depth,h,bottom,squash));
  const openings=wall.openings||[],length=Math.hypot(wall.b.x-wall.a.x,wall.b.y-wall.a.y),at=t=>({x:wall.a.x+(wall.b.x-wall.a.x)*t,y:wall.a.y+(wall.b.y-wall.a.y)*t});
@@ -323,6 +323,12 @@ function drawExplorationWallPrism(wall){
    make(at(lo),at(hi),sill);make(at(lo),at(hi),height,head);
   }else make(at(lo),at(hi),height,explorationEncounterApi.SCENE_STYLE.door.height/explorationEncounterApi.SCENE_STYLE.wallMetres*height);
  }
+
+ return solids;
+}
+function drawExplorationWallPrism(wall){
+ const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ const solids=explorationWallGroundSolids(wall);if(!solids.length)return;
 
  drawExplorationSolids(solids,wall,isArchitecturalWallVisibleToFriendlyParty(wall));
  for(const torch of explorationTerrain.torches||[])if(torch.mountWallId===wall.id&&isHexVisibleToFriendlyParty((torch.visibilityHex||torch).x,(torch.visibilityHex||torch).y)){
@@ -473,6 +479,22 @@ function explorationDaylightAtHex(hex){
  const p=worldPointForHex(hex.x,hex.y),cell=explorationEncounterApi.SCENE_STYLE.cellMetres;
  return field.sample({x:(explorationEncounter.origin.x+p.x/explorationTerrain.cellW)*cell,y:0,z:(explorationEncounter.origin.z+p.y/explorationTerrain.cellH)*cell},{x:0,y:1,z:0},explorationDaylightVisible).relief;
 }
+function explorationWallGroundShadows(){
+ const terrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ const encounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
+ const api=explorationEncounterApi,solar=globalThis.adventurePartySolar?.state?.(),enabled=globalThis.adventurePartySolar?.wallShadows?.()!==false;
+ if(!terrain||!encounter||!solar||!api?.cachedWallGroundShadows||!enabled)return null;
+ const frame=typeof combatLightingFrame==='number'?combatLightingFrame:null,old=explorationWallGroundShadows.frameCache;
+ if(frame!==null&&old?.frame===frame&&old.terrain===terrain&&old.solar===solar)return old.field;
+ const geometryKey=JSON.stringify([encounter.openDoors,(terrain.doors||[]).map(d=>[d.id,d.open])]);
+ const field=api.cachedWallGroundShadows(terrain,api.SCENE_STYLE,solar,{geometryKey,solids:()=>{
+  const solids=(terrain.walls||[]).flatMap(explorationWallGroundSolids);
+  for(const door of terrain.doors||[]){const parts=api.combatDoorSolids(door,terrain,api.SCENE_STYLE);solids.push(parts.leaf,parts.lintel);}return solids;
+ }});
+ explorationWallGroundShadows.frameCache={frame,terrain,solar,field};
+ if(typeof canvas!=='undefined'&&canvas.dataset&&explorationWallGroundShadows.last!==field){canvas.dataset.wallSunShadowStats=JSON.stringify(field.stats);explorationWallGroundShadows.last=field;}
+ return field;
+}
 function explorationSurfaceExposure(point,normal,lights,opened){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
@@ -481,6 +503,11 @@ function explorationSurfaceExposure(point,normal,lights,opened){
  const solar=globalThis.adventurePartySolar?.state?.();
  const outdoor=explorationEncounter.synthetic?!isIndoorWorldPoint({x:(point.x/cell-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(point.z/cell-explorationEncounter.origin.z)*explorationTerrain.cellH}):surface.environment==='outdoor';
  if(solar&&outdoor&&api.solarAmbient){if(!field)ambient=api.solarAmbient(ambient,solar);ambient={...ambient,intensity:ambient.intensity*api.solarFaceGain(normal,solar)};}
+ // Only the ground's direct-sun share is removed. Sky ambient and local
+ // light sources are preserved; wall visibility and tactical LOS are untouched.
+ if(solar&&outdoor&&normal.y>.99&&Math.abs(point.y||0)<.001&&typeof explorationWallGroundShadows==='function'){
+  const shadows=explorationWallGroundShadows();if(shadows){const origin=explorationEncounter.origin,occlusion=shadows.occlusion({x:point.x-origin.x*cell,z:point.z-origin.z*cell});if(occlusion)ambient={...ambient,intensity:ambient.intensity*api.wallSunRetention(occlusion,solar)};}
+ }
  const base=api.surfaceLight(point,normal,lights,explorationDaylightVisible,ambient),day=field?.sample(point,normal,explorationDaylightVisible);
  return api.displayExposure(day?.rgb.some(v=>v>0)?base.map((v,i)=>v+day.rgb[i]):base);
 }
@@ -503,7 +530,8 @@ function drawExplorationIlluminationLayer(gpuOnly=false){
   // Material textures and architectural silhouettes retain their full detail.
   const sampleWorld=12/(typeof battlefieldZoom==='number'?battlefieldZoom:1);
   const width=Math.ceil(spanWidth/sampleWorld),height=Math.ceil(spanHeight/sampleWorld);
-  const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors,(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.revision||0]);
+  const shadowRevision=typeof explorationWallGroundShadows==='function'?explorationWallGroundShadows()?.revision||0:0;
+  const cacheKey=JSON.stringify([shadowRevision,lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors,(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.revision||0]);
   let cache=drawExplorationIlluminationLayer.cache;
   if(!cache||cache.key!==cacheKey){
     const layers=[document.createElement('canvas'),document.createElement('canvas')];for(const c of layers){c.width=width;c.height=height;}
@@ -668,10 +696,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C272');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C273');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C272');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C273');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
