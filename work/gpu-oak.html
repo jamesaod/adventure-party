@@ -4,6 +4,8 @@
 <h1>GPU oak lighting test</h1>
 <p><label>Sun <input id="sun" type="range" min="0" max="360" value="55"></label>
 <label>Unit position <input id="walk" type="range" min="-105" max="105" value="-85"></label>
+<label>Camera <input id="orbit" type="range" min="0" max="360" value="33"></label>
+<label>Wind <input id="wind" type="range" min="0" max="100" value="35"></label>
 <button id="play">Animate</button><label><input id="shadows" type="checkbox" checked> Shadows</label></p>
 <div id="view"></div><p id="status"></p><a href="white-oak-grove.html">Canvas grove baseline</a>
 <script type="module">
@@ -112,6 +114,7 @@ const oak=growFullOak(113), view=document.querySelector("#view");
 const sun=document.querySelector("#sun"), walk=document.querySelector("#walk");
 const play=document.querySelector("#play"), shadows=document.querySelector("#shadows");
 const status=document.querySelector("#status");
+const orbit=document.querySelector("#orbit"), wind=document.querySelector("#wind");
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(960,540);
 renderer.shadowMap.enabled=true;
@@ -161,6 +164,8 @@ const geometry=new THREE.ShapeGeometry(leafShape);
 geometry.rotateX(-Math.PI/2);
 const leaves=new THREE.InstancedMesh(geometry,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.85}),oak.leaves.length);
 const dummy=new THREE.Object3D();
+leaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+leaves.frustumCulled=false;
 for(const [i,p] of oak.leaves.entries()){
   dummy.position.set(p.x,p.z,p.y);
   dummy.rotation.set(0,i*2.39996,0);
@@ -184,7 +189,20 @@ loader.load("../assets/sprites/studio-kobold-ready-se.png",texture=>{
   unit.visible=true;
   draw();
 },undefined,()=>{status.textContent="Could not load the unit sprite.";});
-function draw(){
+function draw(time=0){
+  const heading=Number(orbit.value)*Math.PI/180;
+  camera.position.set(202*Math.sin(heading),120,202*Math.cos(heading));
+  camera.lookAt(0,32,0);
+  const strength=Number(wind.value)/100;
+  for(const [i,p] of oak.leaves.entries()){
+    const gust=Math.sin(time*2+p.y*.085)*strength;
+    dummy.position.set(p.x+gust*2,p.z+gust*.7,p.y);
+    dummy.rotation.set(gust*.22,i*2.39996,gust*.12);
+    dummy.scale.set(p.r*.72,1,p.r);
+    dummy.updateMatrix();
+    leaves.setMatrixAt(i,dummy.matrix);
+  }
+  leaves.instanceMatrix.needsUpdate=true;
   const a=Number(sun.value)*Math.PI/180;
   light.position.set(115*Math.cos(a),115,115*Math.sin(a));
   renderer.shadowMap.enabled=shadows.checked;
@@ -192,7 +210,7 @@ function draw(){
   unit.rotation.y=Math.atan2(camera.position.x,camera.position.z);
   renderer.render(scene,camera);
 }
-for(const control of [sun,walk,shadows])control.addEventListener("input",draw);
+for(const control of [sun,walk,shadows,orbit,wind])control.addEventListener("input",()=>draw());
 let running=false,animation;
 play.addEventListener("click",()=>{
   running=!running;
@@ -203,7 +221,7 @@ play.addEventListener("click",()=>{
     const elapsed=(now-start)/1000;
     sun.value=(55+elapsed*24)%360;
     walk.value=85*Math.sin(elapsed*.9-1.57);
-    draw();
+    draw(elapsed);
     animation=requestAnimationFrame(tick);
   }
   animation=requestAnimationFrame(tick);
