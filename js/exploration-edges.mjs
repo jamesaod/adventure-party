@@ -1,5 +1,5 @@
-import {validateWallFaces} from './wall-surfaces.mjs?v=R238C267';
-import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C267';
+import {validateWallFaces} from './wall-surfaces.mjs?v=R238C268';
+import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C268';
 // Canonical shared edges: h(x,z) is the north edge of cell x,z;
 // v(x,z) is its west edge. Coordinates are independent of any renderer.
 export const edgeKey=e=>`${e.axis}:${e.x},${e.z}`;

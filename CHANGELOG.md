@@ -1,5 +1,10 @@
 # Changelog
 
+## Candidate Rev 268
+- Use 25% ambient illumination outside friendly LOS, retaining direct light sources and sealed-interior blackouts.
+- Snap shared wall and fragment vertices consistently to remove corner raster cracks.
+- Queue chainmail AC, wall UV lightmaps and dynamic light shadows for the next pass.
+
 ## Candidate Rev 267
 - Context-aware map editor with Paintbrush, Erase, Inspect, Objects view and selected-texture preview.
 - Editable selected-item settings and static Exploration/Combat map overview toggle.
