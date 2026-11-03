@@ -12446,6 +12446,7 @@ function isHexVisibleToFriendlyParty(x,y){
 }
 
 function isUnitVisibleToFriendlyParty(unit){
+  const scene=typeof combatSceneTerrain==='undefined'?null:combatSceneTerrain;if(unit&&scene?.isRenderableHex&&!scene.isRenderableHex(unit.x,unit.y))return false;
   if(!unit) return false;
   if(isFriendlyCombatUnit(unit)) return true;
 
@@ -12483,6 +12484,7 @@ function isUnitVisibleToFriendlyParty(unit){
 }
 
 function shouldRenderUnitUnderPartyVisibility(unit){
+  const scene=typeof combatSceneTerrain==='undefined'?null:combatSceneTerrain;if(unit&&scene?.isRenderableHex&&!scene.isRenderableHex(unit.x,unit.y))return false;
   return game?.condition!=="wall" || isUnitVisibleToFriendlyParty(unit);
 }
 
@@ -30418,6 +30420,8 @@ function draw(){
             : drawKobold(enemy)
     });
   }
+
+  if(explorationTerrain?.isRenderableHex)for(let i=actors.length-1;i>=0;i--)if(actors[i].unit&&actors[i].entity&&!explorationTerrain.isRenderableHex(actors[i].entity.x,actors[i].entity.y))actors.splice(i,1);
 
   // Project all visible unit shadows onto terrain before walls, trees, units
   // and fog. Long evening shadows must never paint over another character.

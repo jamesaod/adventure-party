@@ -145,3 +145,6 @@ Per user instruction, this pass receives targeted geometry/navigation checks and
 ## Rev 262 - leaving melee reach
 
 Movement reactions occur only when the moving unit begins within an eligible enemy's melee reach and its destination leaves that enemy's reach. Moving between adjacent hexes around the same enemy does not provoke. Reach weapons and occupied footprints are respected; each nearby enemy is evaluated separately. The reaction resolves before the movement, and a lethal reaction cancels the step.
+
+
+Candidate Rev 265 supersedes the former 37.5% standard door opening: standard openings are 56.25% of an authored square, 50% wider. doorWidthVersion 4 migrates the old default once; custom gates keep their authored width. Editor paint, first-person doorway/leaf, combat geometry and navigation share that width. Door height and thickness remain unchanged. First-person jamb/lintel UVs use physical wall coordinates, preserving the surrounding masonry scale instead of compressing one full texture into each frame piece.

@@ -1,18 +1,19 @@
-import {wallFaceMaterial,quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C264';
-import {quarterAt,quarterFloor,quarterSegments,ceilingKind} from './quarter-walls.mjs?v=R238C264';
-import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C264';
-import {createGroundTileBank} from './terrain-transition.mjs?v=R238C264';
-import {hasOutdoorGrass,hasDirtGround,groundKind,grassNeighborMask} from './exploration-ground.mjs?v=R238C264';
-import {torchAnimation} from './exploration-scene-style.mjs?v=R238C264';
+import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C265';
+import {wallFaceMaterial,quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C265';
+import {quarterAt,quarterFloor,quarterSegments,ceilingKind} from './quarter-walls.mjs?v=R238C265';
+import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C265';
+import {createGroundTileBank} from './terrain-transition.mjs?v=R238C265';
+import {hasOutdoorGrass,hasDirtGround,groundKind,grassNeighborMask} from './exploration-ground.mjs?v=R238C265';
+import {torchAnimation} from './exploration-scene-style.mjs?v=R238C265';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C264';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C265';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C264';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C264';
-import {explorationMapMarkup} from './exploration-map.mjs?v=R238C264';
-import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C264';
-import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C264';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C264';
+import {explorationMaterials,explorationDoor,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C265';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C265';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C265';
+import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C265';
+import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C265';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C265';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const EYE=SCENE_STYLE.eyeMetres,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;
@@ -36,8 +37,10 @@ async function start(){
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
  scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
  const lantern=new THREE.PointLight(lamp.color,lamp.intensity,lamp.range,lamp.decay);lantern.position.set(0,lamp.height-EYE,lamp.offsetZ);lantern.castShadow=true;lantern.shadow.mapSize.set(lamp.shadowPixels,lamp.shadowPixels);lantern.shadow.bias=-.002;lantern.shadow.camera.near=lamp.shadowNear;camera.add(lantern);
+ const accessibility=accessibleFloor(map,state);
  const wallCells=[],floorCells=[];for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)(map.grid[z][x]==='#'?wallCells:floorCells).push({x,z});
  const tiles=(cells,height,y,material)=>{
+  cells=cells.filter(p=>accessibility.at(p));
   const curved=cells.filter(p=>quarterAt(map,p.x,p.z)),flat=cells.filter(p=>!quarterAt(map,p.x,p.z));
   if(flat.length){const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(CELL,height,CELL),material,flat.length),matrix=new THREE.Matrix4();flat.forEach((p,i)=>mesh.setMatrixAt(i,matrix.makeTranslation(p.x*CELL,y,p.z*CELL)));mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);}
   for(const p of curved){const poly=quarterFloor(quarterAt(map,p.x,p.z)),positions=[],uv=[],ceilingFace=y>0,surface=ceilingFace?y-height/2:y+height/2;
@@ -64,7 +67,7 @@ async function start(){
  };
  for(const p of floorCells){const key=groundMaterial(groundKind(map,p.x,p.z),grassNeighborMask(map,p.x,p.z),isOutdoor(map,p.x,p.z));groundGroups.get(key).push(p);}
  for(const [key,cells] of groundGroups)tiles(cells,.12,-.06,groundMaterials.get(key));
- for(const q of map.quarterWalls||[]){const outside=outsideSurface(map,q),material=groundMaterials.get(groundMaterial(outside.ground,grassNeighborMask(map,outside.cell.x,outside.cell.z),outside.environment==='outdoor'));for(const poly of quarterOutsidePolygons(q)){const points=poly,g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x*CELL,0,p.z*CELL]),3));g.setAttribute('uv',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x,p.z]),2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);}}
+ for(const q of map.quarterWalls||[]){const outside=outsideSurface(map,q),material=groundMaterials.get(groundMaterial(outside.ground,grassNeighborMask(map,outside.cell.x,outside.cell.z),outside.environment==='outdoor'));for(const poly of quarterOutsidePolygons(q)){const mid=poly.reduce((s,p)=>({x:s.x+p.x/3,z:s.z+p.z/3}),{x:0,z:0});if(!accessibility.at(mid))continue;const points=poly,g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x*CELL,0,p.z*CELL]),3));g.setAttribute('uv',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x,p.z]),2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);}}
  $('mapDimensions').textContent=`${map.width} × ${map.height} · North up`;
  for(const d of map.doors){const {root,hinge}=explorationDoor(faceMaterials(d,d.axis==='x'),wood,state.openDoors.has(doorKey(d)),map.version===2?{width:d.width*CELL,hinge:d.hinge}:{});root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);doors.set(doorKey(d),hinge);}
  if(map.version===2)for(const edge of effectiveEdges(map)){
@@ -86,6 +89,7 @@ async function start(){
  for(const exit of map.exits||[]){const ring=new THREE.Mesh(new THREE.RingGeometry(.45,.65,24),new THREE.MeshBasicMaterial({color:0xd6b265,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(exit.x*CELL,.015,exit.z*CELL);scene.add(ring);}
  const iron=new THREE.MeshLambertMaterial({color:0x3c3025});
  for(const t of map.torches||[]){
+  if(!accessibility.at(t))continue;
   const placement=torchPlacement(map,t),{x,z,plateX:wallX,plateZ:wallZ,dx,dz}=placement;
   if(placement.attached){
    if(placement.curved){const plate=box(torchLight.plateWidth,torchLight.plateHeight,torchLight.plateDepth,iron,wallX,1.9,wallZ);plate.rotation.y=Math.atan2(dx,dz);}

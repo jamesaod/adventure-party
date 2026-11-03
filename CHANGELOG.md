@@ -1,5 +1,10 @@
 # Changelog
 
+## Candidate Rev 265
+- Keep texture brushes selected across repeated clicks and drag painting.
+- Widen standard doorways by 50% and correct first-person jamb/lintel texture scale.
+- Omit inaccessible sealed interiors while retaining exterior walls; openable doors preserve connected rooms.
+
 ## Candidate Rev 264
 - Restore textured floor outside curved walls; preserve curved movement/LOS barriers.
 - Add editor view overlays for environment, floor, ceiling, ambient and wall materials.

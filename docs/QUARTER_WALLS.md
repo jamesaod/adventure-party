@@ -15,3 +15,9 @@ Optional faceMaterials: {a: 'stone'|'wood', b: 'stone'|'wood'} applies to straig
 The View dropdown above the map switches Indoor/Outdoor, Floor Texture, Ceiling Texture, Ambient Light and Wall Texture overlays. Functional marks, encounter outlines and selection remain visible. Wall view shows paired bands: gray stone and brown wood. Click the actual band to select the wall and open settings; straight faces use cardinal labels, curves use Inside/Outside. Change either dropdown and Apply settings. Both-faces brush sets the defaults for newly painted walls. View changes do not paint or dirty the map.
 
 This face schema is also suitable for future angled walls. Angled geometry and tools are deliberately deferred.
+
+## Rev 265 sealed-area presentation
+
+exploration-accessibility.mjs builds cached adjacency from actual floor polygons, including each side of curved walls. Walls and windows separate regions; every openable door connects regions regardless of its current open state. Starts, test/encounter origins and authored entrances/exits remain visible. Open exterior edges and outdoor map edges connect the surrounding ground. Regions with no route from these entries omit floor/grid, units, light sources and inward wall faces; exterior wall faces and caps stay visible. This is a presentation filter, not a change to movement, targeting or LOS rules. Static layout changes invalidate the cache; door animation and turn changes do not rebuild it.
+
+Editor tool menus retain the current brush and painting does not reload face-material controls from the previous wall. With Select squares or Select edge active, selecting a wall band opens its face settings. Active texture brushes paint over bands without switching tools.
