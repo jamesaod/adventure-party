@@ -168,8 +168,8 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
   if(!record.open)segment(point(low),point(high),id,{doorLeaf:true});
  }
  const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
- const visibleSpaces=spaces.filter(s=>{const point=s.polygon.reduce((sum,p)=>({x:sum.x+p.x/s.polygon.length,z:sum.z+p.y/s.polygon.length}),{x:0,z:0});return accessibility.at({x:origin.x+point.x/cellW,z:origin.z+point.z/cellH});});
- return {walls,spaces:visibleSpaces,isRenderablePoint:p=>accessibility.at({x:origin.x+p.x/cellW,z:origin.z+p.y/cellH}),isRenderableHex:(q,r)=>accessibility.at({x:origin.x+(q+r/2)/scale,z:origin.z+r*Math.sqrt(3)/(2*scale)}),doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
+ const visibleSpaces=[],blackoutSpaces=[];for(const s of spaces){const visible=(()=>{const point=s.polygon.reduce((sum,p)=>({x:sum.x+p.x/s.polygon.length,z:sum.z+p.y/s.polygon.length}),{x:0,z:0});return accessibility.at({x:origin.x+point.x/cellW,z:origin.z+point.z/cellH});})();(visible?visibleSpaces:blackoutSpaces).push(s);}
+ return {walls,spaces:visibleSpaces,blackoutSpaces,isRenderablePoint:p=>accessibility.at({x:origin.x+p.x/cellW,z:origin.z+p.y/cellH}),isRenderableHex:(q,r)=>accessibility.at({x:origin.x+(q+r/2)/scale,z:origin.z+r*Math.sqrt(3)/(2*scale)}),doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
 }
 
 // Cover the projected square map in axial coordinates, including its skew.
