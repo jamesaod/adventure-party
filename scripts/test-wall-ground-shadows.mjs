@@ -33,3 +33,7 @@ console.log('PASS physical wall projection/length, horizon cap, union overlap, s
 sandbox.cubeRound=()=>({x:2,y:3});sandbox.HEX_W=64;sandbox.HEX_ROW=36;sandbox.worldPointForHex=()=>({x:128/3,y:-128/3});
 for(const x of [31,31.1,31.2])sandbox.explorationSurfaceExposure({x,y:0,z:59},{x:0,y:1,z:0},lights,new Set());
 console.log('PASS multiple points in a whole hex use the same shadow anchor');
+
+assert.equal(field.occlusion({x:1,z:-1},.5),1,'Raised face can still be shaded by taller geometry');
+assert.equal(field.occlusion({x:1,z:-1},3.5),0,'Ground shadows cannot shade a face above the blocker');
+assert.equal(field.occlusion({x:1,z:.02},1.75),0,'Sunward receiver outside the wall does not self-shadow');
