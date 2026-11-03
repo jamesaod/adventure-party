@@ -13809,7 +13809,7 @@ function webSilkRandom(seed){
   };
 }
 
-function drawWebSilk(effect,cell,outline){
+function webSilkPattern(effect,cell){
   let patterns=webSilkByEffect.get(effect);
   if(!patterns){
     patterns=new Map();
@@ -13847,6 +13847,11 @@ function drawWebSilk(effect,cell,outline){
     patterns.set(key,pattern);
   }
 
+  return pattern;
+}
+
+function drawWebSilk(effect,cell,outline){
+  const pattern=webSilkPattern(effect,cell);
   ctx.save();
   polygonPath(outline);
   ctx.clip();
@@ -13871,6 +13876,89 @@ function drawWebSilk(effect,cell,outline){
   }
   ctx.stroke();
   ctx.restore();
+}
+
+let raisedWebByMob=new WeakMap();
+function clearRaisedWeb(){
+  if(raisedWebActive){
+    raisedWebByMob=new WeakMap();
+    raisedWebActive=false;
+  }
+}
+let raisedWebActive=false;
+let raisedWebFrame=null;
+
+function drawMobWithWeb(unit,drawMob){
+  const cell=occupiedHexes(unit).find(hex=>webEffectAtHex(hex.x,hex.y));
+  if(!cell){
+    raisedWebByMob.delete(unit);
+    drawMob();
+    return;
+  }
+
+  const effect=webEffectAtHex(cell.x,cell.y);
+  const now=performance.now();
+  let lift=raisedWebByMob.get(unit);
+  if(!lift||lift.effect!==effect||lift.x!==cell.x||lift.y!==cell.y){
+    lift={effect,x:cell.x,y:cell.y,started:now};
+    raisedWebByMob.set(unit,lift);
+    raisedWebActive=true;
+  }
+  const progress=globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ? 1 : Math.min(1,(now-lift.started)/160);
+  const rise=progress*(2-progress);
+  if(progress<1&&raisedWebFrame===null){
+    raisedWebFrame=requestCombatAnimationTick(()=>{
+      raisedWebFrame=null;
+      if(game?.enemies.includes(unit))draw();
+    });
+  }
+
+  const center=worldPointForHex(cell.x,cell.y);
+  const screenCenter=screenPointForWorld(center);
+  const anchors=webSilkPattern(effect,cell).anchors.filter((_,index)=>index%2===0);
+  const rim=anchors.map((anchor,index)=>({
+    x:center.x+(anchor.x-center.x)*.33,
+    y:center.y+(anchor.y-center.y)*.33,
+    height:(index%2===0?22:13)*rise
+  }));
+  const rear=[],front=[];
+  const project=point=>{
+    const ground=screenPointForWorld(point);
+    return {...ground,depth:ground.y-screenCenter.y,y:ground.y-(point.height||0)};
+  };
+  const add=(start,end)=>{
+    const a=project(start),b=project(end);
+    const aLayer=a.depth<0?rear:front,bLayer=b.depth<0?rear:front;
+    if(aLayer===bLayer){
+      aLayer.push([a,b]);
+      return;
+    }
+    const t=a.depth/(a.depth-b.depth);
+    const crossing={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+    aLayer.push([a,crossing]);
+    bLayer.push([crossing,b]);
+  };
+  for(let i=0;i<rim.length;i++){
+    add(anchors[i],rim[i]);
+    add(rim[i],rim[(i+1)%rim.length]);
+  }
+
+  const drawStrands=(strands,color)=>{
+    ctx.save();
+    ctx.strokeStyle=color;
+    ctx.lineWidth=1.15;
+    ctx.beginPath();
+    for(const [a,b] of strands){
+      ctx.moveTo(a.x,a.y);
+      ctx.lineTo(b.x,b.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  };
+  drawStrands(rear,"rgba(204,215,202,0.55)");
+  drawMob();
+  drawStrands(front,"rgba(239,245,229,0.88)");
 }
 
 function drawSpellAreaEffects(){
@@ -30476,7 +30564,7 @@ function draw(){
     actors.push({
       sortY:depth.y,
       sortX:depth.x,
-      unit:true,entity:enemy,
+      unit:true,entity:enemy,wrapWeb:true,
       fn:()=>
         unitPoseDefinition(enemy)?.spriteLayout
           ? drawStudioSpriteMob(enemy)
@@ -30503,9 +30591,12 @@ function draw(){
     (a,b)=>a.sortY-b.sortY || a.sortX-b.sortX
   );
 
+  const hasWeb=game.areaEffects?.some(effect=>effect.type==="web");
+  if(!hasWeb&&typeof clearRaisedWeb==="function")clearRaisedWeb();
   for(const actor of explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors){
     if(combatGpu&&!actor.gpuScenery)combatGpu.prepareOverlay();
-    actor.fn();
+    if(actor.wrapWeb&&hasWeb)drawMobWithWeb(actor.entity,actor.fn);
+    else actor.fn();
   }
 
   if(combatGpu)combatGpu.prepareOverlay();
