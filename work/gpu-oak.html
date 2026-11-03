@@ -138,7 +138,22 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(290,220),new THREE.MeshStand
 ground.rotation.x=-Math.PI/2;
 ground.receiveShadow=true;
 scene.add(ground);
-const bark=new THREE.MeshStandardMaterial({color:0x777064,roughness:1});
+const barkCanvas=document.createElement("canvas");
+barkCanvas.width=256;
+barkCanvas.height=256;
+const barkContext=barkCanvas.getContext("2d");
+const barkRandom=randomFor(113);
+barkContext.fillStyle="#8b8378";
+barkContext.fillRect(0,0,256,256);
+for(let i=0;i<1450;i++){
+  const x=barkRandom()*256,y=barkRandom()*256;
+  barkContext.fillStyle=i%2?"rgba(43,36,31,.27)":"rgba(216,207,191,.23)";
+  barkContext.fillRect(x,y,.6+barkRandom()*2,2+barkRandom()*16);
+}
+const barkTexture=new THREE.CanvasTexture(barkCanvas);
+barkTexture.colorSpace=THREE.SRGBColorSpace;
+const barkHeight=new THREE.CanvasTexture(barkCanvas);
+const bark=new THREE.MeshStandardMaterial({map:barkTexture,bumpMap:barkHeight,bumpScale:.7,roughness:1});
 const wood=(from,to,bottom,top)=>{
   const a=new THREE.Vector3(from.x,from.z,from.y),b=new THREE.Vector3(to.x,to.z,to.y);
   const delta=b.clone().sub(a);
@@ -148,14 +163,45 @@ const wood=(from,to,bottom,top)=>{
   mesh.castShadow=mesh.receiveShadow=true;
   scene.add(mesh);
 };
-for(let i=1;i<oak.nodes.length;i++){
+for(let i=3;i<oak.nodes.length;i++){
   const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
   wood(oak.nodes[p.parent],p,i===1?5.6:r*1.18,r*.76);
 }
-for(let i=0;i<6;i++){
-  const a=i*Math.PI/3;
-  wood({x:0,y:0,z:4},{x:11*Math.cos(a),y:11*Math.sin(a),z:.3},2.3,.2);
+const rootAngles=Array.from({length:6},(_,i)=>({
+  angle:i*Math.PI/3+(barkRandom()-.5)*.5,
+  reach:6+barkRandom()*7
+}));
+const trunkPositions=[],trunkUV=[],trunkIndices=[];
+const rings=[[0,5.5,1],[1.4,5.1,.72],[4,4.3,.34],[8,3.6,.09],[13,3.05,0],[20,2.65,0],[27,2.34,0],[33,2.05,0]];
+const sides=72;
+for(const [height,radius,flare] of rings){
+  for(let i=0;i<=sides;i++){
+    const angle=(i%sides)*2*Math.PI/sides;
+    const roots=rootAngles.reduce((sum,root)=>sum+Math.max(0,Math.cos(angle-root.angle))**26*root.reach,0);
+    const r=radius+flare*roots+.19*Math.sin(angle*11)+.12*Math.cos(angle*17);
+    trunkPositions.push(Math.cos(angle)*r+height/33,height,Math.sin(angle)*r);
+    trunkUV.push(i/sides,height/33);
+  }
 }
+for(let row=0;row<rings.length-1;row++)for(let i=0;i<sides;i++){
+  const a=row*(sides+1)+i,b=a+sides+1;
+  trunkIndices.push(a,b,a+1,a+1,b,b+1);
+}
+const trunkGeometry=new THREE.BufferGeometry();
+trunkGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trunkPositions,3));
+trunkGeometry.setAttribute("uv",new THREE.Float32BufferAttribute(trunkUV,2));
+trunkGeometry.setIndex(trunkIndices);
+trunkGeometry.computeVertexNormals();
+const normals=trunkGeometry.attributes.normal;
+for(let row=0;row<rings.length;row++){
+  const first=row*(sides+1),last=first+sides;
+  const normal=new THREE.Vector3().fromBufferAttribute(normals,first)
+    .add(new THREE.Vector3().fromBufferAttribute(normals,last)).normalize();
+  for(const i of [first,last])normals.setXYZ(i,normal.x,normal.y,normal.z);
+}
+const trunk=new THREE.Mesh(trunkGeometry,bark);
+trunk.castShadow=trunk.receiveShadow=true;
+scene.add(trunk);
 const leafShape=new THREE.Shape();
 leafShape.moveTo(0,-1);
 for(const [x,y] of [[.2,-.66],[.52,-.47],[.25,-.31],[.66,-.08],[.3,.07],[.58,.31],[.24,.38],[.32,.68],[0,1],[-.32,.68],[-.24,.38],[-.58,.31],[-.3,.07],[-.66,-.08],[-.25,-.31],[-.52,-.47],[-.2,-.66]])leafShape.lineTo(x,y);
