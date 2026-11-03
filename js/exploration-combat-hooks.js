@@ -41,16 +41,7 @@ function drawExplorationGpuFloor(tiles){
  }
  const lightMap=drawExplorationIlluminationLayer(true),dynamicLighting=!!explorationGpuLighting;
  for(const [image,group] of groups){
-  for(const face of group){
-   const shadowed=typeof explorationShadowLighting!=='undefined'&&!!explorationShadowLighting;
-   face.lightPoints=dynamicLighting||shadowed?face.points.map(explorationGpuPoint):null;
-   if(shadowed){
-    const p=face.points.reduce((a,b)=>({x:a.x+b.x/face.points.length,y:a.y+b.y/face.points.length}),{x:0,y:0});
-    const cache=drawExplorationGpuFloor.ambientCache||(drawExplorationGpuFloor.ambientCache=new Map()),key=JSON.stringify([explorationDaylight()?.revision,p]);
-    if(drawExplorationGpuFloor.terrain!==t){cache.clear();drawExplorationGpuFloor.terrain=t;}
-    let ambient=cache.get(key);if(!ambient){const q=explorationGpuPoint(p),e=explorationSurfaceExposure({x:q[0],y:0,z:q[2]},{x:0,y:1,z:0},[],new Set(explorationEncounter.openDoors));ambient=e.multiply.map((v,i)=>v/Math.max(.001,255-e.boost[i]));if(cache.size>16000)cache.clear();cache.set(key,ambient);}face.ambient=ambient;
-   }
-  }
+  for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
   combatGpu.surface(group,image,{lightMap,dynamicLighting});
  }
 }
@@ -74,7 +65,6 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const key=JSON.stringify([lights,explorationEncounter.openDoors,explorationDaylight()?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial,wall?.faceMaterials]);
  const cache=drawExplorationGpuSolids.cache||(drawExplorationGpuSolids.cache=new WeakMap());
  let cached=cache.get(cacheOwner);if(cached?.key!==key){cached={key,faces:new Map()};cache.set(cacheOwner,cached);}
- const shadowed=typeof explorationShadowLighting!=='undefined'&&!!explorationShadowLighting,usesAtlas=!!api.createWallLightmap;
  const white=drawExplorationGpuSolids.white||(drawExplorationGpuSolids.white=document.createElement('canvas'));
  if(!drawExplorationGpuSolids.whiteReady){white.width=white.height=1;const c=white.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,1,1);drawExplorationGpuSolids.whiteReady=true;}
  faces.sort((a,b)=>Math.max(...a.points.map(p=>screenPointForWorld(p).y))-Math.max(...b.points.map(p=>screenPointForWorld(p).y))||Number(a.cap)-Number(b.cap));
@@ -87,26 +77,20 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
   if(!fragments){fragments=api.faceLightFragments(face,HEX_W,HEX_ROW).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
    const exposure=explorationSurfaceExposure({x:(explorationEncounter.origin.x+mid.x/t.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/t.cellH)*cell},face.normal,lights,opened);
-   const ambient=shadowed?explorationSurfaceExposure({x:(explorationEncounter.origin.x+mid.x/t.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/t.cellH)*cell},face.normal,[],opened):null;
-   return {...fragment,exposure,ambient};});cached.faces.set(faceKey,fragments);}
-  const atlas=cached.atlas;
+   return {...fragment,exposure};});cached.faces.set(faceKey,fragments);}
   const surfaces=fragments.map(fragment=>{
    const exposure=fragment.exposure,hex=fragment.point,visibility=visible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
    let flicker=0;if(visible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    flicker=Math.max(-.15,Math.min(.15,flicker));
    const radiance=visible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[117,79,42]:[110,104,91];
-   return {_fragment:fragment,points:fragment.points,lightUv:atlas?fragment.points.map(p=>api.wallLightingUv(atlas,fragment,p)):null,ambient:fragment.ambient?fragment.ambient.multiply.map((v,i)=>v/Math.max(.001,255-fragment.ambient.boost[i])):null,lightPoints:dynamicLighting||shadowed?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat+(wall?.textureOffset||0)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
-    multiply:exposure.multiply.map((v,i)=>(usesAtlas?1:v/255)*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap&&!doorTop?cap[i]/255:1)),boost:usesAtlas?[0,0,0]:exposure.boost.map(v=>v/255),
+   return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat+(wall?.textureOffset||0)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
+    multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap&&!doorTop?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
   });
   const image=face.cap&&!doorTop?white:face.material==='door'?explorationDoorImage:wood?explorationWoodWallImage:explorationWallImage,last=batches.at(-1);
-  if(last?.image===image&&!last.blackout)last.surfaces.push(...surfaces);else batches.push({image,surfaces,atlas});
+  if(last?.image===image&&!last.blackout)last.surfaces.push(...surfaces);else batches.push({image,surfaces});
  }
- if(usesAtlas&&!cached.atlas)cached.atlas=api.createWallLightmap([...cached.faces.values()].flat(),()=>document.createElement('canvas'));
- for(const batch of batches){
-  if(usesAtlas&&!batch.blackout)for(const surface of batch.surfaces)surface.lightUv=surface.points.map(p=>api.wallLightingUv(cached.atlas,surface._fragment,p));
-  combatGpu.surface(batch.surfaces,batch.image,{lightMap:batch.blackout?null:cached.atlas,dynamicLighting:dynamicLighting&&!batch.blackout});
- }
+ for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image,{dynamicLighting:dynamicLighting&&!batch.blackout});
 }
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
@@ -297,13 +281,6 @@ function drawExplorationSpellLighting(tiles){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(typeof explorationGpuLighting!=='undefined'&&explorationGpuLighting)return;
- if(typeof explorationShadowLighting!=='undefined'&&explorationShadowLighting&&combatGpu){
-  if(!explorationRenderLights().some(s=>s.sourceKind!=='torch'))return;
-  const white=drawExplorationSpellLighting.white||(drawExplorationSpellLighting.white=document.createElement('canvas'));
-  if(!white.width||white.width!==1){white.width=white.height=1;white.getContext('2d').fillStyle='#fff';white.getContext('2d').fillRect(0,0,1,1);}
-  const faces=explorationFloorFragments(tiles).map(f=>{const p=worldPointForHex(f.point.x,f.point.y);return {points:f.polygon,uv:f.polygon.map(()=>[0,0]),lightPoints:f.polygon.map(explorationGpuPoint),lightWorld:f.polygon.map(()=>[p.x,p.y])};});
-  combatGpu.surface(faces,white,{spellOnly:true,additive:true});return;
- }
  if(!explorationTerrain||!explorationEncounterApi?.spellSurfaceRadiance)return;
  const sources=explorationRenderLights().filter(s=>s.sourceKind!=='torch');if(!sources.length)return;
  const fragments=explorationFloorFragments(tiles);
@@ -320,10 +297,10 @@ function hasAnimatedExplorationTorches(){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  return !!(explorationTerrain&&(explorationTerrain.torches?.length||(game?.areaEffects||[]).some(e=>e.type==='flaming-sphere')))&&!(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
-function explorationWallSolids(wall){
+function drawExplorationWallPrism(wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- if(wall.doorLeaf)return []; // The wooden solid owns the closed-door leaf artwork.
+ if(wall.doorLeaf)return; // The wooden solid owns the closed-door leaf artwork.
  const api=explorationEncounterApi,squash=explorationTerrain.cellH/explorationTerrain.cellW,depth=wall.thickness||3,height=wall.height||35,solids=[];
  const make=(a,b,h=height,bottom=0)=>solids.push(api.joinedWallPrism?api.joinedWallPrism(wall,explorationTerrain.walls||[wall],a,b,depth,h,bottom,squash):api.solidPrism(a,b,depth,h,bottom,squash));
  const openings=wall.openings||[],length=Math.hypot(wall.b.x-wall.a.x,wall.b.y-wall.a.y),at=t=>({x:wall.a.x+(wall.b.x-wall.a.x)*t,y:wall.a.y+(wall.b.y-wall.a.y)*t});
@@ -337,11 +314,6 @@ function explorationWallSolids(wall){
   }else make(at(lo),at(hi),height,explorationEncounterApi.SCENE_STYLE.door.height/explorationEncounterApi.SCENE_STYLE.wallMetres*height);
  }
 
- return solids;
-}
-function drawExplorationWallPrism(wall){
- const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
- const solids=explorationWallSolids(wall);if(!solids.length)return;
  drawExplorationSolids(solids,wall,isArchitecturalWallVisibleToFriendlyParty(wall));
  for(const torch of explorationTerrain.torches||[])if(torch.mountWallId===wall.id&&isHexVisibleToFriendlyParty((torch.visibilityHex||torch).x,(torch.visibilityHex||torch).y)){
   const mount=screenPointForWorld(torch.world),plate=screenPointForWorld(torch.wallPlaneWorld||torch.plateWorld);if(mount.y>=plate.y-.01)drawExplorationTorch(torch);
@@ -675,10 +647,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C269');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C270');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C269');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C270');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');

@@ -1,13 +1,11 @@
 /* Production CPU visibility transport; point-light shading belongs to WebGL.
  * A bounded atlas carries silhouettes, never precomputed color/falloff. */
-let explorationGpuLighting=null,explorationShadowLighting=null;
+let explorationGpuLighting=null;
 function prepareExplorationGpuLighting(){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- explorationGpuLighting=null;explorationShadowLighting=null;
- const options=new URLSearchParams(location.search),gpu=options.get('combatLighting')==='gpu';
- const reference=!!combatGpu?.supportsShadows&&options.get('combatShadows')!=='off'&&options.get('combatLighting')!=='cpu';
- if(!combatGpu?.setLighting||!explorationTerrain||!gpu&&!reference)return;
+ explorationGpuLighting=null;
+ if(!combatGpu?.setLighting||!explorationTerrain||new URLSearchParams(location.search).get('combatLighting')!=='gpu')return;
  const api=explorationEncounterApi,t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres,origin=explorationEncounter.origin;
  const toWorld=p=>({x:(p.x/cell-origin.x)*t.cellW,y:(p.z/cell-origin.z)*t.cellH});
  const axial=p=>({x:p.x/HEX_W-p.y/(2*HEX_ROW),y:p.y/HEX_ROW});
@@ -17,7 +15,7 @@ function prepareExplorationGpuLighting(){
  });
  for(const source of explorationRenderLights())if(source.sourceKind!=='torch'){
   const world=worldPointForHex(source.x,source.y),r=Math.max(1,source.radiusHexes||1);
-  lights.push({...source,kind:'spell',range:r,shadowPosition:[(origin.x+world.x/t.cellW)*cell,1.4,(origin.z+world.y/t.cellH)*cell],shadowRange:r*cell/2,observer:source,bounds:[world.x-r*HEX_W,world.y-r*HEX_ROW,(2*r)*HEX_W,(2*r)*HEX_ROW]});
+  lights.push({...source,kind:'spell',range:r,observer:source,bounds:[world.x-r*HEX_W,world.y-r*HEX_ROW,(2*r)*HEX_W,(2*r)*HEX_ROW]});
  }
  // Never discard spells on large maps. The complete reference route is used
  // for that frame when the guaranteed WebGL 2 uniform budget is exceeded.
@@ -45,23 +43,11 @@ function prepareExplorationGpuLighting(){
   target.restore();
  }
  cache.terrain=t;cache.keys.length=lights.length;
- const state={lights,mask:cache.mask,maskRevision:cache.revision,world:[cell/t.cellW,cell/t.cellH,origin.x*cell,origin.z*cell],reference:!gpu};
- if(combatGpu.supportsShadows&&options.get('combatShadows')!=='off'){
-  const geometryKey=JSON.stringify([explorationEncounter.openDoors,t.doors?.map(d=>[d.id,d.open])]);
-  state.shadowScene={owner:t,key:geometryKey,triangles:()=>{
-   const faces=(t.walls||[]).flatMap(w=>explorationWallSolids(w).flatMap(s=>s.faces));
-   for(const door of t.doors||[])faces.push(...api.combatDoorSolids(door,t,api.SCENE_STYLE).leaf.faces);
-   const vertices=[];
-   const point=p=>[p.x*cell/t.cellW+origin.x*cell,(p.elevation||0)/35*api.SCENE_STYLE.wallMetres,p.y*cell/t.cellH+origin.z*cell];
-   for(const f of faces)for(let i=1;i<f.points.length-1;i++)for(const p of [f.points[0],f.points[i],f.points[i+1]])vertices.push(...point(p));
-   return vertices;
-  }};
- }
- if(gpu)explorationGpuLighting=state;else explorationShadowLighting=state;
- combatGpu.setLighting(state);
+ explorationGpuLighting={lights,mask:cache.mask,maskRevision:cache.revision,world:[cell/t.cellW,cell/t.cellH,origin.x*cell,origin.z*cell]};
+ combatGpu.setLighting(explorationGpuLighting);
 }
 function explorationGpuPoint(p){
- const s=(explorationGpuLighting||explorationShadowLighting).world;
+ const s=explorationGpuLighting.world;
  return [p.x*s[0]+s[2],(p.elevation||0)/35*explorationEncounterApi.SCENE_STYLE.wallMetres,p.y*s[1]+s[3]];
 }
 // Sprite bodies stay upright billboards; sample their standing hex, leaving

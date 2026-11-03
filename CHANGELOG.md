@@ -1,5 +1,11 @@
 # Changelog
 
+## Candidate Rev 270
+- Queue evaluation of less-flat first-person exploration textures for the next pass.
+- Remove Rev269 wall UV lightmaps, GPU depth shadows, proxy geometry and added lighting passes following reported high processor load and choppy FPS.
+- Restore Rev267 combat rendering/lighting, preserving the chainmail and equipped-item armor fixes.
+
+
 ## Candidate Rev 269
 - Mark Rev 268 a failed test and restore the complete Rev 267 baseline.
 - Resolve portable and legacy armor records consistently, retaining chainmail base AC 5 and explicit enchanted variants.

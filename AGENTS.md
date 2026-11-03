@@ -1,5 +1,11 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- NEXT PASS (user queued during Rev270 rollback): evaluate how to make textures in first-person exploration look less flat. Evaluation/options first; no exploration material changes in this rollback.
+
+
+- Rev 270: User rejected Rev269 wall UV lightmaps and dynamic depth shadows because of high processor load and choppy FPS. Both experiments and their added runtime work are REMOVED, not just disabled. Combat rendering/lighting is restored from Rev267; Rev268 remains reverted. KEEP the Rev269 chainmail/armor resolver, null snapshot fallback, explicit enchanted variants and shield overrides. Do not reintroduce either lighting experiment without a new request.
+
+
 - Rev 269: Rev 268 was a FAILED TEST and is fully reverted to the Rev 267 baseline. Do not restore the quarter-ambient rule or its corner snapping. Canonical/portable chainmail IDs and null saved AC resolve through armor-rules; finite enchanted overrides survive. Combat walls have independent padded lighting UV islands with unchanged artwork tiling and hex ownership. Default CPU-reference appearance gains a bounded GPU depth-shadow correction (lantern + strongest spell); see docs/COMBAT_LIGHTING_269.md. CPU LOS/targeting, sealed blackouts and Rev267 unseen presentation remain authoritative. Do not enable full per-pixel point lighting by default.
 
 

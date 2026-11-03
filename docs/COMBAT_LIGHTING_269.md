@@ -1,3 +1,5 @@
+> REVERTED IN REV270: Wall UV lightmaps and dynamic depth shadows described below were removed after user-reported high CPU load and choppy FPS. The armor-resolution fixes remain. This document records the failed experiment only.
+
 # Combat lighting, Candidate Rev 269
 
 Rev 268 was a failed test. Its entire change set is reverted, including the 25%-ambient-outside-LOS rule and corner precision changes. Rev 267 is the baseline. Sealed regions remain opaque black; ordinary unseen terrain uses the Rev267 presentation.
