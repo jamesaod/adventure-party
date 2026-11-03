@@ -1,5 +1,11 @@
 # Changelog
 
+## Candidate Rev 271
+- Exploration-only stone-wall normal-map experiment with matte shading and Original / Enhanced depth comparison.
+- Frame-rate readout uses the existing exploration render loop.
+- Combat rendering and chainmail fixes remain unchanged.
+
+
 ## Candidate Rev 270
 - Queue evaluation of less-flat first-person exploration textures for the next pass.
 - Remove Rev269 wall UV lightmaps, GPU depth shadows, proxy geometry and added lighting passes following reported high processor load and choppy FPS.

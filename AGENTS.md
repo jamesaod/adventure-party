@@ -1,6 +1,6 @@
 # Adventure Party — Session Start and Repository Workflow
 
-- NEXT PASS (user queued during Rev270 rollback): evaluate how to make textures in first-person exploration look less flat. Evaluation/options first; no exploration material changes in this rollback.
+- Rev 271: Exploration-only stone-wall relief uses a precomputed 512px normal map and matte Phong material. Original / Enhanced depth switch swaps stone references without rebuilding the scene. Preserve independent timber faces, painted ambient, lights and shadows. Normal loading is opt-in so the editor overview and combat stay unchanged. FPS readout uses the existing loop. Keep Original available; user performs visual/performance QA. See docs/EXPLORATION_WALL_RELIEF.md.
 
 
 - Rev 270: User rejected Rev269 wall UV lightmaps and dynamic depth shadows because of high processor load and choppy FPS. Both experiments and their added runtime work are REMOVED, not just disabled. Combat rendering/lighting is restored from Rev267; Rev268 remains reverted. KEEP the Rev269 chainmail/armor resolver, null snapshot fallback, explicit enchanted variants and shield overrides. Do not reintroduce either lighting experiment without a new request.
