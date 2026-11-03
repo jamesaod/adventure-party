@@ -1,5 +1,11 @@
 # Changelog
 
+## Candidate Rev 273
+- Add cached, solar-directed wall ground-shadow projection and a Wall shadows comparison toggle.
+- Reuse the existing ground exposure path; preserve ambient/local lighting, combat rules and MOB cast shadows.
+- Keep the reported curved-wall/door LOS regression queued separately.
+
+
 ## Candidate Rev 272
 - Fix false access into sealed mixed curved/straight regions and wall/floor LOS brightness disagreement.
 - Keep exploration ceiling slabs flush with wall tops, removing exposed dark strips above doorways.
