@@ -82,7 +82,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
    const exposure=fragment.exposure,hex=fragment.point,visibility=visible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
    let flicker=0;if(visible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    flicker=Math.max(-.15,Math.min(.15,flicker));
-   const radiance=visible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[179,132,75]:[156,136,103];
+   const radiance=visible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[117,79,42]:[110,104,91];
    return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat+(wall?.textureOffset||0)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
     multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap&&!doorTop?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
@@ -153,7 +153,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
    const density=explorationMaterialDensity(),metrics=api.materialMetrics(explorationTerrain),repeat=face.material==='door'?span:metrics.wallWidth;
    const tile=explorationMaterialTile(image,repeat*density,h*density),pattern=tile&&target.createPattern(tile,'repeat');
    if(pattern){const a=points[3],b=points[2];pattern.setTransform(new DOMMatrix([(b.x-a.x)/span*repeat/tile.width,(b.y-a.y)/span*repeat/tile.width,0,h/tile.height,a.x,a.y]));target.fillStyle=pattern;}else target.fillStyle=face.material==='door'?'#855025':'#8a775d';
-  }else target.fillStyle=face.material==='door'?'#b3844b':'#9c8867';
+  }else target.fillStyle=face.material==='door'?'#b3844b':'#6e685b';
   target.fillRect(left,top,width,height);
   const lighting=(api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW):[face]).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
@@ -167,7 +167,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
    target.save();const polygon=fragment.points.map(p=>screenPointForWorld(p,p.elevation));target.beginPath();target.moveTo(polygon[0].x,polygon[0].y);for(const p of polygon.slice(1))target.lineTo(p.x,p.y);target.closePath();target.clip();
    for(const [mode,color] of [['multiply',fragment.exposure.multiply],['color-dodge',fragment.exposure.boost]]){target.globalCompositeOperation=mode;target.fillStyle=`rgb(${color.join(',')})`;target.fillRect(left,top,width,height);}target.restore();
   }
-  target.restore();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.strokeStyle=face.cap?'#b39a70':'#342b20';target.lineWidth=.6;target.stroke();
+  target.restore();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();// Shared wall edges have no decorative highlight stroke.
  }
  const fragments=faces.flatMap((face,faceIndex)=>api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW).map(f=>({...f,faceIndex,screen:f.points.map(p=>screenPointForWorld(p,p.elevation))})):[face]);
  let blackoutMask=null;if(faces.some(f=>f.blackout)){blackoutMask=document.createElement('canvas');blackoutMask.width=width;blackoutMask.height=height;const m=blackoutMask.getContext('2d');m.translate(-left,-top);m.fillStyle='#000';for(const face of faces){m.globalCompositeOperation=face.blackout?'source-over':'destination-out';const p=face.screen;m.beginPath();m.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))m.lineTo(q.x,q.y);m.closePath();m.fill();}}
@@ -302,7 +302,7 @@ function drawExplorationWallPrism(wall){
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(wall.doorLeaf)return; // The wooden solid owns the closed-door leaf artwork.
  const api=explorationEncounterApi,squash=explorationTerrain.cellH/explorationTerrain.cellW,depth=wall.thickness||3,height=wall.height||35,solids=[];
- const make=(a,b,h=height,bottom=0)=>solids.push(api.solidPrism(a,b,depth,h,bottom,squash));
+ const make=(a,b,h=height,bottom=0)=>solids.push(api.joinedWallPrism?api.joinedWallPrism(wall,explorationTerrain.walls||[wall],a,b,depth,h,bottom,squash):api.solidPrism(a,b,depth,h,bottom,squash));
  const openings=wall.openings||[],length=Math.hypot(wall.b.x-wall.a.x,wall.b.y-wall.a.y),at=t=>({x:wall.a.x+(wall.b.x-wall.a.x)*t,y:wall.a.y+(wall.b.y-wall.a.y)*t});
  for(const part of wallBlockingSubsegments(wall,'los'))make(part.a,part.b);
  for(const opening of openings){
@@ -647,10 +647,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C266');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C267');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C266');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C267');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');

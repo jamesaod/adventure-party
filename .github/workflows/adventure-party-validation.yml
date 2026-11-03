@@ -222,6 +222,7 @@ jobs:
           node scripts/test-quarter-walls.mjs
           node scripts/test-wall-surfaces.mjs
           node scripts/test-sealed-interiors.mjs
+          node scripts/test-editor-qa.mjs
           node scripts/test-exploration-combat-bounds.mjs
           node scripts/test-combat-visibility-performance.mjs
           node scripts/test-combat-view-environments.mjs

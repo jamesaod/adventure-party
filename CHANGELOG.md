@@ -1,5 +1,10 @@
 # Changelog
 
+## Candidate Rev 267
+- Context-aware map editor with Paintbrush, Erase, Inspect, Objects view and selected-texture preview.
+- Editable selected-item settings and static Exploration/Combat map overview toggle.
+- Straight walls on curved-square outer edges; align wall bands and weld display joins to remove bright caps/end seams.
+
 ## Candidate Rev 266
 - Make sealed inward walls, adjoining caps and seams opaque black regardless of LOS or light.
 - Correct doorway scope: restore original combat width; keep 50% wider standard doors in first-person exploration only.
