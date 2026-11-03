@@ -1,4 +1,4 @@
-import {combatLightGLSL,packCombatLights} from './combat-light-shader.mjs?v=R238C272';
+import {combatLightGLSL,packCombatLights} from './combat-light-shader.mjs?v=R238C273';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 
 // Combat owns world coordinates and its established painter ordering. This

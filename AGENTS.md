@@ -1,5 +1,8 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 273: Cached wall ground-shadow experiment uses production wall/door solids projected onto authored ground in the solar direction. Spatially indexed polygon union is cached per terrain/geometry/time; camera and MOB movement do not rebuild it. It attenuates only an outdoor-ground direct-sun share inside the existing exposure bake, preserving ambient/local lights and adding no GPU passes or loop. Wall shadows checkbox compares on/off. MOB cast shadows remain unchanged. Pending separate Rev272 QA: dark curved-wall patches and the door between round structures incorrectly dark in LOS; this experiment does NOT fix those. See docs/WALL_GROUND_SHADOWS.md.
+
+
 - Rev 272: Sealed-floor connectivity links real overlapping curved/straight spans; unmatched interior edges, exits and enclosed outdoor border cells do not seed access. Only real open void boundaries/entrances do. GPU wall fragments use the same friendly LOS polygons as floors, sampled just outside each face. Ceiling slabs finish flush with wall tops instead of protruding above doors. Combat has a manual equinox/38N solar dial above its compass. Drag updates the dial immediately, lighting on pause/release only. Solar presentation changes outdoor ambient, orientation/color and portal daylight while preserving authored indoor ambient, torch/spell lights and tactical illumination/LOS rules. No new shadow/lightmap passes or animation loops. See docs/VISIBILITY_AND_SOLAR_272.md.
 
 

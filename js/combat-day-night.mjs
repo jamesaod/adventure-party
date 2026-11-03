@@ -1,8 +1,9 @@
-import {solarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C272';
+import {solarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C273';
 const host=document.getElementById('combatDayNight');
+let wallShadows=new URLSearchParams(location.search).get('wallSunShadows')!=='off';
 let committed=12,pending=12,committedState=solarState(12),timer=null,dragging=false;
 const commit=()=>{clearTimeout(timer);timer=null;if(committed===pending)return;committed=pending;committedState=solarState(committed);window.dispatchEvent(new CustomEvent('adventure-party:solar-change',{detail:committedState}));};
-window.adventurePartySolar={state:()=>committedState,setHour(hour){pending=Math.round(wrapHour(hour)*6)/6%24;paint();commit();}};
+window.adventurePartySolar={state:()=>committedState,wallShadows:()=>wallShadows,setHour(hour){pending=Math.round(wrapHour(hour)*6)/6%24;paint();commit();}};
 function paint(){
  if(!host)return;const sun=solarState(pending),angle=(pending-12)*Math.PI/12-Math.PI/2,x=100+69*Math.cos(angle),y=100+69*Math.sin(angle);
  host.querySelector('.solar-hand').setAttribute('x2',x);host.querySelector('.solar-hand').setAttribute('y2',y);
@@ -23,7 +24,10 @@ if(host){
  <g class="solar-numerals" fill="#eed38b" text-anchor="middle"><text x="100" y="21">XII</text><text x="18" y="105">VI</text><text x="181" y="105">XVIII</text><text x="100" y="188">XXIV</text></g>
  <line class="solar-hand" x1="100" y1="100" stroke="#e1bc62" stroke-width="2"/><circle cx="100" cy="100" r="5" fill="#d8ad51" stroke="#f8e3a3"/>
  <g class="solar-marker" fill="#ffe49a" stroke="#bd8731"><path d="M0-12L3-7L9-9L7-3L12 0L7 3L9 9L3 7L0 12L-3 7L-9 9L-7 3L-12 0L-7-3L-9-9L-3-7Z"/><circle r="6"/></g></svg>
- <div class="solar-time"></div><div class="solar-position"></div><small>EQUINOX · 38° N</small>`;
+ <div class="solar-time"></div><div class="solar-position"></div><small>EQUINOX · 38° N</small><label class="wall-shadow-toggle"><input id="wallSunShadows" type="checkbox"> WALL SHADOWS</label>`;
+ const shadowToggle=host.querySelector('#wallSunShadows');shadowToggle.checked=wallShadows;
+ shadowToggle.addEventListener('change',()=>{wallShadows=shadowToggle.checked;window.dispatchEvent(new CustomEvent('adventure-party:solar-change',{detail:committedState}));});
+ shadowToggle.addEventListener('keydown',e=>e.stopPropagation());shadowToggle.addEventListener('keyup',e=>e.stopPropagation());
  const wheel=host.querySelector('svg'),queue=()=>{clearTimeout(timer);timer=setTimeout(commit,250);};
  function point(event){const b=wheel.getBoundingClientRect(),x=(event.clientX-b.left)/b.width-.5,y=(event.clientY-b.top)/b.height-.5;if(Math.hypot(x,y)<.12)return;pending=Math.round(hourFromPointer(x,y)*6)/6%24;paint();queue();}
  wheel.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();dragging=true;wheel.setPointerCapture(e.pointerId);point(e);});

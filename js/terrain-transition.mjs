@@ -1,4 +1,4 @@
-import {GROUND_NEIGHBORS} from './exploration-ground.mjs?v=R238C272';
+import {GROUND_NEIGHBORS} from './exploration-ground.mjs?v=R238C273';
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 // Periodic noise and distances to neighboring grass rectangles agree at shared
 // edges, including diagonal-only corners. No transition crosses stone or void.
