@@ -1,4 +1,4 @@
-import {combatLightGLSL,packCombatLights} from './combat-light-shader.mjs?v=R238C273';
+import {combatLightGLSL,packCombatLights} from './combat-light-shader.mjs?v=R238C274';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 
 // Combat owns world coordinates and its established painter ordering. This
@@ -9,28 +9,28 @@ export function combatProjection(point,view){
   y:view.anchor.y+(b*x+d*y+ty-elevation-view.anchor.y)*view.zoom};
 }
 export function triangulateSurfaces(surfaces){
- const position=[],uv=[],multiply=[],boost=[],add=[],lightPoint=[],lightNormal=[],lightWorld=[],visibility=[],tint=[];
+ const position=[],uv=[],multiply=[],boost=[],add=[],lightPoint=[],lightNormal=[],lightWorld=[],visibility=[],tint=[],sunLoss=[];
  for(const face of surfaces){
   if(face.points.length<3)continue;
   for(let i=1;i<face.points.length-1;i++)for(const j of [0,i,i+1]){
-   const p=face.points[j];lightPoint.push(...(face.lightPoints?.[j]||[0,0,0]));lightNormal.push(...(face.lightNormal||[0,1,0]));lightWorld.push(...(face.lightWorld?.[j]||[p.x,p.y]));visibility.push(face.visibility??1);tint.push(...(face.tint||[1,1,1]));position.push(p.x,p.y,p.elevation||0);
+   const p=face.points[j];sunLoss.push(...(face.sunLoss||[0,0,0]));lightPoint.push(...(face.lightPoints?.[j]||[0,0,0]));lightNormal.push(...(face.lightNormal||[0,1,0]));lightWorld.push(...(face.lightWorld?.[j]||[p.x,p.y]));visibility.push(face.visibility??1);tint.push(...(face.tint||[1,1,1]));position.push(p.x,p.y,p.elevation||0);
    uv.push(...(face.uv?.[j]||[0,0]));
    multiply.push(...(face.multiply||[1,1,1]));boost.push(...(face.boost||[0,0,0]));add.push(...(face.add||[0,0,0]));
   }
  }
- return {position,uv,multiply,boost,add,lightPoint,lightNormal,lightWorld,visibility,tint};
+ return {position,uv,multiply,boost,add,lightPoint,lightNormal,lightWorld,visibility,tint,sunLoss};
 }
 const vertexShader=`
  attribute vec3 lightPoint,lightNormal,surfaceTint; attribute vec2 lightSampleWorld; attribute float surfaceVisibility;
- attribute vec3 surfaceMultiply; attribute vec3 surfaceBoost; attribute vec3 surfaceAdd;
+ attribute vec3 surfaceSunLoss; attribute vec3 surfaceMultiply; attribute vec3 surfaceBoost; attribute vec3 surfaceAdd;
  uniform bool screenSpace; uniform mat3 combatView; uniform vec2 anchor; uniform float zoom;
- varying vec3 vLightPoint,vLightNormal,vTint; varying vec2 vLightWorld; varying float vVisibility;
+ varying vec3 vLightPoint,vLightNormal,vTint,vSunLoss; varying vec2 vLightWorld; varying float vVisibility;
  varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
  void main(){
   vec2 screen=(combatView*vec3(position.xy,1.)).xy-vec2(0.,position.z);
   screen=anchor+(screen-anchor)*zoom;
   gl_Position=projectionMatrix*vec4(screenSpace?position.xy:screen,0.,1.);
-  vLightPoint=lightPoint;vLightNormal=lightNormal;vLightWorld=lightSampleWorld;vVisibility=surfaceVisibility;vTint=surfaceTint;
+  vSunLoss=surfaceSunLoss;vLightPoint=lightPoint;vLightNormal=lightNormal;vLightWorld=lightSampleWorld;vVisibility=surfaceVisibility;vTint=surfaceTint;
   vUv=uv;vWorld=position.xy;vMultiply=surfaceMultiply;vBoost=surfaceBoost;vAdd=surfaceAdd;
  }`;
 const fragmentShader=`
@@ -38,7 +38,7 @@ const fragmentShader=`
  uniform bool dynamicLighting,spriteLighting; uniform float surfaceOpacity;
  uniform sampler2D artwork; uniform sampler2D lightMultiply; uniform sampler2D lightBoost;
  uniform bool useLightMap; uniform vec4 lightBounds;
- varying vec3 vLightPoint,vLightNormal,vTint; varying vec2 vLightWorld; varying float vVisibility;
+ varying vec3 vLightPoint,vLightNormal,vTint,vSunLoss; varying vec2 vLightWorld; varying float vVisibility;
  varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
  void main(){
   vec4 texel=texture2D(artwork,vUv);
@@ -53,6 +53,7 @@ const fragmentShader=`
    combatLight(vLightWorld,vLightPoint,normalize(vLightNormal),base,radiance);
    factor=pow(max(vec3(.01),base),vec3(1./2.2));
   }
+  if(any(greaterThan(vSunLoss,vec3(0.))))factor=pow(max(vec3(.01),pow(max(factor,vec3(.0001)),vec3(2.2))-vSunLoss),vec3(1./2.2));
   radiance*=step(.1001,vVisibility);
   vec3 lit=factor*vVisibility;
   if(spriteLighting){float brightness=clamp(dot(lit+radiance,vec3(.2126,.7152,.0722)),.02,1.);gl_FragColor=vec4(texel.rgb*brightness,texel.a*surfaceOpacity);}
@@ -139,7 +140,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
     // setAttribute would orphan the previous driver's buffers.
     geometry.dispose();record.mesh.geometry=geometry=new THREE.BufferGeometry();
    }
-   for(const [name,values,size] of [['lightPoint',data.lightPoint,3],['lightNormal',data.lightNormal,3],['lightSampleWorld',data.lightWorld,2],['surfaceVisibility',data.visibility,1],['surfaceTint',data.tint,3],['position',data.position,3],['uv',data.uv,2],['surfaceMultiply',data.multiply,3],['surfaceBoost',data.boost,3],['surfaceAdd',data.add,3]]){
+   for(const [name,values,size] of [['surfaceSunLoss',data.sunLoss,3],['lightPoint',data.lightPoint,3],['lightNormal',data.lightNormal,3],['lightSampleWorld',data.lightWorld,2],['surfaceVisibility',data.visibility,1],['surfaceTint',data.tint,3],['position',data.position,3],['uv',data.uv,2],['surfaceMultiply',data.multiply,3],['surfaceBoost',data.boost,3],['surfaceAdd',data.add,3]]){
     let attribute=geometry.getAttribute(name);
     if(!attribute||attribute.array.length!==values.length)geometry.setAttribute(name,new THREE.Float32BufferAttribute(values,size).setUsage(THREE.DynamicDrawUsage));
     else{attribute.array.set(values);attribute.needsUpdate=true;}

@@ -1,4 +1,4 @@
-import {solarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C273';
+import {solarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C274';
 const host=document.getElementById('combatDayNight');
 let wallShadows=new URLSearchParams(location.search).get('wallSunShadows')!=='off';
 let committed=12,pending=12,committedState=solarState(12),timer=null,dragging=false;

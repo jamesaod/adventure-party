@@ -1,3 +1,5 @@
+> Rev 274 supersedes smooth ground sampling: whole hexes and owning wall fragments now share stepped Sun shadow decisions. See WALL_VISIBILITY_HEX_SHADOWS.md.
+
 # Cached wall ground shadows, Rev273
 
 First-step experiment approved after the Rev272 solar dial. No GPU shadow maps, extra renderer, lightmap atlas, continuous shadow loop or MOB shadow-generation changes are added.

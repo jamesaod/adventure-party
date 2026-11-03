@@ -1718,7 +1718,7 @@ async function presentCombatFrame(){
 }
 addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C273"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C274"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
