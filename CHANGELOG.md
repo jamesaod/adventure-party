@@ -1,5 +1,10 @@
 # Changelog
 
+## Candidate Rev 264
+- Restore textured floor outside curved walls; preserve curved movement/LOS barriers.
+- Add editor view overlays for environment, floor, ceiling, ambient and wall materials.
+- Author independent materials on both wall faces, with separate curve exterior ground choice; preserve export/resize and old-map defaults.
+
 ## Candidate Rev 110 — 17 Mixamo clips each for New Carl and Orc; reduced preview overhead
 
 - Added SHA-verified, independently offline-baked 17-clip sword/shield GLBs for New Carl and New Orc to the Model Library. The original GLBs, older models and one-clip proof are all preserved, with QA labels on the new entries.

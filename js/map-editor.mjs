@@ -1,10 +1,11 @@
-import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C263';
-import {groundKind} from './exploration-ground.mjs?v=R238C262';
+import {wallFaceMaterial,wallFaceLabels,outsideSurface} from './wall-surfaces.mjs?v=R238C264';
+import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C264';
+import {groundKind} from './exploration-ground.mjs?v=R238C264';
 import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
-import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C263';
-import {FACINGS} from './exploration-core.mjs?v=R238C263';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C263';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C263';
+import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C264';
+import {FACINGS} from './exploration-core.mjs?v=R238C264';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C264';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C264';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null;
@@ -42,7 +43,7 @@ function destinations(preferred){
 }
 function inspector(){
   const m=map(),{x,z}=selected,entrance=m.entrances.find(e=>e.x===x&&e.z===z),exit=m.exits.find(e=>e.x===x&&e.z===z);
-  edgeInspector();
+  edgeInspector();const curve=quarterAt(m,x,z);$('applyCurveSettings').disabled=!curve;$('curveSelection').textContent=curve?`Quarter-round ${curve.corner.toUpperCase()} · square ${x+1}, ${z+1}`:'Select a curved wall square to edit its faces.';if(curve){$('curveFaceA').value=wallFaceMaterial(curve,'a');$('curveFaceB').value=wallFaceMaterial(curve,'b');$('curveOutsideGround').value=curve.outsideGround||'auto';}
   $('migrationNotes').textContent=(m.migrationNotes||[]).join(' ');
   $('ambientSelection').textContent=`Selected square ambient: ${ambientLightAt(m,x,z)}%${m.ambientLight?.[z]?.[x]===null||m.ambientLight?.[z]?.[x]===undefined?' (environment default)':' (painted)'}`;
   $('selection').textContent=`Selected square ${x+1}, ${z+1} · ${m.grid[z][x]==='#'?'Wall':m.grid[z][x]==='D'?'Door':'Floor'}`;
@@ -63,6 +64,7 @@ function inspector(){
   $('removeEntrance').disabled=!entrance;$('removeExit').disabled=!exit;
 }
 function grid(){
+  const view=$('editorView').value;$('editorGrid').dataset.view=view;$('viewLegend').textContent={environment:'Green: outdoor / sky · Cream: indoor / ceiling',floor:'Grass: green · Dirt: brown · Stone: gray',ceiling:'Stone: gray · Wood: brown · Outdoor: sky blue',ambient:'Effective ambient light percentage, including environment defaults.',wall:'Two bands per wall: gray = stone, brown = wood. Select a band to edit that face. Curves: inner / outer band.'}[view];
   const m=map(),fragment=document.createDocumentFragment(),areas=new Map(),edges=new Map(effectiveEdges(m).map(e=>[edgeKey(e),e]));
   (m.encounters||[]).forEach((e,i)=>{for(const p of encounterCells(e))if('.D'.includes(m.grid[p.z]?.[p.x]??'#'))areas.set(`${p.x},${p.z}`,{event:e,index:i+1});});$('editorGrid').style.gridTemplateColumns=`repeat(${m.width},minmax(24px,1fr))`;$('editorGrid').style.width=`max(100%, ${m.width*24}px)`;$('editorGrid').setAttribute('aria-label',`${m.width} by ${m.height} editable map`);
   for(let z=0;z<m.height;z++)for(let x=0;x<m.width;x++){
@@ -76,13 +78,14 @@ function grid(){
       if(area.event.id===activeEncounterId)b.classList.add('active-area');
     }
     if(m.ambientLight?.[z]?.[x]!==null&&m.ambientLight?.[z]?.[x]!==undefined){b.dataset.ambient=String(ambientLightAt(m,x,z));b.title+=(b.title?' · ':'')+`Ambient ${ambientLightAt(m,x,z)}%`;}
+    if(cell==='.'||cell==='D'){const ambient=ambientLightAt(m,x,z),colors={grass:'#a4c285',dirt:'#ad855b',stone:'#b5ada0'};b.style.background=view==='floor'?colors[groundKind(m,x,z)]:view==='ceiling'?(isOutdoor(m,x,z)?'#a4cfeb':ceilingKind(m,x,z)==='wood'?'#ad855b':'#b5ada0'):view==='ambient'?`hsl(48 35% ${20+Math.min(ambient,200)*.3}%)`:view==='wall'?'#ddd4bd':isOutdoor(m,x,z)?'#c5dec4':'#efdbaf';if(view==='ambient')b.dataset.ambient=String(ambient);}
     b.setAttribute('aria-pressed',String(selectionKeys.has(`${x},${z}`)));
     b.textContent=labels.join('')||(door?(door.axis==='x'?'│':'─'):'');
     b.setAttribute('aria-label',`Column ${x+1}, row ${z+1}: ${cell==='#'?(m.version===2?'void / solid area':'wall'):cell==='D'?'door':'floor'}${labels.length?', '+labels.join(', '):''}${area?', encounter '+area.event.name:''}${isOutdoor(m,x,z)?', outdoor / sky':', indoor / ceiling'}, ambient light ${ambientLightAt(m,x,z)}%, ${groundKind(m,x,z)} ground`);
     if(m.ceiling?.[z]?.[x]){b.title+=(b.title?' · ':'')+ceilingKind(m,x,z)+' ceiling';b.setAttribute('aria-label',b.getAttribute('aria-label')+', '+ceilingKind(m,x,z)+' ceiling');}
     if(selectionKeys.has(`${x},${z}`))b.classList.add('selected');
-    for(const side of ['n','e','s','w']){const edge=edgeAtSide(x,z,side),record=edges.get(edgeKey(edge)),mark=document.createElement('span');mark.className=`edge-mark edge-${side} ${record?.kind||'empty'}`;mark.dataset.edge=edgeKey(edge);mark.setAttribute('aria-hidden','true');b.append(mark);}
-    const quarter=quarterAt(m,x,z);if(quarter){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS('http://www.w3.org/2000/svg','polyline');svg.setAttribute('viewBox','0 0 100 100');svg.classList.add('quarter-mark');const cutout=document.createElementNS('http://www.w3.org/2000/svg','path');cutout.setAttribute('d','M0 0H100V100H0Z M'+quarterFloor(quarter).map(p=>`${(p.x-x+.5)*100} ${(p.z-z+.5)*100}`).join('L')+'Z');cutout.setAttribute('fill-rule','evenodd');cutout.setAttribute('fill','#947348');cutout.setAttribute('opacity','.65');svg.append(cutout);path.setAttribute('points',quarterPoints(quarter).map(p=>`${(p.x-x+.5)*100},${(p.z-z+.5)*100}`).join(' '));path.setAttribute('fill','none');path.setAttribute('stroke',quarter.material==='wood'?'#9b551e':'#563d25');path.setAttribute('stroke-width','5');svg.append(path);b.append(svg);b.title+=(b.title?' · ':'')+`Quarter-round ${quarter.corner.toUpperCase()}`;b.setAttribute('aria-label',b.getAttribute('aria-label')+`, quarter-round ${quarter.corner}`);}
+    for(const side of ['n','e','s','w']){const edge=edgeAtSide(x,z,side),record=edges.get(edgeKey(edge)),mark=document.createElement('span');mark.className=`edge-mark edge-${side} ${record?.kind||'empty'}`;mark.dataset.edge=edgeKey(edge);mark.setAttribute('aria-hidden','true');if(record&&view==='wall'){for(const face of ['a','b']){const band=document.createElement('span');band.className='wall-face face-'+face;band.dataset.face=face;band.dataset.edge=edgeKey(edge);band.dataset.material=wallFaceMaterial(record,face);band.title=wallFaceLabels(record)[face]+': '+wallFaceMaterial(record,face);mark.append(band);}}b.append(mark);}
+    const quarter=quarterAt(m,x,z);if(quarter){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS('http://www.w3.org/2000/svg','polyline');svg.setAttribute('viewBox','0 0 100 100');svg.classList.add('quarter-mark');if(view!=='wall'){const outer=outsideSurface(m,quarter),fill=document.createElementNS('http://www.w3.org/2000/svg','path');fill.setAttribute('d','M0 0H100V100H0Z M'+quarterFloor(quarter).map(p=>`${(p.x-x+.5)*100} ${(p.z-z+.5)*100}`).join('L')+'Z');fill.setAttribute('fill-rule','evenodd');fill.setAttribute('fill',view==='floor'?({grass:'#a4c285',dirt:'#ad855b',stone:'#b5ada0'})[outer.ground]:view==='environment'?(outer.environment==='outdoor'?'#c5dec4':'#efdbaf'):view==='ceiling'?(outer.environment==='outdoor'?'#a4cfeb':ceilingKind(m,outer.cell.x,outer.cell.z)==='wood'?'#ad855b':'#b5ada0'):`hsl(48 35% ${20+Math.min(outer.ambient,200)*.3}%)`);svg.append(fill);}path.setAttribute('points',quarterPoints(quarter).map(p=>`${(p.x-x+.5)*100},${(p.z-z+.5)*100}`).join(' '));path.setAttribute('fill','none');path.setAttribute('stroke',quarter.material==='wood'?'#9b551e':'#563d25');path.setAttribute('stroke-width','5');if(view==='wall'){const center=quarterFloor(quarter)[0];for(const face of ['a','b']){const band=path.cloneNode();band.classList.add('curve-face');band.dataset.face=face;band.dataset.curve='true';band.dataset.material=wallFaceMaterial(quarter,face);band.setAttribute('stroke',wallFaceMaterial(quarter,face)==='wood'?'#a9682e':'#6e7478');band.setAttribute('stroke-width','5');band.setAttribute('points',quarterPoints(quarter).map(p=>{const scale=face==='a'?.965:1.035;return `${(center.x+(p.x-center.x)*scale-x+.5)*100},${(center.z+(p.z-center.z)*scale-z+.5)*100}`;}).join(' '));svg.append(band);}}else svg.append(path);b.append(svg);b.title+=(b.title?' · ':'')+`Quarter-round ${quarter.corner.toUpperCase()}`;b.setAttribute('aria-label',b.getAttribute('aria-label')+`, quarter-round ${quarter.corner}`);}
     fragment.append(b);
   }
   $('editorGrid').replaceChildren(fragment);
@@ -116,11 +119,11 @@ function applySquare(button,event){
   const x=Number(button.dataset.x),z=Number(button.dataset.z);selected={x,z};selectionKeys=new Set([`${x},${z}`]);activeEncounterId=null;
   if(tool!=='select'){
     const key=`${x},${z}`;if(stroke.has(key))return;stroke.add(key);
-    try{paintCell(map(),x,z,tool,Number($('ambientPercent').value),{material:$('curveMaterial').value});dirty=true;tell('Unsaved changes.');}catch(e){tell(e.message);}
+    try{paintCell(map(),x,z,tool,Number($('ambientPercent').value),{material:$('curveMaterial').value,faceMaterials:{a:$('curveFaceA').value,b:$('curveFaceB').value},outsideGround:$('curveOutsideGround').value});dirty=true;tell('Unsaved changes.');}catch(e){tell(e.message);}
   }
   grid();inspector();refreshValidation();$('undo').disabled=!history.length;
 }
-function edgeSettings(){return {material:$('edgeMaterial').value,width:Number($('openingWidth').value)/100,hinge:$('doorHinge').value,initialOpen:$('doorInitialOpen').checked};}
+function edgeSettings(){return {material:$('edgeMaterial').value,faceMaterials:{a:$('edgeFaceA').value,b:$('edgeFaceB').value},width:Number($('openingWidth').value)/100,hinge:$('doorHinge').value,initialOpen:$('doorInitialOpen').checked};}
 function edgeFromPointer(button,event){
  const x=Number(button.dataset.x),z=Number(button.dataset.z);let side=$('edgeSide').value;
  if(event?.type?.startsWith('pointer')&&Number.isFinite(event.clientX)){
@@ -137,7 +140,7 @@ function edgeInspector(){
  const record=selectedEdge&&effectiveEdges(map()).find(e=>edgeKey(e)===edgeKey(selectedEdge));
  $('edgeSelection').textContent=selectedEdge?`Edge ${edgeKey(selectedEdge)} · ${record?.kind||'open passage'}${record?.boundary?' · floor/void boundary':''}`:'Choose an edge with a wall tool. Keyboard: select a side below, then activate a square.';
  $('applyEdgeSettings').disabled=!selectedEdge;
- if(record){$('edgeKind').value=record.kind;}
+ if(record){$('edgeKind').value=record.kind;const labels=wallFaceLabels(record);for(const side of ['a','b']){const input=$('edgeFace'+side.toUpperCase());input.parentElement.firstChild.textContent=labels[side];input.value=wallFaceMaterial(record,side);}}
 }
 function applyEdge(button,event){
  const edge=edgeFromPointer(button,event),id=edgeKey(edge);selectedEdge=edge;selected={x:Number(button.dataset.x),z:Number(button.dataset.z)};
@@ -158,15 +161,20 @@ async function start(){
    for(const id of ids)option($(menu),id,toolLabels[id]);
    $(menu).addEventListener('change',()=>{if($(menu).value)setTool($(menu).value);});
   }
+  $('editorView').addEventListener('change',grid);
+  function chooseFace(event){const band=event.target.closest('[data-face]');if(!band)return false;event.preventDefault();const cell=band.closest('button[data-x]');selected=point(cell);selectionKeys=new Set([`${selected.x},${selected.z}`]);if(band.dataset.curve){selectedEdge=null;inspector();$('curvePanel').open=true;$('curveSelection').textContent+=' · Editing '+(band.dataset.face==='a'?'inside':'outside')+' face';}else{selectedEdge=effectiveEdges(map()).find(e=>edgeKey(e)===band.dataset.edge);inspector();$('edgePanel').open=true;$('edgeSelection').textContent+=' · Editing '+wallFaceLabels(selectedEdge)[band.dataset.face];}grid();return true;}
+  $('curveMaterial').addEventListener('change',()=>{$('curveFaceA').value=$('curveFaceB').value=$('curveMaterial').value;});
+  action('applyCurveSettings',()=>{const q=quarterAt(map(),selected.x,selected.z);if(!q)throw Error('Select a curved wall first.');mutate(()=>paintCell(map(),q.x,q.z,'curve-'+q.corner,0,{material:q.material,faceMaterials:{a:$('curveFaceA').value,b:$('curveFaceB').value},outsideGround:$('curveOutsideGround').value}));});
   $('selectTool').addEventListener('click',()=>setTool('select'));
-  $('wallTexture').addEventListener('change',()=>{if($('wallTexture').value){$('edgeMaterial').value=$('wallTexture').value;setTool('edge-wall');}});
-  $('edgeMaterial').addEventListener('change',()=>{if(tool==='edge-wall')setTool(tool);});
+  $('wallTexture').addEventListener('change',()=>{if($('wallTexture').value){$('edgeMaterial').value=$('edgeFaceA').value=$('edgeFaceB').value=$('wallTexture').value;setTool('edge-wall');}});
+  $('edgeMaterial').addEventListener('change',()=>{$('edgeFaceA').value=$('edgeFaceB').value=$('edgeMaterial').value;if(tool==='edge-wall')setTool(tool);});
   const point=b=>({x:Number(b.dataset.x),z:Number(b.dataset.z)});
   function updateSelection(p){
     const drag=selectionDrag;if(!drag)return;drag.last=p;drag.moved||=p.x!==drag.start.x||p.z!==drag.start.z;
     selected=p;selectionKeys=new Set(rectangleSelection(drag.start,p,drag.base,drag.mode));grid();inspector();
   }
   $('editorGrid').addEventListener('pointerdown',e=>{
+    if(chooseFace(e))return;
     const b=e.target.closest('button[data-x]');if(!b||e.button!==0)return;e.preventDefault();painting=true;stroke.clear();
     $('editorGrid').setPointerCapture(e.pointerId);
     if(tool==='select'||tool==='encounter-area'){
@@ -188,7 +196,7 @@ async function start(){
   }
   document.addEventListener('pointerup',finishSelection);$('editorGrid').addEventListener('pointercancel',finishSelection);
   $('editorGrid').addEventListener('click',e=>{
-    if(e.detail!==0)return;const b=e.target.closest('button[data-x]');if(!b)return;const p=point(b);
+    if(e.detail!==0)return;if(chooseFace(e))return;const b=e.target.closest('button[data-x]');if(!b)return;const p=point(b);
     if(tool==='select'||tool==='encounter-area'){
       const mode=e.altKey?'subtract':e.shiftKey?'add':$('selectionMode').value;
       const event=tool==='select'&&mode==='replace'?(map().encounters||[]).find(e=>encounterContains(e,p.x,p.z)):null;
