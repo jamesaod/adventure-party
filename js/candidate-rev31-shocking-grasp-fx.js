@@ -447,6 +447,7 @@
     };
 
     ctx.save();
+    ctx.globalAlpha*=.5;
     ctx.globalCompositeOperation="lighter";
     ctx.lineCap="round";
     ctx.lineJoin="round";

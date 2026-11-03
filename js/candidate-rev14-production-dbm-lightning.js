@@ -1405,6 +1405,8 @@
       return;
     }
 
+    ctx.save();
+    ctx.globalAlpha*=.5;
     drawIllumination(
       fx,
       intensity
@@ -1444,6 +1446,7 @@
         time
       );
     }
+    ctx.restore();
   };
 
   window.AdventurePartyDbmLightningProduction={

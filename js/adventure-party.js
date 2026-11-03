@@ -5820,9 +5820,8 @@ function pointInConvexPolygon(point,vertices,eps=0.0001){
   return true;
 }
 
-function architecturalHexCoreVertices(x,y){
+function architecturalHexCoreVertices(x,y,s=ARCHITECTURAL_HEX_CORE_SCALE){
   const c=worldPointForHex(x,y);
-  const s=ARCHITECTURAL_HEX_CORE_SCALE;
 
   return [
     {x:c.x,               y:c.y-(HEX_H/2)*s},
@@ -12243,7 +12242,7 @@ function visibilityWorldBounds(){
   return {left,right,top,bottom,corners:[{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}]};
 }
 
-function visibilitySegments(mode="los"){
+function visibilitySegments(mode="los",fogPolygons=[]){
   const bounds=visibilityWorldBounds();
   const segments=[];
 
@@ -12259,6 +12258,8 @@ function visibilitySegments(mode="los"){
       }
     }
   }
+
+  for(const polygon of fogPolygons)segments.push(...wallPolygonSegments(polygon));
 
   for(const segment of wallPolygonSegments(bounds.corners)){
     segments.push({...segment,isBoundary:true});
@@ -12340,10 +12341,13 @@ function wallTestVisibilityPolygonWorld(observer,mode="los"){
 
   let cache=wallTestVisibilityPolygonWorld.cache;
   if(!cache||cache.walls!==architecturalWalls){cache={walls:architecturalWalls,observers:new WeakMap()};wallTestVisibilityPolygonWorld.cache=cache;}
-  const cacheKey=[observer.x,observer.y,camera.x,camera.y,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT,battlefieldZoom,battlefieldRotation,mode].join(':');
+  const fog=mode==="los"&&typeof denseFogGeometry==="function"?denseFogGeometry():null;
+  if(fog?.cells.has(observer.x+","+observer.y))return architecturalHexCoreVertices(observer.x,observer.y,1);
+  const cacheKey=[observer.x,observer.y,camera.x,camera.y,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT,battlefieldZoom,battlefieldRotation,mode,fog?.key].join(':');
   const cached=cache.observers.get(observer);if(cached?.key===cacheKey)return cached.polygon;
   const origin=worldPointForHex(observer.x,observer.y);
-  const {segments,bounds}=visibilitySegments(mode);
+  const fogPolygons=fog?.polygons||[];
+  const {segments,bounds}=visibilitySegments(mode,fogPolygons);
   const epsilon=0.00018;
   const vertices=[];
 
@@ -12352,6 +12356,7 @@ function wallTestVisibilityPolygonWorld(observer,mode="los"){
       vertices.push(...architecturalWallWorldVertices(blocker));
     }
   }
+  for(const polygon of fogPolygons)vertices.push(...polygon);
   vertices.push(...bounds.corners);
 
   const angles=[];
@@ -13790,6 +13795,84 @@ function createWallOfFogCells(caster,targetHex,casterLevel,orientationIndex=null
 }
 
 
+// Cache in world coordinates so the silk stays put through camera changes.
+const webSilkByEffect=new WeakMap();
+
+function webSilkRandom(seed){
+  let state=2166136261;
+  for(const char of seed)state=Math.imul(state^char.charCodeAt(0),16777619);
+  return ()=>{
+    state^=state<<13;
+    state^=state>>>17;
+    state^=state<<5;
+    return (state>>>0)/4294967296;
+  };
+}
+
+function drawWebSilk(effect,cell,outline){
+  let patterns=webSilkByEffect.get(effect);
+  if(!patterns){
+    patterns=new Map();
+    webSilkByEffect.set(effect,patterns);
+  }
+  const key=cell.x+","+cell.y;
+  let pattern=patterns.get(key);
+  if(!pattern){
+    const random=webSilkRandom(effect.id+":"+key);
+    const center=worldPointForHex(cell.x,cell.y);
+    const hub={x:center.x+(random()-.5)*HEX_W*.25,y:center.y+(random()-.5)*HEX_H*.25};
+    const vertices=architecturalHexCoreVertices(cell.x,cell.y,1);
+    const mix=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+    const vertexKey=p=>Math.round(p.x*1000)+","+Math.round(p.y*1000);
+    const anchors=[];
+    for(let i=0;i<vertices.length;i++){
+      const a=vertices[i],b=vertices[(i+1)%vertices.length];
+      const ka=vertexKey(a),kb=vertexKey(b),forward=ka<kb;
+      const edgeRandom=webSilkRandom(effect.id+":"+(forward?ka+":"+kb:kb+":"+ka));
+      const positions=[.18+edgeRandom()*.22,.6+edgeRandom()*.22];
+      if(!forward)positions.reverse();
+      for(const t of positions)anchors.push(mix(a,b,forward?t:1-t));
+    }
+    const capture=[];
+    const turns=4+Math.floor(random()*2),steps=turns*anchors.length;
+    let previous=null;
+    for(let i=0;i<=steps;i++){
+      const spoke=anchors[i%anchors.length];
+      const radius=.12+.72*i/steps+(random()-.5)*.028;
+      const point=mix(hub,spoke,radius);
+      if(previous&&random()>.085)capture.push([previous,mix(mix(previous,point,.5),hub,.045+random()*.05),point]);
+      previous=point;
+    }
+    pattern={hub,anchors,capture};
+    patterns.set(key,pattern);
+  }
+
+  ctx.save();
+  polygonPath(outline);
+  ctx.clip();
+  ctx.strokeStyle="rgba(232,237,224,0.64)";
+  ctx.lineWidth=1.15;
+  const hub=screenPointForWorld(pattern.hub);
+  ctx.beginPath();
+  for(const anchor of pattern.anchors){
+    const p=screenPointForWorld(anchor);
+    ctx.moveTo(hub.x,hub.y);
+    ctx.lineTo(p.x,p.y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle="rgba(224,232,222,0.48)";
+  ctx.lineWidth=.85;
+  ctx.beginPath();
+  for(const [start,bend,end] of pattern.capture){
+    const a=screenPointForWorld(start),b=screenPointForWorld(bend),c=screenPointForWorld(end);
+    ctx.moveTo(a.x,a.y);
+    ctx.quadraticCurveTo(b.x,b.y,c.x,c.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawSpellAreaEffects(){
   if(!game?.areaEffects?.length) return;
 
@@ -13824,22 +13907,7 @@ function drawSpellAreaEffects(){
       }
 
       if(effect.type==="web"){
-        polygonPath(top);
-        ctx.fillStyle="rgba(220,225,220,0.10)";
-        ctx.fill();
-        ctx.strokeStyle="rgba(235,238,232,0.86)";
-        ctx.lineWidth=1.3;
-        for(let i=0;i<top.length;i++){
-          const a=top[i];
-          const b=top[(i+3)%top.length];
-          ctx.beginPath();
-          ctx.moveTo(a.x,a.y);
-          ctx.lineTo(b.x,b.y);
-          ctx.stroke();
-        }
-        ctx.beginPath();
-        ctx.arc(center.x,center.y,7,0,Math.PI*2);
-        ctx.stroke();
+        drawWebSilk(effect,cell,top);
         continue;
       }
 
@@ -27751,6 +27819,7 @@ function drawProjectileFx(){
   const y=yLinear - Math.sin(Math.PI*t)*effectiveArcHeight;
 
   ctx.save();
+  if(projectileFx.kind==="magic-missile")ctx.globalAlpha*=.5;
 
   const trailT=Math.max(0,t-0.10);
   const tx=start.x + (end.x-start.x)*trailT;

@@ -1416,34 +1416,7 @@ drawSpellAreaEffects=function(){
       }
 
       if(effect.type==="web"){
-        polygonPath(top);
-        ctx.fillStyle=
-          "rgba(220,225,220,0.10)";
-        ctx.fill();
-        ctx.strokeStyle=
-          "rgba(235,238,232,0.86)";
-        ctx.lineWidth=1.3;
-
-        for(let i=0;i<top.length;i++){
-          const a=top[i];
-          const b=
-            top[(i+3)%top.length];
-
-          ctx.beginPath();
-          ctx.moveTo(a.x,a.y);
-          ctx.lineTo(b.x,b.y);
-          ctx.stroke();
-        }
-
-        ctx.beginPath();
-        ctx.arc(
-          center.x,
-          center.y,
-          7,
-          0,
-          Math.PI*2
-        );
-        ctx.stroke();
+        drawWebSilk(effect,cell,top);
         continue;
       }
 
