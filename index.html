@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Adventure Party (working title)</title>
-<link rel="stylesheet" href="css/adventure-party.css?v=R238C270">
+<link rel="stylesheet" href="css/adventure-party.css?v=R238C272">
 <script type="importmap">
 {
   "imports": {
@@ -14,7 +14,7 @@
 }
 </script>
 <link rel="preload" href="assets/fonts/press-start-2p.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/game-font.css?v=R238C270">
+<link rel="stylesheet" href="css/game-font.css?v=R238C272">
 </head>
 
 <body>
@@ -23,7 +23,7 @@
   <button id="gameStartupReload" type="button" onclick="location.reload()">Reload game</button>
 </div>
 <script id="buildMetadata" type="application/json">
-{"architecture":"Multi-File Engine","release":"R238","candidateRevision":271,"builtAt":"2026-11-03T13:53:40Z"}
+{"architecture":"Multi-File Engine","release":"R238","candidateRevision":272,"builtAt":"2026-11-03T14:47:53Z"}
 </script>
 
 <section id="launcherScreen" class="screen active">
@@ -35,7 +35,7 @@
         <div class="working-title">(working title)</div>
       </div>
       <div class="launcher-build-stack">
-        <div class="candidate-label">Candidate Rev 271</div>
+        <div class="candidate-label">Candidate Rev 272</div>
         <div id="buildLabel" class="build-label">BUILD METADATA LOADING…</div>
         <a href="ATTRIBUTIONS.md" target="_blank" rel="noopener">Asset credits</a>
       </div>
@@ -633,6 +633,7 @@
           <div id="unitInfoEffects" class="unit-effects" hidden></div>
           <div id="unitInfoAbilities" class="abilities" hidden aria-hidden="true"></div>
           <div id="combatCompass" aria-label="Experimental combat view controls">
+            <div id="combatDayNight" aria-label="Day and night controls"></div>
             <div id="combatCompassRose" aria-label="World directions"><span class="north">N</span><span class="west">W</span><span class="east">E</span><span class="south">S</span></div>
             <div><button id="rotateCombatLeft" class="combat-action" type="button">Rotate Left</button><button id="rotateCombatRight" class="combat-action" type="button">Rotate Right</button></div>
             <small id="combatCompassStatus" aria-live="polite">View -60°</small>
@@ -777,8 +778,9 @@
 </section>
 
 <script src="js/priest-spells.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
-  <script src="js/repository-mobs.mjs?v=R238C270" type="text/plain" data-game-script="module"></script>
-<script src="js/adventure-party.js?v=R238C270" type="text/plain" data-game-script="classic"></script>
+  <script src="js/repository-mobs.mjs?v=R238C272" type="text/plain" data-game-script="module"></script>
+<script src="js/adventure-party.js?v=R238C272" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-day-night.mjs?v=R238C272" type="text/plain" data-game-script="module"></script>
 <script src="js/los-wall-boundary-fix.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
 <script src="js/obscuring-volume-los.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
 <script src="js/r218-presentation-audio.js?v=R238C171" type="text/plain" data-game-script="classic"></script>
@@ -843,9 +845,9 @@
 <script src="js/sprite-set-runtime.mjs?v=R238C202" type="text/plain" data-game-script="module"></script>
 <script src="js/combat-result-panel.js?v=R238C257" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-spell-results.js?v=R238C257" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-lighting-hooks.js?v=R238C270" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-runtime.js?v=R238C270" type="text/plain" data-game-script="classic"></script>
-<script src="js/exploration-combat-hooks.js?v=R238C270" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-lighting-hooks.js?v=R238C272" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-runtime.js?v=R238C272" type="text/plain" data-game-script="classic"></script>
+<script src="js/exploration-combat-hooks.js?v=R238C272" type="text/plain" data-game-script="classic"></script>
 <script type="module" src="js/game-script-loader.mjs?v=R238C213"></script>
 </body>
 </html>

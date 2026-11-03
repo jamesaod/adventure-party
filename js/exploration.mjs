@@ -1,20 +1,20 @@
-import {stoneReliefSwitch} from './exploration-wall-relief.mjs?v=R238C271';
-import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C270';
-import {wallFaceMaterial,quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C270';
-import {quarterAt,quarterFloor,quarterSegments,ceilingKind} from './quarter-walls.mjs?v=R238C270';
-import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C271';
-import {createGroundTileBank} from './terrain-transition.mjs?v=R238C270';
-import {hasOutdoorGrass,hasDirtGround,groundKind,grassNeighborMask} from './exploration-ground.mjs?v=R238C270';
-import {torchAnimation} from './exploration-scene-style.mjs?v=R238C270';
+import {stoneReliefSwitch} from './exploration-wall-relief.mjs?v=R238C272';
+import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C272';
+import {wallFaceMaterial,quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C272';
+import {quarterAt,quarterFloor,quarterSegments,ceilingKind} from './quarter-walls.mjs?v=R238C272';
+import {installPaintedAmbient} from './exploration-painted-ambient.mjs?v=R238C272';
+import {createGroundTileBank} from './terrain-transition.mjs?v=R238C272';
+import {hasOutdoorGrass,hasDirtGround,groundKind,grassNeighborMask} from './exploration-ground.mjs?v=R238C272';
+import {torchAnimation} from './exploration-scene-style.mjs?v=R238C272';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C270';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C272';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,explorationDoorWidth,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C271';
-import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C270';
-import {explorationMapMarkup} from './exploration-map.mjs?v=R238C270';
-import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C270';
-import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C270';
-import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C270';
+import {explorationMaterials,explorationDoor,explorationDoorWidth,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C272';
+import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C272';
+import {explorationMapMarkup} from './exploration-map.mjs?v=R238C272';
+import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C272';
+import {testContext,testStateKey,exitUrl} from './exploration-test-context.mjs?v=R238C272';
+import {createEncounterClient} from './exploration-encounter-client.mjs?v=R238C272';
 const $=id=>document.getElementById(id),canvas=$('view'),viewport=$('viewport');
 const EYE=SCENE_STYLE.eyeMetres,doors=new Map(),flames=[];
 let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,camera,scene,motion=null,frame,resizeObserver;
@@ -49,7 +49,7 @@ async function start(){
    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);
   }
  };
- if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);for(const kind of ['stone','wood'])tiles(floorCells.filter(p=>!isOutdoor(map,p.x,p.z)&&ceilingKind(map,p.x,p.z)===kind),.12,HEIGHT+.06,kind==='wood'?woodCeiling:ceiling);
+ if(map.version!==2)tiles(wallCells,HEIGHT,HEIGHT/2,wall);for(const kind of ['stone','wood'])tiles(floorCells.filter(p=>!isOutdoor(map,p.x,p.z)&&ceilingKind(map,p.x,p.z)===kind),.12,HEIGHT-.06,kind==='wood'?woodCeiling:ceiling);
  // Ground is independent of ceiling/sky. Both views use the same composed
  // alpha-mask tiles, with one repeat per authored square (never per hex).
  const sky=OUTDOOR_AMBIENT,bank=hasDirtGround(map)?createGroundTileBank(groundImages):null;
