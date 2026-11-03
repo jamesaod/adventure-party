@@ -57,7 +57,7 @@ const gpuState={explorationEncounterApi:sceneApi,explorationTerrain:{cellW:128,c
  HEX_W:64,HEX_ROW:31.5,explorationDoorImage:{id:'door'},explorationWallImage:{id:'wall'},
  document:{createElement:()=>({tagName:'CANVAS',getContext:()=>({fillRect(){}})})},
  combatGpu:{surface:(surfaces,image)=>draws.push({surfaces,image})}};
-vm.createContext(gpuState);vm.runInContext(hooks.slice(start,end),gpuState);
+vm.createContext(gpuState);const faceStart=hooks.indexOf('function explorationFaceRenderable('),faceEnd=hooks.indexOf('\n}',faceStart)+2;vm.runInContext(hooks.slice(faceStart,faceEnd),gpuState);vm.runInContext(hooks.slice(start,end),gpuState);
 const owner={};gpuState.drawExplorationGpuSolids([prism],owner,true);
 assert.equal(draws.length,1,'Door faces and textured wood cap share the door artwork in painter order');
 assert.equal(draws[0].image.id,'door');assert(draws.every(d=>d.surfaces.every(f=>f.uv.flat().every(Number.isFinite))));

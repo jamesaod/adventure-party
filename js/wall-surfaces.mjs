@@ -1,4 +1,4 @@
-import {quarterAt,quarterContains,quarterSides,quarterPoints,quarterFloor} from './quarter-walls.mjs?v=R238C264';
+import {quarterAt,quarterContains,quarterSides,quarterPoints,quarterFloor} from './quarter-walls.mjs?v=R238C265';
 import {groundKind} from './exploration-ground.mjs?v=R238C263';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
 const materials=['stone','wood'];
@@ -6,7 +6,7 @@ export function wallFaceMaterial(record,side='end'){
  const base=materials.includes(record?.edgeMaterial)?record.edgeMaterial:materials.includes(record?.material)?record.material:'stone';
  return record?.faceMaterials?.[side]||base;
 }
-export {validateWallFaces} from './quarter-walls.mjs?v=R238C264';
+export {validateWallFaces} from './quarter-walls.mjs?v=R238C265';
 export const wallFaceLabels=record=>record.corner?{a:'Inside face',b:'Outside face'}:record.axis==='h'?{a:'South face',b:'North face'}:{a:'West face',b:'East face'};
 export function quarterOutsidePolygons(q){const center=quarterFloor(q)[0],corner={x:2*q.x-center.x,z:2*q.z-center.z},points=quarterPoints(q);return points.slice(1).map((b,i)=>[corner,points[i],b]);}
 export function outsideSurface(map,q){

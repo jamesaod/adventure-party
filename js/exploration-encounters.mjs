@@ -1,11 +1,12 @@
-import {quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C264';
-export * from './wall-surfaces.mjs?v=R238C264';
-import {quarterAt,quarterFloor,quarterSegments} from './quarter-walls.mjs?v=R238C264';
-export {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C264';
-export {createGroundTileBank} from './terrain-transition.mjs?v=R238C264';
-import {groundKind} from './exploration-ground.mjs?v=R238C264';
-export * from './exploration-ground.mjs?v=R238C264';
-export * from './portal-daylight.mjs?v=R238C264';
+import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C265';
+import {quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C265';
+export * from './wall-surfaces.mjs?v=R238C265';
+import {quarterAt,quarterFloor,quarterSegments} from './quarter-walls.mjs?v=R238C265';
+export {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C265';
+export {createGroundTileBank} from './terrain-transition.mjs?v=R238C265';
+import {groundKind} from './exploration-ground.mjs?v=R238C265';
+export * from './exploration-ground.mjs?v=R238C265';
+export * from './portal-daylight.mjs?v=R238C265';
 export * from './sprite-surface-lighting.mjs?v=R238C244';
 export * from './wall-light-bands.mjs?v=R238C243';
 export * from './combat-torch-light.mjs?v=R238C242';
@@ -14,10 +15,10 @@ export {spellSurfaceRadiance,spellEffectLightSources} from './spell-illumination
 export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './distance-visibility.mjs?v=R238C238';
 import {isOutdoor} from './exploration-environment.mjs?v=R238C262';
 export {ambientLightAt,isOutdoor} from './exploration-environment.mjs?v=R238C262';
-export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C264';
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C264';
-import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C264';
-export * from './exploration-scene-style.mjs?v=R238C264';
+export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C265';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C265';
+import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C265';
+export * from './exploration-scene-style.mjs?v=R238C265';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}
@@ -145,7 +146,7 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
  const scale=SCENE_STYLE.tacticalHexesPerCell,cellW=hexWidth*scale,cellH=hexRow*scale/(Math.sqrt(3)/2);
  const bounds={left:0,right:map.width-1,top:0,bottom:map.height-1};
  const project=(x,z)=>({x:(x-origin.x)*cellW,y:(z-origin.z)*cellH}),floor=(x,z)=>x>=bounds.left&&x<=bounds.right&&z>=bounds.top&&z<=bounds.bottom&&map.grid[z]?.[x]==='.';
- const walls=[],spaces=[],doors=[],windows=[];
+ const accessibility=accessibleFloor(map,origin),walls=[],spaces=[],doors=[],windows=[];
  const segment=(a,b,id,extra={})=>walls.push({id,a,b,height:35,thickness:3,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[],...extra});
  for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++)if(floor(x,z)){
   const a=project(x-.5,z-.5),b=project(x+.5,z+.5);spaces.push({id:`floor-${x}-${z}`,environment:isOutdoor(map,x,z)?'outdoor':'indoor',ground:groundKind(map,x,z),floorColor:'#82745d',polygon:quarterAt(map,x,z)?quarterFloor(quarterAt(map,x,z)).map(p=>project(p.x,p.z)):[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
@@ -167,7 +168,8 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
   if(!record.open)segment(point(low),point(high),id,{doorLeaf:true});
  }
  const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
- return {walls,spaces,doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
+ const visibleSpaces=spaces.filter(s=>{const point=s.polygon.reduce((sum,p)=>({x:sum.x+p.x/s.polygon.length,z:sum.z+p.y/s.polygon.length}),{x:0,z:0});return accessibility.at({x:origin.x+point.x/cellW,z:origin.z+point.z/cellH});});
+ return {walls,spaces:visibleSpaces,isRenderablePoint:p=>accessibility.at({x:origin.x+p.x/cellW,z:origin.z+p.y/cellH}),isRenderableHex:(q,r)=>accessibility.at({x:origin.x+(q+r/2)/scale,z:origin.z+r*Math.sqrt(3)/(2*scale)}),doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
 }
 
 // Cover the projected square map in axial coordinates, including its skew.
