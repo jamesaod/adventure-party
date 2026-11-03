@@ -1,11 +1,12 @@
-import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C270';
+import {solarAmbient,solarFaceGain} from './solar-clock.mjs?v=R238C272';
+import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C272';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
-import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C270';
+import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C272';
 export const DAYLIGHT=Object.freeze({rangeCells:5,portalIntensity:1.15,roomFill:.22,fillStep:.78,doorTransmission:.45,windowTransmission:.25});
 const ZERO=Object.freeze({rgb:Object.freeze([0,0,0]),relief:0,direct:0,bounce:0});
 const key=(x,z)=>x+','+z,dirs=[[1,0],[-1,0],[0,1],[0,-1]],sky=[.72,.84,1];
 // A static field per authored map/door state. No gameplay state or timers.
-export function buildDaylightField(map,opened=new Set()){
+export function buildDaylightField(map,opened=new Set(),solar=null){
  const cell=SCENE_STYLE.cellMetres,floor=(x,z)=>'.D'.includes(map.grid[z]?.[x]||'#'),indoor=(x,z)=>floor(x,z)&&!isOutdoor(map,x,z);
  const edges=map.version===2?new Map(effectiveEdges(map).map(e=>[edgeKey(e),e])):null;
  const legacyDoors=new Map((map.doors||[]).map(d=>[key(d.x,d.z),d]));
@@ -23,7 +24,7 @@ export function buildDaylightField(map,opened=new Set()){
  for(let z=0;z<map.height;z++)for(let x=0;x<map.width;x++)if(indoor(x,z)){
   for(const [dx,dz] of dirs){const outside={x:x+dx,z:z+dz};if(!floor(outside.x,outside.z)||!isOutdoor(map,outside.x,outside.z))continue;
    const opening=crossing({x,z},outside);if(!opening)continue;
-   const daylight=ambientLightAt(map,outside.x,outside.z)/100;if(daylight<=0)continue;
+   const daylight=ambientLightAt(map,outside.x,outside.z)/100*(solar?solar.daylight*solarFaceGain({x:dx,y:0,z:dz},solar):1);if(daylight<=0)continue;
    const center=opening.edge?edgeGeometry(opening.edge).center:{x:x+dx/2,z:z+dz/2};
    const portal={id:opening.edge?.id||'sky:'+x+','+z+':'+dx+','+dz,inside:{x,z},outside,center,width:opening.width,daylight,dx,dz,kind:opening.kind,samples:[]};
    for(const t of [-.3,0,.3])portal.samples.push({x:(center.x+dx*.04-dz*opening.width*t)*cell,y:opening.kind==='window'?2:1.8,z:(center.z+dz*.04+dx*opening.width*t)*cell});
@@ -45,10 +46,10 @@ export function buildDaylightField(map,opened=new Set()){
  }
  const profiles=new Map(),queryCaches=new WeakMap(),defaultVisible=(source,point)=>sceneLightVisible(map,opened,source,point);
  function ambientAt(x,z){
-  const base=ambientForCell(map,x,z),painted=map.ambientLight?.[z]?.[x];if(painted===null||painted===undefined)return base;
+  const base=ambientForCell(map,x,z),painted=map.ambientLight?.[z]?.[x];if((painted===null||painted===undefined)&&(!solar||!isOutdoor(map,x,z)))return base;
   const k=(isOutdoor(map,x,z)?'o':'i')+painted;if(profiles.has(k))return profiles.get(k);
-  const amount=painted/100,intensity=isOutdoor(map,x,z)?base.intensity*Math.max(.025,amount):base.intensity+(2.4-base.intensity)*amount;
-  const value={...base,intensity};profiles.set(k,value);return value;
+  const amount=(painted??100)/100,intensity=isOutdoor(map,x,z)?base.intensity*Math.max(.025,amount):base.intensity+(2.4-base.intensity)*amount;
+  const value=solar&&isOutdoor(map,x,z)?solarAmbient({...base,intensity},solar):{...base,intensity};profiles.set(k,value);return value;
  }
  function sample(point,normal={x:0,y:1,z:0},visible=defaultVisible){
   const gx=point.x/cell,gz=point.z/cell,cx=Math.floor(gx+.5),cz=Math.floor(gz+.5);
@@ -75,7 +76,8 @@ export function buildDaylightField(map,opened=new Set()){
    direct+=DAYLIGHT.portalIntensity*portal.daylight*Math.sqrt(portal.width)*(portal.kind==='window'?.7:1)*exposure*cutoff/(1+(distance/1.5)**2);
   }
   const amount=direct+bounce*(.65+.35*Math.max(0,normal.y));
-  const result={rgb:sky.map(v=>v*amount),relief:Math.min(1,direct+bounce*2),direct,bounce};
+  const tint=solar?sky.map((v,i)=>v*(1-solar.warmth*.5)+[1,.65,.3][i]*solar.warmth*.5):sky;
+  const result={rgb:tint.map(v=>v*amount),relief:Math.min(1,direct+bounce*2),direct,bounce};
   if(cache.size>=16384)cache.clear();cache.set(cacheKey,result);return result;
  }
  return {portals,fill,ambientAt,sample};

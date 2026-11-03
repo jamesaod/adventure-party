@@ -1,4 +1,4 @@
-import {solidPrism} from './exploration-combat-geometry.mjs?v=R238C270';
+import {solidPrism} from './exploration-combat-geometry.mjs?v=R238C272';
 const cache=new WeakMap(),key=p=>`${Math.round(p.x*1e6)},${Math.round(p.y*1e6)}`;
 function index(walls,squash){let c=cache.get(walls);if(c?.squash===squash)return c.nodes;const nodes=new Map();for(const wall of walls){if(wall.doorLeaf)continue;for(const [p,q] of [[wall.a,wall.b],[wall.b,wall.a]]){const k=key(p);if(!nodes.has(k))nodes.set(k,[]);const dx=q.x-p.x,dz=(q.y-p.y)/squash,n=Math.hypot(dx,dz);if(n>1e-8)nodes.get(k).push({wall,dx:dx/n,dz:dz/n});}}cache.set(walls,{squash,nodes});return nodes;}
 // Miter only the display extrusion. The CPU wall centerlines never move.
