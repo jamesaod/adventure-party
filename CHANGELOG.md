@@ -1,5 +1,9 @@
 # Changelog
 
+## Candidate Rev 266
+- Correct doorway scope: restore original combat width; keep 50% wider standard doors in first-person exploration only.
+- Restore Rev 265 standard widths once on load; retain custom gates and corrected frame texture scale.
+
 ## Candidate Rev 265
 - Keep texture brushes selected across repeated clicks and drag painting.
 - Widen standard doorways by 50% and correct first-person jamb/lintel texture scale.
