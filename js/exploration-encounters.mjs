@@ -1,9 +1,11 @@
-import {quarterAt,quarterFloor,quarterContains,quarterSegments} from './quarter-walls.mjs?v=R238C263';
-export {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C263';
-export {createGroundTileBank} from './terrain-transition.mjs?v=R238C262';
-import {groundKind} from './exploration-ground.mjs?v=R238C262';
-export * from './exploration-ground.mjs?v=R238C262';
-export * from './portal-daylight.mjs?v=R238C263';
+import {quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C264';
+export * from './wall-surfaces.mjs?v=R238C264';
+import {quarterAt,quarterFloor,quarterSegments} from './quarter-walls.mjs?v=R238C264';
+export {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C264';
+export {createGroundTileBank} from './terrain-transition.mjs?v=R238C264';
+import {groundKind} from './exploration-ground.mjs?v=R238C264';
+export * from './exploration-ground.mjs?v=R238C264';
+export * from './portal-daylight.mjs?v=R238C264';
 export * from './sprite-surface-lighting.mjs?v=R238C244';
 export * from './wall-light-bands.mjs?v=R238C243';
 export * from './combat-torch-light.mjs?v=R238C242';
@@ -12,10 +14,10 @@ export {spellSurfaceRadiance,spellEffectLightSources} from './spell-illumination
 export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './distance-visibility.mjs?v=R238C238';
 import {isOutdoor} from './exploration-environment.mjs?v=R238C262';
 export {ambientLightAt,isOutdoor} from './exploration-environment.mjs?v=R238C262';
-export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C259';
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C263';
-import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C263';
-export * from './exploration-scene-style.mjs?v=R238C263';
+export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C264';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C264';
+import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C264';
+export * from './exploration-scene-style.mjs?v=R238C264';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
 export const progressKey=scope=>`adventure-party:encounters:${scope}`;
 export function readProgress(storage,scope){try{return JSON.parse(storage.getItem(progressKey(scope)))||{encounters:{},player:null};}catch{return {encounters:{},player:null};}}
@@ -74,7 +76,7 @@ export function terrainForEncounter(map,origin,openDoors,hexWidth=64,hexRow=31.5
   }
   for(const d of map.doors||[]){if(!floor(d.x,d.z)||openDoors.has(`${d.x},${d.z}`))continue;segment(d.axis==='x'?project(d.x,d.z-.5):project(d.x-.5,d.z),d.axis==='x'?project(d.x,d.z+.5):project(d.x+.5,d.z),`door-${d.x}-${d.z}`);}
   const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
-  return {walls,spaces,bounds,project,cellAt,cellW,cellH,scale,hexWidth,hexRow,doors:(map.doors||[]).filter(d=>floor(d.x,d.z)).map(d=>({...d,open:openDoors.has(`${d.x},${d.z}`),center:project(d.x,d.z)})),walkableHex:(q,r)=>{const p=cellAt(q,r);const qtr=quarterAt(map,p.x,p.z);return floor(p.x,p.z)&&(!qtr||quarterContains(qtr,{x:origin.x+(q+r/2)/scale,z:origin.z+r*Math.sqrt(3)/(2*scale)}));}};
+  return {walls,spaces,bounds,project,cellAt,cellW,cellH,scale,hexWidth,hexRow,doors:(map.doors||[]).filter(d=>floor(d.x,d.z)).map(d=>({...d,open:openDoors.has(`${d.x},${d.z}`),center:project(d.x,d.z)})),walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
 }
 
 // A straight, two-point crossing joins aligned standing hexes across an OPEN
@@ -147,24 +149,25 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
  const segment=(a,b,id,extra={})=>walls.push({id,a,b,height:35,thickness:3,material:'exploration-stone',blocksMovement:true,blocksLOS:true,blocksVolume:true,openings:[],...extra});
  for(let z=bounds.top;z<=bounds.bottom;z++)for(let x=bounds.left;x<=bounds.right;x++)if(floor(x,z)){
   const a=project(x-.5,z-.5),b=project(x+.5,z+.5);spaces.push({id:`floor-${x}-${z}`,environment:isOutdoor(map,x,z)?'outdoor':'indoor',ground:groundKind(map,x,z),floorColor:'#82745d',polygon:quarterAt(map,x,z)?quarterFloor(quarterAt(map,x,z)).map(p=>project(p.x,p.z)):[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}]});
+  const quarter=quarterAt(map,x,z);if(quarter){const outside=outsideSurface(map,quarter);quarterOutsidePolygons(quarter).forEach((poly,i)=>spaces.push({id:`outside-${x}-${z}-${i}`,environment:outside.environment,ground:outside.ground,polygon:poly.map(p=>project(p.x,p.z)),outside:true}));}
 
  }
- for(const c of quarterSegments(map))segment(project(c.a.x,c.a.z),project(c.b.x,c.b.z),c.id,{edgeMaterial:c.quarter.material,textureOffset:c.offset*cellW,curve:true});
+ for(const c of quarterSegments(map))segment(project(c.a.x,c.a.z),project(c.b.x,c.b.z),c.id,{edgeMaterial:c.quarter.material,faceMaterials:c.quarter.faceMaterials,textureOffset:c.offset*cellW,curve:true});
  for(const edge of effectiveEdges(map)){
   const g=edgeGeometry(edge);if(g.center.x<bounds.left-.5||g.center.x>bounds.right+.5||g.center.z<bounds.top-.5||g.center.z>bounds.bottom+.5)continue;
   const a=project(g.a.x,g.a.z),b=project(g.b.x,g.b.z),point=t=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t}),id=`edge-${edge.id}`,width=edge.width??1;
-  if(edge.kind==='wall'){segment(a,b,id,{edgeMaterial:edge.material});continue;}
-  const record={...g.center,id:edge.id,edgeId:edge.id,axis:g.axis,width,material:edge.material,hinge:edge.hinge,center:project(g.center.x,g.center.z),open:openDoors.has(edge.id),wallId:id};
+  if(edge.kind==='wall'){segment(a,b,id,{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials});continue;}
+  const record={...g.center,faceMaterials:edge.faceMaterials,id:edge.id,edgeId:edge.id,axis:g.axis,width,material:edge.material,hinge:edge.hinge,center:project(g.center.x,g.center.z),open:openDoors.has(edge.id),wallId:id};
   if(edge.kind==='window'){
-   windows.push(record);segment(a,b,id,{openings:[{id:id+'-glass',type:'window',edgeWindow:true,visualHeight:SCENE_STYLE.window.height/SCENE_STYLE.wallMetres*35,visualSill:SCENE_STYLE.window.sill/SCENE_STYLE.wallMetres*35,centerT:.5,widthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width,glassWidthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width}]});continue;
+   windows.push(record);segment(a,b,id,{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials,openings:[{id:id+'-glass',type:'window',edgeWindow:true,visualHeight:SCENE_STYLE.window.height/SCENE_STYLE.wallMetres*35,visualSill:SCENE_STYLE.window.sill/SCENE_STYLE.wallMetres*35,centerT:.5,widthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width,glassWidthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width}]});continue;
   }
   doors.push(record);const low=(1-width)/2,high=(1+width)/2;
   const trim=record.open?Math.max(0,((g.axis==='z'?hexWidth:hexRow)-Math.hypot(b.x-a.x,b.y-a.y)*width)/2):0;
-  if(low>1e-6){segment(a,point(low),id+'-jamb-a',{edgeMaterial:edge.material,doorwayJamb:record.open,doorwayTrimEnd:trim});segment(point(high),b,id+'-jamb-b',{edgeMaterial:edge.material,doorwayJamb:record.open,doorwayTrimStart:trim});}
+  if(low>1e-6){segment(a,point(low),id+'-jamb-a',{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials,doorwayJamb:record.open,doorwayTrimEnd:trim});segment(point(high),b,id+'-jamb-b',{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials,doorwayJamb:record.open,doorwayTrimStart:trim});}
   if(!record.open)segment(point(low),point(high),id,{doorLeaf:true});
  }
  const cellAt=(q,r)=>({x:Math.floor(origin.x+(q+r/2)/scale+.5),z:Math.floor(origin.z+r*Math.sqrt(3)/(2*scale)+.5)});
- return {walls,spaces,doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);const qtr=quarterAt(map,p.x,p.z);return floor(p.x,p.z)&&(!qtr||quarterContains(qtr,{x:origin.x+(q+r/2)/scale,z:origin.z+r*Math.sqrt(3)/(2*scale)}));}};
+ return {walls,spaces,doors,windows,bounds,hexBounds:tacticalHexBounds(bounds,project,hexWidth,hexRow),project,cellAt,cellW,cellH,scale,hexWidth,hexRow,edgeBased:true,walkableHex:(q,r)=>{const p=cellAt(q,r);return floor(p.x,p.z);}};
 }
 
 // Cover the projected square map in axial coordinates, including its skew.

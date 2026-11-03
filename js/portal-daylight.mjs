@@ -1,6 +1,6 @@
-import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C263';
+import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C264';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
-import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C263';
+import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C264';
 export const DAYLIGHT=Object.freeze({rangeCells:5,portalIntensity:1.15,roomFill:.22,fillStep:.78,doorTransmission:.45,windowTransmission:.25});
 const ZERO=Object.freeze({rgb:Object.freeze([0,0,0]),relief:0,direct:0,bounce:0});
 const key=(x,z)=>x+','+z,dirs=[[1,0],[-1,0],[0,1],[0,-1]],sky=[.72,.84,1];

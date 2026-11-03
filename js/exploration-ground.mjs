@@ -11,12 +11,12 @@ export function paintGround(map,x,z,kind){
  if(!map.ground)map.ground=Array.from({length:map.height},()=> 'a'.repeat(map.width));
  const row=[...map.ground[z]];row[x]=code;map.ground[z]=row.join('');
 }
-export function hasDirtGround(map){return map.grid.some((row,z)=>[...row].some((v,x)=>'.D'.includes(v)&&groundKind(map,x,z)==='dirt'));}
+export function hasDirtGround(map){return (map.quarterWalls||[]).some(q=>q.outsideGround==='dirt')||map.grid.some((row,z)=>[...row].some((v,x)=>'.D'.includes(v)&&groundKind(map,x,z)==='dirt'));}
 export const GROUND_NEIGHBORS=Object.freeze([[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]);
 export function grassNeighborMask(map,x,z){
  let mask=0;GROUND_NEIGHBORS.forEach(([dx,dz],i)=>{if('.D'.includes(map.grid[z+dz]?.[x+dx]||'#')&&groundKind(map,x+dx,z+dz)==='grass')mask|=1<<i;});return mask;
 }
-export function hasOutdoorGrass(map){return map.grid.some((row,z)=>[...row].some((v,x)=>'.D'.includes(v)&&groundKind(map,x,z)==='grass'));}
+export function hasOutdoorGrass(map){return (map.quarterWalls||[]).some(q=>q.outsideGround==='grass')||map.grid.some((row,z)=>[...row].some((v,x)=>'.D'.includes(v)&&groundKind(map,x,z)==='grass'));}
 // One grass repeat covers one authored square (three metres), independent of
 // the tactical hex subdivision and of the stone slab's repeat density.
 export function grassMaterialMetrics(terrain){return {floorWidth:terrain.cellW,floorHeight:terrain.cellH};}

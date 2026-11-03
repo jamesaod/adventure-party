@@ -1,11 +1,11 @@
-import {paintQuarter,paintCeiling} from './quarter-walls.mjs?v=R238C263';
-import {paintGround} from './exploration-ground.mjs?v=R238C262';
+import {paintQuarter,paintCeiling} from './quarter-walls.mjs?v=R238C264';
+import {paintGround} from './exploration-ground.mjs?v=R238C264';
 import {paintEnvironment,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
-import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C263';
+import {upgradeEdgeMap,paintEdge,syncEdgeDoors,edgeCells,edgeKey,edgeBetween} from './exploration-edges.mjs?v=R238C264';
 export {upgradeEdgeMap,paintEdge};
-import {validateMap,cellKey} from './exploration-core.mjs?v=R238C263';
+import {validateMap,cellKey} from './exploration-core.mjs?v=R238C264';
 
-import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C263';
+import {validateEncounters,encounterCells} from './exploration-encounters.mjs?v=R238C264';
 export const DRAFT_KEY='adventure-party:exploration-draft:v1';
 export const TEST_KEY='adventure-party:exploration-test:v1';
 export const copy=value=>structuredClone(value);
@@ -83,7 +83,7 @@ export function paintCell(map,x,z,tool,ambientPercent=0,settings={}){
  if(map.version===2&&tool==='void')tool='wall';
 
   if(map.version===2?(x<0||x>=map.width||z<0||z>=map.height):(x<1||x>map.width-2||z<1||z>map.height-2))throw Error('Keep the outer wall intact. Place exits on an interior floor square.');
-  if(tool.startsWith('curve-')){paintQuarter(map,x,z,tool.slice(6),settings.material||'stone');return;}
+  if(tool.startsWith('curve-')){paintQuarter(map,x,z,tool.slice(6),settings.material||'stone',settings);return;}
   if(tool.startsWith('ceiling-')){paintCeiling(map,x,z,tool.slice(8));return;}
   if(tool.startsWith('ground-')){paintGround(map,x,z,tool.slice(7));return;}
   if(tool==='ambient'||tool==='ambient-default'){paintAmbientLight(map,x,z,tool==='ambient-default'?null:ambientPercent);return;}

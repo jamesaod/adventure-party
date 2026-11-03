@@ -27,3 +27,13 @@ label{display:grid;gap:6px;font-size:12px}input,select{font:inherit;color:#83e7e
 #editorGrid button.floor[data-ground="stone"]{background-color:#b5ada0;}
 
 #editorGrid .quarter-mark{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+
+.view-control{max-width:280px;margin-bottom:8px}#viewLegend{min-height:2.5em}
+#editorGrid:not([data-view=ambient]) button[data-ambient]::after{display:none}
+#editorGrid[data-view=wall] .edge-mark{overflow:visible;background:transparent;box-shadow:none}
+#editorGrid .wall-face{position:absolute;pointer-events:auto;cursor:pointer;width:100%;height:100%;background:#6e7478}
+#editorGrid .wall-face[data-material=wood]{background:repeating-linear-gradient(90deg,#a9682e 0 4px,#6e431e 4px 5px)}
+#editorGrid .edge-n .face-a,#editorGrid .edge-s .face-a{top:2px}#editorGrid .edge-n .face-b,#editorGrid .edge-s .face-b{top:-2px}
+#editorGrid .edge-e .face-a,#editorGrid .edge-w .face-a{left:-2px}#editorGrid .edge-e .face-b,#editorGrid .edge-w .face-b{left:2px}
+#editorGrid[data-view=wall] .quarter-mark{overflow:visible}#editorGrid .curve-face{pointer-events:stroke;cursor:pointer}
+#editorGrid[data-view=wall] button:has(.quarter-mark){z-index:4}

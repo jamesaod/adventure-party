@@ -1,3 +1,4 @@
+import {wallFaceMaterial} from '../js/wall-surfaces.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';import {readFileSync} from 'node:fs';
 import {blankEdgeMap,paintCell,resizeMap,seedPack,parsePack} from '../js/exploration-authoring.mjs';
@@ -66,7 +67,7 @@ for(const axis of ['x','z'])for(const hinge of ['start','end']){
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 let allocations=0,drawAlpha=[];
 const facePaints=[];const target=new Proxy({},{get:()=>()=>{},set:(o,key,value)=>{if(key==='fillStyle')facePaints.push(value);return true;}});
-const render={...state,Image:class{},DOMMatrix:class{},explorationEncounterApi:{...geometry,materialMetrics,SCENE_STYLE:style},explorationTerrain:terrain,explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
+const render={...state,Image:class{},DOMMatrix:class{},explorationEncounterApi:{...geometry,materialMetrics,wallFaceMaterial,SCENE_STYLE:style},explorationTerrain:terrain,explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
  document:{createElement:()=>{allocations++;return {getContext:()=>target};}},ctx:{save(){},restore(){},drawImage(){drawAlpha.push(this.globalAlpha);}},
  explorationVisualLights:()=>[],explorationSurfaceExposure:()=>({multiply:[255,255,255],boost:[0,0,0]}),isArchitecturalWallVisibleToFriendlyParty:()=>false};
 vm.createContext(render);vm.runInContext(hooks.slice(0,hooks.indexOf('function configureExplorationTerrain()')),render);
@@ -106,7 +107,7 @@ assert.throws(()=>paintAmbientLight(exported,3,3,1001));assert.throws(()=>parseP
 const painted=[];let actor={x:0,y:0,alive:true},ambient=0,blocked=false;
 const fade={game:{player:actor,condition:'open'},activeUnit:()=>actor,explorationTerrain:{cellAt:(x,y)=>({x,z:y})},explorationEncounter:{map:lightingMap},explorationEncounterApi:{tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>ambient},
  ctx:{save(){},restore(){},fill(){painted.push(this.fillStyle);}},hexDistance:(a,b)=>Math.abs(a.x-b.x),illuminationSources:()=>[{x:10,y:0}],illuminationContributionFromSource:()=>blocked?0:.3,tracePolygonOnContext:()=>true,hexScreenVertices:()=>[]};
-vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;for(const name of ['explorationVisibilityAtHex','explorationTorchAnimation','explorationFriendlyDistance','explorationRenderLights','explorationFloorFragments']){const a=hooks.indexOf('function '+name+'('),b=hooks.indexOf('\n}',a)+2;vm.runInContext(hooks.slice(a,b),fade);}
+fade.explorationAuthoredSurface=()=>({ambient});vm.createContext(fade);const start=hooks.indexOf('function drawDistanceVisibilityLayer('),end=hooks.indexOf('\n}',start)+2;for(const name of ['explorationVisibilityAtHex','explorationTorchAnimation','explorationFriendlyDistance','explorationRenderLights','explorationFloorFragments']){const a=hooks.indexOf('function '+name+'('),b=hooks.indexOf('\n}',a)+2;vm.runInContext(hooks.slice(a,b),fade);}
 vm.runInContext(hooks.slice(start,end),fade);
 fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert(Math.abs(Number(painted.at(-1).split(',').at(-1).slice(0,-1))-.1)<1e-10);
 blocked=true;fade.drawDistanceVisibilityLayer([{x:10,y:0}]);assert.equal(painted.at(-1),'rgba(0,0,0,0.4)');
@@ -124,7 +125,7 @@ assert(!torchPlacement(blankEdgeMap('open','Open'),{x:4,z:4}).attached);
 for(let t=0;t<5000;t+=17){const a=torchAnimation(t,42);assert(a.intensity>=.85-1e-9&&a.intensity<=1.15+1e-9);assert(Math.abs(a.swayX)<=.035);assert(Math.abs(a.swayZ)<=.025);assert(a.height>=.88-1e-9&&a.height<=1.12+1e-9);}
 assert.deepEqual(torchAnimation(234,42),torchAnimation(234,42));assert.notDeepEqual(torchAnimation(234,42),torchAnimation(234,99));assert.deepEqual(torchAnimation(234,42,true),{intensity:1,height:1,width:1,swayX:0,swayZ:0});
 Object.assign(render,{game:{player:{x:-20,y:0,alive:true}},hexDistance:(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y)),illuminationSources:()=>[],illuminationContributionFromSource:()=>0});
-render.explorationEncounterApi={...render.explorationEncounterApi,tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>0};render.explorationTerrain={...terrain,cellAt:(x,y)=>({x,z:y})};
+render.explorationAuthoredSurface=()=>({ambient:render.explorationEncounterApi.ambientLightAt()});render.explorationEncounterApi={...render.explorationEncounterApi,tileDistanceVisibility,DISTANCE_VISIBILITY:{startHex:7},ambientLightAt:()=>0};render.explorationTerrain={...terrain,cellAt:(x,y)=>({x,z:y})};
 facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(facePaints.some(s=>s==='rgb(51,51,51)'||s==='rgba(0,0,0,0.8)'),'Wall faces receive the same capped distance darkness as floors');const warmAllocations=allocations;render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,warmAllocations,'Wall fading reuses its presentation buffer and static material bake');
 render.explorationEncounterApi.ambientLightAt=()=>100;facePaints.length=0;render.drawExplorationSolids(solids,wall,true);assert(!facePaints.some(s=>s.startsWith('rgba(0,0,0,')),'Bright ambient cancels wall distance fading without rebuilding base material lighting');
 render.explorationTerrain.torches=[{}];render.matchMedia=()=>({matches:true});assert(!render.hasAnimatedExplorationTorches());render.matchMedia=()=>({matches:false});assert(render.hasAnimatedExplorationTorches());

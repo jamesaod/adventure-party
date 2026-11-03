@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 264: Curved wall cells retain floor on BOTH sides of the arc (supersedes Rev 263 exterior cutout). Optional outsideGround auto/grass/dirt/stone inherits the outer neighbour surface by default. Walls/quarters have optional faceMaterials {a,b}; positive segment normal is a (horizontal South, vertical West, curve Inside), b is opposite. Old material is the fallback. Both renderers share this mapping; doors retain their leaf artwork. Editor View dropdown changes overlays only; wall bands select independent faces. Angled walls remain future work.
+
 - Rev 263: Real generated oak wall/ceiling textures replace door artwork for wood walls. Optional map.ceiling rows (a/s/w) and map.quarterWalls records (x,z,corner nw/ne/se/sw, material stone/wood) persist through authoring. Four one-cell quarters form a 2x2 tower. quarter-walls.mjs supplies editor/first-person/map/movement/LOS/light/combat geometry. Arc outer straight edges are replaced; doors/windows stay on straight edges. Add tower sample creates an unsaved test map. The queued non-combat font revert is DONE; only combat uses the pixel face. Painted ambient also binds actual Lambert materials.
 
 - Rev 262: Movement reactions require current melee eligibility AND a destination outside that same attacker's melee reach. Circling adjacent hexes, entering reach and non-movement actions do not provoke; evaluate each attacker and the mover footprint separately.
