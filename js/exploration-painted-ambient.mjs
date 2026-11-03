@@ -1,4 +1,4 @@
-import {surfaceAt} from './wall-surfaces.mjs?v=R238C273';
+import {surfaceAt} from './wall-surfaces.mjs?v=R238C274';
 // Paint applies only to indirect light; torch/lantern direct light is untouched.
 export function ambientMultiplier(map,x,z){
  const value=map.ambientLight?.[z]?.[x];

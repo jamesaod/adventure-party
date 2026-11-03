@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 274: Sun shadows shade whole outdoor floor hexes and wall fragments using their owning hex. Filtered floor exposure remains unshadowed; a constant face attribute subtracts only direct Sun energy, preserving local lights. Zero-loss and sealed-black batches retain the original shader path. Visibility probes exit the owning/joined CPU wall shells toward friendly observers, fixing compressed curved-wall and closed-door self-occlusion without changing gameplay LOS. No new passes, shadow maps or frame loop. See docs/WALL_VISIBILITY_HEX_SHADOWS.md.
+
 - Rev 273: Cached wall ground-shadow experiment uses production wall/door solids projected onto authored ground in the solar direction. Spatially indexed polygon union is cached per terrain/geometry/time; camera and MOB movement do not rebuild it. It attenuates only an outdoor-ground direct-sun share inside the existing exposure bake, preserving ambient/local lights and adding no GPU passes or loop. Wall shadows checkbox compares on/off. MOB cast shadows remain unchanged. Pending separate Rev272 QA: dark curved-wall patches and the door between round structures incorrectly dark in LOS; this experiment does NOT fix those. See docs/WALL_GROUND_SHADOWS.md.
 
 
