@@ -40,11 +40,17 @@ function drawExplorationGpuFloor(tiles){
  }
 }
 
+function explorationFaceRenderable(face){
+ const t=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ if(!t?.isRenderablePoint||face.cap)return true;
+ const p=face.points.reduce((s,p)=>({x:s.x+p.x/face.points.length,y:s.y+p.y/face.points.length}),{x:0,y:0});
+ return t.isRenderablePoint({x:p.x+face.normal.x*.001*t.cellW,y:p.y+face.normal.z*.001*t.cellH});
+}
 function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi,view=battlefieldViewportBounds();
- const faces=solids.flatMap(s=>s.faces);
+ const faces=solids.flatMap(s=>s.faces).filter(face=>explorationFaceRenderable(face));
  const all=faces.flatMap(f=>f.points.map(p=>screenPointForWorld(p,p.elevation)));
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
  const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
@@ -119,7 +125,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(typeof combatGpu!=="undefined"&&combatGpu)return drawExplorationGpuSolids(solids,wall,visible,cacheOwner);
- const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).map(face=>({...face,screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
+ const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).filter(face=>explorationFaceRenderable(face)).map(face=>({...face,screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
  const all=faces.flatMap(f=>f.screen);if(!all.length)return;
  const left=Math.floor(Math.min(...all.map(p=>p.x)))-2,top=Math.floor(Math.min(...all.map(p=>p.y)))-2,width=Math.ceil(Math.max(...all.map(p=>p.x))-left)+2,height=Math.ceil(Math.max(...all.map(p=>p.y))-top)+2,v=battlefieldViewportBounds();
  if(left+width<v.left||left>v.right||top+height<v.top||top>v.bottom)return;
@@ -557,6 +563,7 @@ function configureCombatMap(request){
   const floor=[];for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(!isWall(x,y))floor.push({x,y,world:worldPointForHex(x,y)});
   explorationTerrain.torches=(request.map.torches||[]).flatMap((t,i)=>{
     const {bounds}=explorationTerrain;if(t.x<bounds.left||t.x>bounds.right||t.z<bounds.top||t.z>bounds.bottom)return [];
+    if(explorationTerrain.isRenderableHex&&!explorationTerrain.isRenderablePoint(explorationTerrain.project(t.x,t.z)))return [];
     const placement=explorationEncounterApi.torchPlacement(request.map,t),cell=explorationEncounterApi.SCENE_STYLE.cellMetres,world=explorationTerrain.project(placement.x/cell,placement.z/cell),wallPlaneWorld=explorationTerrain.project(placement.wallX/cell,placement.wallZ/cell),plateWorld={x:wallPlaneWorld.x-placement.dx*1.6,y:wallPlaneWorld.y-placement.dz*1.6*explorationTerrain.cellH/explorationTerrain.cellW},sourceWorld=explorationTerrain.project(t.x,t.z),nearest=floor.reduce((best,p)=>!best||Math.hypot(p.world.x-sourceWorld.x,p.world.y-sourceWorld.y)<Math.hypot(best.world.x-sourceWorld.x,best.world.y-sourceWorld.y)?p:best,null);
     if(!nearest||Math.hypot(nearest.world.x-world.x,nearest.world.y-world.y)>HEX_W)return [];
     const mountWall=placement.attached?architecturalWalls.find(w=>{const vx=w.b.x-w.a.x,vy=w.b.y-w.a.y,len=vx*vx+vy*vy,t=len?((wallPlaneWorld.x-w.a.x)*vx+(wallPlaneWorld.y-w.a.y)*vy)/len:-1;return t>=0&&t<=1&&Math.hypot(w.a.x+vx*t-wallPlaneWorld.x,w.a.y+vy*t-wallPlaneWorld.y)<.1;}):null;
@@ -630,10 +637,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C264');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C265');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C264');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C265');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
