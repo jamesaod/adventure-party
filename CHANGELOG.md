@@ -1,6 +1,7 @@
 # Changelog
 
 ## Candidate Rev 266
+- Make sealed inward walls, adjoining caps and seams opaque black regardless of LOS or light.
 - Correct doorway scope: restore original combat width; keep 50% wider standard doors in first-person exploration only.
 - Restore Rev 265 standard widths once on load; retain custom gates and corrected frame texture scale.
 

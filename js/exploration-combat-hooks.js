@@ -22,6 +22,12 @@ function explorationMaterialTile(image,targetWidth=512,targetHeight=512){
 function explorationMaterialDensity(){return (typeof battlefieldZoom==='number'?battlefieldZoom:1)*(typeof BATTLEFIELD_RENDER_DENSITY==='number'?BATTLEFIELD_RENDER_DENSITY:1);}
 // GPU surfaces retain authored world geometry. Tactical masks, grid and VFX
 // remain ordered Canvas overlays, rather than becoming a single screenshot.
+function drawExplorationBlackoutFloor(){
+ const t=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ if(!t?.blackoutSpaces?.length)return;
+ if(typeof combatGpu!=='undefined'&&combatGpu){let black=drawExplorationBlackoutFloor.tile;if(!black){black=drawExplorationBlackoutFloor.tile=document.createElement('canvas');black.width=black.height=1;const c=black.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,1,1);}combatGpu.surface(t.blackoutSpaces.map(s=>({points:s.polygon,uv:s.polygon.map(()=>[0,0])})),black,{dynamicLighting:false});}
+ else{ctx.save();ctx.fillStyle='#000';for(const s of t.blackoutSpaces){const p=s.polygon.map(p=>screenPointForWorld(p));ctx.beginPath();ctx.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))ctx.lineTo(q.x,q.y);ctx.closePath();ctx.fill();}ctx.restore();}
+}
 function drawExplorationGpuFloor(tiles){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
@@ -42,7 +48,8 @@ function drawExplorationGpuFloor(tiles){
 
 function explorationFaceRenderable(face){
  const t=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
- if(!t?.isRenderablePoint||face.cap)return true;
+ if(!t?.isRenderablePoint)return true;
+ if(face.cap||face.side==='end')return face.points.every(p=>t.isRenderablePoint(p));
  const p=face.points.reduce((s,p)=>({x:s.x+p.x/face.points.length,y:s.y+p.y/face.points.length}),{x:0,y:0});
  return t.isRenderablePoint({x:p.x+face.normal.x*.001*t.cellW,y:p.y+face.normal.z*.001*t.cellH});
 }
@@ -50,7 +57,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi,view=battlefieldViewportBounds();
- const faces=solids.flatMap(s=>s.faces).filter(face=>explorationFaceRenderable(face));
+ const faces=solids.flatMap(s=>s.faces).map(face=>({...face,blackout:!explorationFaceRenderable(face)}));
  const all=faces.flatMap(f=>f.points.map(p=>screenPointForWorld(p,p.elevation)));
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
  const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
@@ -63,6 +70,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  faces.sort((a,b)=>Math.max(...a.points.map(p=>screenPointForWorld(p).y))-Math.max(...b.points.map(p=>screenPointForWorld(p).y))||Number(a.cap)-Number(b.cap));
  const batches=[];
  for(const face of faces){
+  if(face.blackout){batches.push({image:white,blackout:true,surfaces:[{points:face.points,uv:face.points.map(()=>[0,0]),multiply:[0,0,0],boost:[0,0,0]}]});continue;}
   const a=face.points[0],b=face.points[1],dx=b.x-a.x,dy=(b.y-a.y)/(t.cellH/t.cellW),span=Math.hypot(dx,dy),low=Math.min(...face.points.map(p=>p.elevation)),high=Math.max(...face.points.map(p=>p.elevation));
   const doorTop=face.cap&&face.material==='door',wood=face.material==='door'||api.wallFaceMaterial(wall,face.side)==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
   const faceKey=JSON.stringify(face.points);let fragments=cached.faces.get(faceKey);
@@ -80,9 +88,9 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
   });
   const image=face.cap&&!doorTop?white:face.material==='door'?explorationDoorImage:wood?explorationWoodWallImage:explorationWallImage,last=batches.at(-1);
-  if(last?.image===image)last.surfaces.push(...surfaces);else batches.push({image,surfaces});
+  if(last?.image===image&&!last.blackout)last.surfaces.push(...surfaces);else batches.push({image,surfaces});
  }
- for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image,{dynamicLighting});
+ for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image,{dynamicLighting:dynamicLighting&&!batch.blackout});
 }
 // Material helpers extend the shared architectural renderer; gameplay uses its
 // existing walls, movement, LOS, lights and depth ordering.
@@ -125,7 +133,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(typeof combatGpu!=="undefined"&&combatGpu)return drawExplorationGpuSolids(solids,wall,visible,cacheOwner);
- const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).filter(face=>explorationFaceRenderable(face)).map(face=>({...face,screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
+ const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).map(face=>({...face,blackout:!explorationFaceRenderable(face),screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
  const all=faces.flatMap(f=>f.screen);if(!all.length)return;
  const left=Math.floor(Math.min(...all.map(p=>p.x)))-2,top=Math.floor(Math.min(...all.map(p=>p.y)))-2,width=Math.ceil(Math.max(...all.map(p=>p.x))-left)+2,height=Math.ceil(Math.max(...all.map(p=>p.y))-top)+2,v=battlefieldViewportBounds();
  if(left+width<v.left||left>v.right||top+height<v.top||top>v.bottom)return;
@@ -138,6 +146,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  faces.sort((a,b)=>Math.max(...a.points.map(p=>screenPointForWorld(p).y))-Math.max(...b.points.map(p=>screenPointForWorld(p).y))||Number(a.cap)-Number(b.cap));
  for(const face of faces){
   const points=face.screen;target.save();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.clip();
+  if(face.blackout){target.fillStyle='#000';target.fillRect(left,top,width,height);target.restore();continue;}
   const image=face.material==='door'?explorationDoorImage:api.wallFaceMaterial(wall,face.side)==='wood'?explorationWoodWallImage:explorationWallImage;
   const span=Math.hypot(face.points[1].x-face.points[0].x,(face.points[1].y-face.points[0].y)/squash),h=Math.abs(face.points[3].elevation-face.points[0].elevation);
   if(!face.cap&&span>.001&&h>.001){
@@ -161,7 +170,8 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
   target.restore();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.strokeStyle=face.cap?'#b39a70':'#342b20';target.lineWidth=.6;target.stroke();
  }
  const fragments=faces.flatMap((face,faceIndex)=>api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW).map(f=>({...f,faceIndex,screen:f.points.map(p=>screenPointForWorld(p,p.elevation))})):[face]);
- const entry={key,layer,left,top,anchor,faces,fragments};cache.set(cacheOwner,entry);
+ let blackoutMask=null;if(faces.some(f=>f.blackout)){blackoutMask=document.createElement('canvas');blackoutMask.width=width;blackoutMask.height=height;const m=blackoutMask.getContext('2d');m.translate(-left,-top);m.fillStyle='#000';for(const face of faces){m.globalCompositeOperation=face.blackout?'source-over':'destination-out';const p=face.screen;m.beginPath();m.moveTo(p[0].x,p[0].y);for(const q of p.slice(1))m.lineTo(q.x,q.y);m.closePath();m.fill();}}
+ const entry={key,layer,left,top,anchor,faces,fragments,blackoutMask};cache.set(cacheOwner,entry);
  presentExplorationSolids(entry,left,top,visible);
 }
 function explorationTorchAnimation(torch,now=null){
@@ -248,7 +258,7 @@ function presentExplorationSolids(entry,x,y,visible){
    const t=hidden.getContext('2d');t.drawImage(entry.layer,0,0);t.globalCompositeOperation='source-atop';t.fillStyle='rgba(0,0,0,.9)';t.fillRect(0,0,hidden.width,hidden.height);
   }layer=entry.hidden;
  }
- ctx.save();ctx.globalAlpha=1;ctx.drawImage(layer,x,y);ctx.restore();
+ ctx.save();ctx.globalAlpha=1;ctx.drawImage(layer,x,y);if(entry.blackoutMask)ctx.drawImage(entry.blackoutMask,x,y);ctx.restore();
 }
 function explorationSpellRadianceAtHex(point,sources=null){
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;

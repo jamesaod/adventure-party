@@ -1,5 +1,7 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 266 sealed-area follow-up: Omit interior floor, but render inward wall/end/cap surfaces as opaque unlit BLACK occluders. Merely skipping inward faces reveals the double-sided exterior faces behind them. LOS and torch/spell light must never reveal sealed interiors; exterior faces stay visible. GPU blackout batches disable lighting; CPU presentation reapplies a cached visible-black mask.
+
 - Rev 266 CORRECTION: The requested 50% wider doorway is FIRST-PERSON EXPLORATION ONLY. Authored/combat default width is restored to .375; doorWidthVersion 5 restores Rev265 .5625 standard doors once. explorationDoorWidth supplies .5625 to the first-person frame/leaf only; custom widths stay authored. Keep the physical frame UV fix. Do not widen combat geometry, collision, LOS, or defaults for a view-only correction.
 
 - Rev 265: Texture tools/face brushes persist across strokes; selection inspectors do not replace active paint settings. Standard door openings are now 56.25% of an authored square (50% wider); doorWidthVersion 4 migrates former 37.5% defaults once and keeps custom gates. First-person doorway frames use world-scale wall UVs, leaf artwork unchanged. exploration-accessibility.mjs caches presentation-only floor connectivity across openable doors; inaccessible sealed square/curved interiors omit floor, grid, units, internal wall faces and torches while exterior walls remain. Party positions, entrances/exits and open exterior edges seed connectivity. Gameplay movement and LOS remain unchanged.
