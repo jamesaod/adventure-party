@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>GPU oak lighting test</title>
+<style>body{background:#1b211c;color:#edf0e7;font:16px system-ui;max-width:980px;margin:2rem auto;padding:0 1rem}canvas{display:block;width:100%;height:auto}label,button{margin-right:1rem}a{color:#c2dfad}</style>
+<h1>GPU oak lighting test</h1>
+<p><label>Sun <input id="sun" type="range" min="0" max="360" value="55"></label>
+<label>Unit position <input id="walk" type="range" min="-105" max="105" value="-85"></label>
+<button id="play">Animate</button><label><input id="shadows" type="checkbox" checked> Shadows</label></p>
+<div id="view"></div><p id="status"></p><a href="white-oak-grove.html">Canvas grove baseline</a>
+<script type="module">
+import * as THREE from "../assets/vendor/three/three.module.min.js";
+function randomFor(seed){
+  let state=seed;
+  return ()=>((state=Math.imul(1664525,state)+1013904223|0)>>>0)/4294967296;
+}
+function growOak(seed){
+  const random=randomFor(seed);
+  const nodes=[{x:0,y:0,z:0,parent:-1},{x:0,y:0,z:20,parent:0},{x:1,y:0,z:33,parent:1}];
+  const targets=[];
+  while(targets.length<230){
+    const x=random()*2-1,y=random()*2-1,z=random()*2-1;
+    if(x*x+y*y+z*z<1)targets.push({x:x*43,y:y*38,z:61+z*27});
+  }
+  let active=targets;
+  for(let step=0;step<37&&active.length;step++){
+    const directions=new Map();
+    active=active.filter(target=>{
+      let closest=-1,distance=29;
+      for(let i=2;i<nodes.length;i++){
+        const node=nodes[i],d=Math.hypot(target.x-node.x,target.y-node.y,target.z-node.z);
+        if(d<distance){closest=i;distance=d;}
+      }
+      if(distance<5)return false;
+      if(closest>=0){
+        const node=nodes[closest];
+        const sum=directions.get(closest)||{x:0,y:0,z:.12};
+        sum.x+=(target.x-node.x)/distance;
+        sum.y+=(target.y-node.y)/distance;
+        sum.z+=(target.z-node.z)/distance;
+        directions.set(closest,sum);
+      }
+      return true;
+    });
+    for(const [parent,v] of directions){
+      const d=Math.hypot(v.x,v.y,v.z);
+      if(d<.001)continue;
+      const p=nodes[parent];
+      nodes.push({x:p.x+v.x/d*4,y:p.y+v.y/d*4,z:p.z+v.z/d*4,parent});
+    }
+  }
+  const mass=nodes.map(()=>1), leaves=[];
+  for(let i=nodes.length-1;i>0;i--)mass[nodes[i].parent]+=mass[i];
+  for(let i=3;i<nodes.length;i++){
+    if(mass[i]>7)continue;
+    const p=nodes[i];
+    for(let j=0;j<4;j++){
+      const phase=i*2.39996+j*Math.PI;
+      const reach=2+random()*5;
+      leaves.push({x:p.x+Math.cos(phase)*reach,y:p.y+Math.sin(phase)*reach,
+        z:p.z+(random()-.5)*8,r:2+random()*3,color:Math.floor(random()*5)});
+    }
+  }
+  return {nodes,mass,leaves};
+}
+
+function growFullOak(seed,species="oak"){
+  const oak=growOak(seed), random=randomFor(seed+88000);
+  oak.leaves=oak.leaves.flatMap(leaf=>[leaf,{
+    ...leaf,x:leaf.x+(random()-.5)*9,
+    y:leaf.y+(random()-.5)*9,z:leaf.z+(random()-.5)*7
+  }]);
+  oak.species=species;
+  if(["birch","pine","cypress"].includes(species)){
+    for(const point of [...oak.nodes,...oak.leaves]){
+      const spread=species==="birch"?.65:species==="cypress"?.34:Math.max(.25,1.25-point.z/90);
+      point.x*=spread;
+      point.y*=spread;
+      point.z*=species==="cypress"?1.45:1.18;
+    }
+  }
+  if(species==="willow"){
+    const strands=[];
+    for(const [i,leaf] of oak.leaves.entries()){
+      if(i%3!==0)continue;
+      const length=12+random()*27;
+      for(let j=0;j<5;j++){
+        strands.push({...leaf,z:Math.max(5,leaf.z-length*j/4),
+          x:leaf.x+j*leaf.x*.023,y:leaf.y+j*leaf.y*.023,r:leaf.r*.77});
+      }
+    }
+    oak.leaves=strands;
+  }
+  if(species==="snag"){
+    oak.leaves=[];
+    oak.nodes=oak.nodes.filter((node,i)=>i<3||oak.mass[i]>12)
+      .map((node,i,kept)=>({...node,parent:kept.indexOf(oak.nodes[node.parent])}));
+    oak.mass=oak.nodes.map(()=>1);
+    for(let i=oak.nodes.length-1;i>0;i--)oak.mass[oak.nodes[i].parent]+=oak.mass[i];
+  }
+  if(species==="apple"){
+    for(const point of [...oak.nodes,...oak.leaves]){
+      point.x*=1.08;
+      point.y*=1.08;
+      point.z*=.82;
+    }
+    for(let i=5;i<oak.leaves.length;i+=23)oak.leaves[i].apple=true;
+  }
+  oak.shadows=new Map();
+  return oak;
+}
+
+const oak=growFullOak(113), view=document.querySelector("#view");
+const sun=document.querySelector("#sun"), walk=document.querySelector("#walk");
+const play=document.querySelector("#play"), shadows=document.querySelector("#shadows");
+const status=document.querySelector("#status");
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(960,540);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFShadowMap;
+view.append(renderer.domElement);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x354538);
+const camera=new THREE.OrthographicCamera(-145,145,81.56,-81.56,1,600);
+camera.position.set(110,120,170);
+camera.lookAt(0,32,0);
+scene.add(new THREE.HemisphereLight(0xe0edff,0x657450,1.5));
+const light=new THREE.DirectionalLight(0xffedcc,2.3);
+light.castShadow=true;
+light.shadow.mapSize.set(2048,2048);
+Object.assign(light.shadow.camera,{left:-135,right:135,top:135,bottom:-135,near:1,far:410});
+light.shadow.bias=-.0005;
+light.shadow.normalBias=.22;
+scene.add(light,light.target);
+const loader=new THREE.TextureLoader();
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(290,220),new THREE.MeshStandardMaterial({color:0x596f40}));
+ground.rotation.x=-Math.PI/2;
+ground.receiveShadow=true;
+scene.add(ground);
+const bark=new THREE.MeshStandardMaterial({color:0x777064,roughness:1});
+const wood=(from,to,bottom,top)=>{
+  const a=new THREE.Vector3(from.x,from.z,from.y),b=new THREE.Vector3(to.x,to.z,to.y);
+  const delta=b.clone().sub(a);
+  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,delta.length(),7),bark);
+  mesh.position.copy(a).lerp(b,.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());
+  mesh.castShadow=mesh.receiveShadow=true;
+  scene.add(mesh);
+};
+for(let i=1;i<oak.nodes.length;i++){
+  const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
+  wood(oak.nodes[p.parent],p,i===1?5.6:r*1.18,r*.76);
+}
+for(let i=0;i<6;i++){
+  const a=i*Math.PI/3;
+  wood({x:0,y:0,z:4},{x:11*Math.cos(a),y:11*Math.sin(a),z:.3},2.3,.2);
+}
+const leafShape=new THREE.Shape();
+leafShape.moveTo(0,-1);
+for(const [x,y] of [[.2,-.66],[.52,-.47],[.25,-.31],[.66,-.08],[.3,.07],[.58,.31],[.24,.38],[.32,.68],[0,1],[-.32,.68],[-.24,.38],[-.58,.31],[-.3,.07],[-.66,-.08],[-.25,-.31],[-.52,-.47],[-.2,-.66]])leafShape.lineTo(x,y);
+leafShape.closePath();
+const geometry=new THREE.ShapeGeometry(leafShape);
+geometry.rotateX(-Math.PI/2);
+const leaves=new THREE.InstancedMesh(geometry,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.85}),oak.leaves.length);
+const dummy=new THREE.Object3D();
+for(const [i,p] of oak.leaves.entries()){
+  dummy.position.set(p.x,p.z,p.y);
+  dummy.rotation.set(0,i*2.39996,0);
+  dummy.scale.set(p.r*.72,1,p.r);
+  dummy.updateMatrix();
+  leaves.setMatrixAt(i,dummy.matrix);
+  leaves.setColorAt(i,new THREE.Color().setHSL(.24+p.color*.011,.42,.22+p.color*.035));
+}
+leaves.castShadow=leaves.receiveShadow=true;
+scene.add(leaves);
+const unitMaterial=new THREE.MeshStandardMaterial({transparent:false,alphaTest:.45,side:THREE.DoubleSide});
+const unit=new THREE.Mesh(new THREE.PlaneGeometry(24,31),unitMaterial);
+unit.receiveShadow=true;
+unit.visible=false;
+scene.add(unit);
+loader.load("../assets/sprites/studio-kobold-ready-se.png",texture=>{
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.magFilter=THREE.NearestFilter;
+  unitMaterial.map=texture;
+  unitMaterial.needsUpdate=true;
+  unit.visible=true;
+  draw();
+},undefined,()=>{status.textContent="Could not load the unit sprite.";});
+function draw(){
+  const a=Number(sun.value)*Math.PI/180;
+  light.position.set(115*Math.cos(a),115,115*Math.sin(a));
+  renderer.shadowMap.enabled=shadows.checked;
+  unit.position.set(Number(walk.value),15.5,9);
+  unit.rotation.y=Math.atan2(camera.position.x,camera.position.z);
+  renderer.render(scene,camera);
+}
+for(const control of [sun,walk,shadows])control.addEventListener("input",draw);
+let running=false,animation;
+play.addEventListener("click",()=>{
+  running=!running;
+  play.textContent=running?"Pause":"Animate";
+  if(!running){cancelAnimationFrame(animation);return;}
+  const start=performance.now();
+  function tick(now){
+    const elapsed=(now-start)/1000;
+    sun.value=(55+elapsed*24)%360;
+    walk.value=85*Math.sin(elapsed*.9-1.57);
+    draw();
+    animation=requestAnimationFrame(tick);
+  }
+  animation=requestAnimationFrame(tick);
+});
+draw();
+</script></html>
