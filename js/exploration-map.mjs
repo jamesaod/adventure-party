@@ -1,6 +1,6 @@
-import {quarterAt,quarterFloor,quarterSegments} from './quarter-walls.mjs?v=R238C263';
-import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C263';
-import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C263';
+import {quarterAt,quarterSegments} from './quarter-walls.mjs?v=R238C264';
+import {effectiveEdges,edgeGeometry,edgeCells,doorKey} from './exploration-edges.mjs?v=R238C264';
+import {validateMap, cellKey, FACINGS} from './exploration-core.mjs?v=R238C264';
 
 // The map and first-person view share the same authored grid and live state.
 // North is the top edge; there is no separately authored illustration to drift.
@@ -18,8 +18,7 @@ export function explorationMapMarkup(map, state, discovery) {
       const px = insetX + x * size, py = insetY + z * size;
       const wall = map.grid[z][x] === '#';
       const quarter=quarterAt(map,x,z);
-      if(quarter)parts.push(`<polygon data-cell="${x},${z}" data-kind="floor" points="${quarterFloor(quarter).map(p=>`${insetX+(p.x+.5)*size},${insetY+(p.z+.5)*size}`).join(' ')}" fill="#fff0ca" fill-opacity=".45"/>`);
-      else parts.push(`<rect data-cell="${x},${z}" data-kind="${wall ? 'wall' : 'floor'}" x="${px}" y="${py}" width="${size}" height="${size}" fill="${wall ? 'url(#mapWallHatch)' : '#fff0ca'}" fill-opacity="${wall ? '1' : '.45'}" stroke="#987345" stroke-opacity=".32" stroke-width=".5"/>`);
+      parts.push(`<rect data-cell="${x},${z}" data-kind="${wall ? 'wall' : 'floor'}" x="${px}" y="${py}" width="${size}" height="${size}" fill="${wall ? 'url(#mapWallHatch)' : '#fff0ca'}" fill-opacity="${wall ? '1' : '.45'}" stroke="#987345" stroke-opacity=".32" stroke-width=".5"/>`);
       if (!wall&&!quarter) {
         // Ink the actual room/corridor perimeter, including isolated pillars.
         for (const [dx, dz, a, b, c, d] of [[0,-1,0,0,16,0],[1,0,16,0,16,16],[0,1,0,16,16,16],[-1,0,0,0,0,16]]) {

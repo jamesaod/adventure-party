@@ -1,4 +1,5 @@
-import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C263';
+import {validateWallFaces} from './wall-surfaces.mjs?v=R238C264';
+import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C264';
 // Canonical shared edges: h(x,z) is the north edge of cell x,z;
 // v(x,z) is its west edge. Coordinates are independent of any renderer.
 export const edgeKey=e=>`${e.axis}:${e.x},${e.z}`;
@@ -34,7 +35,7 @@ export function normalizeDoorWidths(map){
 
 export function syncEdgeDoors(map){
  if(map.version!==2)return map;
- map.doors=(map.edges||[]).filter(e=>e.kind==='door').map(e=>{const g=edgeGeometry(e);return {...g.center,id:e.id||edgeKey(e),edgeId:edgeKey(e),axis:g.axis,material:e.material||'stone',width:e.width??.375,hinge:e.hinge||'start',initialOpen:!!e.initialOpen};});return map;
+ map.doors=(map.edges||[]).filter(e=>e.kind==='door').map(e=>{const g=edgeGeometry(e);return {...g.center,id:e.id||edgeKey(e),edgeId:edgeKey(e),axis:g.axis,faceMaterials:e.faceMaterials,material:e.material||'stone',width:e.width??.375,hinge:e.hinge||'start',initialOpen:!!e.initialOpen};});return map;
 }
 export function upgradeEdgeMap(input){
  const map=structuredClone(input);if(map.version===2)return syncEdgeDoors(normalizeDoorWidths(map));
@@ -48,6 +49,7 @@ export function validateEdges(map){
  if(!Array.isArray(map.edges)||map.edges.length>2*map.width*map.height+map.width+map.height)throw Error('Invalid edge list.');
  const keys=new Set(),ids=new Set();
  for(const e of map.edges){
+  validateWallFaces(e);
   if(!['h','v'].includes(e.axis)||!Number.isInteger(e.x)||!Number.isInteger(e.z)||e.x<0||e.z<0||e.x>(e.axis==='h'?map.width-1:map.width)||e.z>(e.axis==='h'?map.height:map.height-1))throw Error('Wall edge lies outside the map.');
   const key=edgeKey(e);
   for(const q of map.quarterWalls||[])for(const side of quarterSides(q))if(edgeKey(edgeAtSide(q.x,q.z,side))===key)throw Error('Remove the quarter-round wall before placing a straight wall or opening on its outer sides.');
@@ -69,7 +71,7 @@ export function paintEdge(map,edge,kind,settings={}){
  if(kind==='erase'&&edgeCells(edge).some(p=>!floor(map,p)))throw Error('This boundary encloses void. Paint floor on its other side first.');
  const key=edgeKey(edge),old=(map.edges||[]).find(e=>edgeKey(e)===key),next=structuredClone(map);
  next.edges=next.edges.filter(e=>edgeKey(e)!==key);
- if(kind!=='erase')next.edges.push({...edge,id:old?.id||key,kind,material:settings.material||old?.material||'stone',...(kind!=='wall'?{width:settings.width??Math.max(kind==='door'?.2:.4,old?.width??(kind==='door'?.375:.84)),hinge:settings.hinge||old?.hinge||'start',initialOpen:settings.initialOpen??old?.initialOpen??false}:{})});
+ if(kind!=='erase')next.edges.push({...edge,id:old?.id||key,kind,material:settings.material||old?.material||'stone',...((settings.faceMaterials||old?.faceMaterials)?{faceMaterials:{...(settings.faceMaterials||old.faceMaterials)}}:{}),...(kind!=='wall'?{width:settings.width??Math.max(kind==='door'?.2:.4,old?.width??(kind==='door'?.375:.84)),hinge:settings.hinge||old?.hinge||'start',initialOpen:settings.initialOpen??old?.initialOpen??false}:{})});
  syncEdgeDoors(next);validateEdges(next);map.edges=next.edges;map.doors=next.doors;
 }
 export function blockingEdgeSegments(map,opened,mode='movement'){

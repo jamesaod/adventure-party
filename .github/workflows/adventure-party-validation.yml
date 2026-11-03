@@ -220,6 +220,7 @@ jobs:
           node scripts/test-doorway-navigation.mjs
           node scripts/test-exploration-edges.mjs
           node scripts/test-quarter-walls.mjs
+          node scripts/test-wall-surfaces.mjs
           node scripts/test-exploration-combat-bounds.mjs
           node scripts/test-combat-visibility-performance.mjs
           node scripts/test-combat-view-environments.mjs

@@ -27,7 +27,7 @@ function drawExplorationGpuFloor(tiles){
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi,groups=new Map(),t=explorationTerrain,map=explorationEncounter.map;
  for(const fragment of explorationFloorFragments(tiles)){
-  const cell=t.cellAt(fragment.point.x,fragment.point.y),kind=explorationEncounter.synthetic?(isIndoorWorldPoint(worldPointForHex(fragment.point.x,fragment.point.y))?'stone':'grass'):api.groundKind(map,cell.x,cell.z);
+  const world=worldPointForHex(fragment.point.x,fragment.point.y),surface=api.surfaceAt(map,{x:explorationEncounter.origin.x+world.x/t.cellW,z:explorationEncounter.origin.z+world.y/t.cellH}),cell=surface.cell,kind=explorationEncounter.synthetic?(isIndoorWorldPoint(worldPointForHex(fragment.point.x,fragment.point.y))?'stone':'grass'):surface.ground;
   const image=kind==='grass'?explorationGrassImage:kind==='dirt'?explorationGroundBank.get(api.grassNeighborMask(map,cell.x,cell.z)):explorationFloorImage;
   const m=kind==='stone'?api.materialMetrics(t):api.grassMaterialMetrics(t);
   if(!groups.has(image))groups.set(image,[]);
@@ -49,7 +49,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
  const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
  const lights=dynamicLighting?[]:explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
- const key=JSON.stringify([lights,explorationEncounter.openDoors,explorationDaylight()?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial]);
+ const key=JSON.stringify([lights,explorationEncounter.openDoors,explorationDaylight()?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial,wall?.faceMaterials]);
  const cache=drawExplorationGpuSolids.cache||(drawExplorationGpuSolids.cache=new WeakMap());
  let cached=cache.get(cacheOwner);if(cached?.key!==key){cached={key,faces:new Map()};cache.set(cacheOwner,cached);}
  const white=drawExplorationGpuSolids.white||(drawExplorationGpuSolids.white=document.createElement('canvas'));
@@ -58,7 +58,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const batches=[];
  for(const face of faces){
   const a=face.points[0],b=face.points[1],dx=b.x-a.x,dy=(b.y-a.y)/(t.cellH/t.cellW),span=Math.hypot(dx,dy),low=Math.min(...face.points.map(p=>p.elevation)),high=Math.max(...face.points.map(p=>p.elevation));
-  const doorTop=face.cap&&face.material==='door',wood=face.material==='door'||wall?.edgeMaterial==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
+  const doorTop=face.cap&&face.material==='door',wood=face.material==='door'||api.wallFaceMaterial(wall,face.side)==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
   const faceKey=JSON.stringify(face.points);let fragments=cached.faces.get(faceKey);
   if(!fragments){fragments=api.faceLightFragments(face,HEX_W,HEX_ROW).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
@@ -132,7 +132,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  faces.sort((a,b)=>Math.max(...a.points.map(p=>screenPointForWorld(p).y))-Math.max(...b.points.map(p=>screenPointForWorld(p).y))||Number(a.cap)-Number(b.cap));
  for(const face of faces){
   const points=face.screen;target.save();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.clip();
-  const image=face.material==='door'?explorationDoorImage:wall?.edgeMaterial==='wood'?explorationWoodWallImage:explorationWallImage;
+  const image=face.material==='door'?explorationDoorImage:api.wallFaceMaterial(wall,face.side)==='wood'?explorationWoodWallImage:explorationWallImage;
   const span=Math.hypot(face.points[1].x-face.points[0].x,(face.points[1].y-face.points[0].y)/squash),h=Math.abs(face.points[3].elevation-face.points[0].elevation);
   if(!face.cap&&span>.001&&h>.001){
    const density=explorationMaterialDensity(),metrics=api.materialMetrics(explorationTerrain),repeat=face.material==='door'?span:metrics.wallWidth;
@@ -183,12 +183,16 @@ function explorationFriendlyDistance(point){
  const observers=typeof friendlyVisibilityObservers==='function'?friendlyVisibilityObservers():[game?.player].filter(u=>u?.alive&&!u.fled);
  return observers.length?Math.min(...observers.map(u=>hexDistance(u,point))):0;
 }
+function explorationAuthoredSurface(hex){
+ const t=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain,c=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter,p=worldPointForHex(hex.x,hex.y);
+ return explorationEncounterApi.surfaceAt(c.map,{x:c.origin.x+p.x/t.cellW,z:c.origin.z+p.y/t.cellH});
+}
 function explorationVisibilityAtHex(point,sources=null,distancePoint=point){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi;if(!api?.tileDistanceVisibility)return 1;
  const distance=explorationFriendlyDistance(distancePoint);if(distance<api.DISTANCE_VISIBILITY.startHex)return 1;
- const p=explorationTerrain.cellAt(point.x,point.y),ambient=explorationEncounter.synthetic?combatRenderAmbientAtHex(point):api.ambientLightAt(explorationEncounter.map,p.x,p.z);if(ambient>=100)return 1;
+ const p=explorationTerrain.cellAt(point.x,point.y),ambient=explorationEncounter.synthetic?combatRenderAmbientAtHex(point):explorationAuthoredSurface(point).ambient;if(ambient>=100)return 1;
  let light=typeof explorationDaylightAtHex==='function'?explorationDaylightAtHex(point):0;for(const source of sources||explorationRenderLights())light+=illuminationContributionFromSource(source,point.x,point.y)*(source.sourceKind==='torch'?explorationTorchAnimation(source).intensity:1);
  return api.tileDistanceVisibility(distance,ambient,light);
 }
@@ -309,7 +313,7 @@ function drawExplorationCombatDoor(door){
 function explorationDoorWall(door){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const {center:c,axis}=door,t=explorationTerrain;
- return {id:door.wallId||`door-${door.x}-${door.z}`,edgeMaterial:door.material,a:axis==='x'?{x:c.x,y:c.y-t.cellH/2}:{x:c.x-t.cellW/2,y:c.y},b:axis==='x'?{x:c.x,y:c.y+t.cellH/2}:{x:c.x+t.cellW/2,y:c.y}};
+ return {id:door.wallId||`door-${door.x}-${door.z}`,edgeMaterial:door.material,faceMaterials:door.faceMaterials,a:axis==='x'?{x:c.x,y:c.y-t.cellH/2}:{x:c.x-t.cellW/2,y:c.y},b:axis==='x'?{x:c.x,y:c.y+t.cellH/2}:{x:c.x+t.cellW/2,y:c.y}};
 }
 function drawExplorationEdgeWindow(window){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
@@ -371,7 +375,7 @@ function drawDistanceVisibilityLayer(tiles){
  }
  for(const fragment of explorationFloorFragments(tiles)){
   const tile=fragment.point,distance=explorationFriendlyDistance(fragment.hex);if(distance<api.DISTANCE_VISIBILITY.startHex)continue;
-  const p=explorationTerrain.cellAt(tile.x,tile.y),ambient=explorationEncounter.synthetic?combatRenderAmbientAtHex(tile):api.ambientLightAt(explorationEncounter.map,p.x,p.z);if(ambient>=100)continue;
+  const p=explorationTerrain.cellAt(tile.x,tile.y),ambient=explorationEncounter.synthetic?combatRenderAmbientAtHex(tile):explorationAuthoredSurface(tile).ambient;if(ambient>=100)continue;
   const visibility=explorationVisibilityAtHex(tile,sources,fragment.hex);if(visibility>=1)continue;
   if(tracePolygonOnContext(ctx,fragment.screen)){ctx.fillStyle=`rgba(0,0,0,${1-visibility})`;ctx.fill();}
  }
@@ -424,8 +428,8 @@ function explorationDaylightVisible(light,point){
 function explorationAmbientIlluminationAtHex(x,y){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- const api=explorationEncounterApi,p=explorationTerrain.cellAt(x,y),map=explorationEncounter.map,amount=api.ambientLightAt(map,p.x,p.z)/100;
- const base=api.isOutdoor(map,p.x,p.z)?Math.max(.02,amount):ILLUMINATION_RULES.indoorAmbient+(1-ILLUMINATION_RULES.indoorAmbient)*amount;
+ const api=explorationEncounterApi,p=explorationTerrain.cellAt(x,y),map=explorationEncounter.map,surface=explorationAuthoredSurface({x,y}),amount=surface.ambient/100;
+ const base=surface.environment==='outdoor'?Math.max(.02,amount):ILLUMINATION_RULES.indoorAmbient+(1-ILLUMINATION_RULES.indoorAmbient)*amount;
  return Math.min(1,base+explorationDaylightAtHex({x,y}));
 }
 function explorationDaylightAtHex(hex){
@@ -438,7 +442,7 @@ function explorationDaylightAtHex(hex){
 function explorationSurfaceExposure(point,normal,lights,opened){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- const api=explorationEncounterApi,field=explorationDaylight()?.field,cell=api.SCENE_STYLE.cellMetres,x=Math.floor(point.x/cell+.5),z=Math.floor(point.z/cell+.5);
+ const api=explorationEncounterApi,field=explorationDaylight()?.field,cell=api.SCENE_STYLE.cellMetres,surface=api.surfaceAt(explorationEncounter.map,{x:point.x/cell,z:point.z/cell}),x=surface.cell.x,z=surface.cell.z;
  const ambient=explorationEncounter.synthetic?(isIndoorWorldPoint({x:(point.x/cell-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(point.z/cell-explorationEncounter.origin.z)*explorationTerrain.cellH})?api.SCENE_STYLE.ambient:api.ambientForCell({environment:['o']},0,0)):field?field.ambientAt(x,z):api.ambientForCell(explorationEncounter.map,x,z);
  const base=api.surfaceLight(point,normal,lights,explorationDaylightVisible,ambient),day=field?.sample(point,normal,explorationDaylightVisible);
  return api.displayExposure(day?.rgb.some(v=>v>0)?base.map((v,i)=>v+day.rgb[i]):base);
@@ -626,10 +630,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C263');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C264');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C263');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C264');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');
