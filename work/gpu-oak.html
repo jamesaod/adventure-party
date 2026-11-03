@@ -165,6 +165,15 @@ const foliageMaterial=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roug
 function buildTree(mature){
   const oak=growFullOak(113);
   const group=new THREE.Group();
+  // Fill gaps around the existing twigs without changing either crown shape.
+  const fillRandom=randomFor(48113);
+  oak.leaves=oak.leaves.flatMap(leaf=>[leaf,{
+    ...leaf,
+    x:leaf.x+(fillRandom()-.5)*5,
+    y:leaf.y+(fillRandom()-.5)*5,
+    z:leaf.z+(fillRandom()-.5)*5,
+    r:leaf.r*.9
+  }]);
   if(mature){
     const matureLeaves=[];
     const rng=randomFor(27113);
@@ -246,8 +255,8 @@ function buildTree(mature){
   leaves.frustumCulled=false;
   for(const [i,p] of oak.leaves.entries()){
     const outer=Math.min(1,Math.hypot(p.x,p.y,(p.z-38)*.8)/58);
-    const color=mature?new THREE.Color().setHSL(.255-.08*outer,.55,.14+.18*outer+p.color*.018):
-      new THREE.Color().setHSL(.24+p.color*.011,.42,.22+p.color*.035);
+    const color=mature?new THREE.Color().setHSL(.28-.035*outer,.62,.095+.12*outer+p.color*.012):
+      new THREE.Color().setHSL(.267+p.color*.006,.57,.135+p.color*.021);
     leaves.setColorAt(i,color);
   }
   leaves.castShadow=leaves.receiveShadow=true;
@@ -268,7 +277,7 @@ function draw(time=0){
     const {oak,leaves,mature}=tree;
     for(const [i,p] of oak.leaves.entries()){
       const gust=Math.sin(time*2+p.y*.085)*strength;
-      const tilt=mature?.75*Math.sin(i*1.83):0;
+      const tilt=(mature?.75:.62)*Math.sin(i*1.83);
       dummy.position.set(p.x+gust*2,p.z+gust*.7,p.y);
       dummy.rotation.set(tilt+gust*.22,i*2.39996,tilt*.55+gust*.12);
       dummy.scale.set(p.r*.72,1,p.r);
