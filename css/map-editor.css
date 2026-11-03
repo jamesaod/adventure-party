@@ -37,3 +37,20 @@ label{display:grid;gap:6px;font-size:12px}input,select{font:inherit;color:#83e7e
 #editorGrid .edge-e .face-a,#editorGrid .edge-w .face-a{left:-2px}#editorGrid .edge-e .face-b,#editorGrid .edge-w .face-b{left:2px}
 #editorGrid[data-view=wall] .quarter-mark{overflow:visible}#editorGrid .curve-face{pointer-events:stroke;cursor:pointer}
 #editorGrid[data-view=wall] button:has(.quarter-mark){z-index:4}
+
+[hidden]{display:none!important}
+#editorGrid[data-view=wall] .edge-n,#editorGrid[data-view=wall] .edge-s{height:8px;left:-1px;right:-1px;transform:translateY(-50%)}
+#editorGrid[data-view=wall] .edge-n{top:-1px}#editorGrid[data-view=wall] .edge-s{bottom:-5px}
+#editorGrid[data-view=wall] .edge-w,#editorGrid[data-view=wall] .edge-e{width:8px;top:-1px;bottom:-1px;transform:translateX(-50%)}
+#editorGrid[data-view=wall] .edge-w{left:-1px}#editorGrid[data-view=wall] .edge-e{right:-5px}
+#editorGrid .wall-face{left:0;top:0}
+#editorGrid .edge-n .face-a,#editorGrid .edge-s .face-a{top:50%;height:50%}#editorGrid .edge-n .face-b,#editorGrid .edge-s .face-b{top:0;height:50%}
+#editorGrid .edge-e .face-a,#editorGrid .edge-w .face-a{left:0;width:50%}#editorGrid .edge-e .face-b,#editorGrid .edge-w .face-b{left:50%;width:50%}
+.quick-tools{flex-wrap:wrap}.quick-tools #undo{flex-basis:100%}.tools button[aria-pressed=true]{outline:1px solid #edcf79}
+.texture-preview{margin:12px 0;border:1px solid #655d4a;background:#17151a;padding:8px;text-align:center}.texture-preview img{width:100%;height:118px;object-fit:cover}.texture-preview figcaption{font-size:12px;margin-top:6px}.texture-preview .preview-swatch{height:80px;display:grid;place-items:center;background:linear-gradient(#25425d,#b7bea5);font:16px Georgia}
+.map-preview{margin-bottom:14px;border:1px solid #77718d;padding:9px;background:#121117}.map-preview canvas{display:block;width:100%;height:230px;touch-action:none}.map-preview h3{font-size:14px;margin:0 0 8px}.map-preview button{width:100%}.map-preview p{font-size:11px;line-height:1.5}.preview-heading{display:flex;justify-content:space-between;gap:8px}.inspector #surfacePanel label{margin:8px 0}
+
+#editorGrid[data-view=wall] .edge-n,#editorGrid[data-view=wall] .edge-s{left:calc(-1 * var(--edge-border-left,1px));right:calc(-1 * var(--edge-border-right,1px))}
+#editorGrid[data-view=wall] .edge-n{top:calc(-1 * var(--edge-border-top,1px));transform:translateY(-50%)}#editorGrid[data-view=wall] .edge-s{bottom:calc(-1 * var(--edge-border-bottom,1px));transform:translateY(50%)}
+#editorGrid[data-view=wall] .edge-w,#editorGrid[data-view=wall] .edge-e{top:calc(-1 * var(--edge-border-top,1px));bottom:calc(-1 * var(--edge-border-bottom,1px))}
+#editorGrid[data-view=wall] .edge-w{left:calc(-1 * var(--edge-border-left,1px));transform:translateX(-50%)}#editorGrid[data-view=wall] .edge-e{right:calc(-1 * var(--edge-border-right,1px));transform:translateX(50%)}

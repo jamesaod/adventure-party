@@ -1,5 +1,5 @@
-import {validateWallFaces} from './wall-surfaces.mjs?v=R238C266';
-import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C266';
+import {validateWallFaces} from './wall-surfaces.mjs?v=R238C267';
+import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C267';
 // Canonical shared edges: h(x,z) is the north edge of cell x,z;
 // v(x,z) is its west edge. Coordinates are independent of any renderer.
 export const edgeKey=e=>`${e.axis}:${e.x},${e.z}`;
@@ -53,7 +53,7 @@ export function validateEdges(map){
   validateWallFaces(e);
   if(!['h','v'].includes(e.axis)||!Number.isInteger(e.x)||!Number.isInteger(e.z)||e.x<0||e.z<0||e.x>(e.axis==='h'?map.width-1:map.width)||e.z>(e.axis==='h'?map.height:map.height-1))throw Error('Wall edge lies outside the map.');
   const key=edgeKey(e);
-  for(const q of map.quarterWalls||[])for(const side of quarterSides(q))if(edgeKey(edgeAtSide(q.x,q.z,side))===key)throw Error('Remove the quarter-round wall before placing a straight wall or opening on its outer sides.');
+
   if(keys.has(key)||typeof e.id!=='string'||!e.id||!/^[a-zA-Z0-9_:,.-]{1,120}$/.test(e.id)||ids.has(e.id))throw Error('Duplicate or missing wall edge identity.');keys.add(key);ids.add(e.id);
   if(!['wall','door','window'].includes(e.kind)||!['stone','wood'].includes(e.material||'stone'))throw Error('Invalid wall edge type or material.');
   const cells=edgeCells(e);if(!cells.some(p=>floor(map,p)))throw Error('Place wall edges beside floor.');
@@ -69,7 +69,7 @@ export function validateEdges(map){
 }
 export function paintEdge(map,edge,kind,settings={}){
  if(map.version!==2)throw Error('Convert this map to edge walls first.');
- if(kind==='erase'&&edgeCells(edge).some(p=>!floor(map,p)))throw Error('This boundary encloses void. Paint floor on its other side first.');
+ if(kind==='erase'&&edgeCells(edge).some(p=>!floor(map,p))&&!(map.edges||[]).some(e=>edgeKey(e)===edgeKey(edge)))throw Error('This boundary encloses void. Paint floor on its other side first.');
  const key=edgeKey(edge),old=(map.edges||[]).find(e=>edgeKey(e)===key),next=structuredClone(map);
  next.edges=next.edges.filter(e=>edgeKey(e)!==key);
  if(kind!=='erase')next.edges.push({...edge,id:old?.id||key,kind,material:settings.material||old?.material||'stone',...((settings.faceMaterials||old?.faceMaterials)?{faceMaterials:{...(settings.faceMaterials||old.faceMaterials)}}:{}),...(kind!=='wall'?{width:settings.width??Math.max(kind==='door'?.2:.4,old?.width??(kind==='door'?.375:.84)),hinge:settings.hinge||old?.hinge||'start',initialOpen:settings.initialOpen??old?.initialOpen??false}:{})});
