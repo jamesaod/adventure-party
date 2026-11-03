@@ -233,6 +233,7 @@ jobs:
           node scripts/test-combat-webgl.mjs
           node scripts/test-combat-runtime.mjs
           node scripts/test-opportunity-attacks.mjs
+          node scripts/test-wall-lightmap.mjs
           node scripts/test-combat-gpu-lighting.mjs
           node scripts/test-combat-result-panel.mjs
           node scripts/test-spell-target-results.mjs

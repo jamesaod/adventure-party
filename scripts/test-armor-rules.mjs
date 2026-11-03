@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {ARMOR_ITEMS,ARMOR_ENGINE_CATALOG,encumberedMovement,inventoryMovement} from '../js/armor-rules.mjs';
+import {ARMOR_ITEMS,ARMOR_ENGINE_CATALOG,encumberedMovement,inventoryMovement,resolveArmorItem} from '../js/armor-rules.mjs';
 import {ITEM_CATALOG} from '../js/item-catalog.mjs';
 import {sampleGeneration,defaultGeneration} from '../js/mob-generation.mjs';
 assert.equal(Object.keys(ARMOR_ITEMS).length,14);
@@ -37,7 +37,7 @@ assert.throws(()=>sampleGeneration({...g,armor:'long-sword'}),/armor/);
 // Exercise the production equipment synchronizer and AC resolver, not a duplicate engine.
 const source=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const fn=name=>{const start=source.indexOf(`function ${name}(`);assert.ok(start>=0);return source.slice(start,source.indexOf('\n}',start)+2);};
-const sandbox={window:{adventurePartyArmorRules:{inventoryMovement}},getArmorCatalogEntry:id=>ARMOR_ENGINE_CATALOG[id],getWeaponCatalogEntry:()=>null,getMissileCatalogEntry:()=>null,syncRepositoryMissileEquipment:()=>{},dexterityAdjustments:()=>({defensive:0}),clamp:(v,min,max)=>Math.max(min,Math.min(max,v))};
+const sandbox={window:{adventurePartyArmorRules:{inventoryMovement,resolveArmorItem}},getArmorCatalogEntry:id=>ARMOR_ENGINE_CATALOG[id],getWeaponCatalogEntry:()=>null,getMissileCatalogEntry:()=>null,syncRepositoryMissileEquipment:()=>{},dexterityAdjustments:()=>({defensive:0}),clamp:(v,min,max)=>Math.max(min,Math.min(max,v))};
 vm.createContext(sandbox);vm.runInContext(fn('calculateArmorClass')+'\n'+fn('syncFighterEquipment'),sandbox);
 const armored={move:12,stats:{str:10,dex:10},inventory:[{name:'Chain',catalogArmorId:'chain',slot:'armor',equipped:true}]};
 sandbox.syncFighterEquipment(armored);assert.equal(armored.ac,5);assert.equal(armored.move,11);
@@ -46,3 +46,10 @@ armored.inventory[0].baseArmorClass=3;sandbox.syncFighterEquipment(armored);asse
 armored.inventory[0].equipped=false;sandbox.syncFighterEquipment(armored);assert.equal(armored.ac,10);assert.equal(armored.move,11);
 armored.inventory=[];sandbox.syncFighterEquipment(armored);assert.equal(armored.move,12);
 console.log('Armor: 14 shared entries, PHB movement example/boundaries, size, carried armor, stable resync and MOB assignment passed.');
+
+armored.inventory=[{name:'Chain Mail',catalogItemId:'chain-mail',slot:'armor',equipped:true,baseArmorClass:null}];
+sandbox.syncFighterEquipment(armored);assert.equal(armored.ac,5,'Portable item ID resolves chainmail, null snapshot cannot erase canonical AC');
+armored.inventory[0].baseArmorClass=3;sandbox.syncFighterEquipment(armored);assert.equal(armored.ac,3,'Explicit enchanted variant remains intact');
+armored.inventory.push({catalogArmorId:'shield-medium',slot:'shield',equipped:true,acBonus:2});
+sandbox.syncFighterEquipment(armored);assert.equal(armored.ac,1,'Equipped shield variant bonus wins over base catalog');
+assert.equal(resolveArmorItem({slot:'armor',acModifier:-5}).baseArmorClass,5);

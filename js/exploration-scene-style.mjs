@@ -1,6 +1,6 @@
-import {quarterAt,quarterPoints} from './quarter-walls.mjs?v=R238C267';
+import {quarterAt,quarterPoints} from './quarter-walls.mjs?v=R238C269';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
-import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C267';
+import {edgeLineBlocked,effectiveEdges,edgeKey,edgeAtSide} from './exploration-edges.mjs?v=R238C269';
 // Authored scene units are metres; tactical cells and compact display heights
 // are projection choices, never dimensions embedded in artwork or item data.
 export const SCENE_STYLE=Object.freeze({
