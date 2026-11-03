@@ -53,6 +53,16 @@ function explorationFaceRenderable(face){
  const p=face.points.reduce((s,p)=>({x:s.x+p.x/face.points.length,y:s.y+p.y/face.points.length}),{x:0,y:0});
  return t.isRenderablePoint({x:p.x+face.normal.x*.001*t.cellW,y:p.y+face.normal.z*.001*t.cellH});
 }
+function explorationWallFragmentVisible(fragment,normal,fallback){
+ if(typeof friendlyVisibilityObservers!=='function'||typeof observerVisibilityContext!=='function'||typeof pointInSimplePolygon!=='function')return fallback;
+ const t=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+ const frame=typeof combatLightingFrame==='number'?combatLightingFrame:null;
+ let cached=explorationWallFragmentVisible.cache;
+ if(frame===null||cached?.frame!==frame){cached={frame,polygons:friendlyVisibilityObservers().map(o=>observerVisibilityContext(o)?.polygon).filter(p=>p?.length)};explorationWallFragmentVisible.cache=cached;}
+ const p=fragment.points.reduce((s,v)=>({x:s.x+v.x/fragment.points.length,y:s.y+v.y/fragment.points.length}),{x:0,y:0});
+ p.x+=normal.x*.025*t.cellW/3;p.y+=normal.z*.025*t.cellH/3;
+ return cached.polygons.some(polygon=>pointInSimplePolygon(p,polygon));
+}
 function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
@@ -62,7 +72,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
  const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
  const lights=dynamicLighting?[]:explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
- const key=JSON.stringify([lights,explorationEncounter.openDoors,explorationDaylight()?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial,wall?.faceMaterials]);
+ const key=JSON.stringify([lights,explorationEncounter.openDoors,(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial,wall?.faceMaterials]);
  const cache=drawExplorationGpuSolids.cache||(drawExplorationGpuSolids.cache=new WeakMap());
  let cached=cache.get(cacheOwner);if(cached?.key!==key){cached={key,faces:new Map()};cache.set(cacheOwner,cached);}
  const white=drawExplorationGpuSolids.white||(drawExplorationGpuSolids.white=document.createElement('canvas'));
@@ -79,10 +89,10 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
    const exposure=explorationSurfaceExposure({x:(explorationEncounter.origin.x+mid.x/t.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/t.cellH)*cell},face.normal,lights,opened);
    return {...fragment,exposure};});cached.faces.set(faceKey,fragments);}
   const surfaces=fragments.map(fragment=>{
-   const exposure=fragment.exposure,hex=fragment.point,visibility=visible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
-   let flicker=0;if(visible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
+   const exposure=fragment.exposure,hex=fragment.point,fragmentVisible=typeof explorationWallFragmentVisible==='function'?explorationWallFragmentVisible(fragment,face.normal,visible):visible,visibility=fragmentVisible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
+   let flicker=0;if(fragmentVisible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    flicker=Math.max(-.15,Math.min(.15,flicker));
-   const radiance=visible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[117,79,42]:[110,104,91];
+   const radiance=fragmentVisible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[117,79,42]:[110,104,91];
    return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat+(wall?.textureOffset||0)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
     multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap&&!doorTop?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
@@ -138,7 +148,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  const left=Math.floor(Math.min(...all.map(p=>p.x)))-2,top=Math.floor(Math.min(...all.map(p=>p.y)))-2,width=Math.ceil(Math.max(...all.map(p=>p.x))-left)+2,height=Math.ceil(Math.max(...all.map(p=>p.y))-top)+2,v=battlefieldViewportBounds();
  if(left+width<v.left||left>v.right||top+height<v.top||top>v.bottom)return;
  const lights=explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),cell=api.SCENE_STYLE.cellMetres,squash=explorationTerrain.cellH/explorationTerrain.cellW;
- const cache=drawExplorationSolids.cache||(drawExplorationSolids.cache=new WeakMap()),key=JSON.stringify([typeof battlefieldRotation==='number'?battlefieldRotation:0,explorationMaterialDensity(),lights,explorationDaylight()?.revision||0,explorationEncounter.openDoors,explorationFloorImage.naturalWidth,explorationWallImage.naturalWidth,explorationDoorImage.naturalWidth]);
+ const cache=drawExplorationSolids.cache||(drawExplorationSolids.cache=new WeakMap()),key=JSON.stringify([typeof battlefieldRotation==='number'?battlefieldRotation:0,explorationMaterialDensity(),lights,(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.revision||0,explorationEncounter.openDoors,explorationFloorImage.naturalWidth,explorationWallImage.naturalWidth,explorationDoorImage.naturalWidth]);
  const anchor=screenPointForWorld(solids[0].a),prior=cache.get(cacheOwner);
  if(prior?.key===key){presentExplorationSolids(prior,prior.left+anchor.x-prior.anchor.x,prior.top+anchor.y-prior.anchor.y,visible);return;}
  const layer=document.createElement('canvas');layer.width=width;layer.height=height;const target=layer.getContext('2d');target.translate(-left,-top);target.imageSmoothingEnabled=true;target.imageSmoothingQuality='high';
@@ -431,6 +441,14 @@ function explorationDaylight(){
  const field=api.buildDaylightField(map,new Set(doors));
  return explorationDaylight.cache={map,environment:map.environment,ambient:map.ambientLight,edges:map.edges,quarters:map.quarterWalls,grid:map.grid,doors,field,revision:(old?.revision||0)+1};
 }
+// Presentation-only solar field. Tactical illumination keeps the original
+// daylight field, so this experimental clock does not alter targeting rules.
+function explorationVisualDaylight(){
+ const source=explorationDaylight(),solar=globalThis.adventurePartySolar?.state?.();if(!solar||solar.hour===12)return source;if(!source)return {field:null,revision:'solar:'+solar.hour};
+ const old=explorationVisualDaylight.cache;if(old?.source===source&&old.hour===solar.hour)return old;
+ const encounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
+ return explorationVisualDaylight.cache={source,hour:solar.hour,field:explorationEncounterApi.buildDaylightField(encounter.map,new Set(encounter.openDoors),solar),revision:source.revision+':solar:'+solar.hour};
+}
 function explorationDaylightVisible(light,point){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
@@ -458,8 +476,11 @@ function explorationDaylightAtHex(hex){
 function explorationSurfaceExposure(point,normal,lights,opened){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- const api=explorationEncounterApi,field=explorationDaylight()?.field,cell=api.SCENE_STYLE.cellMetres,surface=api.surfaceAt(explorationEncounter.map,{x:point.x/cell,z:point.z/cell}),x=surface.cell.x,z=surface.cell.z;
- const ambient=explorationEncounter.synthetic?(isIndoorWorldPoint({x:(point.x/cell-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(point.z/cell-explorationEncounter.origin.z)*explorationTerrain.cellH})?api.SCENE_STYLE.ambient:api.ambientForCell({environment:['o']},0,0)):field?field.ambientAt(x,z):api.ambientForCell(explorationEncounter.map,x,z);
+ const api=explorationEncounterApi,field=(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.field,cell=api.SCENE_STYLE.cellMetres,surface=api.surfaceAt(explorationEncounter.map,{x:point.x/cell,z:point.z/cell}),x=surface.cell.x,z=surface.cell.z;
+ let ambient=explorationEncounter.synthetic?(isIndoorWorldPoint({x:(point.x/cell-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(point.z/cell-explorationEncounter.origin.z)*explorationTerrain.cellH})?api.SCENE_STYLE.ambient:api.ambientForCell({environment:['o']},0,0)):field?field.ambientAt(x,z):api.ambientForCell(explorationEncounter.map,x,z);
+ const solar=globalThis.adventurePartySolar?.state?.();
+ const outdoor=explorationEncounter.synthetic?!isIndoorWorldPoint({x:(point.x/cell-explorationEncounter.origin.x)*explorationTerrain.cellW,y:(point.z/cell-explorationEncounter.origin.z)*explorationTerrain.cellH}):surface.environment==='outdoor';
+ if(solar&&outdoor&&api.solarAmbient){if(!field)ambient=api.solarAmbient(ambient,solar);ambient={...ambient,intensity:ambient.intensity*api.solarFaceGain(normal,solar)};}
  const base=api.surfaceLight(point,normal,lights,explorationDaylightVisible,ambient),day=field?.sample(point,normal,explorationDaylightVisible);
  return api.displayExposure(day?.rgb.some(v=>v>0)?base.map((v,i)=>v+day.rgb[i]):base);
 }
@@ -482,7 +503,7 @@ function drawExplorationIlluminationLayer(gpuOnly=false){
   // Material textures and architectural silhouettes retain their full detail.
   const sampleWorld=12/(typeof battlefieldZoom==='number'?battlefieldZoom:1);
   const width=Math.ceil(spanWidth/sampleWorld),height=Math.ceil(spanHeight/sampleWorld);
-  const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors,explorationDaylight()?.revision||0]);
+  const cacheKey=JSON.stringify([lights,left,top,width,height,explorationEncounter.scope,explorationEncounter.openDoors,(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.revision||0]);
   let cache=drawExplorationIlluminationLayer.cache;
   if(!cache||cache.key!==cacheKey){
     const layers=[document.createElement('canvas'),document.createElement('canvas')];for(const c of layers){c.width=width;c.height=height;}
@@ -647,10 +668,10 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C270');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C272');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
-    const {validateMap}=await import('./exploration-core.mjs?v=R238C270');
+    const {validateMap}=await import('./exploration-core.mjs?v=R238C272');
     if(!request?.map||!request.event)throw Error('No encounter handoff is available. Return to the map and enter the encounter again.');validateMap(request.map);
     const issues=explorationEncounterApi.validateEncounters({...request.map,encounters:[request.event]});if(issues.length)throw Error(issues.join(' '));
     if(!window.adventurePartyRepositoryMobs.canTest(request.event.mobId))throw Error('Encounter MOB is unavailable or has incomplete appearance data.');

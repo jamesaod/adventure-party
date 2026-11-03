@@ -1,5 +1,8 @@
 # Adventure Party — Session Start and Repository Workflow
 
+- Rev 272: Sealed-floor connectivity links real overlapping curved/straight spans; unmatched interior edges, exits and enclosed outdoor border cells do not seed access. Only real open void boundaries/entrances do. GPU wall fragments use the same friendly LOS polygons as floors, sampled just outside each face. Ceiling slabs finish flush with wall tops instead of protruding above doors. Combat has a manual equinox/38N solar dial above its compass. Drag updates the dial immediately, lighting on pause/release only. Solar presentation changes outdoor ambient, orientation/color and portal daylight while preserving authored indoor ambient, torch/spell lights and tactical illumination/LOS rules. No new shadow/lightmap passes or animation loops. See docs/VISIBILITY_AND_SOLAR_272.md.
+
+
 - Rev 271: Exploration-only stone-wall relief uses a precomputed 512px normal map and matte Phong material. Original / Enhanced depth switch swaps stone references without rebuilding the scene. Preserve independent timber faces, painted ambient, lights and shadows. Normal loading is opt-in so the editor overview and combat stay unchanged. FPS readout uses the existing loop. Keep Original available; user performs visual/performance QA. See docs/EXPLORATION_WALL_RELIEF.md.
 
 

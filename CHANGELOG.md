@@ -1,5 +1,12 @@
 # Changelog
 
+## Candidate Rev 272
+- Fix false access into sealed mixed curved/straight regions and wall/floor LOS brightness disagreement.
+- Keep exploration ceiling slabs flush with wall tops, removing exposed dark strips above doorways.
+- Add a draggable astrolabe-inspired day/night control above the combat compass, with equinox solar geometry at 38N.
+- Keep the current renderer, armor fixes and exploration wall-relief comparison.
+
+
 ## Candidate Rev 271
 - Exploration-only stone-wall normal-map experiment with matte shading and Original / Enhanced depth comparison.
 - Frame-rate readout uses the existing exploration render loop.

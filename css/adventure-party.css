@@ -2499,3 +2499,6 @@ button, input, select, textarea {
 .unit-info-panel > :not(#combatResult) {flex-shrink:0;}
 
 .combat-log-panel[hidden]{display:none;}
+
+/* Small astrolabe-inspired manual solar dial; no animation loop. */
+#combatDayNight{margin:0 auto 12px;color:#ddc17a}#combatDayNight svg{display:block;width:166px;height:166px;margin:auto;touch-action:none;cursor:grab}#combatDayNight svg:active{cursor:grabbing}#combatDayNight svg:focus-visible{outline:2px solid #82e8e9;outline-offset:3px;border-radius:50%}#combatDayNight .solar-numerals{font:12px Georgia,serif}#combatDayNight .solar-numerals text:nth-child(3){font-size:10px}#combatDayNight .solar-time{font-size:12px;margin-top:5px}#combatDayNight .solar-position{font-size:10px;margin:5px 0}#combatDayNight small{font-size:9px;color:#aaa6ba}@media(max-height:800px){#combatDayNight svg{width:126px;height:126px}#combatDayNight{margin-bottom:6px}}
