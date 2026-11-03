@@ -71,6 +71,20 @@ function hasActiveObscuringLosVolume(){
   );
 }
 
+// Use the same solid hex boundaries for fog sight rays and targeting.
+function denseFogGeometry(){
+  const cells=new Map();
+  for(const effect of game?.areaEffects||[]){
+    if(effect?.type!=="fog"||effect.obscuresLOS===false)continue;
+    for(const cell of effect.cells||[])cells.set(cell.x+","+cell.y,cell);
+  }
+  const key=[...cells.keys()].sort().join(";");
+  const cached=denseFogGeometry.cache;
+  if(cached?.key===key)return cached;
+  const polygons=[...cells.values()].map(cell=>architecturalHexCoreVertices(cell.x,cell.y,1));
+  return denseFogGeometry.cache={key,cells,polygons};
+}
+
 function obscuringVolumeBlocksLineBetweenHexes(source,target){
   if(!source || !target) return true;
 
@@ -86,16 +100,19 @@ function obscuringVolumeBlocksLineBetweenHexes(source,target){
     return true;
   }
 
+  const fog=denseFogGeometry();
+  if(fog.polygons.length){
+    const a=worldPointForHex(source.x,source.y),b=worldPointForHex(target.x,target.y);
+    for(const polygon of fog.polygons){
+      if(pointInConvexPolygon(b,polygon)||wallPolygonSegments(polygon).some(edge=>segmentsIntersect(a,b,edge.a,edge.b)))return true;
+    }
+  }
   const cells=hexLineCells(source,target);
 
-  /*
-    Index 0 is the unobscured source cell. Any later obscuring cell terminates
-    the centerline, including the destination cell itself. Thus the cloud can
-    be seen as scenery, but a creature standing inside it cannot be seen.
-  */
+  // Magical Darkness retains its existing effective-cell rules.
   return cells.some((cell,index)=>
     index>0 &&
-    !!obscuringVolumeAtHex(cell.x,cell.y)
+    obscuringVolumeAtHex(cell.x,cell.y)?.kind==="darkness"
   );
 }
 

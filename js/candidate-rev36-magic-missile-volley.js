@@ -796,6 +796,8 @@
   }
 
   function r36DrawVolleyFx(){
+    ctx.save();
+    ctx.globalAlpha*=.5;
     if(r36VolleyFx){
       const elapsed=
         performance.now()-
@@ -826,6 +828,7 @@
     }
 
     r36DrawImpactFx();
+    ctx.restore();
   }
 
   const r36BaseDrawProjectileFx=
