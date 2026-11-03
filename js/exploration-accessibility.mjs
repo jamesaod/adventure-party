@@ -1,7 +1,7 @@
-import {quarterAt,quarterFloor,quarterContains} from './quarter-walls.mjs?v=R238C268';
-import {quarterOutsidePolygons} from './wall-surfaces.mjs?v=R238C268';
-import {effectiveEdges,edgeGeometry} from './exploration-edges.mjs?v=R238C268';
-import {quarterSegments} from './quarter-walls.mjs?v=R238C268';
+import {quarterAt,quarterFloor,quarterContains} from './quarter-walls.mjs?v=R238C267';
+import {quarterOutsidePolygons} from './wall-surfaces.mjs?v=R238C267';
+import {effectiveEdges,edgeGeometry} from './exploration-edges.mjs?v=R238C267';
+import {quarterSegments} from './quarter-walls.mjs?v=R238C267';
 import {isOutdoor} from './exploration-environment.mjs?v=R238C262';
 const cache=new WeakMap(),key=p=>`${Math.round(p.x*1e8)},${Math.round(p.z*1e8)}`,edgeKey=(a,b)=>[key(a),key(b)].sort().join('|');
 // Presentation connectivity treats every openable door as a passage, even when

@@ -1,8 +1,8 @@
-import {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C268';
-import {GRASS_TEXTURES,GROUND_TEXTURES} from './exploration-ground.mjs?v=R238C268';
+import {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C267';
+import {GRASS_TEXTURES,GROUND_TEXTURES} from './exploration-ground.mjs?v=R238C267';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C268';
-export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C268';
+import {SCENE_STYLE} from './exploration-scene-style.mjs?v=R238C267';
+export {SCENE_STYLE,torchPlacement} from './exploration-scene-style.mjs?v=R238C267';
 export const CELL=SCENE_STYLE.cellMetres,HEIGHT=SCENE_STYLE.wallMetres;
 export async function explorationMaterials(renderer,{outdoor=false,dirt=false}={}){
  const loader=new THREE.TextureLoader();
@@ -10,7 +10,7 @@ export async function explorationMaterials(renderer,{outdoor=false,dirt=false}={
  if(outdoor||dirt)textures.push(await loader.loadAsync(new URL('../'+GRASS_TEXTURES.short+'?v=R238C246',import.meta.url).href));
  if(dirt)for(const name of ['dirt','fringe'])textures.push(await loader.loadAsync(new URL('../'+GROUND_TEXTURES[name]+'?v=R238C258',import.meta.url).href));
  for(const texture of textures){texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());}
- const timber=await Promise.all([WOOD_TEXTURES.wall,WOOD_TEXTURES.ceiling].map(path=>loader.loadAsync(new URL('../'+path+'?v=R238C268',import.meta.url).href)));
+ const timber=await Promise.all([WOOD_TEXTURES.wall,WOOD_TEXTURES.ceiling].map(path=>loader.loadAsync(new URL('../'+path+'?v=R238C267',import.meta.url).href)));
  for(const texture of timber){texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());}timber[0].repeat.set(2,1);
  const m=SCENE_STYLE.materials;
  textures[0].wrapS=textures[0].wrapT=textures[1].wrapS=textures[1].wrapT=THREE.RepeatWrapping;
