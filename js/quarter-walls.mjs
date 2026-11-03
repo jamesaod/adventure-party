@@ -22,8 +22,8 @@ export function paintQuarter(map,x,z,corner,material='stone',settings={}){
  if(corner!=='erase'){
   if(!Object.hasOwn(config,corner))throw Error('Choose a quarter-round orientation.');
   const old=previous.find(q=>q.x===x&&q.z===z),q={x,z,corner,material,...old,...settings,x,z,corner,material};validateWallFaces(q);if(q.outsideGround!==undefined&&!['auto','grass','dirt','stone'].includes(q.outsideGround))throw Error('Invalid outside floor material.');const sides=quarterSides(q),keys=sides.map(s=>s==='n'?`h:${x},${z}`:s==='s'?`h:${x},${z+1}`:s==='w'?`v:${x},${z}`:`v:${x+1},${z}`);
-  if((map.edges||[]).some(e=>keys.includes(`${e.axis}:${e.x},${e.z}`)&&e.kind!=='wall'))throw Error('Remove doors/windows on the curve’s outer sides first.');
-  map.edges=(map.edges||[]).filter(e=>!keys.includes(`${e.axis}:${e.x},${e.z}`));next.push(q);
+
+  next.push(q);
  }
  map.quarterWalls=next;validateQuarterWalls(map);
 }

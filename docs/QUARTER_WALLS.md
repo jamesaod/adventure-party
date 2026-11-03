@@ -24,3 +24,14 @@ Editor tool menus retain the current brush and painting does not reload face-mat
 
 
 Rev 266: Sealed interiors are an opaque blackout, even where normal player LOS reaches an inward wall. Inward wall faces, adjoining end faces and caps draw unlit opaque black rather than being omitted; omitting them exposed the double-sided exterior face behind them. GPU batches disable all lighting on blackout surfaces. The CPU reference restores a cached visible-black mask after lighting so torch/spell effects cannot reveal the interior. Exterior faces retain ordinary appearance and LOS darkness.
+
+
+## Rev 267 editor QA
+
+Authored straight walls/openings may coexist with quarter walls, including outer square edges. Curves suppress only implicit boundaries; painting a curve no longer deletes explicit edges. Doors/windows still require floor on both sides. Export, resize, CPU LOS/movement and the production converter retain both geometries.
+
+The editor View controls relevant Tools and Selection settings. Paintbrush and Erase operate in that view; Inspect / select opens actual selected data and retains rectangle encounter selection. Erasing a floor/ceiling texture clears its override, ambient resets to default, environment resets indoor, walls erase their edge/curve, and Objects erases only the selected object type, preserving other items on the same square. Mandatory starts and incoming entrance links remain protected. Surface Apply edits selected squares; edge/curve Apply edits the selected wall independently of the paintbrush. Wall bands have one canonical owner and explicit geometry-aligned positions. Texture previews use runtime material assets.
+
+The upper-right overview switches Exploration Map / Combat Map. It uses shared production terrain, prism/door geometry, actual textures and ambient material injection, with full-height exploration and compact combat walls/hexes. Explorer doorway sizing remains view-only. It is a static, debounced cutaway overview with ceilings hidden, not an encounter or a separate gameplay engine. Maps are cloned for preview and never saved or mutated by rendering.
+
+wall-joins.mjs welds display extrusion endpoints at shared joins and removes internal end caps. Actual CPU segments remain unchanged. Top-cap color no longer produces bright decorative highlights; CPU outlines do not add bright cap strokes. These fixes apply to every production combat entry.
