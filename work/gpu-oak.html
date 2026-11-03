@@ -194,7 +194,9 @@ function buildTree(mature){
   const wood=(from,to,bottom,top)=>{
     const a=new THREE.Vector3(from.x,from.z,from.y),b=new THREE.Vector3(to.x,to.z,to.y);
     const delta=b.clone().sub(a);
-    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,delta.length(),7),bark);
+    const length=delta.length();
+    const overlap=mature?Math.min(length*.28,top*.85):0;
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,length+overlap*2,mature?12:7,1,mature),bark);
     mesh.position.copy(a).lerp(b,.5);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());
     mesh.castShadow=mesh.receiveShadow=true;
@@ -203,6 +205,7 @@ function buildTree(mature){
   for(let i=3;i<oak.nodes.length;i++){
     const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
     const parentRadius=Math.max(.16,Math.sqrt(oak.mass[p.parent])*.24);
+    if(mature&&Math.hypot(p.x+1.9,p.y)<3.1&&p.z<29)continue;
     wood(oak.nodes[p.parent],p,mature?Math.min(parentRadius,r*1.18):r*1.18,mature?r:r*.76);
   }
   const rootAngles=Array.from({length:6},(_,i)=>({
@@ -218,7 +221,7 @@ function buildTree(mature){
       const roots=rootAngles.reduce((sum,root)=>sum+Math.max(0,Math.cos(angle-root.angle))**26*root.reach,0);
       const r=radius+flare*roots*(mature?.72:1)+.19*Math.sin(angle*11)+.12*Math.cos(angle*17);
       const width=mature?1.4:1;
-      trunkPositions.push(Math.cos(angle)*r*width+(mature?-height*.075:height/33),height*(mature?.68:1),Math.sin(angle)*r*width);
+      trunkPositions.push(Math.cos(angle)*r*width+(mature?-height*.075:height/33),height*(mature?.82:1),Math.sin(angle)*r*width);
       trunkUV.push(i/sides,height/33);
     }
   }
