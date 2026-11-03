@@ -1,3 +1,9 @@
+## Candidate Rev 274
+
+- Sun shadows now use whole floor hexes and hex-owned wall fragments, with crisp stepped boundaries and independent torch/spell lighting.
+- Fix compressed wall/door face probes falling inside their own CPU LOS footprint; preserve sealed blackouts and unrelated blockers.
+- Reuse cached geometry/projections; no new rendering passes or animation loop.
+
 # Changelog
 
 ## Candidate Rev 273
