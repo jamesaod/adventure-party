@@ -1,4 +1,4 @@
-import * as armorRules from './armor-rules.mjs?v=R238C204';
+import * as armorRules from './armor-rules.mjs?v=R238C269';
 if(typeof window!=='undefined')window.adventurePartyArmorRules=armorRules;
 import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C204';
 import {generateMobRules} from './mob-class-rules.mjs?v=R238C203';

@@ -74,10 +74,10 @@ vm.createContext(render);vm.runInContext(hooks.slice(0,hooks.indexOf('function c
 render.explorationVisualLights=()=>[];render.explorationSurfaceExposure=()=>({multiply:[255,255,255],boost:[0,0,0]});
 render.explorationMaterialTile=()=>null;
 const wall={a:{x:0,y:0},b:{x:64,y:0}},solids=[geometry.solidPrism(wall.a,wall.b,3,35,0,terrain.cellH/terrain.cellW)];
-render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,1);assert.equal(drawAlpha.at(-1),1);assert(!facePaints.includes('rgba(0,0,0,.9)'),'Unseen walls use reduced ambient, not a flat 90% black overlay');
+render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,2);assert.equal(drawAlpha.at(-1),1);assert(facePaints.includes('rgba(0,0,0,.9)'));
 render.drawExplorationSolids(solids,wall,true);assert.equal(allocations,2);assert.equal(drawAlpha.at(-1),1);
-render.drawExplorationSolids(solids,wall,false);const warmUnseen=allocations;render.camera.x++;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,warmUnseen,'Camera pans reuse geometry lighting');
-render.battlefieldRotation=(render.battlefieldRotation+1)%6;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,warmUnseen+1,'Azimuth changes rebuild projected faces');
+render.camera.x++;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,2,'Camera pans reuse geometry lighting');
+render.battlefieldRotation=(render.battlefieldRotation+1)%6;render.drawExplorationSolids(solids,wall,false);assert.equal(allocations,4,'Azimuth changes rebuild projected faces');
 console.log('PASS solid door front/back/end/top geometry, stable hinges, vertical height at six azimuths, opaque dark unseen walls and bounded render caching');
 
 const names=['E','NE','NW','W','SW','SE'],frames=Object.fromEntries(names.map(name=>[name,{image:{complete:true,naturalWidth:10,naturalHeight:10},assetId:name}]));

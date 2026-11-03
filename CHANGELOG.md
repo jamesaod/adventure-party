@@ -1,9 +1,11 @@
 # Changelog
 
-## Candidate Rev 268
-- Use 25% ambient illumination outside friendly LOS, retaining direct light sources and sealed-interior blackouts.
-- Snap shared wall and fragment vertices consistently to remove corner raster cracks.
-- Queue chainmail AC, wall UV lightmaps and dynamic light shadows for the next pass.
+## Candidate Rev 269
+- Mark Rev 268 a failed test and restore the complete Rev 267 baseline.
+- Resolve portable and legacy armor records consistently, retaining chainmail base AC 5 and explicit enchanted variants.
+- Separate padded wall-lighting UV islands from repeating brick/wood artwork.
+- Add cached GPU depth shadows for a lantern and the strongest active spell, retaining reference colors and CPU combat rules.
+
 
 ## Candidate Rev 267
 - Context-aware map editor with Paintbrush, Erase, Inspect, Objects view and selected-texture preview.

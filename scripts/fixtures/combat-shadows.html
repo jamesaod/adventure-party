@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>Production combat shadow validation</title><pre id="result">RUNNING</pre><canvas width="128" height="128"></canvas><script type="module">
+import {createCombatRenderer} from '../../js/combat-webgl.mjs';
+const result=document.querySelector('#result');
+try{
+ const canvas=document.querySelector('canvas'),raster=document.createElement('canvas');raster.width=raster.height=128;
+ const backend=createCombatRenderer(canvas,raster),gl=canvas.getContext('webgl2');
+ const image=document.createElement('canvas');image.width=image.height=1;image.getContext('2d').fillStyle='#808080';image.getContext('2d').fillRect(0,0,1,1);
+ const mask=document.createElement('canvas');mask.width=2048;mask.height=1024;mask.getContext('2d').fillStyle='#fff';mask.getContext('2d').fillRect(0,0,2048,1024);
+ const view={width:128,height:128,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]};
+ const face={points:[{x:0,y:0},{x:128,y:0},{x:128,y:128},{x:0,y:128}],uv:[[0,1],[1,1],[1,0],[0,0]],lightPoints:[[0,0,0],[8,0,0],[8,0,8],[0,0,8]],ambient:[.2,.2,.2],multiply:[.8,.8,.8]};
+ const wall=[4,0,0,4,3.5,0,4,3.5,8,4,0,0,4,3.5,8,4,0,8];
+ const light={kind:'lantern',x:2,y:3,z:4,intensity:12,color:0xffffff,range:20,decay:1.4,bounds:[0,0,128,128]};
+ const owner={},description={owner,key:'closed',triangles:()=>wall};
+ const state={reference:true,lights:[light],mask,maskRevision:1,world:[1/16,1/16,0,0],shadowScene:description};
+ const pixel=(x,y)=>{const p=new Uint8Array(4);gl.readPixels(x,127-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);return p[0];};
+ const draw=(lighting=state)=>{backend.begin(view);if(lighting)backend.setLighting(lighting);backend.surface([face],image);backend.end();return {lit:pixel(24,64),shadow:pixel(104,64),stats:JSON.parse(canvas.dataset.gpuStats)};};
+ const check=(v,message)=>{if(!v)throw Error(message);};
+ const baseline=draw(null),first=draw();check(first.stats.shadowPasses===6,'One point light renders six depth faces');check(first.shadow<baseline.shadow-5,'Wall casts a real GPU depth shadow');check(Math.abs(first.lit-baseline.lit)<=2,'Unshadowed reference color remains unchanged');
+ const cached=draw();check(cached.stats.shadowPasses===0,'Unchanged light and geometry reuse depth maps');
+ light.intensity=10;check(draw().stats.shadowPasses===0,'Flicker does not rerender depth maps');
+ light.x=6;const moved=draw();check(moved.stats.shadowPasses===6,'Moving lantern updates shadow map');check(moved.lit<baseline.lit-5&&Math.abs(moved.shadow-baseline.shadow)<=2,'Shadow follows moving source');
+ description.key='open';description.triangles=()=>[];const opened=draw();check(Math.abs(opened.lit-baseline.lit)<=2,'Removing door/caster releases shadow');
+ // Ambient-only reference surfaces are unchanged even under a depth shadow.
+ face.ambient=[.8,.8,.8];light.intensity=0;check(Math.abs(draw().lit-baseline.lit)<=2,'Shadows cannot remove ambient illumination');
+ // Render spell radiance through the same additive production surface path.
+ light.intensity=12;description.key='spell-closed';description.triangles=()=>wall;
+ state.lights=[{kind:'spell',x:-.515873,y:2.031746,intensity:2,color:[255,128,35],range:8,bounds:[0,0,128,128],shadowPosition:[2,1.4,4],shadowRange:12}];
+ face.lightWorld=face.points.map(()=>[32,64]);
+ backend.begin(view);backend.setLighting(state);backend.surface([face],image);backend.surface([face],image,{spellOnly:true,additive:true});backend.end();
+ const spellLit=pixel(24,64),spellShadow=pixel(104,64);check(spellLit>spellShadow+15,'Spell emission is shadowed on the production additive path');check(Math.abs(pixel(24,64)-pixel(40,64))<=2,'Spell falloff retains a constant hex anchor');
+ result.textContent='PASS '+JSON.stringify({baseline,first,cached,moved,opened});backend.dispose();
+}catch(error){result.textContent='FAIL '+error.stack;console.error(error);}
+</script>

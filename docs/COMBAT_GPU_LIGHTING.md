@@ -1,3 +1,7 @@
+# Rev 269 update
+
+Rev 268 was reverted in full. The default retains Rev267 reference lighting with a limited GPU depth-shadow correction and independent wall-lighting UVs. See [Rev269 implementation and limits](COMBAT_LIGHTING_269.md). Full per-pixel point lighting remains opt-in.
+
 # Combat point lighting - Candidate Rev 261
 
 Rev 261 restores the earlier lighting appearance by default using the complete CPU reference route. WebGL still renders map meshes and spell effects. The per-pixel direct-light implementation below is retained as an opt-in experiment using ?combatLighting=gpu; ?combatLighting=cpu and no parameter both use the restored appearance. Test scenes now use authored exploration maps and the same LOS mask.

@@ -52,3 +52,21 @@ export function inventoryMovement(unit,lookup=()=>null){
  }
  return {...encumberedMovement({strength:unit.stats?.str??unit.abilities?.str??10,exceptionalStrength:unit.exceptionalStrength||0,weight,baseMove}),baseMove,missingWeights};
 }
+
+// Resolve portable catalog-item IDs as well as historical engine armor IDs.
+// Invalid/null legacy snapshots must not erase a valid catalog AC; explicit
+// finite variant AC remains authoritative.
+export function resolveArmorItem(item,lookup=id=>ARMOR_ENGINE_CATALOG[id]){
+ if(!item)return null;
+ const rules=item.rules||{},portable=ARMOR_ITEMS[item.catalogItemId],id=item.catalogArmorId||rules.catalogArmorId||portable?.rules.catalogArmorId;
+ const base=lookup(id)||portable?.rules||{};
+ const merged={...base,...rules,...item};
+ const finite=(...values)=>values.find(Number.isFinite);
+ merged.baseArmorClass=finite(item.baseArmorClass,rules.baseArmorClass,base.baseArmorClass,portable?.rules.baseArmorClass);
+ if(!Number.isFinite(merged.baseArmorClass)){
+  const modifier=finite(item.acModifier,rules.acModifier,base.acModifier);
+  if(Number.isFinite(modifier))merged.baseArmorClass=10+modifier;
+ }
+ merged.acBonus=finite(item.acBonus,rules.acBonus,base.acBonus)??0;
+ return merged;
+}

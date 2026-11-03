@@ -49,10 +49,10 @@ console.log('PASS GPU projection matches tactical coordinates at all six rotatio
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const adapterName='function drawExplorationGpuSolids(',start=hooks.indexOf(adapterName),end=hooks.indexOf('\n}',start)+2;
 const draws=[];let samples=0,visibility=1;
-const gpuState={explorationAmbientInLOS:()=>true,explorationEncounterApi:sceneApi,explorationTerrain:{cellW:128,cellH:72.746,torches:[]},explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
+const gpuState={explorationEncounterApi:sceneApi,explorationTerrain:{cellW:128,cellH:72.746,torches:[]},explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
  battlefieldViewportBounds:()=>({left:-1000,right:1000,top:-1000,bottom:1000}),screenPointForWorld:(p,h=0)=>({x:p.x,y:p.y-h}),
  explorationVisualLights:()=>[],explorationRenderLights:()=>[],explorationDaylight:()=>null,
- explorationSurfaceExposure:(p,n,l,o,unseen)=>{samples++;return {multiply:unseen?[50,45,40]:[200,180,160],boost:[0,0,0]};},
+ explorationSurfaceExposure:()=>{samples++;return {multiply:[200,180,160],boost:[0,0,0]};},
  explorationVisibilityAtHex:()=>visibility,explorationSpellRadianceAtHex:()=>[.3,.1,0],
  HEX_W:64,HEX_ROW:31.5,explorationDoorImage:{id:'door'},explorationWallImage:{id:'wall'},
  document:{createElement:()=>({tagName:'CANVAS',getContext:()=>({fillRect(){}})})},
@@ -63,10 +63,10 @@ assert.equal(draws.length,1,'Door faces and textured wood cap share the door art
 assert.equal(draws[0].image.id,'door');assert(draws.every(d=>d.surfaces.every(f=>f.uv.flat().every(Number.isFinite))));
 const firstSamples=samples;visibility=.2;draws.length=0;gpuState.drawExplorationGpuSolids([prism],owner,true);
 assert.equal(samples,firstSamples,'Distance/flicker must not rebake physical wall transport');
-assert(Math.abs(draws[0].surfaces[0].multiply[0]-200/255*.2)<1e-8);
+assert(Math.abs(draws[0].surfaces[0].multiply[0]-1*.2)<1e-8);
 assert.deepEqual(Array.from(draws[0].surfaces[0].add),[.3,.1,0],'Spell radiance may exceed ambient darkness');
 draws.length=0;gpuState.drawExplorationGpuSolids([prism],owner,false);
-assert(Math.abs(draws[0].surfaces[0].multiply[0]-50/255)<1e-8);assert.deepEqual(Array.from(draws[0].surfaces[0].add),[0,0,0]);
+assert(Math.abs(draws[0].surfaces[0].multiply[0]-1*.1)<1e-8);assert.deepEqual(Array.from(draws[0].surfaces[0].add),[0,0,0]);
 gpuState.explorationEncounter.openDoors=['changed'];gpuState.drawExplorationGpuSolids([prism],owner,true);assert(samples>firstSamples,'Door changes invalidate physical wall light');
 console.log('PASS production GPU wall adapter preserves batched solid geometry, cached transport, dynamic fade/radiance, hidden-wall opacity and door invalidation');
 
@@ -76,7 +76,7 @@ gpuState.explorationGpuLighting={};gpuState.explorationGpuPoint=p=>[p.x/128*3,(p
 gpuState.explorationSurfaceExposure=(p,n,lights)=>{assert.equal(lights.length,0);return {multiply:[200,180,160],boost:[0,0,0]};};
 gpuState.explorationSpellRadianceAtHex=()=>{throw Error('CPU spell color/falloff was still evaluated');};
 draws.length=0;gpuState.drawExplorationGpuSolids([prism],{},true);
-assert(Math.abs(draws[0].surfaces[0].multiply[0]-200/255)<1e-8);
+assert(Math.abs(draws[0].surfaces[0].multiply[0]-1)<1e-8);
 assert.equal(draws[0].surfaces[0].visibility,.2);assert.deepEqual(Array.from(draws[0].surfaces[0].add),[0,0,0]);
 assert(draws.every(d=>d.surfaces.every(s=>s.lightPoints.flat().every(Number.isFinite))));
 console.log('PASS shader wall route transports base exposure/geometry without CPU point-light or spell shading');
