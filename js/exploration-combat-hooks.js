@@ -92,7 +92,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
   const faceKey=JSON.stringify(face.points);let fragments=cached.faces.get(faceKey);
   if(!fragments){fragments=api.faceLightFragments(face,HEX_W,HEX_ROW).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
-   const exposure=explorationSurfaceExposure({x:(explorationEncounter.origin.x+mid.x/t.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/t.cellH)*cell},face.normal,lights,opened,true,fragment.hex);
+   const exposure=explorationSurfaceExposure({x:(explorationEncounter.origin.x+mid.x/t.cellW)*cell,y:mid.h/35*api.SCENE_STYLE.wallMetres,z:(explorationEncounter.origin.z+mid.y/t.cellH)*cell},face.normal,lights,opened,true);
    return {...fragment,exposure};});cached.faces.set(faceKey,fragments);}
   const surfaces=fragments.map(fragment=>{
    const exposure=fragment.exposure,hex=fragment.point,fragmentVisible=typeof explorationWallFragmentVisible==='function'?explorationWallFragmentVisible(fragment,face.normal,visible,wall):visible,visibility=fragmentVisible?explorationVisibilityAtHex(hex,sources,fragment.hex):.1;
@@ -365,6 +365,21 @@ function drawExplorationEdgeWindow(window){
 function queueExplorationDoors(actors){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
+ for(const space of explorationTerrain.blackoutSpaces||[]){
+  const points=space.polygon.map(p=>({...p,elevation:35}));
+  const screen=points.map(p=>screenPointForWorld(p));
+  const depth=screen.reduce((near,p)=>p.y>near.y?p:near);
+  actors.push({gpuScenery:true,sortY:depth.y+.24,sortX:depth.x,fn:()=>{
+   if(typeof combatGpu!=='undefined'&&combatGpu){
+    const black=drawExplorationBlackoutFloor.tile;
+    combatGpu.surface([{points,uv:points.map(()=>[0,0])}],black,{dynamicLighting:false});
+   }else{
+    ctx.save();ctx.fillStyle='#000';
+    if(tracePolygonOnContext(ctx,points.map(p=>screenPointForWorld(p,p.elevation))))ctx.fill();
+    ctx.restore();
+   }
+  }});
+ }
  for(const window of explorationTerrain.windows||[])if(isArchitecturalWallVisibleToFriendlyParty(explorationDoorWall(window))){const c=screenPointForWorld(window.center);actors.push({sortY:c.y+.3,sortX:c.x,fn:()=>drawExplorationEdgeWindow(window)});}
 
  for(const door of explorationTerrain.doors||[]){
@@ -512,7 +527,7 @@ function explorationHexSunLoss(fragment){
  let loss=[0,0,0];if(amount){const exposure=explorationSurfaceExposure({x:(encounter.origin.x+center.x/terrain.cellW)*cell,y:0,z:(encounter.origin.z+center.y/terrain.cellH)*cell},{x:0,y:1,z:0},[],new Set(encounter.openDoors),false);loss=exposure.multiply.map((v,i)=>Math.pow(v/Math.max(.0001,255-exposure.boost[i]),2.2)*amount);}
  if(cache.values.size>16000)cache.values.clear();cache.values.set(key,loss);return loss;
 }
-function explorationSurfaceExposure(point,normal,lights,opened,sunShadow=true,shadowHex=null){
+function explorationSurfaceExposure(point,normal,lights,opened,sunShadow=true){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi,field=(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.field,cell=api.SCENE_STYLE.cellMetres,surface=api.surfaceAt(explorationEncounter.map,{x:point.x/cell,z:point.z/cell}),x=surface.cell.x,z=surface.cell.z;
@@ -523,7 +538,24 @@ function explorationSurfaceExposure(point,normal,lights,opened,sunShadow=true,sh
  // Only the direct-sun share is removed per owning hex. Sky ambient and local
  // light sources are preserved; wall visibility and tactical LOS are untouched.
  if(sunShadow&&solar&&outdoor&&typeof explorationWallGroundShadows==='function'){
-  const shadows=explorationWallGroundShadows();if(shadows){const origin=explorationEncounter.origin,world={x:(point.x/cell-origin.x)*explorationTerrain.cellW,y:(point.z/cell-origin.z)*explorationTerrain.cellH},hex=shadowHex||(typeof cubeRound==='function'?cubeRound(world.x/HEX_W-world.y/(2*HEX_ROW),world.y/HEX_ROW):null),anchor=hex&&typeof worldPointForHex==='function'?worldPointForHex(hex.x,hex.y):world,occlusion=shadows.occlusion({x:anchor.x/explorationTerrain.cellW*cell,z:anchor.y/explorationTerrain.cellH*cell});if(occlusion)ambient={...ambient,intensity:ambient.intensity*api.wallSunRetention(occlusion,solar)};}
+  const shadows=explorationWallGroundShadows();
+  if(shadows){
+   const origin=explorationEncounter.origin,terrain=explorationTerrain;
+   const local={x:point.x-origin.x*cell,z:point.z-origin.z*cell};
+   let occlusion;
+   if(point.y>0){
+    const dot=normal.x*solar.direction.x+normal.y*solar.direction.y+normal.z*solar.direction.z;
+    // Back-facing walls lose direct sun. Facing walls test from their actual
+    // surface, just outside the solid, at the height being shaded.
+    occlusion=dot<=1e-8?1:shadows.occlusion({x:local.x+normal.x*.002,z:local.z+normal.z*.002},point.y+.002);
+   }else{
+    const world={x:local.x/cell*terrain.cellW,y:local.z/cell*terrain.cellH};
+    const hex=typeof cubeRound==='function'?cubeRound(world.x/HEX_W-world.y/(2*HEX_ROW),world.y/HEX_ROW):null;
+    const anchor=hex&&typeof worldPointForHex==='function'?worldPointForHex(hex.x,hex.y):world;
+    occlusion=shadows.occlusion({x:anchor.x/terrain.cellW*cell,z:anchor.y/terrain.cellH*cell});
+   }
+   if(occlusion)ambient={...ambient,intensity:ambient.intensity*api.wallSunRetention(occlusion,solar)};
+  }
  }
  const base=api.surfaceLight(point,normal,lights,explorationDaylightVisible,ambient),day=field?.sample(point,normal,explorationDaylightVisible);
  return api.displayExposure(day?.rgb.some(v=>v>0)?base.map((v,i)=>v+day.rgb[i]):base);
@@ -713,7 +745,7 @@ async function startExplorationCombat(){
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
   try{
     await window.adventurePartyGameStartup.ready;
-    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C274');
+    explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C275');
     const request=JSON.parse(sessionStorage.getItem(explorationEncounterApi.HANDOFF_KEY)||'null');
     if(request){const query=new URLSearchParams(request.returnSearch),safe=new URLSearchParams();for(const name of ['test','map','entrance'])if(query.has(name))safe.set(name,query.get(name));safe.set('resumeEncounter','1');safe.set('v','R238C217');back.href='exploration.html?'+safe;}
     const {validateMap}=await import('./exploration-core.mjs?v=R238C274');
