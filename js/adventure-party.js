@@ -13878,7 +13878,14 @@ function drawWebSilk(effect,cell,outline){
   ctx.restore();
 }
 
-const raisedWebByMob=new WeakMap();
+let raisedWebByMob=new WeakMap();
+function clearRaisedWeb(){
+  if(raisedWebActive){
+    raisedWebByMob=new WeakMap();
+    raisedWebActive=false;
+  }
+}
+let raisedWebActive=false;
 let raisedWebFrame=null;
 
 function drawMobWithWeb(unit,drawMob){
@@ -13895,6 +13902,7 @@ function drawMobWithWeb(unit,drawMob){
   if(!lift||lift.effect!==effect||lift.x!==cell.x||lift.y!==cell.y){
     lift={effect,x:cell.x,y:cell.y,started:now};
     raisedWebByMob.set(unit,lift);
+    raisedWebActive=true;
   }
   const progress=globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     ? 1 : Math.min(1,(now-lift.started)/160);
@@ -30583,9 +30591,11 @@ function draw(){
     (a,b)=>a.sortY-b.sortY || a.sortX-b.sortX
   );
 
+  const hasWeb=game.areaEffects?.some(effect=>effect.type==="web");
+  if(!hasWeb&&typeof clearRaisedWeb==="function")clearRaisedWeb();
   for(const actor of explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors){
     if(combatGpu&&!actor.gpuScenery)combatGpu.prepareOverlay();
-    if(actor.wrapWeb)drawMobWithWeb(actor.entity,actor.fn);
+    if(actor.wrapWeb&&hasWeb)drawMobWithWeb(actor.entity,actor.fn);
     else actor.fn();
   }
 
