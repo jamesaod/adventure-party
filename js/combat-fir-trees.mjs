@@ -45,6 +45,9 @@ export async function createCombatFirTrees(){
           original.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
           original.onBeforeCompile=shader=>{
             shader.uniforms.foliageFill=fill;
+            // Apply the foliage ceiling after tone mapping, in display color.
+            shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',
+              '#include <colorspace_fragment>\ngl_FragColor.rgb=min(gl_FragColor.rgb,vec3(0.36,0.72,0.24));');
             shader.vertexShader='attribute float canopyExposure; varying float vCanopyExposure;\n'+shader.vertexShader;
             shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCanopyExposure=canopyExposure;');
             shader.fragmentShader='uniform float foliageFill; varying float vCanopyExposure;\n'+shader.fragmentShader;
@@ -54,7 +57,7 @@ export async function createCombatFirTrees(){
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>',
               '#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix(0.12,1.0,vCanopyExposure); reflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.035,0.26,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
           };
-          original.customProgramCacheKey=()=> 'combat-fir-green-canopy-depth';
+          original.customProgramCacheKey=()=> 'combat-fir-green-canopy-capped';
         }else{
           // Darken bark albedo once per shared material; direct light still shades it.
           original.color.multiplyScalar(.45);

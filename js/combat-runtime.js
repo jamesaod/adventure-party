@@ -26,6 +26,7 @@ async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  }
  if(generation!==combatSessionGeneration||!isCurrent())return false;
  newGame(scenario.condition||'grass',scenario);
+ initializeFirMovementObstacles();
  const combat=game;
  fitBattleCanvas();
  let timer;

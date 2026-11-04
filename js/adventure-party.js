@@ -3438,8 +3438,17 @@ function visibleTreeDecorations(tiles){
     }
   }
 
-  return [...decorationsByKey.values()];
+  return [...decorationsByKey.values()].filter(tree=>!game?.firSpawnClearance?.has(key(tree.x,tree.y)));
 }
+
+function initializeFirMovementObstacles(){
+  if(game?.session?.source!=='combat-test'||game.condition!=='grass')return;
+  game.firSpawnClearance=new Set(allUnits().flatMap(unit=>occupiedHexes(unit)).map(cell=>key(cell.x,cell.y)));
+  const tiles=[];
+  for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))tiles.push({x,y});
+  game.firBlockedHexes=new Set(visibleTreeDecorations(tiles).map(tree=>key(tree.x,tree.y)));
+}
+function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y));}
 
 function countTreeHexesOnCurrentMap(){
   const tileSet=activeCombatTerrainTileSet();
@@ -5448,7 +5457,7 @@ function canUnitStandAt(unit,x,y,facingHex=facingDirectionIndex(unit)){
   if(!unit) return false;
 
   for(const cell of occupiedHexesAt(unit,x,y,facingHex)){
-    if(!inside(cell.x,cell.y) || isWall(cell.x,cell.y)){
+    if(!inside(cell.x,cell.y) || isWall(cell.x,cell.y) || isFirBlockedHex(cell.x,cell.y)){
       return false;
     }
 
@@ -24028,7 +24037,7 @@ async function triggerMobGuardsAgainst(target){
 
 function passableForPath(x,y,mover,target){
   if(!mover){
-    return !isWall(x,y) && !occupiedByAnyUnit(x,y,null);
+    return !isWall(x,y) && !isFirBlockedHex(x,y) && !occupiedByAnyUnit(x,y,null);
   }
 
   /*
