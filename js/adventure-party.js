@@ -3448,15 +3448,55 @@ function initializeFirMovementObstacles(){
   for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))tiles.push({x,y});
   game.firBlockedHexes=new Set(visibleTreeDecorations(tiles).map(tree=>key(tree.x,tree.y)));
 }
+function addTerrainScorch(cells,strength=.75){
+  if(!game)return;game.terrainScorch??={};let changed=false;
+  for(const cell of cells){if(!inside(cell.x,cell.y))continue;const id=key(cell.x,cell.y),old=game.terrainScorch[id];
+    if(!old||old.strength<strength){game.terrainScorch[id]={x:cell.x,y:cell.y,strength};changed=true;}}
+  if(changed){game.scorchRevision=(game.scorchRevision||0)+1;game.scorchCache=null;}
+}
+function scorchNoise(x,y,scale){
+  const px=x/scale,py=y/scale,ix=Math.floor(px),iy=Math.floor(py),fx=px-ix,fy=py-iy;
+  const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),rand=(a,b)=>terrainRand(a,b,5913);
+  return (rand(ix,iy)*(1-u)+rand(ix+1,iy)*u)*(1-v)+(rand(ix,iy+1)*(1-u)+rand(ix+1,iy+1)*u)*v;
+}
+function drawTerrainScorch(){
+  const marks=Object.values(game.terrainScorch||{});if(!marks.length)return;
+  let cache=game.scorchCache;
+  if(!cache){
+    const points=marks.map(mark=>({...worldPointForHex(mark.x,mark.y),strength:mark.strength}));
+    const rx=HEX_W*.88,ry=HEX_ROW*1.65,left=Math.min(...points.map(p=>p.x))-rx,top=Math.min(...points.map(p=>p.y))-ry;
+    const spanX=Math.max(...points.map(p=>p.x))+rx-left,spanY=Math.max(...points.map(p=>p.y))+ry-top;
+    const step=Math.max(2,spanX/1024,spanY/1024),width=Math.ceil(spanX/step),height=Math.ceil(spanY/step);
+    const image=document.createElement('canvas');image.width=width;image.height=height;
+    const context=image.getContext('2d'),pixels=context.createImageData(width,height);
+    const buckets=new Map(),bucketSize=HEX_W*2;
+    for(const point of points)for(let bx=Math.floor((point.x-rx)/bucketSize);bx<=Math.floor((point.x+rx)/bucketSize);bx++)for(let by=Math.floor((point.y-ry)/bucketSize);by<=Math.floor((point.y+ry)/bucketSize);by++){
+      const id=bx+':'+by;if(!buckets.has(id))buckets.set(id,[]);buckets.get(id).push(point);}
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const wx=left+(x+.5)*step,wy=top+(y+.5)*step,noise=scorchNoise(wx,wy,13)*.65+scorchNoise(wx,wy,4)*.35;
+      let cover=0;for(const point of buckets.get(Math.floor(wx/bucketSize)+':'+Math.floor(wy/bucketSize))||[]){
+        const distance=Math.hypot((wx-point.x)/rx,(wy-point.y)/ry),edge=Math.max(0,Math.min(1,(1-distance+(noise-.5)*.38)/.52));
+        cover=Math.max(cover,edge*edge*(3-2*edge)*point.strength);}
+      if(cover<=0)continue;
+      let kind='grass';if(combatSceneTerrain&&combatSceneContext){const t=combatSceneTerrain,origin=combatSceneContext.origin;
+        kind=explorationEncounterApi.surfaceAt(combatSceneContext.map,{x:origin.x+wx/t.cellW,z:origin.z+wy/t.cellH}).ground;}
+      const ash=noise>.77&&cover>.35,color=ash?[70,65,57]:kind==='stone'?[16,17,18]:kind==='dirt'?[28,20,14]:kind==='wood'?[18,12,8]:[17,18,11];
+      const index=(y*width+x)*4;pixels.data[index]=color[0];pixels.data[index+1]=color[1];pixels.data[index+2]=color[2];pixels.data[index+3]=Math.round(cover*(.68+noise*.24)*255);
+    }
+    context.putImageData(pixels,0,0);cache=game.scorchCache={image,left,top,spanX:width*step,spanY:height*step};
+  }
+  const origin=screenPointForWorld({x:cache.left,y:cache.top}),u=battlefieldProjectVector({x:cache.spanX,y:0}),v=battlefieldProjectVector({x:0,y:cache.spanY});
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.transform(u.x/cache.image.width,u.y/cache.image.width,v.x/cache.image.height,v.y/cache.image.height,origin.x,origin.y);ctx.drawImage(cache.image,0,0);ctx.restore();
+}
 function igniteFirTrees(cells){
   if(!game?.firBlockedHexes)return;
   game.firFireStates??={};
   for(const cell of cells){const id=key(cell.x,cell.y);if(!game.firBlockedHexes.has(id)||game.firFireStates[id])continue;
-    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+2};}
+    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+2};addTerrainScorch([cell],.85);}
   ensureTransientUnitFxLoop();
 }
 function advanceFirFires(){
-  for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'&&game.round>=fire.burnUntilRound)fire.state='burnt';
+  for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'){addTerrainScorch([fire],.95);if(game.round>=fire.burnUntilRound)fire.state='burnt';}
 }
 function firFireLightSources(){
   const time=performance.now()/1000,palette=[[255,30,10],[255,225,65],[255,115,25]];
@@ -20899,6 +20939,7 @@ async function animateFireballExplosion(targetHex,radiusHexes,blastCells=null){
   const cells=(blastCells?.length ? blastCells : fireballBlastCells(targetHex))
     .map(cell=>({...cell}));
 
+  addTerrainScorch(cells);
   igniteFirTrees(cells);
   const ownedFx=fireballExplosionFx={
     x:targetHex.x,
@@ -27105,6 +27146,8 @@ function drawFloor(){
 
   if(explorationTerrain&&combatGpu)combatGpu.prepareOverlay();
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
+
+  drawTerrainScorch();
 
   /* R195: dynamic light sources brighten terrain before grid/UI overlays. */
   if(explorationTerrain){if(!combatGpu)drawExplorationIlluminationLayer();}else drawTerrainIlluminationLayer(tiles);
