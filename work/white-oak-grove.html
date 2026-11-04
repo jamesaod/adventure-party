@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adventure Party · Oak experiment</title>
+<style>
+body{background:#1b211c;color:#edf0e7;font:16px system-ui;margin:2rem auto;padding:0 1rem;max-width:980px}
+fieldset{display:flex;flex-wrap:wrap;gap:1rem;border:1px solid #657360;margin-bottom:1rem}
+button,select{font:inherit}canvas{display:block;background:#42503a;width:100%;height:auto;border:1px solid #657360}
+p{max-width:70ch}a{color:#bcdfa6}
+</style>
+<h1>Oak experiment</h1>
+<p>Compare the original and upgraded white oak from seed 113 under the same camera and lighting.</p>
+<fieldset><legend>Comparison controls</legend>
+<label>Camera <select id="angle"></select></label>
+<label><input id="bare" type="checkbox"> Bare branches</label>
+<label><input id="unit" type="checkbox" checked> Show unit marker</label>
+<label><input id="shadows" type="checkbox" checked> Cast shadows</label>
+<label>Scene <select id="mode"><option value="compare">Comparison</option><option value="grove" selected>Grove</option></select></label>
+<label>Grove species <select id="species"><option value="oak">Oak</option><option value="birch">Birch</option><option value="pine">Pine</option><option value="willow">Weeping willow</option><option value="maple">Autumn maple</option><option value="cypress">Cypress</option><option value="apple">Apple tree</option><option value="snag">Dead snag</option></select></label>
+<label>Sun <select id="sun"><option value=".7">Morning</option><option value="2.6">Afternoon</option><option value="4.5">Evening</option></select></label>
+<label>Scale <select id="scale"><option value="1">Combat scale</option><option value="1.6">Close view</option></select></label>
+<button id="reroll" type="button" hidden>Reroll grove</button>
+<button id="pixelate" type="button" aria-pressed="false">Pixelate</button>
+</fieldset>
+<canvas id="scene" width="960" height="250" aria-label="Original and upgraded white oak beside the current tree sprite"></canvas>
+<p>Branches grow toward points inside a broad crown. Leaf clusters attach to the fine branches, with variation in size, orientation, and color. The same seed gives the same tree at every angle. <a href="https://www.algorithmicbotany.org/papers/colonization.egwnp2007.html">Growth model</a></p>
+<script>
+const canvas=document.querySelector("#scene"), ctx=canvas.getContext("2d");
+const sceneWidth=canvas.width,sceneHeight=canvas.height;
+const rasterScale=2;
+canvas.width=sceneWidth*rasterScale;
+canvas.height=sceneHeight*rasterScale;
+ctx.scale(rasterScale,rasterScale);
+const angle=document.querySelector("#angle"), bare=document.querySelector("#bare");
+const unit=document.querySelector("#unit"), scale=document.querySelector("#scale");
+for(let i=0;i<6;i++) angle.add(new Option(i*60+"°",i));
+const atlas=new Image();
+atlas.onload=draw;
+atlas.onerror=draw;
+atlas.src="../assets/terrain/grass-outdoors-trees.png";
+const grass=new Image();
+grass.onload=draw;
+grass.src="../assets/terrain/grass-outdoors-tiles.png";
+function randomFor(seed){
+  let state=seed;
+  return ()=>((state=Math.imul(1664525,state)+1013904223|0)>>>0)/4294967296;
+}
+function growOak(seed){
+  const random=randomFor(seed);
+  const nodes=[{x:0,y:0,z:0,parent:-1},{x:0,y:0,z:20,parent:0},{x:1,y:0,z:33,parent:1}];
+  const targets=[];
+  while(targets.length<230){
+    const x=random()*2-1,y=random()*2-1,z=random()*2-1;
+    if(x*x+y*y+z*z<1)targets.push({x:x*43,y:y*38,z:61+z*27});
+  }
+  let active=targets;
+  for(let step=0;step<37&&active.length;step++){
+    const directions=new Map();
+    active=active.filter(target=>{
+      let closest=-1,distance=29;
+      for(let i=2;i<nodes.length;i++){
+        const node=nodes[i],d=Math.hypot(target.x-node.x,target.y-node.y,target.z-node.z);
+        if(d<distance){closest=i;distance=d;}
+      }
+      if(distance<5)return false;
+      if(closest>=0){
+        const node=nodes[closest];
+        const sum=directions.get(closest)||{x:0,y:0,z:.12};
+        sum.x+=(target.x-node.x)/distance;
+        sum.y+=(target.y-node.y)/distance;
+        sum.z+=(target.z-node.z)/distance;
+        directions.set(closest,sum);
+      }
+      return true;
+    });
+    for(const [parent,v] of directions){
+      const d=Math.hypot(v.x,v.y,v.z);
+      if(d<.001)continue;
+      const p=nodes[parent];
+      nodes.push({x:p.x+v.x/d*4,y:p.y+v.y/d*4,z:p.z+v.z/d*4,parent});
+    }
+  }
+  const mass=nodes.map(()=>1), leaves=[];
+  for(let i=nodes.length-1;i>0;i--)mass[nodes[i].parent]+=mass[i];
+  for(let i=3;i<nodes.length;i++){
+    if(mass[i]>7)continue;
+    const p=nodes[i];
+    for(let j=0;j<4;j++){
+      const phase=i*2.39996+j*Math.PI;
+      const reach=2+random()*5;
+      leaves.push({x:p.x+Math.cos(phase)*reach,y:p.y+Math.sin(phase)*reach,
+        z:p.z+(random()-.5)*8,r:2+random()*3,color:Math.floor(random()*5)});
+    }
+  }
+  return {nodes,mass,leaves};
+}
+const seeds=[113,113,287], oaks=seeds.map(growOak);
+function growFullOak(seed,species="oak"){
+  const oak=growOak(seed), random=randomFor(seed+88000);
+  oak.leaves=oak.leaves.flatMap(leaf=>[leaf,{
+    ...leaf,x:leaf.x+(random()-.5)*9,
+    y:leaf.y+(random()-.5)*9,z:leaf.z+(random()-.5)*7
+  }]);
+  oak.species=species;
+  if(["birch","pine","cypress"].includes(species)){
+    for(const point of [...oak.nodes,...oak.leaves]){
+      const spread=species==="birch"?.65:species==="cypress"?.34:Math.max(.25,1.25-point.z/90);
+      point.x*=spread;
+      point.y*=spread;
+      point.z*=species==="cypress"?1.45:1.18;
+    }
+  }
+  if(species==="willow"){
+    const strands=[];
+    for(const [i,leaf] of oak.leaves.entries()){
+      if(i%3!==0)continue;
+      const length=12+random()*27;
+      for(let j=0;j<5;j++){
+        strands.push({...leaf,z:Math.max(5,leaf.z-length*j/4),
+          x:leaf.x+j*leaf.x*.023,y:leaf.y+j*leaf.y*.023,r:leaf.r*.77});
+      }
+    }
+    oak.leaves=strands;
+  }
+  if(species==="snag"){
+    oak.leaves=[];
+    oak.nodes=oak.nodes.filter((node,i)=>i<3||oak.mass[i]>12)
+      .map((node,i,kept)=>({...node,parent:kept.indexOf(oak.nodes[node.parent])}));
+    oak.mass=oak.nodes.map(()=>1);
+    for(let i=oak.nodes.length-1;i>0;i--)oak.mass[oak.nodes[i].parent]+=oak.mass[i];
+  }
+  if(species==="apple"){
+    for(const point of [...oak.nodes,...oak.leaves]){
+      point.x*=1.08;
+      point.y*=1.08;
+      point.z*=.82;
+    }
+    for(let i=5;i<oak.leaves.length;i+=23)oak.leaves[i].apple=true;
+  }
+  oak.shadows=new Map();
+  return oak;
+}
+oaks[1]=growFullOak(113);
+function canopyShadow(oak,light,slope){
+  if(oak.shadows.has(light))return oak.shadows.get(light);
+  const size=192, depths=new Float32Array(size*size).fill(-Infinity);
+  const u=Math.cos(light)/slope,v=Math.sin(light)/slope;
+  const index=(x,y)=>x<0||x>=size||y<0||y>=size?-1:y*size+x;
+  for(const leaf of oak.leaves){
+    const x=Math.round(leaf.x-u*leaf.z+96),y=Math.round(leaf.y-v*leaf.z+96);
+    for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
+      if(dx*dx+dy*dy>leaf.r*leaf.r*.65)continue;
+      const i=index(x+dx,y+dy);
+      if(i>=0)depths[i]=Math.max(depths[i],leaf.z);
+    }
+  }
+  const sample=({x,y,z})=>{
+    const px=Math.round(x-u*z+96),py=Math.round(y-v*z+96);
+    let hits=0;
+    for(let dy=-2;dy<=2;dy+=2)for(let dx=-2;dx<=2;dx+=2){
+      if(depths[index(px+dx,py+dy)]>z+1.2)hits++;
+    }
+    return 1-.52*hits/9;
+  };
+  oak.shadows.set(light,sample);
+  return sample;
+}
+const sun=document.querySelector("#sun");
+const species=document.querySelector("#species");
+const shadows=document.querySelector("#shadows");
+const barkRandom=randomFor(113);
+const roots=Array.from({length:6},(_,i)=>({
+  angle:i*Math.PI/3+(barkRandom()-.5)*.65,
+  length:9+barkRandom()*9
+}));
+const leafPath=new Path2D(
+  "M0 1 Q-.16 .84 -.23 .73 Q-.57 .67 -.48 .5 Q-.43 .41 -.26 .47 Q-.69 .3 -.59 .12 Q-.48 .02 -.29 .18 Q-.65 -.1 -.51 -.27 Q-.39 -.36 -.23 -.22 Q-.44 -.55 -.29 -.67 Q-.18 -.71 -.11 -.55 Q-.19 -.91 0 -1 Q.2 -.94 .13 -.57 Q.37 -.78 .42 -.55 Q.44 -.42 .24 -.28 Q.64 -.42 .61 -.17 Q.58 -.04 .33 .06 Q.71 -.04 .63 .23 Q.58 .4 .29 .4 Q.56 .5 .48 .66 Q.36 .8 .13 .81 Z"
+);
+function woodFaces(project,light,shadow=()=>1,species="oak"){
+  const rings=[[-.7,0,0,5.7],[0,0,4,4.2],[0,0,12,3.15],[0,0,20,2.7],[1,0,33,2]];
+  const sides=24;
+  const vertices=rings.map(([x,y,z,r],level)=>Array.from({length:sides},(_,i)=>{
+    const a=i*2*Math.PI/sides;
+    const flare=level<2?roots.reduce((sum,root)=>sum+Math.max(0,Math.cos(a-root.angle))**22*root.length*(level===0?.62:.15),0):0;
+    const radius=(r+flare+.23*Math.sin(i*2.5))*(species==="birch"?.62:species==="pine"?.78:1);
+    const world={x:x+Math.cos(a)*radius,y:y+Math.sin(a)*radius,z:z*(species==="apple"?.82:species==="cypress"?1.45:["birch","pine"].includes(species)?1.18:1)};
+    return {...project(world),shade:shadow(world)};
+  }));
+  const faces=[];
+  for(let level=0;level<vertices.length-1;level++)for(let i=0;i<sides;i++){
+    const j=(i+1)%sides;
+    const points=[vertices[level][i],vertices[level][j],vertices[level+1][j],vertices[level+1][i]];
+    const shade=(83+31*Math.cos((i+.5)*2*Math.PI/sides-light)+8*Math.sin(i*7+level))*points.reduce((sum,p)=>sum+p.shade,0)/4;
+    faces.push({points,level,side:i,depth:points.reduce((sum,p)=>sum+p.depth,0)/4,shade});
+  }
+  return faces;
+}
+const mode=document.querySelector("#mode");
+const reroll=document.querySelector("#reroll");
+const pixelate=document.querySelector("#pixelate");
+const pixelBuffer=document.createElement("canvas");
+pixelBuffer.width=sceneWidth/2;
+pixelBuffer.height=sceneHeight/2;
+const pixelContext=pixelBuffer.getContext("2d");
+pixelate.addEventListener("click",()=>{
+  const enabled=pixelate.getAttribute("aria-pressed")!=="true";
+  pixelate.setAttribute("aria-pressed",String(enabled));
+  pixelate.textContent=enabled?"Pixelation on":"Pixelate";
+  draw();
+});
+function draw(){
+  reroll.hidden=mode.value!=="grove";
+  if(mode.value==="grove")drawGrove();
+  else drawComparison();
+
+  if(pixelate.getAttribute("aria-pressed")==="true"){
+    pixelContext.clearRect(0,0,pixelBuffer.width,pixelBuffer.height);
+    pixelContext.drawImage(canvas,0,0,pixelBuffer.width,pixelBuffer.height);
+    ctx.clearRect(0,0,sceneWidth,sceneHeight);
+    ctx.save();
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(pixelBuffer,0,0,sceneWidth,sceneHeight);
+    ctx.restore();
+  }
+}
+function drawComparison(pass="normal",oak=oaks[1],target=ctx){
+  const ctx=target;
+  ctx.clearRect(0,0,sceneWidth,sceneHeight);
+  const turn=Number(angle.value)*Math.PI/3, c=Math.cos(turn),s=Math.sin(turn), zoom=Number(scale.value);
+  const palette=["#394c24","#4d642c","#617737","#758744","#8b9950"];
+  ctx.textAlign="center";
+  ctx.font="15px system-ui";
+  for(let panel=pass==="normal"?0:2;panel<(pass==="normal"?4:3);panel++){
+    const x=120+240*panel,y=192;
+    ctx.save();
+    ctx.beginPath();ctx.rect(panel*240,0,240,sceneHeight);ctx.clip();
+    const project=p=>{
+      const depth=p.x*s+p.y*c;
+      return {x:x+(p.x*c-p.y*s)*zoom,y:y+(depth*.568-p.z)*zoom,depth};
+    };
+    ctx.strokeStyle="#637254";
+    if(mode.value!=="grove")for(const [q,r] of [[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]]){
+      const px=x+(q*64+r*32)*zoom,py=y+r*31.5*zoom;
+      ctx.beginPath();
+      for(const [dx,dy] of [[0,-21],[32,-10.5],[32,10.5],[0,21],[-32,10.5],[-32,-10.5]])ctx.lineTo(px+dx*zoom,py+dy*zoom);
+      ctx.closePath();ctx.stroke();
+    }
+    if(panel===2&&shadows.checked&&pass!=="tree"){
+      const light=Number(sun.value);
+      const slope=light===2.6?1.55:.92;
+      const shadowPoint=p=>project({
+        x:p.x-Math.cos(light)*Math.max(0,p.z)/slope,
+        y:p.y-Math.sin(light)*Math.max(0,p.z)/slope,z:0
+      });
+      const {nodes,mass,leaves}=oak;
+      ctx.beginPath();
+      for(const {points} of woodFaces(shadowPoint,light,()=>1,oak.species)){
+        const area=points.reduce((sum,p,i)=>{
+          const q=points[(i+1)%points.length];
+          return sum+p.x*q.y-q.x*p.y;
+        },0);
+        const outline=area<0?[...points].reverse():points;
+        ctx.moveTo(outline[0].x,outline[0].y);
+        for(const p of outline.slice(1))ctx.lineTo(p.x,p.y);
+        ctx.closePath();
+      }
+      for(let i=3;i<nodes.length;i++){
+        const a=shadowPoint(nodes[nodes[i].parent]),b=shadowPoint(nodes[i]);
+        const length=Math.hypot(b.x-a.x,b.y-a.y);
+        if(length<.001)continue;
+        const r=Math.max(.65,Math.sqrt(mass[i])*.26)*zoom/2;
+        const dx=(b.y-a.y)*r/length,dy=-(b.x-a.x)*r/length;
+        ctx.moveTo(a.x+dx,a.y+dy);
+        ctx.lineTo(b.x+dx,b.y+dy);
+        ctx.lineTo(b.x-dx,b.y-dy);
+        ctx.lineTo(a.x-dx,a.y-dy);
+        ctx.closePath();
+      }
+      if(!bare.checked)for(const leaf of leaves){
+        const p=shadowPoint(leaf),radius=leaf.r*zoom;
+        ctx.moveTo(p.x+radius,p.y);
+        ctx.ellipse(p.x,p.y,radius,radius*.568,0,0,Math.PI*2);
+      }
+      ctx.fillStyle=pass==="shadow"?"#161d13":"rgba(22,29,19,.40)";
+      ctx.fill();
+    }
+    if(pass==="shadow"){ctx.restore();continue;}
+    if(unit.checked){
+      ctx.fillStyle="#d6b27a";
+      ctx.fillRect(x+12*zoom,y-32*zoom,9*zoom,32*zoom);
+      ctx.fillStyle="#f0d3a2";
+      ctx.fillRect(x+13*zoom,y-38*zoom,7*zoom,7*zoom);
+    }
+    if(panel===0){
+      if(atlas.naturalWidth){
+        ctx.imageSmoothingEnabled=false;
+        ctx.drawImage(atlas,0,0,192,216,x-38*zoom,y-82*zoom,76*zoom,86*zoom);
+      }else{
+        ctx.fillStyle="#edf0e7";
+        ctx.fillText("Tree sprite unavailable",x,106);
+      }
+    }else{
+      const {nodes,mass,leaves}=panel===2?oak:oaks[panel-1];
+      const upgraded=panel===2, light=Number(sun.value);
+      const shadow=upgraded&&shadows.checked&&!bare.checked?canopyShadow(oak,light,light===2.6?1.55:.92):()=>1;
+      const projected=nodes.map(project);
+      const branches=nodes.slice(1).map((p,i)=>{
+        const a=projected[p.parent],b=projected[i+1];
+        const parent=nodes[p.parent];
+        const azimuth=Math.atan2(p.y-parent.y,p.x-parent.x)+Math.PI/2;
+        const shade=(83+23*Math.abs(Math.cos(azimuth-light)))*(shadow(p)+shadow(parent))/2;
+        return {a,b,shade,depth:(a.depth+b.depth)/2,width:Math.max(.65,Math.sqrt(mass[i+1])*.26)};
+      });
+      if(upgraded)branches.splice(0,2);
+      const wood=upgraded?woodFaces(project,light,shadow,oak.species):[];
+      const foliage=bare.checked?[]:leaves.map(leaf=>({...project(leaf),leaf}));
+      ctx.lineCap="round";
+      for(const item of [...branches,...wood,...foliage].sort((a,b)=>a.depth-b.depth)){
+        if(item.points){
+          const bark=item.shade+(oak.species==="birch"?105:0);
+          ctx.fillStyle="rgb("+[bark+10,bark+6,bark]+")";
+          ctx.beginPath();
+          for(const p of item.points)ctx.lineTo(p.x,p.y);
+          ctx.closePath();ctx.fill();
+          // Bark marks use the same surface coordinates at every camera angle.
+          const random=randomFor(113+item.side*971+item.level*79);
+          const [a,b,c,d]=item.points;
+          const at=(u,v)=>({
+            x:(a.x+(b.x-a.x)*u)*(1-v)+(d.x+(c.x-d.x)*u)*v,
+            y:(a.y+(b.y-a.y)*u)*(1-v)+(d.y+(c.y-d.y)*u)*v
+          });
+          for(let mark=0;mark<5;mark++){
+            const u=.08+random()*.8,v=random()*.83;
+            const end=Math.min(.99,v+.13+random()*.38);
+            const bend=(random()-.5)*.12;
+            for(const offset of [0,.11]){
+              const start=at(u+offset,v);
+              const middle=at(u+offset+bend,(v+end)/2);
+              const finish=oak.species==="birch"?at(Math.min(.99,u+.24),v):at(u+offset,end);
+              ctx.strokeStyle=offset?"rgba(232,226,208,.24)":"rgba(34,30,26,.46)";
+              ctx.lineWidth=zoom*(offset?.30:.43);
+              ctx.beginPath();
+              ctx.moveTo(start.x,start.y);
+              ctx.lineTo(middle.x,middle.y);
+              ctx.lineTo(finish.x,finish.y);
+              ctx.stroke();
+            }
+          }
+        }else if(item.leaf&&upgraded){
+          const {r,color,x,y,z}=item.leaf;
+          const azimuth=(x*2+y*3+z)*.31;
+          const interior=Math.min(1,Math.hypot(x,y,(z-61)*.9)/42);
+          const sunlight=Number(sun.value)===2.6?.84:.68;
+          const shade=(.50+.22*interior+.31*sunlight)*shadow(item.leaf);
+          const green=111+color*7;
+          // Both leaf axes lie in the ground plane. The top normal is +Z.
+          const heading=azimuth+turn;
+          const width=r*zoom*.72,height=r*zoom;
+          ctx.save();
+          ctx.transform(
+            Math.cos(heading)*width,Math.sin(heading)*width*.568,
+            -Math.sin(heading)*height,Math.cos(heading)*height*.568,
+            item.x,item.y
+          );
+          const leafColor=oak.species==="maple"?[212+color*8,73+color*18,29+color*3]:
+            oak.species==="cypress"?[56,102+color*6,65]:[green*.72,green,green*.44];
+          ctx.fillStyle="rgb("+leafColor.map(channel=>channel*shade)+")";
+          if(oak.species==="oak")ctx.fill(leafPath);
+          else{
+            ctx.beginPath();
+            if(oak.species==="maple"){
+              const points=[[0,-1],[.23,-.42],[.68,-.65],[.56,-.12],[.94,-.19],[.65,.31],[.79,.46],[.12,.66],[0,.96],[-.12,.66],[-.79,.46],[-.65,.31],[-.94,-.19],[-.56,-.12],[-.68,-.65],[-.23,-.42]];
+              ctx.moveTo(...points[0]);
+              for(const point of points.slice(1))ctx.lineTo(...point);
+              ctx.closePath();ctx.fill();
+            }else if(oak.species==="willow"){
+              ctx.moveTo(0,-1.25);ctx.quadraticCurveTo(.48,-.05,0,1.14);
+              ctx.quadraticCurveTo(-.37,0,0,-1.25);ctx.fill();
+            }else if(oak.species==="birch"||oak.species==="apple"){
+              ctx.moveTo(0,-.95);ctx.quadraticCurveTo(1,.05,0,.86);
+              ctx.quadraticCurveTo(-1,.05,0,-.95);ctx.fill();
+            }else{
+              ctx.strokeStyle=ctx.fillStyle;
+              ctx.lineWidth=.14;
+              for(const tip of [-.62,-.3,0,.3,.62]){
+                ctx.moveTo(0,.7);ctx.lineTo(tip,-.95);
+              }
+              ctx.stroke();
+            }
+          }
+          if(oak.species==="oak"&&(zoom>1||pass==="tree")){
+            ctx.strokeStyle="rgba(199,209,133,.48)";ctx.lineWidth=.07;
+            ctx.beginPath();ctx.moveTo(0,.86);ctx.lineTo(0,-.82);ctx.stroke();
+            ctx.strokeStyle="rgba(199,209,133,.34)";
+            ctx.lineWidth=.045;
+            ctx.beginPath();
+            for(const y of [-.38,-.03,.31,.59]){
+              ctx.moveTo(-.32,y-.13);ctx.lineTo(0,y);ctx.lineTo(.32,y-.13);
+            }
+            ctx.stroke();
+          }
+          ctx.restore();
+          if(item.leaf.apple){
+            const radius=1.55*zoom;
+            ctx.fillStyle=shadow(item.leaf)<.8?"#a43e32":"#d8563e";
+            ctx.beginPath();
+            ctx.arc(item.x,item.y+radius,radius,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle="#f29a64";
+            ctx.beginPath();
+            ctx.arc(item.x-radius*.32,item.y+radius*.66,radius*.29,0,Math.PI*2);
+            ctx.fill();
+          }
+        }else if(item.leaf){
+          const {r,color}=item.leaf;
+          ctx.fillStyle=palette[color];
+          ctx.beginPath();ctx.ellipse(item.x,item.y,r*zoom,r*.64*zoom,-.35,0,Math.PI*2);ctx.fill();
+        }else{
+          ctx.strokeStyle=upgraded?"rgb("+[item.shade+10,item.shade+6,item.shade]+")":"#65503c";
+          ctx.lineWidth=item.width*zoom;
+          ctx.beginPath();ctx.moveTo(item.a.x,item.a.y);ctx.lineTo(item.b.x,item.b.y);ctx.stroke();
+        }
+      }
+    }
+    ctx.fillStyle="#edf0e7";
+    ctx.fillText(["Current sprite","Original · seed 113","White oak · seed 113","Original · seed 287"][panel],x,235);
+    ctx.restore();
+  }
+}
+const groveTrees=Array.from({length:12},(_,i)=>({
+  x:352+i%4*64+Math.floor(i/4)*32,y:135+Math.floor(i/4)*31.5,
+  size:1
+})).sort((a,b)=>a.y-b.y);
+let groveKey;
+function rerollGrove(){
+  const seeds=new Set();
+  for(const tree of groveTrees){
+    let seed;
+    do{seed=crypto.getRandomValues(new Uint32Array(1))[0];}while(seeds.has(seed));
+    seeds.add(seed);
+    tree.seed=seed;
+    tree.size=.78+randomFor(seed ^ 0x5f3759df)()*.40;
+    tree.oak=growFullOak(seed,species.value);
+  }
+  groveKey=undefined;
+}
+species.addEventListener("change",()=>{
+  for(const tree of groveTrees)if(tree.oak)tree.oak=growFullOak(tree.seed,species.value);
+  groveKey=undefined;
+  draw();
+});
+reroll.addEventListener("click",()=>{rerollGrove();draw();});
+const groveMask=document.createElement("canvas");
+groveMask.width=canvas.width;
+groveMask.height=canvas.height;
+const mask=groveMask.getContext("2d");
+mask.scale(rasterScale,rasterScale);
+function drawGrove(){
+  if(!groveTrees[0].oak)rerollGrove();
+  const key=[angle.value,bare.checked,scale.value,sun.value,shadows.checked].join("/");
+  if(key!==groveKey){
+    const originalUnit=unit.checked;
+    unit.checked=false;
+    try{
+      const bake=(pass,oak)=>{
+        const sprite=document.createElement("canvas");
+        sprite.width=240*rasterScale;
+        sprite.height=250*rasterScale;
+        const target=sprite.getContext("2d");
+        target.setTransform(rasterScale,0,0,rasterScale,-480*rasterScale,0);
+        drawComparison(pass,oak,target);
+        return sprite;
+      };
+      for(const tree of groveTrees){
+        tree.sprite=bake("tree",tree.oak);
+        tree.shadow=shadows.checked?bake("shadow",tree.oak):null;
+      }
+    }finally{
+      unit.checked=originalUnit;
+    }
+    groveKey=key;
+  }
+  ctx.clearRect(0,0,sceneWidth,sceneHeight);
+  ctx.strokeStyle="#82916e";
+  ctx.fillStyle="#4b5940";
+  for(const [index,{x,y}] of groveTrees.entries()){
+    ctx.beginPath();
+    for(const [dx,dy] of [[0,-21],[32,-10.5],[32,10.5],[0,21],[-32,10.5],[-32,-10.5]])ctx.lineTo(x+dx,y+dy);
+    ctx.closePath();
+    ctx.fill();
+    if(grass.naturalWidth){
+      ctx.save();
+      ctx.clip();
+      const tile=(index*7)%32;
+      ctx.drawImage(grass,(tile%8)*168,Math.floor(tile/8)*176,168,176,x-32.6,y-21.6,65.2,43.2);
+      ctx.restore();
+    }
+    ctx.stroke();
+  }
+  const stamp=(target,sprite,tree,height)=>target.drawImage(
+    sprite,0,0,240*rasterScale,height*rasterScale,tree.x-120*tree.size,tree.y-192*tree.size,
+    240*tree.size,height*tree.size
+  );
+  if(shadows.checked){
+    mask.clearRect(0,0,groveMask.width,groveMask.height);
+    for(const tree of groveTrees)stamp(mask,tree.shadow,tree,250);
+    ctx.save();
+    ctx.globalAlpha=.40;
+    ctx.drawImage(groveMask,0,0,sceneWidth,sceneHeight);
+    ctx.restore();
+  }
+  for(const tree of groveTrees)stamp(ctx,tree.sprite,tree,215);
+}
+for(const control of [angle,bare,unit,scale,sun,shadows,mode])control.addEventListener("change",draw);
+draw();
+</script>
+</html>

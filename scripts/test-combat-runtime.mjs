@@ -5,11 +5,11 @@ import {createCombatTestMap} from '../js/combat-test-map.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {floorFragmentIndex,polygonArea} from '../js/combat-surface-lighting.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi');
+const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi').replace("import('./combat-fir-trees.mjs?v=treeit-live-1')",'Promise.resolve({createCombatFirTrees:async()=>({})})');
 function fixture(){
  const events=[],images=Array.from({length:5},()=>({src:'',decode:async()=>{events.push('image');}}));
  const c={sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],game:null,isKoboldUnit:()=>false,
-  newGame:(condition,scenario)=>{events.push('new');c.game=c.createCombatGame(condition,scenario.roster,scenario);},allUnits:()=>[c.game.player,...c.game.allies,...c.game.enemies],fitBattleCanvas:()=>events.push('fit'),waitForCombatUnitRenders:async()=>events.push('sprites'),presentCombatFrame:async()=>events.push('frame'),startRound:()=>{events.push('round');c.game.round++;},canvas:{dataset:{}},setTimeout,clearTimeout,HEX_W:64,HEX_ROW:31.5,MAP_MIN_X:-8,MAP_MAX_X:8,MAP_MIN_Y:-8,MAP_MAX_Y:8,WALL_TEST_ROOM:{left:-64,right:128,top:-63,bottom:63},worldPointForHex:(x,y)=>({x:(x+y/2)*64,y:y*31.5})};
+  initializeFirMovementObstacles:()=>events.push('fir-obstacles'),newGame:(condition,scenario)=>{events.push('new');c.game=c.createCombatGame(condition,scenario.roster,scenario);},allUnits:()=>[c.game.player,...c.game.allies,...c.game.enemies],fitBattleCanvas:()=>events.push('fit'),waitForCombatUnitRenders:async()=>events.push('sprites'),presentCombatFrame:async()=>events.push('frame'),startRound:()=>{events.push('round');c.game.round++;},canvas:{dataset:{}},setTimeout,clearTimeout,HEX_W:64,HEX_ROW:31.5,MAP_MIN_X:-8,MAP_MAX_X:8,MAP_MIN_Y:-8,MAP_MAX_Y:8,WALL_TEST_ROOM:{left:-64,right:128,top:-63,bottom:63},worldPointForHex:(x,y)=>({x:(x+y/2)*64,y:y*31.5})};
  vm.createContext(c);vm.runInContext(source,c);return {c,events};
 }
 for(const entry of ['combat-test','exploration','spell-preview']){
@@ -60,3 +60,5 @@ const preview=read('js/candidate-spell-previewer.js');assert(!/game\s*=\s*\{/.te
 for(const retired of ['spellPreviewRunSleep','spellPreviewRunWallOfFog','spellPreviewRunLightningBolt','spellPreviewApplyDamage'])assert(!preview.includes(retired),'No Previewer-owned spell simulation: '+retired);
 assert(preview.includes('await startCombatSession('));assert(read('js/adventure-party.js').includes('await startCombatSession('));
 console.log('PASS shared startup/material/sprite/frame gate, battle state and reset across all entries, cancellation/supersession, authored test maps, exact floor partitions and production-only Previewer spells');
+
+

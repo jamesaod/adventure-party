@@ -81,3 +81,10 @@ is included at assets/fonts/press-start-2p-OFL.txt.
 ## Dirt paths and grass fringe (Rev 258)
 
 `assets/textures/exploration/dirt-path-v1.png` and `grass-fringe-v1.png` were generated for this project with the built-in image_gen tool on 2026-11-02. Original PNGs are preserved, including the fringe alpha channel. Generation prompts, dimensions and checksums are in `assets/textures/exploration/terrain-transition-generation-v1.json`. A shared runtime alpha mask composes these with the existing short grass material; it is generated from neighbouring terrain rather than baked into each hex.
+
+## TreeIt fir battlefield artwork
+
+The five fir variants derive from the fir sample in EVOLVED's TreeIt sample library.
+Source and credit — EVOLVED / evolved-software, https://www.evolved-software.com/treeit/treeit
+The supplied library license permits commercial copying and modification with attribution. Its original text is preserved at assets/terrain/treeit-firs/SAMPLE-LICENSE.txt and calls itself Creative Commons Attribution International without specifying a version.
+Changes include randomized seeds and scale, a second rotated foliage layer, green tint, interior shading, and twelve rendered rotation views per tree. Ground shadows are rendered separately from the actual branch and foliage-card geometry with filtered edges.

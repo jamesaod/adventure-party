@@ -304,7 +304,8 @@ function drawExplorationSpellLighting(tiles){
  for(const source of sources){
   ctx.save();clipExplorationEmitter(source);
   for(const fragment of fragments){
-   const rgb=explorationEncounterApi.spellSurfaceRadiance(fragment.point,[source],(s,p)=>explorationUnblockedContribution(s,p));if(!rgb.some(v=>v>0))continue;
+   // All floor fragments owned by a hex share one fire/spell-light value.
+   const rgb=explorationEncounterApi.spellSurfaceRadiance(fragment.hex||fragment.point,[source],(s,p)=>explorationUnblockedContribution(s,p));if(!rgb.some(v=>v>0))continue;
    if(tracePolygonOnContext(ctx,fragment.screen)){ctx.fillStyle=`rgb(${rgb.map(v=>Math.round(Math.min(1,v)*255)).join(',')})`;ctx.fill();}
   }ctx.restore();
  }ctx.restore();
@@ -800,3 +801,4 @@ function tryExplorationToggleDoor(){
  log(`${unit.name} ${door.open?'closes':'opens'} the door (1 movement point; ${unit.turnMoves}/${unit.fullMove?unit.move:unit.halfMove}).`,'system');
  refreshTurnBanner();updateUi();draw();
 }
+

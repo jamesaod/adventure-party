@@ -63,7 +63,7 @@ const functions = [
   'key', 'hexDistance', 'facingDirectionIndex', 'hexDirectionIndexToward', 'unitPoseDefinition',
   'unitFootprintDefinition', 'rotateAxialOffset', 'footprintOffsetsForFacing', 'occupiedHexesAt',
   'occupiedHexes', 'unitFootprintCellCount', 'unitOccupiesHex', 'unitFootprintScreenCenter',
-  'unitDistance', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
+  'unitDistance', 'isFirBlockedHex', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
   'searchRotatingFootprintPath', 'pathToHex', 'axialDisk',
   'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'repositoryAttacksThisRound', 'makeOrc', 'makeLegacyOrc', 'makeOrcLeader', 'makeOrcShaman',
   'makeLargeMobTest', 'makeStudioTestMob', 'makeLibraryMob', 'libraryTestPlayer', 'availableCombatMobChoices', 'makeStudioTestPlayer', 'deployConfiguredCombatMobs', 'drawStudioSpriteMob',
@@ -74,7 +74,7 @@ const functions = [
   'getMissileCatalogEntry', 'getWeaponCatalogEntry', 'getArmorCatalogEntry', 'getSpellEntry',
   'applyFighterClassRules', 'fighterLevelData', 'warriorSavingThrows',
   'createCombatGame', 'newGame', 'allUnits', 'livingPartyMembers', 'isPlayerControlledUnit', 'isKoboldUnit',
-  'studioSpriteTestUnits', 'inspectStudioSpritePose', 'beginCombatFromPrompt', 'startRound',
+  'studioSpriteTestUnits', 'inspectStudioSpritePose', 'beginCombatFromPrompt', 'advanceFirFires', 'startRound',
   'rollInitiative', 'getUnitById', 'activeEnemies', 'fighterAttacksThisRound',
   'fighterBaseAttacksThisRound', 'fighterSpecialistAttacksThisRound', 'isStudioTestCombat', 'studioReturnUrl', 'returnToStudioFromCombat', 'checkCombatVictory', 'renderStudioTestCharacterSheet', 'renderCharacterSheet', 'canUseSweep',
   'animateEntitySteps', 'animateMobAlongPath', 'tryPlayerMove'
@@ -335,3 +335,5 @@ for (const move of [
 occupied.clear();
 
 console.log('Studio footprints: seven layouts × six facings, player and monster centroid rendering, blocked movement, real class factories, one controlled selected character through setup/initiative/inspection/restart/return, configurable opponents, empty sandbox and unchanged ordinary Carl passed.');
+
+
