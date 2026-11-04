@@ -11,8 +11,8 @@ function stopDayTest(){
 }
 function tickDayTest(){
  if(document.hidden||!host?.getClientRects().length){stopDayTest();return;}
- pending=Math.round(wrapHour(dayTestHour+(performance.now()-dayTestStart)*24/60000)*6)/6%24;
- paint();commit();dayTestTimer=setTimeout(tickDayTest,100);
+ pending=wrapHour(dayTestHour+Math.floor((performance.now()-dayTestStart)/1000)*24/60);
+ paint();commit();dayTestTimer=setTimeout(tickDayTest,Math.max(20,1000-(performance.now()-dayTestStart)%1000));
 }
 function toggleDayTest(){
  if(dayTestTimer!==null){stopDayTest();return;}
@@ -53,3 +53,4 @@ if(host){
  wheel.addEventListener('keyup',e=>{if(['ArrowRight','ArrowUp','ArrowLeft','ArrowDown','PageUp','PageDown','Home','End'].includes(e.key)){e.stopPropagation();commit();}});
  addEventListener('pagehide',()=>{clearTimeout(timer);stopDayTest();});addEventListener('visibilitychange',()=>{if(document.hidden)stopDayTest();});paint();
 }
+
