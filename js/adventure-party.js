@@ -3459,7 +3459,7 @@ function advanceFirFires(){
   for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'&&game.round>=fire.burnUntilRound)fire.state='burnt';
 }
 function firFireLightSources(){
-  const time=performance.now()/1000,palette=[[255,255,255],[255,225,65],[255,115,25]];
+  const time=performance.now()/1000,palette=[[255,30,10],[255,225,65],[255,115,25]];
   return Object.values(game?.firFireStates||{}).filter(fire=>fire.state==='burning').map(fire=>{
     const seed=terrainRand(fire.x,fire.y,1291),weights=palette.map((_,i)=>{
       const phase=terrainRand(fire.x,fire.y,1292+i)*Math.PI*2,frequency=.8+terrainRand(fire.x,fire.y,1298+i)*2.4;
