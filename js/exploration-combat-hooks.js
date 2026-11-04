@@ -385,7 +385,7 @@ function queueExplorationDoors(actors){
 
  for(const door of explorationTerrain.doors||[]){
   const p=explorationEncounterApi.combatDoorSolids(door,explorationTerrain,explorationEncounterApi.SCENE_STYLE),a=screenPointForWorld(p.hinge),b=screenPointForWorld(p.end);
-  actors.push({gpuScenery:true,sortY:Math.max(a.y,b.y)+.3,sortX:(a.x+b.x)/2,fn:()=>drawExplorationCombatDoor(door)});
+  actors.push({outlineSolids:[p.leaf,p.lintel],gpuScenery:true,sortY:Math.max(a.y,b.y)+.3,sortX:(a.x+b.x)/2,fn:()=>drawExplorationCombatDoor(door)});
  }
 }
 function clipExplorationFloor(){

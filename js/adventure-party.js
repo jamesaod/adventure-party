@@ -3646,6 +3646,7 @@ function drawTreeDecoration(decoration){
   }
   ctx.restore();
 
+  decoration.outlineFrame={image,sx,sy,sourceTileWidth,sourceTileHeight,drawX:Math.round(drawX),drawY:Math.round(drawY),drawW,drawH};
   ctx.save();
   ctx.imageSmoothingEnabled=!!tileSet.treeRotationFrames;
   ctx.drawImage(
@@ -27379,6 +27380,41 @@ function combatSpriteBrightness(unit){
  if(explorationTerrain&&typeof explorationUnitSpriteBrightness==='function')return explorationUnitSpriteBrightness(unit);
  return Math.max(.02,Math.min(1,illuminationAtHex(unit.x,unit.y)));
 }
+let hiddenOutlineUnits=[],hiddenOutlineCapture=null;
+const hiddenOutlineCache=new WeakMap();
+function hiddenUnitOutlineFrame(image,width,height,flip,color){
+  let cache=hiddenOutlineCache.get(image);if(!cache){cache=new Map();hiddenOutlineCache.set(image,cache);}
+  const zoom=typeof battlefieldZoom==='number'?battlefieldZoom:1,radius=1.5/zoom,pad=Math.ceil(radius)+2;
+  const id=[width,height,flip,color,pad,radius.toFixed(2)].join(':');if(cache.has(id))return cache.get(id);
+  const shape=document.createElement('canvas');shape.width=Math.ceil(width)+pad*2;shape.height=Math.ceil(height)+pad*2;
+  const c=shape.getContext('2d');c.save();if(flip){c.translate(shape.width,0);c.scale(-1,1);}c.drawImage(image,pad,pad,width,height);c.restore();
+  c.globalCompositeOperation='source-in';c.fillStyle=color;c.fillRect(0,0,shape.width,shape.height);
+  const ring=document.createElement('canvas');ring.width=shape.width;ring.height=shape.height;const t=ring.getContext('2d');
+  for(let i=0;i<12;i++){const angle=i*Math.PI/6;t.drawImage(shape,Math.cos(angle)*radius,Math.sin(angle)*radius);}
+  t.globalCompositeOperation='destination-out';t.drawImage(shape,0,0);t.globalCompositeOperation='source-over';
+  const result={ring,pad};if(cache.size>=16)cache.delete(cache.keys().next().value);cache.set(id,result);return result;
+}
+function drawHiddenUnitOutlines(ordered){
+  if(!hiddenOutlineUnits.length)return;
+  for(const unit of hiddenOutlineUnits){
+    if(!unit.entity.alive||unit.entity.fled||getUnitEffect(unit.entity,'invisibility')||!shouldRenderUnitUnderPartyVisibility(unit.entity))continue;
+    const friendly=isPlayerControlledUnit(unit.entity)||unit.entity.faction==='player';if(!friendly&&!isUnitVisibleToFriendlyParty(unit.entity))continue;const color=friendly?'#70aaa9':'#b87b65';
+    const frame=hiddenUnitOutlineFrame(unit.image,unit.width,unit.height,unit.flip,color),left=unit.x-frame.pad,top=unit.y-frame.pad;
+    const mask=document.createElement('canvas');mask.width=frame.ring.width;mask.height=frame.ring.height;const m=mask.getContext('2d');m.translate(-left,-top);
+    for(let i=unit.index+1;i<ordered.length;i++){
+      const actor=ordered[i];if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;
+        if(center.x+h/2<left||center.x-h/2>left+mask.width||center.y<top||center.y-h>top+mask.height)continue;
+        const frame=actor.tree.outlineFrame;if(frame)m.drawImage(frame.image,frame.sx,frame.sy,frame.sourceTileWidth,frame.sourceTileHeight,frame.drawX,frame.drawY,frame.drawW,frame.drawH);
+        else{const old=ctx;try{ctx=m;drawTreeDecoration(actor.tree);}finally{ctx=old;}}
+      }else if(actor.wall||actor.outlineSolids){
+        const solids=actor.outlineSolids||(typeof explorationWallGroundSolids==='function'?explorationWallGroundSolids(actor.wall):[]);
+        m.fillStyle='#fff';for(const solid of solids)for(const face of solid.faces||[]){const polygon=face.points.map(point=>screenPointForWorld(point,point.elevation));if(tracePolygonOnContext(m,polygon))m.fill();}
+      }
+    }
+    const layer=document.createElement('canvas');layer.width=mask.width;layer.height=mask.height;const t=layer.getContext('2d');t.drawImage(frame.ring,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mask,0,0);
+    ctx.save();ctx.globalAlpha=game.active?.id===unit.entity.id ? .48 : .32;ctx.drawImage(layer,left,top);ctx.restore();
+  }
+}
 function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity=null,anchor=null){
   if(
     !image ||
@@ -27421,6 +27457,9 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
       anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip,pose:activeUnitPoseName(entity)});
     ctx.restore();return;
   }
+  if(typeof hiddenOutlineCapture!=='undefined'&&hiddenOutlineCapture&&entity&&!getUnitEffect(entity,'invisibility'))hiddenOutlineUnits.push({entity,image:renderSource,
+    width:visualDrawW,height:visualDrawH,flip:shouldFlip,index:hiddenOutlineCapture.index,
+    x:c.x-Math.round(visualDrawW*spriteAnchor.x),y:c.y-Math.round(visualDrawH*spriteAnchor.y)});
   const gpuSprite=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
   const brightness=!gpuSprite&&typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
   const spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
@@ -30644,7 +30683,7 @@ function draw(){
     actors.push({
       sortY:c.y+sortOffset,
       sortX:c.x,
-      fn:()=>drawTreeDecoration(tree)
+      tree,fn:()=>drawTreeDecoration(tree)
     });
   }
 
@@ -30751,12 +30790,16 @@ function draw(){
 
   const hasWeb=game.areaEffects?.some(effect=>effect.type==="web");
   if(!hasWeb&&typeof clearRaisedWeb==="function")clearRaisedWeb();
-  for(const actor of explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors){
+  const outlineActors=explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors;
+  hiddenOutlineUnits=[];
+  for(let actorIndex=0;actorIndex<outlineActors.length;actorIndex++){
+    const actor=outlineActors[actorIndex];hiddenOutlineCapture=actor.unit?{index:actorIndex}:null;
     if(combatGpu&&!actor.gpuScenery)combatGpu.prepareOverlay();
     if(actor.wrapWeb&&hasWeb)drawMobWithWeb(actor.entity,actor.fn);
     else actor.fn();
   }
 
+  hiddenOutlineCapture=null;
   if(combatGpu)combatGpu.prepareOverlay();
   drawPersistentLightSpellFx();
   drawPersistentShieldSpellFx();
@@ -30788,6 +30831,7 @@ function draw(){
   */
   if(explorationTerrain)drawExplorationDarknessVolumes();
   else drawVisibleArchitecturalWallsOverLOS();
+  drawHiddenUnitOutlines(outlineActors);
 
   /* R170 weather is battlefield-only; UI text remains above it. */
   drawWeatherVfx(performance.now());
@@ -31522,6 +31566,9 @@ document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotate
 document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
 
 addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
+
+
+
 
 
 
