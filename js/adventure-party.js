@@ -3460,8 +3460,26 @@ function treeRotationFrame(tileSet,decoration){
   return ((rotation-battlefieldRotation*2)%frames+frames)%frames;
 }
 
+function liveFirTreeRender(tileSet,decoration){
+  if(typeof combatFirTrees==='undefined' || !combatFirTrees || game?.session?.source!=='combat-test' || game.condition!=='grass')return null;
+  return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration),{
+    solar:globalThis.adventurePartySolar?.state?.(),
+    ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation
+  });
+}
+
 function drawTreeGroundShadow(decoration){
   const tileSet=activeCombatTerrainTileSet();
+  const live=liveFirTreeRender(tileSet,decoration);
+  if(live){
+    if(live.shadow){
+      const c=hexCenter(decoration.x,decoration.y),shadow=live.shadow,scale=tileSet.treeDrawHeight/210;
+      ctx.save();ctx.globalAlpha=shadow.opacity;ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(shadow.image,c.x+shadow.left*scale,c.y+shadow.top*scale,shadow.width*scale,shadow.height*scale);
+      ctx.restore();
+    }
+    return;
+  }
   const image=TERRAIN_TREE_SHADOW_IMAGES.get(tileSet.id);
   if(!image?.complete || !image.naturalWidth)return;
   const c=hexCenter(decoration.x,decoration.y);
@@ -3475,12 +3493,12 @@ function drawTreeGroundShadow(decoration){
 
 function drawTreeDecoration(decoration){
   const tileSet=activeCombatTerrainTileSet();
-  const image=TERRAIN_TREE_IMAGES.get(tileSet.id);
+  const live=liveFirTreeRender(tileSet,decoration);
+  const image=live?.body || TERRAIN_TREE_IMAGES.get(tileSet.id);
 
   if(
     !decoration ||
-    !image?.complete ||
-    image.naturalWidth<=0
+    (!live && (!image?.complete || image.naturalWidth<=0))
   ){
     return;
   }
@@ -3503,8 +3521,8 @@ function drawTreeDecoration(decoration){
 
   const sourceTileWidth=tileSet.treeSourceTileWidth || 192;
   const sourceTileHeight=tileSet.treeSourceTileHeight || 216;
-  const sx=sourceColumn*sourceTileWidth;
-  const sy=sourceRow*sourceTileHeight;
+  const sx=live?0:sourceColumn*sourceTileWidth;
+  const sy=live?0:sourceRow*sourceTileHeight;
 
   // Every view uses the same trunk anchor at the exact hex center.
   const sourceBaseX=tileSet.treeBaseAnchorX ?? (sourceTileWidth/2);

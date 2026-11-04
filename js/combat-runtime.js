@@ -2,6 +2,8 @@
 let combatSessionGeneration=0;
 let combatSceneAssets=null;
 let combatTestMapFactory=null;
+let combatFirTrees=null;
+let combatFirTreesLoading=null;
 async function prepareCombatSession(){
  await ensureCombatRenderer();
  if(!combatSceneAssets)combatSceneAssets=(async()=>{
@@ -16,6 +18,12 @@ async function prepareCombatSession(){
 async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  const generation=++combatSessionGeneration;
  await prepareCombatSession();
+ if(scenario.source==='combat-test' && scenario.condition==='grass'){
+  if(!combatFirTreesLoading)combatFirTreesLoading=import('./combat-fir-trees.mjs?v=treeit-live-1')
+   .then(module=>module.createCombatFirTrees()).then(trees=>combatFirTrees=trees)
+   .catch(error=>{combatFirTreesLoading=null;throw error;});
+  await combatFirTreesLoading;
+ }
  if(generation!==combatSessionGeneration||!isCurrent())return false;
  newGame(scenario.condition||'grass',scenario);
  const combat=game;
