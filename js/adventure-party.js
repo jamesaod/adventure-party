@@ -3499,7 +3499,8 @@ function firTreeLocalLights(tree){
   const magical=explorationRenderLights().filter(light=>light.sourceKind!=='torch').map(source=>{
     const strength=illuminationContributionFromSource(source,tree.x,tree.y);if(strength<=0)return null;
     const point=worldPointForHex(source.x,source.y),x=(point.x-origin.x)*units,z=(point.y-origin.y)*units*HEX_W*Math.sqrt(3)/2/HEX_ROW;
-    return {x:c*x-s*z,z:s*x+c*z,height:28,radius:(source.radiusHexes||1)*HEX_W*units,intensity:(source.intensity||0)*1800,decay:2,
+    const decay=api.SCENE_STYLE.lantern.decay,spellHeight=(source.sourceKind==='spell-fx'?2.2:1.9)*metresToUnits;
+    return {x:c*x-s*z,z:s*x+c*z,height:spellHeight,radius:(source.radiusHexes||1)*HEX_W*units,intensity:(source.intensity||0)*api.SCENE_STYLE.lantern.intensity*Math.pow(metresToUnits,decay),decay,
       color:(source.color||[255,192,110]).map(value=>value/255),strength};
   }).filter(Boolean);
   return physical.concat(magical).sort((a,b)=>b.strength-a.strength).slice(0,4);
@@ -31448,4 +31449,5 @@ document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotate
 document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
 
 addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
+
 
