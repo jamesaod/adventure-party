@@ -1,23 +1,25 @@
 import {solarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C274';
 const host=document.getElementById('combatDayNight');
 let wallShadows=new URLSearchParams(location.search).get('wallSunShadows')!=='off';
-let dayTestTimer=null,dayTestStart=0,dayTestHour=12;
+let dayTestFrame=null,dayTestRunning=false,dayTestMinute=720;
 let committed=12,pending=12,committedState=solarState(12),timer=null,dragging=false;
 const commit=()=>{clearTimeout(timer);timer=null;if(committed===pending)return;committed=pending;committedState=solarState(committed);window.dispatchEvent(new CustomEvent('adventure-party:solar-change',{detail:committedState}));};
 window.adventurePartySolar={state:()=>committedState,wallShadows:()=>wallShadows,setHour(hour){stopDayTest();pending=Math.round(wrapHour(hour)*6)/6%24;paint();commit();}};
 function stopDayTest(){
- clearTimeout(dayTestTimer);dayTestTimer=null;
+ dayTestRunning=false;if(dayTestFrame!==null)window.cancelCombatAnimationTick(dayTestFrame);dayTestFrame=null;
  const button=host?.querySelector('#solarDayTest');if(button){button.setAttribute('aria-pressed','false');button.textContent='DAY TEST: OFF';}
 }
 function tickDayTest(){
+ dayTestFrame=null;if(!dayTestRunning)return;
  if(document.hidden||!host?.getClientRects().length){stopDayTest();return;}
- pending=wrapHour(dayTestHour+Math.floor((performance.now()-dayTestStart)/1000)*24/60);
- paint();commit();dayTestTimer=setTimeout(tickDayTest,Math.max(20,1000-(performance.now()-dayTestStart)%1000));
+ dayTestMinute=(dayTestMinute+1)%1440;pending=dayTestMinute/60;
+ paint();commit();dayTestFrame=window.requestCombatAnimationTick(tickDayTest);
 }
 function toggleDayTest(){
- if(dayTestTimer!==null){stopDayTest();return;}
- clearTimeout(timer);timer=null;dayTestStart=performance.now();dayTestHour=pending;
- const button=host.querySelector('#solarDayTest');button.setAttribute('aria-pressed','true');button.textContent='DAY TEST: ON';tickDayTest();
+ if(dayTestRunning){stopDayTest();return;}
+ clearTimeout(timer);timer=null;dayTestRunning=true;dayTestMinute=Math.round(pending*60)%1440;
+ const button=host.querySelector('#solarDayTest');button.setAttribute('aria-pressed','true');button.textContent='DAY TEST: ON';
+ dayTestFrame=window.requestCombatAnimationTick(tickDayTest);
 }
 function paint(){
  if(!host)return;const sun=solarState(pending),angle=(pending-12)*Math.PI/12-Math.PI/2,x=100+69*Math.cos(angle),y=100+69*Math.sin(angle);
@@ -39,7 +41,7 @@ if(host){
  <g class="solar-numerals" fill="#eed38b" text-anchor="middle"><text x="100" y="21">XII</text><text x="18" y="105">VI</text><text x="181" y="105">XVIII</text><text x="100" y="188">XXIV</text></g>
  <line class="solar-hand" x1="100" y1="100" stroke="#e1bc62" stroke-width="2"/><circle cx="100" cy="100" r="5" fill="#d8ad51" stroke="#f8e3a3"/>
  <g class="solar-marker" fill="#ffe49a" stroke="#bd8731"><path d="M0-12L3-7L9-9L7-3L12 0L7 3L9 9L3 7L0 12L-3 7L-9 9L-7 3L-12 0L-7-3L-9-9L-3-7Z"/><circle r="6"/></g></svg>
- <div class="solar-time"></div><div class="solar-position"></div><small>EQUINOX · 38° N</small><label class="wall-shadow-toggle"><input id="wallSunShadows" type="checkbox"> WALL SHADOWS</label><button id="solarDayTest" type="button" aria-pressed="false" title="Repeat a full solar day every 60 seconds">DAY TEST: OFF</button>`;
+ <div class="solar-time"></div><div class="solar-position"></div><small>EQUINOX · 38° N</small><label class="wall-shadow-toggle"><input id="wallSunShadows" type="checkbox"> WALL SHADOWS</label><button id="solarDayTest" type="button" aria-pressed="false" title="Animate one solar minute per combat frame (30 FPS target)">DAY TEST: OFF</button>`;
  const testButton=host.querySelector('#solarDayTest');testButton.addEventListener('click',event=>{event.stopPropagation();toggleDayTest();});for(const name of ['keydown','keyup'])testButton.addEventListener(name,event=>event.stopPropagation());
  const shadowToggle=host.querySelector('#wallSunShadows');shadowToggle.checked=wallShadows;
  shadowToggle.addEventListener('change',()=>{wallShadows=shadowToggle.checked;window.dispatchEvent(new CustomEvent('adventure-party:solar-change',{detail:committedState}));});
