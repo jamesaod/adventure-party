@@ -1723,7 +1723,7 @@ async function ensureCombatRenderer(){
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
   canvas.parentElement.append(status);
-  combatGpu=createCombatRenderer(canvas,combatRaster,{onLost:()=>{canvas.parentElement.append(status);status.hidden=false;status.style.display="grid";},onRestored:()=>{status.hidden=true;status.style.display="none";draw();}});
+  combatGpu=createCombatRenderer(canvas,combatRaster,{onLost:()=>{canvas.parentElement.append(status);status.hidden=false;status.style.display="grid";},onRestored:()=>{status.hidden=true;status.style.display="none";if(typeof combatFirTrees!=='undefined')combatFirTrees?.clearDirectShadows?.();draw();}});
   ctx=combatGpu.context;
   combatFrames=createCombatFrameScheduler({render:()=>{draw();canvas.dataset.frameStats=JSON.stringify(combatFrames.diagnostics());},enabled:()=>!!game&&["combat","spell-preview"].includes(currentScreen)});
   return combatGpu;
@@ -3532,11 +3532,12 @@ function treeRotationFrame(tileSet,decoration){
   return ((rotation-battlefieldRotation*2)%frames+frames)%frames;
 }
 
-function liveFirTreeRender(tileSet,decoration){
+function directFirRendering(){return !!(combatGpu?.treeScene&&ctx===combatGpu.context&&game?.session?.source==='combat-test'&&game.condition==='grass'&&new URLSearchParams(location.search).get('treeRenderer')!=='images');}
+function liveFirTreeRender(tileSet,decoration,direct=null){
   if(typeof combatFirTrees==='undefined' || !combatFirTrees || game?.session?.source!=='combat-test' || game.condition!=='grass')return null;
   return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration),{
     solar:globalThis.adventurePartySolar?.state?.(),
-    ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,
+    ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,direct,
     burning:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==='burning',
     firePhaseValue:terrainRand(decoration.x,decoration.y,911),fireParticles:Math.max(1,Math.min(192,Math.floor(2048/Math.max(1,firFireLightSources().length)))),
     burnt:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==="burnt",instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
@@ -3573,6 +3574,12 @@ function firTreeLocalLights(tree){
 
 function drawTreeGroundShadow(decoration){
   const tileSet=activeCombatTerrainTileSet();
+  if(directFirRendering()){
+    const shadow=liveFirTreeRender(tileSet,decoration,{host:combatGpu,ground:true}).shadow;if(!shadow)return;
+    const center=hexCenter(decoration.x,decoration.y),scale=tileSet.treeDrawHeight/210,left=center.x+shadow.left*scale,top=center.y+shadow.top*scale,width=shadow.width*scale,height=shadow.height*scale;
+    const faces=explorationFloorFragments(visibleHexes()).filter(fragment=>{const p=hexCenter(fragment.point.x,fragment.point.y);return p.x>=left-HEX_W&&p.x<=left+width+HEX_W&&p.y>=top-HEX_ROW&&p.y<=top+height+HEX_ROW;}).map(fragment=>({points:fragment.polygon,uv:fragment.polygon.map(point=>{const p=screenPointForWorld(point);return[(p.x-left)/width,1-(p.y-top)/height];})}));
+    combatGpu.surface(faces,shadow.texture,{opacity:shadow.opacity});return;
+  }
   const live=liveFirTreeRender(tileSet,decoration);
   if(live){
     if(live.shadow){
@@ -3596,6 +3603,13 @@ function drawTreeGroundShadow(decoration){
 
 function drawTreeDecoration(decoration){
   const tileSet=activeCombatTerrainTileSet();
+  if(directFirRendering()){
+    const center=hexCenter(decoration.x,decoration.y),height=tileSet.treeDrawHeight||240;
+    liveFirTreeRender(tileSet,decoration,{host:combatGpu,center,scale:height/210});
+    const burnt=game.firFireStates?.[key(decoration.x,decoration.y)]?.state==='burnt';
+    const image=burnt?combatFirTrees.silhouette(decoration.tileIndex,treeRotationFrame(tileSet,decoration),true):TERRAIN_TREE_IMAGES.get(tileSet.id);
+    decoration.outlineFrame={image,sx:burnt?0:treeRotationFrame(tileSet,decoration)*384,sy:burnt?0:decoration.tileIndex*512,sourceTileWidth:384,sourceTileHeight:512,drawX:center.x-height*.375,drawY:center.y-height*.875,drawW:height*.75,drawH:height};return;
+  }
   const live=liveFirTreeRender(tileSet,decoration);
   const image=live?.body || TERRAIN_TREE_IMAGES.get(tileSet.id);
 
@@ -30642,6 +30656,7 @@ function draw(){
     density*anchor.x*(1-battlefieldZoom),
     density*anchor.y*(1-battlefieldZoom)
   );
+  canvas.dataset.treeRenderer=directFirRendering()?'direct-mesh':'cached-images';
   drawFloor();
   drawWallTestFloorPlan();
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
@@ -30689,7 +30704,7 @@ function draw(){
     actors.push({
       sortY:c.y+sortOffset,
       sortX:c.x,
-      tree,fn:()=>drawTreeDecoration(tree)
+      tree,gpuScenery:directFirRendering(),fn:()=>drawTreeDecoration(tree)
     });
   }
 

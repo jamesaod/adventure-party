@@ -61,7 +61,7 @@ const fragmentShader=`
  }`;
 
 export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=>{}}={}){
- const gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false,powerPreference:'default'});
+ const gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:true,stencil:false,preserveDrawingBuffer:false,powerPreference:'default'});
  if(!gl)throw Error('Combat requires WebGL 2. Enable browser hardware acceleration and check your graphics driver, then retry.');
  const renderer=new THREE.WebGLRenderer({canvas,context:gl,antialias:false});
  renderer.autoClear=false;renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -98,6 +98,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   raw.drawImage(canvas,0,0);raw.restore();needsBackdrop=false;
  }
  function texture(image,repeat=false){
+  if(image.isTexture)return image;
   let t=textures.get(image);if(t)return t;
   t=new THREE.Texture(image);t.colorSpace=THREE.NoColorSpace;
   t.wrapS=t.wrapT=repeat?THREE.RepeatWrapping:THREE.ClampToEdgeWrapping;
@@ -114,6 +115,14 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   context,
   get available(){return !lost&&!disposed;},
   prepareOverlay,
+  treeScene(callback){
+   if(lost||disposed||!frameOpen)return null;flush();
+   const clearColor=renderer.getClearColor(new THREE.Color()),clearAlpha=renderer.getClearAlpha();
+   const target=renderer.getRenderTarget(),tone=renderer.toneMapping,exposure=renderer.toneMappingExposure,shadows=renderer.shadowMap.enabled;
+   try{renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
+     renderer.clearDepth();return callback(renderer,view);
+   }finally{renderer.setRenderTarget(target);renderer.toneMapping=tone;renderer.toneMappingExposure=exposure;renderer.shadowMap.enabled=shadows;renderer.setClearColor(clearColor,clearAlpha);needsBackdrop=true;}
+  },
   setLighting(next){lighting=next;if(next){next.packed=packCombatLights(next.lights);if(next.mask!==maskTexture.image||next.maskRevision!==maskTexture.userData.revision){if(maskTexture.image.width!==next.mask.width||maskTexture.image.height!==next.mask.height)maskTexture.dispose();maskTexture.image=next.mask;maskTexture.userData.revision=next.maskRevision;maskTexture.needsUpdate=true;}}},
   presentOverlay(){flush();},
   begin(nextView){

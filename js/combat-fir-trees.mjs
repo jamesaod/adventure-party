@@ -131,16 +131,42 @@ export async function createCombatFirTrees(){
         gl_Position=projectionMatrix*viewMatrix*p;}`,
     fragmentShader:'void main(){gl_FragColor=vec4(0.0,0.0,0.0,1.0);}'
   });
+  const directGroundCache=new Map(),directSelfCache=new Map(),silhouetteCache=new Map();let directSunKey='';
+  const shadowTemplate=sun.shadow;
+  function clearDirectShadows(){
+    for(const entry of directGroundCache.values()){entry.target.dispose();}directGroundCache.clear();
+    for(const entry of directSelfCache.values()){entry.map?.dispose();entry.mapPass?.dispose();}directSelfCache.clear();
+  }
+  function directGround(model,variant,rotation,burnt,light,solar,host){
+    const key=[variant,rotation,burnt].join(':');if(directGroundCache.has(key))return directGroundCache.get(key);
+    const box=treeBounds[variant][burnt?'bare':'healthy'],yaw=new THREE.Matrix4().makeRotationY(model.rotation.y),points=[];
+    model.updateMatrixWorld(true);
+    for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){
+      const p=new THREE.Vector3(x,y,z).applyMatrix4(yaw);p.x-=Math.max(0,p.y)*light.x/Math.max(.08,light.y);p.z-=Math.max(0,p.y)*light.z/Math.max(.08,light.y);p.y=0;points.push(p.applyMatrix4(camera.matrixWorldInverse));
+    }
+    const bounds=new THREE.Box3().setFromPoints(points);bounds.expandByScalar(4);
+    camera.left=bounds.min.x;camera.right=bounds.max.x;camera.bottom=bounds.min.y;camera.top=bounds.max.y;camera.updateProjectionMatrix();
+    const width=Math.min(1536,Math.max(16,Math.ceil((bounds.max.x-bounds.min.x)*512/210))),height=Math.min(1536,Math.max(16,Math.ceil((bounds.max.y-bounds.min.y)*512/210)));
+    const target=new THREE.WebGLRenderTarget(width,height,{depthBuffer:false,stencilBuffer:false}),originals=[];
+    model.traverse(mesh=>{if(mesh.isMesh){originals.push([mesh,mesh.material,mesh.castShadow]);mesh.material=shadowMaterial;mesh.castShadow=false;}});
+    try{host.treeScene(gpu=>{
+      gpu.shadowMap.enabled=false;
+      shadowTarget.setSize(width,height);shadowDirection.value.copy(light);gpu.setRenderTarget(shadowTarget);gpu.setClearColor(0,0);gpu.clear();gpu.render(scene,camera);
+      blurMaterial.uniforms.source.value=shadowTarget.texture;blurMaterial.uniforms.step.value.set(2/width,2/height);
+      gpu.setRenderTarget(target);gpu.clear();gpu.render(blurScene,blurCamera);
+    });}finally{for(const [mesh,material,castShadow]of originals){mesh.material=material;mesh.castShadow=castShadow;}}
+    const result={target,texture:target.texture,left:bounds.min.x,top:-bounds.max.y,width:bounds.max.x-bounds.min.x,height:bounds.max.y-bounds.min.y,opacity:.32*solar.daylight};directGroundCache.set(key,result);return result;
+  }
   const cache=new Map();let stateKey='',lost=false;
   renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();lost=true;cache.clear();shadowCache.clear();});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;cache.clear();shadowCache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));});
-  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",burnt=false,burning=false,fireParticles=192,firePhaseValue=0,lights=[]}={}){
+  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",burnt=false,burning=false,fireParticles=192,firePhaseValue=0,direct=null,lights=[]}={}){
     if(lost)return null;
     const nextKey=[solar.hour,ambient,viewRotation].join(':');
     if(nextKey!==stateKey){cache.clear();stateKey=nextKey;}
     const key=variant+':'+rotation+':'+instanceKey+':'+burnt;
     const cached=cache.get(key),active=liveLighting?lights.slice(0,4):[],lightKey=JSON.stringify(active)+(burning?":"+Math.floor(performance.now()/33):"");
-    if(cached?.lightKey===lightKey)return cached;
+    if(!direct&&cached?.lightKey===lightKey)return cached;
     const angle=viewRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle),direction=solar.direction;
     const light=new THREE.Vector3(c*direction.x-s*direction.z,direction.y,s*direction.x+c*direction.z);
     sun.position.copy(light).multiplyScalar(380);
@@ -163,13 +189,27 @@ export async function createCombatFirTrees(){
       else material.color.copy(material.userData.healthyColor);
     }
     const model=models[variant];model.traverse(mesh=>{if(mesh.isMesh&&mesh.material.alphaTest>0)mesh.visible=!burnt;});model.rotation.y=rotation*Math.PI/6;scene.add(model);
-    renderer.setSize(384,512,false);
+    if(direct){
+      const nextSunKey=[solar.hour,viewRotation].join(':');if(nextSunKey!==directSunKey){clearDirectShadows();directSunKey=nextSunKey;}
+      if(direct.ground){let shadow=null;try{if(solar.altitude>0)shadow=directGround(model,variant,rotation,burnt,light,solar,direct.host);}finally{scene.remove(model);}return {shadow,direct:true};}
+    }
+    if(!direct)renderer.setSize(384,512,false);
     camera.left=-78.75;camera.right=78.75;camera.top=183.75;camera.bottom=-26.25;camera.updateProjectionMatrix();
     if(burning&&!burnt){
       const samples=anchors[variant];
       for(let i=0;i<particleCount;i++){const point=samples[(i*137+Math.floor(firePhaseValue*101))%samples.length];positions.set([point.x,point.y,point.z],i*3);}
       flameGeometry.attributes.position.needsUpdate=true;flameGeometry.setDrawRange(0,Math.min(particleCount,fireParticles));
       fireTime.value=performance.now()/1000;fireYaw.value=model.rotation.y;firePhase.value=firePhaseValue;scene.add(flames);
+    }
+    if(direct){
+      const key=[variant,rotation,burnt].join(':');let self=directSelfCache.get(key);
+      if(!self){self=shadowTemplate.clone();self.autoUpdate=false;self.needsUpdate=true;directSelfCache.set(key,self);}sun.shadow=self;
+      try{direct.host.treeScene((gpu,view)=>{
+        const scale=direct.scale*view.zoom,cx=view.anchor.x+(direct.center.x-view.anchor.x)*view.zoom,cy=view.anchor.y+(direct.center.y-view.anchor.y)*view.zoom;
+        camera.left=-cx/scale;camera.right=(view.width-cx)/scale;camera.top=cy/scale;camera.bottom=-(view.height-cy)/scale;camera.updateProjectionMatrix();
+        gpu.render(scene,camera);
+      });}finally{sun.shadow=shadowTemplate;scene.remove(flames);scene.remove(model);}
+      return {direct:true};
     }
     renderer.render(scene,camera);scene.remove(flames);
     const body=document.createElement('canvas');body.width=384;body.height=512;
@@ -207,7 +247,11 @@ export async function createCombatFirTrees(){
     scene.remove(model);
     const result={body,shadow,lightKey};cache.set(key,result);return result;
   }
-  return {get,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
+  function silhouette(variant,rotation,burnt){
+    const key=[variant,rotation,burnt].join(':');if(silhouetteCache.has(key))return silhouetteCache.get(key);
+    const body=get(variant,rotation,{solar:solarState(0),ambient:0,burnt}).body;silhouetteCache.set(key,body);return body;
+  }
+  return {get,silhouette,clearDirectShadows,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
 }
 
 function addCanopyExposure(geometry){
@@ -219,5 +263,3 @@ function addCanopyExposure(geometry){
   for(let i=0;i<positions.count;i++)exposure[i]=THREE.MathUtils.smoothstep(Math.hypot(positions.getX(i),positions.getZ(i))/Math.max(1,radii[bandAt(positions.getY(i))]),.15,.9);
   geometry.setAttribute('canopyExposure',new THREE.BufferAttribute(exposure,1));
 }
-
-

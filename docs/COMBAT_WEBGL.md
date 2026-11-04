@@ -88,3 +88,9 @@ The standalone Wall Test previously fetched PamNawi stone from OpenGameArt witho
 ## Candidate Rev 249 - shared presentation cadence
 
 Combat and the Previewer now coalesce invalidations through one 30 FPS scheduler. Finite missile/magic visuals run at half speed with continuous geometry sampling. Lighting and shadow transport remain unchanged. See [Combat frame pacing](COMBAT_FRAME_PACING.md) for lifecycle, profiling and verification.
+
+## Direct fir rendering experiment
+
+The grassy Combat Test defaults to direct tree meshes in the main WebGL context. treeScene flushes pending raster overlays, scopes ACES lighting/shadow renderer settings, clears only depth for each tree actor, and restores renderer state afterward. The context now has depth storage for internal tree self-occlusion; ordinary surface materials still use painter ordering. Ground silhouettes and softening remain GPU render targets; surfaces consume those textures directly and clip them to floor fragments. No per-tree color/shadow canvas capture is required on this path. Trees use the existing actor queue and scheduler. Self-shadow and ground-shadow targets cache by sun/view, variant/rotation and burnt state, and dispose on invalidation/context recovery. Small hidden-outline silhouettes use the existing atlas or a one-time bare-tree capture.
+
+Append ?treeRenderer=images to select the previous reference path. Existing Canvas unit/effect composition and its framebuffer snapshots remain; this is not a complete removal of all CPU/GPU transfers. Local six-sun-update frame samples measured 36-46ms direct versus 124-146ms reference, with zero direct-path tree image capture calls. This small local test is not a cross-device FPS guarantee. Rotation, ignition/burn expiry, bare shadows, hidden-enemy outline protection and existing renderer/runtime checks pass.
