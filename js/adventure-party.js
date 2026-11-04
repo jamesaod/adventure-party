@@ -3452,7 +3452,7 @@ function igniteFirTrees(cells){
   if(!game?.firBlockedHexes)return;
   game.firFireStates??={};
   for(const cell of cells){const id=key(cell.x,cell.y);if(!game.firBlockedHexes.has(id)||game.firFireStates[id])continue;
-    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+1};}
+    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+2};}
   ensureTransientUnitFxLoop();
 }
 function advanceFirFires(){
@@ -3460,14 +3460,6 @@ function advanceFirFires(){
 }
 function firFireLightSources(){
   return Object.values(game?.firFireStates||{}).filter(fire=>fire.state==='burning').map(fire=>({...fire,id:'fir-fire:'+key(fire.x,fire.y),sourceKind:'tree-fire',radiusHexes:4,intensity:1.8*(.85+.15*Math.sin(performance.now()/110+fire.x*7+fire.y)),color:[255,145,45]}));
-}
-function drawFirFlames(tree,c,height){
-  if(game.firFireStates?.[key(tree.x,tree.y)]?.state!=='burning')return;
-  const t=performance.now()/160;ctx.save();
-  for(let i=0;i<12;i++){const y=c.y-height*(.08+i*.055),width=height*(.15-i*.008),x=c.x+Math.sin(i*9+tree.x)*width;
-    const size=height*(.10+.035*Math.sin(t+i*3));
-    ctx.fillStyle=i%2?'rgba(255,194,50,.78)':'rgba(255,76,12,.65)';ctx.beginPath();ctx.moveTo(x-size*.35,y);ctx.quadraticCurveTo(x-size*.5,y-size*.55,x+Math.sin(t+i)*size*.2,y-size);ctx.quadraticCurveTo(x+size*.5,y-size*.4,x+size*.35,y);ctx.fill();}
-  ctx.restore();
 }
 function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y));}
 
@@ -3495,6 +3487,8 @@ function liveFirTreeRender(tileSet,decoration){
   return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration),{
     solar:globalThis.adventurePartySolar?.state?.(),
     ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,
+    burning:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==='burning',
+    firePhaseValue:terrainRand(decoration.x,decoration.y,911),fireParticles:Math.max(1,Math.min(192,Math.floor(2048/Math.max(1,firFireLightSources().length)))),
     burnt:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==="burnt",instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
   });
 }
@@ -3616,7 +3610,7 @@ function drawTreeDecoration(decoration){
     drawH
   );
   ctx.restore();
-  drawFirFlames(decoration,c,drawH);
+
 }
 
 /* ============================================================
@@ -31475,5 +31469,6 @@ document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotate
 document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
 
 addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
+
 
 
