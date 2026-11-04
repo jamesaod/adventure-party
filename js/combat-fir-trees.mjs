@@ -104,6 +104,24 @@ export async function createCombatFirTrees(){
         gl_FragColor=vec4(color,alpha);}`
   });
   const flames=new THREE.Points(flameGeometry,flameMaterial);flames.frustumCulled=false;flames.renderOrder=10;
+  // Immutable bounds are prepared once, not by projecting every vertex per sun update.
+  const treeBounds=models.map(model=>{
+    const healthy=new THREE.Box3(),bare=new THREE.Box3();model.updateMatrixWorld(true);
+    model.traverse(mesh=>{if(!mesh.isMesh)return;mesh.geometry.computeBoundingBox();const box=mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);healthy.union(box);if(mesh.material.alphaTest<=0)bare.union(box);});
+    return {healthy,bare};
+  });
+  const shadowTarget=new THREE.WebGLRenderTarget(16,16,{depthBuffer:false,stencilBuffer:false});
+  const blurMaterial=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,transparent:false,
+    uniforms:{source:{value:null},step:{value:new THREE.Vector2()}},
+    vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+    fragmentShader:`uniform sampler2D source;uniform vec2 step;varying vec2 vUv;
+      void main(){float a=texture2D(source,vUv).a*.25;
+        a+=(texture2D(source,vUv+vec2(step.x,0.)).a+texture2D(source,vUv-vec2(step.x,0.)).a+texture2D(source,vUv+vec2(0.,step.y)).a+texture2D(source,vUv-vec2(0.,step.y)).a)*.125;
+        a+=(texture2D(source,vUv+step).a+texture2D(source,vUv-step).a+texture2D(source,vUv+vec2(step.x,-step.y)).a+texture2D(source,vUv+vec2(-step.x,step.y)).a)*.0625;
+        gl_FragColor=vec4(0.,0.,0.,a);}`
+  });
+  const blurScene=new THREE.Scene(),blurCamera=new THREE.Camera();blurScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),blurMaterial));
+  const shadowCache=new Map();let shadowState='';
   const shadowDirection={value:new THREE.Vector3()};
   const shadowMaterial=new THREE.ShaderMaterial({
     uniforms:{sunDirection:shadowDirection},side:THREE.DoubleSide,depthTest:false,depthWrite:false,
@@ -114,8 +132,8 @@ export async function createCombatFirTrees(){
     fragmentShader:'void main(){gl_FragColor=vec4(0.0,0.0,0.0,1.0);}'
   });
   const cache=new Map();let stateKey='',lost=false;
-  renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();lost=true;cache.clear();});
-  renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;cache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));});
+  renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();lost=true;cache.clear();shadowCache.clear();});
+  renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;cache.clear();shadowCache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));});
   function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",burnt=false,burning=false,fireParticles=192,firePhaseValue=0,lights=[]}={}){
     if(lost)return null;
     const nextKey=[solar.hour,ambient,viewRotation].join(':');
@@ -156,21 +174,18 @@ export async function createCombatFirTrees(){
     renderer.render(scene,camera);scene.remove(flames);
     const body=document.createElement('canvas');body.width=384;body.height=512;
     body.getContext('2d').drawImage(renderer.domElement,0,0);
-    let shadow=cached?.shadow||null;
-    if(solar.altitude>0&&!cached){
+    const nextShadowState=[solar.hour,viewRotation].join(':');if(nextShadowState!==shadowState){shadowCache.clear();shadowState=nextShadowState;}
+    const shadowKey=[variant,rotation,burnt].join(':');
+    let shadow=shadowCache.get(shadowKey)||null;
+    if(solar.altitude>0&&!shadow){
       model.updateMatrixWorld(true);
-      const projected=[];
-      model.traverse(mesh=>{
-        if(!mesh.isMesh||!mesh.visible)return;
-        const positions=mesh.geometry.attributes.position;
-        const point=new THREE.Vector3();
-        for(let i=0;i<positions.count;i++){
-          point.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
-          point.x-=Math.max(0,point.y)*light.x/Math.max(.08,light.y);
-          point.z-=Math.max(0,point.y)*light.z/Math.max(.08,light.y);point.y=0;
-          point.applyMatrix4(camera.matrixWorldInverse);projected.push(point.clone());
-        }
-      });
+      const projected=[],box=treeBounds[variant][burnt?'bare':'healthy'],yaw=new THREE.Matrix4().makeRotationY(model.rotation.y);
+      for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){
+        const point=new THREE.Vector3(x,y,z).applyMatrix4(yaw);
+        point.x-=Math.max(0,point.y)*light.x/Math.max(.08,light.y);
+        point.z-=Math.max(0,point.y)*light.z/Math.max(.08,light.y);point.y=0;
+        projected.push(point.applyMatrix4(camera.matrixWorldInverse));
+      }
       const bounds=new THREE.Box3().setFromPoints(projected);
       bounds.min.x-=4;bounds.max.x+=4;bounds.min.y-=4;bounds.max.y+=4;
       camera.left=bounds.min.x;camera.right=bounds.max.x;camera.bottom=bounds.min.y;camera.top=bounds.max.y;camera.updateProjectionMatrix();
@@ -179,10 +194,14 @@ export async function createCombatFirTrees(){
       renderer.setSize(width,height,false);shadowDirection.value.copy(light);
       const originals=[];
       model.traverse(mesh=>{if(mesh.isMesh){originals.push([mesh,mesh.material,mesh.castShadow]);mesh.material=shadowMaterial;mesh.castShadow=false;}});
-      renderer.render(scene,camera);
+      shadowTarget.setSize(width,height);
+      renderer.setRenderTarget(shadowTarget);renderer.clear();renderer.render(scene,camera);
+      blurMaterial.uniforms.source.value=shadowTarget.texture;blurMaterial.uniforms.step.value.set(2/width,2/height);
+      renderer.setRenderTarget(null);renderer.clear();renderer.render(blurScene,blurCamera);
       const image=document.createElement('canvas');image.width=width;image.height=height;
-      const context=image.getContext('2d');context.filter='blur(2px)';context.drawImage(renderer.domElement,0,0);
+      const context=image.getContext('2d');context.drawImage(renderer.domElement,0,0);
       shadow={image,left:bounds.min.x,top:-bounds.max.y,width:bounds.max.x-bounds.min.x,height:bounds.max.y-bounds.min.y,opacity:.32*solar.daylight};
+      shadowCache.set(shadowKey,shadow);
       for(const [mesh,material,castShadow]of originals){mesh.material=material;mesh.castShadow=castShadow;}
     }
     scene.remove(model);
