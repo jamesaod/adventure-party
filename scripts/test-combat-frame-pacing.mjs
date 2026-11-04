@@ -32,7 +32,7 @@ for(const displayHz of [54,60,144]){
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const extract=(name,prefix='function ')=>{const a=source.indexOf(prefix+name+'(');assert(a>=0,name);return source.slice(a,source.indexOf('\n}',a)+2);};
 let now=0;const samples=[];
-const context={performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,
+const context={addTerrainScorch(){},igniteFirTrees(){},performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,
  presentCombatFrame:async()=>{samples.push({now,projectile:context.projectileFx&&{...context.projectileFx},explosion:context.fireballExplosionFx&&{...context.fireballExplosionFx}});now+=1000/30;}};
 vm.createContext(context);vm.runInContext([extract('combatEffectDuration'),extract('animateArrowProjectile','async function '),extract('animateFireballExplosion','async function ')].join('\n'),context);
 assert.equal(context.combatEffectDuration(280),560);
@@ -66,3 +66,4 @@ assert(!readFileSync(new URL("../js/r223-los-cloud-aim-effects.js",import.meta.u
  const idle={spellPreviewRenderFrame:1,spellPreviewActive:true,spellPreviewRunning:false,currentScreen:"spell-preview",draw(){assert.fail("Stopped preview redrew");}};
  vm.runInNewContext(preview.slice(a,z)+"\nspellPreviewRenderTick();",idle);assert.equal(idle.spellPreviewRenderFrame,null);
 }
+
