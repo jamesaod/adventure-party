@@ -558,7 +558,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);
   const sharedSource=fs.readFileSync(new URL('../js/combat-runtime.js',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
-  vm.runInContext('let combatSessionGeneration=0;\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
+  vm.runInContext('let combatSessionGeneration=0,combatFirTreesLoading=Promise.resolve(); function initializeFirMovementObstacles(){}\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
   context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
   context.api = {
     select: context.selectStudioSpriteSet,
@@ -681,3 +681,4 @@ assert.equal(sandbox.activeUnitPoseName(fallCheck),'prone');
  assert.equal(test.context.pendingCombatStart,null);
 }
 console.log('PASS lazy graphics startup remains deduplicated and cancellable');
+
