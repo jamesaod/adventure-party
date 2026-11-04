@@ -3459,8 +3459,18 @@ function advanceFirFires(){
   for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'&&game.round>=fire.burnUntilRound)fire.state='burnt';
 }
 function firFireLightSources(){
-  return Object.values(game?.firFireStates||{}).filter(fire=>fire.state==='burning').map(fire=>({...fire,id:'fir-fire:'+key(fire.x,fire.y),sourceKind:'tree-fire',radiusHexes:4,intensity:1.8*(.85+.15*Math.sin(performance.now()/110+fire.x*7+fire.y)),color:[255,145,45]}));
+  const time=performance.now()/1000,palette=[[255,255,255],[255,225,65],[255,115,25]];
+  return Object.values(game?.firFireStates||{}).filter(fire=>fire.state==='burning').map(fire=>{
+    const seed=terrainRand(fire.x,fire.y,1291),weights=palette.map((_,i)=>{
+      const phase=terrainRand(fire.x,fire.y,1292+i)*Math.PI*2,frequency=.8+terrainRand(fire.x,fire.y,1298+i)*2.4;
+      return Math.pow(.5+.5*Math.sin(time*frequency+phase),2)+.02;
+    }),total=weights.reduce((a,b)=>a+b,0);
+    const color=[0,1,2].map(channel=>Math.round(palette.reduce((sum,rgb,i)=>sum+rgb[channel]*weights[i],0)/total));
+    return {...fire,id:'fir-fire:'+key(fire.x,fire.y),sourceKind:'tree-fire',radiusHexes:4,
+      intensity:.9*(.85+.15*Math.sin(time*(2+seed*3)+seed*Math.PI*2)),color};
+  });
 }
+
 function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y));}
 
 function countTreeHexesOnCurrentMap(){

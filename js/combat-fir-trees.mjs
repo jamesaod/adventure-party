@@ -27,7 +27,7 @@ export async function createCombatFirTrees(){
   scene.add(hemisphere,sun,sun.target);
   const camera=new THREE.OrthographicCamera(-78.75,78.75,183.75,-26.25,1,1800);
   camera.position.set(0,568,823);camera.lookAt(0,0,0);camera.updateMatrixWorld();
-  const fill={value:1};
+  const fill={value:1},burningLeafShade={value:1};
   const localLights=Array.from({length:4},()=>{const light=new THREE.PointLight(0xffffff,0,200,2);scene.add(light);return light;});
   let liveLighting=true;
   const sharedMaterials=new Map();
@@ -45,12 +45,13 @@ export async function createCombatFirTrees(){
           original.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
           original.onBeforeCompile=shader=>{
             shader.uniforms.foliageFill=fill;
+            shader.uniforms.burningLeafShade=burningLeafShade;
             // Apply the foliage ceiling after tone mapping, in display color.
             shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',
-              '#include <colorspace_fragment>\ngl_FragColor.rgb=min(gl_FragColor.rgb,vec3(0.36,0.72,0.24));');
+              '#include <colorspace_fragment>\ngl_FragColor.rgb=min(gl_FragColor.rgb,vec3(0.36,0.72,0.24))*burningLeafShade;');
             shader.vertexShader='attribute float canopyExposure; varying float vCanopyExposure;\n'+shader.vertexShader;
             shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCanopyExposure=canopyExposure;');
-            shader.fragmentShader='uniform float foliageFill; varying float vCanopyExposure;\n'+shader.fragmentShader;
+            shader.fragmentShader='uniform float burningLeafShade; uniform float foliageFill; varying float vCanopyExposure;\n'+shader.fragmentShader;
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',
               THREE.ShaderChunk.lights_fragment_begin.replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity / 3.0,'));
             shader.fragmentShader=shader.fragmentShader.replace('#include <shadowmap_pars_fragment>','#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>');
@@ -129,7 +130,7 @@ export async function createCombatFirTrees(){
     sun.color.setRGB(1,1-solar.warmth*.2,1-solar.warmth*.45);
     const ambientFactor=Math.max(0,ambient)/100*solar.sky;
     hemisphere.intensity=1.5*ambientFactor;
-    fill.value=ambientFactor;
+    fill.value=ambientFactor;burningLeafShade.value=burning?.5:1;
     for(let i=0;i<localLights.length;i++){
       const target=localLights[i],source=active[i];target.intensity=0;if(!source)continue;
       target.position.set(source.x,source.height,source.z);target.color.setRGB(...source.color);
