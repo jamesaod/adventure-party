@@ -1,0 +1,23 @@
+{
+  "id": "male-orc",
+  "sourceArchive": "orc+3d+model.zip",
+  "sourceArchiveBytes": 11682820,
+  "sourceArchiveSha256": "b2ba66853edcd1376e73daa419fcdd59de8d23c77704969c847143aed6752f25",
+  "sourceFile": "tripo_convert_1df28fa1-4fa6-4e96-b710-45dbfb88080b.fbx",
+  "sourceSha256": "fa547b8ceb0d0ff61dc9dc5fdd8af59fe3249b476cc1c342759c5ec9a39f2ee0",
+  "sourceTextureSha256": "2a5772ceaac1a449e3039dbd18a41c6b1b8a137ae5a9010994e0b7c94cea3528",
+  "triangles": 11519,
+  "sourceVertices": 5794,
+  "bones": 65,
+  "textureSize": [
+    2048,
+    2048
+  ],
+  "bytes": 6162940,
+  "sha256": "e02aea9d2b721ee67f1fb8c9b794b2812aa3c450dd9bfacfdce81ed79ba91335",
+  "importer": "Blender 5.1.1",
+  "animationLibrary": "uploaded-fbx",
+  "retargetMode": "world-bind-delta",
+  "hipTranslation": "scaled-world-y",
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. Original PNG embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring."
+}

@@ -1,0 +1,72 @@
+{
+  "revision": 144,
+  "items": [
+    {
+      "id": "wooden-staff",
+      "sourceKey": "staff",
+      "sourceFile": "tripo_convert_9781cc82-c105-45d1-a38f-f2b6b48b575a.fbx",
+      "sourceSha256": "5dffd2110df27b986f185b3f0456d0c18b3e0ca032c3aedb66db6e9c6112c345",
+      "archive": "wooden+staff+3d+model.zip",
+      "archiveSha256": "a7e5a2d503a1540a59e9cd5c2ff7c08d57ae8f7a2f4737457cdd7720f299d741",
+      "archiveBytes": 12775296,
+      "name": "Wooden Staff",
+      "file": "assets/models/weapons/staves/wooden-staff.glb",
+      "sourceAxis": "Z",
+      "direction": 1,
+      "ratio": 0.5,
+      "sourceTriangles": 15328,
+      "textureFiles": {
+        "albedo": "tripo_convert_9781cc82-c105-45d1-a38f-f2b6b48b575a.fbm/wooden_staff_3d_model_basecolor.PNG",
+        "normal": "tripo_convert_9781cc82-c105-45d1-a38f-f2b6b48b575a.fbm/wooden_staff_3d_model_normal.PNG",
+        "roughness": "tripo_convert_9781cc82-c105-45d1-a38f-f2b6b48b575a.fbm/wooden_staff_3d_model_roughness.PNG",
+        "metallic": "tripo_convert_9781cc82-c105-45d1-a38f-f2b6b48b575a.fbm/wooden_staff_3d_model_metallic.PNG"
+      }
+    },
+    {
+      "id": "short-sword",
+      "sourceKey": "short-sword",
+      "sourceFile": "source/LowPoly.fbx",
+      "sourceSha256": "6b39abf138611c8e78e3005b6d8fad2bc0e5fc3ec6a1d5e2cfda084e6d5308e1",
+      "archive": "splendid-short-sword.zip",
+      "archiveSha256": "48ddde0410503f3b216bef7c676a07b253a704bc4f4259a79893e2c1dc388cca",
+      "archiveBytes": 21153007,
+      "name": "Short Sword",
+      "file": "assets/models/weapons/swords/short-sword.glb",
+      "sourceAxis": "X",
+      "direction": -1,
+      "ratio": 1,
+      "sourceTriangles": 500,
+      "textureFiles": {
+        "albedo": "textures/LowPoly_DefaultMaterial_BaseColor.png",
+        "normal": "textures/LowPoly_DefaultMaterial_Normal.png",
+        "roughness": "textures/LowPoly_DefaultMaterial_Roughness.png",
+        "metallic": "textures/LowPoly_DefaultMaterial_Metallic.png"
+      },
+      "runtimeMetallicFactor": 0.25
+    },
+    {
+      "id": "dagger",
+      "sourceKey": "dagger",
+      "sourceFile": "scene.gltf",
+      "sourceSha256": "7a934c9eaee89b700a0349a69b71e8ef0e75f0587990df60a0bcb368fd3891ac",
+      "archive": "medieval_dagger_3d_model.zip",
+      "archiveSha256": "8ec09c31052ed30e1f41e6cd8adf10eeb80c557b1add1865167f98e09925410c",
+      "archiveBytes": 1705400,
+      "name": "Dagger",
+      "file": "assets/models/weapons/daggers/medieval-dagger.glb",
+      "sourceAxis": "Y",
+      "direction": 1,
+      "ratio": 1,
+      "sourceTriangles": 960,
+      "textureFiles": {
+        "albedo": "textures/wire_009009009_baseColor.jpeg",
+        "normal": "textures/wire_009009009_normal.png",
+        "metallicRoughness": "textures/wire_009009009_metallicRoughness.png"
+      },
+      "sourceDependencies": {
+        "scene.bin": "864fad33fc389f931b981277fe141384351694723da2bb0fda85025f755964a5"
+      },
+      "runtimeMetallicFactor": 0.25
+    }
+  ]
+}

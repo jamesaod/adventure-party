@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {createBandedLighting,normalizedShading} from '../js/banded-lighting.mjs';
+const lighting=createBandedLighting(),scene=new THREE.Scene();
+const texture=new THREE.Texture(),source=new THREE.MeshStandardMaterial({map:texture,color:0x83a947,metalness:1,alphaTest:.4,side:THREE.DoubleSide});
+const mesh=new THREE.SkinnedMesh(new THREE.BoxGeometry(),source);scene.add(mesh);
+const helper=new THREE.Mesh(new THREE.PlaneGeometry(),new THREE.MeshBasicMaterial());scene.add(helper);
+const helperOriginal=helper.material;let toon;
+lighting.render({render(){assert.equal(mesh.material,source);}},scene,null,'standard');
+lighting.render({render(){toon=mesh.material;assert.ok(toon.isMeshToonMaterial);assert.equal(toon.map,texture);assert.ok(toon.color.equals(source.color));assert.equal(toon.alphaTest,.4);assert.equal(toon.side,THREE.DoubleSide);assert.equal(toon.gradientMap.image.width,3);assert.equal(toon.gradientMap.magFilter,THREE.NearestFilter);assert.equal(helper.material,helperOriginal);}},scene,null,'toon-3');
+assert.equal(mesh.material,source);assert.equal(source.metalness,1);
+source.color.set(0xff0000);mesh.material=[source,source];const array=mesh.material;
+assert.throws(()=>lighting.render({render(){assert.equal(mesh.material[0],toon);assert.ok(toon.color.equals(source.color));throw Error('GPU test');}},scene,null,'toon-3'),/GPU test/);
+assert.equal(mesh.material,array,'restore even if drawing fails');
+let released=0,textureReleased=0;toon.addEventListener('dispose',()=>released++);texture.addEventListener('dispose',()=>textureReleased++);
+source.dispose();assert.equal(released,1);lighting.dispose();assert.equal(textureReleased,0,'source textures remain owned by model');
+assert.equal(normalizedShading(undefined),'standard');assert.equal(normalizedShading('unknown'),'standard');
+console.log('Banded lighting: optional materials, texture/color/alpha preservation, shared arrays, recovery and resource ownership passed.');

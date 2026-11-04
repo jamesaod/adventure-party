@@ -1,0 +1,26 @@
+{
+  "assets": [
+    {
+      "file": "wood-wall.png",
+      "source": "exec-abecb348-2c62-41a4-a453-3f8b983480c3.png",
+      "generator": "built-in image_gen",
+      "prompt": "Create a single square seamless tileable game material texture: a medieval timber-plank WALL surface for a grounded fantasy dungeon RPG. Straight-on orthographic material scan filling the entire image edge to edge, medium warm brown aged oak, vertical broad structural planks, subtle grain and small natural knots, narrow seams, restrained wear. Crisp high quality detail that remains readable when downsampled to 512 pixels. Uniform neutral diffuse lighting; no cast shadows, no vignette, no perspective, no border, no lettering. This is continuous wall cladding, NOT a door: absolutely no hinges, iron straps, handle, latch, frame or door shape. Seamless repeat on all four edges.",
+      "runtimeDimensions": [
+        512,
+        512
+      ],
+      "sha256": "e81e71b77c5db99c00a9cd671c6e1d36f61057dfceb13fed65e17b2990ac4c06"
+    },
+    {
+      "file": "wood-ceiling.png",
+      "source": "exec-4ad68cba-e872-4bc8-b0ab-cbe6b45b506d.png",
+      "generator": "built-in image_gen",
+      "prompt": "Create a single square seamless tileable game material texture: the underside of a medieval WOODEN CEILING for a grounded fantasy dungeon RPG. Flat orthographic straight-on material scan, covering the whole image edge to edge with horizontal oak ceiling boards, subtly alternating board widths, restrained grain, occasional small knots, warm muted medium-brown timber matching traditional oak wall paneling. A little smoother and darker than rough wall boards. No perspective, no room, no visible sky, no dramatic shadows, no lighting baked in, no border, no text. No ironwork, no door hardware, no roof shingles. Crisp realistic diffuse/albedo material suitable for downsampling to 512 pixels and seamless repetition on all four edges.",
+      "runtimeDimensions": [
+        512,
+        512
+      ],
+      "sha256": "844c66935ac1ab48eb1041bde9e2507c811239f037b99e4adc2950a1a88de996"
+    }
+  ]
+}

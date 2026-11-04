@@ -1,0 +1,23 @@
+{
+  "id": "orc-female-shaman",
+  "sourceArchive": "Orc+female+shaman+3d+model.zip",
+  "sourceArchiveBytes": 1896822,
+  "sourceArchiveSha256": "a027775e48f7046f99391679e5461fff4e60f5b678f01d09fba5aee097266cc6",
+  "sourceFile": "tripo_convert_4d446031-933e-46d6-b34b-1663b049ec3f.fbx",
+  "sourceSha256": "372d609ee12b939c3c26d5cc85078f16da9b573638e84824644c67aef4931142",
+  "sourceTextureSha256": "568d6eb30080930c792ed12bf2e599dd305e05f8c25b6dae1d3c1753f3336f00",
+  "triangles": 13094,
+  "sourceVertices": 7143,
+  "bones": 65,
+  "textureSize": [
+    512,
+    512
+  ],
+  "bytes": 1349808,
+  "sha256": "0c12d8e3c8a63e53b34372fcfd9486f8701b51ed26538b2986abf315a7fb671b",
+  "importer": "Blender 5.1.1",
+  "animationLibrary": "uploaded-fbx",
+  "retargetMode": "world-bind-delta",
+  "hipTranslation": "scaled-world-y",
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. Original PNG embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring."
+}

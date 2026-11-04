@@ -1,0 +1,91 @@
+{
+  "id": "wooden-staff",
+  "sourceArchive": "wooden+staff+3d+model.zip",
+  "sourceArchiveSha256": "a7e5a2d503a1540a59e9cd5c2ff7c08d57ae8f7a2f4737457cdd7720f299d741",
+  "sourceArchiveBytes": 12775296,
+  "sourceFile": "tripo_convert_9781cc82-c105-45d1-a38f-f2b6b48b575a.fbx",
+  "sourceSha256": "5dffd2110df27b986f185b3f0456d0c18b3e0ca032c3aedb66db6e9c6112c345",
+  "sourceTriangles": 15328,
+  "triangles": 7664,
+  "decimateRatio": 0.5,
+  "bytes": 956992,
+  "sha256": "511a254c763dd9c1569dd181f1c72fa1ba83ef3b92bfc2b4f46517e0f773e1ed",
+  "textureResolution": 512,
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "credits": null,
+  "textureReference": {
+    "albedo": {
+      "sourceSha256": "42469bb2d98edcd2da8a758bbb22e90e4cd9d12464a6d5e297eeecc5fdeab50e",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        118.98654556274414,
+        68.64503288269043,
+        38.896955490112305
+      ],
+      "resizedMean": [
+        118.98616027832031,
+        68.64358139038086,
+        38.89765548706055
+      ]
+    },
+    "normal": {
+      "sourceSha256": "96f0b1dc4629586ad9f34bba7e9353b0b06bf50bfee69f9690c60ecca9f79a25",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        127.8420352935791,
+        127.07209300994873,
+        248.55004024505615
+      ],
+      "resizedMean": [
+        127.84139633178711,
+        127.07211685180664,
+        248.53461456298828
+      ]
+    },
+    "roughness": {
+      "sourceSha256": "f36ad9e5d88ee5200c2fc1b0fa6c71499e3c27a974dbdd76d99bc8dc85fb0b75",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        144.7806396484375,
+        144.7806396484375,
+        144.78152084350586
+      ],
+      "resizedMean": [
+        144.77202224731445,
+        144.77202224731445,
+        144.77297973632812
+      ]
+    },
+    "metallic": {
+      "sourceSha256": "eb4460d03cf2b1b7b0faf1cab4925dbaaefe87bfb46b89ad5f2e7fa11a383b27",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "sourceMean": [
+        12.87797737121582,
+        12.87797737121582,
+        12.87797737121582
+      ],
+      "resizedMean": [
+        12.871749877929688,
+        12.871749877929688,
+        12.871749877929688
+      ]
+    }
+  },
+  "sourceDependencies": {}
+}

@@ -1,0 +1,72 @@
+{
+  "id": "mace",
+  "sourceTriangles": 894,
+  "triangles": 894,
+  "bytes": 303360,
+  "sha256": "0c2b191d2d8a9d3314f332489143bc18d4f08fbd649d5029ba9ceff23787214d",
+  "textureResolution": 256,
+  "sourceAxis": [
+    -3.512718505807929e-09,
+    -8.026130253468988e-09,
+    1.0
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "mace.zip",
+  "sourceArchiveSha256": "224bc22d45d3d9d94c3d68f6a39a05b83b5a69e2e357a04d69751772eddf836a",
+  "sourceSha256": "900218e5da3b8a1017d4e48868b8f8e419c710328873f054ff9f82e5ff7d6bb8",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        138.66805911064148,
+        132.93665170669556,
+        125.28074193000793
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "outputMean": [
+        138.6686248779297,
+        132.9388885498047,
+        125.28779602050781
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        120.37390160560608,
+        124.79625701904297,
+        207.8283712863922
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    },
+    "roughness": {
+      "sourceMean": [
+        192.94392442703247,
+        192.94392228126526,
+        192.94389247894287
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    },
+    "metallic": {
+      "sourceMean": [
+        195.03244519233704,
+        195.03244614601135,
+        195.0324318408966
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    }
+  }
+}

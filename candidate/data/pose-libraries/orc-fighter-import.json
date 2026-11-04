@@ -1,0 +1,16 @@
+{
+  "source": "orc-male-uniformed-weapon-sets (2).zip",
+  "archive": "assets/pose-libraries/orc-fighter/source-r22.zip",
+  "sha256": "e26b99e2c1b19878c405fba0b343fa6679166bf309d590399e88072e894a981d",
+  "sourceRevision": 22,
+  "repositoryRevision": 23,
+  "capturedPoses": 8,
+  "capturedDirections": 6,
+  "referenceOnlyPoses": 5,
+  "copiedProfile": {
+    "from": "two-handed-thrust",
+    "to": "one-handed-thrust",
+    "authorized": true
+  },
+  "modelId": "male-orc"
+}

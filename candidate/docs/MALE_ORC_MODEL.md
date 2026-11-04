@@ -1,0 +1,69 @@
+# Orc, Male, Uniformed — Candidate Rev 162
+
+`male-orc` / **Orc, Male, Uniformed** is available in 3D Studio / Pixel Studio and MOB Creator through the existing `data/studio-models.json` catalog. It shares all 22 uploaded FBX animations and initially selects Sword And Shield Idle. The existing model scale, orientation, primary/off-hand equipment, shield and grip controls remain available.
+
+This is a new model identity. The archived `male-orc-fighter` and other Orc assets remain unchanged. The new entry is appended to `models` so existing first-match Orc combat fallback selection is preserved. Its ID is appended to `studioModelIds`, alongside Carl Ver 3 and the Scale Mail Woman. MOB Creator reads this same filtered catalog; no new renderer, rig adapter, combat factory or Unit Package is introduced.
+
+## Source and runtime
+
+- Supplied archive: `orc+3d+model.zip`, 11,682,820 bytes, SHA-256 `b2ba66853edcd1376e73daa419fcdd59de8d23c77704969c847143aed6752f25`.
+- Source FBX: `tripo_convert_1df28fa1-4fa6-4e96-b710-45dbfb88080b.fbx`, 6,243,840 bytes, SHA-256 `fa547b8ceb0d0ff61dc9dc5fdd8af59fe3249b476cc1c342759c5ec9a39f2ee0`.
+- Source texture: matching `.fbm/Color.png`, 5,547,583 bytes, 2048 × 2048, SHA-256 `2a5772ceaac1a449e3039dbd18a41c6b1b8a137ae5a9010994e0b7c94cea3528`.
+- Runtime: `assets/models/orcs/male-orc/male-orc.glb`, **6,162,940 bytes**, SHA-256 `e02aea9d2b721ee67f1fb8c9b794b2812aa3c450dd9bfacfdce81ed79ba91335`.
+- Geometry: **11,519 triangles**, 5,794 source vertices, one skinned mesh and **65 Mixamo bones**. Export may split vertices along UV/normal seams.
+
+Original topology, UVs, skin weights and encoded texture are preserved. This model import does not downsample or recolor its 2048px texture. The material uses the established opaque base-color setup with metallic 0 / roughness 1. Runtime provenance is recorded in the adjacent `male-orc.json`.
+
+## Reproduce the conversion
+
+Extract the two archive entries while retaining the `.fbm/Color.png` relative path, then run Blender 5.1:
+
+```sh
+blender --background --factory-startup --python scripts/import-male-orc.py -- SOURCE_DIRECTORY assets/models/orcs/male-orc/male-orc.glb
+```
+
+The importer reuses the Scale Mail Woman workflow. It pins input hashes, ignores presentation lights, imports the FBX, and applies the armature object's 0.01 centimetre scale. This normalizes bone units for the existing metre-based equipment mounts while asserting unchanged mesh world transforms and each bone's world rest position/orientation. Only mesh and armature are exported, Y-up, without embedded motions. The original encoded sRGB PNG is embedded and checked byte-for-byte; do not resave it through Blender's floating-point image pipeline. Use a task-local `BLENDER_USER_RESOURCES` directory on Windows.
+
+## Animation acceptance and QA
+
+Use the existing uploaded-animation loader's explicit `world-bind-delta` / `scaled-world-y` recipe. Do not infer that the archived Orc experiments' joint-relative mode is correct for this new upload. Reproduce the independent pose fixtures with Python, numpy and scipy:
+
+```sh
+python scripts/generate-carl-animation-reference.py --target assets/models/orcs/male-orc/male-orc.glb --output scripts/fixtures/male-orc-uploaded-animation-reference.json
+node scripts/test-male-orc-model.mjs
+node scripts/test-fbx-animations.mjs
+```
+
+All **110 real skinned poses** (five authored sample times for each of 22 animations) match the recovered independent evaluator. Maximum joint error is **0.6435 degrees**, with maximum hip error **4.29e-8** native units, within the unchanged tolerances. Existing Carl and Scale Mail Woman references still pass unchanged. The new integrity test checks the GLB checksum, topology, unit-scale rig, texture bytes, catalog entry and unchanged legacy Orc fallback ordering.
+
+Browser QA uses an isolated URL such as `3d-studio.html?model=male-orc&poseLibrary=humanoid-medium`, preserving the user's normal Studio workspace. Check the textured idle, sword/shield, two-handed stab with spear, and six facing previews. Pose selections and fine grip adjustments remain user-authored. Run repository validation, merge a candidate PR only after CI passes, and compare the published GLB bytes/hash after Pages finishes.
+
+Rev 161 browser QA confirmed 20/20 humanoid roles, textured Standing Idle, Sword And Shield Idle with both props, and Bayonet Stab at 0.98 seconds with the spear. The 155% inspection scale is a local QA setting, not a new default. Six Ready facings captured successfully in the isolated workspace; the browser reported no errors. Male Orc also appears in the MOB Creator model selector.
+
+## Rev 162: model-specific grip defaults
+
+The display name changes from Male Orc to **Orc, Male, Uniformed**. Its stable `male-orc` identity, asset bytes, animations and package references are unchanged.
+
+The existing catalog-driven attachment workflow now accepts `weaponAttachmentProfileIds`, an array of keys in `weaponAttachmentProfiles`. Each profile lists explicit `weaponIds` and hand-local XYZ `position` / XYZ Euler `rotation` in degrees. The old single-profile sword format remains supported for archived models. The original opt-in was `male-orc`; Rev 163 also shares these profiles with `orc-leader-male-uniformed`:
+
+| Primary equipment | Position XYZ | Rotation XYZ (degrees) |
+| --- | --- | --- |
+| One-handed: Medieval Sword, Battle Axe, Short Sword, Dagger, Wizard Staff Grip, Sling | -0.020, 0.050, 0.005 | 161, -46, 15 |
+| Two-Handed Sword | -0.045, 0.065, 0.060 | -114, -16, -30 |
+| Spear (Rev 163, 100% weapon size) | -0.010, 0.030, -0.060 | 100, 77, -43 |
+
+Select this model, then select the weapon or press **Reset grip** to apply its profile. Profile values are applied after normalizing the weapon's preset revision, so versioned weapon defaults cannot discard the model calibration. Scale, off-hand mounts, shield and secondary-grip calibration retain their existing controls. Other two-handed weapons keep their own defaults.
+
+Saved custom grips and captured poses are not silently rewritten. If a restored workspace shows older offsets, use Reset grip (clear captured poses first if equipment is locked), then recapture affected poses. New captures and Unit Package exports carry the actual adjusted equipment snapshot through the existing path. Shared pose libraries and animation retargeting are unchanged. Visual grip QA for this revision belongs to the user.
+
+Rev 163 adds the user-approved spear profile to both uniformed Orc models. [Orc Leader import](ORC_LEADER_MODEL.md) records the new source and conversion. Keep the same profile IDs on both models so future approved Orc grip changes remain shared.
+
+Rev 164 changes only the Leader back to Carl's global weapon defaults for a comparison test. The regular `male-orc` keeps all three calibration profiles above.
+
+## Rev 191: Battle Axe native-axis correction
+
+The axe and sword have different native shaft axes. Copying the sword absolute Euler rotation to the axe removed its asset alignment correction. The separate `uniformed-orc-battle-axe-v1` profile keeps position [-0.020, 0.050, 0.005] and uses XYZ rotation [161, -46, 144] degrees. Reproduce with quaternion composition `Q_orcSword * inverse(Q_defaultSword) * Q_defaultAxe`, then convert to XYZ Euler. Studio and repository combat mounts already resolve these per-weapon profiles. The sword and Orc Leader defaults stay unchanged. Existing saved custom grips remain authoritative: select the axe and use Reset grip to adopt the corrected default; recapture poses explicitly if needed. `scripts/test-repository-mobs.mjs` checks shaft alignment, the formerly wrong rotation, unique profile selection and combat recipe resolution.
+
+## Rev 192: axe blade roll and Leader hand basis
+
+The regular Orc axe adds a 90-degree local shaft twist to Rev 191: `Q191 * axisAngle(normalize([4,5,0]), 90deg)`. Shaft direction and grip position stay fixed. The Leader uses a separate axe profile: `inverse(QLeaderHandBindWorld) * QOrcHandBindWorld * QOrcAxe`; apply the same hand-basis delta to the grip position. Read neutral world quaternions from each GLB hierarchy, not bone names alone. This overrides Carl defaults only for the Leader axe. Other weapons and custom saved settings remain unchanged. Reload and Reset grip for Battle Axe to adopt new defaults. Local Studio QA checked neutral/idle and slash placement; regression checks cover roll, shaft direction and both actual GLB hand bases.
