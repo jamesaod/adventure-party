@@ -21,3 +21,6 @@ Canopy exposure now attenuates indirect illumination (12% in the deepest interio
 This deliberately retains the hybrid compositor: meshes are rendered live offscreen and then inserted in actor order. It is not a shared-scene mesh migration. Local lights do not cast new tree shadows; cross-tree shadows remain deferred. The four-light cap bounds work, but moving/flickering lights do cause extra mesh renders and need user performance QA. `combatFirTrees.setLiveLighting(false)` provides a solar-only comparison; reenter combat after switching to redraw.
 
 Browser checks confirm colored local light changes tree pixels, 250% ambient still brightens the canopy, and nighttime omits sun shadows. Daytime battlefield inspected visually. User performs final appearance/performance QA.
+
+Bark adjustment: multiply the shared opaque trunk/branch material albedo by 0.45 once at load. Foliage tint is unchanged. Browser checks verified torch color/flicker reaches the local-light adapter and colored point illumination changes the rendered tree pixels.
+

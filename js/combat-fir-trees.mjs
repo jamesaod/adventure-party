@@ -55,6 +55,9 @@ export async function createCombatFirTrees(){
               '#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix(0.12,1.0,vCanopyExposure); reflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.035,0.26,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
           };
           original.customProgramCacheKey=()=> 'combat-fir-green-canopy-depth';
+        }else{
+          // Darken bark albedo once per shared material; direct light still shades it.
+          original.color.multiplyScalar(.45);
         }
       }
       mesh.castShadow=true;mesh.receiveShadow=true;
@@ -154,3 +157,4 @@ function addCanopyExposure(geometry){
   for(let i=0;i<positions.count;i++)exposure[i]=THREE.MathUtils.smoothstep(Math.hypot(positions.getX(i),positions.getZ(i))/Math.max(1,radii[bandAt(positions.getY(i))]),.15,.9);
   geometry.setAttribute('canopyExposure',new THREE.BufferAttribute(exposure,1));
 }
+
