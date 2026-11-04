@@ -7,8 +7,8 @@ const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfun
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
-    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
+  const context={directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
+    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
     queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
     drawFighter:()=>calls.push(sun.drawingGround?'player shadow':'player'),drawStudioSpriteMob:()=>calls.push(sun.drawingGround?'orc shadow':'orc')};
@@ -101,3 +101,4 @@ assert.equal(sceneApi.materialMetrics(terrain,35).wallHeight,35,'Six source rows
 context.explorationWallPattern(patternTarget,{a:{x:256,y:64}},35);
 assert.equal(transforms[2][4],wallTransform[4],'Adjacent wall faces keep a continuous horizontal texture phase');
 console.log('PASS anisotropic filtering, eight floor slabs per exploration square and six world-anchored wall rows at fixed wall height');
+

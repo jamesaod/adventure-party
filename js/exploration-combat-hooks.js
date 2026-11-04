@@ -73,7 +73,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi,view=battlefieldViewportBounds();
- const faces=solids.flatMap(s=>s.faces).map(face=>({...face,blackout:!explorationFaceRenderable(face)}));
+ const faces=solids.flatMap(s=>s.faces).filter(face=>!api.wallFaceFacesCamera||api.wallFaceFacesCamera(face,screenPointForWorld,explorationTerrain.cellH/explorationTerrain.cellW)).map(face=>({...face,blackout:!explorationFaceRenderable(face)}));
  const all=faces.flatMap(f=>f.points.map(p=>screenPointForWorld(p,p.elevation)));
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
  const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
@@ -149,7 +149,7 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(typeof combatGpu!=="undefined"&&combatGpu)return drawExplorationGpuSolids(solids,wall,visible,cacheOwner);
- const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).map(face=>({...face,blackout:!explorationFaceRenderable(face),screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
+ const api=explorationEncounterApi,faces=solids.flatMap(s=>s.faces).filter(face=>!api.wallFaceFacesCamera||api.wallFaceFacesCamera(face,screenPointForWorld,explorationTerrain.cellH/explorationTerrain.cellW)).map(face=>({...face,blackout:!explorationFaceRenderable(face),screen:face.points.map(p=>screenPointForWorld(p,p.elevation))}));
  const all=faces.flatMap(f=>f.screen);if(!all.length)return;
  const left=Math.floor(Math.min(...all.map(p=>p.x)))-2,top=Math.floor(Math.min(...all.map(p=>p.y)))-2,width=Math.ceil(Math.max(...all.map(p=>p.x))-left)+2,height=Math.ceil(Math.max(...all.map(p=>p.y))-top)+2,v=battlefieldViewportBounds();
  if(left+width<v.left||left>v.right||top+height<v.top||top>v.bottom)return;

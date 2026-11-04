@@ -19,3 +19,11 @@ function shellExit(p,eye,wall){
 export function wallSurfaceProbe(point,eye,wall,neighbours=[]){
  let p={...point};const shells=[wall,...neighbours];for(let i=0;i<=shells.length;i++){let moved=false;for(const shell of shells){const next=shellExit(p,eye,shell);if(next){p=next;moved=true;}}if(!moved)break;}return p;
 }
+
+// Painter-sorted prisms must not draw the far vertical face over the near one.
+// Miter tips can reverse max-endpoint sorting without reversing the true face.
+export function wallFaceFacesCamera(face,project,squash=1){
+ if(face.cap||face.normal.y>0)return true;
+ const origin=project({x:0,y:0}),tip=project({x:face.normal.x,y:face.normal.z*squash});
+ return tip.y-origin.y>=-1e-8;
+}

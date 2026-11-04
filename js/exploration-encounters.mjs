@@ -1,4 +1,4 @@
-export {wallSurfaceProbe,wallSurfaceNeighbours} from './wall-surface-visibility.mjs?v=R238C274';
+export {wallSurfaceProbe,wallSurfaceNeighbours,wallFaceFacesCamera} from './wall-surface-visibility.mjs?v=R238C274';
 export {cachedWallGroundShadows,wallSunRetention} from './wall-ground-shadows.mjs?v=R238C275';
 export {solarState,solarAmbient,solarFaceGain} from './solar-clock.mjs?v=R238C274';
 export {joinedWallPrism} from './wall-joins.mjs?v=R238C274';
