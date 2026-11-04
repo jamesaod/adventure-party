@@ -3464,8 +3464,23 @@ function liveFirTreeRender(tileSet,decoration){
   if(typeof combatFirTrees==='undefined' || !combatFirTrees || game?.session?.source!=='combat-test' || game.condition!=='grass')return null;
   return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration),{
     solar:globalThis.adventurePartySolar?.state?.(),
-    ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation
+    ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,
+    instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
   });
+}
+
+// Reuse authoritative CPU light reach, including walls and closed doors.
+function firTreeLocalLights(tree){
+  const origin=worldPointForHex(tree.x,tree.y),angle=battlefieldRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle);
+  const units=210/((activeCombatTerrainTileSet().treeDrawHeight||240));
+  return explorationRenderLights().map(source=>({source,strength:illuminationContributionFromSource(source,tree.x,tree.y)}))
+    .filter(entry=>entry.strength>0).sort((a,b)=>b.strength-a.strength).slice(0,4).map(({source})=>{
+      const point=worldPointForHex(source.x,source.y),x=(point.x-origin.x)*units,z=(point.y-origin.y)*units*HEX_W*Math.sqrt(3)/2/HEX_ROW;
+      const flicker=source.sourceKind==='torch'?explorationTorchAnimation(source).intensity:1;
+      return {x:c*x-s*z,z:s*x+c*z,height:source.sourceKind==='torch'?42:28,
+        radius:(source.radiusHexes||1)*HEX_W*units,intensity:(source.intensity||0)*flicker,
+        color:(source.color||[255,192,110]).map(value=>value/255)};
+    });
 }
 
 function drawTreeGroundShadow(decoration){

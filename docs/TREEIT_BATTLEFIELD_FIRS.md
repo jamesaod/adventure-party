@@ -11,3 +11,13 @@ The original body and shadow atlases remain as a fallback. Body capture dimensio
 The native TRE projects, OBJ/MTL exports, GLBs and preparation scripts are preserved in the development workspace under work/treeit-firs and work/treeit-preview. Seeds are 134, 961, 497, 567 and 953. Consult SAMPLE-LICENSE.txt and ATTRIBUTIONS.md before distributing artwork.
 
 Validation: repository and combat renderer/environment checks; browser launch through the common combat initializer; morning/noon/afternoon/night visual checks. A fixed-view pixel check measured mean opaque tree brightness increasing from 58.7 at 100% ambient to 101.6 at 250%; nighttime produces no sun shadow. No browser script or shader errors were observed.
+
+## Live local-light experiment
+
+Tree bodies now rerender their mesh materials when their nearby light inputs change. Up to four strongest reachable torch/unit/spell lights are transformed into tree-relative 3D point lights. Existing CPU light reach remains authoritative, so blocked sources are excluded. Ground shadows remain cached; changing local light does not rebuild them. Separate per-hex caches prevent one instance from reusing another instance's lighting. Unchanged inputs reuse the body image, and no separate frame loop is added.
+
+Canopy exposure now attenuates indirect illumination (12% in the deepest interior to full at the outside), with a reduced supplemental fill. This is a radial canopy approximation, not baked ray-traced ambient occlusion. Direct sunlight and local point lights remain independent of that attenuation.
+
+This deliberately retains the hybrid compositor: meshes are rendered live offscreen and then inserted in actor order. It is not a shared-scene mesh migration. Local lights do not cast new tree shadows; cross-tree shadows remain deferred. The four-light cap bounds work, but moving/flickering lights do cause extra mesh renders and need user performance QA. `combatFirTrees.setLiveLighting(false)` provides a solar-only comparison; reenter combat after switching to redraw.
+
+Browser checks confirm colored local light changes tree pixels, 250% ambient still brightens the canopy, and nighttime omits sun shadows. Daytime battlefield inspected visually. User performs final appearance/performance QA.

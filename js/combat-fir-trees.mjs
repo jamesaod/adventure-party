@@ -28,6 +28,8 @@ export async function createCombatFirTrees(){
   const camera=new THREE.OrthographicCamera(-78.75,78.75,183.75,-26.25,1,1800);
   camera.position.set(0,568,823);camera.lookAt(0,0,0);camera.updateMatrixWorld();
   const fill={value:1};
+  const localLights=Array.from({length:4},()=>{const light=new THREE.PointLight(0xffffff,0,200,2);scene.add(light);return light;});
+  let liveLighting=true;
   const sharedMaterials=new Map();
   for(const model of models){
     const extra=[];
@@ -50,7 +52,7 @@ export async function createCombatFirTrees(){
               THREE.ShaderChunk.lights_fragment_begin.replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity / 3.0,'));
             shader.fragmentShader=shader.fragmentShader.replace('#include <shadowmap_pars_fragment>','#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>');
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>',
-              '#include <lights_fragment_end>\nreflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.18,0.48,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
+              '#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix(0.12,1.0,vCanopyExposure); reflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.035,0.26,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
           };
           original.customProgramCacheKey=()=> 'combat-fir-green-canopy-depth';
         }
@@ -82,12 +84,13 @@ export async function createCombatFirTrees(){
   const cache=new Map();let stateKey='',lost=false;
   renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();lost=true;cache.clear();});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;cache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));});
-  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0}={}){
+  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",lights=[]}={}){
     if(lost)return null;
     const nextKey=[solar.hour,ambient,viewRotation].join(':');
     if(nextKey!==stateKey){cache.clear();stateKey=nextKey;}
-    const key=variant+':'+rotation;
-    if(cache.has(key))return cache.get(key);
+    const key=variant+':'+rotation+':'+instanceKey;
+    const cached=cache.get(key),active=liveLighting?lights.slice(0,4):[],lightKey=JSON.stringify(active);
+    if(cached?.lightKey===lightKey)return cached;
     const angle=viewRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle),direction=solar.direction;
     const light=new THREE.Vector3(c*direction.x-s*direction.z,direction.y,s*direction.x+c*direction.z);
     sun.position.copy(light).multiplyScalar(380);
@@ -96,14 +99,19 @@ export async function createCombatFirTrees(){
     const ambientFactor=Math.max(0,ambient)/100*solar.sky;
     hemisphere.intensity=1.5*ambientFactor;
     fill.value=ambientFactor;
+    for(let i=0;i<localLights.length;i++){
+      const target=localLights[i],source=active[i];target.intensity=0;if(!source)continue;
+      target.position.set(source.x,source.height,source.z);target.color.setRGB(...source.color);
+      target.distance=source.radius;target.intensity=source.intensity*1800;
+    }
     const model=models[variant];model.rotation.y=rotation*Math.PI/6;scene.add(model);
     renderer.setSize(384,512,false);
     camera.left=-78.75;camera.right=78.75;camera.top=183.75;camera.bottom=-26.25;camera.updateProjectionMatrix();
     renderer.render(scene,camera);
     const body=document.createElement('canvas');body.width=384;body.height=512;
     body.getContext('2d').drawImage(renderer.domElement,0,0);
-    let shadow=null;
-    if(solar.altitude>0){
+    let shadow=cached?.shadow||null;
+    if(solar.altitude>0&&!cached){
       model.updateMatrixWorld(true);
       const projected=[];
       model.traverse(mesh=>{
@@ -132,9 +140,9 @@ export async function createCombatFirTrees(){
       for(const [mesh,material,castShadow]of originals){mesh.material=material;mesh.castShadow=castShadow;}
     }
     scene.remove(model);
-    const result={body,shadow};cache.set(key,result);return result;
+    const result={body,shadow,lightKey};cache.set(key,result);return result;
   }
-  return {get};
+  return {get,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
 }
 
 function addCanopyExposure(geometry){
