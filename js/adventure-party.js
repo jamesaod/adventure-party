@@ -27384,7 +27384,7 @@ let hiddenOutlineUnits=[],hiddenOutlineCapture=null;
 const hiddenOutlineCache=new WeakMap();
 function hiddenUnitOutlineFrame(image,width,height,flip,color){
   let cache=hiddenOutlineCache.get(image);if(!cache){cache=new Map();hiddenOutlineCache.set(image,cache);}
-  const zoom=typeof battlefieldZoom==='number'?battlefieldZoom:1,radius=1.5/zoom,pad=Math.ceil(radius)+2;
+  const zoom=typeof battlefieldZoom==='number'?battlefieldZoom:1,radius=1.5/zoom,pad=Math.ceil(2.6/zoom)+2;
   const id=[width,height,flip,color,pad,radius.toFixed(2)].join(':');if(cache.has(id))return cache.get(id);
   const shape=document.createElement('canvas');shape.width=Math.ceil(width)+pad*2;shape.height=Math.ceil(height)+pad*2;
   const c=shape.getContext('2d');c.save();if(flip){c.translate(shape.width,0);c.scale(-1,1);}c.drawImage(image,pad,pad,width,height);c.restore();
@@ -27392,13 +27392,16 @@ function hiddenUnitOutlineFrame(image,width,height,flip,color){
   const ring=document.createElement('canvas');ring.width=shape.width;ring.height=shape.height;const t=ring.getContext('2d');
   for(let i=0;i<12;i++){const angle=i*Math.PI/6;t.drawImage(shape,Math.cos(angle)*radius,Math.sin(angle)*radius);}
   t.globalCompositeOperation='destination-out';t.drawImage(shape,0,0);t.globalCompositeOperation='source-over';
-  const result={ring,pad};if(cache.size>=16)cache.delete(cache.keys().next().value);cache.set(id,result);return result;
+  const backing=document.createElement('canvas');backing.width=shape.width;backing.height=shape.height;const b=backing.getContext('2d');
+  for(let i=0;i<12;i++){const angle=i*Math.PI/6;b.drawImage(shape,Math.cos(angle)*2.6/zoom,Math.sin(angle)*2.6/zoom);}
+  b.globalCompositeOperation='destination-out';b.drawImage(shape,0,0);b.globalCompositeOperation='source-in';b.fillStyle='#101318';b.fillRect(0,0,backing.width,backing.height);
+  const result={ring,backing,pad};if(cache.size>=16)cache.delete(cache.keys().next().value);cache.set(id,result);return result;
 }
 function drawHiddenUnitOutlines(ordered){
   if(!hiddenOutlineUnits.length)return;
   for(const unit of hiddenOutlineUnits){
     if(!unit.entity.alive||unit.entity.fled||getUnitEffect(unit.entity,'invisibility')||!shouldRenderUnitUnderPartyVisibility(unit.entity))continue;
-    const friendly=isPlayerControlledUnit(unit.entity)||unit.entity.faction==='player';if(!friendly&&!isUnitVisibleToFriendlyParty(unit.entity))continue;const color=friendly?'#70aaa9':'#b87b65';
+    const friendly=isPlayerControlledUnit(unit.entity)||unit.entity.faction==='player';if(!friendly&&!isUnitVisibleToFriendlyParty(unit.entity))continue;const color=friendly?'#b2f4ef':'#ffc39e';
     const frame=hiddenUnitOutlineFrame(unit.image,unit.width,unit.height,unit.flip,color),left=unit.x-frame.pad,top=unit.y-frame.pad;
     const mask=document.createElement('canvas');mask.width=frame.ring.width;mask.height=frame.ring.height;const m=mask.getContext('2d');m.translate(-left,-top);
     for(let i=unit.index+1;i<ordered.length;i++){
@@ -27412,7 +27415,10 @@ function drawHiddenUnitOutlines(ordered){
       }
     }
     const layer=document.createElement('canvas');layer.width=mask.width;layer.height=mask.height;const t=layer.getContext('2d');t.drawImage(frame.ring,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mask,0,0);
-    ctx.save();ctx.globalAlpha=game.active?.id===unit.entity.id ? .48 : .32;ctx.drawImage(layer,left,top);ctx.restore();
+    const daylight=Math.max(0,Math.min(1,globalThis.adventurePartySolar?.state?.().daylight??1)),active=game.active?.id===unit.entity.id;
+    const backing=document.createElement('canvas');backing.width=mask.width;backing.height=mask.height;const b=backing.getContext('2d');b.drawImage(frame.backing,0,0);b.globalCompositeOperation='destination-in';b.drawImage(mask,0,0);
+    ctx.save();ctx.globalAlpha=.45+.4*daylight;ctx.drawImage(backing,left,top);
+    ctx.globalAlpha=Math.min(1,(active ? .92 : .78)+daylight*.1);ctx.drawImage(layer,left,top);ctx.restore();
   }
 }
 function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity=null,anchor=null){
@@ -31566,6 +31572,7 @@ document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotate
 document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
 
 addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
+
 
 
 
