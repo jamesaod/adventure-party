@@ -3448,6 +3448,27 @@ function initializeFirMovementObstacles(){
   for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))tiles.push({x,y});
   game.firBlockedHexes=new Set(visibleTreeDecorations(tiles).map(tree=>key(tree.x,tree.y)));
 }
+function igniteFirTrees(cells){
+  if(!game?.firBlockedHexes)return;
+  game.firFireStates??={};
+  for(const cell of cells){const id=key(cell.x,cell.y);if(!game.firBlockedHexes.has(id)||game.firFireStates[id])continue;
+    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+1};}
+  ensureTransientUnitFxLoop();
+}
+function advanceFirFires(){
+  for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'&&game.round>=fire.burnUntilRound)fire.state='burnt';
+}
+function firFireLightSources(){
+  return Object.values(game?.firFireStates||{}).filter(fire=>fire.state==='burning').map(fire=>({...fire,id:'fir-fire:'+key(fire.x,fire.y),sourceKind:'tree-fire',radiusHexes:4,intensity:1.8*(.85+.15*Math.sin(performance.now()/110+fire.x*7+fire.y)),color:[255,145,45]}));
+}
+function drawFirFlames(tree,c,height){
+  if(game.firFireStates?.[key(tree.x,tree.y)]?.state!=='burning')return;
+  const t=performance.now()/160;ctx.save();
+  for(let i=0;i<12;i++){const y=c.y-height*(.08+i*.055),width=height*(.15-i*.008),x=c.x+Math.sin(i*9+tree.x)*width;
+    const size=height*(.10+.035*Math.sin(t+i*3));
+    ctx.fillStyle=i%2?'rgba(255,194,50,.78)':'rgba(255,76,12,.65)';ctx.beginPath();ctx.moveTo(x-size*.35,y);ctx.quadraticCurveTo(x-size*.5,y-size*.55,x+Math.sin(t+i)*size*.2,y-size);ctx.quadraticCurveTo(x+size*.5,y-size*.4,x+size*.35,y);ctx.fill();}
+  ctx.restore();
+}
 function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y));}
 
 function countTreeHexesOnCurrentMap(){
@@ -3474,7 +3495,7 @@ function liveFirTreeRender(tileSet,decoration){
   return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration),{
     solar:globalThis.adventurePartySolar?.state?.(),
     ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,
-    instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
+    burnt:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==="burnt",instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
   });
 }
 
@@ -3595,6 +3616,7 @@ function drawTreeDecoration(decoration){
     drawH
   );
   ctx.restore();
+  drawFirFlames(decoration,c,drawH);
 }
 
 /* ============================================================
@@ -10797,6 +10819,7 @@ function pruneTransientUnitFx(now=performance.now()){
 function hasTransientUnitFx(now=performance.now()){
   pruneTransientUnitFx(now);
   return (
+    firFireLightSources().length>0 ||
     castingGlowFx.length>0 ||
     fireDamageFx.length>0 ||
     enlargeTransitionFx.length>0
@@ -11641,6 +11664,7 @@ function illuminationSources(){
 
   const sources=typeof explorationTerrain!=="undefined"&&explorationTerrain ? [...(explorationTerrain.torches||[])] : [];
 
+  sources.push(...firFireLightSources());
   for(const unit of allUnits()){
     if(!unit?.alive || unit.fled) continue;
 
@@ -17371,6 +17395,7 @@ function startRound(){
   if(game.over) return;
 
   game.round++;
+  advanceFirFires();
   expireTimedUnitEffects();
   game.player.turnMoves=0;
   game.player.fullMove=false;
@@ -20870,6 +20895,7 @@ async function animateFireballExplosion(targetHex,radiusHexes,blastCells=null){
   const cells=(blastCells?.length ? blastCells : fireballBlastCells(targetHex))
     .map(cell=>({...cell}));
 
+  igniteFirTrees(cells);
   const ownedFx=fireballExplosionFx={
     x:targetHex.x,
     y:targetHex.y,

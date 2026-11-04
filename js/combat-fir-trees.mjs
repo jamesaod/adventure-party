@@ -90,11 +90,11 @@ export async function createCombatFirTrees(){
   const cache=new Map();let stateKey='',lost=false;
   renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();lost=true;cache.clear();});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;cache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));});
-  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",lights=[]}={}){
+  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",burnt=false,lights=[]}={}){
     if(lost)return null;
     const nextKey=[solar.hour,ambient,viewRotation].join(':');
     if(nextKey!==stateKey){cache.clear();stateKey=nextKey;}
-    const key=variant+':'+rotation+':'+instanceKey;
+    const key=variant+':'+rotation+':'+instanceKey+':'+burnt;
     const cached=cache.get(key),active=liveLighting?lights.slice(0,4):[],lightKey=JSON.stringify(active);
     if(cached?.lightKey===lightKey)return cached;
     const angle=viewRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle),direction=solar.direction;
@@ -110,7 +110,11 @@ export async function createCombatFirTrees(){
       target.position.set(source.x,source.height,source.z);target.color.setRGB(...source.color);
       target.distance=source.radius;target.decay=source.decay??2;target.intensity=source.intensity;
     }
-    const model=models[variant];model.rotation.y=rotation*Math.PI/6;scene.add(model);
+    for(const material of sharedMaterials.values()){
+      material.userData.healthyColor??=material.color.clone();
+      if(burnt&&material.alphaTest<=0)material.color.setRGB(.012,.010,.008);else material.color.copy(material.userData.healthyColor);
+    }
+    const model=models[variant];model.traverse(mesh=>{if(mesh.isMesh&&mesh.material.alphaTest>0)mesh.visible=!burnt;});model.rotation.y=rotation*Math.PI/6;scene.add(model);
     renderer.setSize(384,512,false);
     camera.left=-78.75;camera.right=78.75;camera.top=183.75;camera.bottom=-26.25;camera.updateProjectionMatrix();
     renderer.render(scene,camera);
@@ -121,7 +125,7 @@ export async function createCombatFirTrees(){
       model.updateMatrixWorld(true);
       const projected=[];
       model.traverse(mesh=>{
-        if(!mesh.isMesh)return;
+        if(!mesh.isMesh||!mesh.visible)return;
         const positions=mesh.geometry.attributes.position;
         const point=new THREE.Vector3();
         for(let i=0;i<positions.count;i++){
