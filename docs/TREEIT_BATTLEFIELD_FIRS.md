@@ -24,3 +24,5 @@ Browser checks confirm colored local light changes tree pixels, 250% ambient sti
 
 Bark adjustment: multiply the shared opaque trunk/branch material albedo by 0.45 once at load. Foliage tint is unchanged. Browser checks verified torch color/flicker reaches the local-light adapter and colored point illumination changes the rendered tree pixels.
 
+
+Lantern correction: the ground/wall party lantern comes from explorationVisualLights, not illuminationSources. Trees now consume that physical light list with its metre position, height, range, intensity and decay, plus magical sources. Convert metre-based intensity into model units using the source decay exponent. A nighttime check with the actual party-lantern inputs increased mean opaque tree brightness from 0.22 to 68.2; previous synthetic-light checks did not cover this missing input.

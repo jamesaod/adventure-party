@@ -105,7 +105,7 @@ export async function createCombatFirTrees(){
     for(let i=0;i<localLights.length;i++){
       const target=localLights[i],source=active[i];target.intensity=0;if(!source)continue;
       target.position.set(source.x,source.height,source.z);target.color.setRGB(...source.color);
-      target.distance=source.radius;target.intensity=source.intensity*1800;
+      target.distance=source.radius;target.decay=source.decay??2;target.intensity=source.intensity;
     }
     const model=models[variant];model.rotation.y=rotation*Math.PI/6;scene.add(model);
     renderer.setSize(384,512,false);
