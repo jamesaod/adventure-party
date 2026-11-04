@@ -3065,7 +3065,7 @@ function triggerUnitAttackPose(unit){
 }
 
 
-const GRASS_OUTDOORS_TREE_SHEET_SRC='assets/terrain/grass-outdoors-trees.png';
+const GRASS_OUTDOORS_TREE_SHEET_SRC='assets/terrain/treeit-firs/fir-body-atlas.png';
 
 const GRASS_OUTDOORS_TILE_SHEET_SRC='assets/terrain/grass-outdoors-tiles.png';
 
@@ -3081,6 +3081,7 @@ const GRASS_OUTDOORS_TILE_SHEET_SRC='assets/terrain/grass-outdoors-tiles.png';
 const TERRAIN_TILESETS=new Map();
 const TERRAIN_TILESET_IMAGES=new Map();
 const TERRAIN_TREE_IMAGES=new Map();
+const TERRAIN_TREE_SHADOW_IMAGES=new Map();
 
 function registerTerrainTileSet(definition){
   if(!definition?.id){
@@ -3122,6 +3123,12 @@ function registerTerrainTileSet(definition){
   TERRAIN_TILESETS.set(tileSet.id,tileSet);
   TERRAIN_TILESET_IMAGES.set(tileSet.id,image);
   TERRAIN_TREE_IMAGES.set(tileSet.id,treeImage);
+  if(tileSet.treeShadowSheetSrc){
+    const shadowImage=new Image();
+    shadowImage.onload=()=>{if(game)draw();};
+    shadowImage.src=tileSet.treeShadowSheetSrc;
+    TERRAIN_TREE_SHADOW_IMAGES.set(tileSet.id,shadowImage);
+  }
 
   return tileSet;
 }
@@ -3133,13 +3140,16 @@ const GRASS_OUTDOORS_TILESET=registerTerrainTileSet({
   terrain:"grass",
 
   treeSheetSrc:GRASS_OUTDOORS_TREE_SHEET_SRC,
-  treeColumns:8,
-  treeRows:4,
-  treeSourceTileWidth:192,
-  treeSourceTileHeight:216,
-  treeBaseAnchorX:96,
-  treeBaseAnchorY:204,
-  treeDrawHeight:86,
+  treeColumns:12,
+  treeRows:5,
+  treeVariantCount:5,
+  treeRotationFrames:12,
+  treeShadowSheetSrc:'assets/terrain/treeit-firs/fir-shadow-atlas.png',
+  treeSourceTileWidth:384,
+  treeSourceTileHeight:512,
+  treeBaseAnchorX:192,
+  treeBaseAnchorY:448,
+  treeDrawHeight:240,
   treeBaseSortOffset:3,
   treeOccupiedSortOffset:-0.25,
   treeCoverageRatio:1/20,
@@ -3275,7 +3285,7 @@ function terrainTreeSeedChance(tileSet){
 function treeVariantCount(tileSet){
   return Math.max(
     1,
-    (tileSet?.treeColumns || 1) *
+    tileSet?.treeVariantCount || (tileSet?.treeColumns || 1) *
     (tileSet?.treeRows || 1)
   );
 }
@@ -3355,7 +3365,8 @@ function terrainTreeClusterPositions(tileSet,seed){
 }
 
 function visibleTreeDecorations(tiles){
-  if(explorationTerrain)return [];
+  const battlefieldTrees=game?.session?.source==='combat-test' && game.condition==='grass';
+  if(explorationTerrain && !battlefieldTrees)return [];
   const tileSet=activeCombatTerrainTileSet();
 
   const image=TERRAIN_TREE_IMAGES.get(tileSet.id);
@@ -3443,6 +3454,25 @@ function countTreeHexesOnCurrentMap(){
   return visibleTreeDecorations(allTiles).length;
 }
 
+function treeRotationFrame(tileSet,decoration){
+  const frames=tileSet.treeRotationFrames || 1;
+  const rotation=terrainHash(decoration.x+7901,decoration.y-5107)%frames;
+  return ((rotation-battlefieldRotation*2)%frames+frames)%frames;
+}
+
+function drawTreeGroundShadow(decoration){
+  const tileSet=activeCombatTerrainTileSet();
+  const image=TERRAIN_TREE_SHADOW_IMAGES.get(tileSet.id);
+  if(!image?.complete || !image.naturalWidth)return;
+  const c=hexCenter(decoration.x,decoration.y);
+  const size=tileSet.treeDrawHeight;
+  ctx.save();
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(image,treeRotationFrame(tileSet,decoration)*512,decoration.tileIndex*512,512,512,
+    c.x-size/2,c.y-448*size/512,size,size);
+  ctx.restore();
+}
+
 function drawTreeDecoration(decoration){
   const tileSet=activeCombatTerrainTileSet();
   const image=TERRAIN_TREE_IMAGES.get(tileSet.id);
@@ -3465,21 +3495,18 @@ function drawTreeDecoration(decoration){
     )
   );
 
-  const sourceColumn=
-    decoration.tileIndex % (tileSet.treeColumns || 1);
-  const sourceRow=
-    Math.floor(decoration.tileIndex/(tileSet.treeColumns || 1));
+  const sourceColumn=tileSet.treeRotationFrames
+    ? treeRotationFrame(tileSet,decoration)
+    : decoration.tileIndex % (tileSet.treeColumns || 1);
+  const sourceRow=tileSet.treeRotationFrames ? decoration.tileIndex
+    : Math.floor(decoration.tileIndex/(tileSet.treeColumns || 1));
 
   const sourceTileWidth=tileSet.treeSourceTileWidth || 192;
   const sourceTileHeight=tileSet.treeSourceTileHeight || 216;
   const sx=sourceColumn*sourceTileWidth;
   const sy=sourceRow*sourceTileHeight;
 
-  /*
-    R76: all 32 source sprites are normalized so their actual trunk/root
-    base shares this source-space anchor. Map that point to the exact
-    center of the hex instead of assuming the image cell's bottom-center.
-  */
+  // Every view uses the same trunk anchor at the exact hex center.
   const sourceBaseX=tileSet.treeBaseAnchorX ?? (sourceTileWidth/2);
   const sourceBaseY=tileSet.treeBaseAnchorY ?? sourceTileHeight;
   const scaleX=drawW/sourceTileWidth;
@@ -3488,17 +3515,18 @@ function drawTreeDecoration(decoration){
   const drawY=c.y-sourceBaseY*scaleY;
 
   ctx.save();
-  ctx.translate(c.x,c.y+1);
-  ctx.scale(1.06,0.34);
-  ctx.fillStyle="rgba(0,0,0,0.28)";
-  ctx.beginPath();
-  /* R76: double the previous radius from 13 to 26. */
-  ctx.arc(0,0,26,0,Math.PI*2);
-  ctx.fill();
+  if(!tileSet.treeShadowSheetSrc){
+    ctx.translate(c.x,c.y+1);
+    ctx.scale(1.06,0.34);
+    ctx.fillStyle="rgba(0,0,0,0.28)";
+    ctx.beginPath();
+    ctx.arc(0,0,26,0,Math.PI*2);
+    ctx.fill();
+  }
   ctx.restore();
 
   ctx.save();
-  ctx.imageSmoothingEnabled=false;
+  ctx.imageSmoothingEnabled=!!tileSet.treeRotationFrames;
   ctx.drawImage(
     image,
     sx,
@@ -30457,6 +30485,7 @@ function draw(){
 
   const actors=[];
   const treeDecorations=visibleTreeDecorations(tiles);
+  for(const tree of treeDecorations)drawTreeGroundShadow(tree);
   const tileSet=activeCombatTerrainTileSet();
 
   if(explorationTerrain)for(const torch of explorationTerrain.torches||[]){
