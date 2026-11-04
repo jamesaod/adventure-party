@@ -17,5 +17,19 @@ export function solarFaceGain(normal,sun){
  return (.75+.25*dot(normal,sun.direction))/(.75+.25*dot(normal,noon));
 }
 const channels=c=>[c>>16&255,c>>8&255,c&255],blend=(a,b,t)=>a.map((v,i)=>Math.round(v*(1-t)+b[i]*t)).reduce((n,v)=>n*256+v,0);
-export function solarAmbient(base,sun){return {...base,intensity:base.intensity*sun.sky,sky:blend(channels(base.sky),[245,166,109],sun.warmth*.55),ground:blend(channels(base.ground),[118,86,76],sun.warmth*.35)};}
+// Artistic atmospheric palette, separate from geometric Sun and tactical LOS.
+export function solarPalette(sun){
+ const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+ const dawn=sun.hour<12,warm=(1-smooth(0,25,sun.altitude))*smooth(-10,0,sun.altitude),cool=1-smooth(-12,12,sun.altitude);
+ const direct=dawn?[255,186,114]:[255,143,101];
+ return {warm,cool,sun:[255,255,255].map((value,i)=>(value*(1-warm)+direct[i]*warm)/255),
+   sky:dawn?[255,202,164]:[235,158,171],ground:dawn?[139,111,91]:[128,96,119]};
+}
+export function solarAmbient(base,sun){
+ const palette=solarPalette(sun);
+ const sky=blend(channels(base.sky),[115,139,197],palette.cool*.65),ground=blend(channels(base.ground),[64,77,111],palette.cool*.55);
+ return {...base,intensity:base.intensity*sun.sky,
+   sky:blend(channels(sky),palette.sky,palette.warm*.65),ground:blend(channels(ground),palette.ground,palette.warm*.5)};
+}
+
 export function solarTimeLabel(hour){const minutes=Math.round(wrapHour(hour)*60)%1440;return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');}

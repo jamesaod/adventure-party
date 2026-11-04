@@ -1,6 +1,6 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
-import {solarState} from './solar-clock.mjs?v=R238C274';
+import {solarState,solarPalette,solarAmbient} from './solar-clock.mjs?v=R238C274';
 
 // Render models only when their view or lighting changes. Combat retains its
 // existing foot-sorted composition and frame scheduler.
@@ -127,7 +127,9 @@ export async function createCombatFirTrees(){
     const light=new THREE.Vector3(c*direction.x-s*direction.z,direction.y,s*direction.x+c*direction.z);
     sun.position.copy(light).multiplyScalar(380);
     sun.intensity=solar.altitude>0?2.3*solar.daylight:0;
-    sun.color.setRGB(1,1-solar.warmth*.2,1-solar.warmth*.45);
+    const palette=solarPalette(solar);sun.color.setRGB(...palette.sun);
+    const skyProfile=solarAmbient({sky:0xe0edff,ground:0x657450,intensity:1},solar);
+    hemisphere.color.setHex(skyProfile.sky);hemisphere.groundColor.setHex(skyProfile.ground);
     const ambientFactor=Math.max(0,ambient)/100*solar.sky;
     hemisphere.intensity=1.5*ambientFactor;
     fill.value=ambientFactor;foliageReflectivity.value=burning?0:1;

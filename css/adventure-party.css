@@ -2504,3 +2504,6 @@ button, input, select, textarea {
 #combatDayNight{margin:0 auto 12px;color:#ddc17a}#combatDayNight svg{display:block;width:166px;height:166px;margin:auto;touch-action:none;cursor:grab}#combatDayNight svg:active{cursor:grabbing}#combatDayNight svg:focus-visible{outline:2px solid #82e8e9;outline-offset:3px;border-radius:50%}#combatDayNight .solar-numerals{font:12px Georgia,serif}#combatDayNight .solar-numerals text:nth-child(3){font-size:10px}#combatDayNight .solar-time{font-size:12px;margin-top:5px}#combatDayNight .solar-position{font-size:10px;margin:5px 0}#combatDayNight small{font-size:9px;color:#aaa6ba}@media(max-height:800px){#combatDayNight svg{width:126px;height:126px}#combatDayNight{margin-bottom:6px}}
 
 #combatDayNight .wall-shadow-toggle{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:9px;color:#ddc17a}#wallSunShadows{accent-color:#cda54d;cursor:pointer}
+
+#solarDayTest{display:block;margin:7px auto 0;padding:5px 8px;background:#15131d;color:#e6c875;border:1px solid #8c7750;font:inherit;font-size:9px;cursor:pointer}#solarDayTest[aria-pressed="true"]{background:#493c24;border-color:#e8c973;color:#fff0b6}#solarDayTest:focus-visible{outline:2px solid #82e8e9;outline-offset:2px}
+

@@ -1,4 +1,4 @@
-import {solarAmbient,solarFaceGain} from './solar-clock.mjs?v=R238C274';
+import {solarAmbient,solarFaceGain,solarPalette} from './solar-clock.mjs?v=R238C274';
 import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C274';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
 import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C274';
@@ -76,7 +76,8 @@ export function buildDaylightField(map,opened=new Set(),solar=null){
    direct+=DAYLIGHT.portalIntensity*portal.daylight*Math.sqrt(portal.width)*(portal.kind==='window'?.7:1)*exposure*cutoff/(1+(distance/1.5)**2);
   }
   const amount=direct+bounce*(.65+.35*Math.max(0,normal.y));
-  const tint=solar?sky.map((v,i)=>v*(1-solar.warmth*.5)+[1,.65,.3][i]*solar.warmth*.5):sky;
+  const palette=solar?solarPalette(solar):null;
+  const tint=palette?sky.map((v,i)=>v*(1-palette.warm*.65)+palette.sun[i]*palette.warm*.65):sky;
   const result={rgb:tint.map(v=>v*amount),relief:Math.min(1,direct+bounce*2),direct,bounce};
   if(cache.size>=16384)cache.clear();cache.set(cacheKey,result);return result;
  }
