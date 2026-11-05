@@ -86,6 +86,7 @@ function combatResultLines(beat){
    show(beat);
    if(beat.category==='direct-damage'){
     const action=beat.meta?.action;
+    if(action?.physicalBlood){action.physicalBlood();action.physicalBlood=null;}
     if(action?.impact){action.impact();action.impact=null;}
     else if(['fire','acid','cold','electricity'].includes(beat.meta?.damageType))elementalSound(beat.meta.damageType);
     else baseHitSound();
@@ -134,7 +135,11 @@ function combatResultLines(beat){
   if(unit&&deaths.get(unit)===game&&candidateCombatBeatPresentationEnabled())return;
   return baseDeath(unit);
  });
- window.AdventurePartyCombatResults={physical(base,...args){return physical(base)(...args);},withTarget(caster,target,resolve){
+ window.AdventurePartyCombatResults={physicalHit(attacker,target,damage,damageType='physical'){
+  if(!(damage>0)||!['physical','slashing','piercing','bludgeoning'].includes(String(damageType).toLowerCase()))return;const action=actions.get(target),combat=game;
+  const present=()=>{if(game===combat)startArrowBlood(attacker,target,damage);};
+  if(action&&candidateCombatBeatPresentationEnabled())action.physicalBlood=present;else present();
+ },physical(base,...args){return physical(base)(...args);},withTarget(caster,target,resolve){
   const previous=sources.get(target),previousAction=actions.get(target);
   sources.set(target,caster);actions.set(target,{id:++actionSequence,spellTarget:true});
   try{return resolve();}finally{

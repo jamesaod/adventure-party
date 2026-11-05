@@ -67,7 +67,7 @@ assert.ok(game.includes("renderer:'supersampled-battlefield-v2'"),
 assert.ok(renderer.includes("battlefieldCanvas=quantizedCanvas(") &&
   renderer.includes("reducedCtx.imageSmoothingQuality='high'"),
   'Dynamic equipment renderer must downsample before VGA quantization');
-assert.ok(renderer.includes("runtimeImages[runtimeFile]=await loadImage(runtimeSrc)"),
+assert.ok(renderer.includes("[images[file],runtimeImages[runtimeFile]]=await Promise.all([loadImage(src),loadImage(runtimeSrc)])"),
   'Dynamic equipment renderer returns dedicated native combat images');
 assert.ok(game.includes('window.adventurePartySpriteSets?.register(result.spriteSet)'));
 assert.ok(game.includes('unit.dynamicAppearanceSpriteSetId=spriteSetId'));

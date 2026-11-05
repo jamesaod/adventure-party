@@ -3,6 +3,7 @@
  * Extracted without changing rule or presentation bodies. */
 
 function exitCombat(){
+  document.getElementById('combatEndPrompt')?.remove?.();
   window.AdventurePartyCombatBeats?.clear();
   if(typeof returnFromExplorationCombat==='function'&&returnFromExplorationCombat("retreat"))return;
   if(!returnToStudioFromCombat()) showLauncher();
@@ -184,6 +185,7 @@ function deployConfiguredCombatMobs(condition,player){
 }
 
 function newGame(condition=selectedCombatCondition,scenario={}){
+  document.getElementById('combatEndPrompt')?.remove?.();
   window.AdventurePartyCombatBeats?.clear();
   battlefieldRotation=5;
   if(aiTimer){
@@ -457,7 +459,22 @@ function scheduleCombatFinish(title,text){
   setTimeout(finish,deathFx?1000:100);
 }
 
-function finishCombat(title,text){
+function finishCombat(title,text,confirmed=false){
+  if(!confirmed&&currentScreen==='combat'&&!game.battleResultAcknowledged){
+    game.pendingBattleResult={title,text};
+    if(!document.getElementById('combatEndPrompt')){
+      const combat=game,prompt=document.createElement('button');prompt.id='combatEndPrompt';prompt.className='combat-action';
+      prompt.textContent=`${title} — Press Space to end`;
+      prompt.style.cssText='display:block;width:100%;margin:16px 0;padding:14px;white-space:normal;line-height:1.8';
+      prompt.onclick=()=>{if(game===combat&&game.pendingBattleResult)finishCombat(title,text,true);};
+      document.querySelector('.unit-info-panel').insertBefore(prompt,document.getElementById('combatCompass'));
+    }
+    ui.turnBanner.textContent=`${title.toUpperCase()} — PRESS SPACE TO END`;
+    return;
+  }
+  document.getElementById('combatEndPrompt')?.remove?.();
+  delete game.pendingBattleResult;
+  game.battleResultAcknowledged=true;
   game.over=true;
   game.active=null;
   quickCommandUnitIds.clear();

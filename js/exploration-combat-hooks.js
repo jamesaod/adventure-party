@@ -37,12 +37,13 @@ function drawExplorationGpuFloor(tiles){
   const image=kind==='grass'?explorationGrassImage:kind==='dirt'?explorationGroundBank.get(api.grassNeighborMask(map,cell.x,cell.z)):explorationFloorImage;
   const m=kind==='stone'?api.materialMetrics(t):api.grassMaterialMetrics(t);
   if(!groups.has(image))groups.set(image,[]);
-  groups.get(image).push({points:fragment.polygon,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
+  groups.get(image).push({points:fragment.polygon,visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
  }
  const lightMap=drawExplorationIlluminationLayer(true),dynamicLighting=!!explorationGpuLighting;
+ const groundScorch=dynamicLighting&&typeof drawTerrainScorch==='function'?drawTerrainScorch(true):null;
  for(const [image,group] of groups){
   for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
-  combatGpu.surface(group,image,{lightMap,dynamicLighting});
+  combatGpu.surface(group,image,{lightMap,dynamicLighting,groundScorch});
  }
 }
 
@@ -77,7 +78,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
  const all=faces.flatMap(f=>f.points.map(p=>screenPointForWorld(p,p.elevation)));
  if(!all.length||Math.max(...all.map(p=>p.x))<view.left||Math.min(...all.map(p=>p.x))>view.right||Math.max(...all.map(p=>p.y))<view.top||Math.min(...all.map(p=>p.y))>view.bottom)return;
  const dynamicLighting=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
- const lights=dynamicLighting?[]:explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
+ const lights=dynamicLighting?[]:explorationVisualLights(),opened=new Set(explorationEncounter.openDoors),sources=dynamicLighting?[]:explorationRenderLights(),t=explorationTerrain,cell=api.SCENE_STYLE.cellMetres;
  const key=JSON.stringify([lights,explorationEncounter.openDoors,(typeof explorationVisualDaylight==='function'?explorationVisualDaylight():explorationDaylight())?.revision||0,solids.map(s=>[s.a,s.b,s.depth,s.height,s.bottom,s.faces[0]?.material]),wall?.edgeMaterial,wall?.faceMaterials,typeof explorationWallGroundShadows==='function'?explorationWallGroundShadows()?.revision||0:0]);
  const cache=drawExplorationGpuSolids.cache||(drawExplorationGpuSolids.cache=new WeakMap());
  let cached=cache.get(cacheOwner);if(cached?.key!==key){cached={key,faces:new Map()};cache.set(cacheOwner,cached);}
@@ -416,6 +417,7 @@ function drawExplorationVisibilityMask(){
 }
 // A separate floor-only distance layer. Architecture/creature concealment stays in LOS.
 function drawDistanceVisibilityLayer(tiles){
+ if(typeof explorationGpuLighting!=='undefined'&&explorationGpuLighting)return;
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  if(!explorationTerrain||!explorationEncounterApi?.tileDistanceVisibility)return;
@@ -450,7 +452,7 @@ function explorationVisualLights(){
    return position?{...light,...position}:light;
   });
 
-  return lights;
+  return lights.filter(light=>light.kind!=='lantern');
 }
 function explorationUnitSpriteBrightness(unit){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;

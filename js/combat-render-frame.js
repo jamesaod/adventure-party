@@ -9,6 +9,8 @@ function draw(){
   if(!game) return;
 
   ensureFogAnimationLoop();
+  syncBurningTreeAudio();
+  ensureTransientUnitFxLoop();
 
   const tiles=visibleHexes();
 
@@ -32,6 +34,7 @@ function draw(){
     density*anchor.y*(1-battlefieldZoom)
   );
   canvas.dataset.treeRenderer=directFirRendering()?'direct-mesh':'cached-images';
+  prepareCombatProjectedShadows(tiles);
   drawFloor();
   drawWallTestFloorPlan();
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
@@ -48,6 +51,12 @@ function draw(){
   drawSpellAreaEffects();
 
   const actors=[];
+  // Keep lethal targets visible while their queued death beat is pending;
+  // only that beat changes their standing body to falling/prone scenery.
+  for(const corpse of [game.player,...(game.allies||[]),...(game.enemies||[])])if(corpse&&!corpse.alive&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse)){
+    const p=unitDepthSortPoint(corpse);
+    actors.push({sortY:p.y-.5,sortX:p.x,unit:true,entity:corpse,fn:()=>drawStudioSpriteMob(corpse)});
+  }
   const treeDecorations=visibleTreeDecorations(tiles);
   for(const tree of treeDecorations)drawTreeGroundShadow(tree);
   const tileSet=activeCombatTerrainTileSet();
@@ -177,9 +186,12 @@ function draw(){
   if(globalThis.adventurePartySun){
     if(explorationTerrain){ctx.save();clipExplorationFloor();}
     globalThis.adventurePartySun.drawingGround=true;
-    try{for(const actor of actors)if(actor.unit)actor.fn();}
-    finally{globalThis.adventurePartySun.drawingGround=false;if(explorationTerrain)ctx.restore();}
+    try{for(const actor of actors)if(actor.unit){globalThis.adventurePartySun.caster=actor.entity;actor.fn();}}
+    finally{globalThis.adventurePartySun.caster=null;globalThis.adventurePartySun.drawingGround=false;if(explorationTerrain)ctx.restore();}
   }
+
+  queueFlyingArrowGpuShadow();
+  combatGpu?.projectedShadows?.flush();
 
   actors.sort(
     (a,b)=>a.sortY-b.sortY || a.sortX-b.sortX

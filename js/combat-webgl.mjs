@@ -1,3 +1,4 @@
+import {createProjectedShadowPass} from './combat-projected-shadows.mjs?v=R238C294';
 import {combatLightGLSL,packCombatLights} from './combat-light-shader.mjs?v=R238C274';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 
@@ -36,13 +37,21 @@ const vertexShader=`
 const fragmentShader=`
  ${combatLightGLSL}
  uniform int scorchCount;uniform vec4 scorchMarks[8];uniform vec2 scorchEnds[8];uniform float scorchSquash;
- uniform bool dynamicLighting,spriteLighting; uniform float surfaceOpacity;
+ uniform bool dynamicLighting,spriteLighting; uniform float surfaceOpacity,spriteSaturation;
  uniform sampler2D artwork; uniform sampler2D lightMultiply; uniform sampler2D lightBoost;
+ uniform bool useGroundScorch;uniform sampler2D groundScorchImage;uniform vec4 groundScorchBounds;
  uniform bool useLightMap; uniform vec4 lightBounds;
  varying vec3 vLightPoint,vLightNormal,vTint,vSunLoss; varying vec2 vLightWorld; varying float vVisibility;
  varying vec3 vSurfacePosition; varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
  void main(){
   vec4 texel=texture2D(artwork,vUv);
+  if(useGroundScorch){
+   vec2 uv=(vWorld-groundScorchBounds.xy)/groundScorchBounds.zw;
+   if(all(greaterThanEqual(uv,vec2(0.)))&&all(lessThanEqual(uv,vec2(1.)))){
+    uv.y=1.-uv.y;vec4 charred=texture2D(groundScorchImage,uv);
+    texel.rgb=mix(texel.rgb,charred.rgb,charred.a);
+   }
+  }
   float scorch=0.;
   for(int i=0;i<8;i++){
    if(i>=scorchCount)break;vec4 mark=scorchMarks[i];
@@ -50,8 +59,7 @@ const fragmentShader=`
    float spanLength=length(span),along=dot(local,span)/max(spanLength,.0001);
    // Feather inward: never carry a capsule beyond the affected hex boundary.
    float edge=smoothstep(0.,mark.z,min(along,spanLength-along));
-   float noise=fract(sin(dot(floor(vec2(vSurfacePosition.x+vSurfacePosition.y/scorchSquash,vSurfacePosition.z)/3.),vec2(12.9898,78.233)))*43758.5453);
-   float amount=edge*(1.-smoothstep(23.,45.,abs(vSurfacePosition.z-17.)))*.75*(.68+noise*.24);
+   float amount=edge*(1.-smoothstep(23.,45.,abs(vSurfacePosition.z-17.)))*.60;
    scorch=max(scorch,amount);
   }
   texel.rgb=mix(texel.rgb,vec3(16.,17.,18.)/255.,scorch);
@@ -61,15 +69,23 @@ const fragmentShader=`
    m*=texture2D(lightMultiply,lightUv).rgb;b=texture2D(lightBoost,lightUv).rgb;
   }
   vec3 factor=m/max(vec3(.0001),vec3(1.)-b),radiance=vec3(0.);
+  float surfaceVisibility=vVisibility;
   if(dynamicLighting){
    vec3 base=pow(max(vec3(.0001),factor),vec3(2.2));
+   vec3 ambientBase=base;
    combatLight(vLightWorld,vLightPoint,normalize(vLightNormal),base,radiance);
+   // Light offsets distance fading at the fragment, avoiding a second
+   // per-hex torch/spell relief layer. Hidden surfaces remain concealed.
+   if(vVisibility>.1001)surfaceVisibility=min(1.,vVisibility+dot(pow(max(vec3(0.),base-ambientBase),vec3(1./2.2))+radiance,vec3(.2126,.7152,.0722)));
+   // Baked sprites reflect local spell/fire energy through the same linear-to-display
+   // conversion as physical lights; adding it after conversion made units too dark.
+   if(spriteLighting){base+=radiance; radiance=vec3(0.);}
    factor=pow(max(vec3(.01),base),vec3(1./2.2));
   }
   if(any(greaterThan(vSunLoss,vec3(0.))))factor=pow(max(vec3(.01),pow(max(factor,vec3(.0001)),vec3(2.2))-vSunLoss),vec3(1./2.2));
   radiance*=step(.1001,vVisibility);
-  vec3 lit=factor*vVisibility;
-  if(spriteLighting){float brightness=clamp(dot(lit+radiance,vec3(.2126,.7152,.0722)),.02,1.);gl_FragColor=vec4(texel.rgb*brightness,texel.a*surfaceOpacity);}
+  vec3 lit=factor*surfaceVisibility;
+  if(spriteLighting){float brightness=clamp(dot(lit+radiance,vec3(.2126,.7152,.0722)),.02,1.);vec3 ink=mix(vec3(dot(texel.rgb,vec3(.2126,.7152,.0722))),texel.rgb,spriteSaturation);gl_FragColor=vec4(ink*brightness,texel.a*surfaceOpacity);}
   else gl_FragColor=vec4(clamp(texel.rgb*lit*vTint+vAdd+radiance,0.,1.),texel.a*surfaceOpacity);
  }`;
 
@@ -121,11 +137,13 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  }
  function flush(){if(!dirty||lost||disposed)return;rasterTexture.needsUpdate=true;paint(quad);clearRaster();needsBackdrop=true;}
  function release(record){record.mesh.geometry.dispose();record.mesh.material.dispose();}
+ const projectedShadows=createProjectedShadowPass({renderer,camera,texture,flush,getView:()=>view,onPaint:()=>{needsBackdrop=true;}});
  const lostListener=event=>{event.preventDefault();lost=true;onLost();};
  const restoredListener=()=>{lost=false;for(const t of textures.values())t.needsUpdate=true;rasterTexture.needsUpdate=true;maskTexture.needsUpdate=true;onRestored();};
  canvas.addEventListener('webglcontextlost',lostListener);canvas.addEventListener('webglcontextrestored',restoredListener);
  return {
   context,
+  projectedShadows,
   get available(){return !lost&&!disposed;},
   prepareOverlay,
   treeScene(callback){
@@ -140,19 +158,19 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   presentOverlay(){flush();},
   begin(nextView){
    if(lost||disposed)return false;
-   view=nextView;lighting=null;slot=0;frameOpen=true;needsBackdrop=false;clearRaster();renderer.info.reset();
+   view=nextView;projectedShadows.begin();lighting=null;slot=0;frameOpen=true;needsBackdrop=false;clearRaster();renderer.info.reset();
    const width=canvas.width,height=canvas.height;
    if(width>renderer.capabilities.maxTextureSize||height>renderer.capabilities.maxTextureSize)throw Error('Combat resolution exceeds this device’s graphics limits.');
    if(raster.width!==width||raster.height!==height){raster.width=width;raster.height=height;}
    renderer.setViewport(0,0,width,height);renderer.clear(true,false,false);
    camera.right=view.width;camera.bottom=view.height;camera.updateProjectionMatrix();return true;
   },
-  surface(surfaces,image,{lightMap=null,dynamicLighting=false,spriteLighting=false,screenSpace=false,opacity=1,scorch=[],scorchSquash=1}={}){
+  surface(surfaces,image,{lightMap=null,dynamicLighting=false,spriteLighting=false,saturation=1,screenSpace=false,opacity=1,scorch=[],scorchSquash=1,groundScorch=null}={}){
    if(lost||!frameOpen||!surfaces.length||!image)return;
    flush();let record=records[slot++];
    if(!record){
     const geometry=new THREE.BufferGeometry(),material=new THREE.ShaderMaterial({vertexShader,fragmentShader,
-     uniforms:{scorchCount:{value:0},scorchEnds:{value:new Float32Array(16)},scorchMarks:{value:new Float32Array(32)},scorchSquash:{value:1},dynamicLighting:{value:false},spriteLighting:{value:false},screenSpace:{value:false},surfaceOpacity:{value:1},emitterCount:{value:0},emitterPosition:{value:new Float32Array(128)},emitterColor:{value:new Float32Array(128)},emitterShape:{value:new Float32Array(128)},emitterBounds:{value:new Float32Array(128)},emitterMask:{value:maskTexture},lightWorld:{value:new THREE.Vector4(1,1,0,0)},artwork:{value:null},lightMultiply:{value:null},lightBoost:{value:null},useLightMap:{value:false},lightBounds:{value:new THREE.Vector4()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1}},
+     uniforms:{useGroundScorch:{value:false},groundScorchImage:{value:null},groundScorchBounds:{value:new THREE.Vector4()},scorchCount:{value:0},scorchEnds:{value:new Float32Array(16)},scorchMarks:{value:new Float32Array(32)},scorchSquash:{value:1},dynamicLighting:{value:false},spriteLighting:{value:false},spriteSaturation:{value:1},screenSpace:{value:false},surfaceOpacity:{value:1},emitterCount:{value:0},emitterPosition:{value:new Float32Array(128)},emitterColor:{value:new Float32Array(128)},emitterShape:{value:new Float32Array(128)},emitterBounds:{value:new Float32Array(128)},emitterMask:{value:maskTexture},lightWorld:{value:new THREE.Vector4(1,1,0,0)},artwork:{value:null},lightMultiply:{value:null},lightBoost:{value:null},useLightMap:{value:false},lightBounds:{value:new THREE.Vector4()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1}},
      depthTest:false,depthWrite:false,side:THREE.DoubleSide,transparent:true,toneMapped:false});
     const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;records.push(record={mesh});
    }
@@ -171,26 +189,29 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;
    u.scorchCount.value=Math.min(8,scorch?.length||0);u.scorchSquash.value=scorchSquash;
    u.scorchEnds.value.fill(0);u.scorchMarks.value.fill(0);for(let i=0;i<u.scorchCount.value;i++){const mark=scorch[i];u.scorchMarks.value.set([mark.x,mark.y,mark.radius,1],i*4);u.scorchEnds.value.set([mark.endX??mark.x,mark.endY??mark.y],i*2);}
-   u.dynamicLighting.value=!!(dynamicLighting&&lighting);u.spriteLighting.value=spriteLighting;u.screenSpace.value=screenSpace;u.surfaceOpacity.value=opacity;
+   u.dynamicLighting.value=!!(dynamicLighting&&lighting);u.spriteLighting.value=spriteLighting;u.spriteSaturation.value=saturation;u.screenSpace.value=screenSpace;u.surfaceOpacity.value=opacity;
    u.emitterCount.value=lighting?.lights.length||0;
    if(lighting){const p=lighting.packed;u.emitterPosition.value=p.position;u.emitterColor.value=p.color;u.emitterShape.value=p.shape;u.emitterBounds.value=p.bounds;u.lightWorld.value.fromArray(lighting.world);}
    u.artwork.value=texture(image,!spriteLighting);u.useLightMap.value=!!lightMap;
+   u.useGroundScorch.value=!!groundScorch;
+   if(groundScorch){u.groundScorchImage.value=texture(groundScorch.image);u.groundScorchBounds.value.set(groundScorch.left,groundScorch.top,groundScorch.spanX,groundScorch.spanY);}
+   else u.groundScorchImage.value=null;
    if(lightMap){
     u.lightBounds.value.set(lightMap.left,lightMap.top,lightMap.spanWidth,lightMap.spanHeight);
     u.lightMultiply.value=texture(lightMap.layers[0]);u.lightBoost.value=texture(lightMap.layers[1]);
    }else{u.lightMultiply.value=null;u.lightBoost.value=null;}
    paint(record.mesh);needsBackdrop=true;
   },
-  end(){if(!frameOpen)return;flush();frameOpen=false;
+  end(){if(!frameOpen)return;projectedShadows.flush();projectedShadows.end();flush();frameOpen=false;
    // A larger previous scene must not retain one GPU buffer per old wall.
    while(records.length>slot)release(records.pop());
    // Exposure maps are replaced after movement/door changes; release old maps.
-   for(const [image,t] of textures)if(image.tagName==='CANVAS'&&!records.some(r=>r.mesh.material.uniforms.artwork.value===t||r.mesh.material.uniforms.lightMultiply.value===t||r.mesh.material.uniforms.lightBoost.value===t)){t.dispose();textures.delete(image);}
+   for(const [image,t] of textures)if(image.tagName==='CANVAS'&&!projectedShadows.uses(image)&&!records.some(r=>r.mesh.material.uniforms.artwork.value===t||r.mesh.material.uniforms.lightMultiply.value===t||r.mesh.material.uniforms.lightBoost.value===t)){t.dispose();textures.delete(image);}
    canvas.dataset.combatRenderer='three-webgl2';
-   canvas.dataset.gpuStats=JSON.stringify({calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,shaderLights:lighting?.lights.length||0,lighting:lighting?'gpu-point-lights':'cpu-reference'});
+   canvas.dataset.gpuStats=JSON.stringify({calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,shadowBatches:projectedShadows.diagnostics().batches,shadowTriangles:projectedShadows.diagnostics().triangles,shaderLights:lighting?.lights.length||0,lighting:lighting?'gpu-point-lights':'cpu-reference'});
   },
   diagnostics(){return {backend:'three-webgl2',contextLost:lost,drawCalls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};},
   dispose(){if(disposed)return;disposed=true;canvas.removeEventListener('webglcontextlost',lostListener);canvas.removeEventListener('webglcontextrestored',restoredListener);
-   records.forEach(release);textures.forEach(t=>t.dispose());quadGeometry.dispose();quadMaterial.dispose();rasterTexture.dispose();maskTexture.dispose();renderer.dispose();}
+   projectedShadows.dispose();records.forEach(release);textures.forEach(t=>t.dispose());quadGeometry.dispose();quadMaterial.dispose();rasterTexture.dispose();maskTexture.dispose();renderer.dispose();}
  };
 }

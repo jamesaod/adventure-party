@@ -54,8 +54,9 @@ function breakCombatWindow(id,{source=null,cause='impact'}={}){
  rebuildArchitecturalBlockedHexes();playEnvironmentGlass();ensureTransientUnitFxLoop();
  log(`The window shatters (${cause}).`,'system');return true;
 }
-function environmentEffectsActive(){if(!game?.environmentState)return false;const state=combatEnvironment();state.glassFx=state.glassFx.filter(fx=>performance.now()<fx.started+fx.duration);return state.glassFx.length>0;}
+function environmentEffectsActive(){const bloodActive=settleCombatBlood();if(!game?.environmentState)return bloodActive;const state=combatEnvironment();state.glassFx=state.glassFx.filter(fx=>performance.now()<fx.started+fx.duration);return bloodActive||state.glassFx.length>0;}
 function queueCombatEnvironmentActors(actors){
+ for(const burst of game?.bloodState?.bursts||[]){const c=screenPointForWorld(burst.origin);actors.push({sortY:c.y+.6,sortX:c.x,fn:()=>drawArrowBloodBurst(burst)});}
  for(const fx of game?.environmentState?.glassFx||[]){const c=screenPointForWorld(fx.world);actors.push({sortY:c.y+.5,sortX:c.x,fn:()=>drawEnvironmentGlass(fx)});}
  for(const arrow of game?.environmentState?.arrows||[])if(arrow.wallId){const wall=architecturalWalls.find(w=>w.id===arrow.wallId);if(!wall)continue;const a=screenPointForWorld(wall.a),b=screenPointForWorld(wall.b);actors.push({sortY:Math.max(a.y,b.y)+.31,sortX:(a.x+b.x)/2,fn:()=>drawEnvironmentArrow(arrow)});}
 }
@@ -148,8 +149,13 @@ function resolveEnvironmentArrow(attacker,target,{empty=false}={}){
  const from=worldPointForHex(attacker.x,attacker.y),aim=worldPointForHex(target.x,target.y);
  const pane=empty&&environmentWindowAtTarget(target);if(pane){const hit=environmentRayHit(from,pane.center);if(hit?.windowId===pane.id){const length=Math.hypot(hit.x-from.x,hit.y-from.y)||1;return {...hit,hex:environmentHex(hit),direction:{x:(hit.x-from.x)/length,y:(hit.y-from.y)/length}};}}
  const dx=aim.x-from.x,dy=(aim.y-from.y)/environmentSquash(),length=Math.hypot(dx,dy)||1;
- const roll=attacker.environmentMissileRoll,deflected=!empty&&roll&&roll.targetNumber-roll.modifiedRoll<=2;
- const scatter=(Math.random()-.5)*HEX_W*.65,extra=empty?0:HEX_W*(1+Math.random()*1.5),point=deflected?{...aim}:{x:aim.x+dx/length*extra-dy/length*scatter,y:aim.y+dy/length*extra*environmentSquash()+dx/length*scatter*environmentSquash()};
+ // A near attack-roll miss does not prove an armor/shield deflection.
+ // Scatter ordinary misses before or beyond the target rather than at its feet.
+ const deflected=false,scatter=(Math.random()-.5)*HEX_W*.65;
+ const short=!empty&&Math.random()<.5;
+ const distance=empty?0:HEX_W*(.5+Math.random()*2);
+ const extra=short?-Math.min(distance,length*(.25+Math.random()*.55)):distance;
+ const point={x:aim.x+dx/length*extra-dy/length*scatter,y:aim.y+dy/length*extra*environmentSquash()+dx/length*scatter*environmentSquash()};
  const hit=environmentRayHit(from,point),impact=hit||{...point,height:0,kind:'ground'};
  impact.hex=environmentHex(impact);impact.direction={x:dx/length,y:dy/length*environmentSquash()};impact.deflected=deflected;
  // Optional house rule: intersect the resolved scattered ray, stopping at the first wall.
@@ -178,7 +184,7 @@ async function finishEnvironmentArrow(attacker,impact){
     candidateQueueCombatBeat(target,{category:'direct-result',text:'Stray arrow misses',meta:{outcome:'miss'}});return;
    }
    const bow=getMissileCatalogEntry(attacker.missileCatalogId||'bow-long'),damage=Math.max(1,rollDiceExpression(damageExpressionForSize(bow,target)).total+physicalDamageEffectModifier(attacker,'missile'));
-   target.hp=Math.max(0,target.hp-damage);candidateWithDamageBeatContext({category:'direct-damage',source:attacker.name},()=>onUnitDamaged(target,damage));
+   window.AdventurePartyCombatResults?.physicalHit?.(attacker,target,damage);target.hp=Math.max(0,target.hp-damage);candidateWithDamageBeatContext({category:'direct-damage',source:attacker.name},()=>onUnitDamaged(target,damage));
    log('Stray arrow: '+attacker.name+' hits '+target.name+' for '+damage+' (−6 test penalty).','system');
    if(target.hp<=0){target.alive=false;playAgonySound(target);playDeathSound(target);triggerDeathFx(target);if(target.controller==='mob')markEnemyNeutralized(target);}
   });
@@ -201,9 +207,9 @@ function drawEnvironmentArrow(arrow){
   point={...arrow,x:arrow.x+normal.x*offset,y:arrow.y+normal.z*offset*squash};
  }else if(!isHexVisibleToFriendlyParty(arrow.hex.x,arrow.hex.y))return;
  const tip=environmentArrowScreen(point),tail=screenPointForWorld({x:point.x-arrow.direction.x*16,y:point.y-arrow.direction.y*16},(arrow.height||0)+5);
- ctx.save();ctx.globalAlpha=Math.max(.25,Math.min(1,combatSpriteBrightness({...arrow.hex,alive:true})));drawCombatArrowSilhouette(tail,tip);ctx.restore();
+ ctx.save();ctx.globalAlpha=Math.max(.25,Math.min(1,combatSpriteBrightness({...arrow.hex,alive:true})));if(!arrow.wallId&&typeof queueCombatArrowGpuShadow==='function')queueCombatArrowGpuShadow(tail,tip,{tailHeight:(arrow.height||0)+5,tipHeight:arrow.height||0});drawCombatArrowSilhouette(tail,tip,{tailHeight:(arrow.height||0)+5,tipHeight:arrow.height||0,wall:arrow.wallId?architecturalWalls.find(w=>w.id===arrow.wallId):null});ctx.restore();
 }
-function drawEnvironmentGroundArrows(){for(const arrow of game?.environmentState?.arrows||[])if(!arrow.wallId)drawEnvironmentArrow(arrow);}
+function drawEnvironmentGroundArrows(){settleCombatBlood();drawCombatBloodStains();for(const arrow of game?.environmentState?.arrows||[])if(!arrow.wallId)drawEnvironmentArrow(arrow);}
 async function breakNearbyCombatWindow(unit,preferred=null){
  const windows=(combatSceneTerrain?.windows||[]).filter(window=>!window.broken&&hexDistance(unit,environmentHex(window.center))<=1.5);
  const window=preferred?windows.find(window=>window.id===preferred):windows[0];if(!window||!(unit.attacksRemaining>0))return false;

@@ -42,7 +42,8 @@
     {
       "name": "attack",
       "file": "combat-melee-actions.js",
-      "sha256": "19747588e3b238e4f1f3c102ea908fc1eaba4a8d305662e6e371afcd93a8fd48"
+      "sha256": "cc77de8f6afe3b5a56d4c5649a4c7c708d6f460df38960ad259b271166bebe1d",
+      "postExtractionChange": "2026-11-05: queue blood for direct physical melee damage; elemental riders unchanged."
     },
     {
       "name": "playerAttackKey",
@@ -487,7 +488,8 @@
     {
       "name": "firFireLightSources",
       "file": "combat-environment-state.js",
-      "sha256": "6b4438ee806344496f79ab5a69cc11021cd92a8cf4fe5238d805b7ad73e4b162"
+      "sha256": "9c70894ee9c0b92f5b23d4a9dba19ad072bac15b066204214feffbe3ecee8501",
+      "postExtractionChange": "2026-11-05: user-requested fourfold burning-tree illumination boost; preserve range, flicker palette and two-round lifetime."
     },
     {
       "name": "isFirBlockedHex",
@@ -777,7 +779,8 @@
     {
       "name": "illuminationSources",
       "file": "combat-lighting-services.js",
-      "sha256": "0c3459aed4b7afcf9b203e339bdb92bbf9ca83a548589f35b695b9b348893597"
+      "sha256": "5ce97bf39412a928e84e1081a3137af252a73ab832614fb2110765548cfd241f",
+      "postExtractionChange": "Sword light 50% brighter with small presentation-only metre sway shared by GPU illumination and projected shadows; shadow emitter honors source height."
     },
     {
       "name": "illuminationSourceReachesHex",
@@ -817,17 +820,20 @@
     {
       "name": "draw",
       "file": "combat-render-frame.js",
-      "sha256": "480e89e71aec9024f733a428bcaa515f24385ebd714ac9408e6c5eabaae96f23"
+      "sha256": "f1cce64f8401e5dc842e761c6360844306170fca749cd1aa7579ebb352b130ec",
+      "postExtractionChange": "Animated attached flaming blade, continuous fire presentation and positioned burning-tree audio; small sword light uses shared lighting sources."
     },
     {
       "name": "drawTerrainScorch",
       "file": "combat-render-surfaces.js",
-      "sha256": "e6797b7de42051ed5856268e17ed35d589c77ef45aa82d43f257de8c28232373"
+      "sha256": "f26ee812c62c91ee5e3429e73c3678de472d9f950350ad7f271b4c08c87cbdc6",
+      "postExtractionChange": "2026-11-05: expose cached scorch albedo to floor shader; apply char before GPU illumination instead of covering firelight with a Canvas overlay."
     },
     {
       "name": "drawTreeGroundShadow",
       "file": "combat-render-surfaces.js",
-      "sha256": "c873333b2edc52e8a37fe2c41e1296a497af90d3971020da1b9cc519ba21ca46"
+      "sha256": "bc9813afdab48cc5d6e5c923cab7d373725fb2828f2cdf971f28c58a5a542ba2",
+      "postExtractionChange": "2026-11-05: fir-only soft radial ground contact shadow before solar shadow."
     },
     {
       "name": "drawTreeDecoration",
@@ -927,7 +933,8 @@
     {
       "name": "drawSpriteFacing",
       "file": "combat-render-units.js",
-      "sha256": "b398074491256b0dc5a4be6946daf4dc50f04a9584a66d263249b07898840eff"
+      "sha256": "20fc1eda3e4f9422f778aa117503fc643086ac49afb99bbaa0f294b9363e927b",
+      "postExtractionChange": "Animated attached flaming blade, continuous fire presentation and positioned burning-tree audio; small sword light uses shared lighting sources."
     },
     {
       "name": "drawFighter",
@@ -937,7 +944,8 @@
     {
       "name": "drawStudioSpriteMob",
       "file": "combat-render-units.js",
-      "sha256": "b023d1f7ea6234c1c0803c03caf8369c24a9b26d36af83cf500538d3bf46db57"
+      "sha256": "da451347d75a5c1d7a2a328173b8ba4c582017347aa77ae1d75850c377281f23",
+      "postExtractionChange": "2026-11-05: 50% desaturated randomly placed corpses with aligned pools; explicit Space acknowledgment before battle exit."
     },
     {
       "name": "drawKobold",
@@ -1007,7 +1015,8 @@
     {
       "name": "exitCombat",
       "file": "combat-session-state.js",
-      "sha256": "ea0e3513634d2d33f3b75c15da9da57baf376878ada178480b9132122c4c2918"
+      "sha256": "ba94ab5edd4093c5a26ec9f76eb867283246e05c41f91f97bc076b2d2ff4efca",
+      "postExtractionChange": "2026-11-05: 50% desaturated randomly placed corpses with aligned pools; explicit Space acknowledgment before battle exit."
     },
     {
       "name": "cancelPendingCombatStart",
@@ -1042,7 +1051,8 @@
     {
       "name": "newGame",
       "file": "combat-session-state.js",
-      "sha256": "2c37ce24a5aa937287a9f5f1edade11dfbcc4e347a205828833e7be74ee77741"
+      "sha256": "f7b4b7c57a107a800b1ee785311dd2ac38055445144d07983f023e5bea9a8515",
+      "postExtractionChange": "2026-11-05: 50% desaturated randomly placed corpses with aligned pools; explicit Space acknowledgment before battle exit."
     },
     {
       "name": "collectLootFromSlainEnemies",
@@ -1057,7 +1067,8 @@
     {
       "name": "finishCombat",
       "file": "combat-session-state.js",
-      "sha256": "37de3bfcf99bd3287f49f40721323e2db9f830f17047cf3efdc81cd92059545e"
+      "sha256": "83a04359be8d0371255d7a1aefb98f981ffd2d1b416a8c892584d349d09608dc",
+      "postExtractionChange": "2026-11-05: 50% desaturated randomly placed corpses with aligned pools; explicit Space acknowledgment before battle exit."
     }
   ]
 }

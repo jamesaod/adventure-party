@@ -189,7 +189,7 @@ const expectedMobs = {
   'orc-leader': { ac: 6, thaco: 19, move: 9, hitDiceValue: 1, weapon: 'Axe, battle' },
   'orc-shaman': { ac: 6, thaco: 19, move: 9, hitDiceValue: 2, priestLevel: 3, weapon: 'Spear' },
   'juvenile-red-dragon': { ac: -3, thaco: 7, move: 9, hitDiceValue: 15, weapon: 'Bite', attacksPerRound: 3 },
-  fighter: { ac: 4, thaco: 1, move: 9, level: 20, heightInches: 76, weapon: 'Flaming Sword +5', faction: 'player', attacksThisRound: 2 },
+  fighter: { ac: -1, thaco: 1, move: 9, level: 20, heightInches: 76, weapon: 'Flaming Sword +5', faction: 'player', attacksThisRound: 2 },
   ranger: { ac: 5, thaco: 11, move: 9, level: 10, weapon: 'Short Sword', rangedWeapon: 'Longbow', controller: 'player', faction: 'player' },
   mage: { ac: 9, thaco: 14, move: 12, level: 20, weapon: 'Staff', controller: 'player', faction: 'player' }
 };
@@ -229,7 +229,7 @@ Object.assign(sandbox, {
   MAP_WIDTH_HEXES: 25, MAP_HEIGHT_HEXES: 25,
   ui: { combatLog: {}, resultOverlay: { classList: { remove() {} } }, roundLabel: {}, initiativeLabel: {}, turnBanner: {} },
   log() {}, setCombatMessage() {}, updateUi() {}, draw() {}, expireTimedUnitEffects() {}, beginTurn() {},
-  document: { dispatchEvent() {} }, Event, URLSearchParams,
+  document: { dispatchEvent() {}, getElementById:()=>null }, Event, URLSearchParams,
   readCombatMobRoster:()=>[{type:'kobold',count:2,faction:'hostile'}],
   window: { ...sandbox.window, location: { assign: url => studioReturns.push(url) } }
 });

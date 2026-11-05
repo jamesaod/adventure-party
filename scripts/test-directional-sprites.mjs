@@ -41,7 +41,7 @@ const framedAsset = {
 };
 const legacyProneAsset = { spec: { renderWidth: 35, renderHeight: 18, nativeFacing: "right" } };
 const registeredAssets = [];
-const sandbox = {
+const sandbox = {drawFlamingSword:()=>{},
   HEX_DIRS,
   UNIT_FOOTPRINTS: SPRITE_LAYOUTS,
   STUDIO_FOOTPRINTS: new Map(),

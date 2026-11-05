@@ -44,7 +44,7 @@ function firFireLightSources(){
     }),total=weights.reduce((a,b)=>a+b,0);
     const color=[0,1,2].map(channel=>Math.round(palette.reduce((sum,rgb,i)=>sum+rgb[channel]*weights[i],0)/total));
     return {...fire,id:'fir-fire:'+key(fire.x,fire.y),sourceKind:'tree-fire',radiusHexes:4,
-      intensity:.9*(.85+.15*Math.sin(time*(2+seed*3)+seed*Math.PI*2)),color};
+      intensity:3.6*(.85+.15*Math.sin(time*(2+seed*3)+seed*Math.PI*2)),color};
   });
 }
 
@@ -329,4 +329,60 @@ function burnWebCells(cells,sourceName="fire"){
 function igniteWebAtUnit(unit,sourceName="fire"){
   if(!unit) return 0;
   return burnWebCells(occupiedHexes(unit),sourceName);
+}
+
+// Encounter-local arrow blood. Particle trajectories are fixed at impact; settled marks are bounded.
+function combatBloodState(){return game.bloodState||(game.bloodState={bursts:[],stains:[],pools:[],revision:0,cache:null});}
+function settleCombatBlood(now=performance.now()){
+  if(!game?.bloodState)return false;const state=game.bloodState;
+  for(const burst of state.bursts)for(const drop of burst.drops){
+    if(drop.settled||now<burst.started+((drop.delay||0)+drop.duration)*1000)continue;
+    drop.settled=true;if(!drop.lands)continue;
+    state.stains.push({point:drop.end,hex:drop.hex,size:drop.size,seed:drop.seed,ground:drop.ground});state.revision++;
+  }
+  if(state.stains.length>768)state.stains.splice(0,state.stains.length-768);
+  state.bursts=state.bursts.filter(burst=>burst.drops.some(drop=>!drop.settled));
+  return state.bursts.length>0||(state.pools||[]).some(pool=>now<pool.started+3000);
+}
+function sampleArrowBloodOffset(){
+  const direction=Math.random()*Math.PI*2;
+  // Beta(1,3) radial distribution: p(r) falls quadratically to zero at 1.5 hexes.
+  const radius=HEX_W*1.5*(1-Math.cbrt(1-Math.random()));
+  return {x:Math.cos(direction)*radius,y:Math.sin(direction)*radius};
+}
+function sampleCorpseOffset(unit){
+  const center=worldPointForHex(unit.x,unit.y),vertices=architecturalHexCoreVertices(unit.x,unit.y,1);
+  for(let attempt=0;attempt<12;attempt++){
+    const side=Math.floor(Math.random()*6),a=vertices[side],b=vertices[(side+1)%6],radius=Math.sqrt(Math.random()),mix=Math.random();
+    const offset={x:radius*((1-mix)*(a.x-center.x)+mix*(b.x-center.x)),y:radius*((1-mix)*(a.y-center.y)+mix*(b.y-center.y))};
+    const end={x:center.x+offset.x,y:center.y+offset.y},hit=environmentRayHit(center,end),t=hit?Math.max(0,hit.t-.03):1;
+    const point={x:center.x+offset.x*t,y:center.y+offset.y*t};
+    if(combatSceneTerrain?.isRenderablePoint&&!combatSceneTerrain.isRenderablePoint(point))continue;
+    return {x:offset.x*t,y:offset.y*t};
+  }
+  return {x:0,y:0};
+}
+function startArrowBlood(attacker,target,damage,{death=false}={}){
+  if(!game||!(damage>0)||!attacker||!target)return;
+  const state=combatBloodState(),origin=worldPointForHex(target.x,target.y),squash=environmentSquash();
+  if(death&&target.deathWorldOffset){origin.x+=target.deathWorldOffset.x;origin.y+=target.deathWorldOffset.y;}
+  const drops=[];
+  settleCombatBlood();
+  // Settle oldest bursts before recycling their bounded animation slots.
+  if(state.bursts.length>=16)settleCombatBlood(Math.max(...state.bursts.map(b=>b.started+Math.max(...b.drops.map(d=>(d.delay||0)+d.duration))*1000+1)));
+  for(let i=0,count=(8+Math.floor(Math.random()*5))*(death?4:1);i<count;i++){
+    const offset=sampleArrowBloodOffset(),up=8+Math.random()*14,height=12,gravity=120;
+    const duration=(up+Math.sqrt(up*up+2*gravity*height))/gravity;
+    let end={x:origin.x+offset.x,y:origin.y+offset.y*squash};
+    const wall=environmentRayHit(origin,end);if(wall){const t=Math.max(0,wall.t-.025);end={x:origin.x+(end.x-origin.x)*t,y:origin.y+(end.y-origin.y)*t};}
+    const hex=environmentHex(end),lands=inside(hex.x,hex.y)&&(!combatSceneTerrain?.isRenderableHex||combatSceneTerrain.isRenderableHex(hex.x,hex.y));
+    let ground='stone';if(combatSceneTerrain&&combatSceneContext){const t=combatSceneTerrain,c=combatSceneContext;ground=explorationEncounterApi.surfaceAt(c.map,{x:c.origin.x+end.x/t.cellW,z:c.origin.z+end.y/t.cellH}).ground;}
+    drops.push({end,hex,lands,duration,delay:death?3*duration*i/(count-1):0,up,height,gravity,size:.65+Math.random()*.8,seed:Math.random(),ground,settled:false});
+  }
+  const started=performance.now();state.bursts.push({origin,hex:{x:target.x,y:target.y},started,drops});
+  if(death){const contour=[];
+    for(let i=0;i<24;i++){const angle=i*Math.PI/12,r=HEX_W*(.19+Math.random()*.07),end={x:origin.x+Math.cos(angle)*r,y:origin.y+Math.sin(angle)*r*squash},hit=environmentRayHit(origin,end),t=hit?Math.max(0,hit.t-.02):1;contour.push({x:origin.x+(end.x-origin.x)*t,y:origin.y+(end.y-origin.y)*t});}
+    (state.pools??=[]).push({origin,hex:{x:target.x,y:target.y},started:started+1000,contour});
+  }
+  ensureTransientUnitFxLoop();draw();
 }

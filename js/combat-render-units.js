@@ -94,7 +94,8 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     x:c.x-Math.round(visualDrawW*spriteAnchor.x),y:c.y-Math.round(visualDrawH*spriteAnchor.y)});
   const gpuSprite=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
   const brightness=!gpuSprite&&typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
-  const spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
+  let spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
+  if(!gpuSprite&&entity&&!entity.alive&&Number.isFinite(entity.deathPresentationStartedAt))spriteFilter=`${spriteFilter&&spriteFilter!=='none'?spriteFilter+' ':''}saturate(0.5)`;
   ctx.translate(c.x,c.y);
 
   if(shouldFlip){
@@ -148,6 +149,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     console.error("Sprite draw skipped because the image source is invalid.",error);
   }finally{ctx.restore();}
 
+  drawFlamingSword(renderSource,entity,visualDrawW,visualDrawH,spriteAnchor);
   ctx.restore();
 }
 
@@ -190,11 +192,12 @@ function drawStudioSpriteMob(unit){
       unit.type==='juvenile-red-dragon'?juvenileRedDragonStandSprite:fighterSprite);
   if(!sprite?.complete||!sprite.naturalWidth)return;
   const center=unitFootprintScreenCenter(unit);
+  if(!unit.alive&&unit.deathWorldOffset){const offset=battlefieldProjectVector(unit.deathWorldOffset);center.x+=offset.x;center.y+=offset.y;}
   const dimensions=frame?spriteRenderDimensions(frame.assetId,sprite):
     {width:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?50:32))),
      height:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?54:35)))};
   const friendly=unit.faction==="player";
-  if(game.active===unit.id) drawActiveHex(unit,friendly ? "player" : "#df6b6b");
+  if(unit.alive&&game.active===unit.id) drawActiveHex(unit,friendly ? "player" : "#df6b6b");
   if(unit.alive) drawHpBar(unit,friendly ? "#94e084" : "#df6b6b");
   if(!globalThis.adventurePartySun?.drawingGround&&unitFootprintCellCount(unit)>1){
     ctx.save();

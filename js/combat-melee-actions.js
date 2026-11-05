@@ -241,6 +241,7 @@ async function resolveMeleeHit(attacker,defender,options={}){
       damage-secondaryDamage
     );
 
+  window.AdventurePartyCombatResults?.physicalHit?.(attacker,defender,directDamage);
   defender.hp=Math.max(0,defender.hp-directDamage);
 
   if(typeof candidateWithDamageBeatContext==="function"){

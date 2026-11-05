@@ -61,6 +61,8 @@ for (const setId of ['studio-kobold', 'sprite-set:imported-orc-leader']) {
     const { sandbox, calls } = harness(true, setId);
     if (outcome === 'defeat') sandbox.game.player.alive = false;
     assert.equal(outcome === 'victory' ? sandbox.checkCombatVictory() : sandbox.checkPartyDefeat(), true);
+    assert.deepEqual(calls.navigation,[],'Resolved combat remains visible until acknowledged');
+    sandbox.handleCombatKey({key:' ',code:'Space',preventDefault(){}});
     assert.deepEqual(calls.navigation, [restoreUrl], `${setId} ${outcome} returns immediately`);
     assert.equal(calls.timers.length, 0, 'Studio tests do not wait for the ordinary death-effect delay');
     assert.deepEqual(calls.loot, []);
@@ -91,6 +93,8 @@ for (const outcome of ['victory', 'defeat']) {
   assert.equal(calls.timers.length, 1);
   assert.equal(calls.timers[0].delay, 1000, 'Ordinary combat retains its death-effect delay');
   calls.timers[0].callback();
+  assert.equal(calls.loot.length,0,'Loot waits for Space after result holds finish');
+  sandbox.handleCombatKey({key:' ',code:'Space',preventDefault(){}});
   assert.equal(calls.loot.length, 1, 'Ordinary combat still opens its results and loot screen');
   assert.deepEqual(calls.xp, outcome === 'victory' ? [100] : []);
   assert.equal(calls.loot[0][2], outcome === 'victory' ? 110 : 0);

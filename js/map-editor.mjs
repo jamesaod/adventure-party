@@ -1,13 +1,14 @@
-import {VIEW_TOOLS,OBJECT_TOOLS,eraseTool,texturePreview} from './editor-view-tools.mjs?v=R238C274';
-import {createMapPreview} from './map-editor-preview.mjs?v=R238C274';
-import {wallFaceMaterial,wallFaceLabels,outsideSurface} from './wall-surfaces.mjs?v=R238C274';
-import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C274';
-import {groundKind} from './exploration-ground.mjs?v=R238C274';
+import {EXPLORATION_SKIES} from './exploration-skies.mjs';
+import {VIEW_TOOLS,OBJECT_TOOLS,eraseTool,texturePreview} from './editor-view-tools.mjs?v=R238C278';
+import {createMapPreview} from './map-editor-preview.mjs?v=R238C278';
+import {wallFaceMaterial,wallFaceLabels,outsideSurface} from './wall-surfaces.mjs?v=R238C278';
+import {quarterAt,quarterPoints,quarterFloor,ceilingKind} from './quarter-walls.mjs?v=R238C278';
+import {groundKind} from './exploration-ground.mjs?v=R238C278';
 import {isOutdoor,ambientLightAt,paintAmbientLight} from './exploration-environment.mjs?v=R238C262';
-import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C274';
-import {FACINGS} from './exploration-core.mjs?v=R238C274';
-import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C274';
-import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C274';
+import {upgradeEdgeMap,paintEdge,edgeAtSide,edgeKey,effectiveEdges} from './exploration-edges.mjs?v=R238C278';
+import {FACINGS} from './exploration-core.mjs?v=R238C278';
+import {DRAFT_KEY,TEST_KEY,copy,newId,seedPack,blankMap,blankEdgeMap,terrainTransitionSample,quarterTowerSample,packIssues,parsePack,paintCell,linkMaps,resizeMap,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from './exploration-authoring.mjs?v=R238C278';
+import {encounterCells,encounterContains} from './exploration-encounters.mjs?v=R238C278';
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
 const $=id=>document.getElementById(id);
 let selectedEdge=null,editorMode='paint',mapPreview=null;
@@ -67,7 +68,7 @@ function inspector(){
   $('removeEntrance').disabled=!entrance;$('removeExit').disabled=!exit;surfaceInspector();updateContext();
 }
 function grid(){
-  const view=$('editorView').value;$('editorGrid').dataset.view=view;$('viewLegend').textContent={environment:'Green: outdoor / sky · Cream: indoor / ceiling',floor:'Grass: green · Dirt: brown · Stone: gray',ceiling:'Stone: gray · Wood: brown · Outdoor: sky blue',ambient:'Effective ambient light percentage, including environment defaults.',wall:'Stone: gray · Wood: brown · Inspect a band to edit its face. Paintbrush and Erase work on edges or curves.',objects:'Doors: orange · Windows: cyan · T: wall sconce · S/E/X/C: start, entrance, exit, encounter.'}[view];
+  const view=$('editorView').value;$('editorGrid').dataset.view=view;$('viewLegend').textContent={environment:'Green: outdoor / sky · Cream: indoor / ceiling',floor:'Grass: green · Dirt: brown · Stone: gray',ceiling:'Stone: gray · Wood: brown · Outdoor: sky blue',ambient:'Effective ambient light percentage, including environment defaults.',construction:'Paint edges to build/remove walls. Remove solid square creates floor; Erase clears the selected construction type.',wall:'Stone: gray · Wood: brown · Inspect a band to edit its face. Paintbrush and Erase work on edges or curves.',objects:'Doors: orange · Windows: cyan · T: wall sconce · S/E/X/C: start, entrance, exit, encounter.'}[view];
   const m=map(),fragment=document.createDocumentFragment(),areas=new Map(),edges=new Map(effectiveEdges(m).map(e=>[edgeKey(e),e]));
   (m.encounters||[]).forEach((e,i)=>{for(const p of encounterCells(e))if('.D'.includes(m.grid[p.z]?.[p.x]??'#'))areas.set(`${p.x},${p.z}`,{event:e,index:i+1});});$('editorGrid').style.gridTemplateColumns=`repeat(${m.width},minmax(24px,1fr))`;$('editorGrid').style.width=`max(100%, ${m.width*24}px)`;$('editorGrid').setAttribute('aria-label',`${m.width} by ${m.height} editable map`);
   for(let z=0;z<m.height;z++)for(let x=0;x<m.width;x++){
@@ -109,7 +110,7 @@ function render(){
   if(activeEncounterId&&!(map().encounters||[]).some(e=>e.id===activeEncounterId)){activeEncounterId=null;formKey=null;}
   selectionKeys=new Set([...selectionKeys].filter(k=>{const [x,z]=k.split(',').map(Number);return x<map().width&&z<map().height;}));
   selected.x=Math.min(selected.x,map().width-1);selected.z=Math.min(selected.z,map().height-1);$('mapWidth').value=map().width;$('mapHeight').value=map().height;$('mapDimensions').textContent=`${map().width} × ${map().height} · North ↑`;$('spawnX').min=$('spawnZ').min=map().version===2?1:2;$('spawnX').max=map().width-(map().version===2?0:1);$('spawnZ').max=map().height-(map().version===2?0:1);
-  $('packName').value=pack.name;$('mapName').value=map().name;
+  $('skyboxSelect').value=map().skybox||'default';$('packName').value=pack.name;$('mapName').value=map().name;
   selectOptions($('mapSelect'),pack.maps.map(m=>[m.id,m.name]),mapId);
   const current=$('testEntrance').value;selectOptions($('testEntrance'),[['','Map start'],...map().entrances.map(e=>[e.id,e.name])],current);
   grid();inspector();$('undo').disabled=!history.length;$('deleteMap').disabled=pack.maps.length<2;
@@ -157,13 +158,14 @@ function applyEdge(button,event){
 }
 function activateBrush(id){editorMode='paint';viewBrushes[$('editorView').value]=id;setTool(id);updateContext();}
 function updateTexturePreview(){const view=$('editorView').value,p=texturePreview(view,viewBrushes[view],$('wallTexture').value||'stone');$('texturePreviewImage').hidden=!p.src;if(p.src)$('texturePreviewImage').src=p.src;$('texturePreviewImage').alt=p.name;$('texturePreviewName').textContent=p.name;$('texturePreviewSwatch').hidden=!!p.src;$('texturePreviewSwatch').textContent=view==='ambient'?$('ambientPercent').value+'%':view==='objects'?($('objectTool').selectedOptions[0]?.textContent||'Object'):($('environmentTool').value==='outdoor'?'Outdoor / sky':'Indoor / ceiling');}
-function updateContext(){const view=$('editorView').value;for(const e of document.querySelectorAll('[data-views]'))e.hidden=!e.dataset.views.split(' ').includes(view);for(const [id,views] of [['surfacePanel',['environment','floor','ceiling','ambient']],['edgePanel',['wall','objects']],['curvePanel',['wall']],['squarePanel',['objects']],['entrancePanel',['objects']],['exitPanel',['objects']],['encounterPanel',['objects']]])$(id).hidden=!views.includes(view);$('newDoorPanel').hidden=view!=='objects'||!['edge-door','edge-window'].includes($('objectTool').value);}
+function updateContext(){const view=$('editorView').value;for(const e of document.querySelectorAll('[data-views]'))e.hidden=!e.dataset.views.split(' ').includes(view);for(const [id,views] of [['surfacePanel',['environment','floor','ceiling','ambient']],['edgePanel',['wall','construction','objects']],['curvePanel',['wall','construction']],['squarePanel',['objects']],['entrancePanel',['objects']],['exitPanel',['objects']],['encounterPanel',['objects']]])$(id).hidden=!views.includes(view);$('newDoorPanel').hidden=view!=='objects'||!['edge-door','edge-window'].includes($('objectTool').value);}
 function surfaceInspector(){const view=$('editorView').value,m=map(),p=selected,choices={environment:[['indoor','Indoor / ceiling'],['outdoor','Outdoor / sky']],floor:[['ground-stone','Stone'],['ground-grass','Grass'],['ground-dirt','Dirt path'],['ground-auto','Automatic']],ceiling:[['ceiling-stone','Stone'],['ceiling-wood','Wood'],['ceiling-auto','Automatic']]};$('surfaceHeading').textContent=({environment:'Environment',floor:'Floor texture',ceiling:'Ceiling texture',ambient:'Ambient light'})[view]||'Selected surface';$('surfaceSelection').textContent=`Square ${p.x+1}, ${p.z+1} · ${selectionKeys.size} selected`;if(choices[view])selectOptions($('selectedSurface'),choices[view],view==='environment'?(isOutdoor(m,p.x,p.z)?'outdoor':'indoor'):view==='floor'?'ground-'+groundKind(m,p.x,p.z):'ceiling-'+ceilingKind(m,p.x,p.z));$('selectedAmbient').value=ambientLightAt(m,p.x,p.z);$('surfaceAmbientLabel').hidden=view!=='ambient';$('surfaceTextureLabel').hidden=view==='ambient';}
 function eraseAt(button,event){
  const x=Number(button.dataset.x),z=Number(button.dataset.z),view=$('editorView').value,k=`${x},${z}`,edge=edgeFromPointer(button,event),record=effectiveEdges(map()).find(e=>edgeKey(e)===edgeKey(edge)),q=quarterAt(map(),x,z),box=button.getBoundingClientRect(),u=(event.clientX-box.left)/box.width,v=(event.clientY-box.top)/box.height,near=event.type==='click'&&event.detail===0?isEdgeTool():Math.min(u,1-u,v,1-v)<.2;
  selected={x,z};selectionKeys=new Set([k]);const stamp=view==='wall'&&(!q||near)?edgeKey(edge):k;if(stroke.has(stamp))return;stroke.add(stamp);
  try{
-  if(view==='wall'){if(q&&!near)paintCell(map(),x,z,'curve-erase');else{selectedEdge=edge;paintEdge(map(),edge,'erase');}}
+  if(view==='construction'){const brush=viewBrushes.construction;if(brush==='void'||brush==='floor')paintCell(map(),x,z,'floor');else if(brush.startsWith('curve-'))paintCell(map(),x,z,'curve-erase');else{selectedEdge=edge;paintEdge(map(),edge,'erase');}}
+  else if(view==='wall'){if(q&&!near)paintCell(map(),x,z,'curve-erase');else{selectedEdge=edge;paintEdge(map(),edge,'erase');}}
   else if(view==='objects'){
    const kind=$('objectTool').value;
    if(['edge-door','edge-window'].includes(kind)){if(!record||record.kind!==kind.slice(5))throw Error('No matching opening on this edge.');paintEdge(map(),edge,'erase');}
@@ -185,13 +187,15 @@ async function start(){
   pack.maps=pack.maps.map(upgradeEdgeMap);
   if(pack.maps.some(m=>m.migrationNotes?.length))loadNotice+=' Converted legacy door squares to north/west edges. Review highlighted migration notes; stored maps are unchanged until Save maps.';
   mapId=pack.maps.find(m=>m.id===new URLSearchParams(location.search).get('map'))?.id||pack.maps[0].id;selected={x:map().start.x,z:map().start.z};
+  for(const sky of EXPLORATION_SKIES)option($('skyboxSelect'),sky.id,sky.name);
+  $('skyboxSelect').addEventListener('change',()=>mutate(()=>{map().skybox=$('skyboxSelect').value;}));
   for(const [menu,ids] of [['floorTool',['ground-dirt','ground-grass','ground-stone','ground-auto']],['ceilingTool',['ceiling-wood','ceiling-stone','ceiling-auto']],['lightingTool',['ambient','ambient-default']],['functionTool',['floor','void']]]){
    for(const id of ids)option($(menu),id,toolLabels[id]);
    $(menu).addEventListener('change',()=>{if($(menu).value)activateBrush($(menu).value);});
   }
   $('editorView').addEventListener('change',()=>{setTool(editorMode==='inspect'?'select':viewBrushes[$('editorView').value]);grid();inspector();updateTexturePreview();});
   for(const [id,name] of OBJECT_TOOLS)option($('objectTool'),id,name);
-  for(const id of ['environmentTool','wallShape','objectTool'])$(id).addEventListener('change',()=>{if(id==='objectTool'&&['edge-door','edge-window'].includes($(id).value))$('brushOpeningWidth').value=$(id).value==='edge-window'?84:37.5;activateBrush($(id).value);updateContext();});
+  for(const id of ['environmentTool','wallShape','objectTool','constructionTool'])$(id).addEventListener('change',()=>{if(id==='objectTool'&&['edge-door','edge-window'].includes($(id).value))$('brushOpeningWidth').value=$(id).value==='edge-window'?84:37.5;activateBrush($(id).value);updateContext();});
   $('eraseTool').addEventListener('click',()=>{editorMode='erase';setTool(viewBrushes[$('editorView').value]);updateTexturePreview();});
   $('inspectTool').addEventListener('click',()=>{editorMode='inspect';setTool('select');});
   action('applySurfaceSettings',()=>mutate(()=>{const view=$('editorView').value;for(const p of selectedCells())if(map().grid[p.z]?.[p.x]==='.')paintCell(map(),p.x,p.z,view==='ambient'?'ambient':$('selectedSurface').value,Number($('selectedAmbient').value));}));
@@ -200,7 +204,7 @@ async function start(){
   $('curveMaterial').addEventListener('change',()=>{$('curveFaceA').value=$('curveFaceB').value=$('curveMaterial').value;});
   action('applyCurveSettings',()=>{const q=quarterAt(map(),selected.x,selected.z);if(!q)throw Error('Select a curved wall first.');mutate(()=>paintCell(map(),q.x,q.z,'curve-'+q.corner,0,{material:$('curveMaterial').value,faceMaterials:{a:$('curveFaceA').value,b:$('curveFaceB').value},outsideGround:$('curveOutsideGround').value}));});
   $('selectTool').addEventListener('click',()=>{editorMode='paint';setTool(viewBrushes[$('editorView').value]);});
-  $('wallTexture').addEventListener('change',()=>{if($('wallTexture').value){activateBrush($('wallShape').value);}});
+  $('wallTexture').addEventListener('change',()=>{if($('wallTexture').value){activateBrush($('editorView').value==='construction'?$('constructionTool').value:$('wallShape').value);}});
   $('edgeMaterial').addEventListener('change',()=>{$('edgeFaceA').value=$('edgeFaceB').value=$('edgeMaterial').value;});
   const point=b=>({x:Number(b.dataset.x),z:Number(b.dataset.z)});
   function updateSelection(p){

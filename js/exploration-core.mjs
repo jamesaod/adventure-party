@@ -1,3 +1,4 @@
+import {validateSkybox} from './exploration-skies.mjs';
 import {validateCeiling} from './quarter-walls.mjs?v=R238C274';
 import {validateGround} from './exploration-ground.mjs?v=R238C274';
 import {validateEnvironment} from './exploration-environment.mjs?v=R238C262';
@@ -6,7 +7,7 @@ export const FACINGS=['North','East','South','West'];
 const vectors=[[0,-1],[1,0],[0,1],[-1,0]];
 export const cellKey=(x,z)=>`${x},${z}`;
 export function validateMap(map){
- if(map){validateEnvironment(map);validateGround(map);validateCeiling(map);}
+ if(map){validateSkybox(map);validateEnvironment(map);validateGround(map);validateCeiling(map);}
  if(map?.version===2){
   if(![map.width,map.height].every(n=>Number.isInteger(n)&&n>=8&&n<=128)||!Array.isArray(map.grid)||map.grid.length!==map.height||map.grid.some(row=>typeof row!=='string'||row.length!==map.width||/[^#.]/.test(row)))throw Error('Expected an edge map with floor/void grid and width/height 8–128.');
   const s=map.start;if(!Number.isInteger(s?.x)||!Number.isInteger(s?.z)||map.grid[s.z]?.[s.x]!=='.'||!Number.isInteger(s.facing)||s.facing<0||s.facing>3)throw Error('Invalid start.');

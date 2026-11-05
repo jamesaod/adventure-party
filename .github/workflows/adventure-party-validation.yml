@@ -32,6 +32,15 @@ jobs:
           node --check js/game-script-loader.mjs
           node scripts/test-game-script-loader.mjs
           node scripts/test-combat-module-boundaries.mjs
+          node scripts/test-arrow-blood.mjs
+          node scripts/test-projected-shadows.mjs
+          node scripts/test-unit-shadow-proxy.mjs
+          node scripts/test-combat-model-shadow.mjs
+          node scripts/test-combat-death-scene.mjs
+          node scripts/test-tree-fire-particles.mjs
+          node scripts/test-burning-tree-audio.mjs
+          node scripts/test-flaming-sword.mjs
+          node scripts/test-flaming-sword-light.mjs
           node scripts/test-combat-turn-flow.mjs
           node scripts/test-combat-casting-lifecycle.mjs
           node scripts/test-combat-spell-actions.mjs

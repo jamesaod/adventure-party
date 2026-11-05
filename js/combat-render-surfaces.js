@@ -2,7 +2,7 @@
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
 
-function drawTerrainScorch(){
+function drawTerrainScorch(cacheOnly=false){
   const marks=Object.values(game.terrainScorch||{});if(!marks.length)return;
   let cache=game.scorchCache;
   if(!cache){
@@ -23,17 +23,21 @@ function drawTerrainScorch(){
       if(cover<=0)continue;
       let kind='grass';if(combatSceneTerrain&&combatSceneContext){const t=combatSceneTerrain,origin=combatSceneContext.origin;
         kind=explorationEncounterApi.surfaceAt(combatSceneContext.map,{x:origin.x+wx/t.cellW,z:origin.z+wy/t.cellH}).ground;}
-      const ash=noise>.77&&cover>.35,color=ash?[70,65,57]:kind==='stone'?[16,17,18]:kind==='dirt'?[28,20,14]:kind==='wood'?[18,12,8]:[17,18,11];
+      const color=kind==='stone'?[16,17,18]:kind==='dirt'?[28,20,14]:kind==='wood'?[18,12,8]:[17,18,11];
       const index=(y*width+x)*4;pixels.data[index]=color[0];pixels.data[index+1]=color[1];pixels.data[index+2]=color[2];pixels.data[index+3]=Math.round(cover*(.68+noise*.24)*255);
     }
     context.putImageData(pixels,0,0);cache=game.scorchCache={image,left,top,spanX:width*step,spanY:height*step};
   }
+  if(cacheOnly)return cache;
+  // The GPU floor applies this albedo layer before local-light shading.
+  if(typeof explorationGpuLighting!=='undefined'&&explorationGpuLighting)return;
   const origin=screenPointForWorld({x:cache.left,y:cache.top}),u=battlefieldProjectVector({x:cache.spanX,y:0}),v=battlefieldProjectVector({x:0,y:cache.spanY});
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.transform(u.x/cache.image.width,u.y/cache.image.width,v.x/cache.image.height,v.y/cache.image.height,origin.x,origin.y);ctx.drawImage(cache.image,0,0);ctx.restore();
 }
 
 function drawTreeGroundShadow(decoration){
   const tileSet=activeCombatTerrainTileSet();
+  drawFirContactShadow(decoration,tileSet);
   if(directFirRendering()){
     const shadow=liveFirTreeRender(tileSet,decoration,{host:combatGpu,ground:true}).shadow;if(!shadow)return;
     const center=hexCenter(decoration.x,decoration.y),scale=tileSet.treeDrawHeight/210,left=center.x+shadow.left*scale,top=center.y+shadow.top*scale,width=shadow.width*scale,height=shadow.height*scale;
@@ -1160,4 +1164,78 @@ function drawActiveHex(entity,color){
     ctx.lineWidth=3;
     ctx.stroke();
   }
+}
+
+// Rebuild small per-hex stamps only when droplets settle, never each animation frame.
+function drawCombatBloodStains(){
+  drawCombatDeathPools();
+  const state=game?.bloodState;if(!state?.stains.length)return;
+  if(!state.cache||state.cache.revision!==state.revision){
+    const groups=new Map();
+    for(const stain of state.stains){const id=stain.hex.x+':'+stain.hex.y;let group=groups.get(id);
+      if(!group){const center=worldPointForHex(stain.hex.x,stain.hex.y),image=document.createElement('canvas');image.width=128;image.height=128;
+        group={image,hex:stain.hex,left:center.x-HEX_W/2,top:center.y-HEX_ROW};groups.set(id,group);}
+      const c=group.image.getContext('2d'),sx=128/HEX_W,sy=128/(HEX_ROW*2),x=(stain.point.x-group.left)*sx,y=(stain.point.y-group.top)*sy;
+      c.fillStyle=stain.seed<.5?'rgba(83,13,17,.82)':'rgba(111,22,24,.78)';
+      const flecks=stain.ground==='grass'?4:2;
+      for(let i=0;i<flecks;i++){const angle=stain.seed*37+i*2.4,r=i?stain.size:0;c.beginPath();c.ellipse(x+Math.cos(angle)*r*sx,y+Math.sin(angle)*r*sy,stain.size*sx*(i?.35:.8),stain.size*sy*(i?.65:.5),angle,0,Math.PI*2);c.fill();}
+    }state.cache={revision:state.revision,groups:[...groups.values()]};
+  }
+  ctx.save();
+  // Continuous party LOS also clips partial hexes alongside walls.
+  if(typeof friendlyVisibilityObservers==='function'&&typeof observerVisibilityContext==='function'){
+    const polygons=friendlyVisibilityObservers().map(observer=>observerVisibilityContext(observer)?.polygon).filter(Boolean);
+    if(polygons.length){ctx.beginPath();for(const polygon of polygons){const points=polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();}
+  }
+  for(const group of state.cache.groups){if(!isHexVisibleToFriendlyParty(group.hex.x,group.hex.y))continue;
+    const origin=screenPointForWorld({x:group.left,y:group.top}),u=battlefieldProjectVector({x:HEX_W,y:0}),v=battlefieldProjectVector({x:0,y:HEX_ROW*2});
+    ctx.save();ctx.filter='brightness('+Math.max(.08,Math.min(1,combatSpriteBrightness({...group.hex,alive:true})))+')';
+    ctx.transform(u.x/128,u.y/128,v.x/128,v.y/128,origin.x,origin.y);ctx.drawImage(group.image,0,0);ctx.restore();
+  }ctx.restore();
+}
+
+function drawCombatDeathPools(){
+ const now=performance.now();
+ for(const pool of game?.bloodState?.pools||[]){
+  if(now<pool.started||!isHexVisibleToFriendlyParty(pool.hex.x,pool.hex.y))continue;
+  const growth=Math.sqrt(Math.min(1,(now-pool.started)/3000));
+  const points=pool.contour.map(p=>screenPointForWorld({x:pool.origin.x+(p.x-pool.origin.x)*growth,y:pool.origin.y+(p.y-pool.origin.y)*growth}));
+  ctx.save();ctx.filter='brightness('+Math.max(.08,Math.min(1,combatSpriteBrightness({...pool.hex,alive:true})))+')';
+  if(typeof tracePolygonOnContext==='function'&&tracePolygonOnContext(ctx,points)){ctx.fillStyle='rgba(83,8,13,.85)';ctx.fill();}
+  ctx.restore();
+ }
+}
+
+// Low fir boughs occlude the ground beneath them independently of solar direction.
+function drawFirContactShadow(tree,tileSet){
+  if(!tileSet.treeSheetSrc?.includes('/treeit-firs/'))return;
+  if(game.firFireStates?.[key(tree.x,tree.y)]?.state==='burnt')return;
+  let image=drawFirContactShadow.image;
+  if(!image){image=document.createElement('canvas');image.width=image.height=128;
+    const brush=image.getContext('2d'),gradient=brush.createRadialGradient(64,64,0,64,64,64);
+    gradient.addColorStop(0,'rgba(0,0,0,.48)');gradient.addColorStop(.22,'rgba(0,0,0,.35)');
+    gradient.addColorStop(.6,'rgba(0,0,0,.14)');gradient.addColorStop(1,'rgba(0,0,0,0)');
+    brush.fillStyle=gradient;brush.fillRect(0,0,128,128);drawFirContactShadow.image=image;
+  }
+  const center=worldPointForHex(tree.x,tree.y),rx=HEX_W*.75,ry=rx*HEX_ROW/(HEX_W*Math.sqrt(3)/2);
+  const left=center.x-rx,top=center.y-ry;
+  if(combatGpu&&combatSceneTerrain){
+    const tiles=visibleHexes().filter(hex=>{const p=worldPointForHex(hex.x,hex.y);return Math.abs(p.x-center.x)<rx+HEX_W&&Math.abs(p.y-center.y)<ry+HEX_ROW*2;});
+    const faces=explorationFloorFragments(tiles).map(fragment=>clipFirContactPolygon(fragment.polygon,left,top,left+rx*2,top+ry*2)).filter(points=>points.length>=3).map(points=>({points,uv:points.map(p=>[Math.max(0,Math.min(1,(p.x-left)/(rx*2))),Math.max(0,Math.min(1,1-(p.y-top)/(ry*2)))])}));
+    combatGpu.surface(faces,image);return;
+  }
+  const origin=screenPointForWorld({x:left,y:top}),u=battlefieldProjectVector({x:rx*2,y:0}),v=battlefieldProjectVector({x:0,y:ry*2});
+  ctx.save();ctx.transform(u.x/128,u.y/128,v.x/128,v.y/128,origin.x,origin.y);ctx.drawImage(image,0,0);ctx.restore();
+}
+
+// Clip the receiver geometry to the stamp: floor materials repeat UVs by default.
+function clipFirContactPolygon(points,left,top,right,bottom){
+  for(const [axis,bound,sign] of [['x',left,1],['x',right,-1],['y',top,1],['y',bottom,-1]]){
+    const result=[];if(!points.length)break;
+    for(let i=0;i<points.length;i++){
+      const a=points[i],b=points[(i+1)%points.length],insideA=(a[axis]-bound)*sign>=0,insideB=(b[axis]-bound)*sign>=0;
+      if(insideA)result.push(a);
+      if(insideA!==insideB){const t=(bound-a[axis])/(b[axis]-a[axis]);result.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});}
+    }points=result;
+  }return points.map(p=>({x:Math.max(left,Math.min(right,p.x)),y:Math.max(top,Math.min(bottom,p.y))}));
 }

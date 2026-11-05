@@ -1,3 +1,4 @@
+import {createTreeFireParticles} from './combat-tree-fire-particles.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import {solarState,solarPalette,solarAmbient} from './solar-clock.mjs?v=R238C274';
@@ -27,7 +28,7 @@ export async function createCombatFirTrees(){
   scene.add(hemisphere,sun,sun.target);
   const camera=new THREE.OrthographicCamera(-78.75,78.75,183.75,-26.25,1,1800);
   camera.position.set(0,568,823);camera.lookAt(0,0,0);camera.updateMatrixWorld();
-  const fill={value:1},foliageReflectivity={value:1};
+  const fill={value:1},foliageReflectivity={value:0};
   const localLights=Array.from({length:4},()=>{const light=new THREE.PointLight(0xffffff,0,200,2);scene.add(light);return light;});
   let liveLighting=true;
   const sharedMaterials=new Map();
@@ -53,12 +54,16 @@ export async function createCombatFirTrees(){
             shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCanopyExposure=canopyExposure;');
             shader.fragmentShader='uniform float foliageReflectivity; uniform float foliageFill; varying float vCanopyExposure;\n'+shader.fragmentShader;
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',
-              THREE.ShaderChunk.lights_fragment_begin.replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity / 3.0,'));
+              THREE.ShaderChunk.lights_fragment_begin
+                .replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity / 3.0,')
+                // Foliage-only local diffuse response; sunlight and bark keep their lighting.
+                .replace('getPointLightInfo( pointLight, geometryPosition, directLight );',
+                  'getPointLightInfo( pointLight, geometryPosition, directLight ); directLight.color *= 0.5;'));
             shader.fragmentShader=shader.fragmentShader.replace('#include <shadowmap_pars_fragment>','#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>');
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>',
               '#include <lights_fragment_end>\nreflectedLight.directSpecular *= foliageReflectivity; reflectedLight.indirectSpecular *= foliageReflectivity; reflectedLight.indirectDiffuse *= mix(0.12,1.0,vCanopyExposure); reflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.035,0.26,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
           };
-          original.customProgramCacheKey=()=> 'combat-fir-burning-matte';
+          original.customProgramCacheKey=()=> 'combat-fir-foliage-matte-local-half';
         }else{
           // Darken bark albedo once per shared material; direct light still shades it.
           original.color.multiplyScalar(.45);
@@ -86,24 +91,7 @@ export async function createCombatFirTrees(){
       for(let i=0;i<pos.count;i+=Math.max(1,Math.floor(pos.count/256))){const point=new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(mesh.matrixWorld);if(point.y>8)samples.push(point);}
     });return samples;
   });
-  const flameGeometry=new THREE.BufferGeometry(),positions=new Float32Array(particleCount*3),seeds=new Float32Array(particleCount),kinds=new Float32Array(particleCount);
-  for(let i=0;i<particleCount;i++){seeds[i]=(Math.sin(i*127.1+19.7)*43758.5453)%1;kinds[i]=i%5===0?1:0;}
-  flameGeometry.setAttribute('position',new THREE.BufferAttribute(positions,3));flameGeometry.setAttribute('seed',new THREE.BufferAttribute(seeds,1));flameGeometry.setAttribute('ember',new THREE.BufferAttribute(kinds,1));
-  const fireTime={value:0},fireYaw={value:0},firePhase={value:0};
-  const flameMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-    uniforms:{time:fireTime,yaw:fireYaw,phase:firePhase},
-    vertexShader:`attribute float seed;attribute float ember;uniform float time;uniform float yaw;uniform float phase;varying float life;varying float isEmber;
-      void main(){float t=fract(time*(.55+fract(seed)*.4)+seed+phase);life=t;isEmber=ember;
-        vec3 p=position;float c=cos(yaw),s=sin(yaw);p.xz=mat2(c,s,-s,c)*p.xz;
-        p.y+=t*mix(24.,70.,ember);p.x+=sin(time*2.+seed*30.+t*5.)*t*7.;p.z+=cos(time*1.7+seed*23.+t*4.)*t*5.;
-        gl_Position=projectionMatrix*viewMatrix*vec4(p,1.);gl_PointSize=mix(34.,3.,ember)*(1.-.55*t);}`,
-    fragmentShader:`varying float life;varying float isEmber;
-      void main(){vec2 p=gl_PointCoord*2.-1.;p.x*=mix(1.9,1.,isEmber)+max(0.,-p.y)*2.2;float d=length(p);
-        float alpha=(1.-smoothstep(.15,1.,d))*sin(life*3.14159)*.72;
-        vec3 color=mix(vec3(1.,.12,.015),vec3(1.,.82,.22),(1.-d)*(1.-life));
-        gl_FragColor=vec4(color,alpha);}`
-  });
-  const flames=new THREE.Points(flameGeometry,flameMaterial);flames.frustumCulled=false;flames.renderOrder=10;
+  const fireParticlesGpu=createTreeFireParticles(particleCount),flames=fireParticlesGpu.mesh;
   // Immutable bounds are prepared once, not by projecting every vertex per sun update.
   const treeBounds=models.map(model=>{
     const healthy=new THREE.Box3(),bare=new THREE.Box3();model.updateMatrixWorld(true);
@@ -176,7 +164,7 @@ export async function createCombatFirTrees(){
     hemisphere.color.setHex(skyProfile.sky);hemisphere.groundColor.setHex(skyProfile.ground);
     const ambientFactor=Math.max(0,ambient)/100*solar.sky;
     hemisphere.intensity=1.5*ambientFactor;
-    fill.value=ambientFactor;foliageReflectivity.value=burning?0:1;
+    fill.value=ambientFactor;foliageReflectivity.value=0; // Matte foliage: retain diffuse illumination and canopy occlusion.
     for(let i=0;i<localLights.length;i++){
       const target=localLights[i],source=active[i];target.intensity=0;if(!source)continue;
       target.position.set(source.x,source.height,source.z);target.color.setRGB(...source.color);
@@ -196,10 +184,7 @@ export async function createCombatFirTrees(){
     if(!direct)renderer.setSize(384,512,false);
     camera.left=-78.75;camera.right=78.75;camera.top=183.75;camera.bottom=-26.25;camera.updateProjectionMatrix();
     if(burning&&!burnt){
-      const samples=anchors[variant];
-      for(let i=0;i<particleCount;i++){const point=samples[(i*137+Math.floor(firePhaseValue*101))%samples.length];positions.set([point.x,point.y,point.z],i*3);}
-      flameGeometry.attributes.position.needsUpdate=true;flameGeometry.setDrawRange(0,Math.min(particleCount,fireParticles));
-      fireTime.value=performance.now()/1000;fireYaw.value=model.rotation.y;firePhase.value=firePhaseValue;scene.add(flames);
+      fireParticlesGpu.update({samples:anchors[variant],yaw:model.rotation.y,phase:firePhaseValue,time:performance.now()/1000,count:fireParticles});scene.add(flames);
     }
     if(direct){
       const key=[variant,rotation,burnt].join(':');let self=directSelfCache.get(key);

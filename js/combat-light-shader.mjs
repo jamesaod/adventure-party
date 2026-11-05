@@ -28,10 +28,15 @@ export const combatLightGLSL=`
     float cutoff=pow(max(0.,1.-pow(d/shape.x,4.)),2.);
     linearBase+=color.rgb*color.a*alignment*cutoff/(3.14159265359*max(.01,pow(d,shape.y)));
    }else{
-    vec2 axial=vec2(world.x/64.-world.y/63.,world.y/31.5)-source.xy;
-    float d=max(max(abs(axial.x),abs(axial.y)),abs(axial.x+axial.y));
-    if(d>shape.x)continue;
-    radiance+=color.rgb*color.a*.18*(1.-pow(clamp(d/(shape.x+.45),0.,1.),2.));
+    // Spell/fire coordinates originate in axial cells, but their visible
+    // lighting uses Euclidean scene metres, not a hex-distance contour.
+    vec2 origin=vec2((source.x+source.y*.5)*64.,source.y*31.5)*lightWorld.xy+lightWorld.zw;
+    vec3 delta=vec3(origin.x,source.z,origin.y)-point;
+    float radius=shape.x*64.*lightWorld.x;
+    float d=length(delta)/max(.01,radius);
+    if(d>=1.)continue;
+    float falloff=pow(1.-d*d,2.);
+    radiance+=color.rgb*color.a*.18*falloff;
    }
   }
  }
@@ -44,7 +49,7 @@ export function packCombatLights(lights){
  const position=new Float32Array(128),color=new Float32Array(128),shape=new Float32Array(128),bounds=new Float32Array(128);
  lights.forEach((l,i)=>{
   const spell=l.kind==='spell';
-  position.set(spell?[l.x,l.y,0,1]:[l.x,l.y,l.z,0],i*4);
+  position.set(spell?[l.x,l.y,l.height||2.2,1]:[l.x,l.y,l.z,0],i*4);
   color.set([...(spell?l.color.map(v=>v/255):linearLightColor(l.color)),l.intensity],i*4);
   shape.set([l.range,l.decay||1,0,0],i*4);bounds.set(l.bounds,i*4);
  });

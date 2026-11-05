@@ -1,7 +1,6 @@
 import {createBandedLighting} from './banded-lighting.mjs?v=R238C205';
 import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs?v=R238C202';
-import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
-import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
+import {captureModelShadow,setModelShadow,prepareModelShadow} from './combat-model-shadow.mjs';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C178';
 import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C178';
@@ -184,7 +183,23 @@ function quantizedCanvas(source,width,height,style,{flipY=true}={}){
   return canvas;
 }
 
-function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,shadowMaterial,bandedLighting,shading){
+// Project the actual mounted blade into each captured pose, retaining its attachment.
+function captureFlamingBlade(attachment,camera,occluder=null){
+  if(!attachment?.model)return null;
+  const root=attachment.model;root.updateWorldMatrix(true,true);
+  const inverse=root.matrixWorld.clone().invert(),box=new THREE.Box3(),p=new THREE.Vector3();
+  root.traverse(mesh=>{if(!mesh.isMesh)return;const attr=mesh.geometry?.attributes.position;if(!attr)return;for(let i=0;i<attr.count;i++){p.fromBufferAttribute(attr,i).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);box.expandByPoint(p);}});
+  if(box.isEmpty())return null;
+  const size=box.getSize(new THREE.Vector3()),axis=['x','y','z'].sort((a,b)=>size[b]-size[a])[0],center=box.getCenter(new THREE.Vector3());
+  const ray=new THREE.Raycaster(),forward=new THREE.Vector3();camera.getWorldDirection(forward);
+  occluder?.updateWorldMatrix(true,true);
+  return Array.from({length:7},(_,i)=>{const t=.22+.73*i/6;p.copy(center);p[axis]=box.min[axis]+size[axis]*t;p.applyMatrix4(root.matrixWorld);const world=p.clone();p.project(camera);
+    ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
+    const distance=world.clone().sub(ray.ray.origin).dot(ray.ray.direction);
+    const blocked=!!occluder&&ray.intersectObject(occluder,true).some(hit=>{let object=hit.object;while(object){if(object===root)return false;object=object.parent;}return hit.object.visible&&hit.distance<distance-.015;});
+    return {x:(p.x+1)/2,y:(1-p.y)/2,blocked};});
+}
+function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,bandedLighting,shading,preparedShadow){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
@@ -235,15 +250,22 @@ function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,sh
     },{flipY:false}
   );
 
-  renderer.clear(true,true,true);
-  renderGroundShadow(renderer,scene,camera,shadowMaterial);
-  const shadowRaw=new Uint8Array(raw.length);
-  renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,shadowRaw);
-  const groundShadow=shadowPixelsCanvas(shadowRaw,frame.width,frame.height);
-  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight,groundShadow};
+  const modelShadow=captureModelShadow(turntable,camera,preparedShadow);
+  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight,modelShadow};
 }
 
-export async function generateCombatSpriteSet(recipe){
+export async function generateCombatSpriteSet(recipe,{onProgress}={}){
+  const generationStarted=performance.now(),shadowTimings=[];
+  let lastProgressPaint=-Infinity;
+  const progress=async(step,reason)=>{
+    onProgress?.({step,reason});
+    // Let the loading panel paint before synchronous geometry/render work.
+    // Update its text at every stage, but do not wait a display frame per facing.
+    if(performance.now()-lastProgressPaint<50)return;
+    await new Promise(resolve=>{if(typeof requestAnimationFrame==='function'&&document.visibilityState==='visible')requestAnimationFrame(()=>setTimeout(resolve,0));else setTimeout(resolve,0);});
+    lastProgressPaint=performance.now();
+  };
+  await progress('Loading character model','The actual 3D model supplies both the visible sprites and accurate shadow shapes.');
   const modelUrl=recipe?.model?.url||(recipe?.mob?.type==='fighter'?DEFAULT_FIGHTER_MODEL_URL:null);
   if(!modelUrl)throw new Error(`No humanoid runtime model is registered for ${recipe?.mob?.type||'this MOB'}.`);
   const gltf=await loadGltf(modelUrl);
@@ -251,6 +273,7 @@ export async function generateCombatSpriteSet(recipe){
   // Source-only GLBs use the catalog's animation library, just as Studio does.
   // Keep the ID fallback for older Carl recipes without this metadata.
   if(recipe?.model?.animationLibrary==='uploaded-fbx'||recipe?.model?.id==='dungeon-crawler-carl-v3'){
+    await progress('Loading animation poses','Matching movement and attack poses to this character’s model.');
     gltf.animations=await loadUploadedFbxAnimations({
       appRoot:new URL('../',import.meta.url),targetModel:model,FBXLoader,THREE,
       prepareStudioAnimations,retargetHumanoidClip,
@@ -291,6 +314,7 @@ export async function generateCombatSpriteSet(recipe){
   target.texture.colorSpace=THREE.SRGBColorSpace;
 
   let attachment=null,shieldAttachment=null,offHandAttachment=null;
+  await progress('Fitting weapons and shield','The sprites and shadows must show the equipment this unit is currently using.');
   if(recipe.equipment){
     const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
     const preset=studioWeapon(id);
@@ -337,13 +361,15 @@ export async function generateCombatSpriteSet(recipe){
   }
 
   const mixer=new THREE.AnimationMixer(model);
-  const profile=recipe.poseProfile||poseProfileForHumanoid(recipe.animation?.semanticId||'one-handed-swing');
+  let profile=recipe.poseProfile||poseProfileForHumanoid(recipe.animation?.semanticId||'one-handed-swing');
+  // Older three-pose sets have a final death frame but no falling capture.
+  // Sample that same real death clip earlier, without changing saved recipes.
+  if(profile?.poses?.prone&&!profile.poses.falling)profile={...profile,poses:{...profile.poses,falling:{...profile.poses.prone,timeSeconds:(profile.poses.prone.timeSeconds||1)*.45}}};
   const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
   const poseNames=WINDUP_POSES.filter(name=>profile?.poses?.[name]);
   const images={},runtimeImages={},sourceUrls={},poses={};
-  const shadowMaterial=createGroundShadowMaterial();
   const bandedLighting=createBandedLighting();
   try{
     for(const capture of poseNames){
@@ -364,21 +390,29 @@ export async function generateCombatSpriteSet(recipe){
       action.time=pose.rest?0:Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
       poses[capture]={clip:pose.rest?'T-pose':clip.name,time:action.time,frames:{}};
+      const poseLabel=({ready:'standing',attack:'attack',prone:'fallen',windup:'attack preparation',cast:'spellcasting'})[capture]||capture;
+      await progress(`Preparing ${poseLabel} shadow`,'Simplifying the actual posed model toward 500 triangles to keep combat shadows efficient.');
+      const preparedShadow=prepareModelShadow(turntable,{targetTriangles:500});
+      shadowTimings.push({pose:capture,...preparedShadow.stats});
       for(const facing of HEX_FACINGS){
+        await progress(`Rendering ${poseLabel} — facing ${facing.id}`,'Creating the matching sprite and shadow geometry so the unit looks correct when the map rotates.');
         const rendered=frameCanvases(
-          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,shadowMaterial,bandedLighting,recipe.renderSettings?.lighting?.shading
+          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,bandedLighting,recipe.renderSettings?.lighting?.shading,preparedShadow
         );
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
         const src=rendered.sourceCanvas.toDataURL('image/png');
-        images[file]=await loadImage(src);
-        setGroundShadow(images[file],rendered.groundShadow);
-        sourceUrls[file]=src;
-        poses[capture].frames[facing.id]=file;
-
         const runtimeFile=`${capture}-${facing.id.toLowerCase()}-battlefield.png`;
         const runtimeSrc=rendered.battlefieldCanvas.toDataURL('image/png');
-        runtimeImages[runtimeFile]=await loadImage(runtimeSrc);
-        setGroundShadow(runtimeImages[runtimeFile],rendered.groundShadow);
+        [images[file],runtimeImages[runtimeFile]]=await Promise.all([loadImage(src),loadImage(runtimeSrc)]);
+        if(recipe.equipment?.appearanceId==='flaming-sword-5'){
+          const blade=captureFlamingBlade(attachment,camera,turntable);
+          const metadata=globalThis.adventurePartyFlamingBlades||(globalThis.adventurePartyFlamingBlades=new WeakMap());
+          if(blade){metadata.set(images[file],blade);metadata.set(runtimeImages[runtimeFile],blade);}
+        }
+        setModelShadow(images[file],rendered.modelShadow);
+        setModelShadow(runtimeImages[runtimeFile],rendered.modelShadow);
+        sourceUrls[file]=src;
+        poses[capture].frames[facing.id]=file;
         sourceUrls[runtimeFile]=runtimeSrc;
       }
     }
@@ -402,11 +436,12 @@ export async function generateCombatSpriteSet(recipe){
     });
     mixer.stopAllAction();
     bandedLighting.dispose();
-    shadowMaterial.dispose();
     target.dispose();
     renderer.dispose();
   }
 
+  document.documentElement.dataset.shadowPreparation=JSON.stringify({model:recipe.model?.url||recipe.mob?.type,poses:shadowTimings,shadowPreparationMs:shadowTimings.reduce((sum,p)=>sum+p.preparationMs,0),spriteSetMs:performance.now()-generationStarted});
+  onProgress?.({step:'Appearance ready',reason:'Sprites and simplified shadows are prepared and cached for combat.'});
   return {
     manifest:{
       schema:'adventure-party.sprite-set',version:1,id:manifestId,

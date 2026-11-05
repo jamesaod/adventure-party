@@ -8,15 +8,17 @@ const draw=extractCombatFunction(source,'draw');
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
+  const context={syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
-    queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
+    prepareCombatProjectedShadows:record('shadow receiver'),queueFlyingArrowGpuShadow:record('flying arrow shadow'),queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
     drawFighter:()=>calls.push(sun.drawingGround?'player shadow':'player'),drawStudioSpriteMob:()=>calls.push(sun.drawingGround?'orc shadow':'orc')};
   for(const name of [...draw.matchAll(/\b((?:draw|ensure|clip)[A-Z]\w*)\(/g)].map(m=>m[1]))context[name]??=record(name);
   vm.runInNewContext(draw+'\ndraw();',context);
   assert.equal(calls.filter(x=>x==='orc').length,1);
   assert.equal(calls.filter(x=>x==='orc shadow').length,1);
+  assert(calls.indexOf('shadow receiver')<calls.indexOf('player shadow'));
+  assert(calls.indexOf('flying arrow shadow')<calls.indexOf('orc'));
   assert.equal(calls.filter(x=>x==='drawWallTestLineOfSightMask').length,1);
   if(exploration){
     assert(calls.indexOf('drawWallTestLineOfSightMask')<calls.indexOf('orc'));
@@ -82,9 +84,9 @@ Object.assign(context,{explorationEncounter:{map,origin:{x:3,z:6},openDoors:['3,
   ctx:{save(){},restore(){},transform(){},drawImage(){lightCalls.push(this.globalCompositeOperation);}}});
 context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['multiply','color-dodge']);assert.equal(uploads.length,2);
 context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Static lights/camera reuse their exposure map');
-context.game.player.x=1;context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Party lantern movement invalidates the exposure map');
+context.game.player.x=1;context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Moving Carl without an equipped light does not rebake a default lantern');
 context.screenPointForWorld=(p,elevation=0)=>{assert.equal(elevation,0);return {x:p.x+100,y:p.y+50};};
-context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Camera pans move the world-anchored exposure map without rebaking it');
+context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Camera pans move the world-anchored exposure map without rebaking it');
 context.screenPointForWorld=(p,elevation=0)=>{assert.equal(elevation,0);return p;};
 console.log('PASS shared hemisphere/torch/lantern exposure preserves material contrast and caches static lighting');
 

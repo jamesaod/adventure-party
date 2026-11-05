@@ -311,8 +311,21 @@ function combatRenderingPanel(){
   panel.style.cssText='position:fixed;inset:0;z-index:200000;background:#10101b;color:#77e7ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:24px';
   const wasInert=combatScreen.inert;combatScreen.inert=true;
   const label=document.createElement('strong');label.textContent='Please wait, rendering Units';panel.append(label);document.body.append(panel);
+  const task=document.createElement('div'),why=document.createElement('div'),history=document.createElement('div');
+  task.style.cssText='font:18px/1.6 system-ui,sans-serif;text-align:center;max-width:760px;padding:0 20px';
+  why.style.cssText='font:16px/1.6 system-ui,sans-serif;color:#bdc7d7;text-align:center;max-width:760px;padding:0 20px';
+  history.style.cssText='font:14px/1.8 system-ui,sans-serif;color:#8192a9;text-align:center;max-width:760px;padding:0 20px';
+  task.textContent='Checking the units and their equipment…';why.textContent='Preparing the appearances needed for this battle.';panel.append(task,why,history);
+  const recent=[];
+  const progress=event=>{const {unitName,step,reason}=event.detail||{};if(!step)return;
+    if(task.textContent&&!task.textContent.startsWith('Checking'))recent.push(task.textContent);
+    task.textContent=unitName?`${unitName} — ${step}`:step;why.textContent=reason||'';
+    history.replaceChildren(...recent.slice(-3).map(text=>{const row=document.createElement('div');row.textContent=text;return row;}));
+  };
+  document.addEventListener('adventure-party:unit-render-progress',progress);
   const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
-  return {finish(){combatScreen.inert=wasInert;panel.remove();window.removeEventListener('keydown',block,true);},fail(error){
+  return {finish(){combatScreen.inert=wasInert;panel.remove();window.removeEventListener('keydown',block,true);document.removeEventListener('adventure-party:unit-render-progress',progress);},fail(error){
+    document.removeEventListener('adventure-party:unit-render-progress',progress);
     label.textContent='Combat could not start';const detail=document.createElement('p');detail.textContent=error.message;
     const retry=document.createElement('button');retry.textContent='Retry';retry.onclick=()=>location.reload();panel.append(detail,retry);
   }};
@@ -1516,6 +1529,12 @@ async function waitForCombatActionPause(){
 
 function triggerDeathFx(entity){
   if(!entity) return;
+  if(!Number.isFinite(entity.deathPresentationStartedAt)){
+    entity.deathPresentationStartedAt=performance.now();
+    entity.deathFacingHex=Math.floor(Math.random()*6);
+    entity.deathWorldOffset=sampleCorpseOffset(entity);
+    startArrowBlood(entity,entity,1,{death:true});
+  }
 
   startDeathActionPause();
 
@@ -2822,7 +2841,8 @@ function directionalUnitPoseFrame(unit,poseName=null){
   const poses=definition?.directionalSprites;
   if(!poses) return null;
 
-  const facing=HEX_DIRS[((facingDirectionIndex(unit)-(typeof battlefieldRotation==='number'?battlefieldRotation:0))%6+6)%6].name;
+  const renderFacing=!unit.alive&&Number.isInteger(unit.deathFacingHex)?unit.deathFacingHex:facingDirectionIndex(unit);
+  const facing=HEX_DIRS[((renderFacing-(typeof battlefieldRotation==='number'?battlefieldRotation:0))%6+6)%6].name;
   const requestedPose=poseName || activeUnitPoseName(unit) || definition.defaultPose || "stand";
   const defaultPose=definition.defaultPose || "stand";
   const loaded=frame=>frame?.image?.complete &&
@@ -2867,6 +2887,13 @@ function shouldUseKoboldPronePose(unit){
 function activeUnitPoseName(unit,now=performance.now()){
   const definition=unitPoseDefinition(unit);
   if(!definition) return null;
+  if(!unit.alive){
+    // Lethal rules resolve before the queued death beat. Keep the body
+    // upright during that interval rather than removing it from the scene.
+    if(!Number.isFinite(unit.deathPresentationStartedAt))return definition.defaultPose||'stand';
+    if(now-unit.deathPresentationStartedAt<1000&&unitPoseSupportsPose(definition,'falling'))return 'falling';
+    if(unitPoseSupportsPose(definition,'prone'))return 'prone';
+  }
 
   /* Initial sprite inspection affects presentation only; it expires before combat. */
   if(unit.studioPoseInspection && combatAwaitingStart && unit.studioSpriteTest &&
@@ -5133,9 +5160,10 @@ function unitDepthSortPoint(unit){
   const centers=occupiedHexes(unit).map(cell=>hexCenter(cell.x,cell.y));
   if(!centers.length) return hexCenter(unit?.x||0,unit?.y||0);
 
+  const offset=!unit.alive&&unit.deathWorldOffset?battlefieldProjectVector(unit.deathWorldOffset):{x:0,y:0};
   return {
-    x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length,
-    y:Math.max(...centers.map(point=>point.y))
+    x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length+offset.x,
+    y:Math.max(...centers.map(point=>point.y))+offset.y
   };
 }
 
@@ -6339,6 +6367,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const result=await runtime.ensure(unit,{
       ...model,
+      onProgress:({step,reason:workReason})=>document.dispatchEvent(new CustomEvent('adventure-party:unit-render-progress',{detail:{unitName:unit.name||unit.type,step,reason:workReason}})),
       // Captured animation names must use their original baked Studio GLB.
       // The legacy Carl model is only the fallback when there is no valid capture.
       ...(captured.model || {}),
@@ -9681,6 +9710,7 @@ function hasTransientUnitFx(now=performance.now()){
   return (
     (typeof environmentEffectsActive==='function'&&environmentEffectsActive()) ||
     firFireLightSources().length>0 ||
+    (game && allUnits().some(u=>u?.alive&&!u.fled&&u.inventory?.some(item=>item.equipped&&item.appearanceId==='flaming-sword-5'))) ||
     castingGlowFx.length>0 ||
     fireDamageFx.length>0 ||
     enlargeTransitionFx.length>0
@@ -12830,6 +12860,7 @@ function makeFighter(){
     f.x=0;
     f.y=0;
     f.alive=true;
+    delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;
     f.fled=false;
     f.turnMoves=0;
     f.fullMove=false;
@@ -12907,16 +12938,18 @@ function makeFighter(){
         detail:"One-handed battle axe. Uses the first-pass one-handed swinging weapon visual pose profile."
       },
       {
-        name:"Chain Mail",
+        name:"Chain Mail +5",
         type:"Armor",
         slot:"armor",
         equippable:true,
-        equipped:oldChain ? oldChain.equipped!==false : true,
+        equipped:true,
         qty:1,
-        magical:false,
+        magical:true,
+        baseArmorClass:0,
+        magicBonus:5,
         catalogItemId:"chain-mail",
         catalogArmorId:"chain",
-        detail:"Mail hauberk or byrnie (chain)."
+        detail:"Enchanted chain mail +5: base AC 0 before Dexterity and shield."
       },
       {
         name:"Round Wooden Shield",
@@ -13050,16 +13083,18 @@ function makeFighter(){
         detail:"One-handed battle axe. Uses the first-pass one-handed swinging weapon visual pose profile."
       },
       {
-        name:"Chain Mail",
+        name:"Chain Mail +5",
         type:"Armor",
         slot:"armor",
         equippable:true,
         equipped:true,
         qty:1,
-        magical:false,
+        magical:true,
+        baseArmorClass:0,
+        magicBonus:5,
         catalogItemId:"chain-mail",
         catalogArmorId:"chain",
-        detail:"Mail hauberk or byrnie (chain)."
+        detail:"Enchanted chain mail +5: base AC 0 before Dexterity and shield."
       },
       {
         name:"Round Wooden Shield",
@@ -20197,7 +20232,8 @@ function drawProjectileFx(){
 
     drawCombatArrowSilhouette(
       {x:x-Math.cos(angle)*9,y:y-Math.sin(angle)*9},
-      {x:x+Math.cos(angle)*9,y:y+Math.sin(angle)*9}
+      {x:x+Math.cos(angle)*9,y:y+Math.sin(angle)*9},
+      {tailHeight:16+Math.sin(Math.PI*t)*effectiveArcHeight,tipHeight:16+Math.sin(Math.PI*t)*effectiveArcHeight}
     );
   }else if(projectileFx.kind==="fireball"){
     /* Fireball head/trail were already drawn above. */
@@ -22022,75 +22058,15 @@ function ensurePersistentStatusFxLoop(){
 }
 
 function drawFireDamageFx(){
-  if(!game || !fireDamageFx.length) return;
-
+  if(!game)return;
   const now=performance.now();
-
   for(const fx of fireDamageFx){
-    const unit=getUnitById(fx.unitId);
-    if(!unit || unit.fled) continue;
-
-    const age=Math.max(0,now-fx.started);
-    const t=Math.max(0,Math.min(1,age/Math.max(1,fx.duration)));
-    if(t>=1) continue;
-
-    const c=hexCenter(unit.x,unit.y);
-    const fade=t<0.62 ? 1 : Math.max(0,1-(t-0.62)/0.38);
-    const intensity=Math.max(0.7,Number(fx.intensity)||1);
-    const frame=Math.floor(age/70);
-
-    ctx.save();
-    ctx.globalAlpha=fade;
-    ctx.imageSmoothingEnabled=false;
-
-    const flames=[
-      {x:-7,y:0,h:13,w:7,phase:0,color:"#d52b08",inner:"#ff8a13"},
-      {x:0,y:-2,h:18,w:8,phase:2,color:"#ed3e08",inner:"#ffd44d"},
-      {x:7,y:1,h:12,w:6,phase:4,color:"#b91f07",inner:"#ff7410"}
-    ];
-
-    for(const flame of flames){
-      const flicker=((frame+flame.phase)%3)-1;
-      const height=flame.h*intensity+flicker*2;
-      const width=flame.w*intensity;
-      const baseY=c.y-5;
-      const x=c.x+flame.x;
-
-      ctx.fillStyle=flame.color;
-      ctx.beginPath();
-      ctx.moveTo(x-width/2,baseY);
-      ctx.quadraticCurveTo(x-width*0.72,baseY-height*0.43,x+flicker,baseY-height);
-      ctx.quadraticCurveTo(x+width*0.72,baseY-height*0.42,x+width/2,baseY);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle=flame.inner;
-      ctx.beginPath();
-      ctx.moveTo(x-width*0.25,baseY-1);
-      ctx.quadraticCurveTo(x-width*0.20,baseY-height*0.28,x+1,baseY-height*0.58);
-      ctx.quadraticCurveTo(x+width*0.25,baseY-height*0.22,x+width*0.18,baseY-1);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    /*
-      R144: increase the victim-side fire motes by roughly an order of magnitude
-      so fire hits shed many more visible embers.
-    */
-    for(let i=0;i<50;i++){
-      const seed=(i*37+fx.unitId.length*19+frame*11)%101;
-      const ex=c.x-12+(seed%25)+((i%5)-2)*1.4;
-      const ey=c.y-14-((seed*7+i*5)%18)-t*(8+(i%4));
-      const size=i%11===0 ? 3 : 2;
-      const alpha=0.38+0.62*(1-t);
-      ctx.fillStyle=i%3===0
-        ? `rgba(255,179,33,${alpha})`
-        : (i%3===1
-          ? `rgba(255,90,11,${alpha})`
-          : `rgba(216,42,7,${alpha})`);
-      ctx.fillRect(Math.round(ex),Math.round(ey),size,size);
-    }
-
+    const unit=getUnitById(fx.unitId);if(!unit||unit.fled||!shouldRenderUnitUnderPartyVisibility(unit))continue;
+    const t=(now-fx.started)/fx.duration;if(t<0||t>=1)continue;
+    const c=unitFootprintScreenCenter(unit),fade=Math.min(1,t*9,(1-t)*3),intensity=Math.max(.7,Number(fx.intensity)||1);
+    for(let i=0;i<9;i++){const phase=i*2.399,x=c.x+Math.sin(phase)*9,y=c.y-3-(i%3)*6;drawFlowingFlame(x,y,4.5,12*intensity+(i%3)*4,now,phase,fade*.85);}
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(let i=0;i<18;i++){const life=((now-fx.started)*.001*(.7+(i%4)*.15)+i*.618)%1;ctx.globalAlpha=fade*(1-life)*.8;ctx.fillStyle=i%3?'#ff9c24':'#ffe3a0';ctx.beginPath();ctx.arc(c.x+Math.sin(i*2.4+life*3)*(5+life*8),c.y-8-life*32,.45+(1-life)*.45,0,Math.PI*2);ctx.fill();}
     ctx.restore();
   }
 }
@@ -22242,6 +22218,10 @@ function handleLauncherKey(event){
 function handleCombatKey(event){
   const code=event.code;
   const keyLower=event.key.toLowerCase();
+  if(game?.pendingBattleResult&&(code==='Space'||event.key===' ')){
+    event.preventDefault();if(event.repeat)return;
+    const result=game.pendingBattleResult;finishCombat(result.title,result.text,true);return;
+  }
 
   // Ctrl+Q assigns the friendly roster without changing controller types.
   if(keyLower==="q"){

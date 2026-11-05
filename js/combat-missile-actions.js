@@ -225,6 +225,8 @@ async function resolveLongbowHit(attacker,defender){
 
   const damage=Math.max(1,damageRoll.total+physicalDamageEffectModifier(attacker,"missile"));
 
+  window.AdventurePartyCombatResults?.physicalHit?.(attacker,defender,damage);
+
   defender.hp=Math.max(
     0,
     defender.hp-damage
@@ -465,6 +467,7 @@ async function resolveSlingHit(attacker,defender){
   const damageRoll=rollDiceExpression(damageExpression);
   const damage=Math.max(1,damageRoll.total+physicalDamageEffectModifier(attacker,"missile"));
 
+  window.AdventurePartyCombatResults?.physicalHit?.(attacker,defender,damage);
   defender.hp=Math.max(0,defender.hp-damage);
   onUnitDamaged(defender,damage);
 

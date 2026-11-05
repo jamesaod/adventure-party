@@ -54,3 +54,8 @@ armored.inventory[0].baseArmorClass=3;sandbox.syncFighterEquipment(armored);asse
 armored.inventory.push({catalogArmorId:'shield-medium',slot:'shield',equipped:true,acBonus:2});
 sandbox.syncFighterEquipment(armored);assert.equal(armored.ac,1,'Equipped shield variant bonus wins over base catalog');
 assert.equal(resolveArmorItem({slot:'armor',acModifier:-5}).baseArmorClass,5);
+Object.assign(sandbox,{getArmorCatalogEntry:id=>id==='shield-medium'?{slot:'shield',acBonus:1}:ARMOR_ENGINE_CATALOG[id],persistentFighter:{maxHp:20,stats:{str:18,dex:10},inventory:[],deathPresentationStartedAt:1,deathFacingHex:3,deathWorldOffset:{x:4,y:5}},applyFighterClassRules(){},applyPlayerSpriteSet:f=>f});
+vm.runInContext(fn('makeFighter'),sandbox);const equippedCarl=sandbox.makeFighter(),chain=equippedCarl.inventory.find(i=>i.slot==='armor');
+assert.equal(chain.name,'Chain Mail +5');assert.equal(chain.magical,true);assert.equal(chain.equipped,true);assert.equal(chain.baseArmorClass,0);assert.equal(equippedCarl.ac,-1,'Chain +5 base AC 0, with one point from the wooden shield');
+assert.equal(equippedCarl.deathWorldOffset,undefined,'New battle clears persistent Carl corpse placement');
+console.log('PASS Carl equipped Chain Mail +5 through production inventory/AC synchronization and corpse reset');

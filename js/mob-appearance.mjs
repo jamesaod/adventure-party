@@ -165,7 +165,10 @@ function canonical(value) {
 
 export function appearanceCacheKey(recipe) {
   // Deterministic non-cryptographic key suitable for an in-memory/browser cache namespace.
-  const text = canonical(recipe);
+  // Names and instance IDs do not affect pixels. Identical roster members
+  // should share preparation, while model/height/equipment/poses still differ.
+  const {id,name,...visualMob}=recipe.mob||{};
+  const text = canonical({...recipe,mob:visualMob});
   let hash = 2166136261;
   for (let i = 0; i < text.length; i++) {
     hash ^= text.charCodeAt(i);

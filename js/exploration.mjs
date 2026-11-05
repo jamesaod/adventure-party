@@ -1,3 +1,4 @@
+import {loadExplorationSky} from './exploration-skies.mjs';
 import {stoneReliefSwitch} from './exploration-wall-relief.mjs?v=R238C274';
 import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C274';
 import {wallFaceMaterial,quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C274';
@@ -32,7 +33,7 @@ async function start(){
  scene=new THREE.Scene();const skyCanvas=document.createElement('canvas');skyCanvas.width=512;skyCanvas.height=256;
  const skyContext=skyCanvas.getContext('2d'),skyGradient=skyContext.createLinearGradient(0,0,0,256);skyGradient.addColorStop(0,'#346da7');skyGradient.addColorStop(.5,'#9dc7e6');skyGradient.addColorStop(1,'#dbe3df');skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,512,256);
  skyContext.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<16;i++){skyContext.beginPath();skyContext.ellipse((i*137)%512,35+(i*31)%85,35+i%4*8,7+i%3*3,0,0,Math.PI*2);skyContext.fill();}
- const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
+ const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;try{const chosenSky=await loadExplorationSky(THREE,map.skybox);if(chosenSky){skyTexture.dispose();scene.background=chosenSky;}}catch(error){console.warn('Sky image unavailable; using classic sky.',error);}canvas.dataset.skybox=map.skybox||'default';scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
  const {wall,wallEnhanced,floor,grass,wood,woodWall,woodCeiling,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map),wallRelief:true});
  const faceMaterials=(record,reverse=false)=>{const base=wallFaceMaterial(record)==='wood'?woodWall:wall,a=wallFaceMaterial(record,'a')==='wood'?woodWall:wall,b=wallFaceMaterial(record,'b')==='wood'?woodWall:wall;return [base,base,base,base,reverse?b:a,reverse?a:b];};
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
@@ -124,4 +125,4 @@ async function start(){
  }frame=requestAnimationFrame(render);
 }
 start().catch(error=>{$('loading').textContent=`Exploration could not start: ${error.message} Reload to retry. WebGL is required.`;console.error(error);});
-addEventListener('pagehide',()=>{cancelAnimationFrame(frame);resizeObserver?.disconnect();renderer?.dispose();});
+addEventListener('pagehide',()=>{cancelAnimationFrame(frame);resizeObserver?.disconnect();scene?.background?.dispose?.();renderer?.dispose();});

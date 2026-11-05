@@ -138,6 +138,7 @@ function illuminationSources(){
   for(const unit of allUnits()){
     if(!unit?.alive || unit.fled) continue;
 
+    if(unit.inventory?.some(item=>item.equipped&&item.appearanceId==='flaming-sword-5'))sources.push({id:'flaming-sword:'+unit.id,sourceKind:'unit',unitId:unit.id,x:unit.x,y:unit.y,radiusHexes:3,intensity:3.3*(.82+.10*Math.sin(performance.now()*.012+unit.x*1.7)+.05*Math.sin(performance.now()*.027+unit.y)+.03*Math.sin(performance.now()*.049)),color:[255,153,45],heightMetres:1.1,visualOffsetMetres:{x:.035*Math.sin(performance.now()*.0067+unit.x),z:.035*Math.sin(performance.now()*.0089+unit.y),y:.02*Math.sin(performance.now()*.0113)}});
     const effect=
       getUnitEffect(unit,"continual-light") ||
       getUnitEffect(unit,"light");
@@ -300,4 +301,146 @@ function combatSpriteBrightness(unit){
  if(!unit||!game)return 1;
  if(explorationTerrain&&typeof explorationUnitSpriteBrightness==='function')return explorationUnitSpriteBrightness(unit);
  return Math.max(.02,Math.min(1,illuminationAtHex(unit.x,unit.y)));
+}
+// Shared projected-shadow adapters: physical metres in, GPU projection out.
+function combatShadowScale(){
+ const t=combatSceneTerrain,s=explorationEncounterApi.SCENE_STYLE;
+ return [t.cellW/s.cellMetres,s.tacticalWallPixels/s.wallMetres,t.cellH/s.cellMetres];
+}
+function combatShadowWorld(screen,height=0){
+ const origin=screenPointForWorld({x:0,y:0}),p=battlefieldProjectVector({x:screen.x-origin.x,y:screen.y+height-origin.y},true),scale=combatShadowScale();
+ return [p.x/scale[0],height/scale[1],p.y/scale[2]];
+}
+function prepareCombatProjectedShadows(tiles){
+ if(!combatGpu?.projectedShadows||!combatSceneTerrain)return;
+ const scale=combatShadowScale(),bounds=battlefieldWorldViewport(),observers=friendlyVisibilityObservers();
+ const signature=[typeof denseFogGeometry==='function'?denseFogGeometry()?.key:'',bounds.left.toFixed(1),bounds.top.toFixed(1),bounds.right.toFixed(1),bounds.bottom.toFixed(1),...observers.map(u=>u.id+':'+u.x+':'+u.y)].join('|');
+ let cache=prepareCombatProjectedShadows.cache;
+ if(!cache||cache.game!==game||cache.terrain!==combatSceneTerrain||cache.walls!==architecturalWalls||cache.signature!==signature){
+  const image=document.createElement('canvas');image.width=image.height=512;const m=image.getContext('2d');
+  const width=Math.max(1,bounds.right-bounds.left),height=Math.max(1,bounds.bottom-bounds.top);
+  const path=polygon=>{if(!polygon?.length)return;const convert=p=>({x:(p.x-bounds.left)/width*512,y:(p.y-bounds.top)/height*512});const first=convert(polygon[0]);m.moveTo(first.x,first.y);for(const p of polygon.slice(1)){const q=convert(p);m.lineTo(q.x,q.y);}m.closePath();};
+  const polygons=observers.map(u=>observerVisibilityContext(u)?.polygon).filter(Boolean);
+  if(polygons.length){m.beginPath();polygons.forEach(path);m.clip();}
+  m.fillStyle='#fff';
+  const allowed=tiles.filter(h=>isHexVisibleToFriendlyParty(h.x,h.y)&&(!combatSceneTerrain.isRenderableHex||combatSceneTerrain.isRenderableHex(h.x,h.y)));
+  for(const fragment of explorationFloorFragments(allowed)){
+    const hex=fragment.hex||fragment.point,center=worldPointForHex(hex.x,hex.y);
+    const polygon=fragment.polygon||[[0,-HEX_H/2],[HEX_W/2,-HEX_H/4],[HEX_W/2,HEX_H/4],[0,HEX_H/2],[-HEX_W/2,HEX_H/4],[-HEX_W/2,-HEX_H/4]].map(([x,y])=>({x:center.x+x,y:center.y+y}));
+    const indoor=isIndoorWorldPoint(center),c=combatSceneContext,t=combatSceneTerrain;
+    const ambient=explorationEncounterApi.ambientLightAt?.(c.map,Math.floor(c.origin.x+center.x/t.cellW),Math.floor(c.origin.z+center.y/t.cellH))??(indoor?0:100);
+    m.fillStyle='rgb('+(indoor?0:255)+','+Math.round(Math.min(1000,ambient)/1000*255)+',0)';m.beginPath();path(polygon);m.fill();
+  }
+  cache=prepareCombatProjectedShadows.cache={game,terrain:combatSceneTerrain,walls:architecturalWalls,signature,image,
+   bounds:[bounds.left/scale[0],bounds.top/scale[2],width/scale[0],height/scale[2]]};
+ }
+ combatGpu.projectedShadows.receiver(cache);
+ const sources=[],cell=explorationEncounterApi.SCENE_STYLE.cellMetres,c=combatSceneContext;
+ if(c){for(const [index,l] of explorationVisualLights().entries()){
+  if(!(l.intensity>0))continue;
+  sources.push({id:'scene:'+index,vector:[l.x-c.origin.x*cell,l.y||1.9,l.z-c.origin.z*cell,1],range:l.range||8,power:Math.min(1,l.intensity/6),ownerId:l.kind==='lantern'?((game.session?.controlledActorId&&getUnitById(game.session.controlledActorId))||game.player)?.id:null});
+ }}
+ for(const [index,l] of explorationRenderLights().entries()){
+  if(l.sourceKind==='torch'||!(l.intensity>0))continue;
+  const p=worldPointForHex(l.x,l.y);sources.push({id:'effect:'+(l.id||index),vector:[p.x/scale[0]+(l.visualOffsetMetres?.x||0),(l.heightMetres||(l.sourceKind==='tree-fire'?2.5:2.2))+(l.visualOffsetMetres?.y||0),p.y/scale[2]+(l.visualOffsetMetres?.z||0),1],range:(l.radiusHexes||3)*HEX_W/scale[0],power:Math.min(12,l.intensity*(l.sourceKind==='spell-fx'?4:1)),ownerId:l.unitId||null,source:l});
+ }
+ prepareCombatProjectedShadows.sources=sources;
+ combatGpu.projectedShadows.lighting({solar:globalThis.adventurePartySolar?.state?.(),sources});
+ globalThis.adventurePartyGpuShadows={unit:queueCombatUnitGpuShadow};
+}
+function combatShadowBackground(outdoor,ambientPercent,solar){
+ const sky=outdoor?(solar?.sky??1):1;
+ return Math.max(0,ambientPercent)/100*sky*2+(outdoor?12*(solar?.daylight||0):0);
+}
+function combatLocalShadowOpacity(strength,background){
+ // A light removes only its own share of illumination behind a caster.
+ // Below eight percent of the background, its shadow is visually negligible.
+ const contrast=Math.max(0,(strength-background*.08)/(strength+background+.1));
+ return Math.min(.3,contrast*.3);
+}
+function combatShadowLights(point,casterId=null){
+ const scale=combatShadowScale(),world={x:point[0]*scale[0],y:point[2]*scale[2]},hex=environmentHex(world),lights=[];
+ const sun=globalThis.adventurePartySolar?.state?.(),outdoor=!isIndoorWorldPoint(world);
+ let ambient=outdoor?100:0;
+ if(typeof combatSceneContext!=='undefined'&&combatSceneContext&&typeof explorationEncounterApi?.ambientLightAt==='function'){
+  const c=combatSceneContext,t=combatSceneTerrain;
+  ambient=explorationEncounterApi.ambientLightAt(c.map,Math.floor(c.origin.x+world.x/t.cellW),Math.floor(c.origin.z+world.y/t.cellH));
+ }
+ const background=combatShadowBackground(outdoor,ambient,sun);
+ if(sun?.direction.y>.00001&&outdoor)lights.push({id:'sun',vector:[sun.direction.x,sun.direction.y,sun.direction.z,0],opacity:.32*sun.daylight});
+ const candidates=[];
+ for(const l of prepareCombatProjectedShadows.sources||[]){
+  if(casterId&&l.ownerId===casterId)continue;
+  const distance=Math.hypot(point[0]-l.vector[0],point[2]-l.vector[2]);if(distance>=l.range)continue;
+  if(l.source&&!illuminationSourceReachesHex(l.source,hex.x,hex.y))continue;
+  const lightWorld={x:l.vector[0]*scale[0],y:l.vector[2]*scale[2]};
+  if(worldLineBlockedByOtherArchitecturalWalls(lightWorld,world,null))continue;
+  const strength=l.power*Math.pow(1-distance/l.range,2),opacity=combatLocalShadowOpacity(strength,background);if(opacity<.012)continue;
+  candidates.push({...l,opacity,strength});
+ }
+ return lights.concat(candidates.sort((a,b)=>b.strength-a.strength).slice(0,2));
+}
+function queueCombatUnitGpuShadow(image,options){
+ if(!combatGpu?.projectedShadows||!combatSceneTerrain)return false;
+ const unit=globalThis.adventurePartySun?.caster;
+ if(!unit||getUnitEffect(unit,'invisibility')||!shouldRenderUnitUnderPartyVisibility(unit))return true;
+ if(options.modelShadow&&combatGpu.projectedShadows.modelGeometry){
+  const scale=combatShadowScale(),capture=options.modelShadow;
+  const {x,y,width,height,anchorX=.5,anchorY=1,flip=false}=options;
+  const points=[],uv=[];
+  for(let i=0;i<capture.positions.length;i+=3){
+   const u=capture.positions[i],v=capture.positions[i+1],rise=capture.positions[i+2]*height;
+   const ground=combatShadowWorld({x:x+(u-anchorX)*width*(flip?-1:1),y:y+(v-anchorY)*height},0);
+   ground[1]=Math.max(0,rise/scale[1]);points.push(ground);uv.push([.5,.5]);
+  }
+  const geometry=combatGpu.projectedShadows.modelGeometry({points,uv,indices:capture.indices});
+  const world=worldPointForHex(unit.x,unit.y),origin=[world.x/scale[0],0,world.y/scale[2]];
+  for(const light of combatShadowLights(origin,unit.id))combatGpu.projectedShadows.queue({...geometry,light,scale,opacity:light.opacity,softness:0});
+  return true;
+ }
+ if(!image)return false;
+ const scale=combatShadowScale(),{x,y,width,height,anchorX=.5,anchorY=1,flip=false,pose,footLine}=options;
+ const points=[],uv=[],indices=[],cols=8,rows=12,line=footLine||{slope:0,intercept:image.height};
+ for(let row=0;row<=rows;row++)for(let col=0;col<=cols;col++){
+  const u=col/cols,v=row/rows,px=u*image.width,foot=(line.slope*px+line.intercept),baseline=(foot/image.height-anchorY)*height;
+  const elevation=pose==='prone'?.6:Math.max(0,(foot/image.height-v)*height);
+  const ground=combatShadowWorld({x:x+(u-anchorX)*width*(flip?-1:1),y:y+baseline},0);
+  if(pose==='prone')ground[2]+=(v-anchorY)*height/scale[2]*.35;
+  ground[1]=elevation/scale[1];points.push(ground);uv.push([u,1-v]);
+ }
+ for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){const i=row*(cols+1)+col;indices.push(i,i+1,i+cols+2,i,i+cols+2,i+cols+1);}
+ const origin=combatShadowWorld({x,y});
+ const casterHeight=Math.max(...points.map(p=>p[1]));
+ for(const light of combatShadowLights(origin,unit.id))combatGpu.projectedShadows.queue({points,uv,indices,image,light,scale,opacity:light.opacity,softness:1.2,silhouetteAnchor:[origin[0],0,origin[2],casterHeight]});
+ return true;
+}
+function queueCombatArrowGpuShadow(tail,tip,{tailHeight=16,tipHeight=16,wall=null}={}){
+ if(!combatGpu?.projectedShadows||!combatSceneTerrain)return false;
+ let image=queueCombatArrowGpuShadow.image;
+ if(!image){image=document.createElement('canvas');image.width=64;image.height=16;const c=image.getContext('2d');c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.moveTo(2,8);c.lineTo(62,8);c.stroke();c.lineWidth=3;c.beginPath();c.moveTo(2,5);c.lineTo(16,5);c.moveTo(2,11);c.lineTo(16,11);c.stroke();queueCombatArrowGpuShadow.image=image;}
+ const dx=tip.x-tail.x,dy=tip.y-tail.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,points=[],uv=[],indices=[],scale=combatShadowScale();
+ for(let i=0;i<=8;i++)for(const side of [-1,1]){const t=i/8;points.push(combatShadowWorld({x:tail.x+dx*t+nx*side,y:tail.y+dy*t+ny*side},tailHeight+(tipHeight-tailHeight)*t));uv.push([t,side<0?0:1]);}
+ for(let i=0;i<8;i++){const n=i*2;indices.push(n,n+1,n+3,n,n+3,n+2);}
+ let receiver=null,plane=[0,1,0,0];
+ if(wall){const ax=wall.a.x/scale[0],az=wall.a.y/scale[2],bx=wall.b.x/scale[0],bz=wall.b.y/scale[2],length=Math.hypot(bx-ax,bz-az)||1,nx=-(bz-az)/length,nz=(bx-ax)/length;
+  plane=[nx,0,nz,-nx*ax-nz*az];receiver={id:wall.id,span:[ax,az,bx,bz],height:3.5};}
+ for(const light of combatShadowLights(points[8]))combatGpu.projectedShadows.queue({points,uv,indices,image,light,scale,plane,wall:receiver,opacity:light.opacity,softness:.6});
+ if(wall)combatGpu.projectedShadows.flush();return true;
+}
+function queueFlyingArrowGpuShadow(){
+ const fx=projectileFx;if(!fx||!['arrow','flame-arrow','acid-arrow'].includes(fx.kind))return;
+ const {start,end,t}=fx,arc=Math.sin(Math.PI*t)*(fx.arcHeight||0),x=start.x+(end.x-start.x)*t,y=start.y+(end.y-start.y)*t-arc,angle=Math.atan2(end.y-start.y,end.x-start.x);
+ queueCombatArrowGpuShadow({x:x-Math.cos(angle)*9,y:y-Math.sin(angle)*9},{x:x+Math.cos(angle)*9,y:y+Math.sin(angle)*9},{tailHeight:16+arc,tipHeight:16+arc});
+}
+
+// Derive floor contacts from the same cropped sprite, anchor and mirroring used
+// by drawSpriteFacing. Keep anatomical volume; fit only its stance and root.
+function fitCombatShadowFeet(image,options,yaw,height){
+ const {x,y,width,anchorX=.5,anchorY=1,flip=false,footLine}=options;
+ const screenHeight=options.height,contacts=footLine.contacts.slice(0,2);
+ if(contacts.length===1)contacts.push(contacts[0]);
+ const world=contacts.map(p=>combatShadowWorld({x:x+(p.x/image.width-anchorX)*width*(flip?-1:1),y:y+(p.y/image.height-anchorY)*screenHeight},0));
+ const origin=[(world[0][0]+world[1][0])/2,0,(world[0][2]+world[1][2])/2],c=Math.cos(yaw),s=Math.sin(yaw),scale=height/1.8;
+ const feet=world.map(p=>{const dx=p[0]-origin[0],dz=p[2]-origin[2];return [(dx*c-dz*s)/scale,(dx*s+dz*c)/scale];}).sort((a,b)=>a[0]-b[0]);
+ return {origin,feet,world};
 }

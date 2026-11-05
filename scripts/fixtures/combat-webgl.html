@@ -59,15 +59,34 @@ function run(){
  const spell={kind:'spell',x:.25,y:1,color:[255,40,0],intensity:2,range:5,bounds:[0,0,64,64]};
  backend.begin(view);backend.setLighting({lights:[spell],mask,maskRevision:1,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true});backend.end();
  const spellPixel=pixel(16,32);check(spellPixel[0]>120&&spellPixel[1]<100,'Colored spell radiance missing or gamma transformed');
+ // Scorch is terrain albedo, not a dark overlay painted AFTER illumination.
+ const groundScorch={image:image('rgba(17,18,11,.8)'),left:0,top:0,spanX:64,spanY:64};
+ backend.begin(view);backend.setLighting({lights:[],mask,maskRevision:1,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true,groundScorch});backend.end();const unlitScorch=pixel(16,32);
+ backend.begin(view);backend.setLighting({lights:[spell],mask,maskRevision:1,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true,groundScorch});backend.end();const litScorch=pixel(16,32);
+ check(litScorch[0]>unlitScorch[0]+50,'Scorched ground must receive fire/spell radiance');
+ backend.begin(view);backend.surface(face(),white);backend.end();check(pixel(16,32)[0]>250,'Ground scorch must not leak into later surfaces');
  // Sprite brightness is neutral luminance at its feet, capped at source art.
  mc.fillRect(0,0,256,256);litFrame({spriteLighting:true,revision:2});
  const sp=pixel(16,32);check(Math.max(...sp.slice(0,3))-Math.min(...sp.slice(0,3))<=1,'Sprite shader changed baked artwork hue');
+ // Local spell/sword light must visibly illuminate dark sprite artwork.
+ const spriteInk=image('rgb(160,80,40)');
+ backend.begin(view);backend.setLighting({lights:[],mask,maskRevision:2,world:[1/16,1/16,0,0]});backend.surface(litFace(),spriteInk,{dynamicLighting:true,spriteLighting:true});backend.end();const darkSprite=pixel(16,32);
+ const sword={...spell,color:[255,153,45],height:1.1,intensity:3.3,range:3};
+ backend.begin(view);backend.setLighting({lights:[sword],mask,maskRevision:2,world:[1/16,1/16,0,0]});backend.surface(litFace(),spriteInk,{dynamicLighting:true,spriteLighting:true});backend.end();const brightSprite=pixel(16,32);
+ check(brightSprite[0]>darkSprite[0]+35,'Sword light fails to illuminate nearby unit artwork');
+ check(brightSprite[0]<=161&&Math.abs(brightSprite[0]/brightSprite[1]-2)<.1,'Local light must preserve baked sprite hue and brightness cap');
  // Exercise the last slot of the minimum-budget uniform/atlas layout.
  mc.clearRect(0,0,2048,1024);mc.fillRect(7*256,3*256,256,256);
  const full=Array.from({length:32},(_,i)=>({...source,intensity:i===31?8:0}));
  backend.begin(view);backend.setLighting({lights:full,mask,maskRevision:3,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true});backend.end();
  check(pixel(32,32)[0]>170,'Last atlas/uniform light slot was dropped or misaddressed');
  backend.setLighting(null);
+ // Corpse ink retains 50% color saturation; living sprites stay untouched.
+ backend.begin(view);backend.surface(face(),red,{spriteLighting:true,saturation:.5});backend.end();
+ const deadInk=pixel(32,32),gray=128*.2126;
+ check(Math.abs(deadInk[0]-(128*.5+gray*.5))<=2&&Math.abs(deadInk[1]-gray*.5)<=2,'Corpse saturation must blend 50% toward luminance');
+ backend.begin(view);backend.surface(face(),red,{spriteLighting:true});backend.end();
+ check(Math.abs(pixel(32,32)[0]-128)<=2&&pixel(32,32)[1]<=2,'Corpse saturation must not leak into living sprites');
  // Draw a much smaller next scene repeatedly: buffer and exposure resources
  // must remain bounded rather than accumulating after door/viewport changes.
  for(let i=0;i<30;i++){backend.begin(view);backend.surface(i%2?[...face(0,32),...face(32,64)]:face(),red);backend.end();}

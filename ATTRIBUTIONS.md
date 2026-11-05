@@ -96,3 +96,13 @@ Changes include randomized seeds and scale, a second rotated foliage layer, gree
 ## Selected replacement glass sound (local test)
 
 `assets/audio/sfx/environment/glass-break-selected.wav` derives from the user-selected “Glass Breaking Sound Effect HD | Glass Shattering Sound Effect” by Car Features: https://www.youtube.com/watch?v=TcnufvBffcY . Leading/trailing silence was trimmed (source 0.734104–4.078521 seconds); converted to 48 kHz stereo PCM WAV. This replaces the Kenney sound for the current local test. No CC0 license is claimed for this replacement.
+
+## Burning-tree fire loop
+“fire crackling loop.wav” by soundofsong, Freesound 650574, CC0. Game uses the public HQ MP3 preview. Source: https://freesound.org/people/soundofsong/sounds/650574/ — https://creativecommons.org/publicdomain/zero/1.0/
+
+## Exploration sky panoramas (CC0)
+Local 2048×1024 JPEG derivatives of Poly Haven's tonemapped equirectangular panoramas.
+- Clear Noon: Qwantani Noon (Pure Sky), Greg Zaal / Jarod Guest — https://polyhaven.com/a/qwantani_noon_puresky
+- Sunny Clouds: Kloofendal 48d Partly Cloudy (Pure Sky), Greg Zaal / Jarod Guest — https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+- Clear Morning: Autumn Field (Pure Sky), Sergej Majboroda / Jarod Guest — https://polyhaven.com/a/autumn_field_puresky
+License: https://polyhaven.com/license (CC0). Sky artwork selection does not replace authored ambient lighting.

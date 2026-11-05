@@ -52,6 +52,13 @@ function rect(x0,y0,x1,y1){for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)rgba[(y*w
 rect(13,5,27,27);rect(6,25,12,36);rect(27,25,33,44);
 const feet=findShadowFootLine(rgba,w,h);
 assert.equal(feet.contacts.length,2);close(feet.contacts[0].y,35.5);close(feet.contacts[1].y,43.5);
+// A low shield is larger than either boot but is not a ground contact.
+const shieldRgba=new Uint8ClampedArray(100*100*4);
+function shieldRect(x,y,w,h){for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)shieldRgba[(j*100+i)*4+3]=255;}
+shieldRect(35,5,25,52);shieldRect(5,58,25,15);
+shieldRect(38,65,7,30);shieldRect(56,65,7,25);
+assert.deepEqual(findShadowFootLine(shieldRgba,100,100).contacts.map(p=>[p.x,p.y]),[[41.5,94.5],[59.5,89.5]],
+ 'A shield cannot move or widen the fitted body proxy');
 const stance=Object.freeze({width:w,height:h});shadowMask(stance).rgba=rgba;
 assert.deepEqual(shadowFootLine(shadowMask(stance)),feet);
 for(const hour of [7,9,12,15,17])for(const flip of [false,true])for(const scale of [0.5,1,2.4]){
@@ -109,7 +116,7 @@ assert.equal(calls.length,1);assert.equal(calls[0].image,image);assert.equal(cal
 assert.equal(calls[0].options.flip,true);assert.equal(calls[0].options.anchorY,0.65);
 sandbox.getUnitEffect=()=>({});sandbox.drawSpriteFacing(image,{x:0,y:0},80,100,'left');assert.equal(calls.length,1,'Invisible units have no revealing ground silhouette');
 sandbox.getUnitEffect=()=>null;sandbox.adventurePartySun.drawingGround=false;sandbox.drawSpriteFacing(image,{x:0,y:0},80,100,'left');assert.equal(calls.at(-1),'body');
-assert.ok(engine.indexOf('if(actor.unit)actor.fn()')<engine.lastIndexOf('  actors.sort('),'Shadows are beneath depth-sorted actors');
+assert.ok(engine.indexOf('globalThis.adventurePartySun.caster=actor.entity;actor.fn()')<engine.lastIndexOf('  actors.sort('),'Shadows are beneath depth-sorted actors');
 const studio=readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 const capture=readFileSync(new URL('../js/studio-capture.mjs',import.meta.url),'utf8');
 assert.ok(studio.includes('if(sunShadowMesh)sunShadowMesh.visible=false;'),'3D ground shadow is excluded from the capture atlas');
