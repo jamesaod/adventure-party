@@ -13,8 +13,7 @@
 
   let shockingGraspFx=null;
 
-  const baseDrawProjectileFx=
-    drawProjectileFx;
+  const baseDrawProjectileFx=AdventurePartyCombatServices.current('drawProjectileFx');
 
   function clamp01(value){
     return Math.max(
@@ -630,10 +629,10 @@
     ctx.restore();
   }
 
-  drawProjectileFx=function(){
+  AdventurePartyCombatServices.register('drawProjectileFx','candidate-rev31-shocking-grasp-fx.js:633:drawProjectileFx',function(){
     baseDrawProjectileFx();
     drawShockingGraspFx();
-  };
+  });
 
   async function play(
     caster,
@@ -694,15 +693,14 @@
   if(
     typeof spellPreviewClearTransientPresentation==="function"
   ){
-    const baseSpellPreviewClearTransientPresentation=
-      spellPreviewClearTransientPresentation;
+    const baseSpellPreviewClearTransientPresentation=AdventurePartyCombatServices.current('spellPreviewClearTransientPresentation');
 
-    spellPreviewClearTransientPresentation=function(){
+    AdventurePartyCombatServices.register('spellPreviewClearTransientPresentation','candidate-rev31-shocking-grasp-fx.js:700:spellPreviewClearTransientPresentation',function(){
       const result=
         baseSpellPreviewClearTransientPresentation();
       clear();
       return result;
-    };
+    });
   }
 
   window.AdventurePartyShockingGraspFx={

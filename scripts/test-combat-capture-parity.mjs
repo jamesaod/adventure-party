@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import { resolveCombatWeaponMount } from '../js/combat-weapon-mount.mjs';
 
 const catalog = JSON.parse(readFileSync(new URL('../data/studio-models.json', import.meta.url),'utf8'));

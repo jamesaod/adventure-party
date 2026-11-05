@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {normalizeMobDefinition,normalizeMobRules} from '../js/mob-definition.mjs';
 import {generateMobRules} from '../js/mob-class-rules.mjs';
 import {normalizeGeneration,sampleGeneration} from '../js/mob-generation.mjs';
 import {createRepositoryMob} from '../js/repository-mobs.mjs';
-const mob=normalizeMobDefinition(JSON.parse(fs.readFileSync('data/mobs/orc-archer.unit-package.json')));
+const mob=normalizeMobDefinition(JSON.parse(readCombatFixture('data/mobs/orc-archer.unit-package.json')));
 mob.character.rules.minimumHp=5;
 const noClass={classId:null,level:1};
 let result=generateMobRules(mob,noClass,()=>0);
@@ -19,5 +20,5 @@ for(const value of [0,-1,1.5,NaN,100001])assert.throws(()=>normalizeMobRules({mi
 const g={...mob.mob.generation,classLevels:[]};assert.deepEqual(normalizeGeneration(g,{complete:true}).classLevels,[{classId:'none',level:1,weight:100}]);assert.equal(sampleGeneration(g,()=>0).classId,null);
 assert.throws(()=>normalizeGeneration({...g,classLevels:[{classId:'fighter',level:2,weight:50}]},{complete:true}),/total 100/);
 mob.mob.species='Orc';mob.character.rules.monsterBaseline='auto';mob.mob.generation=g;
-const unit=createRepositoryMob(mob,JSON.parse(fs.readFileSync('data/studio-models.json'))).apply({},()=>0);assert.equal(unit.hp,5);assert.equal(unit.thaco,19);assert.equal(unit.monsterBaselineId,'orc');
+const unit=createRepositoryMob(mob,JSON.parse(readCombatFixture('data/studio-models.json'))).apply({},()=>0);assert.equal(unit.hp,5);assert.equal(unit.thaco,19);assert.equal(unit.monsterBaselineId,'orc');
 console.log('PASS HP floor, monster HP/THAC0, fractional HD, unknown species, explicit authored rules, class preservation, roundtrip, empty-class fallback and runtime generation');

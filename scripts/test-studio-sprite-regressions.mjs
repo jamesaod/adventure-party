@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {preserveThinSpriteDetails} from '../js/studio-thin-detail.mjs';
 // Studio storage is scoped to the current page URL.
 globalThis.location = {href:'https://example.test/candidate/3d-studio.html'};

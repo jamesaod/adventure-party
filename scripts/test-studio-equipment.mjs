@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -11,13 +12,13 @@ import {
   createShieldAttachment
 } from '../js/studio-shield.mjs';
 
-const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
+const source = readCombatFixture(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${source.toString('base64')}`);
 const close = (actual, expected, label) => assert.ok(actual.distanceTo(expected) < 1e-6,
   `${label}: ${actual.toArray()} vs ${expected.toArray()}`);
 
 function glb(path) {
-  const bytes = fs.readFileSync(new URL(`../${path}`, import.meta.url));
+  const bytes = readCombatFixture(new URL(`../${path}`, import.meta.url));
   assert.equal(bytes.readUInt32LE(0), 0x46546c67);
   assert.equal(bytes.readUInt32LE(4), 2);
   assert.equal(bytes.readUInt32LE(8), bytes.length);
@@ -417,12 +418,12 @@ assert.equal(disposed.filter(object => object === lateAsset).length, 1);
 
 // Exercise the production boundary, including a synthetic change event on a
 // disabled control, so a partial sheet cannot silently mix equipment states.
-const posePanel=fs.readFileSync(new URL('../js/studio-weapon-pose-panel.mjs',import.meta.url),'utf8');
+const posePanel=readCombatFixture(new URL('../js/studio-weapon-pose-panel.mjs',import.meta.url),'utf8');
 assert.ok(posePanel.includes("'medieval-two-handed-sword'"));
 assert.ok(posePanel.includes("poseProfileId: 'two-handed-swing'"));
 assert.ok(posePanel.includes("heightInches: snap.mobType === 'fighter' ? 76 : null"));
 assert.ok(posePanel.includes("bodyReferenceHeightInches: snap.mobType === 'fighter' ? 76 : null"));
-const studio = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
+const studio = readCombatFixture(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
 const mixerEvaluationCount=(studio.match(/state\.mixer\.update\(/g)||[]).length;
 const inlineRestoreCount=(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length;
 assert.equal(mixerEvaluationCount-inlineRestoreCount,1,
@@ -483,7 +484,7 @@ assert.equal(spear.secondaryGrip, undefined);
 assert.equal(solveTwoHandedGrip(THREE,{model:new THREE.Group(),attachment:{weapon:spear}}).active,false);
 assert.equal(spear.poseProfileId, 'one-handed-thrust');
 const spearAsset = glb(spear.file);
-const spearMetadata = JSON.parse(fs.readFileSync(new URL('../assets/models/weapons/spears/spear.json', import.meta.url)));
+const spearMetadata = JSON.parse(readCombatFixture(new URL('../assets/models/weapons/spears/spear.json', import.meta.url)));
 assert.equal(spearAsset.bytes.length, spearMetadata.bytes);
 assert.equal(crypto.createHash('sha256').update(spearAsset.bytes).digest('hex'), spearMetadata.sha256);
 assert.equal(spearAsset.json.skins?.length || 0, 0);
@@ -580,7 +581,7 @@ const leftOnlyManager=createStudioEquipment({THREE,loadAsset:async()=>new THREE.
 assert.equal(await leftOnlyManager.setModel(bowOnlyLeftRig,{rightHand:'recurve-bow'}),true,'Bow requires the left hand, not an unrelated right-hand bone');
 assert.equal(await leftOnlyManager.select({rightHand:'medieval-sword'}),false);
 assert.match(leftOnlyManager.snapshot().error,/right-hand bone/);leftOnlyManager.dispose();
-const bowReference=JSON.parse(fs.readFileSync(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
+const bowReference=JSON.parse(readCombatFixture(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
 const bowHandQuaternion=bowReference.clips.find(clip=>clip.id==='standing-aim-recoil').frames[0].worldQuaternions.LeftHand;
 const bowAxis=new THREE.Vector3(...bow.primaryAxis).applyEuler(new THREE.Euler(...bow.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...bowHandQuaternion).normalize());
 assert.ok(bowAxis.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(1),'Bow stands upright in the independently recovered aim pose');
@@ -688,7 +689,7 @@ console.log('PASS wizard staff: shared GLB, one-handed independent profile, upri
 const sling=STUDIO_WEAPONS.find(w=>w.id==='sling');
 assert.equal(sling.handsRequired,1);assert.equal(sling.poseProfileId,'sling');assert.equal(sling.secondaryGrip,undefined);
 const slingAsset=glb(sling.file);assert.equal(crypto.createHash('sha256').update(slingAsset.bytes).digest('hex'),sling.assetSha256);
-const slingReference=JSON.parse(fs.readFileSync(new URL('./fixtures/sling-over-shoulder-reference.json',import.meta.url)));
+const slingReference=JSON.parse(readCombatFixture(new URL('./fixtures/sling-over-shoulder-reference.json',import.meta.url)));
 const slingFrame=slingReference.clips[0].frames[0];assert.equal(sling.previewPose.timeSeconds,slingFrame.timeSeconds);
 const slingDown=new THREE.Vector3(0,-1,0).applyEuler(new THREE.Euler(...sling.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...slingFrame.worldQuaternions.RightHand).normalize());
 assert.ok(slingDown.angleTo(new THREE.Vector3(0,-1,0))<THREE.MathUtils.degToRad(.01),'Pouch hangs vertically in the independently recovered over-shoulder pose');

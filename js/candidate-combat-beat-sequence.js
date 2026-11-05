@@ -243,15 +243,14 @@ function candidateFlushCombatBeats(){
    HOLD TURN PROGRESSION UNTIL THE VISIBLE SERIES FINISHES
    ============================================================ */
 
-const candidateBaseCombatActionPauseRemaining=
-  combatActionPauseRemaining;
+const candidateBaseCombatActionPauseRemaining=AdventurePartyCombatServices.current('combatActionPauseRemaining');
 
-combatActionPauseRemaining=function(){
+AdventurePartyCombatServices.register('combatActionPauseRemaining','candidate-combat-beat-sequence.js:249:combatActionPauseRemaining',function(){
   return Math.max(
     candidateBaseCombatActionPauseRemaining(),
     candidateCombatBeatRemaining()
   );
-};
+});
 
 
 /* ============================================================
@@ -278,10 +277,9 @@ function candidateWithDamageBeatContext(
 }
 
 
-const candidateBaseShowDamageText=
-  r236ShowDamageText;
+const candidateBaseShowDamageText=AdventurePartyCombatServices.current('r236ShowDamageText');
 
-r236ShowDamageText=function(unit,damage){
+AdventurePartyCombatServices.register('r236ShowDamageText','candidate-combat-beat-sequence.js:284:r236ShowDamageText',function(unit,damage){
   const amount=
     Math.max(
       0,
@@ -333,17 +331,16 @@ r236ShowDamageText=function(unit,damage){
       }
     }
   );
-};
+});
 
 
 /* ============================================================
    BUFF / DEBUFF APPLICATION BEATS
    ============================================================ */
 
-const candidateBaseAddUnitEffect=
-  addUnitEffect;
+const candidateBaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
 
-addUnitEffect=function(
+AdventurePartyCombatServices.register('addUnitEffect','candidate-combat-beat-sequence.js:346:addUnitEffect',function(
   unit,
   effectSpec
 ){
@@ -400,17 +397,16 @@ addUnitEffect=function(
   }
 
   return effect;
-};
+});
 
 
 /* ============================================================
    STYLE EXTENSIONS
    ============================================================ */
 
-const candidateBeatBaseFloatingTextStyle=
-  r236FloatingTextStyle;
+const candidateBeatBaseFloatingTextStyle=AdventurePartyCombatServices.current('r236FloatingTextStyle');
 
-r236FloatingTextStyle=function(kind,alpha){
+AdventurePartyCombatServices.register('r236FloatingTextStyle','candidate-combat-beat-sequence.js:413:r236FloatingTextStyle',function(kind,alpha){
   switch(kind){
     case "secondary-damage":
       return {
@@ -470,7 +466,7 @@ r236FloatingTextStyle=function(kind,alpha){
         alpha
       );
   }
-};
+});
 
 
 /* ============================================================

@@ -33,8 +33,8 @@ function r219FocusSpellAffectedUnit(unit){
   Strength, Invisibility, Ray of Enfeeblement, etc., including self-targeted
   effects without adding special camera code to every spell caster.
 */
-const r219BaseAddUnitEffect=addUnitEffect;
-addUnitEffect=function(unit,effectSpec){
+const r219BaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
+AdventurePartyCombatServices.register('addUnitEffect','r219-combat-presentation.js:37:addUnitEffect',function(unit,effectSpec){
   const applied=r219BaseAddUnitEffect(unit,effectSpec);
 
   if(applied && spellCastInProgress){
@@ -42,11 +42,11 @@ addUnitEffect=function(unit,effectSpec){
   }
 
   return applied;
-};
+});
 
 /* Persistent area spells present each unit's save/result while centered. */
-const r219BasePresentPersistentAreaSave=presentPersistentAreaSave;
-presentPersistentAreaSave=async function(unit,effect,save,saveLabel){
+const r219BasePresentPersistentAreaSave=AdventurePartyCombatServices.current('presentPersistentAreaSave');
+AdventurePartyCombatServices.register('presentPersistentAreaSave','r219-combat-presentation.js:49:presentPersistentAreaSave',async function(unit,effect,save,saveLabel){
   r219FocusSpellAffectedUnit(unit);
   return await r219BasePresentPersistentAreaSave(
     unit,
@@ -54,20 +54,20 @@ presentPersistentAreaSave=async function(unit,effect,save,saveLabel){
     save,
     saveLabel
   );
-};
+});
 
-const r219BasePresentPersistentAreaFailure=presentPersistentAreaFailure;
-presentPersistentAreaFailure=async function(unit,message){
+const r219BasePresentPersistentAreaFailure=AdventurePartyCombatServices.current('presentPersistentAreaFailure');
+AdventurePartyCombatServices.register('presentPersistentAreaFailure','r219-combat-presentation.js:60:presentPersistentAreaFailure',async function(unit,message){
   r219FocusSpellAffectedUnit(unit);
   return await r219BasePresentPersistentAreaFailure(
     unit,
     message
   );
-};
+});
 
 /* Direct spell damage belongs visually to the victim, including later DoT. */
-const r219BaseApplySpellDamage=applySpellDamage;
-applySpellDamage=function(source,target,damage,sourceName,damageType="magic"){
+const r219BaseApplySpellDamage=AdventurePartyCombatServices.current('applySpellDamage');
+AdventurePartyCombatServices.register('applySpellDamage','r219-combat-presentation.js:70:applySpellDamage',function(source,target,damage,sourceName,damageType="magic"){
   r219FocusSpellAffectedUnit(target);
   return r219BaseApplySpellDamage(
     source,
@@ -76,14 +76,14 @@ applySpellDamage=function(source,target,damage,sourceName,damageType="magic"){
     sourceName,
     damageType
   );
-};
+});
 
 /* Sequential area-damage result cards also center their current victim. */
-const r219BaseShowAreaEffectUnitResolution=showAreaEffectUnitResolution;
-showAreaEffectUnitResolution=async function(options={}){
+const r219BaseShowAreaEffectUnitResolution=AdventurePartyCombatServices.current('showAreaEffectUnitResolution');
+AdventurePartyCombatServices.register('showAreaEffectUnitResolution','r219-combat-presentation.js:83:showAreaEffectUnitResolution',async function(options={}){
   r219FocusSpellAffectedUnit(options.unit);
   return await r219BaseShowAreaEffectUnitResolution(options);
-};
+});
 
 /*
   Shared magical application VFX:
@@ -92,7 +92,7 @@ showAreaEffectUnitResolution=async function(options={}){
   frame. A modest 140 ms minimum stagger makes multi-target camera handoff
   readable without turning area spells into a long serial animation.
 */
-animateMagicEffectOnUnits=async function(units,kind="generic",options={}){
+AdventurePartyCombatServices.register('animateMagicEffectOnUnits','r219-combat-presentation.js:95:animateMagicEffectOnUnits',async function(units,kind="generic",options={}){
   const targets=(units || []).filter(unit=>unit?.alive && !unit.fled);
   if(!targets.length) return;
 
@@ -151,7 +151,7 @@ animateMagicEffectOnUnits=async function(units,kind="generic",options={}){
 
   magicEffectFx=[];
   draw();
-};
+});
 
 
 /* ============================================================
@@ -171,7 +171,7 @@ function r219AutomatedStepDelay(mode,baseDelay){
     : delay;
 }
 
-animateEntitySteps=async function(entity,steps,stepProvider,delay=145){
+AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presentation.js:174:animateEntitySteps',async function(entity,steps,stepProvider,delay=145){
   const senseContext=createHiddenMobMovementSenseContext();
 
   for(let i=0;i<steps;i++){
@@ -365,9 +365,9 @@ animateEntitySteps=async function(entity,steps,stepProvider,delay=145){
   }
 
   return true;
-};
+});
 
-animateMobAlongPath=async function(mob,path,maxSteps){
+AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-presentation.js:370:animateMobAlongPath',async function(mob,path,maxSteps){
   const steps=
     Math.min(maxSteps,Math.max(0,path.length-1));
 
@@ -468,14 +468,14 @@ animateMobAlongPath=async function(mob,path,maxSteps){
   }
 
   return true;
-};
+});
 
 
 /* ============================================================
    R219 — STINKING CLOUD AT 75% LOWER OPACITY
    ============================================================ */
 
-drawFogVolumeCell=function(cell,effect=null){
+AdventurePartyCombatServices.register('drawFogVolumeCell','r219-combat-presentation.js:478:drawFogVolumeCell',function(cell,effect=null){
   if(
     !cell ||
     !inside(cell.x,cell.y) ||
@@ -676,4 +676,4 @@ drawFogVolumeCell=function(cell,effect=null){
   ctx.stroke();
 
   ctx.restore();
-};
+});

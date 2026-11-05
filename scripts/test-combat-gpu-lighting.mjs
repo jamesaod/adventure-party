@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {MAX_COMBAT_LIGHTS,packCombatLights,linearLightColor} from '../js/combat-light-shader.mjs';
 import {triangulateSurfaces} from '../js/combat-webgl.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');

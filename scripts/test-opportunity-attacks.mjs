@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 function fn(name){const a=source.indexOf(`function ${name}(`),b=source.indexOf('\n}',a)+2;assert(a>=0&&b>a);return source.slice(source.slice(a-6,a)==='async '?a-6:a,b);}
 const mover={id:'m',name:'Mover',x:1,y:0,alive:true,faction:'player'},enemy={id:'a',name:'Enemy',x:0,y:0,alive:true,faction:'enemy'};

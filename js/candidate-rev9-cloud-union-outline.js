@@ -500,10 +500,9 @@ function candidateRev9DrawFormationUnionOutline(
    FORMATION OUTLINE OVERRIDE
    ============================================================ */
 
-const candidateRev9PreviousDrawFogEffectOutline=
-  drawFogEffectOutline;
+const candidateRev9PreviousDrawFogEffectOutline=AdventurePartyCombatServices.current('drawFogEffectOutline');
 
-drawFogEffectOutline=function(effect){
+AdventurePartyCombatServices.register('drawFogEffectOutline','candidate-rev9-cloud-union-outline.js:506:drawFogEffectOutline',function(effect){
   if(
     !candidateIsGaseousAreaEffect(
       effect
@@ -533,7 +532,7 @@ drawFogEffectOutline=function(effect){
     effect,
     raw
   );
-};
+});
 
 
 /* ============================================================

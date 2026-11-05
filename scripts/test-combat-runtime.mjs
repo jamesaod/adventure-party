@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createCombatTestMap} from '../js/combat-test-map.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {floorFragmentIndex,polygonArea} from '../js/combat-surface-lighting.mjs';
@@ -39,7 +39,7 @@ scene.c.configureStandaloneCombatScene('wall');
 assert.equal(converted.map.version,2);assert(!converted.synthetic,'Test maps cannot select the old synthetic renderer');
 const terrain=scene.c.combatSceneTerrain;
 assert(terrain.walls.every(w=>w.material==='exploration-stone'));
-assert.equal(terrain.doors.length,2);assert.equal(terrain.windows.length,1);
+assert.equal(terrain.doors.length,2);assert.equal(terrain.windows.length,7,'Wall Test has a complete row of seven windows');
 assert(terrain.spaces.some(s=>s.environment==='indoor')&&terrain.spaces.some(s=>s.environment==='outdoor'));
 assert(converted.map.torches.every(t=>sceneApi.torchPlacement(converted.map,t).attached),'Test torches use authored wall mounts');
 const fragments=floorFragmentIndex(terrain.spaces);

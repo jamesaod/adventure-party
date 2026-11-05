@@ -112,22 +112,20 @@ function r224PersistentHypnotizedUnits(){
    CONTINUOUS ANIMATION LOOP INTEGRATION
    ============================================================ */
 
-const r224BaseHasPersistentStatusFx=
-  hasPersistentStatusFx;
+const r224BaseHasPersistentStatusFx=AdventurePartyCombatServices.current('hasPersistentStatusFx');
 
-hasPersistentStatusFx=function(){
+AdventurePartyCombatServices.register('hasPersistentStatusFx','r224-hypnotic-pattern-vfx.js:118:hasPersistentStatusFx',function(){
   return !!(
     r224BaseHasPersistentStatusFx() ||
     r224ActiveHypnoticPatternVisuals().length ||
     r224PersistentHypnotizedUnits().length
   );
-};
+});
 
 
-const r224BaseAddUnitEffect=
-  addUnitEffect;
+const r224BaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
 
-addUnitEffect=function(unit,effectSpec){
+AdventurePartyCombatServices.register('addUnitEffect','r224-hypnotic-pattern-vfx.js:130:addUnitEffect',function(unit,effectSpec){
   const effect=
     r224BaseAddUnitEffect(
       unit,
@@ -139,14 +137,14 @@ addUnitEffect=function(unit,effectSpec){
   }
 
   return effect;
-};
+});
 
 
 /* ============================================================
    CAST HOOK
    ============================================================ */
 
-castHypnoticPatternSpell=async function(action,targetHex){
+AdventurePartyCombatServices.register('castHypnoticPatternSpell','r224-hypnotic-pattern-vfx.js:149:castHypnoticPatternSpell',async function(action,targetHex){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("hypnotic-pattern");
   const level=
@@ -285,7 +283,7 @@ castHypnoticPatternSpell=async function(action,targetHex){
   );
 
   return true;
-};
+});
 
 
 /* ============================================================
@@ -533,16 +531,15 @@ function r224DrawHypnoticGroundShimmer(effect){
 }
 
 
-const r224BaseDrawSpellAreaEffects=
-  drawSpellAreaEffects;
+const r224BaseDrawSpellAreaEffects=AdventurePartyCombatServices.current('drawSpellAreaEffects');
 
-drawSpellAreaEffects=function(){
+AdventurePartyCombatServices.register('drawSpellAreaEffects','r224-hypnotic-pattern-vfx.js:539:drawSpellAreaEffects',function(){
   r224BaseDrawSpellAreaEffects();
 
   for(const effect of r224ActiveHypnoticPatternVisuals()){
     r224DrawHypnoticGroundShimmer(effect);
   }
-};
+});
 
 
 /* ============================================================
@@ -1236,10 +1233,9 @@ function r224DrawAllHypnoticStatusFx(){
   the floating pattern remains above the battlefield sprites while staying below
   messages, weather foreground, death markers, and UI.
 */
-const r224BaseDrawPersistentCharmStatusFx=
-  drawPersistentCharmStatusFx;
+const r224BaseDrawPersistentCharmStatusFx=AdventurePartyCombatServices.current('drawPersistentCharmStatusFx');
 
-drawPersistentCharmStatusFx=function(){
+AdventurePartyCombatServices.register('drawPersistentCharmStatusFx','r224-hypnotic-pattern-vfx.js:1242:drawPersistentCharmStatusFx',function(){
   r224BaseDrawPersistentCharmStatusFx();
 
   for(const effect of r224ActiveHypnoticPatternVisuals()){
@@ -1247,17 +1243,16 @@ drawPersistentCharmStatusFx=function(){
   }
 
   r224DrawAllHypnoticStatusFx();
-};
+});
 
 
 /* ============================================================
    AIM TILE INSPECTION
    ============================================================ */
 
-const r224BaseAreaEffectsAtHex=
-  r223AreaEffectsAtHex;
+const r224BaseAreaEffectsAtHex=AdventurePartyCombatServices.current('r223AreaEffectsAtHex');
 
-r223AreaEffectsAtHex=function(x,y){
+AdventurePartyCombatServices.register('r223AreaEffectsAtHex','r224-hypnotic-pattern-vfx.js:1260:r223AreaEffectsAtHex',function(x,y){
   const result=
     r224BaseAreaEffectsAtHex(
       x,
@@ -1277,13 +1272,12 @@ r223AreaEffectsAtHex=function(x,y){
   }
 
   return result;
-};
+});
 
 
-const r224BaseAreaEffectRuleText=
-  r223AreaEffectRuleText;
+const r224BaseAreaEffectRuleText=AdventurePartyCombatServices.current('r223AreaEffectRuleText');
 
-r223AreaEffectRuleText=function(effect){
+AdventurePartyCombatServices.register('r223AreaEffectRuleText','r224-hypnotic-pattern-vfx.js:1286:r223AreaEffectRuleText',function(effect){
   if(
     effect?.type==="hypnotic-pattern"
   ){
@@ -1294,12 +1288,11 @@ r223AreaEffectRuleText=function(effect){
   }
 
   return r224BaseAreaEffectRuleText(effect);
-};
+});
 
 
 if(window.AdventurePartyAimTileEffects){
-  window.AdventurePartyAimTileEffects.effectsAtHex=
-    r223AreaEffectsAtHex;
+  window.AdventurePartyAimTileEffects.effectsAtHex=AdventurePartyCombatServices.current('r223AreaEffectsAtHex');
 }
 
 

@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -35,7 +36,7 @@ const sample=sampleGeneration(g);assert.ok(sample.equipment.some(i=>i.itemId==='
 assert.equal(sample.generation.armor,'chain-mail');assert.equal(g.alwaysItems.length,0);
 assert.throws(()=>sampleGeneration({...g,armor:'long-sword'}),/armor/);
 // Exercise the production equipment synchronizer and AC resolver, not a duplicate engine.
-const source=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const fn=name=>{const start=source.indexOf(`function ${name}(`);assert.ok(start>=0);return source.slice(start,source.indexOf('\n}',start)+2);};
 const sandbox={window:{adventurePartyArmorRules:{inventoryMovement,resolveArmorItem}},getArmorCatalogEntry:id=>ARMOR_ENGINE_CATALOG[id],getWeaponCatalogEntry:()=>null,getMissileCatalogEntry:()=>null,syncRepositoryMissileEquipment:()=>{},dexterityAdjustments:()=>({defensive:0}),clamp:(v,min,max)=>Math.max(min,Math.min(max,v))};
 vm.createContext(sandbox);vm.runInContext(fn('calculateArmorClass')+'\n'+fn('syncFighterEquipment'),sandbox);

@@ -278,37 +278,12 @@ function playDqkMeleeMissSound(){
 
 let candidateRev10ResolvingSpellId=null;
 
-const candidateRev10BaseCastPreparedCombatSpell=
-  castPreparedCombatSpell;
-
-castPreparedCombatSpell=async function(
-  action,
-  targetHex,
-  targetUnit
-){
-  const previous=
-    candidateRev10ResolvingSpellId;
-
-  candidateRev10ResolvingSpellId=
-    action?.spellId || null;
-
-  try{
-    return await candidateRev10BaseCastPreparedCombatSpell(
-      action,
-      targetHex,
-      targetUnit
-    );
-  }finally{
-    candidateRev10ResolvingSpellId=
-      previous;
-  }
-};
 
 
-const candidateRev10BasePlayFireballExplosionSound=
-  playFireballExplosionSound;
 
-playFireballExplosionSound=function(){
+const candidateRev10BasePlayFireballExplosionSound=AdventurePartyCombatServices.current('playFireballExplosionSound');
+
+AdventurePartyCombatServices.register('playFireballExplosionSound','candidate-rev10-dqk-sfx.js:287:playFireballExplosionSound',function(){
   if(
     candidateRev10ResolvingSpellId==="fireball"
   ){
@@ -320,7 +295,7 @@ playFireballExplosionSound=function(){
     sound rather than inheriting the new Fireball sample accidentally.
   */
   return candidateRev10BasePlayFireballExplosionSound();
-};
+});
 
 
 /* ============================================================
@@ -400,10 +375,9 @@ function candidateRev10IsHostileSpellAffect(
 }
 
 
-const candidateRev10BaseAddUnitEffect=
-  addUnitEffect;
+const candidateRev10BaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
 
-addUnitEffect=function(
+AdventurePartyCombatServices.register('addUnitEffect','candidate-rev10-dqk-sfx.js:382:addUnitEffect',function(
   unit,
   effectSpec
 ){
@@ -441,56 +415,14 @@ addUnitEffect=function(
   }
 
   return effect;
-};
+});
 
 
 /* ============================================================
    ADJACENT / MELEE MISS — DQK SFX 07
    ============================================================ */
 
-const candidateRev10BaseAttack=
-  attack;
 
-attack=function(
-  attacker,
-  defender,
-  options={}
-){
-  const baseMissSound=
-    playMissSound;
-
-  /*
-    The generic attack() path is the adjacent physical/melee attack path.
-    Longbow, sling, projectile spell and other ranged resolvers use their own
-    attack functions and therefore retain the established ranged miss sound.
-  */
-  const adjacentPhysicalAttack=
-    !!(
-      attacker?.alive &&
-      defender?.alive &&
-      attacker.weaponInHand!=="ranged" &&
-      canMeleeReach(
-        attacker,
-        defender
-      )
-    );
-
-  if(adjacentPhysicalAttack){
-    playMissSound=
-      playDqkMeleeMissSound;
-  }
-
-  try{
-    return candidateRev10BaseAttack(
-      attacker,
-      defender,
-      options
-    );
-  }finally{
-    playMissSound=
-      baseMissSound;
-  }
-};
 
 
 candidateRev10PrimeDqkSfx();

@@ -31,6 +31,12 @@ jobs:
           node --check js/adventure-party.js
           node --check js/game-script-loader.mjs
           node scripts/test-game-script-loader.mjs
+          node scripts/test-combat-module-boundaries.mjs
+          node scripts/test-combat-turn-flow.mjs
+          node scripts/test-combat-casting-lifecycle.mjs
+          node scripts/test-combat-spell-actions.mjs
+          node scripts/test-combat-missile-actions.mjs
+          node scripts/test-combat-action-entry.mjs
           node scripts/test-battlefield-font.mjs
           node scripts/test-combat-info-panel.mjs
           node scripts/test-quick-command.mjs

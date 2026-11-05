@@ -2507,3 +2507,7 @@ button, input, select, textarea {
 
 #solarDayTest{display:block;margin:7px auto 0;padding:5px 8px;background:#15131d;color:#e6c875;border:1px solid #8c7750;font:inherit;font-size:9px;cursor:pointer}#solarDayTest[aria-pressed="true"]{background:#493c24;border-color:#e8c973;color:#fff0b6}#solarDayTest:focus-visible{outline:2px solid #82e8e9;outline-offset:2px}
 
+
+/* Local environmental-action test controls. */
+#combatEnvironmentControls{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;align-items:center;margin-top:.6rem;font-size:.7em;}
+#combatEnvironmentControls label{display:flex;align-items:center;gap:.3rem;}

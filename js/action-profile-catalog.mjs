@@ -68,7 +68,8 @@ export function resolveActionPose(profile,poseName,sharedProne=null,catalog=ACTI
   if(poseName==='prone'&&profile?.sharedProne&&sharedProne)
     return {source:'shared-prone',pose:normalizePose(sharedProne)};
   const fallbackPose=['ready','windup','attack'].includes(poseName)?poseName:['falling','prone'].includes(poseName)?'ready':null;
-  const borrowed=fallbackPose&&catalog?.get('one-handed-swing')?.poses?.[fallbackPose];
+  // The dedicated staff grip must never silently inherit another weapon's pose.
+  const borrowed=profile?.id!=='wizard-staff-grip'&&fallbackPose&&catalog?.get('one-handed-swing')?.poses?.[fallbackPose];
   if(borrowed)return {source:'profile-fallback',profileId:'one-handed-swing',pose:borrowed};
   return {source:'fallback-sprite',pose:null};
 }

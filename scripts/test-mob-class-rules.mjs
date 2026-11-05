@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import * as rules from '../js/mob-class-rules.mjs';
 import {PRIEST_SPELLS} from '../js/priest-spells.mjs';
 import {normalizeMobDefinition} from '../js/mob-definition.mjs';
-const engine=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const engine=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 // Extract the production declarations, not a second set of expected tables.
 const constants=['FIGHTER_CLASS','MAGE_CLASS','CLERIC_CLASS','THIEF_CLASS','FIGHTER_LEVELS','MAGE_SPELL_SLOT_ROWS','CLERIC_SPELL_SLOT_ROWS','MAGE_SAVING_THROW_BANDS','PRIEST_SAVING_THROW_BANDS','ROGUE_SAVING_THROW_BANDS','WARRIOR_SAVING_THROW_BANDS','MAGE_INTELLIGENCE_TABLE','SPELL_CATALOG'];
 const context=vm.createContext({PRIEST_SPELLS,TACTICAL_FEET_PER_HEX:10,Infinity});
@@ -20,7 +21,7 @@ assert.deepEqual(rules.prepareMobSpells('mage',2,{int:10},prepared).memorizedSpe
 assert.throws(()=>rules.normalizeSpellPreparation({cleric:{mode:'prepared',choices:[{spellId:'magic-missile',count:1}]}}));
 const pool={mage:{mode:'pool',choices:[{spellId:'magic-missile',count:1},{spellId:'shield',count:3},{spellId:'fireball',count:1}]}};
 assert.deepEqual(rules.prepareMobSpells('mage',1,{int:10},pool,()=>.5).memorizedSpellIds,['shield']);
-const template=JSON.parse(fs.readFileSync(new URL('../data/mobs/orc-male-uniformed.unit-package.json',import.meta.url)));
+const template=JSON.parse(readCombatFixture(new URL('../data/mobs/orc-male-uniformed.unit-package.json',import.meta.url)));
 let a=rules.generateMobRules(template,{classId:'fighter',level:3},()=>0);assert.equal(a.hp,3);assert.equal(a.thaco,18);
 template.character.abilities.con=18;a=rules.generateMobRules(template,{classId:'fighter',level:3},()=>0);assert.equal(a.hp,15);
 template.character.rules.overrideHp=true;template.character.rules.hpMode='fixed';template.character.rules.maxHp=42;a=rules.generateMobRules(template,{classId:'fighter',level:3},()=>0);assert.equal(a.hp,42);assert.equal(a.thaco,18);

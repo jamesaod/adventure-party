@@ -1,7 +1,8 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const start=source.indexOf('// Battlefield text size is separate');
 const setup=source.slice(start,source.indexOf('const ui={',start));
 const handler=source.slice(source.indexOf('function handleCombatKey('),source.indexOf('function handleCombatConditionsKey('));

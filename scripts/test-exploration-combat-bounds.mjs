@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {blankEdgeMap} from '../js/exploration-authoring.mjs';
 import {paintEdge} from '../js/exploration-edges.mjs';
 import {terrainForEncounter} from '../js/exploration-encounters.mjs';

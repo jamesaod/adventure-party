@@ -268,10 +268,9 @@ function candidateRev3Preview(
    FINAL AIM-PREVIEW WRAPPER
    ============================================================ */
 
-const candidateRev3BaseAimAreaPreviewForAction=
-  aimAreaPreviewForAction;
+const candidateRev3BaseAimAreaPreviewForAction=AdventurePartyCombatServices.current('aimAreaPreviewForAction');
 
-aimAreaPreviewForAction=function(
+AdventurePartyCombatServices.register('aimAreaPreviewForAction','candidate-aoe-aim-preview-audit.js:274:aimAreaPreviewForAction',function(
   action,
   targetHex
 ){
@@ -498,7 +497,7 @@ aimAreaPreviewForAction=function(
     default:
       return existing || null;
   }
-};
+});
 
 
 /* ============================================================

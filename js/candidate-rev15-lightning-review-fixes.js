@@ -137,10 +137,9 @@
     return true;
   }
 
-  const baseMagicEffectSound=
-    playMagicEffectSound;
+  const baseMagicEffectSound=AdventurePartyCombatServices.current('playMagicEffectSound');
 
-  playMagicEffectSound=function(kind="generic",index=0){
+  AdventurePartyCombatServices.register('playMagicEffectSound','candidate-rev15-lightning-review-fixes.js:143:playMagicEffectSound',function(kind="generic",index=0){
     if(kind==="lightning"){
       return playLightningBoltSample();
     }
@@ -149,20 +148,20 @@
       kind,
       index
     );
-  };
+  });
 
   primeLightningBoltSfx();
 
-  const basePor07CastingSound=playPor07CastingSound;
-  playPor07CastingSound=function(){
+  const basePor07CastingSound=AdventurePartyCombatServices.current('playPor07CastingSound');
+  AdventurePartyCombatServices.register('playPor07CastingSound','candidate-rev15-lightning-review-fixes.js:157:playPor07CastingSound',function(){
     if(suppressLightningUniversalCastCue){
       return;
     }
     return basePor07CastingSound();
-  };
+  });
 
-  const baseCommitSpellCast=commitSpellCast;
-  commitSpellCast=function(caster,spell,action){
+  const baseCommitSpellCast=AdventurePartyCombatServices.current('commitSpellCast');
+  AdventurePartyCombatServices.register('commitSpellCast','candidate-rev15-lightning-review-fixes.js:165:commitSpellCast',function(caster,spell,action){
     const suppress=spell?.id==="lightning-bolt";
 
     if(!suppress){
@@ -175,10 +174,10 @@
     }finally{
       suppressLightningUniversalCastCue=false;
     }
-  };
+  });
 
-  const baseLightningBoltCast=r226CastLightningBolt;
-  r226CastLightningBolt=async function(action,targetHex){
+  const baseLightningBoltCast=AdventurePartyCombatServices.current('r226CastLightningBolt');
+  AdventurePartyCombatServices.register('r226CastLightningBolt','candidate-rev15-lightning-review-fixes.js:181:r226CastLightningBolt',async function(action,targetHex){
     /*
       R231 target-at-completion prompts use displayMs=0 intentionally, making
       them persistent while AIM is active. Once the player commits the target,
@@ -191,7 +190,7 @@
       action,
       targetHex
     );
-  };
+  });
 
   window.AdventurePartyLightningReviewFixes={
     queued:true,

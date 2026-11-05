@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {HAIR_PRESETS,METAL_PRESETS,isWarriorRecolorModel,normalizeWarriorRecolor,WARRIOR_RECOLOR_ID}
   from '../js/warrior-recolor.mjs';
 assert.equal(WARRIOR_RECOLOR_ID,'woman-warrior-hair-metal-v2');

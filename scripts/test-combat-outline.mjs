@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spriteOutlinePixels, BATTLEFIELD_PIXELS_PER_INCH } from '../js/sprite-outline.mjs';
@@ -38,7 +39,7 @@ for(let y=0;y<height;y++)for(let x=0;x<width;x++){
 }
 assert.equal(outlineCount,4,'One-pixel outline has four cardinal neighbors');
 
-const renderer=fs.readFileSync(new URL('../js/combat-mob-renderer.mjs',import.meta.url),'utf8');
+const renderer=readCombatFixture(new URL('../js/combat-mob-renderer.mjs',import.meta.url),'utf8');
 assert.ok(renderer.includes('outline:spriteOutlinePixels(style,frame.width,nativeWidth,frame.width)'),
   'Full-resolution source images keep correctly scaled outline');
 assert.ok(renderer.includes('outline:spriteOutlinePixels(style,nativeWidth,nativeWidth,frame.width)'),

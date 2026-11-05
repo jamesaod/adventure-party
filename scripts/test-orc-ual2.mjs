@@ -1,13 +1,14 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 
 const root=new URL('../',import.meta.url);
-const threeSource=fs.readFileSync(new URL('assets/vendor/three/three.core.min.js',root));
+const threeSource=readCombatFixture(new URL('assets/vendor/three/three.core.min.js',root));
 const THREE=await import(`data:text/javascript;base64,${threeSource.toString('base64')}`);
 
 function readGlb(relative){
-  const bytes=fs.readFileSync(new URL(relative,root));
+  const bytes=readCombatFixture(new URL(relative,root));
   assert.equal(bytes.readUInt32LE(0),0x46546c67,`${relative}: GLB magic`);
   assert.equal(bytes.readUInt32LE(4),2,`${relative}: GLB version`);
   assert.equal(bytes.readUInt32LE(8),bytes.length,`${relative}: declared length`);
@@ -94,7 +95,7 @@ assert.ok(leftHand.x>hips.x+0.12 && leftFore.x>hips.x+0.10,
 assert.ok(rightHand.x<hips.x-0.12 && rightFore.x<hips.x-0.10,
   `Ready right arm must remain on anatomical right: hips ${hips.x}, forearm ${rightFore.x}, hand ${rightHand.x}`);
 
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root),'utf8'));
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root),'utf8'));
 const raw=catalog.models.find(model=>model.id==='male-orc-fighter');
 const derived=catalog.models.find(model=>model.id==='male-orc-fighter-ual2-one-handed-proof');
 assert.ok(raw&&!raw.animationFamilies,'Raw Orc remains untouched and does not runtime-retarget animations');
@@ -108,7 +109,7 @@ assert.deepEqual(derived,{
   skinWeightRepair:'cross-limb-components-v1'
 },'Derived proof is a separate Studio Model Library entry');
 
-const provenance=JSON.parse(fs.readFileSync(new URL(
+const provenance=JSON.parse(readCombatFixture(new URL(
   'assets/models/orcs/male-orc-fighter/ual2-one-handed/provenance.json',root),'utf8'));
 assert.equal(provenance.source.sha256,'8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8');
 assert.equal(provenance.target.sha256,'a0b63e9ae67c47779baf9e254660918c073ab1684237f528c43bb9f7e9f9c688');

@@ -25,23 +25,36 @@ const vertexShader=`
  attribute vec3 surfaceSunLoss; attribute vec3 surfaceMultiply; attribute vec3 surfaceBoost; attribute vec3 surfaceAdd;
  uniform bool screenSpace; uniform mat3 combatView; uniform vec2 anchor; uniform float zoom;
  varying vec3 vLightPoint,vLightNormal,vTint,vSunLoss; varying vec2 vLightWorld; varying float vVisibility;
- varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
+ varying vec3 vSurfacePosition; varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
  void main(){
   vec2 screen=(combatView*vec3(position.xy,1.)).xy-vec2(0.,position.z);
   screen=anchor+(screen-anchor)*zoom;
   gl_Position=projectionMatrix*vec4(screenSpace?position.xy:screen,0.,1.);
-  vSunLoss=surfaceSunLoss;vLightPoint=lightPoint;vLightNormal=lightNormal;vLightWorld=lightSampleWorld;vVisibility=surfaceVisibility;vTint=surfaceTint;
+  vSurfacePosition=position;vSunLoss=surfaceSunLoss;vLightPoint=lightPoint;vLightNormal=lightNormal;vLightWorld=lightSampleWorld;vVisibility=surfaceVisibility;vTint=surfaceTint;
   vUv=uv;vWorld=position.xy;vMultiply=surfaceMultiply;vBoost=surfaceBoost;vAdd=surfaceAdd;
  }`;
 const fragmentShader=`
  ${combatLightGLSL}
+ uniform int scorchCount;uniform vec4 scorchMarks[8];uniform vec2 scorchEnds[8];uniform float scorchSquash;
  uniform bool dynamicLighting,spriteLighting; uniform float surfaceOpacity;
  uniform sampler2D artwork; uniform sampler2D lightMultiply; uniform sampler2D lightBoost;
  uniform bool useLightMap; uniform vec4 lightBounds;
  varying vec3 vLightPoint,vLightNormal,vTint,vSunLoss; varying vec2 vLightWorld; varying float vVisibility;
- varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
+ varying vec3 vSurfacePosition; varying vec2 vUv; varying vec2 vWorld; varying vec3 vMultiply; varying vec3 vBoost; varying vec3 vAdd;
  void main(){
   vec4 texel=texture2D(artwork,vUv);
+  float scorch=0.;
+  for(int i=0;i<8;i++){
+   if(i>=scorchCount)break;vec4 mark=scorchMarks[i];
+   vec2 local=(vSurfacePosition.xy-mark.xy)/vec2(1.,scorchSquash),span=(scorchEnds[i]-mark.xy)/vec2(1.,scorchSquash);
+   float spanLength=length(span),along=dot(local,span)/max(spanLength,.0001);
+   // Feather inward: never carry a capsule beyond the affected hex boundary.
+   float edge=smoothstep(0.,mark.z,min(along,spanLength-along));
+   float noise=fract(sin(dot(floor(vec2(vSurfacePosition.x+vSurfacePosition.y/scorchSquash,vSurfacePosition.z)/3.),vec2(12.9898,78.233)))*43758.5453);
+   float amount=edge*(1.-smoothstep(23.,45.,abs(vSurfacePosition.z-17.)))*.75*(.68+noise*.24);
+   scorch=max(scorch,amount);
+  }
+  texel.rgb=mix(texel.rgb,vec3(16.,17.,18.)/255.,scorch);
   vec3 m=vMultiply,b=vBoost;
   if(useLightMap){
    vec2 lightUv=(vWorld-lightBounds.xy)/lightBounds.zw;lightUv.y=1.-lightUv.y;
@@ -134,12 +147,12 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    renderer.setViewport(0,0,width,height);renderer.clear(true,false,false);
    camera.right=view.width;camera.bottom=view.height;camera.updateProjectionMatrix();return true;
   },
-  surface(surfaces,image,{lightMap=null,dynamicLighting=false,spriteLighting=false,screenSpace=false,opacity=1}={}){
+  surface(surfaces,image,{lightMap=null,dynamicLighting=false,spriteLighting=false,screenSpace=false,opacity=1,scorch=[],scorchSquash=1}={}){
    if(lost||!frameOpen||!surfaces.length||!image)return;
    flush();let record=records[slot++];
    if(!record){
     const geometry=new THREE.BufferGeometry(),material=new THREE.ShaderMaterial({vertexShader,fragmentShader,
-     uniforms:{dynamicLighting:{value:false},spriteLighting:{value:false},screenSpace:{value:false},surfaceOpacity:{value:1},emitterCount:{value:0},emitterPosition:{value:new Float32Array(128)},emitterColor:{value:new Float32Array(128)},emitterShape:{value:new Float32Array(128)},emitterBounds:{value:new Float32Array(128)},emitterMask:{value:maskTexture},lightWorld:{value:new THREE.Vector4(1,1,0,0)},artwork:{value:null},lightMultiply:{value:null},lightBoost:{value:null},useLightMap:{value:false},lightBounds:{value:new THREE.Vector4()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1}},
+     uniforms:{scorchCount:{value:0},scorchEnds:{value:new Float32Array(16)},scorchMarks:{value:new Float32Array(32)},scorchSquash:{value:1},dynamicLighting:{value:false},spriteLighting:{value:false},screenSpace:{value:false},surfaceOpacity:{value:1},emitterCount:{value:0},emitterPosition:{value:new Float32Array(128)},emitterColor:{value:new Float32Array(128)},emitterShape:{value:new Float32Array(128)},emitterBounds:{value:new Float32Array(128)},emitterMask:{value:maskTexture},lightWorld:{value:new THREE.Vector4(1,1,0,0)},artwork:{value:null},lightMultiply:{value:null},lightBoost:{value:null},useLightMap:{value:false},lightBounds:{value:new THREE.Vector4()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1}},
      depthTest:false,depthWrite:false,side:THREE.DoubleSide,transparent:true,toneMapped:false});
     const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;records.push(record={mesh});
    }
@@ -156,6 +169,8 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    }
    const u=record.mesh.material.uniforms,[a,b,c,d,tx,ty]=view.matrix;
    u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;
+   u.scorchCount.value=Math.min(8,scorch?.length||0);u.scorchSquash.value=scorchSquash;
+   u.scorchEnds.value.fill(0);u.scorchMarks.value.fill(0);for(let i=0;i<u.scorchCount.value;i++){const mark=scorch[i];u.scorchMarks.value.set([mark.x,mark.y,mark.radius,1],i*4);u.scorchEnds.value.set([mark.endX??mark.x,mark.endY??mark.y],i*2);}
    u.dynamicLighting.value=!!(dynamicLighting&&lighting);u.spriteLighting.value=spriteLighting;u.screenSpace.value=screenSpace;u.surfaceOpacity.value=opacity;
    u.emitterCount.value=lighting?.lights.length||0;
    if(lighting){const p=lighting.packed;u.emitterPosition.value=p.position;u.emitterColor.value=p.color;u.emitterShape.value=p.shape;u.emitterBounds.value=p.bounds;u.lightWorld.value.fromArray(lighting.world);}

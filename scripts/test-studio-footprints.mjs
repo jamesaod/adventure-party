@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import * as armorRules from '../js/armor-rules.mjs';
 import {createRepositoryMobRegistry} from '../js/repository-mobs.mjs';
 import assert from 'node:assert/strict';
@@ -8,9 +9,10 @@ import { SPRITE_LAYOUT_PRESETS, SPRITE_LEGACY_LAYOUT_PRESETS, SPRITE_LAYOUTS, SP
 const allLayoutPresets = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRESETS];
 
 // Run the game's actual footprint, movement, factory, and rendering functions.
-const source = fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
+const lifecycleSource=readCombatFixture(new URL('../js/combat-casting-lifecycle.js',import.meta.url),'utf8');
+const source = readCombatFixture(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
 function productionFunction(name) {
-  const code = name==='createCombatGame'?fs.readFileSync(new URL('../js/combat-runtime.js',import.meta.url),'utf8'):source;
+  const code = ['r230InitiativeStore','r230PendingCastings','r230CastingStore','castingInitiativeSlots'].includes(name)?lifecycleSource:name==='createCombatGame'?readCombatFixture(new URL('../js/combat-runtime.js',import.meta.url),'utf8'):source;
   const start = code.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function ${name}`);
   const end = code.indexOf('\n}', start);
@@ -31,7 +33,7 @@ const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
 const sandbox = {
-  window:{adventurePartyArmorRules:armorRules,adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(fs.readFileSync(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
+  window:{adventurePartyArmorRules:armorRules,adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(readCombatFixture(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(readCombatFixture(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
   markMobAppearanceDirty:()=>Promise.resolve(null),
   PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
   HEX_DIRS: directions.map((name, index) => ({ name, x: vectors[index][0], y: vectors[index][1] })),
@@ -70,12 +72,12 @@ const functions = [
   'drawFighter', 'drawFriendlyArcher', 'drawFriendlyMage',
   'isStudioPlayerSpriteTarget', 'playerSpriteSetForType', 'applyPlayerSpriteSet',
   'makeFighter', 'makeFriendlyElvenRanger', 'makeTestPartyMage', 'clamp',
-  'conHpAdjustment', 'strengthMods', 'syncFighterEquipment', 'syncRepositoryMissileEquipment', 'calculateArmorClass', 'dexterityAdjustments',
+  'conHpAdjustment', 'strengthMods', 'equipCarlBowForCombatTest', 'syncFighterEquipment', 'syncRepositoryMissileEquipment', 'calculateArmorClass', 'dexterityAdjustments',
   'getMissileCatalogEntry', 'getWeaponCatalogEntry', 'getArmorCatalogEntry', 'getSpellEntry',
   'applyFighterClassRules', 'fighterLevelData', 'warriorSavingThrows',
   'createCombatGame', 'newGame', 'allUnits', 'livingPartyMembers', 'isPlayerControlledUnit', 'isKoboldUnit',
   'studioSpriteTestUnits', 'inspectStudioSpritePose', 'beginCombatFromPrompt', 'advanceFirFires', 'startRound',
-  'rollInitiative', 'getUnitById', 'activeEnemies', 'fighterAttacksThisRound',
+  'r230InitiativeStore', 'r230PendingCastings', 'r230CastingStore', 'castingInitiativeSlots', 'rollInitiative', 'rollUnitInitiative', 'applyInitiativeEffects', 'getUnitById', 'activeEnemies', 'fighterAttacksThisRound',
   'fighterBaseAttacksThisRound', 'fighterSpecialistAttacksThisRound', 'isStudioTestCombat', 'studioReturnUrl', 'returnToStudioFromCombat', 'checkCombatVictory', 'renderStudioTestCharacterSheet', 'renderCharacterSheet', 'canUseSweep',
   'animateEntitySteps', 'animateMobAlongPath', 'tryPlayerMove'
 ];
@@ -92,6 +94,7 @@ vm.runInContext([
   source.slice(mageStart, mageEnd), source.slice(spellStart, spellEnd),
   ...functions.map(productionFunction)
 ].join('\n'), sandbox);
+sandbox.getUnitEffect=()=>null;
 const plain = value => JSON.parse(JSON.stringify(value));
 
 // All six rotations agree with the shared studio layout, retain cell count,

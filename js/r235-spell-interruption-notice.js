@@ -34,9 +34,9 @@ function r235SpellInterruptionNoticeActive(){
 }
 
 
-const r235BaseSetCombatMessage=setCombatMessage;
+const r235BaseSetCombatMessage=AdventurePartyCombatServices.current('setCombatMessage');
 
-setCombatMessage=function(
+AdventurePartyCombatServices.register('setCombatMessage','r235-spell-interruption-notice.js:39:setCombatMessage',function(
   message,
   holdMs=0,
   displayMs=COMBAT_MESSAGE_DISPLAY_MS,
@@ -66,7 +66,7 @@ setCombatMessage=function(
     displayMs,
     tone
   );
-};
+});
 
 
 function r235FlushDeferredCombatMessage(){
@@ -127,9 +127,9 @@ function r235ScheduleDeferredCombatMessageFlush(){
    INTERRUPT PRESENTATION
    ============================================================ */
 
-const r235BaseDisruptCasting=r230DisruptCasting;
+const r235BaseDisruptCasting=AdventurePartyCombatServices.current('r230DisruptCasting');
 
-r230DisruptCasting=function(
+AdventurePartyCombatServices.register('r230DisruptCasting','r235-spell-interruption-notice.js:132:r230DisruptCasting',function(
   unit,
   reason="interruption"
 ){
@@ -194,14 +194,14 @@ r230DisruptCasting=function(
   r235ScheduleDeferredCombatMessageFlush();
 
   return true;
-};
+});
 
 
 /* ============================================================
    ACTION PAUSE MUST INCLUDE THE DEFERRED FOLLOW-UP MESSAGE
    ============================================================ */
 
-waitForCombatActionPause=async function(){
+AdventurePartyCombatServices.register('waitForCombatActionPause','r235-spell-interruption-notice.js:204:waitForCombatActionPause',async function(){
   while(true){
     const priorityRemaining=
       r235SpellInterruptionNoticeRemaining();
@@ -232,7 +232,7 @@ waitForCombatActionPause=async function(){
       Math.max(1,remaining)
     );
   }
-};
+});
 
 
 /* ============================================================

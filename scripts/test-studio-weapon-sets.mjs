@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -5,7 +6,7 @@ import {createStudioEquipment,normalizeEquipment,normalizeOffHandEquipment,studi
 import {normalizeShield} from '../js/studio-shield.mjs';
 import {buildStudioUnitExport} from '../js/studio-unit-export.mjs';
 import {validateUnitPackage} from '../js/unit-package.mjs';
-const source=fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
+const source=readCombatFixture(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
 const THREE=await import(`data:text/javascript;base64,${source.toString('base64')}`);
 const rig=new THREE.Group(),right=new THREE.Bone(),left=new THREE.Bone();
 right.name='mixamorigRightHand';left.name='mixamorigLeftHand';right.position.x=1;left.position.x=-1;rig.add(right,left);
@@ -34,7 +35,7 @@ await off.select({rightHand:'spear'});assert.equal(left.children.length,0);
 // Independent source-pose references exercise eligible mounts as the left hand
 // changes orientation. Validate the actual shared attachment transform, not
 // just the normalizer's returned Euler values.
-const handReference=JSON.parse(fs.readFileSync(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
+const handReference=JSON.parse(readCombatFixture(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
 const offWeapons=STUDIO_OFF_HAND_WEAPONS;
 assert.deepEqual(offWeapons.map(weapon=>weapon.id),['medieval-sword','battle-axe','short-sword','dagger','scimitar','broadsword','mace','morning-star','flail','club']);
 for(const id of ['wizard-staff-grip','sling']){
@@ -67,7 +68,7 @@ assert.deepEqual(normalizeOffHandEquipment(legacyMount).rotation,legacyMount.rot
 console.log(`PASS off-hand alignment: ${offWeapons.length} weapons, ${handReference.clips.length} uploaded clips, 70 sampled poses and six facings; calibrated axes and palm pivots`);
 primary.dispose();off.dispose();
 
-const studio=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+const studio=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 const manager=(normalize,initial)=>{let settings=normalize(initial);return {snapshot:()=>({settings:structuredClone(settings)}),select:async value=>{settings=normalize(value);return true;}};};
 const context=vm.createContext({
  state:{modelReady:true,modelLoading:false,disposed:false,model:{}},

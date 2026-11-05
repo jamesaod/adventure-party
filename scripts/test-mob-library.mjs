@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createAuthoringStore} from '../js/authoring-store.mjs';
 import {createMobLibrary,encounterReadiness} from '../js/mob-library.mjs';
 import {normalizeMobDefinition} from '../js/mob-definition.mjs';

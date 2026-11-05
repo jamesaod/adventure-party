@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 
 const html=readFileSync('3d-studio.html','utf8');
 const studio=readFileSync('js/3d-studio.mjs','utf8');

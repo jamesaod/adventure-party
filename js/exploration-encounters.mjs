@@ -20,7 +20,7 @@ export {tileDistanceVisibility,distanceDarkness,DISTANCE_VISIBILITY} from './dis
 import {isOutdoor} from './exploration-environment.mjs?v=R238C262';
 export {ambientLightAt,isOutdoor} from './exploration-environment.mjs?v=R238C262';
 export {solidPrism,combatDoorSolids,doorCapUv} from './exploration-combat-geometry.mjs?v=R238C274';
-import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C274';
+import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C277';
 import {SCENE_STYLE,projectSceneObject} from './exploration-scene-style.mjs?v=R238C274';
 export * from './exploration-scene-style.mjs?v=R238C274';
 export const HANDOFF_KEY='adventure-party:exploration-combat:v1';
@@ -164,7 +164,7 @@ export function terrainForEdgeEncounter(map,origin,openDoors,hexWidth=64,hexRow=
   if(edge.kind==='wall'){segment(a,b,id,{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials});continue;}
   const record={...g.center,faceMaterials:edge.faceMaterials,id:edge.id,edgeId:edge.id,axis:g.axis,width,material:edge.material,hinge:edge.hinge,center:project(g.center.x,g.center.z),open:openDoors.has(edge.id),wallId:id};
   if(edge.kind==='window'){
-   windows.push(record);segment(a,b,id,{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials,openings:[{id:id+'-glass',type:'window',edgeWindow:true,visualHeight:SCENE_STYLE.window.height/SCENE_STYLE.wallMetres*35,visualSill:SCENE_STYLE.window.sill/SCENE_STYLE.wallMetres*35,centerT:.5,widthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width,glassWidthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width}]});continue;
+   record.broken=!!edge.broken;windows.push(record);segment(a,b,id,{edgeMaterial:edge.material,faceMaterials:edge.faceMaterials,openings:[{id:id+'-glass',type:'window',edgeWindow:true,broken:!!edge.broken,visualHeight:SCENE_STYLE.window.height/SCENE_STYLE.wallMetres*35,visualSill:SCENE_STYLE.window.sill/SCENE_STYLE.wallMetres*35,centerT:.5,widthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width,glassWidthWorld:Math.hypot(b.x-a.x,b.y-a.y)*width}]});continue;
   }
   doors.push(record);const low=(1-width)/2,high=(1+width)/2;
   const trim=record.open?Math.max(0,((g.axis==='z'?hexWidth:hexRow)-Math.hypot(b.x-a.x,b.y-a.y)*width)/2):0;

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createRepositoryMob} from '../js/repository-mobs.mjs';
 const read=p=>JSON.parse(readFileSync(new URL(p,import.meta.url)));
 const template=read('../data/mobs/orc-male-uniformed.unit-package.json');

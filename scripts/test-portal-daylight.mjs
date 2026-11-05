@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';import vm from 'node:vm';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';import vm from 'node:vm';
 import {buildDaylightField} from '../js/portal-daylight.mjs';
 import {blankEdgeMap} from '../js/exploration-authoring.mjs';
 import {paintEnvironment,paintAmbientLight} from '../js/exploration-environment.mjs';

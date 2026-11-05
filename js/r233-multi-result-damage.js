@@ -6,7 +6,7 @@
 */
 
 
-castMagicMissileFromScroll=async function(action,target){
+AdventurePartyCombatServices.register('castMagicMissileFromScroll','r233-multi-result-damage.js:9:castMagicMissileFromScroll',async function(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry(action?.spellId);
 
@@ -304,10 +304,10 @@ castMagicMissileFromScroll=async function(action,target){
   );
 
   return true;
-};
+});
 
 
-castFireballFromScroll=async function(action,targetHex){
+AdventurePartyCombatServices.register('castFireballFromScroll','r233-multi-result-damage.js:310:castFireballFromScroll',async function(action,targetHex){
   const resultSession=captureSpellTargetResults();
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry(action?.spellId);
@@ -354,10 +354,12 @@ castFireballFromScroll=async function(action,targetHex){
     return false;
   }
 
+  if(typeof rejectWindowTarget==='function'&&rejectWindowTarget(caster,targetHex))return false;
+
   const radiusHexes=
     fireballRadiusHexes();
 
-  const blastCells=
+  let blastCells=
     fireballBlastCells(
       targetHex
     );
@@ -367,12 +369,12 @@ castFireballFromScroll=async function(action,targetHex){
     "Fireball"
   );
 
-  const affected=
+  let affected=
     livingUnitsInAreaCells(
       blastCells
     );
 
-  const friendlyTargets=
+  let friendlyTargets=
     affected.filter(
       unit=>
         unit.faction===caster.faction
@@ -418,6 +420,9 @@ castFireballFromScroll=async function(action,targetHex){
     targetHex
   );
 
+  if(typeof resolveFireballEnvironment==='function'){
+    blastCells=resolveFireballEnvironment(targetHex,blastCells);affected=livingUnitsInAreaCells(blastCells);friendlyTargets=affected.filter(unit=>unit.faction===caster.faction);burnWebCells(blastCells,'Fireball');
+  }
   const damageDice=
     fireballDamageDiceForCasterLevel(
       casterLevel
@@ -458,12 +463,13 @@ castFireballFromScroll=async function(action,targetHex){
               {suppressFocus:true}
             );
 
+      const exposureScale=typeof fireballEnvironmentDamageScale==='function'?fireballEnvironmentDamageScale(unit,blastCells):1;
       const damage=
         immune
           ? 0
           : save.success
-            ? Math.floor(rolledDamage/2)
-            : rolledDamage;
+            ? Math.floor(rolledDamage*exposureScale/2)
+            : Math.floor(rolledDamage*exposureScale);
 
       return {
         unit,
@@ -574,4 +580,4 @@ castFireballFromScroll=async function(action,targetHex){
   );
 
   return true;
-};
+});

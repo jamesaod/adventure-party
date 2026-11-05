@@ -1,12 +1,13 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const renderer=fs.readFileSync(new URL('../js/combat-mob-renderer.mjs', import.meta.url),'utf8');
-const recipe=fs.readFileSync(new URL('../js/combat-pose-recipe.mjs', import.meta.url),'utf8');
-const game=fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url),'utf8');
-const studio=fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url),'utf8');
-const index=fs.readFileSync(new URL('../index.html', import.meta.url),'utf8');
-const studioHtml=fs.readFileSync(new URL('../3d-studio.html', import.meta.url),'utf8');
+const renderer=readCombatFixture(new URL('../js/combat-mob-renderer.mjs', import.meta.url),'utf8');
+const recipe=readCombatFixture(new URL('../js/combat-pose-recipe.mjs', import.meta.url),'utf8');
+const game=readCombatFixture(new URL('../js/adventure-party.js', import.meta.url),'utf8');
+const studio=readCombatFixture(new URL('../js/3d-studio.mjs', import.meta.url),'utf8');
+const index=readCombatFixture(new URL('../index.html', import.meta.url),'utf8');
+const studioHtml=readCombatFixture(new URL('../3d-studio.html', import.meta.url),'utf8');
 
 for(const token of [
   "const WINDUP_POSES = SPRITE_POSES;",
@@ -96,7 +97,7 @@ assert.ok(renderer.includes("windupDurationMs:profile?.poses?.windup"));
 assert.ok(renderer.includes("recipe?.model?.animationLibrary==='uploaded-fbx'") && renderer.includes('await loadUploadedFbxAnimations('), 'Every catalog-selected uploaded-FBX model uses the same motion library in combat as Studio');
 // Execute the real scene assembly on a body proxy: delayed fallback rendering
 // must retain the canonical frame's 175% model / 109% hex body calibration.
-const core=fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
+const core=readCombatFixture(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
 const THREE=await import(`data:text/javascript;base64,${core.toString('base64')}`);
 const bodyBuilder=new Function('THREE',`${renderer.slice(renderer.indexOf('const finite='),renderer.indexOf('function loadImage('))}\n${renderer.slice(renderer.indexOf('function buildSceneGraph('),renderer.indexOf('function configureCamera('))}\nreturn buildSceneGraph;`)(THREE);
 function body(){return new THREE.Mesh(new THREE.BoxGeometry(1,2,.4),new THREE.MeshBasicMaterial());}

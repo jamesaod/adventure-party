@@ -9,9 +9,9 @@ export function createCombatTestMap(condition='wall'){
   edges:[],doors:[],torches:[],encounters:[],start:{x:12,z:12,facing:0}};
  const edge=(axis,x,z,kind='wall',extra={})=>map.edges.push({axis,x,z,id:`${axis}:${x},${z}`,kind,material:'stone',...extra});
  if(room){
-  for(let x=9;x<=15;x++){edge('h',x,9,x===12?'window':'wall',{width:.5});edge('h',x,16,x===12?'door':'wall',{width:.375});}
+  for(let x=9;x<=15;x++){edge('h',x,9,'window',{width:.5});edge('h',x,16,x===12?'door':'wall',{width:.375});}
   for(let z=9;z<=15;z++){edge('v',9,z,z===12?'door':'wall',{width:.375,initialOpen:z===12});edge('v',16,z);}
-  map.torches=[{x:9,z:10},{x:15,z:14},{x:10,z:9}];
+  map.torches=[{x:9,z:10},{x:15,z:14},{x:15,z:10}];
  }
  return syncEdgeDoors(map);
 }

@@ -47,8 +47,7 @@ const spellPreviewCanvasHome={
   nextSibling:canvas.nextSibling
 };
 
-const spellPreviewBaseFitBattleCanvas=
-  fitBattleCanvas;
+const spellPreviewBaseFitBattleCanvas=AdventurePartyCombatServices.current('fitBattleCanvas');
 
 let spellPreviewActive=false;
 let spellPreviewRenderFrame=null;
@@ -149,7 +148,7 @@ const SPELL_PREVIEW_PROFILES=Object.freeze(
    SCREEN + CANVAS ROUTING
    ============================================================ */
 
-fitBattleCanvas=function(){
+AdventurePartyCombatServices.register('fitBattleCanvas','candidate-spell-previewer.js:152:fitBattleCanvas',function(){
   if(
     currentScreen==="spell-preview" &&
     spellPreviewUi.arena
@@ -188,7 +187,7 @@ fitBattleCanvas=function(){
   }
 
   return spellPreviewBaseFitBattleCanvas();
-};
+});
 
 
 function spellPreviewMoveCanvasIntoArena(){
@@ -1529,10 +1528,9 @@ function spellPreviewVisualsSuppressed(){
 }
 
 
-const spellPreviewBaseWaitForCombatActionPause=
-  waitForCombatActionPause;
+const spellPreviewBaseWaitForCombatActionPause=AdventurePartyCombatServices.current('waitForCombatActionPause');
 
-waitForCombatActionPause=async function(){
+AdventurePartyCombatServices.register('waitForCombatActionPause','candidate-spell-previewer.js:1535:waitForCombatActionPause',async function(){
   if(
     !spellPreviewActive ||
     currentScreen!=="spell-preview"
@@ -1560,13 +1558,12 @@ waitForCombatActionPause=async function(){
       )
     );
   }
-};
+});
 
 
-const spellPreviewBaseQueueSfx=
-  queueSfx;
+const spellPreviewBaseQueueSfx=AdventurePartyCombatServices.current('queueSfx');
 
-queueSfx=function(fn){
+AdventurePartyCombatServices.register('queueSfx','candidate-spell-previewer.js:1569:queueSfx',function(fn){
   if(
     spellPreviewActive &&
     currentScreen==="spell-preview" &&
@@ -1578,13 +1575,12 @@ queueSfx=function(fn){
   return spellPreviewBaseQueueSfx(
     fn
   );
-};
+});
 
 
-const spellPreviewBaseSpeakSpellIncantation=
-  speakSpellIncantation;
+const spellPreviewBaseSpeakSpellIncantation=AdventurePartyCombatServices.current('speakSpellIncantation');
 
-speakSpellIncantation=function(
+AdventurePartyCombatServices.register('speakSpellIncantation','candidate-spell-previewer.js:1587:speakSpellIncantation',function(
   caster,
   spell,
   durationMs=1800
@@ -1605,13 +1601,12 @@ speakSpellIncantation=function(
     spell,
     durationMs
   );
-};
+});
 
 
-const spellPreviewBasePorCastingSound=
-  playPor07CastingSound;
+const spellPreviewBasePorCastingSound=AdventurePartyCombatServices.current('playPor07CastingSound');
 
-playPor07CastingSound=function(){
+AdventurePartyCombatServices.register('playPor07CastingSound','candidate-spell-previewer.js:1614:playPor07CastingSound',function(){
   if(
     spellPreviewActive &&
     currentScreen==="spell-preview" &&
@@ -1621,13 +1616,12 @@ playPor07CastingSound=function(){
   }
 
   return spellPreviewBasePorCastingSound();
-};
+});
 
 
-const spellPreviewBaseD=
-  d;
+const spellPreviewBaseD=AdventurePartyCombatServices.current('d');
 
-d=function(sides){
+AdventurePartyCombatServices.register('d','candidate-spell-previewer.js:1630:d',function(sides){
   if(
     spellPreviewActive &&
     currentScreen==="spell-preview" &&
@@ -1652,13 +1646,12 @@ d=function(sides){
   return spellPreviewBaseD(
     sides
   );
-};
+});
 
 
-const spellPreviewBaseRollSpellSave=
-  rollSpellSave;
+const spellPreviewBaseRollSpellSave=AdventurePartyCombatServices.current('rollSpellSave');
 
-rollSpellSave=function(
+AdventurePartyCombatServices.register('rollSpellSave','candidate-spell-previewer.js:1661:rollSpellSave',function(
   target,
   sourceUnit=null,
   extraModifier=0,
@@ -1719,13 +1712,12 @@ rollSpellSave=function(
     targetNumber,
     success
   };
-};
+});
 
 
-const spellPreviewBaseResolveMeleeAttackD20=
-  resolveMeleeAttackD20;
+const spellPreviewBaseResolveMeleeAttackD20=AdventurePartyCombatServices.current('resolveMeleeAttackD20');
 
-resolveMeleeAttackD20=function(
+AdventurePartyCombatServices.register('resolveMeleeAttackD20','candidate-spell-previewer.js:1728:resolveMeleeAttackD20',function(
   rawRoll,
   targetNumber,
   attackModifier=0
@@ -1747,13 +1739,12 @@ resolveMeleeAttackD20=function(
     targetNumber,
     attackModifier
   );
-};
+});
 
 
-const spellPreviewBaseResolveMissileAttackD20=
-  resolveMissileAttackD20;
+const spellPreviewBaseResolveMissileAttackD20=AdventurePartyCombatServices.current('resolveMissileAttackD20');
 
-resolveMissileAttackD20=function(
+AdventurePartyCombatServices.register('resolveMissileAttackD20','candidate-spell-previewer.js:1756:resolveMissileAttackD20',function(
   rawRoll,
   targetNumber,
   attackModifier=0
@@ -1775,7 +1766,7 @@ resolveMissileAttackD20=function(
     targetNumber,
     attackModifier
   );
-};
+});
 
 
 function spellPreviewGateRenderer(base){
@@ -1792,10 +1783,9 @@ function spellPreviewGateRenderer(base){
 }
 
 
-const spellPreviewBaseQueueFloatingCombatText=
-  r236QueueFloatingCombatText;
+const spellPreviewBaseQueueFloatingCombatText=AdventurePartyCombatServices.current('r236QueueFloatingCombatText');
 
-r236QueueFloatingCombatText=function(
+AdventurePartyCombatServices.register('r236QueueFloatingCombatText','candidate-spell-previewer.js:1798:r236QueueFloatingCombatText',function(
   unit,
   text,
   kind,
@@ -1811,7 +1801,7 @@ r236QueueFloatingCombatText=function(
     kind,
     options
   );
-};
+});
 
 
 const spellPreviewBaseDrawCombatMessageBox=
@@ -1822,12 +1812,10 @@ drawCombatMessageBox=
   );
 
 
-const spellPreviewBaseDrawSpellAreaEffects=
-  drawSpellAreaEffects;
-drawSpellAreaEffects=
-  spellPreviewGateRenderer(
+const spellPreviewBaseDrawSpellAreaEffects=AdventurePartyCombatServices.current('drawSpellAreaEffects');
+AdventurePartyCombatServices.register('drawSpellAreaEffects','candidate-spell-previewer.js:gate:drawSpellAreaEffects',spellPreviewGateRenderer(
     spellPreviewBaseDrawSpellAreaEffects
-  );
+  ));
 
 const spellPreviewBaseDrawPersistentLightSpellFx=
   drawPersistentLightSpellFx;
@@ -1871,12 +1859,10 @@ drawPersistentTauntStatusFx=
     spellPreviewBaseDrawPersistentTauntStatusFx
   );
 
-const spellPreviewBaseDrawPersistentCharmStatusFx=
-  drawPersistentCharmStatusFx;
-drawPersistentCharmStatusFx=
-  spellPreviewGateRenderer(
+const spellPreviewBaseDrawPersistentCharmStatusFx=AdventurePartyCombatServices.current('drawPersistentCharmStatusFx');
+AdventurePartyCombatServices.register('drawPersistentCharmStatusFx','candidate-spell-previewer.js:gate:drawPersistentCharmStatusFx',spellPreviewGateRenderer(
     spellPreviewBaseDrawPersistentCharmStatusFx
-  );
+  ));
 
 const spellPreviewBaseDrawColorSprayFx=
   drawColorSprayFx;
@@ -1899,12 +1885,10 @@ drawAreaDamageFx=
     spellPreviewBaseDrawAreaDamageFx
   );
 
-const spellPreviewBaseDrawDragonBreathFx=
-  drawDragonBreathFx;
-drawDragonBreathFx=
-  spellPreviewGateRenderer(
+const spellPreviewBaseDrawDragonBreathFx=AdventurePartyCombatServices.current('drawDragonBreathFx');
+AdventurePartyCombatServices.register('drawDragonBreathFx','candidate-spell-previewer.js:gate:drawDragonBreathFx',spellPreviewGateRenderer(
     spellPreviewBaseDrawDragonBreathFx
-  );
+  ));
 
 const spellPreviewBaseDrawFireballExplosionFx=
   drawFireballExplosionFx;
@@ -1920,26 +1904,20 @@ drawFireDamageFx=
     spellPreviewBaseDrawFireDamageFx
   );
 
-const spellPreviewBaseDrawProjectileFx=
-  drawProjectileFx;
-drawProjectileFx=
-  spellPreviewGateRenderer(
+const spellPreviewBaseDrawProjectileFx=AdventurePartyCombatServices.current('drawProjectileFx');
+AdventurePartyCombatServices.register('drawProjectileFx','candidate-spell-previewer.js:gate:drawProjectileFx',spellPreviewGateRenderer(
     spellPreviewBaseDrawProjectileFx
-  );
+  ));
 
-const spellPreviewBaseDrawFogVolumeCell=
-  drawFogVolumeCell;
-drawFogVolumeCell=
-  spellPreviewGateRenderer(
+const spellPreviewBaseDrawFogVolumeCell=AdventurePartyCombatServices.current('drawFogVolumeCell');
+AdventurePartyCombatServices.register('drawFogVolumeCell','candidate-spell-previewer.js:gate:drawFogVolumeCell',spellPreviewGateRenderer(
     spellPreviewBaseDrawFogVolumeCell
-  );
+  ));
 
-const spellPreviewBaseDrawFogEffectOutline=
-  drawFogEffectOutline;
-drawFogEffectOutline=
-  spellPreviewGateRenderer(
+const spellPreviewBaseDrawFogEffectOutline=AdventurePartyCombatServices.current('drawFogEffectOutline');
+AdventurePartyCombatServices.register('drawFogEffectOutline','candidate-spell-previewer.js:gate:drawFogEffectOutline',spellPreviewGateRenderer(
     spellPreviewBaseDrawFogEffectOutline
-  );
+  ));
 
 const spellPreviewBaseDrawTerrainIlluminationLayer=
   drawTerrainIlluminationLayer;
@@ -1949,10 +1927,9 @@ drawTerrainIlluminationLayer=
   );
 
 
-const spellPreviewBaseEnlargeVisualScale=
-  enlargeVisualScale;
+const spellPreviewBaseEnlargeVisualScale=AdventurePartyCombatServices.current('enlargeVisualScale');
 
-enlargeVisualScale=function(unit){
+AdventurePartyCombatServices.register('enlargeVisualScale','candidate-spell-previewer.js:1955:enlargeVisualScale',function(unit){
   if(spellPreviewVisualsSuppressed()){
     return 1;
   }
@@ -1960,13 +1937,12 @@ enlargeVisualScale=function(unit){
   return spellPreviewBaseEnlargeVisualScale(
     unit
   );
-};
+});
 
 
-const spellPreviewBaseVisualMirrorOffsets=
-  visualMirrorOffsets;
+const spellPreviewBaseVisualMirrorOffsets=AdventurePartyCombatServices.current('visualMirrorOffsets');
 
-visualMirrorOffsets=function(count){
+AdventurePartyCombatServices.register('visualMirrorOffsets','candidate-spell-previewer.js:1969:visualMirrorOffsets',function(count){
   if(spellPreviewVisualsSuppressed()){
     return [];
   }
@@ -1974,13 +1950,12 @@ visualMirrorOffsets=function(count){
   return spellPreviewBaseVisualMirrorOffsets(
     count
   );
-};
+});
 
 
-const spellPreviewBaseOnUnitDamaged=
-  onUnitDamaged;
+const spellPreviewBaseOnUnitDamaged=AdventurePartyCombatServices.current('onUnitDamaged');
 
-onUnitDamaged=function(
+AdventurePartyCombatServices.register('onUnitDamaged','candidate-spell-previewer.js:1983:onUnitDamaged',function(
   unit,
   damage
 ){
@@ -2009,13 +1984,12 @@ onUnitDamaged=function(
   }
 
   return result;
-};
+});
 
 
-const spellPreviewBaseAddUnitEffect=
-  addUnitEffect;
+const spellPreviewBaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
 
-addUnitEffect=function(
+AdventurePartyCombatServices.register('addUnitEffect','candidate-spell-previewer.js:2018:addUnitEffect',function(
   unit,
   effectSpec
 ){
@@ -2049,13 +2023,12 @@ addUnitEffect=function(
   }
 
   return effect;
-};
+});
 
 
-const spellPreviewBaseAddAreaEffect=
-  addAreaEffect;
+const spellPreviewBaseAddAreaEffect=AdventurePartyCombatServices.current('addAreaEffect');
 
-addAreaEffect=function(effectSpec){
+AdventurePartyCombatServices.register('addAreaEffect','candidate-spell-previewer.js:2058:addAreaEffect',function(effectSpec){
   const effect=
     spellPreviewBaseAddAreaEffect(
       effectSpec
@@ -2078,7 +2051,7 @@ addAreaEffect=function(effectSpec){
   }
 
   return effect;
-};
+});
 
 
 function spellPreviewPlaceUnit(

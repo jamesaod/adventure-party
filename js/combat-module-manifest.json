@@ -1,0 +1,1063 @@
+{
+  "format": 1,
+  "owners": [
+    "combat-turn-flow.js",
+    "combat-melee-actions.js",
+    "combat-movement.js",
+    "combat-reactions.js",
+    "combat-spells-damage.js",
+    "combat-spells-control.js",
+    "combat-spells-support.js",
+    "combat-environment-state.js",
+    "combat-visibility.js",
+    "combat-targeting.js",
+    "combat-lighting-services.js",
+    "combat-render-frame.js",
+    "combat-render-surfaces.js",
+    "combat-render-units.js",
+    "combat-effect-animation.js",
+    "combat-session-state.js"
+  ],
+  "extractions": [
+    {
+      "name": "startRound",
+      "file": "combat-turn-flow.js",
+      "sha256": "491bcc051b82b1b61d091af65a354dad0bb9cd83ef7ce6d19fd3d08bf35f72aa"
+    },
+    {
+      "name": "fighterHasSweepSlashingWeapon",
+      "file": "combat-melee-actions.js",
+      "sha256": "bfddfd65590b593212ccfe3cc1a18fc23a26b12c5e8bcc880fd39554ee88560c"
+    },
+    {
+      "name": "resolveChillTouchOnHit",
+      "file": "combat-melee-actions.js",
+      "sha256": "879bf8c3d5b6746853ec291f2e7ba158e441988f221fc83139c74d3d7bd3fece"
+    },
+    {
+      "name": "meleeDamageExpression",
+      "file": "combat-melee-actions.js",
+      "sha256": "8e410c160d3bc5fdee296b5dca55508f691ada485174c5dc0607f2e6b370cd89"
+    },
+    {
+      "name": "attack",
+      "file": "combat-melee-actions.js",
+      "sha256": "19747588e3b238e4f1f3c102ea908fc1eaba4a8d305662e6e371afcd93a8fd48"
+    },
+    {
+      "name": "playerAttackKey",
+      "file": "combat-melee-actions.js",
+      "sha256": "9585426817572e303b829fd38655598b3d2b40b6ea48628212225affed02e130"
+    },
+    {
+      "name": "isSweepEligibleTarget",
+      "file": "combat-melee-actions.js",
+      "sha256": "467a988b3d7731515f96c8abd85d38bdf9b97a83d91a344020935a7ee4f73ec6"
+    },
+    {
+      "name": "adjacentSweepTargets",
+      "file": "combat-melee-actions.js",
+      "sha256": "e7cc2783f41871c70f14ab4c6b66b2a642277a81a2b55a6fbf5412729221e080"
+    },
+    {
+      "name": "canUseSweep",
+      "file": "combat-melee-actions.js",
+      "sha256": "9d3c7d76831efc5aabef8c9f2f533488273e1d2e146062dcde92805220c65c1d"
+    },
+    {
+      "name": "performSweep",
+      "file": "combat-melee-actions.js",
+      "sha256": "1d0b64e66777352e2405f0d6173fc299f017b5c9f276c22419e8089dae3f4321"
+    },
+    {
+      "name": "unitFootprintDefinition",
+      "file": "combat-movement.js",
+      "sha256": "abc2e8dc9f646c0816f1809a26073083068d15b5beefcc4f0be428f5b802785a"
+    },
+    {
+      "name": "rotateAxialOffset",
+      "file": "combat-movement.js",
+      "sha256": "e5f1ea91abd6b39e5aa4b00c20534aa51edf10ff5d69ca340de74682d3b595d5"
+    },
+    {
+      "name": "footprintOffsetsForFacing",
+      "file": "combat-movement.js",
+      "sha256": "1867a71e738af9fc46d25b24b1725ca8e2034657dbb512cf1c0336ccb89c4b54"
+    },
+    {
+      "name": "occupiedHexesAt",
+      "file": "combat-movement.js",
+      "sha256": "2d10e8bdeab8d7a02ae4d785b56fc73bd244b88f03eb33b607a99d12a008f2fb"
+    },
+    {
+      "name": "occupiedHexes",
+      "file": "combat-movement.js",
+      "sha256": "1fbcd54d5be0cccc1bf5d327f74616b88dc6879df5c393ddf68c6c8e00aa8ed7"
+    },
+    {
+      "name": "unitOccupiesHex",
+      "file": "combat-movement.js",
+      "sha256": "fc9fd1af452d64bc5cce55e16125cb2a04310abed2776e67721921648f43b3a2"
+    },
+    {
+      "name": "unitFootprintCellCount",
+      "file": "combat-movement.js",
+      "sha256": "d4ecaddff51cd41080f324835fc030480cfbc4b27c3f8c6e0d288f9834c06b75"
+    },
+    {
+      "name": "unitDistance",
+      "file": "combat-movement.js",
+      "sha256": "886e2bc0c372f9487d58b6fda04b476ed78600258052475227c8e295b1634878"
+    },
+    {
+      "name": "unitDistanceAt",
+      "file": "combat-movement.js",
+      "sha256": "3c02fa56e5ba61d0a4e0575ee072f635c2bd338311a664eaf331de8c6af58d96"
+    },
+    {
+      "name": "canUnitStandAt",
+      "file": "combat-movement.js",
+      "sha256": "00b4c80284a930c2522625765f04fc690a43686380baffd739546843d0d58d62"
+    },
+    {
+      "name": "canUnitRotateAt",
+      "file": "combat-movement.js",
+      "sha256": "99b0bb296d90bd0b77c242524603e6f8fc4581e93a5e5713cdbc86bcac10225e"
+    },
+    {
+      "name": "unitTransitionBlocked",
+      "file": "combat-movement.js",
+      "sha256": "f0b0260364100031ed6194e02960de38e582c949a86e8774ea3325e08afb4f46"
+    },
+    {
+      "name": "pathToNearestRangedFiringHex",
+      "file": "combat-movement.js",
+      "sha256": "ca0ee00eb8523ff7bca8e34e27270df6d292b335b94aceac5bc35d9e032e96ce"
+    },
+    {
+      "name": "animateAiAlongPath",
+      "file": "combat-movement.js",
+      "sha256": "ec291613f444d04bec1f1580be650e493b09cdb64f7ebe9d2040895dcb376918"
+    },
+    {
+      "name": "tryPlayerMove",
+      "file": "combat-movement.js",
+      "sha256": "5246d63bb8473a8f4d2bfd18d864cbc84e8780ccf8fd69a60c98912c81fdef0b"
+    },
+    {
+      "name": "chooseFullMove",
+      "file": "combat-movement.js",
+      "sha256": "722e35c68d28ceb9048a3f74ded0da24aebc3a77c999534efd9036eaf20d6360"
+    },
+    {
+      "name": "passableForPath",
+      "file": "combat-movement.js",
+      "sha256": "d9898fd984af6b751696cb20b7bc695508c1028f7b4865a39967b1ce3082575d"
+    },
+    {
+      "name": "searchRotatingFootprintPath",
+      "file": "combat-movement.js",
+      "sha256": "aa175e0ff05addec53272e6229b1cabbf5b6eed76bcc31cf650ea0a71bc6326f"
+    },
+    {
+      "name": "pathToAdjacent",
+      "file": "combat-movement.js",
+      "sha256": "d91fdbb0b1f2e27ae18495abf68c31dcc3f75884125dcc0d820d362faa9a4eb7"
+    },
+    {
+      "name": "mobPathToPartyTarget",
+      "file": "combat-movement.js",
+      "sha256": "ac3812925233ff0464e1b4c0da990fb8713cf05a3912966404c2f67054086fed"
+    },
+    {
+      "name": "pathToHex",
+      "file": "combat-movement.js",
+      "sha256": "034358af53d93be1c02747bc2f04d05855af6d17c0316e8f063593888f9fff59"
+    },
+    {
+      "name": "pathToClosestReachable",
+      "file": "combat-movement.js",
+      "sha256": "8a8e229a43dc701008ea061c599b5aee60bd889fd0425d5d7cb7aafd971917c6"
+    },
+    {
+      "name": "clickPathStep",
+      "file": "combat-movement.js",
+      "sha256": "a2f5b5bdc4b86b024b53db9cb30830c80fd800f7cb4b74dcd2d9285a7188c83a"
+    },
+    {
+      "name": "fleeStep",
+      "file": "combat-movement.js",
+      "sha256": "78b4126f21e2b1b8e9680bb55ddb159f0579680f939b36d65c397702b1f8efcb"
+    },
+    {
+      "name": "animateEntitySteps",
+      "file": "combat-movement.js",
+      "sha256": "45661eb489c301799b63fb83c91ee9132215906e1263113cc61d0b26e7294db4"
+    },
+    {
+      "name": "animateMobAlongPath",
+      "file": "combat-movement.js",
+      "sha256": "7dd3b420c2d92c0387d2b7d209fd1e6fbb49b1d01a65ee8471440fcbdaf58587"
+    },
+    {
+      "name": "rangedRetreatStep",
+      "file": "combat-movement.js",
+      "sha256": "8c7725bc3c8ad266fcf05c487aa9ffde30e66ef5aadb3089c45d8dcb372d3067"
+    },
+    {
+      "name": "unitCanMakeLeavingHexFreeAttack",
+      "file": "combat-reactions.js",
+      "sha256": "13274c624104103f66008bac4493a6087ef65a1bb6d4c9f8e931b104f33d0de9"
+    },
+    {
+      "name": "movementLeavesMeleeReach",
+      "file": "combat-reactions.js",
+      "sha256": "b33287e94bd88e16c52775b599ba14ebf61a7397dd75cf93a75e87609547f02c"
+    },
+    {
+      "name": "leavingHexFreeAttackers",
+      "file": "combat-reactions.js",
+      "sha256": "b9ed66e60cbfdd032e72e4515f5dc9407c69b5a35a1ea9a5b7bd7b7f8198970f"
+    },
+    {
+      "name": "performLeavingHexFreeAttacks",
+      "file": "combat-reactions.js",
+      "sha256": "bde5b8fdf40225353017b045060b803163d52c42f07b18a41beb385c7f159229"
+    },
+    {
+      "name": "adjacentHostileIdsFor",
+      "file": "combat-reactions.js",
+      "sha256": "c1450ae16a672de309600aaea9db8095d0cac60209f2010436cccda92adc75c4"
+    },
+    {
+      "name": "wasAdjacentWhenGuardSet",
+      "file": "combat-reactions.js",
+      "sha256": "0e8cc7af47e5724d6e3a2bee50b75b2f2ecf7281836c30bbd7f0418685bceab1"
+    },
+    {
+      "name": "chooseGuard",
+      "file": "combat-reactions.js",
+      "sha256": "f2f29f4ddaf29628ea6d7084266ab4ec52e0bfb47ce8b142d09da405da2a2096"
+    },
+    {
+      "name": "maybeTriggerPlayerGuard",
+      "file": "combat-reactions.js",
+      "sha256": "461a3b8caaa0a62f01a8fd3743df9bc27a3d4d8744816a69c14add9e2e9c004f"
+    },
+    {
+      "name": "canMobGuard",
+      "file": "combat-reactions.js",
+      "sha256": "3a7527b2caff16335c88ede1e78cbdcedea8046df3f7af44ced9ab1eb2039a15"
+    },
+    {
+      "name": "enterMobGuard",
+      "file": "combat-reactions.js",
+      "sha256": "e5b63f3406296de3edfd0697908708a825183567a195786a45ec3a0211c55ec1"
+    },
+    {
+      "name": "triggerMobGuardsAgainst",
+      "file": "combat-reactions.js",
+      "sha256": "8ff06b50622e870c6aa2b19f252a4b8f80fdc20a9b7a6341b93d74ee97b57538"
+    },
+    {
+      "name": "castMagicMissileFromScroll",
+      "file": "combat-spells-damage.js",
+      "sha256": "20b0653fe5944a18f43e8749a1d9dd22c726347cea85cce89848ca76827125d2"
+    },
+    {
+      "name": "castFireballFromScroll",
+      "file": "combat-spells-damage.js",
+      "sha256": "fe11b1e85892599fc0394a4735df3e3d721d427c58fa5ac43d34d8cec2cec4ca"
+    },
+    {
+      "name": "resolveAoeDamageSpell",
+      "file": "combat-spells-damage.js",
+      "sha256": "ffd0431519239689728daf48eff34fa6b1b779076ce42a6babea1a188a92cd79"
+    },
+    {
+      "name": "castBurningHandsSpell",
+      "file": "combat-spells-damage.js",
+      "sha256": "e8359a2f55bb16dc814cc3d6c2fff7d49261ece96bd348729b3a444486d6f3aa"
+    },
+    {
+      "name": "castShockingGraspSpell",
+      "file": "combat-spells-damage.js",
+      "sha256": "a3d6c042028eb30052f9a651ac2fb8880050e1930f144152f9434a9de5853f30"
+    },
+    {
+      "name": "castMelfsAcidArrowSpell",
+      "file": "combat-spells-damage.js",
+      "sha256": "4a8500c97b6f36449bc48fe94a33411612b17c7000932569e8bd97f181209e04"
+    },
+    {
+      "name": "castCharmPersonSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "37e1dacf9f35608cd17e9dd9b501eec4675cdfae5e675f0cb5d59ebd6678b28c"
+    },
+    {
+      "name": "castColorSpraySpell",
+      "file": "combat-spells-control.js",
+      "sha256": "eaa1f26b5d72f25268b30a400516654d1206df0e06a0290e4ea2681ba74373af"
+    },
+    {
+      "name": "castGreaseSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "e356915b45b35a1e51efa1cd62e806e00fa6a886ac4bf7a3127e6f1cfadb9817"
+    },
+    {
+      "name": "castSleepSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "27162d991331dd1a3a79c4b643402817224610e9fab454896c4b5e9be8260bbd"
+    },
+    {
+      "name": "castSpookSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "6c4cc871ac9b56850a1507112a5b70959a1a74e05a62027baad6149857f82f73"
+    },
+    {
+      "name": "castTauntSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "d3ba52f8da9fbd104d9762ec6df78e354bf5005381fce409dc576a22bc418716"
+    },
+    {
+      "name": "castWallOfFogSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "6a8c6d31c72df65a39604279e6accf0f47680a7258ce0c31742fb708a1184bb1"
+    },
+    {
+      "name": "castBlindnessSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "609a8bfb399bdc78fea641f00bc156e2479446fc5111830424ad629067943281"
+    },
+    {
+      "name": "castDarknessSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "5a871fdeb72d074119bd5843629ae75f74c03a567186680a82aecc2392bfe859"
+    },
+    {
+      "name": "castDeafnessSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "11ae00c39a9e3ff2e633c188d77b69e6b96d366daa2d2afa3585b7e57ebd3328"
+    },
+    {
+      "name": "castFogCloudSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "db00c9533bacefbd30ae2816657ac4804b31b88fa6283cd61d38b0e006fa3f7f"
+    },
+    {
+      "name": "castGlitterdustSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "acd4e4d511d6c6438d701f7de2f7e9c641581f39d117b4a7dbf4992c7bb4e25b"
+    },
+    {
+      "name": "castHypnoticPatternSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "025604aed8e10aa6e216f39eb8fa48a7667cc24e260ca9e7dd9860466a007737"
+    },
+    {
+      "name": "castPyrotechnicsSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "d3957bed02b300d95947cc5f476f5a7ed70b560dd143833d6ea010ec28695448"
+    },
+    {
+      "name": "castRayOfEnfeeblementSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "c3973a2f749ca277153165ae2e0445bbfe9e72083c00c491a4f3a23db89abb12"
+    },
+    {
+      "name": "castScareSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "f99ce1d50420c9194506709a18b4cf1c017d0a007fa0d5402926535ad23ff600"
+    },
+    {
+      "name": "castStinkingCloudSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "dea5c6375a0e1d6849499c957fc315782635de411669024259faf898af243af2"
+    },
+    {
+      "name": "castTashasHideousLaughterSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "0574f9dc498860c6b811d5fa022084ff9f6ca6489891377476482ff3ae57e6d0"
+    },
+    {
+      "name": "castWebSpell",
+      "file": "combat-spells-control.js",
+      "sha256": "3e28a44a995752ce9a75f607c46ea6c0bc281c02453519a3cec346805600e4b6"
+    },
+    {
+      "name": "castArmorSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "174f5e00041f577249636296e3a051a6b12ba3248c72489bcb6b5fb0eb13256d"
+    },
+    {
+      "name": "castShieldSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "d90b7c4dc9d585b2071305a3b8bfca7a1f56897c1f29433b61085217725da53d"
+    },
+    {
+      "name": "castChillTouchSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "6f082d9fc573e9712db66fa8bf6c0821fc0fb8d0f224a115a193f014b6386cb8"
+    },
+    {
+      "name": "castEnlargeSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "2fe53af1223c829fc6cd0b6d9be46d1fbc9cd7f5f1cc7e3febe6d3a2d81649df"
+    },
+    {
+      "name": "castProtectionFromEvilSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "260562962929e7e2eae9f4d2c1444ac8ed370d7a1599ca0cd1c539cc6720d96b"
+    },
+    {
+      "name": "castLightSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "5f55b34be44a493ee4bcf4a8bd01357b0d6e60b3a396800cbea9b733c19eb096"
+    },
+    {
+      "name": "castBlurSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "185724218f217f9dee1992623098df03aa6dbd6a4a3219586c9a9046060107ce"
+    },
+    {
+      "name": "castContinualLightSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "baf7ff18ad61f9831379faea21d5f935b14aea1717e6159421d072b4134d8c2a"
+    },
+    {
+      "name": "castDetectInvisibilitySpell",
+      "file": "combat-spells-support.js",
+      "sha256": "8d2aa8484f712a5e9c73e93baf739c5c21a7a8ea1b378d63b160c08eb429cb46"
+    },
+    {
+      "name": "castFlamingSphereSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "0bbfbba241e67af4a605c97e1b6cff55473b762b01fe162338f9219bf1dd2a41"
+    },
+    {
+      "name": "castInvisibilitySpell",
+      "file": "combat-spells-support.js",
+      "sha256": "3822250c3c0b438120e3f4d3cb011cdc3ee720aee12f248ec7203920c4510920"
+    },
+    {
+      "name": "castMirrorImageSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "54675a63362681cb7424aa8b35f5e0fea8da78ef35c4cc240b1f18ff9b8dcf51"
+    },
+    {
+      "name": "castSpectralHandSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "df24495cd82d3c3bde923c5a531de632420c5182d35f5e46de81eb866d2a194c"
+    },
+    {
+      "name": "castStrengthSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "1dc699f708fb766418987521d08bad89c20789adb3a8831a525878b4832d6f0d"
+    },
+    {
+      "name": "castPriestCombatSpell",
+      "file": "combat-spells-support.js",
+      "sha256": "87f9607a2a802d5a1e9620a233260919834a693cbed484945dcd59c3d95798f6"
+    },
+    {
+      "name": "initializeFirMovementObstacles",
+      "file": "combat-environment-state.js",
+      "sha256": "5c5308387ce59769bc9b27550a44dabb78acc107d228773e43be5df0ef7a3138"
+    },
+    {
+      "name": "addTerrainScorch",
+      "file": "combat-environment-state.js",
+      "sha256": "0439da5be55a1b207473a293495d90bbe7b70b5e202bc9c311fc2ad66ebaa159"
+    },
+    {
+      "name": "scorchNoise",
+      "file": "combat-environment-state.js",
+      "sha256": "452763ddd11c36db294bae9ff6ae384df3a96ce6ef8318087d4cc475e16eac82"
+    },
+    {
+      "name": "igniteFirTrees",
+      "file": "combat-environment-state.js",
+      "sha256": "c3844074c6d97ed575245abb71e451c07b1de6729ad0d19bdc7f7e1be24d15eb"
+    },
+    {
+      "name": "advanceFirFires",
+      "file": "combat-environment-state.js",
+      "sha256": "ad17fcae7284dd83792872519a675610b397c35d2b9e90aa84f51bd3f97ac38b"
+    },
+    {
+      "name": "firFireLightSources",
+      "file": "combat-environment-state.js",
+      "sha256": "6b4438ee806344496f79ab5a69cc11021cd92a8cf4fe5238d805b7ad73e4b162"
+    },
+    {
+      "name": "isFirBlockedHex",
+      "file": "combat-environment-state.js",
+      "sha256": "32b1352818417eba5091eb3688a6ae94e2240a019c9aa79f5ea43dc501957f76"
+    },
+    {
+      "name": "wallOpeningCenterT",
+      "file": "combat-environment-state.js",
+      "sha256": "1d747388c9192cc202debdc9f3697396c4ae5f7754944ad41eb04cce8853a2de"
+    },
+    {
+      "name": "wallOpeningPassesMode",
+      "file": "combat-environment-state.js",
+      "sha256": "024038ba2e541e8c4c3b6ce73dae88353fe131118df6bca7ac77111c850d8850"
+    },
+    {
+      "name": "wallBlockingSubsegments",
+      "file": "combat-environment-state.js",
+      "sha256": "254c1d8cd07f976033411f808a66ee8e93df44db73d019225dd9d621b3e286da"
+    },
+    {
+      "name": "wallSegmentCutsHexInterior",
+      "file": "combat-environment-state.js",
+      "sha256": "6c49bd7c04461c44c6a4fd7863580a03c5aa6a0e4a33e4b297cea50e0c4be52a"
+    },
+    {
+      "name": "rebuildArchitecturalBlockedHexes",
+      "file": "combat-environment-state.js",
+      "sha256": "95079175bd8255dec5a6b1fe7c4b5240bbadccb1cef51d2b5d9e8e40662df00c"
+    },
+    {
+      "name": "isArchitecturalBlockedHex",
+      "file": "combat-environment-state.js",
+      "sha256": "912c1d58a9e6d50d173d5afbb4c6e17a3f612e6a9b3d733d476f5bd4a231df87"
+    },
+    {
+      "name": "architecturalWallBlocksWorldLine",
+      "file": "combat-environment-state.js",
+      "sha256": "3196d5438757782df52f1d85123283ce64c491e24bc8b1c7a3eab3f22ee6c31f"
+    },
+    {
+      "name": "architecturalWallBlocksStep",
+      "file": "combat-environment-state.js",
+      "sha256": "825f85640acbf2600e13eaa542b908ea9f611a530ad75891457ea870f89a9922"
+    },
+    {
+      "name": "architecturalWallBlocksLOS",
+      "file": "combat-environment-state.js",
+      "sha256": "d92bc32060ac287175ef5446e1bedccb79bee965ed3335bf4728b84d88876f11"
+    },
+    {
+      "name": "burnWebCells",
+      "file": "combat-environment-state.js",
+      "sha256": "5402a81519fefecb6f07e10c109b029255ef80891d3377b7037adb28cbae52fd"
+    },
+    {
+      "name": "igniteWebAtUnit",
+      "file": "combat-environment-state.js",
+      "sha256": "7a2569d76afa57865829f29f33a10f8c8389f91c06de847d7ec934c14bff9a24"
+    },
+    {
+      "name": "hexLineCells",
+      "file": "combat-visibility.js",
+      "sha256": "3d1bc541bf3b3f78294d14e69ccc72bc5b20881de9f19a569379cdb77edba851"
+    },
+    {
+      "name": "lineOfSightBlockedBetweenHexes",
+      "file": "combat-visibility.js",
+      "sha256": "067539a8c2b0a98bf4743f06fe751f325a83873bdef11326ac06378d936aa899"
+    },
+    {
+      "name": "lightBlockedBetweenHexes",
+      "file": "combat-visibility.js",
+      "sha256": "7964feb067d72a2c2408592964936465e11074a73f475fab1b9b453937f8eab2"
+    },
+    {
+      "name": "lineOfSightBlocked",
+      "file": "combat-visibility.js",
+      "sha256": "435b567c0aaf5b2133eee6a29e53f3e5b753d118ef1658464844fc6d198d332b"
+    },
+    {
+      "name": "projectilePathBlockedBetweenHexes",
+      "file": "combat-visibility.js",
+      "sha256": "06fec27f907e0552309e4672b18b3c81135a9acdf71a8b4870e71457916a037a"
+    },
+    {
+      "name": "projectilePathBlocked",
+      "file": "combat-visibility.js",
+      "sha256": "62e51f470d3d4e8cf75b11804efd7824bf4a083b84fa387bfab53e81f697d105"
+    },
+    {
+      "name": "friendlyVisibilityObservers",
+      "file": "combat-visibility.js",
+      "sha256": "e88c89cc2eaa7110574b67ed7d8418bf8a10e134bfd766f888dbb8f3e0d74e3d"
+    },
+    {
+      "name": "wallTestVisibilityObserver",
+      "file": "combat-visibility.js",
+      "sha256": "c8f1bef77c1b1e059fc9665fc0817e5a3384066afb50af29521819b3052cf0c7"
+    },
+    {
+      "name": "isFriendlyCombatUnit",
+      "file": "combat-visibility.js",
+      "sha256": "7c8c997ed11a971d2ae5ee705e648733f395b2cc920e59f63a540153d1ed7737"
+    },
+    {
+      "name": "pointInSimplePolygon",
+      "file": "combat-visibility.js",
+      "sha256": "957e02b84b2da43fe4d0e19cdcfd484d3ddc000b253800819b7c7a02d49a9250"
+    },
+    {
+      "name": "observerVisibilityContext",
+      "file": "combat-visibility.js",
+      "sha256": "7a255bf3fbc71515daf65fd6b49cc8a5f37316a7f5551fe6b6b5413101e93cd3"
+    },
+    {
+      "name": "isHexCenterInsideObserverLosCone",
+      "file": "combat-visibility.js",
+      "sha256": "85f455d11b98dd457632aa739a5107e32136227ffdd1da8bda2bce30a6e9bc98"
+    },
+    {
+      "name": "visibilityWorldBounds",
+      "file": "combat-visibility.js",
+      "sha256": "4d15ca59e103ad0dbee8f4419fa2a1083092c00167dddd7fb92dd87de3834c76"
+    },
+    {
+      "name": "visibilitySegments",
+      "file": "combat-visibility.js",
+      "sha256": "71b8be406d53472ae8962f56ddeb1133b40ce9bba616b897ca929034719f0396"
+    },
+    {
+      "name": "cross2d",
+      "file": "combat-visibility.js",
+      "sha256": "cbcedde090308968338249baa26da9c14a183f9a09d4b9a5cdae64bad57b90ab"
+    },
+    {
+      "name": "raySegmentIntersection",
+      "file": "combat-visibility.js",
+      "sha256": "f311d1b0ee4438c58716cb092e6c2eda45b3a0a7ffa0ccfc4a9e407b344f0cbf"
+    },
+    {
+      "name": "castVisibilityRay",
+      "file": "combat-visibility.js",
+      "sha256": "a35cb1c543ecb492660e0fb76da92a609f315d5f85e0dd1e67efdf9e3e9c7f08"
+    },
+    {
+      "name": "wallTestVisibilityPolygonWorld",
+      "file": "combat-visibility.js",
+      "sha256": "c7f3fa986fbfe817b0de0a2f2b78c7638897f187c5c43005c6e8ee4d202562b0"
+    },
+    {
+      "name": "fogBlocksVisibilityToHex",
+      "file": "combat-visibility.js",
+      "sha256": "9605a6b7a1f27bf9efe3a98a5d1f4abc133fc74a897098c11cac3b28797f7e11"
+    },
+    {
+      "name": "isHexVisibleFromObserver",
+      "file": "combat-visibility.js",
+      "sha256": "10cfa90507bdc0dbdd9eb26884f909a9706027f7eb0f6fe8d952cd2e67ca871a"
+    },
+    {
+      "name": "isHexVisibleToFriendlyParty",
+      "file": "combat-visibility.js",
+      "sha256": "4ed72ff450a46489d0a3f28ee3639a1a9a056eb6f5279b28f00bf639071d6d36"
+    },
+    {
+      "name": "isUnitVisibleToFriendlyParty",
+      "file": "combat-visibility.js",
+      "sha256": "ece48062ff69e2f6c895ca8b40eaaed0c1c98bef60e1e7a8fcf9c0338c929087"
+    },
+    {
+      "name": "shouldRenderUnitUnderPartyVisibility",
+      "file": "combat-visibility.js",
+      "sha256": "17d3a7fc6eca62c7935c83bb79c0342a53c5db3066688f13a9e48508d9506c6c"
+    },
+    {
+      "name": "mobPositionVisibleToFriendlyParty",
+      "file": "combat-visibility.js",
+      "sha256": "cc1ec36ad598719b48163d847a31e69305c06fb6bba58b77a95484008baf0aed"
+    },
+    {
+      "name": "isHexVisibleToWallTestObserver",
+      "file": "combat-visibility.js",
+      "sha256": "74f2fbc0b1e51bf2f1ec73c6d0ea02a18c7f81c0c7d3ab4df4cb27b58d75635f"
+    },
+    {
+      "name": "worldLineBlockedByOtherArchitecturalWalls",
+      "file": "combat-visibility.js",
+      "sha256": "90d21a687cc301fd2715401dfd4bb7999cb47f05ec848d580428d8f671917f23"
+    },
+    {
+      "name": "isArchitecturalWallVisibleToFriendlyParty",
+      "file": "combat-visibility.js",
+      "sha256": "5066c3244c942e008c51bf5fd6f5283f863c4fe5aea40321b785f8e3fb59bf05"
+    },
+    {
+      "name": "isFogCellArchitecturallyVisibleToFriendlyParty",
+      "file": "combat-visibility.js",
+      "sha256": "d13eebc5de64b4af71e07c970b3da97de9a78a3b0606373a7d4920459a583055"
+    },
+    {
+      "name": "spellRangeHexes",
+      "file": "combat-targeting.js",
+      "sha256": "5491fd19ba711322f380b6a875cf1d4047273826d2cce2e5dd312de274f029fb"
+    },
+    {
+      "name": "unitsWithinHexRadius",
+      "file": "combat-targeting.js",
+      "sha256": "bd9789168e25c89d454fdc3543268bd86fe4d55fe6caf9ec9b5c3305fe21c0c4"
+    },
+    {
+      "name": "directionVectorForAim",
+      "file": "combat-targeting.js",
+      "sha256": "05c805e8ea3b4036e1a625d9b26ced7351453198ff09e70123e56b8765fb4e07"
+    },
+    {
+      "name": "unitsInDirectionalWedge",
+      "file": "combat-targeting.js",
+      "sha256": "6d4e06179030a127814465b28aa3f2fb3cb7e99d82dad140477ce905cd239a72"
+    },
+    {
+      "name": "hexesWithinRadius",
+      "file": "combat-targeting.js",
+      "sha256": "e2ce0652cd2c3f39626ab6c632a9971cbd0d89773988c92fb7f1e7a837d5056f"
+    },
+    {
+      "name": "directionalWedgeCells",
+      "file": "combat-targeting.js",
+      "sha256": "7d4693b2bd4d2369ccc6693413cd092950fdf961432bfd8a758c08e56cc20092"
+    },
+    {
+      "name": "livingUnitsInAreaCells",
+      "file": "combat-targeting.js",
+      "sha256": "5fee1a4edec74910669abcb0efa5113b62d945ba8f710c2f4a90c526af3b4348"
+    },
+    {
+      "name": "aimAreaPreviewForAction",
+      "file": "combat-targeting.js",
+      "sha256": "3f5bc6fd30d1fa333e26c2c6de4a53b11c556f377932442a96e40460ceb7020b"
+    },
+    {
+      "name": "controlledUnitCanAct",
+      "file": "combat-targeting.js",
+      "sha256": "0588d608c26b1e1fba77de159d6d49f5dcc039b85a88d12580e6139af3a857ea"
+    },
+    {
+      "name": "moveAimCursor",
+      "file": "combat-targeting.js",
+      "sha256": "5439f6590b0de03525275edcb21f4121a9b3896eac4a07b594976e5f6db87f53"
+    },
+    {
+      "name": "validCreatureTargetWithinRange",
+      "file": "combat-targeting.js",
+      "sha256": "c9b95e05186b0470d4376730c7adfb3d65a676fb40877e971747baa9e4915ded"
+    },
+    {
+      "name": "resolveAimAction",
+      "file": "combat-targeting.js",
+      "sha256": "e0007dba9d851c44eb65d5e9a2956c5e267e87be80c52167c213533befa041d3"
+    },
+    {
+      "name": "firTreeLocalLights",
+      "file": "combat-lighting-services.js",
+      "sha256": "ea36c920ef1cfa8dbf2d413d34ea78d1ad6827310a160d7f0bb7fb8233de8191"
+    },
+    {
+      "name": "architecturalWallLightContributions",
+      "file": "combat-lighting-services.js",
+      "sha256": "a32cde79f510ffb597400f0944efeb4a86109fcffaa6f28feb13231d9bac8056"
+    },
+    {
+      "name": "ambientIlluminationLevel",
+      "file": "combat-lighting-services.js",
+      "sha256": "006d0a2f4653160f7632ee386eef6e9dfa92561dde227ee04a66e80859fb1790"
+    },
+    {
+      "name": "illuminationAreaEffects",
+      "file": "combat-lighting-services.js",
+      "sha256": "0bc85599d3ade324007db7a7ee0eeab072364d82c0109545c3c1c5125fae8c01"
+    },
+    {
+      "name": "combatSpellEffectLights",
+      "file": "combat-lighting-services.js",
+      "sha256": "dc4d95d5830b84cbb21b1d032b4a727df60abbc68b95941972f94cf917e63a6a"
+    },
+    {
+      "name": "illuminationSources",
+      "file": "combat-lighting-services.js",
+      "sha256": "0c3459aed4b7afcf9b203e339bdb92bbf9ca83a548589f35b695b9b348893597"
+    },
+    {
+      "name": "illuminationSourceReachesHex",
+      "file": "combat-lighting-services.js",
+      "sha256": "1c91c16df87b10d89690eab7b5ee6de3af6a4154c82adcbd0a50afb329ce4359"
+    },
+    {
+      "name": "illuminationContributionFromSource",
+      "file": "combat-lighting-services.js",
+      "sha256": "631d9e73ce78b8c8a68a4b641a5b84a0b04f2ca652a28d892a4674686f87709f"
+    },
+    {
+      "name": "dynamicIlluminationAtHex",
+      "file": "combat-lighting-services.js",
+      "sha256": "9f8acb67a4bce6d8f44e238dd1ba654c36103b54a0b86ddda5eafb74f3daacd3"
+    },
+    {
+      "name": "illuminationAtHex",
+      "file": "combat-lighting-services.js",
+      "sha256": "f854057387a43e3e8fbf006ccf618c75bac6adae180195a9a4466be917694683"
+    },
+    {
+      "name": "isHexIlluminated",
+      "file": "combat-lighting-services.js",
+      "sha256": "256071c637a66a01f757d5d044f09b16cb2b8cc393875303f70e40847d542c10"
+    },
+    {
+      "name": "architecturalLightShadowPolygonWorld",
+      "file": "combat-lighting-services.js",
+      "sha256": "a275be109729b717999063cf25bdfd4e5dc4d0ac7b35549757f6f58b246d8fe0"
+    },
+    {
+      "name": "combatSpriteBrightness",
+      "file": "combat-lighting-services.js",
+      "sha256": "3f074eda6b483f4d24ff9925ce93232828d65628c18188ba74a9b9039ddc23fc"
+    },
+    {
+      "name": "draw",
+      "file": "combat-render-frame.js",
+      "sha256": "480e89e71aec9024f733a428bcaa515f24385ebd714ac9408e6c5eabaae96f23"
+    },
+    {
+      "name": "drawTerrainScorch",
+      "file": "combat-render-surfaces.js",
+      "sha256": "e6797b7de42051ed5856268e17ed35d589c77ef45aa82d43f257de8c28232373"
+    },
+    {
+      "name": "drawTreeGroundShadow",
+      "file": "combat-render-surfaces.js",
+      "sha256": "c873333b2edc52e8a37fe2c41e1296a497af90d3971020da1b9cc519ba21ca46"
+    },
+    {
+      "name": "drawTreeDecoration",
+      "file": "combat-render-surfaces.js",
+      "sha256": "db875b1f8a0ea6a9627b302508603cea120e5fa2b993c66c7c6f58450011304e"
+    },
+    {
+      "name": "drawScaleTestHex",
+      "file": "combat-render-surfaces.js",
+      "sha256": "b09ff0659b2f4f00fd12468428f9b4fbf1c64dfd5def9742bdefb8c13c6f9dc0"
+    },
+    {
+      "name": "drawArchitecturalFloorRegions",
+      "file": "combat-render-surfaces.js",
+      "sha256": "35baf691330b5a2bf64b7c64a867464e5f74b3888d96623d7d68cd650efdea42"
+    },
+    {
+      "name": "drawDoorwayThresholds",
+      "file": "combat-render-surfaces.js",
+      "sha256": "b56fcfb65ea2f78e21b60a3d960a0aa44620f7270d21556a1704462532d12a73"
+    },
+    {
+      "name": "drawWallTestFloorPlan",
+      "file": "combat-render-surfaces.js",
+      "sha256": "7de25e89c3dc40e368c7dfa3738a69539957a46e20aece631f9e52841a60393d"
+    },
+    {
+      "name": "drawArchitecturalWallShadows",
+      "file": "combat-render-surfaces.js",
+      "sha256": "30d5f4b4fdb1e0b40c449e34a9e02a47b9c340d16d53d6b5b4a66ddb13129db1"
+    },
+    {
+      "name": "drawWallOpeningOnLayer",
+      "file": "combat-render-surfaces.js",
+      "sha256": "ee89e57d68b4fb56ca00dae55b8bf6137e641adfde45ce6a02c7edb7b9f1449c"
+    },
+    {
+      "name": "drawArchitecturalWallShapeOutline",
+      "file": "combat-render-surfaces.js",
+      "sha256": "03d5dff324443faea638009434ce9e3fbc282ae99066738ff370eb20e464dc5f"
+    },
+    {
+      "name": "drawArchitecturalWallTopOutline",
+      "file": "combat-render-surfaces.js",
+      "sha256": "239012b8b9270b8246f52a7593a2123bc6f23538a8f730ba5170f4bb70ebaa85"
+    },
+    {
+      "name": "drawArchitecturalWallSegment",
+      "file": "combat-render-surfaces.js",
+      "sha256": "3f932534dd68a8eb7748ce60a859de5a4af0929977d8c92f93c6d3d73ae3a971"
+    },
+    {
+      "name": "drawTerrainIlluminationLayer",
+      "file": "combat-render-surfaces.js",
+      "sha256": "eb5a082ad169421b4afce25708a661cfce91024424f8654658780926dab9ce96"
+    },
+    {
+      "name": "drawWallTestLineOfSightMask",
+      "file": "combat-render-surfaces.js",
+      "sha256": "972fa6505e1a1220cd7cc45735cb9f913cbbb319edd04bbaf8e242805cf9bce0"
+    },
+    {
+      "name": "drawVisibleArchitecturalWallsOverLOS",
+      "file": "combat-render-surfaces.js",
+      "sha256": "e030bb88090b1ef61425d54f0b4ce6f60a55773be58302a23542af455378cafb"
+    },
+    {
+      "name": "drawHexFill",
+      "file": "combat-render-surfaces.js",
+      "sha256": "a6e5e9c56407c859f8a7b33589f579b9e216a2b38e3e92443fddec5550d6599f"
+    },
+    {
+      "name": "drawHexGridLine",
+      "file": "combat-render-surfaces.js",
+      "sha256": "4c71e4566cd6c21830daa735a3f880159b74a1343f6aea36ed1afb10ab1fd15b"
+    },
+    {
+      "name": "drawFloor",
+      "file": "combat-render-surfaces.js",
+      "sha256": "21defac2bfb9176840c99d88a6455aaf4f99c59fd4b60395d1053ba8d59397d2"
+    },
+    {
+      "name": "drawActiveHex",
+      "file": "combat-render-surfaces.js",
+      "sha256": "25ab348b63da5098c92f6015c4c2630e51d75f6ab8ab235d0f1647762b3dd75b"
+    },
+    {
+      "name": "drawScaleTestSprite",
+      "file": "combat-render-units.js",
+      "sha256": "b307783a1415d9dee763769ab82a8ab9ea8f41acdbb408beb4a3fbe2ecc89a2c"
+    },
+    {
+      "name": "drawHiddenUnitOutlines",
+      "file": "combat-render-units.js",
+      "sha256": "b6b567bac4c5f443664206f04869261d0535f625045926fa8002bb8ef1429912"
+    },
+    {
+      "name": "drawSpriteFacing",
+      "file": "combat-render-units.js",
+      "sha256": "b398074491256b0dc5a4be6946daf4dc50f04a9584a66d263249b07898840eff"
+    },
+    {
+      "name": "drawFighter",
+      "file": "combat-render-units.js",
+      "sha256": "a9ef10f5e9139db4e7c50ae0406ca3620b719fc5bd88cd0931c3cc1736b3daec"
+    },
+    {
+      "name": "drawStudioSpriteMob",
+      "file": "combat-render-units.js",
+      "sha256": "b023d1f7ea6234c1c0803c03caf8369c24a9b26d36af83cf500538d3bf46db57"
+    },
+    {
+      "name": "drawKobold",
+      "file": "combat-render-units.js",
+      "sha256": "1059725c52da80534a27752b04ca2a5fb370ca4603e665c39ab775da1754aadb"
+    },
+    {
+      "name": "drawDeathFx",
+      "file": "combat-render-units.js",
+      "sha256": "4a938e8fb6cdbf26b02f30150d10fca69193f792ad73f954619acd518aeaf34c"
+    },
+    {
+      "name": "drawUnitBarks",
+      "file": "combat-render-units.js",
+      "sha256": "cccab2ef424cb79ca92ca0faf1f1e2a223908dc4b17f01328f6ada2b6365d597"
+    },
+    {
+      "name": "animateArrowProjectile",
+      "file": "combat-effect-animation.js",
+      "sha256": "a209e0519548937809a82fdf416b215d06237a3836805a081596982227c9953b"
+    },
+    {
+      "name": "animateSlingProjectile",
+      "file": "combat-effect-animation.js",
+      "sha256": "2e208a856004ccb41e09642178307833457f87fd7cd55370e375b95edf2c5c85"
+    },
+    {
+      "name": "animateMagicMissile",
+      "file": "combat-effect-animation.js",
+      "sha256": "7a72c657169d807aef8b849be005fa73d70961b728a0f42c70fc371f2e47858d"
+    },
+    {
+      "name": "animateElementalArrowProjectile",
+      "file": "combat-effect-animation.js",
+      "sha256": "28cbdc993b850dddc751734e5c1d762ab7b9d39e46475cb6c2f00ce598d5e89c"
+    },
+    {
+      "name": "animateFireballProjectile",
+      "file": "combat-effect-animation.js",
+      "sha256": "732dc1ee786b51be0f52a364592ff8e1bd9334fc18e3272f7652bf380687931f"
+    },
+    {
+      "name": "animateFireballExplosion",
+      "file": "combat-effect-animation.js",
+      "sha256": "0e10989e29e680d9c5f93a5e9b503bc7e7c8b78a39fa07726f3756595a9cc8fa"
+    },
+    {
+      "name": "animateColorSprayEffect",
+      "file": "combat-effect-animation.js",
+      "sha256": "aa466e392cb51baeee7bbf50203f733434e282fe2fb6fcdeba0088c94d7fabe1"
+    },
+    {
+      "name": "animateMagicEffectOnUnits",
+      "file": "combat-effect-animation.js",
+      "sha256": "1e7bbd82489b531bc6c65419f5402f82f194e80a86d7e1ce4aed593c0d7e6cd7"
+    },
+    {
+      "name": "animateSpellSurfaceFlash",
+      "file": "combat-effect-animation.js",
+      "sha256": "503059450d83cf17a9ee852708f2848081b64d77dfba6217ddc1fa49396de4ba"
+    },
+    {
+      "name": "animateDragonBreath",
+      "file": "combat-effect-animation.js",
+      "sha256": "3d1e2b5138e1d68013a836a896dbcc34a3419ed2878086b4a51c493e33e51aad"
+    },
+    {
+      "name": "exitCombat",
+      "file": "combat-session-state.js",
+      "sha256": "ea0e3513634d2d33f3b75c15da9da57baf376878ada178480b9132122c4c2918"
+    },
+    {
+      "name": "cancelPendingCombatStart",
+      "file": "combat-session-state.js",
+      "sha256": "4ddf81a26114768c433a53821fd999e8899265624bdccf194fe51c2115ed35d4"
+    },
+    {
+      "name": "waitForCombatUnitRenders",
+      "file": "combat-session-state.js",
+      "sha256": "cceddf64f4bebbf7fdd4e32c0f39dea3a05930ac73b7c62a73f3de25f3edd17e"
+    },
+    {
+      "name": "showCombat",
+      "file": "combat-session-state.js",
+      "sha256": "6aca2839a63c3dfbb82ef6872e57b5c111c73a331f19080d6d7c962c59629257"
+    },
+    {
+      "name": "checkPartyDefeat",
+      "file": "combat-session-state.js",
+      "sha256": "271275107bc9caf62626235d7c0faeb00e2393f9348daae341f587abdb5defde"
+    },
+    {
+      "name": "checkCombatVictory",
+      "file": "combat-session-state.js",
+      "sha256": "90e8af6466bb927e82d3dacc79ae50b75d52165397156c4bcfa9f3929c492e65"
+    },
+    {
+      "name": "deployConfiguredCombatMobs",
+      "file": "combat-session-state.js",
+      "sha256": "815b49b9611406363f86464d2efee3cc25cce8c3e035191c10ea5d4126351547"
+    },
+    {
+      "name": "newGame",
+      "file": "combat-session-state.js",
+      "sha256": "2c37ce24a5aa937287a9f5f1edade11dfbcc4e347a205828833e7be74ee77741"
+    },
+    {
+      "name": "collectLootFromSlainEnemies",
+      "file": "combat-session-state.js",
+      "sha256": "fdc12f20d20a68bdaf35094548b5ac6186899ddeae83ab61d247b5e174cf9581"
+    },
+    {
+      "name": "scheduleCombatFinish",
+      "file": "combat-session-state.js",
+      "sha256": "85fd5800b7a6513141a4b7787baa1988fb4aa30d73e90b9ad70b2bc8ad9997b0"
+    },
+    {
+      "name": "finishCombat",
+      "file": "combat-session-state.js",
+      "sha256": "37de3bfcf99bd3287f49f40721323e2db9f830f17047cf3efdc81cd92059545e"
+    }
+  ]
+}

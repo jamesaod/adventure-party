@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
+import {fileURLToPath} from 'node:url';
 import { deflateSync } from 'node:zlib';
 import {
   SPRITE_DIRECTIONS, SPRITE_POSES, spriteSetSlug, createSpriteSetManifest,
@@ -441,7 +441,9 @@ assert.throws(() => validateSpritePackage(manifest, mismatched), /sheet pixels/)
 const missing = new Map(files); missing.delete('attack-nw.png');
 assert.throws(() => validateSpritePackage(manifest, missing), /missing attack-nw/);
 
-const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'adventure-party-sprite-package-'));
+const temporaryRoot=fileURLToPath(new URL('../work/test-tmp/',import.meta.url));
+await fs.mkdir(temporaryRoot,{recursive:true});
+const temp = await fs.mkdtemp(path.join(temporaryRoot, 'adventure-party-sprite-package-'));
 try {
   const zipPath = path.join(temp, 'character.zip');
   const zipEntries = Object.fromEntries([...files].map(([name, bytes]) => [`${manifest.id}/${name}`, bytes]));
@@ -516,7 +518,7 @@ try {
 
   const symlinkRoot = path.join(temp, 'symlink-repo');
   await fs.mkdir(symlinkRoot);
-  await fs.symlink(root, path.join(symlinkRoot, 'assets'));
+  await fs.symlink(root, path.join(symlinkRoot, 'assets'),process.platform==='win32'?'junction':'dir');
   await assert.rejects(importSpriteSet(zipPath, { repoRoot: symlinkRoot }), /ordinary directory/);
 
   const validationRoot = path.join(temp, 'validation-repo');

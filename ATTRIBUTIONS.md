@@ -88,3 +88,11 @@ The five fir variants derive from the fir sample in EVOLVED's TreeIt sample libr
 Source and credit — EVOLVED / evolved-software, https://www.evolved-software.com/treeit/treeit
 The supplied library license permits commercial copying and modification with attribution. Its original text is preserved at assets/terrain/treeit-firs/SAMPLE-LICENSE.txt and calls itself Creative Commons Attribution International without specifying a version.
 Changes include randomized seeds and scale, a second rotated foliage layer, green tint, interior shading, and twelve rendered rotation views per tree. Ground shadows are rendered separately from the actual branch and foliage-card geometry with filtered edges.
+
+## Window-breaking sound
+
+`assets/audio/sfx/environment/kenney-glass-break.ogg` is the unmodified `impactGlass_heavy_000.ogg` from Kenney’s [Impact Sounds](https://kenney.nl/assets/impact-sounds), licensed CC0. The original license is preserved alongside it as `KENNEY-LICENSE.txt`.
+
+## Selected replacement glass sound (local test)
+
+`assets/audio/sfx/environment/glass-break-selected.wav` derives from the user-selected “Glass Breaking Sound Effect HD | Glass Shattering Sound Effect” by Car Features: https://www.youtube.com/watch?v=TcnufvBffcY . Leading/trailing silence was trimmed (source 0.734104–4.078521 seconds); converted to 48 kHz stereo PCM WAV. This replaces the Kenney sound for the current local test. No CC0 license is claimed for this replacement.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
 import {sunPosition,shadowProjection,normalizeSunHour,sunDescription,shadowMask,drawUnitShadow,unitSun,findShadowFootLine,shadowFootLine} from '../js/unit-sun-shadow.mjs';
 import {CAMERA_ELEVATION} from '../js/studio-core.mjs';

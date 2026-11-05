@@ -7,7 +7,7 @@
 */
 
 
-castMelfsAcidArrowSpell=async function(action,target){
+AdventurePartyCombatServices.register('castMelfsAcidArrowSpell','r233-attack-spell-results.js:10:castMelfsAcidArrowSpell',async function(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("melfs-acid-arrow");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -171,10 +171,10 @@ castMelfsAcidArrowSpell=async function(action,target){
     action
   );
   return true;
-};
+});
 
 
-castShockingGraspSpell=async function(action,target){
+AdventurePartyCombatServices.register('castShockingGraspSpell','r233-attack-spell-results.js:177:castShockingGraspSpell',async function(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("shocking-grasp");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -357,10 +357,10 @@ castShockingGraspSpell=async function(action,target){
     action
   );
   return true;
-};
+});
 
 
-r226CastVampiricTouch=async function(action,target){
+AdventurePartyCombatServices.register('r226CastVampiricTouch','r233-attack-spell-results.js:363:r226CastVampiricTouch',async function(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("vampiric-touch");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -527,10 +527,10 @@ r226CastVampiricTouch=async function(action,target){
     action
   );
   return true;
-};
+});
 
 
-r226CastFlameArrow=async function(action,target){
+AdventurePartyCombatServices.register('r226CastFlameArrow','r233-attack-spell-results.js:533:r226CastFlameArrow',async function(action,target){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("flame-arrow");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -712,4 +712,4 @@ r226CastFlameArrow=async function(action,target){
   );
 
   return true;
-};
+});

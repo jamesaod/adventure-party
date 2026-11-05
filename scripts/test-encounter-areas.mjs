@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {blankMap,seedPack,parsePack,resizeMap,paintCell,rectangleSelection,setEncounterArea,removeEncounterSquares,deleteSelectedEncounters} from '../js/exploration-authoring.mjs';
 import {encounterCells,encounterAt,validateEncounters,recordOutcome,terrainForEncounter} from '../js/exploration-encounters.mjs';
 const map=blankMap('areas','Areas'),record={id:'patrol',name:'Patrol',mobId:'orc',count:2,spawnX:4,spawnZ:4,color:'#638bdb',enabled:true};

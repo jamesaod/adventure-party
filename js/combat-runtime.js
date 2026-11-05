@@ -7,8 +7,8 @@ let combatFirTreesLoading=null;
 async function prepareCombatSession(){
  await ensureCombatRenderer();
  if(!combatSceneAssets)combatSceneAssets=(async()=>{
-  explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C276');
-  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C274')).createCombatTestMap;
+  explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C277');
+  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C280')).createCombatTestMap;
   const sources=[[explorationFloorImage,'assets/textures/exploration/floor.png?v=R238C206'],[explorationWallImage,'assets/textures/exploration/wall.png?v=R238C206'],[explorationDoorImage,'assets/textures/exploration/door.png?v=R238C206'],[explorationGrassImage,explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246'],[explorationWoodWallImage,explorationEncounterApi.WOOD_TEXTURES.wall+'?v=R238C274']];
   await Promise.all(sources.map(async([image,url])=>{if(!image.src)image.src=url;await image.decode();}));
  })().catch(error=>{combatSceneAssets=null;throw error;});

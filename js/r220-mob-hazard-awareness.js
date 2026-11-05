@@ -575,44 +575,44 @@ function r220RefreshCurrentCellHazardExperience(mob){
   Give the current test MOBs explicit intelligence scores. Future monsters can
   supply stats.int, intelligenceScore, or a standard AD&D intelligence label.
 */
-const r220BaseMakeKobold=makeKobold;
-makeKobold=function(index,position){
+const r220BaseMakeKobold=AdventurePartyCombatServices.current('makeKobold');
+AdventurePartyCombatServices.register('makeKobold','r220-mob-hazard-awareness.js:579:makeKobold',function(index,position){
   const unit=r220BaseMakeKobold(index,position);
   unit.intelligenceScore=9;
   unit.intelligence=unit.intelligence || "Average (8-10)";
   return unit;
-};
+});
 
-const r220BaseMakeKoboldBodyguard=makeKoboldBodyguard;
-makeKoboldBodyguard=function(index,position){
+const r220BaseMakeKoboldBodyguard=AdventurePartyCombatServices.current('makeKoboldBodyguard');
+AdventurePartyCombatServices.register('makeKoboldBodyguard','r220-mob-hazard-awareness.js:587:makeKoboldBodyguard',function(index,position){
   const unit=r220BaseMakeKoboldBodyguard(index,position);
   unit.intelligenceScore=9;
   unit.intelligence=unit.intelligence || "Average (8-10)";
   return unit;
-};
+});
 
-const r220BaseMakeKoboldSlinger=makeKoboldSlinger;
-makeKoboldSlinger=function(index,position){
+const r220BaseMakeKoboldSlinger=AdventurePartyCombatServices.current('makeKoboldSlinger');
+AdventurePartyCombatServices.register('makeKoboldSlinger','r220-mob-hazard-awareness.js:595:makeKoboldSlinger',function(index,position){
   const unit=r220BaseMakeKoboldSlinger(index,position);
   unit.intelligenceScore=9;
   unit.intelligence=unit.intelligence || "Average (8-10)";
   return unit;
-};
+});
 
-const r220BaseMakeOrc=makeOrc;
-makeOrc=function(index,position,...options){
+const r220BaseMakeOrc=AdventurePartyCombatServices.current('makeOrc');
+AdventurePartyCombatServices.register('makeOrc','r220-mob-hazard-awareness.js:603:makeOrc',function(index,position,...options){
   const unit=r220BaseMakeOrc(index,position,...options);
   unit.intelligenceScore=9;
   unit.intelligence=unit.intelligence || "Average (8-10)";
   return unit;
-};
+});
 
-const r220BaseMakeLargeMobTest=makeLargeMobTest;
-makeLargeMobTest=function(position){
+const r220BaseMakeLargeMobTest=AdventurePartyCombatServices.current('makeLargeMobTest');
+AdventurePartyCombatServices.register('makeLargeMobTest','r220-mob-hazard-awareness.js:611:makeLargeMobTest',function(position){
   const unit=r220BaseMakeLargeMobTest(position);
   unit.intelligenceScore=16;
   return unit;
-};
+});
 
 
 /* ============================================================
@@ -1061,8 +1061,8 @@ function r220ObserveVisibleTargetsForAllMobs(){
   Preserve last-known positions immediately before an obscuring area appears,
   then let intelligent MOBs perceive/recognize the new hazard after it exists.
 */
-const r220BaseAddAreaEffect=addAreaEffect;
-addAreaEffect=function(effect){
+const r220BaseAddAreaEffect=AdventurePartyCombatServices.current('addAreaEffect');
+AdventurePartyCombatServices.register('addAreaEffect','r220-mob-hazard-awareness.js:1065:addAreaEffect',function(effect){
   const definition=r220HazardDefinition(effect);
 
   if(definition){
@@ -1101,27 +1101,27 @@ addAreaEffect=function(effect){
   }
 
   return added;
-};
+});
 
 /*
   Player movement is an information event: MOBs remember the pre-move location
   and update to the new location only if it remains visible afterward.
 */
-const r220BaseTryPlayerMove=tryPlayerMove;
-tryPlayerMove=async function(dx,dy,options){
+const r220BaseTryPlayerMove=AdventurePartyCombatServices.current('tryPlayerMove');
+AdventurePartyCombatServices.register('tryPlayerMove','r220-mob-hazard-awareness.js:1111:tryPlayerMove',async function(dx,dy,options){
   r220ObserveVisibleTargetsForAllMobs();
   const result=await r220BaseTryPlayerMove(dx,dy,options);
   r220ObserveVisibleTargetsForAllMobs();
   return result;
-};
+});
 
 
 /* ============================================================
    INTEGRATION WITH EXISTING MOB AI
    ============================================================ */
 
-const r220BasePathToAdjacent=pathToAdjacent;
-pathToAdjacent=function(start,target,mover){
+const r220BasePathToAdjacent=AdventurePartyCombatServices.current('pathToAdjacent');
+AdventurePartyCombatServices.register('pathToAdjacent','r220-mob-hazard-awareness.js:1124:pathToAdjacent',function(start,target,mover){
   if(mover?.controller!=="mob"){
     return r220BasePathToAdjacent(start,target,mover);
   }
@@ -1132,10 +1132,10 @@ pathToAdjacent=function(start,target,mover){
   }
 
   return r220WeightedPathToAdjacent(mover,target,point);
-};
+});
 
-const r220BasePathToClosestReachable=pathToClosestReachable;
-pathToClosestReachable=function(start,target,mover,maxSteps){
+const r220BasePathToClosestReachable=AdventurePartyCombatServices.current('pathToClosestReachable');
+AdventurePartyCombatServices.register('pathToClosestReachable','r220-mob-hazard-awareness.js:1138:pathToClosestReachable',function(start,target,mover,maxSteps){
   if(mover?.controller!=="mob"){
     return r220BasePathToClosestReachable(
       start,
@@ -1150,10 +1150,10 @@ pathToClosestReachable=function(start,target,mover,maxSteps){
     target,
     Math.max(0,Number(maxSteps)||0)
   );
-};
+});
 
-const r220BaseCanMeleeAttackTarget=canMeleeAttackTarget;
-canMeleeAttackTarget=function(attacker,target){
+const r220BaseCanMeleeAttackTarget=AdventurePartyCombatServices.current('canMeleeAttackTarget');
+AdventurePartyCombatServices.register('canMeleeAttackTarget','r220-mob-hazard-awareness.js:1156:canMeleeAttackTarget',function(attacker,target){
   if(
     attacker?.controller==="mob" &&
     target &&
@@ -1168,9 +1168,9 @@ canMeleeAttackTarget=function(attacker,target){
   }
 
   return r220BaseCanMeleeAttackTarget(attacker,target);
-};
+});
 
-selectMobPartyTarget=function(mob){
+AdventurePartyCombatServices.register('selectMobPartyTarget','r220-mob-hazard-awareness.js:1173:selectMobPartyTarget',function(mob){
   r220RefreshCurrentCellHazardExperience(mob);
 
   const known=r220KnownTargetEntries(mob)
@@ -1220,7 +1220,7 @@ selectMobPartyTarget=function(mob){
     memoryPursuit:!known[0].visible,
     knownPoint:{x:known[0].x,y:known[0].y}
   };
-};
+});
 
 function r220KnownObservationPoints(entry){
   const center={x:entry.x,y:entry.y};
@@ -1282,10 +1282,9 @@ function r220RangedLaneToKnownPoint(unit,source,entry){
   return null;
 }
 
-const r220BasePathToNearestRangedFiringHex=
-  pathToNearestRangedFiringHex;
+const r220BasePathToNearestRangedFiringHex=AdventurePartyCombatServices.current('pathToNearestRangedFiringHex');
 
-pathToNearestRangedFiringHex=function(unit,{avoidThreatened=true}={}){
+AdventurePartyCombatServices.register('pathToNearestRangedFiringHex','r220-mob-hazard-awareness.js:1288:pathToNearestRangedFiringHex',function(unit,{avoidThreatened=true}={}){
   if(unit?.controller!=="mob"){
     return r220BasePathToNearestRangedFiringHex(
       unit,
@@ -1355,10 +1354,10 @@ pathToNearestRangedFiringHex=function(unit,{avoidThreatened=true}={}){
     ),
     memoryWatch:!matched.visible
   };
-};
+});
 
-const r220BaseRangedRetreatStep=rangedRetreatStep;
-rangedRetreatStep=function(unit,threat){
+const r220BaseRangedRetreatStep=AdventurePartyCombatServices.current('rangedRetreatStep');
+AdventurePartyCombatServices.register('rangedRetreatStep','r220-mob-hazard-awareness.js:1361:rangedRetreatStep',function(unit,threat){
   if(unit?.controller!=="mob"){
     return r220BaseRangedRetreatStep(unit,threat);
   }
@@ -1384,10 +1383,10 @@ rangedRetreatStep=function(unit,threat){
     );
 
   return options[0] || null;
-};
+});
 
-const r220BaseFleeStep=fleeStep;
-fleeStep=function(unit,threat){
+const r220BaseFleeStep=AdventurePartyCombatServices.current('fleeStep');
+AdventurePartyCombatServices.register('fleeStep','r220-mob-hazard-awareness.js:1390:fleeStep',function(unit,threat){
   if(unit?.controller!=="mob"){
     return r220BaseFleeStep(unit,threat);
   }
@@ -1439,11 +1438,11 @@ fleeStep=function(unit,threat){
     );
 
   return options[0] || null;
-};
+});
 
 
 /* A dragon only plans breath attacks from targets it can currently perceive. */
-bestDragonBreathPlan=function(dragon){
+AdventurePartyCombatServices.register('bestDragonBreathPlan','r220-mob-hazard-awareness.js:1446:bestDragonBreathPlan',function(dragon){
   if(!dragonBreathReady(dragon)) return null;
 
   const party=livingPartyMembers()
@@ -1492,15 +1491,15 @@ bestDragonBreathPlan=function(dragon){
   );
 
   return plans[0] || null;
-};
+});
 
 
 /* ============================================================
    EXPERIENCE / OBSERVATIONAL LEARNING
    ============================================================ */
 
-const r220BaseResolvePersistentAreaSave=resolvePersistentAreaSave;
-resolvePersistentAreaSave=async function(
+const r220BaseResolvePersistentAreaSave=AdventurePartyCombatServices.current('resolvePersistentAreaSave');
+AdventurePartyCombatServices.register('resolvePersistentAreaSave','r220-mob-hazard-awareness.js:1503:resolvePersistentAreaSave',async function(
   unit,
   effect,
   options={}
@@ -1526,7 +1525,7 @@ resolvePersistentAreaSave=async function(
   );
 
   return result;
-};
+});
 
 
 /* Public debug/introspection hook for later hazard additions. */

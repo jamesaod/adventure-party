@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
@@ -6,7 +7,7 @@ import { SPRITE_LAYOUTS, spriteLayout, spriteMob } from "../js/sprite-layouts.mj
 
 // Exercise the production pose resolver and draw path without booting audio,
 // terrain, or the DOM. Images and the clock are the only inputs replaced here.
-const source = fs.readFileSync(new URL("../js/adventure-party.js", import.meta.url), "utf8");
+const source = readCombatFixture(new URL("../js/adventure-party.js", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 function productionFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function: ${name}`);
@@ -171,7 +172,7 @@ assert.equal(sandbox.runtimeAnchorForAsset("legacy").y, 1);
 // The later R221 script replaces drawKobold and the asset mapper in the real
 // page. Run its production prone adapter too: sleep/prone must not squash a
 // directional ready frame into the old 35x18 prone image's dimensions.
-const proneAdapter = fs.readFileSync(new URL("../js/r221-prone-cloud-shapes.js", import.meta.url), "utf8");
+const proneAdapter = readCombatFixture(new URL("../js/r221-prone-cloud-shapes.js", import.meta.url), "utf8");
 const cloudStart = proneAdapter.indexOf("\nfunction r221FogCellKey(");
 assert.ok(cloudStart > 0, "Missing R221 prone/cloud boundary");
 vm.runInContext(proneAdapter.slice(0, cloudStart), sandbox);
@@ -428,10 +429,10 @@ for (const type of ["fighter", "ranger", "mage"]) {
 // The published Carl package must bind in ordinary combat without selecting a
 // studio encounter. A declared but unavailable default retains legacy art;
 // it must not silently adopt an unrelated alphabetically earlier package.
-const repositoryIndex = JSON.parse(fs.readFileSync(new URL("../data/sprite-sets.json", import.meta.url), "utf8"));
+const repositoryIndex = JSON.parse(readCombatFixture(new URL("../data/sprite-sets.json", import.meta.url), "utf8"));
 const carlBinding = repositoryIndex.sets.find(entry => entry.defaultFor === "fighter");
 assert.ok(carlBinding, "Carl needs an explicit repository sprite assignment");
-const carlManifest = validateSpriteSetManifest(JSON.parse(fs.readFileSync(new URL(`../${carlBinding.manifest}`, import.meta.url), "utf8")));
+const carlManifest = validateSpriteSetManifest(JSON.parse(readCombatFixture(new URL(`../${carlBinding.manifest}`, import.meta.url), "utf8")));
 assert.equal(carlManifest.mobType, "fighter");
 const carlImages = {}, carlUrls = {};
 for (const pose of carlManifest.sheet.poses) for (const facing of SPRITE_DIRECTIONS) {
@@ -477,7 +478,7 @@ assert.deepEqual(monster, { type: "orc", faction: "enemy" }, "Player imports do 
 // Exercise the actual mouse/Enter routes and runtime startup, with controllable
 // network/decode completion. Factories must run only after all optional art and
 // the requested draft have settled, and a cancelled start must stay cancelled.
-const runtimeSource = fs.readFileSync(new URL("../js/sprite-set-runtime.mjs", import.meta.url), "utf8");
+const runtimeSource = readCombatFixture(new URL("../js/sprite-set-runtime.mjs", import.meta.url), "utf8");
 function runtimeFunction(name) {
   const start = runtimeSource.indexOf(`function ${name}(`);
   const end = runtimeSource.indexOf("\n}", start);
@@ -557,7 +558,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
       "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);
-  const sharedSource=fs.readFileSync(new URL('../js/combat-runtime.js',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
+  const sharedSource=readCombatFixture(new URL('../js/combat-runtime.js',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
   vm.runInContext('let combatSessionGeneration=0,combatFirTreesLoading=Promise.resolve(); function initializeFirMovementObstacles(){}\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
   context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
   context.api = {

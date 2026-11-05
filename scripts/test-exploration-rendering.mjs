@@ -1,9 +1,10 @@
+import {extractCombatFunction} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import * as sceneApi from '../js/exploration-encounters.mjs';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
-const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfunction flashAttack('));
+const draw=extractCombatFunction(source,'draw');
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
@@ -42,11 +43,11 @@ context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equa
 const image={complete:true,naturalWidth:1024,naturalHeight:1024};
 const tile=context.explorationMaterialTile(image);assert.equal(tile.width,512);assert.deepEqual(reductions,[[512,512]]);
 assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reductions.length,1,'Reuse filtered texture rather than rebuilding it per frame');
-const shadows=source.slice(source.indexOf('function drawArchitecturalWallShadows(){'),source.indexOf('\nfunction closestPointOnWorldSegment('));
+const shadows=extractCombatFunction(source,'drawArchitecturalWallShadows');
 vm.runInNewContext(shadows+'\ndrawArchitecturalWallShadows();',{explorationTerrain:{},architecturalWalls:[{}]});
 console.log('PASS wall-edge mask uses room LOS polygons, cached texture prefilter and no indoor test-sun shadows');
 
-const waitCode=source.slice(source.indexOf('async function waitForCombatUnitRenders('),source.indexOf('\nfunction combatRenderingPanel('));
+const waitCode=extractCombatFunction(source,'waitForCombatUnitRenders');
 const waitContext={};vm.createContext(waitContext);vm.runInContext(waitCode,waitContext);
 let playerReady,enemyReady,finished=false;
 const player={appearanceRefreshPromise:new Promise(r=>{playerReady=r;})},enemy={appearanceRefreshPromise:new Promise(r=>{enemyReady=r;})};

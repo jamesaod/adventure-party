@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 const root=new URL('../',import.meta.url);
 const folder='assets/models/orcs/male-orc/';
-const raw=fs.readFileSync(new URL(folder+'male-orc.glb',root));
-const meta=JSON.parse(fs.readFileSync(new URL(folder+'male-orc.json',root)));
+const raw=readCombatFixture(new URL(folder+'male-orc.glb',root));
+const meta=JSON.parse(readCombatFixture(new URL(folder+'male-orc.json',root)));
 const sha=data=>createHash('sha256').update(data).digest('hex');
 assert.equal(sha(raw),meta.sha256);assert.equal(raw.length,meta.bytes);
 assert.equal(raw.toString('ascii',0,4),'glTF');assert.equal(raw.readUInt32LE(8),raw.length);
@@ -17,7 +18,7 @@ assert.equal(doc.images.length,1);const view=doc.bufferViews[doc.images[0].buffe
 const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),2048);assert.equal(png.readUInt32BE(20),2048);
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root)));
 assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'male-orc.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');
@@ -32,7 +33,7 @@ assert.equal(catalog.models.find(model=>model.mobType==='orc').id,'male-orc-figh
 const {default:vm}=await import('node:vm');
 const {studioWeapon,normalizeEquipment,STUDIO_WEAPONS}=await import('../js/studio-equipment.mjs');
 assert.equal(entry.label,'Orc, Male, Uniformed');
-const studio=fs.readFileSync(new URL('js/3d-studio.mjs',root),'utf8');
+const studio=readCombatFixture(new URL('js/3d-studio.mjs',root),'utf8');
 const parser=studio.slice(studio.indexOf('      const profileIds = entry.weaponAttachmentProfileIds'),studio.indexOf('      ids.add(entry.id);'));
 const profiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
 const model={...entry,weaponAttachmentProfiles:profiles};

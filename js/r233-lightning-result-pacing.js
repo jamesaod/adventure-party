@@ -5,7 +5,7 @@
   exposure individually after the shared continuous discharge.
 */
 
-r226CastLightningBolt=async function(action,targetHex){
+AdventurePartyCombatServices.register('r226CastLightningBolt','r233-lightning-result-pacing.js:8:r226CastLightningBolt',async function(action,targetHex){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("lightning-bolt");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -249,4 +249,4 @@ r226CastLightningBolt=async function(action,targetHex){
   );
 
   return true;
-};
+});

@@ -280,10 +280,9 @@ function r232DrawLightningTraceFx(fx){
 }
 
 
-const r232BaseDrawLineFx=
-  r226DrawLineFx;
+const r232BaseDrawLineFx=AdventurePartyCombatServices.current('r226DrawLineFx');
 
-r226DrawLineFx=function(fx,kind){
+AdventurePartyCombatServices.register('r226DrawLineFx','r232-lightning-reflection-cast.js:286:r226DrawLineFx',function(fx,kind){
   if(
     kind==="lightning" &&
     fx?.r232Trace
@@ -296,14 +295,14 @@ r226DrawLineFx=function(fx,kind){
     fx,
     kind
   );
-};
+});
 
 
 /* ============================================================
    LIGHTNING BOLT RESOLUTION
    ============================================================ */
 
-r226CastLightningBolt=async function(
+AdventurePartyCombatServices.register('r226CastLightningBolt','r232-lightning-reflection-cast.js:306:r226CastLightningBolt',async function(
   action,
   targetHex
 ){
@@ -553,17 +552,16 @@ r226CastLightningBolt=async function(
   );
 
   return true;
-};
+});
 
 
 /* ============================================================
    AIM PREVIEW USES THE SAME REFLECTED RAY
    ============================================================ */
 
-const r232BaseAimAreaPreviewForAction=
-  aimAreaPreviewForAction;
+const r232BaseAimAreaPreviewForAction=AdventurePartyCombatServices.current('aimAreaPreviewForAction');
 
-aimAreaPreviewForAction=function(
+AdventurePartyCombatServices.register('aimAreaPreviewForAction','r232-lightning-reflection-cast.js:566:aimAreaPreviewForAction',function(
   action,
   targetHex
 ){
@@ -629,7 +627,7 @@ aimAreaPreviewForAction=function(
       friendlyIds.size,
     lightningTrace:trace
   };
-};
+});
 
 
 if(window.AdventurePartyLevel3Spells){

@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CAMERA_ELEVATION, HEX_FACINGS } from '../js/studio-core.mjs';
@@ -12,7 +13,7 @@ const close = (actual, expected, message) => assert.ok(Math.abs(actual - expecte
 const combatVertices = [[0, -21], [32, -10.5], [32, 10.5], [0, 21], [-32, 10.5], [-32, -10.5]];
 
 // Calibrate against the actual game, not imported FBX/glTF unit conventions.
-const game = fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
+const game = readCombatFixture(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
 assert.equal(STUDIO_FEET_PER_HEX, Number(game.match(/const TACTICAL_FEET_PER_HEX=(\d+);/)[1]));
 assert.equal(Number(game.match(/const HEX_W=(\d+);/)[1]), 64);
 assert.equal(STUDIO_HEIGHT_RULER_FEET, 75);
@@ -104,15 +105,15 @@ assert.throws(() => studioLightPosition('E', 45, 0), /distance/);
 // Exercise the actual off-scene bounds helper: updateWorldMatrix alone skips
 // SkinnedMesh's bind-inverse refresh and incorrectly squares a parent's scale.
 // A data URL lets CI's Node 20 read the bundled ESM without a package.json type.
-const threeSource = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
+const threeSource = readCombatFixture(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const threeModuleUrl = `data:text/javascript;base64,${threeSource.toString('base64')}`;
 const THREE = await import(threeModuleUrl);
-const studioSource = fs.readFileSync(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
+const studioSource = readCombatFixture(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
 
 // Exercise the production camera adjustment against the bundled camera and
 // OrbitControls: model points must retain their screen positions and depth,
 // including an already-panned/zoomed view and pending movement inertia.
-const controlsSource = fs.readFileSync(new URL('../assets/vendor/three/addons/controls/OrbitControls.js', import.meta.url), 'utf8')
+const controlsSource = readCombatFixture(new URL('../assets/vendor/three/addons/controls/OrbitControls.js', import.meta.url), 'utf8')
   .replace("from 'three'", `from '${threeModuleUrl}'`);
 const { OrbitControls } = await import(`data:text/javascript;base64,${Buffer.from(controlsSource).toString('base64')}`);
 const rescaleSource = studioSource.match(/function rescaleModelView\([^\n]*\) \{[\s\S]*?\n\}/)?.[0];

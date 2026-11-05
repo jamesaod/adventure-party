@@ -16,8 +16,8 @@ function r226CleanupRadiusInvisibility(){
   }
 }
 
-const r226BaseBreakInvisibility=breakInvisibility;
-breakInvisibility=function(unit,reason="hostile action"){
+const r226BaseBreakInvisibility=AdventurePartyCombatServices.current('breakInvisibility');
+AdventurePartyCombatServices.register('breakInvisibility','r226-level3-casts-a.js:20:breakInvisibility',function(unit,reason="hostile action"){
   const invis=getUnitEffect(unit,"invisibility");
   const radiusSourceId=invis?.data?.radiusSourceUnitId;
 
@@ -35,7 +35,7 @@ breakInvisibility=function(unit,reason="hostile action"){
   }
 
   return r226BaseBreakInvisibility(unit,reason);
-};
+});
 
 
 /* ============================================================

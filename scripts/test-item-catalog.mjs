@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -18,7 +19,7 @@ assert.deepEqual(twoHanded.appearance.secondaryGrip,[0,0.95,0]);
 assert.equal(twoHanded.appearance.nativeScale,0.78);
 assert.equal(twoHanded.appearance.source.originalBytes,646456);
 assert.equal(twoHanded.appearance.source.originalSha256,'85408b9b17fa38a72816d57ac55e63e6409862b5d5a305beb6cf5eee045c948a');
-const twoHandedBytes=fs.readFileSync(new URL('../'+twoHanded.appearance.asset,import.meta.url));
+const twoHandedBytes=readCombatFixture(new URL('../'+twoHanded.appearance.asset,import.meta.url));
 assert.equal(twoHandedBytes.length,646456);
 assert.equal(crypto.createHash('sha256').update(twoHandedBytes).digest('hex'),twoHanded.appearance.source.originalSha256);
 assert.equal(twoHandedBytes.readUInt32LE(0),0x46546c67);
@@ -61,7 +62,7 @@ assert.equal(shield.appearance.source.originalSha256,'4a0bad4a77b3e5a086576b00e8
 assert.equal(shield.appearance.source.vertices,5648);
 assert.equal(shield.appearance.source.triangles,8478);
 
-const bytes=fs.readFileSync(new URL('../'+shield.appearance.asset,import.meta.url));
+const bytes=readCombatFixture(new URL('../'+shield.appearance.asset,import.meta.url));
 assert.equal(bytes.length,781832);
 assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
   '4a0bad4a77b3e5a086576b00e8890ef5f0c2417ea423559ef7196acd8a488928');
@@ -87,7 +88,7 @@ assert.ok(json.images.every(image=>image.mimeType==='image/jpeg'&&Number.isInteg
 assert.deepEqual(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].min,[-0.4998169541358948,0,-0.12459565699100494]);
 assert.deepEqual(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].max,[0.4998169541358948,1,0.12459565699100494]);
 
-const game=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const game=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 assert.ok(game.includes('fighter:76'));
 assert.ok(game.includes('heightInches:76'));
 assert.ok(game.includes('f.heightInches=76'));

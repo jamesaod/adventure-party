@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
 const root=new URL('../',import.meta.url);
 const source='assets/models/humans/woman-warrior/woman-warrior.glb';

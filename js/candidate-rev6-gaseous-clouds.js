@@ -100,10 +100,9 @@ function candidateGasFormationClipForCell(
 }
 
 
-const candidateRev6BaseAddAreaEffect=
-  addAreaEffect;
+const candidateRev6BaseAddAreaEffect=AdventurePartyCombatServices.current('addAreaEffect');
 
-addAreaEffect=function(effect){
+AdventurePartyCombatServices.register('addAreaEffect','candidate-rev6-gaseous-clouds.js:106:addAreaEffect',function(effect){
   if(candidateIsGaseousAreaEffect(effect)){
     /*
       R217 already treats fog as obscuring unless explicitly false. Make that
@@ -130,17 +129,16 @@ addAreaEffect=function(effect){
   return candidateRev6BaseAddAreaEffect(
     effect
   );
-};
+});
 
 
 /* ============================================================
    BOTTOM-UP CLOUD FORMATION
    ============================================================ */
 
-const candidateRev6BaseDrawFogVolumeCell=
-  drawFogVolumeCell;
+const candidateRev6BaseDrawFogVolumeCell=AdventurePartyCombatServices.current('drawFogVolumeCell');
 
-drawFogVolumeCell=function(
+AdventurePartyCombatServices.register('drawFogVolumeCell','candidate-rev6-gaseous-clouds.js:143:drawFogVolumeCell',function(
   cell,
   effect=null
 ){
@@ -179,13 +177,12 @@ drawFogVolumeCell=function(
   );
 
   ctx.restore();
-};
+});
 
 
-const candidateRev6BaseDrawFogEffectOutline=
-  drawFogEffectOutline;
+const candidateRev6BaseDrawFogEffectOutline=AdventurePartyCombatServices.current('drawFogEffectOutline');
 
-drawFogEffectOutline=function(effect){
+AdventurePartyCombatServices.register('drawFogEffectOutline','candidate-rev6-gaseous-clouds.js:188:drawFogEffectOutline',function(effect){
   if(
     !candidateIsGaseousAreaEffect(effect) ||
     !Array.isArray(effect.cells) ||
@@ -276,7 +273,7 @@ drawFogEffectOutline=function(effect){
   );
 
   ctx.restore();
-};
+});
 
 
 /* ============================================================

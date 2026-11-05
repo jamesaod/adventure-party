@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
 import {combatProjection,triangulateSurfaces,createCombatRenderer} from '../js/combat-webgl.mjs';
 import {solidPrism} from '../js/exploration-combat-geometry.mjs';

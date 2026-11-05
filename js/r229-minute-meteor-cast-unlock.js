@@ -47,8 +47,8 @@ function r229ClearStoredMeteorCastLock(caster,reason="stored Minute Meteor relea
    UI: STORED METEORS MAY ENABLE CAST WITHOUT FIRST ATTACKING
    ============================================================ */
 
-const r229BaseUpdateUi=updateUi;
-updateUi=function(){
+const r229BaseUpdateUi=AdventurePartyCombatServices.current('updateUi');
+AdventurePartyCombatServices.register('updateUi','r229-minute-meteor-cast-unlock.js:51:updateUi',function(){
   r229BaseUpdateUi();
 
   const caster=activePlayerControlledUnit();
@@ -83,15 +83,15 @@ updateUi=function(){
         : `Cast menu; ${remaining} stored Minute Meteors ready to release`
     );
   }
-};
+});
 
 
 /* ============================================================
    OPEN CAST MENU: CLEAR ONLY THE STALE LOCK FOR STORED METEORS
    ============================================================ */
 
-const r229BaseOpenSpellCastOverlay=openSpellCastOverlay;
-openSpellCastOverlay=function(){
+const r229BaseOpenSpellCastOverlay=AdventurePartyCombatServices.current('openSpellCastOverlay');
+AdventurePartyCombatServices.register('openSpellCastOverlay','r229-minute-meteor-cast-unlock.js:94:openSpellCastOverlay',function(){
   const caster=activePlayerControlledUnit();
 
   if(
@@ -106,15 +106,15 @@ openSpellCastOverlay=function(){
   }
 
   return r229BaseOpenSpellCastOverlay();
-};
+});
 
 
 /* ============================================================
    TURN START: NORMALIZE BEFORE THE PLAYER RECEIVES CONTROL
    ============================================================ */
 
-const r229BaseHandleTurnControlEffects=handleTurnControlEffects;
-handleTurnControlEffects=async function(actor){
+const r229BaseHandleTurnControlEffects=AdventurePartyCombatServices.current('handleTurnControlEffects');
+AdventurePartyCombatServices.register('handleTurnControlEffects','r229-minute-meteor-cast-unlock.js:117:handleTurnControlEffects',async function(actor){
   const handled=await r229BaseHandleTurnControlEffects(actor);
   if(handled) return true;
 
@@ -132,7 +132,7 @@ handleTurnControlEffects=async function(actor){
   }
 
   return false;
-};
+});
 
 
 /* ============================================================

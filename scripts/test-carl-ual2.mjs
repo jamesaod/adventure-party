@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -5,14 +6,14 @@ import { STUDIO_WEAPONS, normalizeEquipment, findRightHand, createWeaponAttachme
 
 // Validate the shipped proof against the actual original Carl, independently of
 // the optional offline retargeter and without requiring the uploaded library.
-const core = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
+const core = readCombatFixture(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${core.toString('base64')}`);
 const root = new URL('../', import.meta.url);
 const originalPath = 'assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb';
 const proofPath = 'assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
 
 function readGlb(path) {
-  const bytes = fs.readFileSync(new URL(path, root));
+  const bytes = readCombatFixture(new URL(path, root));
   assert.equal(bytes.readUInt32LE(0), 0x46546c67, 'GLB magic');
   assert.equal(bytes.readUInt32LE(4), 2, 'glTF 2');
   assert.equal(bytes.readUInt32LE(8), bytes.length, 'Complete file');
@@ -49,7 +50,7 @@ function readGlb(path) {
 }
 
 const original = readGlb(originalPath), proof = readGlb(proofPath);
-const provenance = JSON.parse(fs.readFileSync(new URL(
+const provenance = JSON.parse(readCombatFixture(new URL(
   'assets/models/dungeon-crawler-carl/v2-ual2-sword-test/provenance.json', root)));
 assert.equal(crypto.createHash('sha256').update(proof.bytes).digest('hex'), provenance.output.sha256,
   'The shipped model matches its recorded generation result');
@@ -67,14 +68,14 @@ assert.ok(proof.binary.subarray(0, original.json.buffers[0].byteLength)
 assert.deepEqual(proof.json.animations.slice(2), original.json.animations, 'All original takes retained verbatim');
 assert.deepEqual(proof.json.animations.slice(0, 2).map(a => a.name), ['UAL2_Sword_Ready', 'UAL2_Sword_Regular_A']);
 
-const catalog = JSON.parse(fs.readFileSync(new URL('data/studio-models.json', root)));
+const catalog = JSON.parse(readCombatFixture(new URL('data/studio-models.json', root)));
 const entries = catalog.models.filter(m => m.id === 'dungeon-crawler-carl-v2-ual2-sword-test');
 assert.equal(entries.length, 1);
 assert.equal(entries[0].file, proofPath);
 assert.equal(entries[0].upAxis, 'Y');
 assert.equal(entries[0].mobType, 'fighter');
 assert.equal(catalog.models.find(m => m.id === 'dungeon-crawler-carl-v2')?.file, originalPath);
-const binding = JSON.parse(fs.readFileSync(new URL('data/sprite-sets.json', root)));
+const binding = JSON.parse(readCombatFixture(new URL('data/sprite-sets.json', root)));
 const defaults = binding.sets.filter(s => s.defaultFor === 'fighter');
 assert.equal(defaults.length, 1);
 assert.equal(defaults[0].id, 'dungeon-crawler-carl',

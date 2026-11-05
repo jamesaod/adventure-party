@@ -23,10 +23,10 @@
 */
 let r218AttackPresentationUntil=0;
 
-const r218BaseTriggerUnitAttackPose=triggerUnitAttackPose;
-const r218BaseCombatActionPauseRemaining=combatActionPauseRemaining;
+const r218BaseTriggerUnitAttackPose=AdventurePartyCombatServices.current('triggerUnitAttackPose');
+const r218BaseCombatActionPauseRemaining=AdventurePartyCombatServices.current('combatActionPauseRemaining');
 
-triggerUnitAttackPose=function(unit){
+AdventurePartyCombatServices.register('triggerUnitAttackPose','r218-presentation-audio.js:29:triggerUnitAttackPose',function(unit){
   const triggered=r218BaseTriggerUnitAttackPose(unit);
   if(!triggered) return false;
 
@@ -42,9 +42,9 @@ triggerUnitAttackPose=function(unit){
   );
 
   return true;
-};
+});
 
-combatActionPauseRemaining=function(){
+AdventurePartyCombatServices.register('combatActionPauseRemaining','r218-presentation-audio.js:47:combatActionPauseRemaining',function(){
   const existingPause=r218BaseCombatActionPauseRemaining();
   const attackPause=Math.max(
     0,
@@ -52,14 +52,14 @@ combatActionPauseRemaining=function(){
   );
 
   return Math.max(existingPause,attackPause);
-};
+});
 
 /* Disable the title MIDI-derived music path without disturbing shared SFX. */
-const r218StopLegacyTitleMusic=stopTitleMusic;
+const r218StopLegacyTitleMusic=AdventurePartyCombatServices.current('stopTitleMusic');
 
 titleEvents.length=0;
 
-stopTitleMusic=function(){
+AdventurePartyCombatServices.register('stopTitleMusic','r218-presentation-audio.js:62:stopTitleMusic',function(){
   /*
     Preserve the old cleanup once, so any already-scheduled oscillators/timers
     are stopped safely if this file is hot-reloaded during development.
@@ -67,18 +67,18 @@ stopTitleMusic=function(){
   r218StopLegacyTitleMusic();
   musicPlaying=false;
   updateAudioIndicators();
-};
+});
 
-startTitleMusic=function(){
+AdventurePartyCombatServices.register('startTitleMusic','r218-presentation-audio.js:72:startTitleMusic',function(){
   /*
     Intentionally disabled in R218. Keep the callable compatibility surface so
     screen routing and audio-unlock code do not need a parallel special case.
   */
   musicPlaying=false;
   updateAudioIndicators();
-};
+});
 
-drawFogVolumeCell=function(cell,effect=null){
+AdventurePartyCombatServices.register('drawFogVolumeCell','r218-presentation-audio.js:81:drawFogVolumeCell',function(cell,effect=null){
   if(
     !cell ||
     !inside(cell.x,cell.y) ||
@@ -217,4 +217,4 @@ drawFogVolumeCell=function(cell,effect=null){
   ctx.stroke();
 
   ctx.restore();
-};
+});

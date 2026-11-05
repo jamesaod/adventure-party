@@ -1,6 +1,7 @@
+import {extractCombatFunction} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {terrainForEncounter,doorwayCrossings,closedDoorsInReach,combatDoorPresentation,combatDoorFrame} from '../js/exploration-encounters.mjs';
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const names=['worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','isArchitecturalBlockedHex','architecturalWallBlocksWorldLine','architecturalWallBlocksStep'];
@@ -32,12 +33,12 @@ const env={game:{active:'player',over:false},activePlayerControlledUnit:()=>play
  isWall:()=>false,architecturalWallBlocksStep:()=>false,enemyAtHex:()=>null,occupiedByAnyUnit:()=>false,unitTransitionBlocked:()=>false,
  log:m=>logs.push(m),performLeavingHexFreeAttacks:async()=>{calls.push('leave');return true;},updateFacingForStep:noop,setUnitActionBanner:noop,maybeRecenterCamera:noop,playMoveSound:noop,updateUi:noop,draw:noop,
  resolvePersistentAreaMovementStep:async()=>{calls.push('area');return {haltMovement:false};},triggerMobGuardsAgainst:async()=>calls.push('guard'),endTurn:noop};
-vm.createContext(env);const start=source.indexOf('async function tryPlayerMove('),end=source.indexOf('\nasync function playerAttackKey(',start);vm.runInContext(source.slice(start,end),env);
+vm.createContext(env);const start=source.indexOf('async function tryPlayerMove('),end=source.indexOf('\nasync function playerAttackKey(',start);vm.runInContext(extractCombatFunction(source,'tryPlayerMove'),env);
 await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,1);assert.equal(player.x,front.x+1);assert.deepEqual(calls,['leave','area','guard']);
 Object.assign(player,{...front,turnMoves:5,move:5,fullMove:true});await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,5);assert.equal(player.x,front.x);assert(logs.at(-1).includes('Not enough movement'));
 Object.assign(player,{turnMoves:0,move:10,fullMove:false});env.architecturalWallBlocksStep=()=>true;await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,0,'Closed doors and walls still reject normal movement');env.architecturalWallBlocksStep=()=>false;
 const awareness=readFileSync(new URL('../js/r220-mob-hazard-awareness.js',import.meta.url),'utf8'),wrapperStart=awareness.indexOf('const r220BaseTryPlayerMove='),wrapperEnd=awareness.indexOf('const r220BasePathToAdjacent=',wrapperStart);
-let observations=0;env.r220ObserveVisibleTargetsForAllMobs=()=>observations++;vm.runInContext(awareness.slice(wrapperStart,wrapperEnd),env);await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,1);assert.equal(observations,2);
+let observations=0;env.r220ObserveVisibleTargetsForAllMobs=()=>observations++;vm.runInContext(readFileSync(new URL('../js/combat-services.js',import.meta.url),'utf8'),env);vm.runInContext(awareness.slice(wrapperStart,wrapperEnd),env);await env.tryPlayerMove(1,0);assert.equal(player.turnMoves,1);assert.equal(observations,2);
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');assert(!html.includes('id="doorCrossingButton"'),'There is no separate crossing button');
 console.log('PASS normal one-point movement, closed-wall/budget checks and unchanged reaction/area/awareness pipeline');
 

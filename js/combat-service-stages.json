@@ -1,0 +1,797 @@
+{
+  "format": 1,
+  "stages": [
+    {
+      "service": "triggerUnitAttackPose",
+      "stage": "r218-presentation-audio.js:29:triggerUnitAttackPose"
+    },
+    {
+      "service": "combatActionPauseRemaining",
+      "stage": "r218-presentation-audio.js:47:combatActionPauseRemaining"
+    },
+    {
+      "service": "stopTitleMusic",
+      "stage": "r218-presentation-audio.js:62:stopTitleMusic"
+    },
+    {
+      "service": "startTitleMusic",
+      "stage": "r218-presentation-audio.js:72:startTitleMusic"
+    },
+    {
+      "service": "drawFogVolumeCell",
+      "stage": "r218-presentation-audio.js:81:drawFogVolumeCell"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "r219-combat-presentation.js:37:addUnitEffect"
+    },
+    {
+      "service": "presentPersistentAreaSave",
+      "stage": "r219-combat-presentation.js:49:presentPersistentAreaSave"
+    },
+    {
+      "service": "presentPersistentAreaFailure",
+      "stage": "r219-combat-presentation.js:60:presentPersistentAreaFailure"
+    },
+    {
+      "service": "applySpellDamage",
+      "stage": "r219-combat-presentation.js:70:applySpellDamage"
+    },
+    {
+      "service": "showAreaEffectUnitResolution",
+      "stage": "r219-combat-presentation.js:83:showAreaEffectUnitResolution"
+    },
+    {
+      "service": "animateMagicEffectOnUnits",
+      "stage": "r219-combat-presentation.js:95:animateMagicEffectOnUnits"
+    },
+    {
+      "service": "animateEntitySteps",
+      "stage": "r219-combat-presentation.js:174:animateEntitySteps"
+    },
+    {
+      "service": "animateMobAlongPath",
+      "stage": "r219-combat-presentation.js:370:animateMobAlongPath"
+    },
+    {
+      "service": "drawFogVolumeCell",
+      "stage": "r219-combat-presentation.js:478:drawFogVolumeCell"
+    },
+    {
+      "service": "makeKobold",
+      "stage": "r220-mob-hazard-awareness.js:579:makeKobold"
+    },
+    {
+      "service": "makeKoboldBodyguard",
+      "stage": "r220-mob-hazard-awareness.js:587:makeKoboldBodyguard"
+    },
+    {
+      "service": "makeKoboldSlinger",
+      "stage": "r220-mob-hazard-awareness.js:595:makeKoboldSlinger"
+    },
+    {
+      "service": "makeOrc",
+      "stage": "r220-mob-hazard-awareness.js:603:makeOrc"
+    },
+    {
+      "service": "makeLargeMobTest",
+      "stage": "r220-mob-hazard-awareness.js:611:makeLargeMobTest"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "r220-mob-hazard-awareness.js:1065:addAreaEffect"
+    },
+    {
+      "service": "tryPlayerMove",
+      "stage": "r220-mob-hazard-awareness.js:1111:tryPlayerMove"
+    },
+    {
+      "service": "pathToAdjacent",
+      "stage": "r220-mob-hazard-awareness.js:1124:pathToAdjacent"
+    },
+    {
+      "service": "pathToClosestReachable",
+      "stage": "r220-mob-hazard-awareness.js:1138:pathToClosestReachable"
+    },
+    {
+      "service": "canMeleeAttackTarget",
+      "stage": "r220-mob-hazard-awareness.js:1156:canMeleeAttackTarget"
+    },
+    {
+      "service": "selectMobPartyTarget",
+      "stage": "r220-mob-hazard-awareness.js:1173:selectMobPartyTarget"
+    },
+    {
+      "service": "pathToNearestRangedFiringHex",
+      "stage": "r220-mob-hazard-awareness.js:1288:pathToNearestRangedFiringHex"
+    },
+    {
+      "service": "rangedRetreatStep",
+      "stage": "r220-mob-hazard-awareness.js:1361:rangedRetreatStep"
+    },
+    {
+      "service": "fleeStep",
+      "stage": "r220-mob-hazard-awareness.js:1390:fleeStep"
+    },
+    {
+      "service": "bestDragonBreathPlan",
+      "stage": "r220-mob-hazard-awareness.js:1446:bestDragonBreathPlan"
+    },
+    {
+      "service": "resolvePersistentAreaSave",
+      "stage": "r220-mob-hazard-awareness.js:1503:resolvePersistentAreaSave"
+    },
+    {
+      "service": "pixelAssetIdForUnitPose",
+      "stage": "r221-prone-cloud-shapes.js:27:pixelAssetIdForUnitPose"
+    },
+    {
+      "service": "shouldUseKoboldPronePose",
+      "stage": "r221-prone-cloud-shapes.js:60:shouldUseKoboldPronePose"
+    },
+    {
+      "service": "drawKobold",
+      "stage": "r221-prone-cloud-shapes.js:66:drawKobold"
+    },
+    {
+      "service": "drawFogVolumeCell",
+      "stage": "r221-prone-cloud-shapes.js:655:drawFogVolumeCell"
+    },
+    {
+      "service": "drawFogEffectOutline",
+      "stage": "r221-prone-cloud-shapes.js:819:drawFogEffectOutline"
+    },
+    {
+      "service": "hostileCombatantsFor",
+      "stage": "r222-perception-darkness-volume.js:184:hostileCombatantsFor"
+    },
+    {
+      "service": "nearestLivingPartyTarget",
+      "stage": "r222-perception-darkness-volume.js:195:nearestLivingPartyTarget"
+    },
+    {
+      "service": "canMeleeAttackTarget",
+      "stage": "r222-perception-darkness-volume.js:219:canMeleeAttackTarget"
+    },
+    {
+      "service": "mobCanMissileAttack",
+      "stage": "r222-perception-darkness-volume.js:247:mobCanMissileAttack"
+    },
+    {
+      "service": "unitCanMakeLeavingHexFreeAttack",
+      "stage": "r222-perception-darkness-volume.js:267:unitCanMakeLeavingHexFreeAttack"
+    },
+    {
+      "service": "maybeTriggerPlayerGuard",
+      "stage": "r222-perception-darkness-volume.js:291:maybeTriggerPlayerGuard"
+    },
+    {
+      "service": "r220WeightedPathSearch",
+      "stage": "r222-perception-darkness-volume.js:486:r220WeightedPathSearch"
+    },
+    {
+      "service": "r220WeightedClosestReachable",
+      "stage": "r222-perception-darkness-volume.js:663:r220WeightedClosestReachable"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "r222-perception-darkness-volume.js:1106:addAreaEffect"
+    },
+    {
+      "service": "drawSpellAreaEffects",
+      "stage": "r222-perception-darkness-volume.js:1336:drawSpellAreaEffects"
+    },
+    {
+      "service": "drawWallTestLineOfSightMask",
+      "stage": "r222-perception-darkness-volume.js:1449:drawWallTestLineOfSightMask"
+    },
+    {
+      "service": "drawVisibleArchitecturalWallsOverLOS",
+      "stage": "r222-perception-darkness-volume.js:1662:drawVisibleArchitecturalWallsOverLOS"
+    },
+    {
+      "service": "updateUnitInfoPanel",
+      "stage": "r223-los-cloud-aim-effects.js:340:updateUnitInfoPanel"
+    },
+    {
+      "service": "drawDragonBreathFx",
+      "stage": "r223-los-cloud-aim-effects.js:456:drawDragonBreathFx"
+    },
+    {
+      "service": "hasPersistentStatusFx",
+      "stage": "r224-hypnotic-pattern-vfx.js:118:hasPersistentStatusFx"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "r224-hypnotic-pattern-vfx.js:130:addUnitEffect"
+    },
+    {
+      "service": "castHypnoticPatternSpell",
+      "stage": "r224-hypnotic-pattern-vfx.js:149:castHypnoticPatternSpell"
+    },
+    {
+      "service": "drawSpellAreaEffects",
+      "stage": "r224-hypnotic-pattern-vfx.js:539:drawSpellAreaEffects"
+    },
+    {
+      "service": "drawPersistentCharmStatusFx",
+      "stage": "r224-hypnotic-pattern-vfx.js:1242:drawPersistentCharmStatusFx"
+    },
+    {
+      "service": "r223AreaEffectsAtHex",
+      "stage": "r224-hypnotic-pattern-vfx.js:1260:r223AreaEffectsAtHex"
+    },
+    {
+      "service": "r223AreaEffectRuleText",
+      "stage": "r224-hypnotic-pattern-vfx.js:1286:r223AreaEffectRuleText"
+    },
+    {
+      "service": "commitSpellCast",
+      "stage": "r225-universal-por-cast-sfx.js:179:commitSpellCast"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "r226-level3-systems.js:6:addUnitEffect"
+    },
+    {
+      "service": "removeUnitEffect",
+      "stage": "r226-level3-systems.js:18:removeUnitEffect"
+    },
+    {
+      "service": "expireTimedUnitEffects",
+      "stage": "r226-level3-systems.js:27:expireTimedUnitEffects"
+    },
+    {
+      "service": "attackEffectModifier",
+      "stage": "r226-level3-systems.js:37:attackEffectModifier"
+    },
+    {
+      "service": "spellSaveRollModifier",
+      "stage": "r226-level3-systems.js:67:spellSaveRollModifier"
+    },
+    {
+      "service": "effectiveArmorClassForAttack",
+      "stage": "r226-level3-systems.js:80:effectiveArmorClassForAttack"
+    },
+    {
+      "service": "breakInvisibility",
+      "stage": "r226-level3-casts-a.js:20:breakInvisibility"
+    },
+    {
+      "service": "handleTurnControlEffects",
+      "stage": "r226-level3-dispatch.js:6:handleTurnControlEffects"
+    },
+    {
+      "service": "testSpellTargetPrompt",
+      "stage": "r226-level3-dispatch.js:32:testSpellTargetPrompt"
+    },
+    {
+      "service": "aimAreaPreviewForAction",
+      "stage": "r226-level3-dispatch.js:40:aimAreaPreviewForAction"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "r226-level3-dispatch.js:73:addAreaEffect"
+    },
+    {
+      "service": "drawSpellAreaEffects",
+      "stage": "r226-level3-vfx.js:142:drawSpellAreaEffects"
+    },
+    {
+      "service": "drawPersistentCharmStatusFx",
+      "stage": "r226-level3-vfx.js:148:drawPersistentCharmStatusFx"
+    },
+    {
+      "service": "hasPersistentStatusFx",
+      "stage": "r226-level3-vfx.js:154:hasPersistentStatusFx"
+    },
+    {
+      "service": "r226ResolveMinuteMeteorsTurn",
+      "stage": "r227-minute-meteors-hooks.js:6:r226ResolveMinuteMeteorsTurn"
+    },
+    {
+      "service": "r226CastMinuteMeteors",
+      "stage": "r227-minute-meteors-hooks.js:15:r226CastMinuteMeteors"
+    },
+    {
+      "service": "renderSpellCastList",
+      "stage": "r227-minute-meteors-hooks.js:88:renderSpellCastList"
+    },
+    {
+      "service": "beginSelectedCombatSpell",
+      "stage": "r227-minute-meteors-hooks.js:130:beginSelectedCombatSpell"
+    },
+    {
+      "service": "exitAimMode",
+      "stage": "r227-minute-meteors-ui.js:6:exitAimMode"
+    },
+    {
+      "service": "drawPersistentCharmStatusFx",
+      "stage": "r227-minute-meteors-ui.js:82:drawPersistentCharmStatusFx"
+    },
+    {
+      "service": "drawProjectileFx",
+      "stage": "r227-minute-meteors-ui.js:88:drawProjectileFx"
+    },
+    {
+      "service": "handleTurnControlEffects",
+      "stage": "r228-minute-meteor-remainder.js:29:handleTurnControlEffects"
+    },
+    {
+      "service": "renderSpellCastList",
+      "stage": "r228-minute-meteor-remainder.js:75:renderSpellCastList"
+    },
+    {
+      "service": "beginSelectedCombatSpell",
+      "stage": "r228-minute-meteor-remainder.js:135:beginSelectedCombatSpell"
+    },
+    {
+      "service": "updateUi",
+      "stage": "r228-minute-meteor-remainder.js:167:updateUi"
+    },
+    {
+      "service": "updateUi",
+      "stage": "r229-minute-meteor-cast-unlock.js:51:updateUi"
+    },
+    {
+      "service": "openSpellCastOverlay",
+      "stage": "r229-minute-meteor-cast-unlock.js:94:openSpellCastOverlay"
+    },
+    {
+      "service": "handleTurnControlEffects",
+      "stage": "r229-minute-meteor-cast-unlock.js:117:handleTurnControlEffects"
+    },
+    {
+      "service": "commitSpellCast",
+      "stage": "r230-casting-time-hooks.js:29:commitSpellCast"
+    },
+    {
+      "service": "finishFailedSpellCommit",
+      "stage": "r230-casting-time-hooks.js:38:finishFailedSpellCommit"
+    },
+    {
+      "service": "onUnitDamaged",
+      "stage": "r230-casting-time-hooks.js:55:onUnitDamaged"
+    },
+    {
+      "service": "rollSpellSave",
+      "stage": "r230-casting-time-hooks.js:72:rollSpellSave"
+    },
+    {
+      "service": "effectiveArmorClassForAttack",
+      "stage": "r230-casting-time-hooks.js:105:effectiveArmorClassForAttack"
+    },
+    {
+      "service": "beginMageCombatSpell",
+      "stage": "r231-target-at-completion-hooks.js:16:beginMageCombatSpell"
+    },
+    {
+      "service": "beginCombatTestSpell",
+      "stage": "r231-target-at-completion-hooks.js:54:beginCombatTestSpell"
+    },
+    {
+      "service": "useInventoryItem",
+      "stage": "r231-target-at-completion-hooks.js:95:useInventoryItem"
+    },
+    {
+      "service": "exitAimMode",
+      "stage": "r231-target-at-completion-hooks.js:171:exitAimMode"
+    },
+    {
+      "service": "r226DrawLineFx",
+      "stage": "r232-lightning-reflection-cast.js:286:r226DrawLineFx"
+    },
+    {
+      "service": "r226CastLightningBolt",
+      "stage": "r232-lightning-reflection-cast.js:306:r226CastLightningBolt"
+    },
+    {
+      "service": "aimAreaPreviewForAction",
+      "stage": "r232-lightning-reflection-cast.js:566:aimAreaPreviewForAction"
+    },
+    {
+      "service": "animateMagicMissile",
+      "stage": "r233-spell-presentation-core.js:251:animateMagicMissile"
+    },
+    {
+      "service": "animateFireballProjectile",
+      "stage": "r233-spell-presentation-core.js:273:animateFireballProjectile"
+    },
+    {
+      "service": "animateColorSprayEffect",
+      "stage": "r233-spell-presentation-core.js:291:animateColorSprayEffect"
+    },
+    {
+      "service": "rollSpellSave",
+      "stage": "r233-spell-presentation-core.js:311:rollSpellSave"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "r233-spell-presentation-core.js:342:addAreaEffect"
+    },
+    {
+      "service": "castMelfsAcidArrowSpell",
+      "stage": "r233-attack-spell-results.js:10:castMelfsAcidArrowSpell"
+    },
+    {
+      "service": "castShockingGraspSpell",
+      "stage": "r233-attack-spell-results.js:177:castShockingGraspSpell"
+    },
+    {
+      "service": "r226CastVampiricTouch",
+      "stage": "r233-attack-spell-results.js:363:r226CastVampiricTouch"
+    },
+    {
+      "service": "r226CastFlameArrow",
+      "stage": "r233-attack-spell-results.js:533:r226CastFlameArrow"
+    },
+    {
+      "service": "castMagicMissileFromScroll",
+      "stage": "r233-multi-result-damage.js:9:castMagicMissileFromScroll"
+    },
+    {
+      "service": "castFireballFromScroll",
+      "stage": "r233-multi-result-damage.js:310:castFireballFromScroll"
+    },
+    {
+      "service": "illuminationSources",
+      "stage": "r233-minute-meteor-illumination.js:23:illuminationSources"
+    },
+    {
+      "service": "r227DrawMeteorVolleyFx",
+      "stage": "r233-minute-meteor-illumination.js:110:r227DrawMeteorVolleyFx"
+    },
+    {
+      "service": "r227AnimateMeteorVolley",
+      "stage": "r233-minute-meteor-illumination.js:245:r227AnimateMeteorVolley"
+    },
+    {
+      "service": "r227ResolveSelectedMeteorVolley",
+      "stage": "r233-minute-meteor-illumination.js:346:r227ResolveSelectedMeteorVolley"
+    },
+    {
+      "service": "r226FireMeteorVolley",
+      "stage": "r233-minute-meteor-illumination.js:730:r226FireMeteorVolley"
+    },
+    {
+      "service": "r226CastLightningBolt",
+      "stage": "r233-lightning-result-pacing.js:8:r226CastLightningBolt"
+    },
+    {
+      "service": "drawWallTestLineOfSightMask",
+      "stage": "r234-binary-hidden-los.js:63:drawWallTestLineOfSightMask"
+    },
+    {
+      "service": "setCombatMessage",
+      "stage": "r235-spell-interruption-notice.js:39:setCombatMessage"
+    },
+    {
+      "service": "r230DisruptCasting",
+      "stage": "r235-spell-interruption-notice.js:132:r230DisruptCasting"
+    },
+    {
+      "service": "waitForCombatActionPause",
+      "stage": "r235-spell-interruption-notice.js:204:waitForCombatActionPause"
+    },
+    {
+      "service": "drawUnitBarks",
+      "stage": "r236-floating-combat-text.js:468:drawUnitBarks"
+    },
+    {
+      "service": "onUnitDamaged",
+      "stage": "r236-floating-combat-text.js:481:onUnitDamaged"
+    },
+    {
+      "service": "aimAreaPreviewForAction",
+      "stage": "candidate-aoe-aim-preview-audit.js:274:aimAreaPreviewForAction"
+    },
+    {
+      "service": "combatActionPauseRemaining",
+      "stage": "candidate-combat-beat-sequence.js:249:combatActionPauseRemaining"
+    },
+    {
+      "service": "r236ShowDamageText",
+      "stage": "candidate-combat-beat-sequence.js:284:r236ShowDamageText"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "candidate-combat-beat-sequence.js:346:addUnitEffect"
+    },
+    {
+      "service": "r236FloatingTextStyle",
+      "stage": "candidate-combat-beat-sequence.js:413:r236FloatingTextStyle"
+    },
+    {
+      "service": "r230DisruptCasting",
+      "stage": "candidate-casting-interrupted-float.js:168:r230DisruptCasting"
+    },
+    {
+      "service": "r236FloatingTextStyle",
+      "stage": "candidate-casting-interrupted-float.js:196:r236FloatingTextStyle"
+    },
+    {
+      "service": "drawWallTestLineOfSightMask",
+      "stage": "candidate-outdoor-los-visibility-mask.js:60:drawWallTestLineOfSightMask"
+    },
+    {
+      "service": "fitBattleCanvas",
+      "stage": "candidate-spell-previewer.js:152:fitBattleCanvas"
+    },
+    {
+      "service": "waitForCombatActionPause",
+      "stage": "candidate-spell-previewer.js:1535:waitForCombatActionPause"
+    },
+    {
+      "service": "queueSfx",
+      "stage": "candidate-spell-previewer.js:1569:queueSfx"
+    },
+    {
+      "service": "speakSpellIncantation",
+      "stage": "candidate-spell-previewer.js:1587:speakSpellIncantation"
+    },
+    {
+      "service": "playPor07CastingSound",
+      "stage": "candidate-spell-previewer.js:1614:playPor07CastingSound"
+    },
+    {
+      "service": "d",
+      "stage": "candidate-spell-previewer.js:1630:d"
+    },
+    {
+      "service": "rollSpellSave",
+      "stage": "candidate-spell-previewer.js:1661:rollSpellSave"
+    },
+    {
+      "service": "resolveMeleeAttackD20",
+      "stage": "candidate-spell-previewer.js:1728:resolveMeleeAttackD20"
+    },
+    {
+      "service": "resolveMissileAttackD20",
+      "stage": "candidate-spell-previewer.js:1756:resolveMissileAttackD20"
+    },
+    {
+      "service": "r236QueueFloatingCombatText",
+      "stage": "candidate-spell-previewer.js:1798:r236QueueFloatingCombatText"
+    },
+    {
+      "service": "enlargeVisualScale",
+      "stage": "candidate-spell-previewer.js:1955:enlargeVisualScale"
+    },
+    {
+      "service": "visualMirrorOffsets",
+      "stage": "candidate-spell-previewer.js:1969:visualMirrorOffsets"
+    },
+    {
+      "service": "onUnitDamaged",
+      "stage": "candidate-spell-previewer.js:1983:onUnitDamaged"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "candidate-spell-previewer.js:2018:addUnitEffect"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "candidate-spell-previewer.js:2058:addAreaEffect"
+    },
+    {
+      "service": "drawSpellAreaEffects",
+      "stage": "candidate-spell-previewer.js:gate:drawSpellAreaEffects"
+    },
+    {
+      "service": "drawPersistentCharmStatusFx",
+      "stage": "candidate-spell-previewer.js:gate:drawPersistentCharmStatusFx"
+    },
+    {
+      "service": "drawDragonBreathFx",
+      "stage": "candidate-spell-previewer.js:gate:drawDragonBreathFx"
+    },
+    {
+      "service": "drawProjectileFx",
+      "stage": "candidate-spell-previewer.js:gate:drawProjectileFx"
+    },
+    {
+      "service": "drawFogVolumeCell",
+      "stage": "candidate-spell-previewer.js:gate:drawFogVolumeCell"
+    },
+    {
+      "service": "drawFogEffectOutline",
+      "stage": "candidate-spell-previewer.js:gate:drawFogEffectOutline"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "candidate-rev6-gaseous-clouds.js:106:addAreaEffect"
+    },
+    {
+      "service": "drawFogVolumeCell",
+      "stage": "candidate-rev6-gaseous-clouds.js:143:drawFogVolumeCell"
+    },
+    {
+      "service": "drawFogEffectOutline",
+      "stage": "candidate-rev6-gaseous-clouds.js:188:drawFogEffectOutline"
+    },
+    {
+      "service": "drawFogVolumeCell",
+      "stage": "candidate-rev7-gaseous-clouds.js:521:drawFogVolumeCell"
+    },
+    {
+      "service": "drawFogEffectOutline",
+      "stage": "candidate-rev7-gaseous-clouds.js:563:drawFogEffectOutline"
+    },
+    {
+      "service": "candidateRev7DrawCompleteEllipse",
+      "stage": "candidate-rev8-cloud-tufts.js:14:candidateRev7DrawCompleteEllipse"
+    },
+    {
+      "service": "drawFogEffectOutline",
+      "stage": "candidate-rev9-cloud-union-outline.js:506:drawFogEffectOutline"
+    },
+    {
+      "service": "playFireballExplosionSound",
+      "stage": "candidate-rev10-dqk-sfx.js:287:playFireballExplosionSound"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "candidate-rev10-dqk-sfx.js:382:addUnitEffect"
+    },
+    {
+      "service": "r232DrawLightningTraceFx",
+      "stage": "candidate-rev14-production-dbm-lightning.js:1360:r232DrawLightningTraceFx"
+    },
+    {
+      "service": "playMagicEffectSound",
+      "stage": "candidate-rev15-lightning-review-fixes.js:143:playMagicEffectSound"
+    },
+    {
+      "service": "playPor07CastingSound",
+      "stage": "candidate-rev15-lightning-review-fixes.js:157:playPor07CastingSound"
+    },
+    {
+      "service": "commitSpellCast",
+      "stage": "candidate-rev15-lightning-review-fixes.js:165:commitSpellCast"
+    },
+    {
+      "service": "r226CastLightningBolt",
+      "stage": "candidate-rev15-lightning-review-fixes.js:181:r226CastLightningBolt"
+    },
+    {
+      "service": "playPor07CastingSound",
+      "stage": "candidate-rev16-elemental-damage-presentation.js:57:playPor07CastingSound"
+    },
+    {
+      "service": "applySpellDamage",
+      "stage": "candidate-rev16-elemental-damage-presentation.js:74:applySpellDamage"
+    },
+    {
+      "service": "r236ShowDamageText",
+      "stage": "candidate-rev16-elemental-damage-presentation.js:120:r236ShowDamageText"
+    },
+    {
+      "service": "registerElementalDamageFx",
+      "stage": "candidate-rev16-elemental-damage-presentation.js:215:registerElementalDamageFx"
+    },
+    {
+      "service": "r236FloatingTextStyle",
+      "stage": "candidate-rev16-elemental-damage-presentation.js:297:r236FloatingTextStyle"
+    },
+    {
+      "service": "drawUnitBarks",
+      "stage": "candidate-rev16-elemental-damage-presentation.js:650:drawUnitBarks"
+    },
+    {
+      "service": "drawProjectileFx",
+      "stage": "candidate-rev31-shocking-grasp-fx.js:633:drawProjectileFx"
+    },
+    {
+      "service": "spellPreviewClearTransientPresentation",
+      "stage": "candidate-rev31-shocking-grasp-fx.js:700:spellPreviewClearTransientPresentation"
+    },
+    {
+      "service": "resolveAimAction",
+      "stage": "candidate-rev36-magic-missile-volley.js:190:resolveAimAction"
+    },
+    {
+      "service": "r231CompletionTargetPrompt",
+      "stage": "candidate-rev36-magic-missile-volley.js:219:r231CompletionTargetPrompt"
+    },
+    {
+      "service": "drawProjectileFx",
+      "stage": "candidate-rev36-magic-missile-volley.js:837:drawProjectileFx"
+    },
+    {
+      "service": "castMagicMissileFromScroll",
+      "stage": "candidate-rev36-magic-missile-volley.js:968:castMagicMissileFromScroll"
+    },
+    {
+      "service": "spellPreviewClearTransientPresentation",
+      "stage": "candidate-rev36-magic-missile-volley.js:1277:spellPreviewClearTransientPresentation"
+    },
+    {
+      "service": "playMagicEffectSound",
+      "stage": "candidate-rev38-placeholder-spell-sfx-grease-vfx.js:532:playMagicEffectSound"
+    },
+    {
+      "service": "playStinkingCloudCastSound",
+      "stage": "candidate-rev38-placeholder-spell-sfx-grease-vfx.js:566:playStinkingCloudCastSound"
+    },
+    {
+      "service": "drawSpellAreaEffects",
+      "stage": "candidate-rev38-placeholder-spell-sfx-grease-vfx.js:860:drawSpellAreaEffects"
+    },
+    {
+      "service": "addAreaEffect",
+      "stage": "candidate-rev38-placeholder-spell-sfx-grease-vfx.js:918:addAreaEffect"
+    },
+    {
+      "service": "spellPreviewClearTransientPresentation",
+      "stage": "candidate-rev38-placeholder-spell-sfx-grease-vfx.js:939:spellPreviewClearTransientPresentation"
+    },
+    {
+      "service": "playPor07CastingSound",
+      "stage": "candidate-rev39-replace-default-spell-sfx.js:105:playPor07CastingSound"
+    },
+    {
+      "service": "commitSpellCast",
+      "stage": "candidate-rev39-replace-default-spell-sfx.js:122:commitSpellCast"
+    },
+    {
+      "service": "playDqkSpellAffectSound",
+      "stage": "candidate-rev39-replace-default-spell-sfx.js:201:playDqkSpellAffectSound"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "candidate-rev39-replace-default-spell-sfx.js:218:addUnitEffect"
+    },
+    {
+      "service": "flashAttack",
+      "stage": "combat-result-panel.js:15:flashAttack"
+    },
+    {
+      "service": "playAgonySound",
+      "stage": "combat-result-panel.js:30:playAgonySound"
+    },
+    {
+      "service": "playDeathSound",
+      "stage": "combat-result-panel.js:34:playDeathSound"
+    },
+    {
+      "service": "playDqkSpellAffectSound",
+      "stage": "combat-result-panel.js:69:playDqkSpellAffectSound"
+    },
+    {
+      "service": "addUnitEffect",
+      "stage": "combat-result-panel.js:73:addUnitEffect"
+    },
+    {
+      "service": "candidateQueueCombatBeat",
+      "stage": "combat-result-panel.js:79:candidateQueueCombatBeat"
+    },
+    {
+      "service": "candidateRunCombatBeat",
+      "stage": "combat-result-panel.js:84:candidateRunCombatBeat"
+    },
+    {
+      "service": "updateUnitInfoPanel",
+      "stage": "combat-result-panel.js:97:updateUnitInfoPanel"
+    },
+    {
+      "service": "applySpellDamage",
+      "stage": "combat-result-panel.js:123:applySpellDamage"
+    },
+    {
+      "service": "triggerDeathFx",
+      "stage": "combat-result-panel.js:129:triggerDeathFx"
+    },
+    {
+      "service": "checkCombatVictory",
+      "stage": "combat-spell-results.js:43:checkCombatVictory"
+    },
+    {
+      "service": "checkPartyDefeat",
+      "stage": "combat-spell-results.js:44:checkPartyDefeat"
+    },
+    {
+      "service": "resolveAoeDamageSpell",
+      "stage": "combat-spell-results.js:49:resolveAoeDamageSpell"
+    }
+  ]
+}

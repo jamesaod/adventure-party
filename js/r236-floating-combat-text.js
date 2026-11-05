@@ -462,23 +462,21 @@ function r236EnsureFloatingCombatTextLoop(){
    FINAL FOREGROUND RENDER HOOK
    ============================================================ */
 
-const r236BaseDrawUnitBarks=
-  drawUnitBarks;
+const r236BaseDrawUnitBarks=AdventurePartyCombatServices.current('drawUnitBarks');
 
-drawUnitBarks=function(){
+AdventurePartyCombatServices.register('drawUnitBarks','r236-floating-combat-text.js:468:drawUnitBarks',function(){
   r236BaseDrawUnitBarks();
   r236DrawFloatingCombatText();
-};
+});
 
 
 /* ============================================================
    DAMAGE HOOK
    ============================================================ */
 
-const r236BaseOnUnitDamaged=
-  onUnitDamaged;
+const r236BaseOnUnitDamaged=AdventurePartyCombatServices.current('onUnitDamaged');
 
-onUnitDamaged=function(unit,damage){
+AdventurePartyCombatServices.register('onUnitDamaged','r236-floating-combat-text.js:481:onUnitDamaged',function(unit,damage){
   const result=
     r236BaseOnUnitDamaged(
       unit,
@@ -493,38 +491,14 @@ onUnitDamaged=function(unit,damage){
   }
 
   return result;
-};
+});
 
 
 /* ============================================================
    CASTING-START HOOK
    ============================================================ */
 
-const r236BaseScheduleSpellCast=
-  r230ScheduleSpellCast;
 
-r230ScheduleSpellCast=function(
-  caster,
-  spell,
-  action,
-  context
-){
-  const record=
-    r236BaseScheduleSpellCast(
-      caster,
-      spell,
-      action,
-      context
-    );
-
-  if(record && caster){
-    r236ShowBeginsCastingText(
-      caster
-    );
-  }
-
-  return record;
-};
 
 
 /* ============================================================

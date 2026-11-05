@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {itemCatalogEntry} from '../js/item-catalog.mjs';
 import {STUDIO_WEAPONS,studioWeapon,normalizeEquipment,STUDIO_OFF_HAND_WEAPONS} from '../js/studio-equipment.mjs';
 import {VISIBLE_WEAPON_ASSETS} from '../js/mob-appearance.mjs';
 import {CAPTURE_GROUP_CATALOG} from '../js/action-capture-groups.mjs';
-const items=JSON.parse(fs.readFileSync(new URL('../data/equipment-imports-196.json',import.meta.url))).items;
+const items=JSON.parse(readCombatFixture(new URL('../data/equipment-imports-196.json',import.meta.url))).items;
 assert.equal(new Set(STUDIO_WEAPONS.map(w=>w.id)).size,STUDIO_WEAPONS.length);
 for(const source of items){
  const item=itemCatalogEntry(source.id),weapon=studioWeapon(source.id);

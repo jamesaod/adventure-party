@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import { createWeaponAttachment, normalizeEquipment, studioWeapon, STUDIO_WEAPONS } from '../js/studio-equipment.mjs';
 const THREE=await import('data:text/javascript;base64,'+
   readFileSync(new URL('../assets/vendor/three/three.core.min.js',import.meta.url)).toString('base64'));

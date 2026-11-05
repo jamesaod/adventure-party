@@ -238,44 +238,16 @@ async function r233ApplySpellDamageBeat(
    UNIVERSAL CASTER-FIRST HANDOFF
    ============================================================ */
 
-const r233BaseCastPreparedCombatSpell=
-  castPreparedCombatSpell;
 
-castPreparedCombatSpell=async function(
-  action,
-  targetHex,
-  targetUnit
-){
-  const caster=
-    spellCasterForAction(action);
-
-  if(
-    r233IsCombatSpellAction(action) &&
-    caster?.alive &&
-    !action.r233SkipCasterFocus
-  ){
-    await r233FocusCaster(
-      caster,
-      action.spellId
-    );
-  }
-
-  return await r233BaseCastPreparedCombatSpell(
-    action,
-    targetHex,
-    targetUnit
-  );
-};
 
 
 /* ============================================================
    TARGET HANDOFF FOR COMMON EFFECT PATHS
    ============================================================ */
 
-const r233BaseAnimateMagicMissile=
-  animateMagicMissile;
+const r233BaseAnimateMagicMissile=AdventurePartyCombatServices.current('animateMagicMissile');
 
-animateMagicMissile=async function(
+AdventurePartyCombatServices.register('animateMagicMissile','r233-spell-presentation-core.js:251:animateMagicMissile',async function(
   attacker,
   defender,
   index,
@@ -291,13 +263,12 @@ animateMagicMissile=async function(
     index,
     total
   );
-};
+});
 
 
-const r233BaseAnimateFireballProjectile=
-  animateFireballProjectile;
+const r233BaseAnimateFireballProjectile=AdventurePartyCombatServices.current('animateFireballProjectile');
 
-animateFireballProjectile=async function(
+AdventurePartyCombatServices.register('animateFireballProjectile','r233-spell-presentation-core.js:273:animateFireballProjectile',async function(
   caster,
   targetHex
 ){
@@ -309,13 +280,12 @@ animateFireballProjectile=async function(
     caster,
     targetHex
   );
-};
+});
 
 
-const r233BaseAnimateColorSprayEffect=
-  animateColorSprayEffect;
+const r233BaseAnimateColorSprayEffect=AdventurePartyCombatServices.current('animateColorSprayEffect');
 
-animateColorSprayEffect=async function(
+AdventurePartyCombatServices.register('animateColorSprayEffect','r233-spell-presentation-core.js:291:animateColorSprayEffect',async function(
   caster,
   targetHex,
   cells
@@ -329,13 +299,12 @@ animateColorSprayEffect=async function(
     targetHex,
     cells
   );
-};
+});
 
 
-const r233BaseRollSpellSave=
-  rollSpellSave;
+const r233BaseRollSpellSave=AdventurePartyCombatServices.current('rollSpellSave');
 
-rollSpellSave=function(
+AdventurePartyCombatServices.register('rollSpellSave','r233-spell-presentation-core.js:311:rollSpellSave',function(
   target,
   sourceUnit=null,
   extraModifier=0,
@@ -360,13 +329,12 @@ rollSpellSave=function(
     sourceUnit,
     extraModifier
   );
-};
+});
 
 
-const r233BaseAddAreaEffect=
-  addAreaEffect;
+const r233BaseAddAreaEffect=AdventurePartyCombatServices.current('addAreaEffect');
 
-addAreaEffect=function(effect){
+AdventurePartyCombatServices.register('addAreaEffect','r233-spell-presentation-core.js:342:addAreaEffect',function(effect){
   const added=
     r233BaseAddAreaEffect(effect);
 
@@ -405,7 +373,7 @@ addAreaEffect=function(effect){
   }
 
   return added;
-};
+});
 
 
 /* ============================================================

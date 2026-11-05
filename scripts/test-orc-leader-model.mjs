@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 const root=new URL('../',import.meta.url);
 const folder='assets/models/orcs/orc-leader-male-uniformed/';
-const raw=fs.readFileSync(new URL(folder+'orc-leader-male-uniformed.glb',root));
-const meta=JSON.parse(fs.readFileSync(new URL(folder+'orc-leader-male-uniformed.json',root)));
+const raw=readCombatFixture(new URL(folder+'orc-leader-male-uniformed.glb',root));
+const meta=JSON.parse(readCombatFixture(new URL(folder+'orc-leader-male-uniformed.json',root)));
 const sha=data=>createHash('sha256').update(data).digest('hex');
 assert.equal(sha(raw),meta.sha256);assert.equal(raw.length,meta.bytes);
 assert.equal(raw.toString('ascii',0,4),'glTF');assert.equal(raw.readUInt32LE(8),raw.length);
@@ -17,7 +18,7 @@ assert.equal(doc.images.length,1);const view=doc.bufferViews[doc.images[0].buffe
 const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),2048);assert.equal(png.readUInt32BE(20),2048);
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root)));
 assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'orc-leader-male-uniformed.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');

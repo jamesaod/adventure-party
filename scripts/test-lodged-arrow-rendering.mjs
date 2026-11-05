@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
+const engine=readFileSync('js/adventure-party.js','utf8'),addon=readFileSync('js/combat-environment-actions.js','utf8');
+const start=engine.lastIndexOf('function drawFloor(){'),end=engine.indexOf('\nfunction ',start+1),events=[];
+const context={combatSceneTerrain:null,combatGpu:null,globalThis:{},ctx:{fillRect(){}},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,activeCombatTerrainTileSet(){},visibleHexes:()=>[{x:0,y:0}],drawHexFill:()=>events.push('floor'),drawArchitecturalFloorRegions(){},drawTerrainScorch(){},drawTerrainIlluminationLayer(){},drawHexGridLine:()=>events.push('grid'),drawEnvironmentGroundArrows:()=>events.push('arrows'),hoverHighlightCells:()=>[],aimMode:false};
+vm.runInNewContext(engine.slice(start,end)+';drawFloor();',context);
+assert.deepEqual(events,['floor','grid','arrows'],'Actual final floor renderer draws lodged arrows after floor/grid');
+let strokes=0,visible=false,camera=true,surface=true;
+const wall={id:'wall',a:{x:0,y:0},b:{x:100,y:0},thickness:3};
+const c=vm.createContext({architecturalWalls:[wall],environmentSquash:()=>1,isHexVisibleToFriendlyParty:()=>visible,explorationWallGroundSolids:()=>[{faces:[{side:'a'},{side:'b'}]}],explorationEncounterApi:{wallFaceFacesCamera:()=>camera},explorationWallFragmentVisible:()=>surface,isArchitecturalWallVisibleToFriendlyParty:()=>true,environmentArrowScreen:p=>p,screenPointForWorld:p=>p,combatSpriteBrightness:()=>1,drawCombatArrowSilhouette(){strokes+=2},ctx:{save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},stroke(){strokes++},fillRect(){}}});
+const a=addon.indexOf('function drawEnvironmentArrow('),b=addon.indexOf('async function breakNearbyCombatWindow',a);vm.runInContext(addon.slice(a,b),c);
+const arrow={x:10,y:0,hex:{x:0,y:0},direction:{x:0,y:-1},height:15,wallId:'wall'};
+c.drawEnvironmentArrow(arrow);assert.equal(strokes,2,'Visible wall face renders even when containing hex is hidden');
+surface=false;c.drawEnvironmentArrow(arrow);assert.equal(strokes,2);surface=true;camera=false;c.drawEnvironmentArrow(arrow);assert.equal(strokes,2);camera=true;
+c.drawEnvironmentArrow({...arrow,wallId:null});assert.equal(strokes,2);visible=true;c.drawEnvironmentArrow({...arrow,wallId:null});assert.equal(strokes,4);
+console.log('PASS production floor arrow draw, wall surface visibility, camera occlusion and ground LOS');
+const finishStart=addon.indexOf('async function finishEnvironmentArrow('),finishEnd=addon.indexOf('function drawEnvironmentArrow(',finishStart);
+const state={arrows:[],sequence:0};const finishContext=vm.createContext({inside:()=>true,combatEnvironment:()=>state});vm.runInContext(addon.slice(finishStart,finishEnd),finishContext);
+for(const controller of ['player','mob'])await finishContext.finishEnvironmentArrow({controller},{x:10,y:0,hex:{x:0,y:0},direction:{x:1,y:0},kind:'ground'});
+assert.equal(state.arrows.length,2,'Both controllers retain ground impacts');
+finishContext.inside=()=>false;await finishContext.finishEnvironmentArrow({controller:'mob'},arrow);assert.equal(state.arrows.length,3,'Boundary wall impacts survive a hex centre outside the map');
+console.log('PASS player/enemy impact persistence and boundary-wall impacts');
+
+// The shared silhouette draws a dark shaft, white feathers, and a separate soft shadow.
+const effectSource=readFileSync('js/combat-effect-animation.js','utf8');
+const helper=effectSource.slice(effectSource.indexOf('function drawCombatArrowSilhouette'),effectSource.indexOf('async function animateArrowProjectile'));
+const ink=[];const arrowCtx={save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},stroke(){ink.push(this.strokeStyle)}};
+const arrowSandbox=vm.createContext({ctx:arrowCtx});vm.runInContext(helper,arrowSandbox);
+arrowSandbox.drawCombatArrowSilhouette({x:0,y:0},{x:18,y:0});
+assert.deepEqual(ink,['rgba(0,0,0,.38)','rgba(0,0,0,.38)','#080808','#ffffff']);
+console.log('PASS shared black shaft, white fletching and soft arrow shadow');

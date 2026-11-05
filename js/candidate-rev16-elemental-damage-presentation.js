@@ -54,9 +54,9 @@
      REMOVE THE UNIVERSAL INITIAL CASTING SOUND
      ============================================================ */
 
-  playPor07CastingSound=function(){
+  AdventurePartyCombatServices.register('playPor07CastingSound','candidate-rev16-elemental-damage-presentation.js:57:playPor07CastingSound',function(){
     return false;
-  };
+  });
 
   if(window.AdventurePartyCastingSound){
     window.AdventurePartyCastingSound.play=()=>false;
@@ -68,10 +68,9 @@
      DAMAGE-TYPE CONTEXT FOR SHARED SPELL-DAMAGE PATH
      ============================================================ */
 
-  const r16BaseApplySpellDamage=
-    applySpellDamage;
+  const r16BaseApplySpellDamage=AdventurePartyCombatServices.current('applySpellDamage');
 
-  applySpellDamage=function(
+  AdventurePartyCombatServices.register('applySpellDamage','candidate-rev16-elemental-damage-presentation.js:74:applySpellDamage',function(
     source,
     target,
     damage,
@@ -110,14 +109,14 @@
       sourceName,
       damageType
     );
-  };
+  });
 
 
   /* ============================================================
      ELEMENT-AWARE FLOATING DAMAGE BEATS
      ============================================================ */
 
-  r236ShowDamageText=function(
+  AdventurePartyCombatServices.register('r236ShowDamageText','candidate-rev16-elemental-damage-presentation.js:120:r236ShowDamageText',function(
     unit,
     damage
   ){
@@ -200,7 +199,7 @@
       text,
       kind
     );
-  };
+  });
 
 
   /*
@@ -209,10 +208,9 @@
     flush until a microtask, so at this point their just-created damage beat is
     still pending and can safely inherit the known elemental type.
   */
-  const r16BaseRegisterElementalDamageFx=
-    registerElementalDamageFx;
+  const r16BaseRegisterElementalDamageFx=AdventurePartyCombatServices.current('registerElementalDamageFx');
 
-  registerElementalDamageFx=function(
+  AdventurePartyCombatServices.register('registerElementalDamageFx','candidate-rev16-elemental-damage-presentation.js:215:registerElementalDamageFx',function(
     unit,
     damageType,
     damage
@@ -284,17 +282,16 @@
       damageType,
       damage
     );
-  };
+  });
 
 
   /* ============================================================
      ELEMENTAL DAMAGE-TEXT STYLES
      ============================================================ */
 
-  const r16BaseFloatingTextStyle=
-    r236FloatingTextStyle;
+  const r16BaseFloatingTextStyle=AdventurePartyCombatServices.current('r236FloatingTextStyle');
 
-  r236FloatingTextStyle=function(
+  AdventurePartyCombatServices.register('r236FloatingTextStyle','candidate-rev16-elemental-damage-presentation.js:297:r236FloatingTextStyle',function(
     kind,
     alpha
   ){
@@ -411,7 +408,7 @@
           alpha
         );
     }
-  };
+  });
 
 
   /* ============================================================
@@ -644,13 +641,12 @@
   }
 
 
-  const r16BaseDrawUnitBarks=
-    drawUnitBarks;
+  const r16BaseDrawUnitBarks=AdventurePartyCombatServices.current('drawUnitBarks');
 
-  drawUnitBarks=function(){
+  AdventurePartyCombatServices.register('drawUnitBarks','candidate-rev16-elemental-damage-presentation.js:650:drawUnitBarks',function(){
     r16BaseDrawUnitBarks();
     r16DrawColdDamageParticles();
-  };
+  });
 
 
   window.AdventurePartyElementalDamagePresentation={

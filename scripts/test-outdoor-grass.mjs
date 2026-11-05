@@ -1,5 +1,5 @@
 import {WOOD_TEXTURES} from '../js/quarter-walls.mjs';
-import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createHash} from 'node:crypto';import vm from 'node:vm';
+import assert from 'node:assert/strict';import {readCombatFixture as readFileSync} from './combat-test-source.mjs';import {createHash} from 'node:crypto';import vm from 'node:vm';
 import {groundKind,hasOutdoorGrass,grassMaterialMetrics,GRASS_TEXTURES} from '../js/exploration-ground.mjs';
 import {blankEdgeMap,seedPack,parsePack} from '../js/exploration-authoring.mjs';import {paintEnvironment} from '../js/exploration-environment.mjs';
 import {terrainForEncounter} from '../js/exploration-encounters.mjs';import {SCENE_STYLE,materialMetrics} from '../js/exploration-scene-style.mjs';

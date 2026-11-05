@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import { createHash } from 'node:crypto';
 
 const manifest=JSON.parse(readFileSync('data/new-tripo-qa-assets.json','utf8'));

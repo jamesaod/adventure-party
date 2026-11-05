@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {seedPack,blankMap,packIssues,parsePack,paintCell,linkMaps,destination,TEST_KEY} from '../js/exploration-authoring.mjs';
 import {testContext,exitUrl,testStateKey} from '../js/exploration-test-context.mjs';
 const starter=JSON.parse(readFileSync(new URL('../data/exploration/old-tollhouse.json',import.meta.url)));

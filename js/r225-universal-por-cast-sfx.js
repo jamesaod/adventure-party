@@ -173,10 +173,9 @@ function playPor07CastingSound(){
    SHARED SPELL-COMMIT HOOK
    ============================================================ */
 
-const r225BaseCommitSpellCast=
-  commitSpellCast;
+const r225BaseCommitSpellCast=AdventurePartyCombatServices.current('commitSpellCast');
 
-commitSpellCast=function(
+AdventurePartyCombatServices.register('commitSpellCast','r225-universal-por-cast-sfx.js:179:commitSpellCast',function(
   caster,
   spell,
   action,
@@ -201,7 +200,7 @@ commitSpellCast=function(
   }
 
   return committed;
-};
+});
 
 
 window.AdventurePartyCastingSound={

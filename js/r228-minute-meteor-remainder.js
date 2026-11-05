@@ -25,8 +25,8 @@ function r228ManualMeteorCaster(caster){
    NEXT-TURN RECOVERY
    ============================================================ */
 
-const r228BaseHandleTurnControlEffects=handleTurnControlEffects;
-handleTurnControlEffects=async function(actor){
+const r228BaseHandleTurnControlEffects=AdventurePartyCombatServices.current('handleTurnControlEffects');
+AdventurePartyCombatServices.register('handleTurnControlEffects','r228-minute-meteor-remainder.js:29:handleTurnControlEffects',async function(actor){
   const handled=await r228BaseHandleTurnControlEffects(actor);
   if(handled) return true;
 
@@ -64,15 +64,15 @@ handleTurnControlEffects=async function(actor){
   }
 
   return false;
-};
+});
 
 
 /* ============================================================
    CAST MENU: ALWAYS EXPOSE ANY POSITIVE REMAINDER
    ============================================================ */
 
-const r228BaseRenderSpellCastList=renderSpellCastList;
-renderSpellCastList=function(){
+const r228BaseRenderSpellCastList=AdventurePartyCombatServices.current('renderSpellCastList');
+AdventurePartyCombatServices.register('renderSpellCastList','r228-minute-meteor-remainder.js:75:renderSpellCastList',function(){
   r228BaseRenderSpellCastList();
 
   const {caster,effect,remaining}=r228StoredMinuteMeteorState(
@@ -124,15 +124,15 @@ renderSpellCastList=function(){
     subtitle.textContent=
       `${subtitle.textContent} Stored Minute Meteors: ${remaining} remaining; release manually.`;
   }
-};
+});
 
 
 /* ============================================================
    RELEASE ROUTING: STORED POOL ALWAYS WINS
    ============================================================ */
 
-const r228BaseBeginSelectedCombatSpell=beginSelectedCombatSpell;
-beginSelectedCombatSpell=function(spellId){
+const r228BaseBeginSelectedCombatSpell=AdventurePartyCombatServices.current('beginSelectedCombatSpell');
+AdventurePartyCombatServices.register('beginSelectedCombatSpell','r228-minute-meteor-remainder.js:135:beginSelectedCombatSpell',function(spellId){
   const caster=activePlayerControlledUnit();
 
   if(
@@ -156,15 +156,15 @@ beginSelectedCombatSpell=function(spellId){
   }
 
   return r228BaseBeginSelectedCombatSpell(spellId);
-};
+});
 
 
 /* ============================================================
    UI HINT + DIAGNOSTICS
    ============================================================ */
 
-const r228BaseUpdateUi=updateUi;
-updateUi=function(){
+const r228BaseUpdateUi=AdventurePartyCombatServices.current('updateUi');
+AdventurePartyCombatServices.register('updateUi','r228-minute-meteor-remainder.js:167:updateUi',function(){
   r228BaseUpdateUi();
 
   const {caster,remaining}=r228StoredMinuteMeteorState(
@@ -189,7 +189,7 @@ updateUi=function(){
         ? "1 stored Minute Meteor ready"
         : `${remaining} stored Minute Meteors ready`;
   }
-};
+});
 
 if(window.AdventurePartyLevel3Spells){
   window.AdventurePartyLevel3Spells.release="R228";

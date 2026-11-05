@@ -37,10 +37,15 @@ const borrowedCatalog=new Map(ACTION_PROFILE_CATALOG);
 borrowedCatalog.set('one-handed-swing',defineActionProfile({id:'one-handed-swing',label:'1H',poses:{ready:sharedReady,attack:sharedAttack}}));
 assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).source,'profile-fallback');
 assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).pose.animation,'SwordSlash');
-assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'falling',null,borrowedCatalog).source,'fallback-sprite');
+const fallingFallback=resolveActionPose(borrowedCatalog.get('dual-wield'),'falling',null,borrowedCatalog);
+assert.equal(fallingFallback.source,'profile-fallback');
+assert.equal(fallingFallback.profileId,'one-handed-swing');
+assert.deepEqual(fallingFallback.pose,borrowedCatalog.get('one-handed-swing').poses.ready,'Falling uses the documented shared Ready pose');
 borrowedCatalog.set('dual-wield',defineActionProfile({id:'dual-wield',label:'Dual',fallbackId:'one-handed-swing',poses:{attack:{animation:'TwoWeaponSlash',timeSeconds:0.5}}}));
 assert.equal(resolveActionPose(borrowedCatalog.get('dual-wield'),'attack',null,borrowedCatalog).pose.animation,'TwoWeaponSlash');
 
 const wizardProfile=ACTION_PROFILE_CATALOG.get('wizard-staff-grip');
 assert.equal(wizardProfile.label,'Wooden Staff 1');assert.equal(wizardProfile.fallbackId,null);
 assert.equal(resolveActionPose(wizardProfile,'ready',null,borrowedCatalog).source,'fallback-sprite','Wizard captures cannot silently reuse another weapon grip');
+
+for(const pose of ['ready','windup','attack','falling','prone'])assert.equal(resolveActionPose(wizardProfile,pose,null,borrowedCatalog).source,'fallback-sprite','Wizard Staff remains isolated for '+pose);

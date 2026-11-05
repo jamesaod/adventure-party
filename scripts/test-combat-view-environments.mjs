@@ -1,6 +1,6 @@
 import {wallFaceMaterial} from '../js/wall-surfaces.mjs';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';import {readFileSync} from 'node:fs';
+import vm from 'node:vm';import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {blankEdgeMap,paintCell,resizeMap,seedPack,parsePack} from '../js/exploration-authoring.mjs';
 import {isOutdoor,validateEnvironment} from '../js/exploration-environment.mjs';
 import {SCENE_STYLE,materialMetrics,ambientForCell,surfaceLight} from '../js/exploration-scene-style.mjs';

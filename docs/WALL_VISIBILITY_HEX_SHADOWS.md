@@ -1,3 +1,5 @@
+> The hex-based building ground-shadow experiment below is historical. The current local test restores filtered, actual-position building shadows. Visibility and wall-face corrections remain; tree shadows are unchanged.
+
 # Candidate Rev 274: wall visibility and stepped sunlight
 
 Whole floor hexes sample cached projected wall shadows at their tactical center. Wall fragments use their owning hex, uniformly across the fragment. This is a ground-based solar approximation, not a 3D wall shadow map. Authored indoor areas retain their own lighting.
