@@ -6,8 +6,13 @@
 <label>View <select id="viewpoint"><option value="ground">Near ground</option><option value="combat">Combat</option></select></label>
 <label>Camera <input id="orbit" type="range" min="0" max="360" value="33"></label>
 <label>Wind <input id="wind" type="range" min="0" max="100" value="35"></label>
+<label>Number of leaves <input id="leafCount" type="range" min="0" max="300" step="5" value="100"> <output id="leafTotal"></output></label>
+<label>Leaf size <input id="leafSize" type="range" min="5" max="150" value="100"> <output id="leafScale"></output></label>
+<label>Foliage <select id="foliageMode"><option value="leaves">Leaves</option><option value="cards">Cards</option></select></label>
+<label>Leaf tip angle <input id="leafAngle" type="range" min="0" max="60" value="10"> <output id="leafAngleValue">10&#176;</output></label>
+<a id="groveLink" href="?grove=1">Try stacked shadows in the oak grove</a> <label id="speciesControl" hidden>Tree type <select id="species"><option value="mixed">Mixed woodland</option><option value="oak">Oak</option><option value="birch">Silver birch</option><option value="pine">Scots pine</option><option value="willow">Weeping willow</option><option value="maple">Autumn maple</option><option value="cypress">Cypress</option><option value="apple">Apple tree</option><option value="elm">American elm</option><option value="hemlock">Eastern hemlock</option><option value="baldCypress">Bald cypress</option><option value="redMaple">Red maple</option><option value="blackCherry">Black cherry</option><option value="sugarMaple">Sugar maple</option><option value="tulipTree">Tulip tree</option><option value="whiteAsh">White ash</option><option value="snag">Dead snag</option></select></label> <span id="layoutControls" hidden><label>Tree density <input id="treeDensity" type="range" min="0" max="100" value="70"> <output id="treeDensityValue"></output></label> <label>Clearing size <input id="clearingSize" type="range" min="0" max="100" value="45"> <output id="clearingSizeValue"></output></label></span> <button id="randomizeGrove" hidden>Randomize grove</button><label id="stackControl" hidden><input id="stackShadows" type="checkbox"> Stack shadows within foliage</label>
 <button id="play">Animate</button><label><input id="shadows" type="checkbox" checked> Shadows</label></p>
-<div style="display:flex;justify-content:space-around"><strong>Current oak</strong><strong>Broad mature oak</strong></div><div id="view"></div><p id="status"></p><a href="white-oak-grove.html">Canvas grove baseline</a>
+<div id="comparisonLabels" style="display:flex;justify-content:space-around"><strong>Current oak</strong><strong>Broad mature oak</strong></div><div id="view"></div><p id="status"></p><a href="white-oak-grove.html">Canvas grove baseline</a>
 <script type="module">
 import * as THREE from "../assets/vendor/three/three.module.min.js";
 function randomFor(seed){
@@ -64,19 +69,78 @@ function growOak(seed){
   return {nodes,mass,leaves};
 }
 
+const hardwoodProfiles={
+  redMaple:{base:24,spacing:4,tiers:10,width:29,rise:.40,paired:true,hue:.015,bark:0xb8ada8},
+  blackCherry:{base:34,spacing:5,tiers:8,width:20,rise:.49,paired:false,hue:.27,bark:0x74635e},
+  sugarMaple:{base:26,spacing:4,tiers:10,width:34,rise:.44,paired:true,hue:.095,bark:0xa89b8c},
+  tulipTree:{base:43,spacing:5,tiers:9,width:23,rise:.42,paired:false,hue:.25,bark:0xa49b83},
+  whiteAsh:{base:32,spacing:5,tiers:8,width:24,rise:.57,paired:true,hue:.22,bark:0xaaa598}
+};
+function growSpecies(seed,species){
+  const hardwood=hardwoodProfiles[species];
+  const random=randomFor(seed);
+  const hemlock=species==="hemlock", elm=species==="elm", swamp=species==="baldCypress";
+  const pine=species==="pine"||hemlock, apple=species==="apple";
+  const forkHeight=hardwood?.base??(elm?(seed%2?20:38):apple?13:25);
+  const nodes=[{x:0,y:0,z:0,parent:-1}],leaves=[];
+  function add(parent,x,y,z){
+    return nodes.push({parent,x,y,z})-1;
+  }
+  add(0,0,0,apple?7:12);
+  let leader=add(1,0,0,forkHeight);
+  const tiers=hardwood?.tiers??(elm?1:apple?5:pine?8:12);
+  for(let tier=0;tier<tiers;tier++){
+    const progress=tier/tiers;
+    const height=forkHeight+tier*(hardwood?.spacing??(apple?2.8:pine?6:4));
+    leader=add(leader,0,0,height+.2);
+    const count=hardwood?(hardwood.paired?2:1):elm?5:pine?3+Math.floor(random()*4):apple?3:1+Math.floor(random()*2);
+    const phase=tier*2.39996;
+    for(let branch=0;branch<count;branch++){
+      const angle=phase+branch*Math.PI*2/count+(random()-.5)*.55;
+      const reach=hardwood
+        ? hardwood.width*Math.sin(Math.PI*(.18+.77*progress))*(.8+random()*.35)
+        : apple?28*Math.sin(Math.PI*(.24+.70*progress))*(.82+random()*.32)
+        : (elm?(forkHeight===20?36:23):pine?32:swamp?26:24)*(1-progress*(pine?.88:.65))*(.7+random()*.5);
+      const rise=hardwood?reach*hardwood.rise:elm?reach*.95:hemlock?reach*-.08:apple?reach*.34:pine?reach*.1:reach*.34;
+      const x=Math.cos(angle)*reach,y=Math.sin(angle)*reach;
+      const middle=add(leader,x*.48,y*.48,height+rise*.35);
+      const tip=add(middle,x,y,height+rise);
+      for(let shoot=0;shoot<8;shoot++){
+        const t=elm?.56+shoot*.062:.38+shoot*.085;
+        const bearing=angle+(shoot%2?1:-1)*(.6+random()*.45);
+        const length=(pine?5:apple?8:6)*(1-progress*.55);
+        const sx=x*t+Math.cos(bearing)*length,sy=y*t+Math.sin(bearing)*length;
+        const sz=height+rise*t+length*(elm?.85:hemlock?-.65:pine?.18:.42);
+        const parent=t<.66?middle:tip;
+        add(parent,sx,sy,sz);
+        const origin=nodes[parent];
+        for(let j=0;j<12;j++){
+          const spread=elm?9:pine?3:apple?6:4;
+          const along=apple?.32+.68*j/11:1;
+          leaves.push({x:origin.x+(sx-origin.x)*along+(random()-.5)*spread,y:origin.y+(sy-origin.y)*along+(random()-.5)*spread,
+            z:origin.z+(sz-origin.z)*along+(random()-.5)*spread,r:(apple?1.05:pine?1.6:1.8)+random(),
+            color:Math.floor(random()*5),apple:apple&&j===0&&shoot%3===0});
+        }
+      }
+    }
+  }
+  const mass=nodes.map(()=>1);
+  for(let i=nodes.length-1;i>0;i--)mass[nodes[i].parent]+=mass[i];
+  return {nodes,mass,leaves,species};
+}
 function growFullOak(seed,species="oak"){
+  if(hardwoodProfiles[species]||["pine","apple","birch","elm","hemlock","baldCypress"].includes(species))return growSpecies(seed,species);
   const oak=growOak(seed), random=randomFor(seed+88000);
   oak.leaves=oak.leaves.flatMap(leaf=>[leaf,{
     ...leaf,x:leaf.x+(random()-.5)*9,
     y:leaf.y+(random()-.5)*9,z:leaf.z+(random()-.5)*7
   }]);
   oak.species=species;
-  if(["birch","pine","cypress"].includes(species)){
+  if(species==="cypress"){
     for(const point of [...oak.nodes,...oak.leaves]){
-      const spread=species==="birch"?.65:species==="cypress"?.34:Math.max(.25,1.25-point.z/90);
-      point.x*=spread;
-      point.y*=spread;
-      point.z*=species==="cypress"?1.45:1.18;
+      point.x*=.34;
+      point.y*=.34;
+      point.z*=1.45;
     }
   }
   if(species==="willow"){
@@ -98,18 +162,12 @@ function growFullOak(seed,species="oak"){
     oak.mass=oak.nodes.map(()=>1);
     for(let i=oak.nodes.length-1;i>0;i--)oak.mass[oak.nodes[i].parent]+=oak.mass[i];
   }
-  if(species==="apple"){
-    for(const point of [...oak.nodes,...oak.leaves]){
-      point.x*=1.08;
-      point.y*=1.08;
-      point.z*=.82;
-    }
-    for(let i=5;i<oak.leaves.length;i+=23)oak.leaves[i].apple=true;
-  }
   oak.shadows=new Map();
   return oak;
 }
 
+const groveParams=new URLSearchParams(location.search);
+const grove=groveParams.has("grove");
 const view=document.querySelector("#view");
 const sun=document.querySelector("#sun"), viewpoint=document.querySelector("#viewpoint");
 const play=document.querySelector("#play"), shadows=document.querySelector("#shadows");
@@ -158,17 +216,109 @@ const leafShape=new THREE.Shape();
 leafShape.moveTo(0,-1);
 for(const [x,y] of [[.2,-.66],[.52,-.47],[.25,-.31],[.66,-.08],[.3,.07],[.58,.31],[.24,.38],[.32,.68],[0,1],[-.32,.68],[-.24,.38],[-.58,.31],[-.3,.07],[-.66,-.08],[-.25,-.31],[-.52,-.47],[-.2,-.66]])leafShape.lineTo(x,y);
 leafShape.closePath();
+const hardwoodOutlines={
+  redMaple:[[0,-1],[.32,-.46],[.75,.22],[.31,.13],[0,1],[-.31,.13],[-.75,.22],[-.32,-.46]],
+  sugarMaple:[[0,-1],[.53,-.62],[.42,-.35],[.89,.27],[.38,.16],[0,1],[-.38,.16],[-.89,.27],[-.42,-.35],[-.53,-.62]],
+  blackCherry:[[0,-1],[.38,-.65],[.51,-.23],[.43,.28],[.23,.67],[0,1],[-.23,.67],[-.43,.28],[-.51,-.23],[-.38,-.65]],
+  tulipTree:[[0,-1],[.7,-.72],[.52,-.24],[.83,.48],[.49,.85],[0,.47],[-.49,.85],[-.83,.48],[-.52,-.24],[-.7,-.72]],
+  whiteAsh:[[0,-1],[.3,-.66],[.17,-.48],[.49,-.31],[.19,-.12],[.5,.14],[.13,.27],[0,1],[-.13,.27],[-.5,.14],[-.19,-.12],[-.49,-.31],[-.17,-.48],[-.3,-.66]]
+};
+const hardwoodGeometry=Object.fromEntries(Object.entries(hardwoodOutlines).map(([species,points])=>{
+  const shape=new THREE.Shape(points.map(([x,y])=>new THREE.Vector2(x,y)));
+  shape.closePath();
+  return [species,new THREE.ShapeGeometry(shape).rotateX(-Math.PI/2)];
+}));
 const geometry=new THREE.ShapeGeometry(leafShape);
 geometry.rotateX(-Math.PI/2);
+
+const leafAngle=document.getElementById("leafAngle");
+const leafAngleValue=document.getElementById("leafAngleValue");
+const leafMeshes=[geometry,...Object.values(hardwoodGeometry)].map(mesh=>{
+  const vertices=mesh.attributes.position;
+  return {mesh,vertices,flatZ:Float32Array.from({length:vertices.count},(_,i)=>vertices.getZ(i))};
+});
+function updateLeafAngle(){
+  const angle=Number(leafAngle.value)*Math.PI/180;
+  const sine=Math.sin(angle),cosine=Math.cos(angle);
+  for(const {mesh,vertices:leafVertices,flatZ} of leafMeshes){
+  for(let i=0;i<leafVertices.count;i++){
+    const distance=1-flatZ[i];
+    leafVertices.setY(i,-distance*sine);
+    leafVertices.setZ(i,1-distance*cosine);
+  }
+  mesh.computeVertexNormals();
+  leafVertices.needsUpdate=true;
+  }
+leafAngleValue.textContent=leafAngle.value+String.fromCharCode(176);
+}
+updateLeafAngle();
+leafAngle.addEventListener("input",()=>{
+  updateLeafAngle();
+  draw();
+});
 const dummy=new THREE.Object3D();
 const foliageMaterial=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.85});
-function buildTree(mature){
-  const oak=growFullOak(113);
+const barkTints={
+  elm:0xafa59a,
+  hemlock:0xaf9986,
+  baldCypress:0xc38e70,
+  birch:0xffffff,
+  pine:0xd6a481,
+  willow:0xb7b49b,
+  maple:0xc2b9b1,
+  cypress:0xc78e68,
+  apple:0xb4a092,
+  snag:0xaaa8a3
+};
+const speciesBark=new Map();
+const foliageMode=document.querySelector("#foliageMode");
+foliageMode.value=groveParams.get("foliage")??"leaves";
+if(!foliageMode.value)foliageMode.value="leaves";
+const cardCanvas=document.createElement("canvas");
+cardCanvas.width=cardCanvas.height=128;
+const cardContext=cardCanvas.getContext("2d");
+const cardRandom=randomFor(185);
+for(let i=0;i<25;i++){
+  const angle=i*2.39996;
+  const radius=54*Math.sqrt(i/25);
+  cardContext.save();
+  cardContext.translate(64+radius*Math.cos(angle),64+radius*Math.sin(angle));
+  cardContext.rotate(angle);
+  const shade=78+Math.floor(cardRandom()*45);
+  cardContext.fillStyle="rgb("+shade+","+shade+","+shade+")";
+  cardContext.beginPath();
+  cardContext.ellipse(0,0,8+cardRandom()*2,3.5+cardRandom()*1.5,0,0,Math.PI*2);
+  cardContext.fill();
+  cardContext.restore();
+}
+const cardTexture=new THREE.CanvasTexture(cardCanvas);
+const cardMaterial=new THREE.MeshStandardMaterial({
+  map:cardTexture,alphaTest:.45,side:THREE.DoubleSide,roughness:.85
+});
+const cardGeometry=new THREE.PlaneGeometry(10,10).rotateX(-Math.PI/2);
+const leavesPerCard=25;
+
+function buildTree(mature,seed=113,species="oak",sapling=false){
+  if(!speciesBark.has(species)){
+    const material=bark.clone();
+    material.color.set(hardwoodProfiles[species]?.bark??barkTints[species]??0xffffff);
+    if(species==="birch")material.color.multiplyScalar(2.25);
+    speciesBark.set(species,material);
+  }
+  const woodMaterial=speciesBark.get(species);
+  const oak=growFullOak(seed,species);
+  if(species==="elm"){
+    const random=randomFor(seed+193);
+    for(let i=oak.leaves.length-1;i>0;i--){
+      const j=Math.floor(random()*(i+1));
+      [oak.leaves[i],oak.leaves[j]]=[oak.leaves[j],oak.leaves[i]];
+    }
+  }
   const group=new THREE.Group();
   // Fill gaps around the existing twigs without changing either crown shape.
-  const fillRandom=randomFor(48113);
+  const fillRandom=randomFor(48000+seed);
   oak.leaves=oak.leaves.flatMap(leaf=>[leaf,{
-    ...leaf,
+    ...leaf,apple:false,
     x:leaf.x+(fillRandom()-.5)*5,
     y:leaf.y+(fillRandom()-.5)*5,
     z:leaf.z+(fillRandom()-.5)*5,
@@ -195,8 +345,11 @@ function buildTree(mature){
     const a=new THREE.Vector3(from.x,from.z,from.y),b=new THREE.Vector3(to.x,to.z,to.y);
     const delta=b.clone().sub(a);
     const length=delta.length();
-    const overlap=mature?Math.min(length*.28,top*.85):0;
-    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,length+overlap*2,mature?12:7,1,mature),bark);
+    const radiusLimit=Math.min(1.65,length*.55);
+    bottom=Math.min(bottom,radiusLimit);
+    top=Math.min(top,radiusLimit*.9);
+    const overlap=Math.min(length*.2,top*.75);
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,length+overlap*2,12,1,true),woodMaterial);
     mesh.position.copy(a).lerp(b,.5);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());
     mesh.castShadow=mesh.receiveShadow=true;
@@ -205,27 +358,62 @@ function buildTree(mature){
   for(let i=3;i<oak.nodes.length;i++){
     const p=oak.nodes[i],r=Math.max(.16,Math.sqrt(oak.mass[i])*.24);
     const parentRadius=Math.max(.16,Math.sqrt(oak.mass[p.parent])*.24);
-    if(mature&&Math.hypot(p.x+1.9,p.y)<3.1&&p.z<29)continue;
+    // The trunk and primary limbs supply the large wood at the fork.
     wood(oak.nodes[p.parent],p,mature?Math.min(parentRadius,r*1.18):r*1.18,mature?r:r*.76);
   }
-  const rootAngles=Array.from({length:6},(_,i)=>({
-    angle:i*Math.PI/3+(barkRandom()-.5)*.5,
-    reach:6+barkRandom()*7
+  const trunkRandom=randomFor(seed+57281);
+  const rootCount=4+Math.floor(trunkRandom()*4);
+  const rootPhase=trunkRandom()*Math.PI*2;
+  const trunkWidth=.82+trunkRandom()*.36;
+  const taperVariation=(trunkRandom()-.5)*.3;
+  const bendX=(trunkRandom()-.5)*(sapling?1:7);
+  const bendZ=(trunkRandom()-.5)*(sapling?1:7);
+  const rootAngles=Array.from({length:rootCount},(_,i)=>({
+    angle:rootPhase+i*Math.PI*2/rootCount+(trunkRandom()-.5)*.65,
+    reach:4+trunkRandom()*10
   }));
   const trunkPositions=[],trunkUV=[],trunkIndices=[];
   const rings=[[0,5.5,1],[1.4,5.1,.72],[4,4.3,.34],[8,3.6,.09],[13,3.05,0],[20,2.65,0],[27,2.34,0],[33,2.05,0]];
+  if(mature)rings.push([39,1.72,0],[46,1.05,0],[52,.35,0],[54,.04,0]);
+  else rings.push([37,1.72,0],[41,1.12,0],[45,.48,0],[48,.04,0]);
+  const trunkProfiles={
+    elm:{width:1.12,flare:.85,bend:.55},
+    hemlock:{width:.78,flare:.45,bend:.38},
+    baldCypress:{width:1.15,flare:1.4,bend:.15},
+    birch:{width:.57,flare:.32,bend:.65},
+    pine:{width:.74,flare:.48,bend:.22},
+    willow:{width:1.22,flare:1.2,bend:2.7},
+    maple:{width:1.08,flare:.85,bend:1.45},
+    cypress:{width:.66,flare:.48,bend:.15},
+    apple:{width:.86,flare:.58,bend:2.25},
+    snag:{width:.78,flare:.64,bend:1.75}
+  };
+  const profile=trunkProfiles[species]??{width:1,flare:1,bend:1};
+  // Ring values describe height, bole radius, and root flare.
+  const elmFork=oak.nodes[2].z;
+  const speciesRings={
+    apple:[[0,3.8,.22],[2,3.45,.08],[8,3.15,0],[15,2.6,0],[22,1.7,0],[32,.12,0]],
+    elm:[[0,4.6,.65],[3,4.1,.22],[8,3.6,0],[elmFork-5,3.05,0],[elmFork,2.6,0],[elmFork+3,.1,0]],
+    tulipTree:[[0,5,.3],[3,4.5,.08],[12,4.1,0],[27,3.65,0],[43,3.2,0],[58,2.35,0],[72,1.4,0],[84,.08,0]],
+    baldCypress:[[0,7,1],[2,6.1,.84],[5,4.75,.58],[10,3.3,.21],[16,2.65,.05],[25,2.25,0],[43,1.55,0],[63,.6,0],[72,.07,0]]
+  };
+  const trunkRings=speciesRings[species]??rings;
   const sides=72;
-  for(const [height,radius,flare] of rings){
+  for(const [height,radius,flare] of trunkRings){
     for(let i=0;i<=sides;i++){
       const angle=(i%sides)*2*Math.PI/sides;
       const roots=rootAngles.reduce((sum,root)=>sum+Math.max(0,Math.cos(angle-root.angle))**26*root.reach,0);
-      const r=radius+flare*roots*(mature?.72:1)+.19*Math.sin(angle*11)+.12*Math.cos(angle*17);
-      const width=mature?1.4:1;
-      trunkPositions.push(Math.cos(angle)*r*width+(mature?-height*.075:height/33),height*(mature?.82:1),Math.sin(angle)*r*width);
+      const r=sapling
+        ? Math.min(radius,.9)+flare*roots*.012+.025*Math.sin(angle*11)
+        : radius+flare*roots*(mature?.72:profile.flare)+.19*Math.sin(angle*11)+.12*Math.cos(angle*17);
+      const heightFraction=Math.min(1,height/33);
+      const bendWeight=Math.sin(Math.PI*heightFraction);
+      const width=(mature?1.4:profile.width)*trunkWidth*(1+taperVariation*(1-heightFraction));
+      trunkPositions.push(Math.cos(angle)*r*width+bendX*bendWeight+(mature?-height*.075:height/33*profile.bend),height*(mature?.82:species==="apple"?.82:species==="cypress"?1.45:species==="birch"||species==="pine"?1.18:1),Math.sin(angle)*r*width+bendZ*bendWeight);
       trunkUV.push(i/sides,height/33);
     }
   }
-  for(let row=0;row<rings.length-1;row++)for(let i=0;i<sides;i++){
+  for(let row=0;row<trunkRings.length-1;row++)for(let i=0;i<sides;i++){
     const a=row*(sides+1)+i,b=a+sides+1;
     trunkIndices.push(a,b,a+1,a+1,b,b+1);
   }
@@ -235,28 +423,38 @@ function buildTree(mature){
   trunkGeometry.setIndex(trunkIndices);
   trunkGeometry.computeVertexNormals();
   const normals=trunkGeometry.attributes.normal;
-  for(let row=0;row<rings.length;row++){
+  for(let row=0;row<trunkRings.length;row++){
     const first=row*(sides+1),last=first+sides;
     const normal=new THREE.Vector3().fromBufferAttribute(normals,first)
       .add(new THREE.Vector3().fromBufferAttribute(normals,last)).normalize();
     for(const i of [first,last])normals.setXYZ(i,normal.x,normal.y,normal.z);
   }
-  const trunk=new THREE.Mesh(trunkGeometry,bark);
+  const trunk=new THREE.Mesh(trunkGeometry,woodMaterial);
   trunk.castShadow=trunk.receiveShadow=true;
   group.add(trunk);
+  if(species==="baldCypress"&&!sapling){
+    const kneeRandom=randomFor(seed+921);
+    for(let i=0;i<9;i++){
+      const angle=i*2.39996+kneeRandom()*.6;
+      const radius=8+kneeRandom()*16;
+      const x=Math.cos(angle)*radius,y=Math.sin(angle)*radius;
+      wood({x,y,z:-.15},{x:x+.2,y,z:1.3+kneeRandom()*3.5},.95,.12);
+    }
+  }
   if(mature){
     for(let i=0;i<5;i++){
       const angle=.4+i*Math.PI*2/5;
-      const base={x:-1,y:0,z:14};
+      const base={x:-1,y:0,z:13};
+      const shoulder={x:-1.3+Math.cos(angle)*2,y:Math.sin(angle)*2,z:19+i*.7};
       const elbow={x:Math.cos(angle)*19,y:Math.sin(angle)*19,z:23+(i%2)*3};
       const end={x:Math.cos(angle)*39,y:Math.sin(angle)*39,z:30+(i%3)*4};
-      const curve=new THREE.CatmullRomCurve3([base,elbow,end].map(p=>new THREE.Vector3(p.x,p.z,p.y)));
+      const curve=new THREE.CatmullRomCurve3([base,shoulder,elbow,end].map(p=>new THREE.Vector3(p.x,p.z,p.y)));
       const steps=18,sides=12;
       const tube=new THREE.TubeGeometry(curve,steps,1,sides,false);
       const positions=tube.attributes.position;
       for(let step=0;step<=steps;step++){
         const t=step/steps,center=curve.getPointAt(t);
-        const radius=3.4*Math.pow(1-t,1.15)+.55;
+        const radius=2.7*Math.pow(1-t,1.35)+.25;
         for(let side=0;side<=sides;side++){
           const index=step*(sides+1)+side;
           const point=new THREE.Vector3().fromBufferAttribute(positions,index).sub(center).multiplyScalar(radius).add(center);
@@ -264,27 +462,181 @@ function buildTree(mature){
         }
       }
       tube.computeVertexNormals();
-      const limb=new THREE.Mesh(tube,bark);
+      const limb=new THREE.Mesh(tube,woodMaterial);
       limb.castShadow=limb.receiveShadow=true;
       group.add(limb);
     }
   }
-  const leaves=new THREE.InstancedMesh(geometry,foliageMaterial,oak.leaves.length);
+  const baselineCount=oak.leaves.length;
+  const scatter=randomFor(7231);
+  for(let i=0;baselineCount&&i<Math.max(sapling?0:baselineCount*2,(sapling?1080:grove?13500:4500)-baselineCount);i++){
+    const leaf=oak.leaves[i%baselineCount];
+    oak.leaves.push({...leaf,x:leaf.x+(scatter()-.5)*4,y:leaf.y+(scatter()-.5)*4,z:leaf.z+(scatter()-.5)*4});
+  }
+  const leaves=new THREE.InstancedMesh(hardwoodGeometry[species]??geometry,foliageMaterial,oak.leaves.length);
   leaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   leaves.frustumCulled=false;
   for(const [i,p] of oak.leaves.entries()){
     const outer=Math.min(1,Math.hypot(p.x,p.y,(p.z-38)*.8)/58);
     const color=mature?new THREE.Color().setHSL(.28-.035*outer,.62,.095+.12*outer+p.color*.012):
       new THREE.Color().setHSL(.267+p.color*.006,.57,.135+p.color*.021);
+    const hardwood=hardwoodProfiles[species];
+    if(hardwood)color.setHSL(hardwood.hue+p.color*.006,.65,.19+p.color*.025);
+    if(species==="maple")color.setHSL(.045+p.color*.018,.76,.35+p.color*.055);
     leaves.setColorAt(i,color);
   }
   leaves.castShadow=leaves.receiveShadow=true;
   group.add(leaves);
+  const cards=new THREE.InstancedMesh(cardGeometry,cardMaterial,Math.ceil(oak.leaves.length/leavesPerCard));
+  cards.castShadow=cards.receiveShadow=true;
+  cards.frustumCulled=false;
+  cards.visible=false;
+  const color=new THREE.Color();
+  for(let i=0;i<cards.count;i++){
+    leaves.getColorAt(i*leavesPerCard,color);
+    cards.setColorAt(i,color);
+  }
+  group.add(cards);
+  const fruit=sapling?[]:oak.leaves.slice(0,baselineCount).filter(leaf=>leaf.apple);
+  if(fruit.length){
+    const apples=new THREE.InstancedMesh(new THREE.SphereGeometry(.48,8,6),
+      new THREE.MeshStandardMaterial({color:0xb12618}),fruit.length);
+    for(const [i,leaf] of fruit.entries()){
+      apples.setMatrixAt(i,new THREE.Matrix4().makeTranslation(leaf.x,leaf.z-.55,leaf.y));
+    }
+    apples.castShadow=apples.receiveShadow=true;
+    group.add(apples);
+  }
   scene.add(group);
-  return {oak,group,leaves,mature};
+  return {seed,oak,group,leaves,cards,mature,baselineCount,baseColors:leaves.instanceColor?.array.slice()};
 }
-const trees=[buildTree(false),buildTree(true)];
+const saplings=[];
+const trees=grove?[]:[buildTree(false),buildTree(true)];
+const leafCount=document.getElementById("leafCount");
+const leafSize=document.getElementById("leafSize");
+const leafTotal=document.getElementById("leafTotal");
+const leafScale=document.getElementById("leafScale");
+const stackShadows=document.querySelector("#stackShadows");
+if(grove){
+  document.querySelector("#groveLink").hidden=true;
+  document.querySelector("#stackControl").hidden=false;
+  stackShadows.addEventListener("input",()=>{
+    if(stackShadows.checked)shadows.checked=true;
+  });
+  shadows.addEventListener("input",()=>{
+    if(!shadows.checked)stackShadows.checked=false;
+  });
+  const species=document.querySelector("#species");
+  document.querySelector("#speciesControl").hidden=false;
+  species.value=groveParams.get("species")??"oak";
+  if(!species.value)species.value="oak";
+  document.querySelector("#comparisonLabels").textContent=species.selectedOptions[0].text+" grove · combat terrain preview";
+  viewpoint.value=groveParams.get("view")??"combat";
+  orbit.value=groveParams.get("camera")??orbit.defaultValue;
+  sun.value=groveParams.get("sun")??sun.defaultValue;
+  leafSize.value=groveParams.get("size")??105;
+  leafAngle.value=groveParams.get("angle")??26;
+  updateLeafAngle();
+  leafCount.value=groveParams.get("density")??100;
+  shadows.checked=groveParams.get("shadows")!=="0";
+  stackShadows.checked=groveParams.get("stack")==="1";
+  const randomizeGrove=document.querySelector("#randomizeGrove");
+  randomizeGrove.hidden=false;
+  randomizeGrove.addEventListener("click",()=>{
+    const seed=crypto.getRandomValues(new Uint32Array(1))[0];
+    groveParams.set("seed",seed);
+    reloadGrove();
+  });
+  species.addEventListener("change",reloadGrove);
+  document.querySelector("#layoutControls").hidden=false;
+  const treeDensity=document.querySelector("#treeDensity");
+  const clearingSize=document.querySelector("#clearingSize");
+  for(const control of [treeDensity,clearingSize]){
+    control.value=groveParams.get(control.id)??control.defaultValue;
+    const output=document.getElementById(control.id+"Value");
+    output.value=control.value+"%";
+    control.addEventListener("input",()=>output.value=control.value+"%");
+    control.addEventListener("change",reloadGrove);
+  }
+  function reloadGrove(){
+    groveParams.set("species",species.value);
+    groveParams.set("foliage",foliageMode.value);
+    groveParams.set("treeDensity",treeDensity.value);
+    groveParams.set("clearingSize",clearingSize.value);
+    groveParams.set("camera",orbit.value);
+    groveParams.set("sun",sun.value);
+    groveParams.set("view",viewpoint.value);
+    groveParams.set("size",leafSize.value);
+    groveParams.set("angle",leafAngle.value);
+    groveParams.set("density",leafCount.value);
+    groveParams.set("shadows",Number(shadows.checked));
+    groveParams.set("stack",Number(stackShadows.checked));
+    location.search=groveParams.toString();
+  }
+  const grass=new THREE.TextureLoader().load("../assets/textures/exploration/grass-short-v1.png",()=>draw());
+  grass.colorSpace=THREE.SRGBColorSpace;
+  grass.wrapS=grass.wrapT=THREE.RepeatWrapping;
+  grass.repeat.set(48,48);
+  ground.material.color.set(0xffffff);
+  ground.material.map=grass;
+  const seed=Number(groveParams.get("seed")??4500);
+  const random=randomFor(seed);
+  const scatterRandom=randomFor(seed+73);
+  const types=Array.from(species.options,option=>option.value).filter(type=>type!=="mixed");
+  for(let i=types.length-1;i>0;i--){
+    const j=Math.floor(random()*(i+1));
+    [types[i],types[j]]=[types[j],types[i]];
+  }
+  const lines=[];
+  const hexRadius=32;
+  const candidates=[];
+  const layoutRandom=randomFor(seed+119);
+  const clearings=Array.from({length:3},()=>({
+    x:(layoutRandom()-.5)*300,z:(layoutRandom()-.5)*240
+  }));
+  const clearingRadius=Number(clearingSize.value)*.85;
+  for(let row=-5;row<=5;row++)for(let col=-7;col<=7;col++){
+    const x=Math.sqrt(3)*hexRadius*(col+row/2),z=1.5*hexRadius*row;
+    for(let side=0;side<6;side++){
+      for(const corner of [side,side+1]){
+        const angle=Math.PI/6+corner*Math.PI/3;
+        lines.push(x+hexRadius*Math.cos(angle),.05,z+hexRadius*Math.sin(angle));
+      }
+    }
+    if(Math.hypot(x,z)<235&&clearings.every(gap=>Math.hypot(x-gap.x,z-gap.z)>=clearingRadius)){
+      candidates.push({x,z,order:layoutRandom()});
+    }
+  }
+  candidates.sort((a,b)=>a.order-b.order);
+  const treeCount=Math.round(Number(treeDensity.value)*.24);
+  for(const {x,z} of candidates.slice(0,treeCount)){
+      const kind=species.value==="mixed"?types[trees.length%types.length]:species.value;
+      const tree=buildTree(false,Math.floor(random()*100000)+1,kind);
+      tree.group.position.set(x+(random()-.5)*10,0,z+(random()-.5)*10);
+      tree.group.scale.setScalar((.72+random()*.23)*(kind==="apple"?1.30:1));
+      trees.push(tree);
+      if(kind!=="snag"){
+        const sapling=buildTree(false,Math.floor(scatterRandom()*100000)+1,kind,true);
+        const angle=scatterRandom()*Math.PI*2;
+        sapling.group.position.set(x+18*Math.cos(angle),0,z+18*Math.sin(angle));
+        sapling.group.scale.setScalar(.16+scatterRandom()*.11);
+        sapling.sapling=true;
+        saplings.push(sapling);
+      }
+  }
+  trees.push(...saplings);
+  const grid=new THREE.BufferGeometry();
+  grid.setAttribute("position",new THREE.Float32BufferAttribute(lines,3));
+  scene.add(new THREE.LineSegments(grid,new THREE.LineBasicMaterial({color:0x394429,transparent:true,opacity:.45})));
+  Object.assign(camera,{left:-240,right:240,top:110,bottom:-110});
+  camera.updateProjectionMatrix();
+}
+let canopyShaded=false;
 function draw(time=0){
+  const density=Number(leafCount.value)/100;
+  const size=Number(leafSize.value)/100;
+  leafTotal.textContent=(grove?trees.slice(0,1):trees).map(tree=>Math.round((grove&&tree.baselineCount?4500:tree.baselineCount)*density).toLocaleString()).join(" / ");
+  leafScale.textContent=leafSize.value+"%";
   const heading=Number(orbit.value)*Math.PI/180;
   camera.position.set(202*Math.sin(heading),viewpoint.value==="ground"?61:120,202*Math.cos(heading));
   camera.lookAt(0,34,0);
@@ -292,25 +644,77 @@ function draw(time=0){
   const a=Number(sun.value)*Math.PI/180;
   light.position.set(115*Math.cos(a),115,115*Math.sin(a));
   renderer.shadowMap.enabled=shadows.checked;
+  const useCards=foliageMode.value==="cards";
+  const stackCanopy=!useCards&&grove&&shadows.checked&&stackShadows.checked;
+  const canopyRays=new Map();
+  const sampleWidth=Math.max(.3,size*1.4);
   for(const [panel,tree] of trees.entries()){
-    const {oak,leaves,mature}=tree;
-    for(const [i,p] of oak.leaves.entries()){
+    const {oak,leaves,cards,mature,baselineCount}=tree;
+    leaves.count=Math.min(oak.leaves.length,Math.round((tree.sapling?360:grove?4500:baselineCount)*density));
+    leaves.visible=!useCards;
+    cards.visible=useCards;
+    cards.count=Math.ceil(leaves.count/leavesPerCard);
+    const step=useCards?leavesPerCard:1;
+    for(let slot=0;slot<leaves.count;slot+=step){
+      const i=slot;
+      const p=oak.leaves[i];
+
       const gust=Math.sin(time*2+p.y*.085)*strength;
-      const tilt=(mature?.75:.62)*Math.sin(i*1.83);
+      const trunkX=mature?-p.z*.075/.82:p.z/33;
+      const outward=Math.atan2(trunkX-p.x,-p.y);
       dummy.position.set(p.x+gust*2,p.z+gust*.7,p.y);
-      dummy.rotation.set(tilt+gust*.22,i*2.39996,tilt*.55+gust*.12);
-      dummy.scale.set(p.r*.72,1,p.r);
+      dummy.rotation.set(gust*.035,outward,0,"YXZ");
+      const leafWidth=["pine","hemlock","baldCypress"].includes(oak.species)?.12:.72;
+      dummy.scale.set(p.r*leafWidth*size,p.r*size,p.r*size);
       dummy.updateMatrix();
-      leaves.setMatrixAt(i,dummy.matrix);
+      if(useCards){
+        dummy.rotation.x+=Number(leafAngle.value)*Math.PI/180+Math.sin(i)*.28;
+        dummy.scale.set(size,size,size);
+        dummy.updateMatrix();
+        cards.setMatrixAt(i/leavesPerCard,dummy.matrix);
+      }else{
+        leaves.setMatrixAt(slot,dummy.matrix);
+      }
+      if(stackCanopy){
+        const scale=tree.group.scale.x;
+        const height=dummy.position.y*scale;
+        const x=dummy.position.x*scale+tree.group.position.x;
+        const z=dummy.position.z*scale+tree.group.position.z;
+        const u=Math.floor((x-height*Math.cos(a))/sampleWidth);
+        const v=Math.floor((z-height*Math.sin(a))/sampleWidth);
+        const key=u+","+v;
+        if(!canopyRays.has(key))canopyRays.set(key,[]);
+        canopyRays.get(key).push({tree,i,height});
+      }
     }
-    leaves.instanceMatrix.needsUpdate=true;
+    if(useCards)cards.instanceMatrix.needsUpdate=true;
+    else leaves.instanceMatrix.needsUpdate=true;
+    if(grove)continue;
     for(const other of trees)other.group.visible=other===tree;
     renderer.setViewport(panel*480,0,480,440);
     renderer.setScissor(panel*480,0,480,440);
     renderer.render(scene,camera);
   }
+  if(grove){
+    if(stackCanopy||canopyShaded){
+      for(const tree of trees)tree.leaves.instanceColor?.array.set(tree.baseColors);
+      for(const ray of canopyRays.values()){
+        ray.sort((a,b)=>b.height-a.height);
+        for(const [layers,{tree,i}] of ray.entries()){
+          const colors=tree.leaves.instanceColor.array;
+          const shade=Math.max(.35,.9**layers);
+          for(let channel=0;channel<3;channel++)colors[i*3+channel]*=shade;
+        }
+      }
+      for(const tree of trees)if(tree.leaves.instanceColor)tree.leaves.instanceColor.needsUpdate=true;
+      canopyShaded=stackCanopy;
+    }
+    renderer.setViewport(0,0,960,440);
+    renderer.setScissor(0,0,960,440);
+    renderer.render(scene,camera);
+  }
 }
-for(const control of [sun,viewpoint,shadows,orbit,wind])control.addEventListener("input",()=>draw());
+for(const control of [sun,viewpoint,shadows,orbit,wind,leafCount,leafSize,stackShadows,foliageMode])control.addEventListener("input",()=>draw());
 let running=false,animation;
 play.addEventListener("click",()=>{
   running=!running;

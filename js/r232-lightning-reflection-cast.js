@@ -383,6 +383,7 @@ AdventurePartyCombatServices.register('r226CastLightningBolt','r232-lightning-re
       caster
     );
 
+  if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(trace.cells||[],1);
   const ownedFx=r226LightningFx={
     r232Trace:true,
     segments:trace.segments,

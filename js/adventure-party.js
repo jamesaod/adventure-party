@@ -116,6 +116,7 @@ function updateLauncherSelection(){
 
 function showLauncher(){
   cancelPendingCombatStart({preserveDraft:currentScreen==="launcher"});
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'launcher','back');
   currentScreen="launcher";
   stopWeatherAudio();
   classReportOpen=false;
@@ -270,7 +271,7 @@ function returnToStudioFromCombat(){
   }
   if(!game.returningToStudio){
     game.returningToStudio=true;
-    window.location.assign(studioReturnUrl());
+    globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign(studioReturnUrl());
   }
   return true;
 }
@@ -287,6 +288,7 @@ function updateCombatConditionSelection(){
 
 function showCombatConditions(){
   if(currentScreen!=="combat-conditions") cancelPendingCombatStart({preserveDraft:true});
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'combat-conditions','open');
   currentScreen="combat-conditions";
   stopTitleMusic();
   launcherScreen.classList.remove("active");
@@ -334,6 +336,7 @@ function combatRenderingPanel(){
 
 
 function showSpellBook(){
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'spellbook','open');
   currentScreen="spellbook";
 
   stopTitleMusic();
@@ -351,6 +354,7 @@ function showSpellBook(){
 }
 
 function showClassBook(){
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'classbook','open');
   currentScreen="classbook";
 
   stopTitleMusic();
@@ -368,6 +372,7 @@ function showClassBook(){
 }
 
 async function showPixelEditor(){
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'pixel','open');
   currentScreen="pixel";
 
   stopTitleMusic();
@@ -411,17 +416,17 @@ async function activateLauncherSelection(){
     return;
   }
 
-  if(target==="mob-creator"){window.location.assign("./mob-creator.html");return;}
+  if(target==="mob-creator"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-creator.html");return;}
   if(target==="mob-catalog"){
-    window.location.assign("./mob-catalog.html");
+    globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-catalog.html");
     return;
   }
 
-  if(target==="explorer"){window.location.assign("./map-editor.html");return;}
-  if(target==="exploration-test"){window.location.assign("./exploration.html");return;}
+  if(target==="explorer"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./map-editor.html");return;}
+  if(target==="exploration-test"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./exploration.html");return;}
 
   if(target==="3d-studio"){
-    window.location.assign("./3d-studio.html");
+    globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./3d-studio.html");
     return;
   }
 
@@ -475,10 +480,8 @@ document.getElementById("xpLootLauncherButton")?.addEventListener("click",showLa
    One AudioContext lives for the entire application.
    ============================================================ */
 
-const titleEvents=[{"t":0.0,"n":74,"v":127,"c":0,"p":46},{"t":0.352941,"n":74,"v":127,"c":0,"p":46},{"t":0.529411,"n":77,"v":127,"c":0,"p":46},{"t":0.617647,"n":76,"v":127,"c":0,"p":46},{"t":0.705882,"n":77,"v":127,"c":0,"p":46},{"t":0.794117,"n":76,"v":127,"c":0,"p":46},{"t":0.882352,"n":76,"v":127,"c":0,"p":46},{"t":1.058823,"n":77,"v":127,"c":0,"p":46},{"t":1.058823,"n":62,"v":127,"c":0,"p":46},{"t":1.411764,"n":77,"v":127,"c":0,"p":46},{"t":1.411764,"n":62,"v":127,"c":0,"p":46},{"t":1.588234,"n":76,"v":127,"c":0,"p":46},{"t":1.588234,"n":64,"v":127,"c":0,"p":46},{"t":1.941175,"n":76,"v":127,"c":0,"p":46},{"t":1.941175,"n":64,"v":127,"c":0,"p":46},{"t":2.117646,"n":74,"v":127,"c":0,"p":46},{"t":2.117646,"n":65,"v":127,"c":0,"p":46},{"t":2.470587,"n":73,"v":127,"c":0,"p":46},{"t":2.470587,"n":64,"v":127,"c":0,"p":46},{"t":2.647057,"n":74,"v":127,"c":0,"p":46},{"t":2.647057,"n":65,"v":127,"c":0,"p":46},{"t":2.999998,"n":76,"v":127,"c":0,"p":46},{"t":2.999998,"n":67,"v":127,"c":0,"p":46},{"t":3.176469,"n":74,"v":127,"c":0,"p":46},{"t":3.176469,"n":57,"v":127,"c":0,"p":46},{"t":3.264704,"n":73,"v":127,"c":0,"p":46},{"t":3.352939,"n":74,"v":127,"c":0,"p":46},{"t":3.441175,"n":73,"v":127,"c":0,"p":46},{"t":3.70588,"n":69,"v":127,"c":0,"p":46},{"t":4.058821,"n":67,"v":127,"c":0,"p":46},{"t":4.235292,"n":65,"v":127,"c":0,"p":46},{"t":4.411763,"n":69,"v":127,"c":0,"p":46},{"t":4.588233,"n":74,"v":127,"c":0,"p":46},{"t":4.764704,"n":64,"v":127,"c":0,"p":46},{"t":5.117645,"n":72,"v":127,"c":0,"p":46},{"t":5.294115,"n":62,"v":127,"c":0,"p":46},{"t":5.470586,"n":65,"v":127,"c":0,"p":46},{"t":5.647056,"n":70,"v":127,"c":0,"p":46},{"t":5.823527,"n":60,"v":127,"c":0,"p":46},{"t":6.176468,"n":69,"v":127,"c":0,"p":46},{"t":6.352938,"n":58,"v":127,"c":0,"p":46},{"t":6.529409,"n":62,"v":127,"c":0,"p":46},{"t":6.705879,"n":69,"v":127,"c":0,"p":46},{"t":6.88235,"n":69,"v":127,"c":0,"p":46},{"t":6.970585,"n":67,"v":127,"c":0,"p":46},{"t":7.05882,"n":69,"v":127,"c":0,"p":46},{"t":7.147055,"n":67,"v":127,"c":0,"p":46},{"t":7.235291,"n":67,"v":127,"c":0,"p":46},{"t":7.411761,"n":69,"v":127,"c":0,"p":46},{"t":7.764702,"n":57,"v":127,"c":0,"p":46},{"t":7.941173,"n":69,"v":127,"c":0,"p":46},{"t":8.470584,"n":74,"v":127,"c":0,"p":46},{"t":8.823525,"n":74,"v":127,"c":0,"p":46},{"t":8.999996,"n":77,"v":127,"c":0,"p":46},{"t":9.088231,"n":76,"v":127,"c":0,"p":46},{"t":9.176466,"n":77,"v":127,"c":0,"p":46},{"t":9.264701,"n":76,"v":127,"c":0,"p":46},{"t":9.352937,"n":76,"v":127,"c":0,"p":46},{"t":9.529407,"n":77,"v":127,"c":0,"p":46},{"t":9.529407,"n":62,"v":127,"c":0,"p":46},{"t":9.882348,"n":77,"v":127,"c":0,"p":46},{"t":9.882348,"n":62,"v":127,"c":0,"p":46},{"t":10.058819,"n":76,"v":127,"c":0,"p":46},{"t":10.058819,"n":64,"v":127,"c":0,"p":46},{"t":10.41176,"n":76,"v":127,"c":0,"p":46},{"t":10.41176,"n":64,"v":127,"c":0,"p":46},{"t":10.58823,"n":74,"v":127,"c":0,"p":46},{"t":10.58823,"n":65,"v":127,"c":0,"p":46},{"t":10.941171,"n":73,"v":127,"c":0,"p":46},{"t":10.941171,"n":64,"v":127,"c":0,"p":46},{"t":11.117642,"n":74,"v":127,"c":0,"p":46},{"t":11.117642,"n":65,"v":127,"c":0,"p":46},{"t":11.470583,"n":76,"v":127,"c":0,"p":46},{"t":11.470583,"n":67,"v":127,"c":0,"p":46},{"t":11.647053,"n":74,"v":127,"c":0,"p":46},{"t":11.647053,"n":57,"v":127,"c":0,"p":46},{"t":11.735288,"n":73,"v":127,"c":0,"p":46},{"t":11.823524,"n":74,"v":127,"c":0,"p":46},{"t":11.911759,"n":73,"v":127,"c":0,"p":46},{"t":12.176465,"n":69,"v":127,"c":0,"p":46},{"t":12.529406,"n":67,"v":127,"c":0,"p":46},{"t":12.705876,"n":65,"v":127,"c":0,"p":46},{"t":12.882347,"n":69,"v":127,"c":0,"p":46},{"t":13.058817,"n":74,"v":127,"c":0,"p":46},{"t":13.235288,"n":64,"v":127,"c":0,"p":46},{"t":13.588229,"n":72,"v":127,"c":0,"p":46},{"t":13.764699,"n":62,"v":127,"c":0,"p":46},{"t":13.94117,"n":65,"v":127,"c":0,"p":46},{"t":14.11764,"n":70,"v":127,"c":0,"p":46},{"t":14.294111,"n":60,"v":127,"c":0,"p":46},{"t":14.647052,"n":69,"v":127,"c":0,"p":46},{"t":14.823522,"n":58,"v":127,"c":0,"p":46},{"t":14.999993,"n":62,"v":127,"c":0,"p":46},{"t":15.176463,"n":69,"v":127,"c":0,"p":46},{"t":15.352934,"n":69,"v":127,"c":0,"p":46},{"t":15.441169,"n":67,"v":127,"c":0,"p":46},{"t":15.529404,"n":69,"v":127,"c":0,"p":46},{"t":15.617639,"n":67,"v":127,"c":0,"p":46},{"t":15.705875,"n":67,"v":127,"c":0,"p":46},{"t":15.882345,"n":69,"v":127,"c":0,"p":46},{"t":16.235286,"n":57,"v":127,"c":0,"p":46},{"t":16.411757,"n":69,"v":127,"c":0,"p":46},{"t":16.941168,"n":69,"v":127,"c":0,"p":46},{"t":17.294109,"n":69,"v":127,"c":0,"p":46},{"t":17.47058,"n":72,"v":127,"c":0,"p":46},{"t":17.558815,"n":71,"v":127,"c":0,"p":46},{"t":17.64705,"n":72,"v":127,"c":0,"p":46},{"t":17.735285,"n":71,"v":127,"c":0,"p":46},{"t":17.823521,"n":71,"v":127,"c":0,"p":46},{"t":17.999991,"n":72,"v":127,"c":0,"p":46},{"t":17.999991,"n":57,"v":127,"c":0,"p":46},{"t":18.352932,"n":72,"v":127,"c":0,"p":46},{"t":18.352932,"n":57,"v":127,"c":0,"p":46},{"t":18.529403,"n":71,"v":127,"c":0,"p":46},{"t":18.529403,"n":59,"v":127,"c":0,"p":46},{"t":18.882344,"n":71,"v":127,"c":0,"p":46},{"t":18.882344,"n":59,"v":127,"c":0,"p":46},{"t":19.058814,"n":69,"v":127,"c":0,"p":46},{"t":19.058814,"n":60,"v":127,"c":0,"p":46},{"t":19.411755,"n":68,"v":127,"c":0,"p":46},{"t":19.411755,"n":59,"v":127,"c":0,"p":46},{"t":19.588226,"n":69,"v":127,"c":0,"p":46},{"t":19.588226,"n":60,"v":127,"c":0,"p":46},{"t":19.941167,"n":71,"v":127,"c":0,"p":46},{"t":19.941167,"n":62,"v":127,"c":0,"p":46},{"t":20.117637,"n":69,"v":127,"c":0,"p":46},{"t":20.205872,"n":68,"v":127,"c":0,"p":46},{"t":20.294108,"n":69,"v":127,"c":0,"p":46},{"t":20.382343,"n":68,"v":127,"c":0,"p":46},{"t":20.470578,"n":64,"v":127,"c":0,"p":46},{"t":20.647049,"n":52,"v":127,"c":0,"p":46},{"t":20.99999,"n":62,"v":127,"c":0,"p":46},{"t":21.17646,"n":60,"v":127,"c":0,"p":46},{"t":21.352931,"n":76,"v":127,"c":0,"p":46},{"t":21.529401,"n":69,"v":127,"c":0,"p":46},{"t":21.705872,"n":59,"v":127,"c":0,"p":46},{"t":21.882342,"n":74,"v":127,"c":0,"p":46},{"t":22.058813,"n":67,"v":127,"c":0,"p":46},{"t":22.235283,"n":57,"v":127,"c":0,"p":46},{"t":22.411754,"n":72,"v":127,"c":0,"p":46},{"t":22.588224,"n":65,"v":127,"c":0,"p":46},{"t":22.764695,"n":55,"v":127,"c":0,"p":46},{"t":22.941165,"n":59,"v":127,"c":0,"p":46},{"t":23.117636,"n":64,"v":127,"c":0,"p":46},{"t":23.294106,"n":69,"v":127,"c":0,"p":46},{"t":23.294106,"n":53,"v":127,"c":0,"p":46},{"t":23.470577,"n":62,"v":127,"c":0,"p":46},{"t":23.647047,"n":71,"v":127,"c":0,"p":46},{"t":23.823518,"n":52,"v":127,"c":0,"p":46},{"t":23.999988,"n":69,"v":127,"c":0,"p":46},{"t":24.176459,"n":68,"v":127,"c":0,"p":46},{"t":24.352929,"n":69,"v":127,"c":0,"p":46},{"t":24.882341,"n":57,"v":127,"c":0,"p":46},{"t":25.411752,"n":72,"v":127,"c":0,"p":46},{"t":25.411752,"n":69,"v":127,"c":0,"p":46},{"t":25.411752,"n":53,"v":127,"c":0,"p":46},{"t":25.764693,"n":72,"v":127,"c":0,"p":46},{"t":25.764693,"n":69,"v":127,"c":0,"p":46},{"t":25.941164,"n":72,"v":127,"c":0,"p":46},{"t":25.941164,"n":67,"v":127,"c":0,"p":46},{"t":25.941164,"n":52,"v":127,"c":0,"p":46},{"t":26.294105,"n":72,"v":127,"c":0,"p":46},{"t":26.294105,"n":67,"v":127,"c":0,"p":46},{"t":26.470575,"n":72,"v":127,"c":0,"p":46},{"t":26.470575,"n":69,"v":127,"c":0,"p":46},{"t":26.470575,"n":53,"v":127,"c":0,"p":46},{"t":26.823516,"n":72,"v":127,"c":0,"p":46},{"t":26.823516,"n":69,"v":127,"c":0,"p":46},{"t":26.999987,"n":72,"v":127,"c":0,"p":46},{"t":26.999987,"n":67,"v":127,"c":0,"p":46},{"t":26.999987,"n":60,"v":127,"c":0,"p":46},{"t":27.529398,"n":53,"v":127,"c":0,"p":46},{"t":27.705869,"n":69,"v":127,"c":0,"p":46},{"t":27.882339,"n":72,"v":127,"c":0,"p":46},{"t":28.05881,"n":52,"v":127,"c":0,"p":46},{"t":28.23528,"n":67,"v":127,"c":0,"p":46},{"t":28.411751,"n":72,"v":127,"c":0,"p":46},{"t":28.588221,"n":53,"v":127,"c":0,"p":46},{"t":28.764692,"n":69,"v":127,"c":0,"p":46},{"t":28.941162,"n":72,"v":127,"c":0,"p":46},{"t":29.117633,"n":72,"v":127,"c":0,"p":46},{"t":29.117633,"n":67,"v":127,"c":0,"p":46},{"t":29.117633,"n":48,"v":127,"c":0,"p":46},{"t":29.647044,"n":50,"v":127,"c":0,"p":46},{"t":29.823515,"n":77,"v":127,"c":0,"p":46},{"t":29.999985,"n":70,"v":127,"c":0,"p":46},{"t":30.176456,"n":52,"v":127,"c":0,"p":46},{"t":30.352926,"n":79,"v":127,"c":0,"p":46},{"t":30.529397,"n":72,"v":127,"c":0,"p":46},{"t":30.705867,"n":53,"v":127,"c":0,"p":46},{"t":30.882338,"n":81,"v":127,"c":0,"p":46},{"t":31.058808,"n":72,"v":127,"c":0,"p":46},{"t":31.235279,"n":55,"v":127,"c":0,"p":46},{"t":31.411749,"n":82,"v":127,"c":0,"p":46},{"t":31.58822,"n":76,"v":127,"c":0,"p":46},{"t":31.76469,"n":84,"v":127,"c":0,"p":46},{"t":31.76469,"n":57,"v":127,"c":0,"p":46},{"t":31.941161,"n":77,"v":127,"c":0,"p":46},{"t":32.117631,"n":79,"v":127,"c":0,"p":46},{"t":32.294102,"n":48,"v":127,"c":0,"p":46},{"t":32.470572,"n":67,"v":127,"c":0,"p":46},{"t":32.647043,"n":76,"v":127,"c":0,"p":46},{"t":32.823513,"n":77,"v":127,"c":0,"p":46},{"t":33.176454,"n":53,"v":127,"c":0,"p":46},{"t":33.352925,"n":77,"v":127,"c":0,"p":46},{"t":33.352925,"n":69,"v":127,"c":0,"p":46},{"t":33.882336,"n":72,"v":127,"c":0,"p":46},{"t":33.882336,"n":69,"v":127,"c":0,"p":46},{"t":33.882336,"n":53,"v":127,"c":0,"p":46},{"t":34.235277,"n":72,"v":127,"c":0,"p":46},{"t":34.235277,"n":69,"v":127,"c":0,"p":46},{"t":34.411748,"n":72,"v":127,"c":0,"p":46},{"t":34.411748,"n":67,"v":127,"c":0,"p":46},{"t":34.411748,"n":52,"v":127,"c":0,"p":46},{"t":34.764689,"n":72,"v":127,"c":0,"p":46},{"t":34.764689,"n":67,"v":127,"c":0,"p":46},{"t":34.941159,"n":74,"v":127,"c":0,"p":46},{"t":34.941159,"n":69,"v":127,"c":0,"p":46},{"t":34.941159,"n":50,"v":127,"c":0,"p":46},{"t":35.2941,"n":74,"v":127,"c":0,"p":46},{"t":35.2941,"n":69,"v":127,"c":0,"p":46},{"t":35.470571,"n":76,"v":127,"c":0,"p":46},{"t":35.470571,"n":69,"v":127,"c":0,"p":46},{"t":35.470571,"n":61,"v":127,"c":0,"p":46},{"t":35.823512,"n":76,"v":127,"c":0,"p":46},{"t":35.823512,"n":69,"v":127,"c":0,"p":46},{"t":35.999982,"n":77,"v":127,"c":0,"p":46},{"t":35.999982,"n":69,"v":127,"c":0,"p":46},{"t":35.999982,"n":62,"v":127,"c":0,"p":46},{"t":36.352923,"n":76,"v":127,"c":0,"p":46},{"t":36.352923,"n":60,"v":127,"c":0,"p":46},{"t":36.529393,"n":74,"v":127,"c":0,"p":46},{"t":36.529393,"n":58,"v":127,"c":0,"p":46},{"t":36.705864,"n":57,"v":127,"c":0,"p":46},{"t":36.882334,"n":76,"v":127,"c":0,"p":46},{"t":36.882334,"n":55,"v":127,"c":0,"p":46},{"t":37.058805,"n":74,"v":127,"c":0,"p":46},{"t":37.058805,"n":57,"v":127,"c":0,"p":46},{"t":37.14704,"n":73,"v":127,"c":0,"p":46},{"t":37.235275,"n":74,"v":127,"c":0,"p":46},{"t":37.323511,"n":73,"v":127,"c":0,"p":46},{"t":37.588216,"n":69,"v":127,"c":0,"p":46},{"t":38.117628,"n":66,"v":127,"c":0,"p":46},{"t":38.294098,"n":74,"v":127,"c":0,"p":46},{"t":38.470569,"n":84,"v":127,"c":0,"p":46},{"t":38.647039,"n":82,"v":127,"c":0,"p":46},{"t":38.647039,"n":74,"v":127,"c":0,"p":46},{"t":38.647039,"n":67,"v":127,"c":0,"p":46},{"t":38.99998,"n":82,"v":127,"c":0,"p":46},{"t":39.176451,"n":64,"v":127,"c":0,"p":46},{"t":39.352921,"n":72,"v":127,"c":0,"p":46},{"t":39.529392,"n":82,"v":127,"c":0,"p":46},{"t":39.705862,"n":81,"v":127,"c":0,"p":46},{"t":39.705862,"n":74,"v":127,"c":0,"p":46},{"t":39.705862,"n":65,"v":127,"c":0,"p":46},{"t":40.235274,"n":58,"v":127,"c":0,"p":46},{"t":40.411744,"n":74,"v":127,"c":0,"p":46},{"t":40.588215,"n":81,"v":127,"c":0,"p":46},{"t":40.764685,"n":79,"v":127,"c":0,"p":46},{"t":40.764685,"n":74,"v":127,"c":0,"p":46},{"t":40.764685,"n":52,"v":127,"c":0,"p":46},{"t":41.117626,"n":79,"v":127,"c":0,"p":46},{"t":41.294097,"n":57,"v":127,"c":0,"p":46},{"t":41.470567,"n":73,"v":127,"c":0,"p":46},{"t":41.647038,"n":79,"v":127,"c":0,"p":46},{"t":41.823508,"n":77,"v":127,"c":0,"p":46},{"t":41.823508,"n":74,"v":127,"c":0,"p":46},{"t":41.823508,"n":62,"v":127,"c":0,"p":46},{"t":42.176449,"n":77,"v":127,"c":0,"p":46},{"t":42.35292,"n":76,"v":127,"c":0,"p":46},{"t":42.35292,"n":70,"v":127,"c":0,"p":46},{"t":42.35292,"n":55,"v":127,"c":0,"p":46},{"t":42.52939,"n":77,"v":127,"c":0,"p":46},{"t":42.705861,"n":74,"v":127,"c":0,"p":46},{"t":42.882331,"n":57,"v":127,"c":0,"p":46},{"t":43.058802,"n":74,"v":127,"c":0,"p":46},{"t":43.235272,"n":73,"v":127,"c":0,"p":46},{"t":43.411743,"n":74,"v":127,"c":0,"p":46},{"t":43.411743,"n":62,"v":127,"c":0,"p":46},{"t":43.941154,"n":50,"v":127,"c":0,"p":46},{"t":44.470566,"n":69,"v":127,"c":0,"p":46},{"t":44.823507,"n":69,"v":127,"c":0,"p":46},{"t":44.999977,"n":72,"v":127,"c":0,"p":46},{"t":45.088213,"n":71,"v":127,"c":0,"p":46},{"t":45.176448,"n":72,"v":127,"c":0,"p":46},{"t":45.264683,"n":71,"v":127,"c":0,"p":46},{"t":45.352918,"n":71,"v":127,"c":0,"p":46},{"t":45.529389,"n":72,"v":127,"c":0,"p":46},{"t":45.529389,"n":57,"v":127,"c":0,"p":46},{"t":45.88233,"n":72,"v":127,"c":0,"p":46},{"t":45.88233,"n":57,"v":127,"c":0,"p":46},{"t":46.0588,"n":71,"v":127,"c":0,"p":46},{"t":46.0588,"n":59,"v":127,"c":0,"p":46},{"t":46.411741,"n":71,"v":127,"c":0,"p":46},{"t":46.411741,"n":59,"v":127,"c":0,"p":46},{"t":46.588212,"n":69,"v":127,"c":0,"p":46},{"t":46.588212,"n":60,"v":127,"c":0,"p":46},{"t":46.941153,"n":68,"v":127,"c":0,"p":46},{"t":46.941153,"n":59,"v":127,"c":0,"p":46},{"t":47.117623,"n":69,"v":127,"c":0,"p":46},{"t":47.117623,"n":60,"v":127,"c":0,"p":46},{"t":47.470564,"n":71,"v":127,"c":0,"p":46},{"t":47.470564,"n":62,"v":127,"c":0,"p":46},{"t":47.647035,"n":69,"v":127,"c":0,"p":46},{"t":47.73527,"n":68,"v":127,"c":0,"p":46},{"t":47.823505,"n":69,"v":127,"c":0,"p":46},{"t":47.911741,"n":68,"v":127,"c":0,"p":46},{"t":47.999976,"n":64,"v":127,"c":0,"p":46},{"t":48.176446,"n":52,"v":127,"c":0,"p":46},{"t":48.529387,"n":62,"v":127,"c":0,"p":46},{"t":48.705858,"n":60,"v":127,"c":0,"p":46},{"t":48.882328,"n":76,"v":127,"c":0,"p":46},{"t":49.058799,"n":69,"v":127,"c":0,"p":46},{"t":49.235269,"n":59,"v":127,"c":0,"p":46},{"t":49.41174,"n":74,"v":127,"c":0,"p":46},{"t":49.58821,"n":67,"v":127,"c":0,"p":46},{"t":49.764681,"n":57,"v":127,"c":0,"p":46},{"t":49.941151,"n":72,"v":127,"c":0,"p":46},{"t":50.117622,"n":65,"v":127,"c":0,"p":46},{"t":50.294092,"n":55,"v":127,"c":0,"p":46},{"t":50.470563,"n":59,"v":127,"c":0,"p":46},{"t":50.647033,"n":64,"v":127,"c":0,"p":46},{"t":50.823504,"n":69,"v":127,"c":0,"p":46},{"t":50.823504,"n":53,"v":127,"c":0,"p":46},{"t":50.999974,"n":62,"v":127,"c":0,"p":46},{"t":51.176445,"n":71,"v":127,"c":0,"p":46},{"t":51.352915,"n":52,"v":127,"c":0,"p":46},{"t":51.529386,"n":69,"v":127,"c":0,"p":46},{"t":51.705856,"n":68,"v":127,"c":0,"p":46},{"t":51.882327,"n":69,"v":127,"c":0,"p":46},{"t":52.411738,"n":57,"v":127,"c":0,"p":46},{"t":52.94115,"n":72,"v":127,"c":0,"p":46},{"t":52.94115,"n":69,"v":127,"c":0,"p":46},{"t":52.94115,"n":53,"v":127,"c":0,"p":46},{"t":53.294091,"n":72,"v":127,"c":0,"p":46},{"t":53.294091,"n":69,"v":127,"c":0,"p":46},{"t":53.470561,"n":72,"v":127,"c":0,"p":46},{"t":53.470561,"n":67,"v":127,"c":0,"p":46},{"t":53.470561,"n":52,"v":127,"c":0,"p":46},{"t":53.823502,"n":72,"v":127,"c":0,"p":46},{"t":53.823502,"n":67,"v":127,"c":0,"p":46},{"t":53.999973,"n":72,"v":127,"c":0,"p":46},{"t":53.999973,"n":69,"v":127,"c":0,"p":46},{"t":53.999973,"n":53,"v":127,"c":0,"p":46},{"t":54.352914,"n":72,"v":127,"c":0,"p":46},{"t":54.352914,"n":69,"v":127,"c":0,"p":46},{"t":54.529384,"n":72,"v":127,"c":0,"p":46},{"t":54.529384,"n":67,"v":127,"c":0,"p":46},{"t":54.529384,"n":60,"v":127,"c":0,"p":46},{"t":55.058796,"n":53,"v":127,"c":0,"p":46},{"t":55.235266,"n":69,"v":127,"c":0,"p":46},{"t":55.411737,"n":72,"v":127,"c":0,"p":46},{"t":55.588207,"n":52,"v":127,"c":0,"p":46},{"t":55.764678,"n":67,"v":127,"c":0,"p":46},{"t":55.941148,"n":72,"v":127,"c":0,"p":46},{"t":56.117619,"n":53,"v":127,"c":0,"p":46},{"t":56.294089,"n":69,"v":127,"c":0,"p":46},{"t":56.47056,"n":72,"v":127,"c":0,"p":46},{"t":56.64703,"n":72,"v":127,"c":0,"p":46},{"t":56.64703,"n":67,"v":127,"c":0,"p":46},{"t":56.64703,"n":48,"v":127,"c":0,"p":46},{"t":57.176442,"n":50,"v":127,"c":0,"p":46},{"t":57.352912,"n":77,"v":127,"c":0,"p":46},{"t":57.529383,"n":70,"v":127,"c":0,"p":46},{"t":57.705853,"n":52,"v":127,"c":0,"p":46},{"t":57.882324,"n":79,"v":127,"c":0,"p":46},{"t":58.058794,"n":72,"v":127,"c":0,"p":46},{"t":58.235265,"n":53,"v":127,"c":0,"p":46},{"t":58.411735,"n":81,"v":127,"c":0,"p":46},{"t":58.588206,"n":72,"v":127,"c":0,"p":46},{"t":58.764676,"n":55,"v":127,"c":0,"p":46},{"t":58.941147,"n":82,"v":127,"c":0,"p":46},{"t":59.117617,"n":76,"v":127,"c":0,"p":46},{"t":59.294088,"n":84,"v":127,"c":0,"p":46},{"t":59.294088,"n":57,"v":127,"c":0,"p":46},{"t":59.470558,"n":77,"v":127,"c":0,"p":46},{"t":59.647029,"n":79,"v":127,"c":0,"p":46},{"t":59.823499,"n":48,"v":127,"c":0,"p":46},{"t":59.99997,"n":67,"v":127,"c":0,"p":46},{"t":60.17644,"n":76,"v":127,"c":0,"p":46},{"t":60.352911,"n":77,"v":127,"c":0,"p":46},{"t":60.705852,"n":53,"v":127,"c":0,"p":46},{"t":60.882322,"n":77,"v":127,"c":0,"p":46},{"t":60.882322,"n":69,"v":127,"c":0,"p":46},{"t":61.411734,"n":72,"v":127,"c":0,"p":46},{"t":61.411734,"n":69,"v":127,"c":0,"p":46},{"t":61.411734,"n":53,"v":127,"c":0,"p":46},{"t":61.764675,"n":72,"v":127,"c":0,"p":46},{"t":61.764675,"n":69,"v":127,"c":0,"p":46},{"t":61.941145,"n":72,"v":127,"c":0,"p":46},{"t":61.941145,"n":67,"v":127,"c":0,"p":46},{"t":61.941145,"n":52,"v":127,"c":0,"p":46},{"t":62.294086,"n":72,"v":127,"c":0,"p":46},{"t":62.294086,"n":67,"v":127,"c":0,"p":46},{"t":62.470557,"n":74,"v":127,"c":0,"p":46},{"t":62.470557,"n":69,"v":127,"c":0,"p":46},{"t":62.470557,"n":50,"v":127,"c":0,"p":46},{"t":62.823498,"n":74,"v":127,"c":0,"p":46},{"t":62.823498,"n":69,"v":127,"c":0,"p":46},{"t":62.999968,"n":76,"v":127,"c":0,"p":46},{"t":62.999968,"n":69,"v":127,"c":0,"p":46},{"t":62.999968,"n":61,"v":127,"c":0,"p":46},{"t":63.352909,"n":76,"v":127,"c":0,"p":46},{"t":63.352909,"n":69,"v":127,"c":0,"p":46},{"t":63.52938,"n":77,"v":127,"c":0,"p":46},{"t":63.52938,"n":69,"v":127,"c":0,"p":46},{"t":63.52938,"n":62,"v":127,"c":0,"p":46},{"t":63.882321,"n":76,"v":127,"c":0,"p":46},{"t":63.882321,"n":60,"v":127,"c":0,"p":46},{"t":64.058791,"n":74,"v":127,"c":0,"p":46},{"t":64.058791,"n":58,"v":127,"c":0,"p":46},{"t":64.235262,"n":57,"v":127,"c":0,"p":46},{"t":64.411732,"n":76,"v":127,"c":0,"p":46},{"t":64.411732,"n":55,"v":127,"c":0,"p":46},{"t":64.588203,"n":74,"v":127,"c":0,"p":46},{"t":64.588203,"n":57,"v":127,"c":0,"p":46},{"t":64.676438,"n":73,"v":127,"c":0,"p":46},{"t":64.764673,"n":74,"v":127,"c":0,"p":46},{"t":64.852909,"n":73,"v":127,"c":0,"p":46},{"t":65.117614,"n":69,"v":127,"c":0,"p":46},{"t":65.647026,"n":66,"v":127,"c":0,"p":46},{"t":65.823496,"n":74,"v":127,"c":0,"p":46},{"t":65.999967,"n":84,"v":127,"c":0,"p":46},{"t":66.176437,"n":82,"v":127,"c":0,"p":46},{"t":66.176437,"n":74,"v":127,"c":0,"p":46},{"t":66.176437,"n":67,"v":127,"c":0,"p":46},{"t":66.529378,"n":82,"v":127,"c":0,"p":46},{"t":66.705849,"n":64,"v":127,"c":0,"p":46},{"t":66.882319,"n":72,"v":127,"c":0,"p":46},{"t":67.05879,"n":82,"v":127,"c":0,"p":46},{"t":67.23526,"n":81,"v":127,"c":0,"p":46},{"t":67.23526,"n":74,"v":127,"c":0,"p":46},{"t":67.23526,"n":65,"v":127,"c":0,"p":46},{"t":67.764672,"n":58,"v":127,"c":0,"p":46},{"t":67.941142,"n":74,"v":127,"c":0,"p":46},{"t":68.117613,"n":81,"v":127,"c":0,"p":46},{"t":68.294083,"n":79,"v":127,"c":0,"p":46},{"t":68.294083,"n":74,"v":127,"c":0,"p":46},{"t":68.294083,"n":52,"v":127,"c":0,"p":46},{"t":68.647024,"n":79,"v":127,"c":0,"p":46},{"t":68.823495,"n":57,"v":127,"c":0,"p":46},{"t":68.999965,"n":73,"v":127,"c":0,"p":46},{"t":69.176436,"n":79,"v":127,"c":0,"p":46},{"t":69.352906,"n":77,"v":127,"c":0,"p":46},{"t":69.352906,"n":74,"v":127,"c":0,"p":46},{"t":69.352906,"n":62,"v":127,"c":0,"p":46},{"t":69.705847,"n":77,"v":127,"c":0,"p":46},{"t":69.882318,"n":76,"v":127,"c":0,"p":46},{"t":69.882318,"n":70,"v":127,"c":0,"p":46},{"t":69.882318,"n":55,"v":127,"c":0,"p":46},{"t":70.058788,"n":77,"v":127,"c":0,"p":46},{"t":70.235259,"n":74,"v":127,"c":0,"p":46},{"t":70.411729,"n":57,"v":127,"c":0,"p":46},{"t":70.5882,"n":74,"v":127,"c":0,"p":46},{"t":70.76467,"n":73,"v":127,"c":0,"p":46},{"t":70.941141,"n":74,"v":127,"c":0,"p":46},{"t":70.941141,"n":62,"v":127,"c":0,"p":46},{"t":71.470552,"n":50,"v":127,"c":0,"p":46},{"t":71.999964,"n":66,"v":127,"c":0,"p":46},{"t":72.176434,"n":74,"v":127,"c":0,"p":46},{"t":72.352905,"n":84,"v":127,"c":0,"p":46},{"t":72.529375,"n":82,"v":127,"c":0,"p":46},{"t":72.529375,"n":74,"v":127,"c":0,"p":46},{"t":72.529375,"n":67,"v":127,"c":0,"p":46},{"t":72.882316,"n":82,"v":127,"c":0,"p":46},{"t":73.058787,"n":64,"v":127,"c":0,"p":46},{"t":73.235257,"n":72,"v":127,"c":0,"p":46},{"t":73.411728,"n":82,"v":127,"c":0,"p":46},{"t":73.588198,"n":81,"v":127,"c":0,"p":46},{"t":73.588198,"n":74,"v":127,"c":0,"p":46},{"t":73.588198,"n":65,"v":127,"c":0,"p":46},{"t":74.11761,"n":58,"v":127,"c":0,"p":46},{"t":74.29408,"n":74,"v":127,"c":0,"p":46},{"t":74.470551,"n":81,"v":127,"c":0,"p":46},{"t":74.647021,"n":79,"v":127,"c":0,"p":46},{"t":74.647021,"n":74,"v":127,"c":0,"p":46},{"t":74.647021,"n":52,"v":127,"c":0,"p":46},{"t":74.999962,"n":79,"v":127,"c":0,"p":46},{"t":75.176433,"n":57,"v":127,"c":0,"p":46},{"t":75.352903,"n":73,"v":127,"c":0,"p":46},{"t":75.529374,"n":79,"v":127,"c":0,"p":46},{"t":75.705844,"n":77,"v":127,"c":0,"p":46},{"t":75.705844,"n":74,"v":127,"c":0,"p":46},{"t":75.705844,"n":62,"v":127,"c":0,"p":46},{"t":76.058785,"n":77,"v":127,"c":0,"p":46},{"t":76.235256,"n":76,"v":127,"c":0,"p":46},{"t":76.235256,"n":70,"v":127,"c":0,"p":46},{"t":76.235256,"n":55,"v":127,"c":0,"p":46},{"t":76.411726,"n":77,"v":127,"c":0,"p":46},{"t":76.588197,"n":74,"v":127,"c":0,"p":46},{"t":76.764667,"n":57,"v":127,"c":0,"p":46},{"t":76.941138,"n":74,"v":127,"c":0,"p":46},{"t":77.117608,"n":73,"v":127,"c":0,"p":46},{"t":77.294079,"n":74,"v":127,"c":0,"p":46},{"t":77.294079,"n":62,"v":127,"c":0,"p":46},{"t":77.82349,"n":50,"v":127,"c":0,"p":46}];
-const titleDuration=79.411725;
 
-let audioEnabled=true;
+let audioEnabled=(()=>{try{return sessionStorage.getItem('adventure-party-audio-muted')!=='true';}catch{return true;}})();
 let audioCtx=null;
 let musicGain=null;
 let sfxGain=null;
@@ -490,8 +493,7 @@ let activeWeatherAudio=null;
 let activeWeatherAudioSignature="";
 
 let musicPlaying=false;
-let titleSources=[];
-let titleLoopTimer=null;
+let titleLoopBuffer=null,titleLoopLoading=null,titleLoopSource=null,titleLoopGeneration=0;
 
 const queuedSfx=[];
 
@@ -598,98 +600,18 @@ async function unlockAudio(){
   return audioReady;
 }
 
-function noteHz(note){
-  return 440*Math.pow(2,(note-69)/12);
+async function startTitleMusic(){
+  if(!audioEnabled||!audioReady||!audioCtx||currentScreen!=='launcher'||musicPlaying)return;
+  const ticket=++titleLoopGeneration;
+  try{
+    if(!titleLoopBuffer){titleLoopLoading??=fetch('assets/audio/music/arcane-dust.wav').then(r=>{if(!r.ok)throw Error('Title audio '+r.status);return r.arrayBuffer();}).then(data=>audioCtx.decodeAudioData(data)).then(buffer=>titleLoopBuffer=buffer).finally(()=>titleLoopLoading=null);await titleLoopLoading;}
+    if(ticket!==titleLoopGeneration||!audioEnabled||!audioReady||currentScreen!=='launcher')return;
+    const source=audioCtx.createBufferSource();source.buffer=titleLoopBuffer;source.loop=true;source.connect(musicGain);titleLoopSource=source;musicPlaying=true;source.start();updateAudioIndicators();
+  }catch(error){console.warn('Title loop unavailable:',error);musicPlaying=false;updateAudioIndicators();}
 }
-
-function scheduleTitleNote(event,startAt){
-  if(!audioEnabled || !audioReady || !audioCtx) return;
-
-  const when=startAt+event.t;
-  const velocity=Math.max(0.02,event.v/127);
-  const f=noteHz(event.n);
-
-  const osc=audioCtx.createOscillator();
-  const overtone=audioCtx.createOscillator();
-  const gain=audioCtx.createGain();
-  const overtoneGain=audioCtx.createGain();
-  const filter=audioCtx.createBiquadFilter();
-
-  osc.type="triangle";
-  osc.frequency.setValueAtTime(f,when);
-
-  overtone.type="sine";
-  overtone.frequency.setValueAtTime(f*2,when);
-
-  filter.type="lowpass";
-  filter.frequency.setValueAtTime(Math.min(9000,1400+f*7),when);
-  filter.Q.value=0.55;
-
-  gain.gain.setValueAtTime(0.0001,when);
-  gain.gain.exponentialRampToValueAtTime(0.15*velocity,when+0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001,when+1.45);
-
-  overtoneGain.gain.setValueAtTime(0.0001,when);
-  overtoneGain.gain.exponentialRampToValueAtTime(0.035*velocity,when+0.005);
-  overtoneGain.gain.exponentialRampToValueAtTime(0.0001,when+0.55);
-
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(musicGain);
-
-  overtone.connect(overtoneGain);
-  overtoneGain.connect(musicGain);
-
-  osc.start(when);
-  overtone.start(when);
-  osc.stop(when+1.5);
-  overtone.stop(when+0.6);
-
-  titleSources.push(osc,overtone);
-}
-
-function startTitleMusic(){
-  if(
-    !audioEnabled ||
-    !audioReady ||
-    !audioCtx ||
-    currentScreen!=="launcher" ||
-    musicPlaying
-  ) return;
-
-  const startAt=audioCtx.currentTime+0.08;
-
-  for(const event of titleEvents){
-    scheduleTitleNote(event,startAt);
-  }
-
-  musicPlaying=true;
-  updateAudioIndicators();
-
-  titleLoopTimer=setTimeout(()=>{
-    musicPlaying=false;
-    titleSources=[];
-    titleLoopTimer=null;
-
-    if(audioEnabled && currentScreen==="launcher"){
-      startTitleMusic();
-    }
-  },Math.ceil((titleDuration+0.25)*1000));
-}
-
 function stopTitleMusic(){
-  if(titleLoopTimer){
-    clearTimeout(titleLoopTimer);
-    titleLoopTimer=null;
-  }
-
-  for(const source of titleSources){
-    try{ source.stop(); }catch{}
-  }
-
-  titleSources=[];
-  musicPlaying=false;
-  updateAudioIndicators();
+  titleLoopGeneration++;if(titleLoopSource){try{titleLoopSource.stop();}catch{}titleLoopSource.disconnect();titleLoopSource=null;}
+  musicPlaying=false;updateAudioIndicators();
 }
 
 function queueSfx(fn){
@@ -1578,6 +1500,7 @@ soundToggle.addEventListener("click",async(event)=>{
   event.stopPropagation();
 
   audioEnabled=!audioEnabled;
+  globalThis.adventurePartyUiAudio?.setEnabled(audioEnabled);
 
   if(!audioEnabled){
     stopTitleMusic();
@@ -3414,6 +3337,7 @@ function liveFirTreeRender(tileSet,decoration,direct=null){
     ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,direct,
     burning:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==='burning',
     firePhaseValue:terrainRand(decoration.x,decoration.y,911),fireParticles:Math.max(1,Math.min(192,Math.floor(2048/Math.max(1,firFireLightSources().length)))),
+    snowAmount:combatGpu?.snowAmount?.(decoration.x,decoration.y)||0,
     burnt:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==="burnt",instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
   });
 }
@@ -6757,10 +6681,10 @@ async function focusRangedAttacker(attacker,settleMs=180){
   }
 }
 
-async function focusDamagedTargetIfOffscreen(target,settleMs=120){
+async function focusDamagedTargetIfOffscreen(target,settleMs=120,force=false){
   if(
     !target ||
-    isEntityOnBattlefieldScreen(target)
+    (!force && isEntityOnBattlefieldScreen(target))
   ){
     return false;
   }
@@ -9710,7 +9634,7 @@ function hasTransientUnitFx(now=performance.now()){
   return (
     (typeof environmentEffectsActive==='function'&&environmentEffectsActive()) ||
     firFireLightSources().length>0 ||
-    (game && allUnits().some(u=>u?.alive&&!u.fled&&u.inventory?.some(item=>item.equipped&&item.appearanceId==='flaming-sword-5'))) ||
+    (game && allUnits().some(u=>u?.alive&&!u.fled&&u.inventory?.some(item=>globalThis.AdventurePartyItemLighting?.profile(item)?.flicker))) ||
     castingGlowFx.length>0 ||
     fireDamageFx.length>0 ||
     enlargeTransitionFx.length>0
@@ -17943,6 +17867,7 @@ function showXpLootScreen(title,text,xpAwarded=0){
       }
     : collectLootFromSlainEnemies();
 
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'xp-loot','open');
   currentScreen="xp-loot";
   combatScreen.classList.remove("active");
   combatConditionsScreen?.classList.remove("active");
@@ -18235,10 +18160,12 @@ function renderClassReport(){
 }
 
 function openClassReport(){
+  if(classReportOpen)return;
   if(!game?.player) return;
 
   exitAimMode(false);
   closeCharacterSheet();
+  globalThis.adventurePartyUiAudio?.play('open');
   classReportOpen=true;
   renderClassReport();
 
@@ -18246,6 +18173,8 @@ function openClassReport(){
 }
 
 function closeClassReport(){
+  const uiWasOpen=classReportOpen;
+  if(uiWasOpen)globalThis.adventurePartyUiAudio?.play('back');
   classReportOpen=false;
   document.getElementById("classOverlay").classList.remove("show");
 }
@@ -18321,6 +18250,7 @@ function renderSpellCastList(){
 }
 
 function openSpellCastOverlay(){
+  if(spellCastOverlayOpen)return;
   if(
     !game ||
     game.over ||
@@ -18335,6 +18265,7 @@ function openSpellCastOverlay(){
   exitAimMode(false,true);
   closeCharacterSheet();
 
+  globalThis.adventurePartyUiAudio?.play('open');
   spellCastOverlayOpen=true;
   renderSpellCastList();
   document.getElementById("spellCastOverlay").classList.add("show");
@@ -18342,6 +18273,8 @@ function openSpellCastOverlay(){
 }
 
 function closeSpellCastOverlay(){
+  const uiWasOpen=spellCastOverlayOpen;
+  if(uiWasOpen)globalThis.adventurePartyUiAudio?.play('back');
   spellCastOverlayOpen=false;
   document.getElementById("spellCastOverlay")?.classList.remove("show");
   updateUi();
@@ -18746,16 +18679,20 @@ function renderCombatInventory(){
   });
 }
 function openInventory(){
+  if(inventoryOpen)return;
   if(!game?.player)return;
   exitAimMode(false);
   closeClassReport();
   if(characterSheetOpen)closeCharacterSheet();
+  globalThis.adventurePartyUiAudio?.play('open');
   inventoryOpen=true;renderCombatInventory();
   document.getElementById("inventoryOverlay").classList.add("show");
   document.getElementById("inventoryOverlay").setAttribute("aria-hidden","false");
   updateUi();
 }
 function closeInventory(){
+  const uiWasOpen=inventoryOpen;
+  if(uiWasOpen)globalThis.adventurePartyUiAudio?.play('back');
   inventoryOpen=false;
   document.getElementById("inventoryOverlay").classList.remove("show");
   document.getElementById("inventoryOverlay").setAttribute("aria-hidden","true");
@@ -18763,12 +18700,14 @@ function closeInventory(){
 }
 
 function openCharacterSheet(){
+  if(characterSheetOpen)return;
   if(!game?.player) return;
 
   exitAimMode(false);
   closeClassReport();
   if(inventoryOpen)closeInventory();
 
+  globalThis.adventurePartyUiAudio?.play('open');
   characterSheetOpen=true;
   renderCharacterSheet();
 
@@ -18777,6 +18716,8 @@ function openCharacterSheet(){
 }
 
 function closeCharacterSheet(){
+  const uiWasOpen=characterSheetOpen;
+  if(uiWasOpen)globalThis.adventurePartyUiAudio?.play('back');
   characterSheetOpen=false;
   document.getElementById("sheetOverlay").classList.remove("show");
   updateUi();
@@ -22888,6 +22829,8 @@ document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotate
 document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
 
 addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
+addEventListener('adventure-party:snow-change',()=>{if(game)draw();});
+addEventListener('adventure-party:tree-aa-change',()=>{if(game)draw();});
 
 
 
@@ -22895,3 +22838,5 @@ addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
 
 
 
+
+globalThis.adventurePartyUiAudio?.configure({getContext:()=>ensureAudioContext(),getDestination:()=>sfxGain,isEnabled:()=>audioEnabled});

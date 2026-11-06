@@ -331,6 +331,9 @@ AdventurePartyCombatServices.register('r227AnimateMeteorVolley','r233-minute-met
 
   }
 
+  // Miss offsets remain inside the target hex. Apply once after the volley arrives,
+  // for both player-selected and AI volleys, never while meteors are stored.
+  if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(results.filter(r=>r.target).map(r=>({x:r.target.x,y:r.target.y})),1);
   r233MinuteMeteorLights=[];
   r227MeteorVolleyFx=null;
 

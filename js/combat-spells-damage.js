@@ -438,6 +438,7 @@ async function castBurningHandsSpell(action,targetHex){
     );
   }
 
+  if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(blastCells,1);
   await animateSpellSurfaceFlash(blastCells);
   if(!await resolveAoeDamageSpell({
     caster,

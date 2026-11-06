@@ -237,6 +237,8 @@ async function animateElementalArrowProjectile(
   }
 
   projectileFx=null;
+  // Only fiery arrows transfer heat; acid arrows share this animation.
+  if(kind==="flame-arrow" && typeof combatGpu!=="undefined")combatGpu?.meltSnow?.([defender],1);
   await presentCombatFrame();
 }
 

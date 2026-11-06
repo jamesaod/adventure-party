@@ -1,3 +1,4 @@
+export {createRoadTileBank} from './broken-stone-road.mjs';
 export {wallSurfaceProbe,wallSurfaceNeighbours,wallFaceFacesCamera} from './wall-surface-visibility.mjs?v=R238C274';
 export {cachedWallGroundShadows,wallSunRetention} from './wall-ground-shadows.mjs?v=R238C275';
 export {solarState,solarAmbient,solarFaceGain} from './solar-clock.mjs?v=R238C274';
@@ -6,6 +7,7 @@ import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C274';
 import {quarterOutsidePolygons,outsideSurface} from './wall-surfaces.mjs?v=R238C274';
 export * from './wall-surfaces.mjs?v=R238C274';
 import {quarterAt,quarterFloor,quarterSegments} from './quarter-walls.mjs?v=R238C274';
+export {CITY_WALL_TEXTURES,CITY_WOOD_FLOOR,CITY_FLOOR_TEXTURES} from './city-materials.mjs';
 export {WOOD_TEXTURES} from './quarter-walls.mjs?v=R238C274';
 export {createGroundTileBank} from './terrain-transition.mjs?v=R238C274';
 import {groundKind} from './exploration-ground.mjs?v=R238C274';

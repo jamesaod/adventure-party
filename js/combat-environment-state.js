@@ -11,6 +11,7 @@ function initializeFirMovementObstacles(){
 }
 
 function addTerrainScorch(cells,strength=.75){
+  if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(cells,1);
   if(!game)return;game.terrainScorch??={};let changed=false;
   for(const cell of cells){if(!inside(cell.x,cell.y))continue;const id=key(cell.x,cell.y),old=game.terrainScorch[id];
     if(!old||old.strength<strength){game.terrainScorch[id]={x:cell.x,y:cell.y,strength};changed=true;}}

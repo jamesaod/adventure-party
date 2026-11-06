@@ -42,8 +42,8 @@
     {
       "name": "attack",
       "file": "combat-melee-actions.js",
-      "sha256": "cc77de8f6afe3b5a56d4c5649a4c7c708d6f460df38960ad259b271166bebe1d",
-      "postExtractionChange": "2026-11-05: queue blood for direct physical melee damage; elemental riders unchanged."
+      "sha256": "5ea49b23aef498152aea8242c32798c49d8ffb4808963fa24684b604321ca00b",
+      "postExtractionChange": "Always center direct physical attack targets: melee before windup, ranged hit at impact and protected misses after projectile."
     },
     {
       "name": "playerAttackKey",
@@ -278,7 +278,7 @@
     {
       "name": "castBurningHandsSpell",
       "file": "combat-spells-damage.js",
-      "sha256": "e8359a2f55bb16dc814cc3d6c2fff7d49261ece96bd348729b3a444486d6f3aa"
+      "sha256": "dfbc7991ed666d1dd956c8f2dce748c02a1175b69ae3cd045f7f77b3d1dc9a86"
     },
     {
       "name": "castShockingGraspSpell",
@@ -468,7 +468,7 @@
     {
       "name": "addTerrainScorch",
       "file": "combat-environment-state.js",
-      "sha256": "0439da5be55a1b207473a293495d90bbe7b70b5e202bc9c311fc2ad66ebaa159"
+      "sha256": "6c0625f5cef265f334129641d62a3f2e307a4fb813c896b5571e20778c45532f"
     },
     {
       "name": "scorchNoise",
@@ -779,8 +779,8 @@
     {
       "name": "illuminationSources",
       "file": "combat-lighting-services.js",
-      "sha256": "5ce97bf39412a928e84e1081a3137af252a73ab832614fb2110765548cfd241f",
-      "postExtractionChange": "Sword light 50% brighter with small presentation-only metre sway shared by GPU illumination and projected shadows; shadow emitter honors source height."
+      "sha256": "61801ebea83d1c7e6468a5a1dcd6493f5b4e64e0382383ab4365c41bfb6e9fe8",
+      "postExtractionChange": "Generic catalog/inventory light-source profiles replace sword-specific emission; presentation-only daylight contrast."
     },
     {
       "name": "illuminationSourceReachesHex",
@@ -832,7 +832,7 @@
     {
       "name": "drawTreeGroundShadow",
       "file": "combat-render-surfaces.js",
-      "sha256": "bc9813afdab48cc5d6e5c923cab7d373725fb2828f2cdf971f28c58a5a542ba2",
+      "sha256": "4e0c4f62e15254dc6af80ba5acfdd9f64383c335a8dc15416729481373342607",
       "postExtractionChange": "2026-11-05: fir-only soft radial ground contact shadow before solar shadow."
     },
     {
@@ -980,7 +980,7 @@
     {
       "name": "animateElementalArrowProjectile",
       "file": "combat-effect-animation.js",
-      "sha256": "28cbdc993b850dddc751734e5c1d762ab7b9d39e46475cb6c2f00ce598d5e89c"
+      "sha256": "bee279368cd8207c750d70f7a3c4f3aec142f327ea802bf406f71062523c2c2c"
     },
     {
       "name": "animateFireballProjectile",
@@ -1031,7 +1031,8 @@
     {
       "name": "showCombat",
       "file": "combat-session-state.js",
-      "sha256": "6aca2839a63c3dfbb82ef6872e57b5c111c73a331f19080d6d7c962c59629257"
+      "sha256": "274c6d26c4bef5ad4b340acc51aba972af5ea6dbb0166c5dcedc8385576081f9",
+      "postExtractionChange": "Semantic combat-entry UI sound uses shared audio transition service."
     },
     {
       "name": "checkPartyDefeat",
@@ -1052,7 +1053,7 @@
       "name": "newGame",
       "file": "combat-session-state.js",
       "sha256": "f7b4b7c57a107a800b1ee785311dd2ac38055445144d07983f023e5bea9a8515",
-      "postExtractionChange": "2026-11-05: 50% desaturated randomly placed corpses with aligned pools; explicit Space acknowledgment before battle exit."
+      "postExtractionChange": "Semantic combat-entry UI sound uses shared audio transition service."
     },
     {
       "name": "collectLootFromSlainEnemies",

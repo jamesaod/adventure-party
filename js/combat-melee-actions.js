@@ -100,6 +100,9 @@ async function resolveMeleeHit(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0,blockedByWall:true};
   }
 
+  centerCameraOn(defender);
+  draw();
+
   const position=
     attackPositionData(attacker,defender);
 

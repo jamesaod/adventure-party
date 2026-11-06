@@ -1,6 +1,9 @@
 /* Loaded after the ordinary engine. Encounters reuse its units, turns and walls. */
 const explorationFloorImage=new Image(),explorationWallImage=new Image(),explorationDoorImage=new Image(),explorationGrassImage=new Image(),explorationDirtImage=new Image(),explorationFringeImage=new Image(),explorationWoodWallImage=new Image();
-let explorationGroundBank=null;
+const explorationCityWallImages={'red-brick':new Image(),'beige-stone':new Image()},explorationCityWoodFloorImage=new Image();
+const explorationCityFloorImages={wood:explorationCityWoodFloorImage,'gray-stone':new Image(),'gray-flagstone':new Image()};
+function explorationWallImageFor(material){return explorationCityWallImages[material]||(material==='wood'?explorationWoodWallImage:explorationWallImage);}
+let explorationGroundBank=null,explorationRoadBank=null;
 const explorationMaterialTiles=new WeakMap();
 // Filter to each material's displayed footprint, including anisotropic wall
 // reduction, instead of keeping a grainy large source or a blurred fixed mip.
@@ -31,19 +34,52 @@ function drawExplorationBlackoutFloor(){
 function drawExplorationGpuFloor(tiles){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- const api=explorationEncounterApi,groups=new Map(),t=explorationTerrain,map=explorationEncounter.map;
+ const api=explorationEncounterApi,groups=new Map(),curbs=new Map(),t=explorationTerrain,map=explorationEncounter.map;
+ combatGpu.snowScene?.(map,[(-explorationEncounter.origin.x-.5)*t.cellW,(-explorationEncounter.origin.z-.5)*t.cellH,map.width*t.cellW,map.height*t.cellH]);
+ if(drawExplorationGpuFloor.snowTerrain!==t){
+  const index=api.floorFragmentIndex(t.spaces,HEX_W,HEX_ROW),ground=[];
+  for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))for(const f of index({x,y})){
+   const p=worldPointForHex(f.point.x,f.point.y);if(!isIndoorWorldPoint(p))ground.push({snowEligible:1,snowHex:x+','+y,points:f.polygon});
+  }
+  drawExplorationGpuFloor.snowTerrain=t;drawExplorationGpuFloor.snowGround=ground;
+ }
+ combatGpu.snowGround?.(drawExplorationGpuFloor.snowGround);
+ combatGpu.firLitter?.(game?.firBlockedHexes||t,[...(game?.firBlockedHexes||[])].map(id=>{const [x,y]=id.split(',').map(Number);return worldPointForHex(x,y);}),[(-explorationEncounter.origin.x-.5)*t.cellW,(-explorationEncounter.origin.z-.5)*t.cellH,map.width*t.cellW,map.height*t.cellH],HEX_W*.85);
+ const heat=[];
+ // Persistent spell heat follows the live footprint; expiry removes it automatically.
+ for(const sphere of flamingSphereEffects())heat.push({keys:(sphere.cells||[]).map(c=>c.x+","+c.y),rate:1.5});
+ for(const fire of Object.values(game?.firFireStates||{}))if(fire.state==='burning'){
+  const keys=[];for(let x=fire.x-2;x<=fire.x+2;x++)for(let y=fire.y-2;y<=fire.y+2;y++)if(hexDistance(fire,{x,y})<=1)keys.push(x+','+y);
+  heat.push({keys,rate:1.5});
+ }
+ if(typeof r226LightningFx!=='undefined'&&r226LightningFx?.points)heat.push({keys:r226LightningFx.points.map(p=>p.x+','+p.y),rate:12});
+ combatGpu.snowHeat?.(heat);
  for(const fragment of explorationFloorFragments(tiles)){
   const world=worldPointForHex(fragment.point.x,fragment.point.y),surface=api.surfaceAt(map,{x:explorationEncounter.origin.x+world.x/t.cellW,z:explorationEncounter.origin.z+world.y/t.cellH}),cell=surface.cell,kind=explorationEncounter.synthetic?(isIndoorWorldPoint(worldPointForHex(fragment.point.x,fragment.point.y))?'stone':'grass'):surface.ground;
-  const image=kind==='grass'?explorationGrassImage:kind==='dirt'?explorationGroundBank.get(api.grassNeighborMask(map,cell.x,cell.z)):explorationFloorImage;
-  const m=kind==='stone'?api.materialMetrics(t):api.grassMaterialMetrics(t);
+  const image=(kind==='road'||kind==='road2'||kind==='sidewalk')?(explorationRoadBank||(explorationRoadBank=api.createRoadTileBank({base:explorationGroundBank}))).get(map,cell.x,cell.z):explorationCityFloorImages[kind]?explorationCityFloorImages[kind]:kind==='grass'?explorationGrassImage:kind==='dirt'?explorationGroundBank.get(api.grassNeighborMask(map,cell.x,cell.z)):explorationFloorImage;
+  if((kind==='road'||kind==='road2'||kind==='sidewalk'))explorationRoadBank.normal(map,cell.x,cell.z);
+  const m=explorationCityFloorImages[kind]?{floorWidth:t.cellW*2,floorHeight:t.cellH*2}:kind==='stone'?api.materialMetrics(t):api.grassMaterialMetrics(t);
   if(!groups.has(image))groups.set(image,[]);
-  groups.get(image).push({points:fragment.polygon,visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1,uv:fragment.polygon.map(p=>[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
+  if(kind==='sidewalk'){
+   const polygon=fragment.polygon,center=polygon.reduce((c,p)=>({x:c.x+p.x/polygon.length,y:c.y+p.y/polygon.length}),{x:0,y:0}),rise=.15/3*t.cellW;
+   for(let i=0;i<polygon.length;i++){
+    const a=polygon[i],b=polygon[(i+1)%polygon.length],mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    const length=Math.hypot(b.x-a.x,b.y-a.y);if(length<.001)continue;
+    let nx=-(b.y-a.y)/length,ny=(b.x-a.x)/length;if(nx*(mx-center.x)+ny*(my-center.y)<0){nx=-nx;ny=-ny;}
+    const next=api.surfaceAt(map,{x:explorationEncounter.origin.x+(mx+nx*.02)/t.cellW,z:explorationEncounter.origin.z+(my+ny*.02)/t.cellH});
+    if(next.ground==='sidewalk')continue;
+    if(!curbs.has(image))curbs.set(image,[]);
+    curbs.get(image).push({points:[a,b,{...b,elevation:rise},{...a,elevation:rise}],uv:[[0,0],[length/t.cellW,0],[length/t.cellW,.05],[0,.05]],tint:[.65,.60,.53],lightNormal:[nx,0,ny],visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1});
+   }
+  }
+  groups.get(image).push({snowHex:`${fragment.hex.x},${fragment.hex.y}`,snowEligible:isIndoorWorldPoint(world)?0:1,points:kind==='sidewalk'?fragment.polygon.map(p=>({...p,elevation:.15/3*t.cellW})):fragment.polygon,visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1,uv:fragment.polygon.map(p=>(kind==='road'||kind==='road2'||kind==='sidewalk')?[(p.x/t.cellW+explorationEncounter.origin.x-cell.x+.5),1-(p.y/t.cellH+explorationEncounter.origin.z-cell.z+.5)]:explorationCityFloorImages[kind]?[(p.x/t.cellW+explorationEncounter.origin.x+.5)/2,(.5-p.y/t.cellH-explorationEncounter.origin.z)/2]:[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
  }
  const lightMap=drawExplorationIlluminationLayer(true),dynamicLighting=!!explorationGpuLighting;
  const groundScorch=dynamicLighting&&typeof drawTerrainScorch==='function'?drawTerrainScorch(true):null;
+ for(const [image,group] of curbs){for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;combatGpu.surface(group,image,{lightMap,dynamicLighting});}
  for(const [image,group] of groups){
   for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
-  combatGpu.surface(group,image,{lightMap,dynamicLighting,groundScorch});
+  combatGpu.surface(group,image,{lightMap,dynamicLighting,groundScorch,needleLitter:true,normalMap:image.roadNormal||null});
  }
 }
 
@@ -90,7 +126,7 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
   if(face.blackout){batches.push({image:white,blackout:true,surfaces:[{points:face.points,uv:face.points.map(()=>[0,0]),multiply:[0,0,0],boost:[0,0,0]}]});continue;}
   const scorch=typeof combatWallScorch==='function'?combatWallScorch(wall,face):[],scorchKey=JSON.stringify(scorch);
   const a=face.points[0],b=face.points[1],dx=b.x-a.x,dy=(b.y-a.y)/(t.cellH/t.cellW),span=Math.hypot(dx,dy),low=Math.min(...face.points.map(p=>p.elevation)),high=Math.max(...face.points.map(p=>p.elevation));
-  const doorTop=face.cap&&face.material==='door',wood=face.material==='door'||api.wallFaceMaterial(wall,face.side)==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth;
+  const doorTop=face.cap&&face.material==='door',wood=face.material==='door'||api.wallFaceMaterial(wall,face.side)==='wood',repeat=face.material==='door'?span:api.materialMetrics(t).wallWidth*(api.wallFaceMaterial(wall,face.side)==='beige-stone'?2:1);
   const faceKey=JSON.stringify(face.points);let fragments=cached.faces.get(faceKey);
   if(!fragments){fragments=api.faceLightFragments(face,HEX_W,HEX_ROW).map(fragment=>{
    const n=fragment.points.length,mid=fragment.points.reduce((p,q)=>({x:p.x+q.x/n,y:p.y+q.y/n,h:p.h+q.elevation/n}),{x:0,y:0,h:0});
@@ -101,11 +137,11 @@ function drawExplorationGpuSolids(solids,wall,visible,cacheOwner=wall){
    let flicker=0;if(fragmentVisible&&!dynamicLighting)for(const torch of t.torches||[]){const distance=hexDistance(torch,hex);if(distance<=torch.radiusHexes&&illuminationContributionFromSource(torch,hex.x,hex.y)>0)flicker+=(explorationTorchAnimation(torch).intensity-1)*(1-distance/(torch.radiusHexes+.45));}
    flicker=Math.max(-.15,Math.min(.15,flicker));
    const radiance=fragmentVisible&&!dynamicLighting?explorationSpellRadianceAtHex(hex,sources):[0,0,0],cap=wood?[117,79,42]:[110,104,91];
-   return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat+(wall?.textureOffset||0)/repeat,(p.elevation-low)/Math.max(.0001,high-low)]),
+   return {points:fragment.points,lightPoints:dynamicLighting?fragment.points.map(explorationGpuPoint):null,lightNormal:[face.normal.x,face.normal.y,face.normal.z],visibility:dynamicLighting?visibility:1,tint:dynamicLighting&&face.cap&&!doorTop?cap.map(v=>v/255):[1,1,1],uv:fragment.points.map(p=>doorTop?api.doorCapUv(face,p):face.cap?[0,0]:[((p.x-a.x)*dx+(p.y-a.y)/(t.cellH/t.cellW)*dy)/Math.max(.0001,span)/repeat+(wall?.textureOffset||0)/repeat,(p.elevation-low)/Math.max(.0001,high-low)*(api.wallFaceMaterial(wall,face.side)==='beige-stone'?.5:1)]),
     multiply:exposure.multiply.map((v,i)=>v/255*(dynamicLighting?1:visibility)*(flicker<0?1+flicker*.6:1)*(!dynamicLighting&&face.cap&&!doorTop?cap[i]/255:1)),boost:exposure.boost.map(v=>v/255),
     add:radiance.map((v,i)=>v+[255,172,70][i]/255*Math.max(0,flicker)*.2*visibility)};
   });
-  const image=face.cap&&!doorTop?white:face.material==='door'?explorationDoorImage:wood?explorationWoodWallImage:explorationWallImage,last=batches.at(-1);
+  const image=face.cap&&!doorTop?white:face.material==='door'?explorationDoorImage:explorationWallImageFor(api.wallFaceMaterial(wall,face.side)),last=batches.at(-1);
   if(last?.image===image&&!last.blackout&&last.scorchKey===scorchKey)last.surfaces.push(...surfaces);else batches.push({image,surfaces,scorch,scorchKey});
  }
  for(const batch of batches)combatGpu.surface(batch.surfaces,batch.image,{dynamicLighting:dynamicLighting&&!batch.blackout,scorch:batch.scorch,scorchSquash:t.cellH/t.cellW});
@@ -125,7 +161,7 @@ function explorationFloorPatternForView(outdoor=false){
 function explorationWallPattern(target,wall,height){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
-  const image=wall.edgeMaterial==='wood'?explorationWoodWallImage:explorationWallImage;
+  const image=explorationWallImageFor(explorationEncounterApi.wallFaceMaterial(wall));
   if(!image.complete||!image.naturalWidth)return null;
   const m=explorationEncounterApi.materialMetrics(explorationTerrain,height),density=explorationMaterialDensity();
   const tile=explorationMaterialTile(image,m.wallWidth*density,m.wallHeight*density),pattern=target.createPattern(tile,'repeat');if(!pattern)return null;
@@ -165,12 +201,12 @@ function drawExplorationSolids(solids,wall,visible=true,cacheOwner=wall){
  for(const face of faces){
   const points=face.screen;target.save();target.beginPath();target.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))target.lineTo(p.x,p.y);target.closePath();target.clip();
   if(face.blackout){target.fillStyle='#000';target.fillRect(left,top,width,height);target.restore();continue;}
-  const image=face.material==='door'?explorationDoorImage:api.wallFaceMaterial(wall,face.side)==='wood'?explorationWoodWallImage:explorationWallImage;
+  const image=face.material==='door'?explorationDoorImage:explorationWallImageFor(api.wallFaceMaterial(wall,face.side));
   const span=Math.hypot(face.points[1].x-face.points[0].x,(face.points[1].y-face.points[0].y)/squash),h=Math.abs(face.points[3].elevation-face.points[0].elevation);
   if(!face.cap&&span>.001&&h>.001){
-   const density=explorationMaterialDensity(),metrics=api.materialMetrics(explorationTerrain),repeat=face.material==='door'?span:metrics.wallWidth;
+   const density=explorationMaterialDensity(),metrics=api.materialMetrics(explorationTerrain),repeat=face.material==='door'?span:metrics.wallWidth*(api.wallFaceMaterial(wall,face.side)==='beige-stone'?2:1);
    const tile=explorationMaterialTile(image,repeat*density,h*density),pattern=tile&&target.createPattern(tile,'repeat');
-   if(pattern){const a=points[3],b=points[2];pattern.setTransform(new DOMMatrix([(b.x-a.x)/span*repeat/tile.width,(b.y-a.y)/span*repeat/tile.width,0,h/tile.height,a.x,a.y]));target.fillStyle=pattern;}else target.fillStyle=face.material==='door'?'#855025':'#8a775d';
+   if(pattern){const a=points[3],b=points[2];pattern.setTransform(new DOMMatrix([(b.x-a.x)/span*repeat/tile.width,(b.y-a.y)/span*repeat/tile.width,0,h/tile.height*(api.wallFaceMaterial(wall,face.side)==='beige-stone'?2:1),a.x,a.y]));target.fillStyle=pattern;}else target.fillStyle=face.material==='door'?'#855025':'#8a775d';
   }else target.fillStyle=face.material==='door'?'#b3844b':'#6e685b';
   target.fillRect(left,top,width,height);
   const lighting=(api.faceLightFragments?api.faceLightFragments(face,HEX_W,HEX_ROW):[face]).map(fragment=>{
@@ -201,7 +237,7 @@ function explorationTorchAnimation(torch,now=null){
 function explorationRenderLights(){
  const frame=typeof combatLightingFrame==='number'?combatLightingFrame:null;
  if(frame!==null&&explorationRenderLights.frame===frame)return explorationRenderLights.sources;
- const sources=(typeof illuminationSources==='function'?illuminationSources():[]).concat(typeof combatSpellEffectLights==='function'?combatSpellEffectLights():[]);
+ const sources=(typeof illuminationSources==='function'?illuminationSources():[]).concat(typeof combatSpellEffectLights==='function'?combatSpellEffectLights():[]).map(source=>source.visualScale===undefined?source:{...source,intensity:source.intensity*source.visualScale});
  explorationRenderLights.frame=frame;explorationRenderLights.sources=sources;return sources;
 }
 function explorationFloorFragments(tiles){
@@ -752,6 +788,7 @@ async function startExplorationCombat(){
       explorationDirtImage.src=explorationEncounterApi.GROUND_TEXTURES.dirt+'?v=R238C258';explorationFringeImage.src=explorationEncounterApi.GROUND_TEXTURES.fringe+'?v=R238C258';await Promise.all([explorationDirtImage.decode(),explorationFringeImage.decode()]);
     }
     explorationGroundBank=explorationEncounterApi.hasDirtGround(request.map)?explorationEncounterApi.createGroundTileBank({grass:explorationGrassImage,dirt:explorationDirtImage,fringe:explorationFringeImage}):null;
+    explorationRoadBank=null;
     selectedMobEncounter='custom';combatMobRoster.length=0;
     const retreat=document.createElement('button');retreat.textContent='Retreat to exploration';retreat.addEventListener('click',()=>returnFromExplorationCombat('retreat'));document.getElementById('returnButton').after(retreat);
     ui.restartButton.disabled=true;ui.restartButton.title='Return to exploration to preserve this encounter.';

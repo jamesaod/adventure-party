@@ -106,3 +106,9 @@ Local 2048×1024 JPEG derivatives of Poly Haven's tonemapped equirectangular pan
 - Sunny Clouds: Kloofendal 48d Partly Cloudy (Pure Sky), Greg Zaal / Jarod Guest — https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
 - Clear Morning: Autumn Field (Pure Sky), Sergej Majboroda / Jarod Guest — https://polyhaven.com/a/autumn_field_puresky
 License: https://polyhaven.com/license (CC0). Sky artwork selection does not replace authored ambient lighting.
+
+## User-provided UI and title audio
+- `assets/audio/sfx/ui/page-open.wav` — supplied as Inventory_Close_01.wav, requested for page/panel opening.
+- `assets/audio/sfx/ui/page-back.wav` — supplied as Inventory_Close_02.wav, requested for closing/back navigation.
+- `assets/audio/music/arcane-dust.wav` — supplied as 068_Arcane_Dust.wav, requested as the looping title-screen track.
+These files were supplied by the project owner for integration. Source licensing was not independently established in this pass.

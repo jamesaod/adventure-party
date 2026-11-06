@@ -62,6 +62,7 @@ async function showCombat(condition=selectedCombatCondition){
   pendingCombatStart=request;
   const rendering=combatRenderingPanel();
   selectedCombatCondition=condition || "grass";
+  globalThis.adventurePartyUiAudio?.transition(currentScreen,'combat','open');
   currentScreen="combat";
 
   stopTitleMusic();

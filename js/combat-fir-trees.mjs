@@ -1,3 +1,4 @@
+import {createFirSnowCaps} from './combat-fir-snow.mjs';
 import {createTreeFireParticles} from './combat-tree-fire-particles.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
@@ -28,6 +29,7 @@ export async function createCombatFirTrees(){
   scene.add(hemisphere,sun,sun.target);
   const camera=new THREE.OrthographicCamera(-78.75,78.75,183.75,-26.25,1,1800);
   camera.position.set(0,568,823);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+  const snowCoverage={value:0};
   const fill={value:1},foliageReflectivity={value:0};
   const localLights=Array.from({length:4},()=>{const light=new THREE.PointLight(0xffffff,0,200,2);scene.add(light);return light;});
   let liveLighting=true;
@@ -45,14 +47,15 @@ export async function createCombatFirTrees(){
           original.alphaTest=.12;original.alphaToCoverage=true;
           original.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
           original.onBeforeCompile=shader=>{
-            shader.uniforms.foliageFill=fill;
+            shader.uniforms.foliageFill=fill;shader.uniforms.snowCoverage=snowCoverage;
             shader.uniforms.foliageReflectivity=foliageReflectivity;
             // Apply the foliage ceiling after tone mapping, in display color.
             shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',
-              '#include <colorspace_fragment>\ngl_FragColor.rgb=min(gl_FragColor.rgb,vec3(0.36,0.72,0.24));');
-            shader.vertexShader='attribute float canopyExposure; varying float vCanopyExposure;\n'+shader.vertexShader;
-            shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCanopyExposure=canopyExposure;');
-            shader.fragmentShader='uniform float foliageReflectivity; uniform float foliageFill; varying float vCanopyExposure;\n'+shader.fragmentShader;
+              '#include <colorspace_fragment>\ngl_FragColor.rgb=min(gl_FragColor.rgb,mix(vec3(0.36,0.72,0.24),vec3(1.0),snowMask));');
+            shader.vertexShader='varying vec3 vSnowNormal; attribute float canopyExposure; varying float vCanopyExposure;\n'+shader.vertexShader;
+            shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCanopyExposure=canopyExposure;vSnowNormal=normalize(mat3(modelMatrix)*normal);');
+            shader.fragmentShader='uniform float snowCoverage; varying vec3 vSnowNormal; uniform float foliageReflectivity; uniform float foliageFill; varying float vCanopyExposure;\n'+shader.fragmentShader;
+            shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\nfloat snowMask=smoothstep(0.0,0.15,snowCoverage)*smoothstep(1.0-snowCoverage,1.18-snowCoverage,abs(normalize(vSnowNormal).y)*0.65+vCanopyExposure*0.35); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.82,0.88,0.94),snowMask);');
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',
               THREE.ShaderChunk.lights_fragment_begin
                 .replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity / 3.0,')
@@ -61,9 +64,9 @@ export async function createCombatFirTrees(){
                   'getPointLightInfo( pointLight, geometryPosition, directLight ); directLight.color *= 0.5;'));
             shader.fragmentShader=shader.fragmentShader.replace('#include <shadowmap_pars_fragment>','#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>');
             shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>',
-              '#include <lights_fragment_end>\nreflectedLight.directSpecular *= foliageReflectivity; reflectedLight.indirectSpecular *= foliageReflectivity; reflectedLight.indirectDiffuse *= mix(0.12,1.0,vCanopyExposure); reflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.035,0.26,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
+              '#include <lights_fragment_end>\nreflectedLight.directSpecular *= foliageReflectivity; reflectedLight.indirectSpecular *= foliageReflectivity; reflectedLight.indirectDiffuse *= mix(0.22,0.94,vCanopyExposure); reflectedLight.indirectDiffuse += diffuseColor.rgb * mix(0.055,0.22,vCanopyExposure) * foliageFill * mix(1.0,getShadowMask(),1.0/3.0);');
           };
-          original.customProgramCacheKey=()=> 'combat-fir-foliage-matte-local-half';
+          original.customProgramCacheKey=()=> 'combat-fir-foliage-soft-diffuse';
         }else{
           // Darken bark albedo once per shared material; direct light still shades it.
           original.color.multiplyScalar(.45);
@@ -98,6 +101,7 @@ export async function createCombatFirTrees(){
     model.traverse(mesh=>{if(!mesh.isMesh)return;mesh.geometry.computeBoundingBox();const box=mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);healthy.union(box);if(mesh.material.alphaTest<=0)bare.union(box);});
     return {healthy,bare};
   });
+  const snowCaps=models.map(createFirSnowCaps);
   const shadowTarget=new THREE.WebGLRenderTarget(16,16,{depthBuffer:false,stencilBuffer:false});
   const blurMaterial=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,transparent:false,
     uniforms:{source:{value:null},step:{value:new THREE.Vector2()}},
@@ -148,9 +152,11 @@ export async function createCombatFirTrees(){
   const cache=new Map();let stateKey='',lost=false;
   renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();lost=true;cache.clear();shadowCache.clear();});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;cache.clear();shadowCache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));});
-  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",burnt=false,burning=false,fireParticles=192,firePhaseValue=0,direct=null,lights=[]}={}){
+  function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",snowAmount=0,burnt=false,burning=false,fireParticles=192,firePhaseValue=0,direct=null,lights=[]}={}){
     if(lost)return null;
-    const nextKey=[solar.hour,ambient,viewRotation].join(':');
+    const capAmount=burning||burnt?0:Math.round(Math.max(0,Math.min(1,snowAmount))*100)/100;
+    snowCoverage.value=0; // Keep green foliage; snow is separate geometry.
+    const nextKey=[solar.hour,ambient,viewRotation,capAmount].join(':');
     if(nextKey!==stateKey){cache.clear();stateKey=nextKey;}
     const key=variant+':'+rotation+':'+instanceKey+':'+burnt;
     const cached=cache.get(key),active=liveLighting?lights.slice(0,4):[],lightKey=JSON.stringify(active)+(burning?":"+Math.floor(performance.now()/33):"");
@@ -176,6 +182,8 @@ export async function createCombatFirTrees(){
       else if(burnt&&material.alphaTest<=0)material.color.setRGB(.012,.010,.008);
       else material.color.copy(material.userData.healthyColor);
     }
+    snowCaps[variant].light(light,solar.daylight);
+    snowCaps[variant].set(direct?.ground?0:capAmount);
     const model=models[variant];model.traverse(mesh=>{if(mesh.isMesh&&mesh.material.alphaTest>0)mesh.visible=!burnt;});model.rotation.y=rotation*Math.PI/6;scene.add(model);
     if(direct){
       const nextSunKey=[solar.hour,viewRotation].join(':');if(nextSunKey!==directSunKey){clearDirectShadows();directSunKey=nextSunKey;}

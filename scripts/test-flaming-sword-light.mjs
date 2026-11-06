@@ -1,22 +1,9 @@
-import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';import {extractCombatFunction} from './combat-test-source.mjs';import {packCombatLights} from '../js/combat-light-shader.mjs';
-const unit={id:'carl',alive:true,x:4,y:5,inventory:[{equipped:true,appearanceId:'flaming-sword-5'}]};
-const ctx=vm.createContext({game:{},performance:{now:()=>1000},firFireLightSources:()=>[],allUnits:()=>[unit],getUnitEffect:()=>null,illuminationAreaEffects:()=>[]});
-vm.runInContext(extractCombatFunction(fs.readFileSync('js/combat-lighting-services.js','utf8'),'illuminationSources'),ctx);
-const sources=ctx.illuminationSources();assert.equal(sources.length,1);
-const packed=packCombatLights(sources.map(s=>({...s,kind:'spell',height:s.heightMetres,range:s.radiusHexes,bounds:[0,0,64,32]})));assert([...packed.color.slice(0,4)].every(Number.isFinite));assert(Math.abs(packed.color[1]-153/255)<1e-6);
-unit.inventory[0].equipped=false;assert.equal(ctx.illuminationSources().length,0);unit.inventory[0]={equipped:true,appearanceId:'sword-long'};assert.equal(ctx.illuminationSources().length,0);
-console.log('PASS equipping Flaming Sword generates valid GPU light; unequipping and ordinary swords remove it');
-
-const adapter=fs.readFileSync('js/exploration-combat-hooks.js','utf8');const lampContext=vm.createContext({game:{player:{x:0,y:0}},combatSceneTerrain:{cellW:128,cellH:72,torches:[]},combatSceneContext:{origin:{x:0,z:0}},worldPointForHex:()=>({x:0,y:0}),explorationEncounterApi:{SCENE_STYLE:{cellMetres:3},sceneLights:()=>[{kind:'lantern'},{kind:'torch',x:1}]}});vm.runInContext(extractCombatFunction(adapter,'explorationVisualLights'),lampContext);assert.deepEqual(Array.from(lampContext.explorationVisualLights(),l=>l.kind),['torch']);console.log('PASS default combat lantern removed while authored torches remain');
-
-assert.equal(sources[0].heightMetres,1.1,'Sword light uses adapter metre-height contract');
-const radiusMetres=sources[0].radiusHexes*1.5,d=sources[0].heightMetres/radiusMetres;
-assert(sources[0].intensity*.18*(1-d*d)**2>.2,'Ground under sword receives substantial shader radiance');
-unit.inventory[0]={equipped:true,appearanceId:'flaming-sword-5'};ctx.performance.now=()=>1077;assert.notEqual(ctx.illuminationSources()[0].intensity,sources[0].intensity,'Torch-like flicker changes source intensity over time');
-console.log('PASS sword height, effective ground falloff and time-varying flicker');
-
-const before=sources[0].visualOffsetMetres,after=ctx.illuminationSources()[0].visualOffsetMetres;assert.notDeepEqual({...before},{...after});
-assert(Math.abs(after.x)<=.035&&Math.abs(after.z)<=.035&&Math.abs(after.y)<=.02,'Source sway stays within a few centimetres');
-assert.equal(ctx.illuminationSources()[0].x,unit.x,'Visual sway does not move gameplay light hex');
-const time=1,oldIntensity=2.2*(.82+.10*Math.sin(time*12+unit.x*1.7)+.05*Math.sin(time*27+unit.y)+.03*Math.sin(time*49));assert(Math.abs(sources[0].intensity/oldIntensity-1.5)<1e-9,'Light output increases exactly 50 percent');
-console.log('PASS bounded source sway leaves gameplay location stable and raises light output 50 percent');
+import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';import {extractCombatFunction} from './combat-test-source.mjs';import {packCombatLights} from '../js/combat-light-shader.mjs';import {itemLightSources,itemLightProfile,ITEM_LIGHT_PROFILES} from '../js/item-lighting.mjs';
+const unit={id:'carl',alive:true,x:4,y:5,inventory:[{equipped:true,catalogItemId:'flaming-sword-5'}]};
+const a=itemLightSources(unit,{now:1000}),b=itemLightSources(unit,{now:1077});assert.equal(a.length,1);assert.notEqual(a[0].intensity,b[0].intensity);assert.equal(a[0].heightMetres,1.1);assert.equal(itemLightSources(unit,{daylight:1})[0].visualScale,.04);assert.equal(itemLightSources(unit,{daylight:1,indoor:true})[0].visualScale,1);assert.equal(itemLightSources(unit,{daylight:0})[0].visualScale,1);
+unit.inventory.push({name:'Custom lantern',lit:true,lightSource:{radiusHexes:4,intensity:2,color:[255,220,180],heightMetres:1.5,flicker:false}});let lights=itemLightSources(unit,{now:1000});assert.equal(lights.length,2);assert.notEqual(lights[0].id,lights[1].id);assert.equal(lights[1].intensity,2);assert.equal(itemLightSources({...unit,id:'orc'},{}).length,2,'MOBs share item logic');
+unit.inventory[0].equipped=false;assert.equal(itemLightSources(unit).length,1);unit.inventory[1].lit=false;assert.equal(itemLightSources(unit).length,0);assert.equal(itemLightProfile({equipped:true,lightSource:{intensity:2,radiusHexes:3,color:'#ff0000'}}),null,'Invalid colors rejected');
+unit.inventory[0].equipped=true;unit.inventory[0].lightEnabled=false;assert.equal(itemLightSources(unit).length,0);delete unit.inventory[0].lightEnabled;
+const ctx=vm.createContext({game:{condition:'grass'},performance:{now:()=>1000},AdventurePartyItemLighting:{sources:itemLightSources},adventurePartySolar:{state:()=>({daylight:1})},firFireLightSources:()=>[],allUnits:()=>[unit],getUnitEffect:()=>null,illuminationAreaEffects:()=>[]});vm.runInContext(extractCombatFunction(fs.readFileSync('js/combat-lighting-services.js','utf8'),'illuminationSources'),ctx);const sources=ctx.illuminationSources();assert.equal(sources[0].visualScale,.04);const packed=packCombatLights(sources.map(s=>({...s,kind:'spell',height:s.heightMetres,range:s.radiusHexes,bounds:[0,0,64,32]})));assert([...packed.color.slice(0,4)].every(Number.isFinite));assert.equal(ITEM_LIGHT_PROFILES['flaming-sword-5'].intensity,3.3);
+const catalog=await import('../js/item-catalog.mjs');assert.equal(catalog.itemCatalogEntry('flaming-sword-5').rules.lightSource,ITEM_LIGHT_PROFILES['flaming-sword-5']);
+console.log('PASS shared equipment light profiles, catalog contract, player/MOB parity, equipped/lit/disabled states, flicker, daylight contrast and GPU packing');

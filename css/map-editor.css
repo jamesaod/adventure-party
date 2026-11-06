@@ -60,3 +60,6 @@ label{display:grid;gap:6px;font-size:12px}input,select{font:inherit;color:#83e7e
 .editor-layout>.map-preview{min-width:0;box-sizing:border-box;padding:14px;margin:0}.editor-layout>.map-preview canvas{height:420px}.sky-control{margin-bottom:14px}
 @media(max-width:1150px){.editor-layout>.map-preview{grid-column:1/-1;grid-row:1}.editor-layout>.map-preview canvas{height:380px}}
 @media(max-width:650px){.editor-layout>.map-preview{order:-1}.editor-layout>.map-preview canvas{height:320px}}
+
+#editorGrid .wall-face[data-material="red-brick"]{background:#a96750}
+#editorGrid .wall-face[data-material="beige-stone"]{background:#c5b393}

@@ -1,7 +1,8 @@
+import {WALL_MATERIAL_IDS} from './city-materials.mjs';
 import {quarterAt,quarterContains,quarterSides,quarterPoints,quarterFloor} from './quarter-walls.mjs?v=R238C274';
 import {groundKind} from './exploration-ground.mjs?v=R238C263';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
-const materials=['stone','wood'];
+const materials=WALL_MATERIAL_IDS;
 export function wallFaceMaterial(record,side='end'){
  const base=materials.includes(record?.edgeMaterial)?record.edgeMaterial:materials.includes(record?.material)?record.material:'stone';
  return record?.faceMaterials?.[side]||base;

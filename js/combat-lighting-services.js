@@ -138,7 +138,9 @@ function illuminationSources(){
   for(const unit of allUnits()){
     if(!unit?.alive || unit.fled) continue;
 
-    if(unit.inventory?.some(item=>item.equipped&&item.appearanceId==='flaming-sword-5'))sources.push({id:'flaming-sword:'+unit.id,sourceKind:'unit',unitId:unit.id,x:unit.x,y:unit.y,radiusHexes:3,intensity:3.3*(.82+.10*Math.sin(performance.now()*.012+unit.x*1.7)+.05*Math.sin(performance.now()*.027+unit.y)+.03*Math.sin(performance.now()*.049)),color:[255,153,45],heightMetres:1.1,visualOffsetMetres:{x:.035*Math.sin(performance.now()*.0067+unit.x),z:.035*Math.sin(performance.now()*.0089+unit.y),y:.02*Math.sin(performance.now()*.0113)}});
+    const itemEnvironment={now:performance.now(),daylight:globalThis.adventurePartySolar?.state?.().daylight||0,
+      indoor:typeof isIndoorWorldPoint==='function'&&typeof worldPointForHex==='function'?isIndoorWorldPoint(worldPointForHex(unit.x,unit.y)):game?.condition==='wall'};
+    sources.push(...(globalThis.AdventurePartyItemLighting?.sources(unit,itemEnvironment)||[]));
     const effect=
       getUnitEffect(unit,"continual-light") ||
       getUnitEffect(unit,"light");
@@ -417,14 +419,14 @@ function queueCombatUnitGpuShadow(image,options){
 function queueCombatArrowGpuShadow(tail,tip,{tailHeight=16,tipHeight=16,wall=null}={}){
  if(!combatGpu?.projectedShadows||!combatSceneTerrain)return false;
  let image=queueCombatArrowGpuShadow.image;
- if(!image){image=document.createElement('canvas');image.width=64;image.height=16;const c=image.getContext('2d');c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.moveTo(2,8);c.lineTo(62,8);c.stroke();c.lineWidth=3;c.beginPath();c.moveTo(2,5);c.lineTo(16,5);c.moveTo(2,11);c.lineTo(16,11);c.stroke();queueCombatArrowGpuShadow.image=image;}
+ if(!image){image=document.createElement('canvas');image.width=64;image.height=16;const c=image.getContext('2d');c.strokeStyle='#fff';c.lineWidth=5;c.beginPath();c.moveTo(2,8);c.lineTo(62,8);c.stroke();c.lineWidth=4;c.beginPath();c.moveTo(2,5);c.lineTo(16,5);c.moveTo(2,11);c.lineTo(16,11);c.stroke();queueCombatArrowGpuShadow.image=image;}
  const dx=tip.x-tail.x,dy=tip.y-tail.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,points=[],uv=[],indices=[],scale=combatShadowScale();
- for(let i=0;i<=8;i++)for(const side of [-1,1]){const t=i/8;points.push(combatShadowWorld({x:tail.x+dx*t+nx*side,y:tail.y+dy*t+ny*side},tailHeight+(tipHeight-tailHeight)*t));uv.push([t,side<0?0:1]);}
+ for(let i=0;i<=8;i++)for(const side of [-1,1]){const t=i/8;points.push(combatShadowWorld({x:tail.x+dx*t+nx*side*1.4,y:tail.y+dy*t+ny*side*1.4},tailHeight+(tipHeight-tailHeight)*t));uv.push([t,side<0?0:1]);}
  for(let i=0;i<8;i++){const n=i*2;indices.push(n,n+1,n+3,n,n+3,n+2);}
  let receiver=null,plane=[0,1,0,0];
  if(wall){const ax=wall.a.x/scale[0],az=wall.a.y/scale[2],bx=wall.b.x/scale[0],bz=wall.b.y/scale[2],length=Math.hypot(bx-ax,bz-az)||1,nx=-(bz-az)/length,nz=(bx-ax)/length;
   plane=[nx,0,nz,-nx*ax-nz*az];receiver={id:wall.id,span:[ax,az,bx,bz],height:3.5};}
- for(const light of combatShadowLights(points[8]))combatGpu.projectedShadows.queue({points,uv,indices,image,light,scale,plane,wall:receiver,opacity:light.opacity,softness:.6});
+ for(const light of combatShadowLights(points[8]))combatGpu.projectedShadows.queue({points,uv,indices,image,light,scale,plane,wall:receiver,opacity:Math.min(.7,light.opacity*1.5),softness:.35});
  if(wall)combatGpu.projectedShadows.flush();return true;
 }
 function queueFlyingArrowGpuShadow(){
@@ -444,3 +446,4 @@ function fitCombatShadowFeet(image,options,yaw,height){
  const feet=world.map(p=>{const dx=p[0]-origin[0],dz=p[2]-origin[2];return [(dx*c-dz*s)/scale,(dx*s+dz*c)/scale];}).sort((a,b)=>a[0]-b[0]);
  return {origin,feet,world};
 }
+

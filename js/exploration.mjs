@@ -1,3 +1,5 @@
+import {isCityPaving,SIDEWALK_HEIGHT} from './city-sidewalk.mjs';
+import {createRoadTileBank} from './broken-stone-road.mjs';
 import {loadExplorationSky} from './exploration-skies.mjs';
 import {stoneReliefSwitch} from './exploration-wall-relief.mjs?v=R238C274';
 import {accessibleFloor} from './exploration-accessibility.mjs?v=R238C274';
@@ -10,7 +12,7 @@ import {torchAnimation} from './exploration-scene-style.mjs?v=R238C274';
 import {isOutdoor,OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
 import {effectiveEdges,edgeGeometry,doorKey} from './exploration-edges.mjs?v=R238C274';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {explorationMaterials,explorationDoor,explorationDoorWidth,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C274';
+import {wallFrameGeometry,explorationMaterials,explorationDoor,explorationDoorWidth,SCENE_STYLE,torchPlacement,CELL,HEIGHT} from './exploration-materials.mjs?v=R238C274';
 import {FACINGS,cellKey,createExplorationState,act} from './exploration-core.mjs?v=R238C274';
 import {explorationMapMarkup} from './exploration-map.mjs?v=R238C274';
 import {discoveryKey,restoreDiscovery,revealDiscovery,saveDiscovery} from './exploration-discovery.mjs?v=R238C274';
@@ -22,7 +24,7 @@ let encounterClient,returnMessage,context,spawn,discovery,renderer,map,state,cam
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function message(text){if(!text)return;const li=document.createElement('li');li.textContent=text;$('messages').append(li);while($('messages').children.length>3)$('messages').firstChild.remove();}
 function status(){ revealDiscovery(map,state,discovery);try{const storage=context?sessionStorage:localStorage;storage.setItem(context?testStateKey(context,'discovery'):discoveryKey(map),saveDiscovery(discovery));if(context)storage.setItem(testStateKey(context,'doors'),JSON.stringify([...state.openDoors]));}catch{$('mapSaveStatus').textContent='Map remembered for this visit only (browser storage unavailable).';} $('areaMap').innerHTML=explorationMapMarkup(map,state,discovery);$('mapPosition').textContent=`Party: ${state.x+1}, ${state.z+1} · ${FACINGS[state.facing]}`; $('position').textContent=`Square ${state.x+1}, ${state.z+1} · ${state.steps} steps · ${state.visited.size} squares explored`;$('facing').textContent=FACINGS[state.facing];canvas.dataset.position=`${state.x},${state.z},${state.facing}`;const place=map.landmarks?.find(p=>p.x===state.x&&p.z===state.z);if(place)$('landmark').textContent=place.text;}
-function box(w,h,d,material,x,y,z,parent=scene){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
+function box(w,h,d,material,x,y,z,parent=scene){const mesh=new THREE.Mesh((Array.isArray(material)&&material.some(m=>m.userData.cityWall))?wallFrameGeometry(w,h,d,x,y,z):new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
 function resize(){const r=viewport.getBoundingClientRect(),width=Math.max(1,Math.min(Math.floor(r.width),$('pixelView').checked?800:1600));renderer.setSize(width,Math.max(1,Math.round(width*r.height/r.width)),false);canvas.classList.toggle('pixel',$('pixelView').checked);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
 function command(action){if(!state||motion)return;if(encounterClient?.defeated()){message('Carl is defeated. Restart the test to begin again.');return;}const previous={x:state.x,z:state.z,facing:state.facing};const old={x:camera.position.x,z:camera.position.z,yaw:camera.rotation.y};const result=act(map,state,action);message(result.message);if(!result.changed)return;status();if(result.moved&&encounterClient?.begin(state,previous)){motion={};return;}if(context&&result.moved){const url=exitUrl(context,state.x,state.z);if(url){motion={};location.assign(url);return;}}const yaw=old.yaw+(action==='left'?Math.PI/2:action==='right'?-Math.PI/2:0);motion={start:performance.now(),duration:reduced?1:190,old,x:state.x*CELL,z:state.z*CELL,yaw};}
 async function start(){
@@ -34,8 +36,8 @@ async function start(){
  const skyContext=skyCanvas.getContext('2d'),skyGradient=skyContext.createLinearGradient(0,0,0,256);skyGradient.addColorStop(0,'#346da7');skyGradient.addColorStop(.5,'#9dc7e6');skyGradient.addColorStop(1,'#dbe3df');skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,512,256);
  skyContext.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<16;i++){skyContext.beginPath();skyContext.ellipse((i*137)%512,35+(i*31)%85,35+i%4*8,7+i%3*3,0,0,Math.PI*2);skyContext.fill();}
  const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;try{const chosenSky=await loadExplorationSky(THREE,map.skybox);if(chosenSky){skyTexture.dispose();scene.background=chosenSky;}}catch(error){console.warn('Sky image unavailable; using classic sky.',error);}canvas.dataset.skybox=map.skybox||'default';scene.fog=new THREE.FogExp2('#24211c',.025);camera=new THREE.PerspectiveCamera(66,1,.05,65);camera.rotation.order='YXZ';camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;scene.add(camera);
- const {wall,wallEnhanced,floor,grass,wood,woodWall,woodCeiling,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map),wallRelief:true});
- const faceMaterials=(record,reverse=false)=>{const base=wallFaceMaterial(record)==='wood'?woodWall:wall,a=wallFaceMaterial(record,'a')==='wood'?woodWall:wall,b=wallFaceMaterial(record,'b')==='wood'?woodWall:wall;return [base,base,base,base,reverse?b:a,reverse?a:b];};
+ const {cityFloors,cityWalls,woodFloor,wall,wallEnhanced,floor,grass,wood,woodWall,woodCeiling,ceiling,groundImages}=await explorationMaterials(renderer,{outdoor:hasOutdoorGrass(map),dirt:hasDirtGround(map),wallRelief:true});
+ const faceMaterials=(record,reverse=false)=>{const base=cityWalls[wallFaceMaterial(record)]||(wallFaceMaterial(record)==='wood'?woodWall:wall),a=cityWalls[wallFaceMaterial(record,'a')]||(wallFaceMaterial(record,'a')==='wood'?woodWall:wall),b=cityWalls[wallFaceMaterial(record,'b')]||(wallFaceMaterial(record,'b')==='wood'?woodWall:wall);return [base,base,base,base,reverse?b:a,reverse?a:b];};
  const {ambient,lantern:lamp,torch:torchLight}=SCENE_STYLE;
  scene.add(new THREE.HemisphereLight(ambient.sky,ambient.ground,ambient.intensity));
  const lantern=new THREE.PointLight(lamp.color,lamp.intensity,lamp.range,lamp.decay);lantern.position.set(0,lamp.height-EYE,lamp.offsetZ);lantern.castShadow=true;lantern.shadow.mapSize.set(lamp.shadowPixels,lamp.shadowPixels);lantern.shadow.bias=-.002;lantern.shadow.camera.near=lamp.shadowNear;camera.add(lantern);
@@ -46,7 +48,7 @@ async function start(){
   const curved=cells.filter(p=>quarterAt(map,p.x,p.z)),flat=cells.filter(p=>!quarterAt(map,p.x,p.z));
   if(flat.length){const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(CELL,height,CELL),material,flat.length),matrix=new THREE.Matrix4();flat.forEach((p,i)=>mesh.setMatrixAt(i,matrix.makeTranslation(p.x*CELL,y,p.z*CELL)));mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);}
   for(const p of curved){const poly=quarterFloor(quarterAt(map,p.x,p.z)),positions=[],uv=[],ceilingFace=y>0,surface=ceilingFace?y-height/2:y+height/2;
-   for(let i=1;i<poly.length-1;i++)for(const q of ceilingFace?[poly[0],poly[i],poly[i+1]]:[poly[0],poly[i+1],poly[i]]){positions.push(q.x*CELL,surface,q.z*CELL);uv.push(q.x,q.z);}
+   for(let i=1;i<poly.length-1;i++)for(const q of ceilingFace?[poly[0],poly[i],poly[i+1]]:[poly[0],poly[i+1],poly[i]]){positions.push(q.x*CELL,surface,q.z*CELL);const rc=material.userData.roadCell;uv.push(...(rc?[q.x-rc.x+.5,1-(q.z-rc.z+.5)]:[q.x,q.z]));}
    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);
   }
  };
@@ -54,22 +56,24 @@ async function start(){
  // Ground is independent of ceiling/sky. Both views use the same composed
  // alpha-mask tiles, with one repeat per authored square (never per hex).
  const sky=OUTDOOR_AMBIENT,bank=hasDirtGround(map)?createGroundTileBank(groundImages):null;
+ const roads=createRoadTileBank({base:bank});
  const groundMaterials=new Map(),groundGroups=new Map();
- const groundMaterial=(kind,mask,outdoor)=>{const key=`${kind}:${mask}:${outdoor}`;
+ const groundMaterial=(kind,mask,outdoor,cell={x:0,z:0})=>{const key=`${kind}:${mask}:${outdoor}${isCityPaving(kind)||cityFloors[kind]?':'+cell.x+','+cell.z:''}`;
   if(!groundMaterials.has(key)){
-   let material=(kind==='grass'?grass:floor).clone();
-   if(kind==='dirt'){
-    const texture=new THREE.CanvasTexture(bank.get(mask));texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
-    material.map=texture;
+   let material=(cityFloors[kind]||(kind==='grass'?grass:floor)).clone();
+   if(cityFloors[kind]){material.map=cityFloors[kind].map.clone();material.map.offset.set(cell.x*.5,-cell.z*.5);material.userData.roadCell=cell;}
+   if(kind==='dirt'||isCityPaving(kind)){
+    const texture=new THREE.CanvasTexture(isCityPaving(kind)?roads.get(map,cell.x,cell.z):bank.get(mask));texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+    material.map=texture;if(isCityPaving(kind)){material.dispose();material=new THREE.MeshStandardMaterial({map:texture,roughness:.98,metalness:0,normalMap:new THREE.CanvasTexture(roads.normal(map,cell.x,cell.z)),normalScale:new THREE.Vector2(1.3,1.3)});material.userData.roadCell=cell;material.userData.sidewalk=kind==='sidewalk';}
    }
    if(outdoor){material.emissive=new THREE.Color(sky.sky);material.emissiveIntensity=.28;material.emissiveMap=material.map;}
    groundMaterials.set(key,material);groundGroups.set(key,[]);
   }
   return key;
  };
- for(const p of floorCells){const key=groundMaterial(groundKind(map,p.x,p.z),grassNeighborMask(map,p.x,p.z),isOutdoor(map,p.x,p.z));groundGroups.get(key).push(p);}
- for(const [key,cells] of groundGroups)tiles(cells,.12,-.06,groundMaterials.get(key));
- for(const q of map.quarterWalls||[]){const outside=outsideSurface(map,q),material=groundMaterials.get(groundMaterial(outside.ground,grassNeighborMask(map,outside.cell.x,outside.cell.z),outside.environment==='outdoor'));for(const poly of quarterOutsidePolygons(q)){const mid=poly.reduce((s,p)=>({x:s.x+p.x/3,z:s.z+p.z/3}),{x:0,z:0});if(!accessibility.at(mid))continue;const points=poly,g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x*CELL,0,p.z*CELL]),3));g.setAttribute('uv',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x,p.z]),2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);}}
+ for(const p of floorCells){const key=groundMaterial(groundKind(map,p.x,p.z),grassNeighborMask(map,p.x,p.z),isOutdoor(map,p.x,p.z),p);groundGroups.get(key).push(p);}
+ for(const [key,cells] of groundGroups)tiles(cells,groundMaterials.get(key).userData.sidewalk?.15:.12,groundMaterials.get(key).userData.sidewalk?.075:-.06,groundMaterials.get(key));
+ for(const q of map.quarterWalls||[]){const outside=outsideSurface(map,q),material=groundMaterials.get(groundMaterial(outside.ground,grassNeighborMask(map,outside.cell.x,outside.cell.z),outside.environment==='outdoor',outside.cell));for(const poly of quarterOutsidePolygons(q)){const mid=poly.reduce((s,p)=>({x:s.x+p.x/3,z:s.z+p.z/3}),{x:0,z:0});if(!accessibility.at(mid))continue;const points=poly,g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(points.flatMap(p=>[p.x*CELL,0,p.z*CELL]),3));g.setAttribute('uv',new THREE.Float32BufferAttribute(points.flatMap(p=>{const rc=material.userData.roadCell;return rc?[p.x-rc.x+.5,1-(p.z-rc.z+.5)]:[p.x,p.z];}),2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;scene.add(mesh);}}
  $('mapDimensions').textContent=`${map.width} × ${map.height} · North up`;
  for(const d of map.doors){const {root,hinge}=explorationDoor(faceMaterials(d,d.axis==='x'),wood,state.openDoors.has(doorKey(d)),map.version===2?{width:explorationDoorWidth(d)*CELL,hinge:d.hinge}:{});root.position.set(d.x*CELL,0,d.z*CELL);root.rotation.y=d.axis==='x'?Math.PI/2:0;scene.add(root);doors.set(doorKey(d),hinge);}
  if(map.version===2)for(const edge of effectiveEdges(map)){
@@ -109,7 +113,7 @@ async function start(){
  $('restart').disabled=false;$('restart').addEventListener('click',()=>{encounterClient?.reset();state=createExplorationState(map);Object.assign(state,spawn);state.visited=new Set([cellKey(state.x,state.z)]);discovery=restoreDiscovery(map,null);if(encounterClient){map.party=encounterClient.roster();$('party').replaceChildren();for(const p of map.party){const row=document.createElement('tr');for(const v of [p.name,p.ac,`${p.hp}/${p.maxHp}`]){const td=document.createElement('td');td.textContent=v;row.append(td);}$('party').append(row);}}motion=null;renderer.shadowMap.needsUpdate=true;camera.position.set(state.x*CELL,EYE,state.z*CELL);camera.rotation.y=-state.facing*Math.PI/2;doors.forEach((hinge,key)=>hinge.rotation.y=state.openDoors.has(key)?hinge.userData.openAngle:0);$('messages').replaceChildren();status();message('Back at the entrance. Doors restored to their initial states.');});
  $('pixelView').addEventListener('change',resize);resizeObserver=new ResizeObserver(resize);resizeObserver.observe(viewport);resize();status();$('loading').hidden=true;if(returnMessage)message(returnMessage);message(context?'Editor test: step onto a gold floor ring to travel to its connected map.':'You enter the old tollhouse. Move with W A S D; turn with Q / E.');
  const keys={w:'forward',ArrowUp:'forward',s:'back',ArrowDown:'back',a:'strafeLeft',d:'strafeRight',q:'left',ArrowLeft:'left',e:'right',ArrowRight:'right',f:'door'};
- document.addEventListener('keydown',event=>{if(event.ctrlKey||event.metaKey||event.altKey||/INPUT|SELECT|TEXTAREA/.test(event.target.tagName))return;if(event.key==='Escape'){location.assign(context?$('returnLink').href:'index.html');return;}const action=keys[event.key.length===1?event.key.toLowerCase():event.key];if(action){event.preventDefault();if(action!=='door'||!event.repeat)command(action);}});
+ document.addEventListener('keydown',event=>{if(event.ctrlKey||event.metaKey||event.altKey||/INPUT|SELECT|TEXTAREA/.test(event.target.tagName))return;if(event.key==='Escape'){globalThis.adventurePartyUiAudio?.prepareNavigation('back');location.assign(context?$('returnLink').href:'index.html');return;}const action=keys[event.key.length===1?event.key.toLowerCase():event.key];if(action){event.preventDefault();if(action!=='door'||!event.repeat)command(action);}});
  installPaintedAmbient(THREE,scene,map,CELL,[wallEnhanced]);
  const wallSwitch=stoneReliefSwitch(scene,wall,wallEnhanced),appearance=$('wallAppearance'),timing=$('viewTiming');
  const preference='adventure-party:exploration-wall-relief:v1:'+location.pathname;

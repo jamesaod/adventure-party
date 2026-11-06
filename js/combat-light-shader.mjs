@@ -15,7 +15,7 @@ export const combatLightGLSL=`
   vec2 tile=vec2(float(i%8),float(i/8));
   vec2 atlasUv=(tile+clamp(uv,vec2(.00196),vec2(.99804)))/vec2(8.,4.);atlasUv.y=1.-atlasUv.y;return step(.5,texture2D(emitterMask,atlasUv).r);
  }
- void combatLight(vec2 world,vec3 point,vec3 normal,inout vec3 linearBase,out vec3 radiance){
+ void combatLight(vec2 world,vec3 point,vec3 normal,float relief,inout vec3 linearBase,out vec3 radiance){
   radiance=vec3(0.);
   for(int i=0;i<32;i++){
    if(i>=emitterCount)break;
@@ -36,7 +36,8 @@ export const combatLightGLSL=`
     float d=length(delta)/max(.01,radius);
     if(d>=1.)continue;
     float falloff=pow(1.-d*d,2.);
-    radiance+=color.rgb*color.a*.18*falloff;
+    float diffuse=mix(1.,max(0.,dot(normal,normalize(delta))),relief);
+    radiance+=color.rgb*color.a*.18*falloff*diffuse;
    }
   }
  }

@@ -1539,3 +1539,17 @@ window.AdventurePartyMobHazards={
   knownTargets:r220KnownTargetEntries,
   memory:r220MobMemory
 };
+
+// Shared behavior catalog: species supply attributes; these policies apply to
+// every automated humanoid/creature through the existing service entry points.
+window.AdventurePartyMobAI={
+ behaviors:Object.freeze({
+   perception:Object.freeze({name:'Current sight',evaluate:(...args)=>r220MobCanSeeUnit(...args)}),
+   memory:Object.freeze({name:'Last-known target position',evaluate:(...args)=>r220PursuitPointForTarget(...args)}),
+   hazards:Object.freeze({name:'Intelligence and role-based spell risk',evaluate:(...args)=>r220MobStepCost(...args)}),
+   navigation:Object.freeze({name:'Perception-aware obstacle detours',evaluate:(...args)=>r220WeightedPathSearch(...args)})
+ }),
+ knownTargets:r220KnownTargetEntries,
+ memory:r220MobMemory,
+ plan:(mob,target,maxSteps=mob.move)=>r220WeightedClosestReachable(mob,target,maxSteps)
+};

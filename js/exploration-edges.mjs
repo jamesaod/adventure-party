@@ -1,3 +1,4 @@
+import {WALL_MATERIAL_IDS} from './city-materials.mjs';
 import {validateWallFaces} from './wall-surfaces.mjs?v=R238C274';
 import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C274';
 // Canonical shared edges: h(x,z) is the north edge of cell x,z;
@@ -55,7 +56,7 @@ export function validateEdges(map){
   const key=edgeKey(e);
 
   if(keys.has(key)||typeof e.id!=='string'||!e.id||!/^[a-zA-Z0-9_:,.-]{1,120}$/.test(e.id)||ids.has(e.id))throw Error('Duplicate or missing wall edge identity.');keys.add(key);ids.add(e.id);
-  if(!['wall','door','window'].includes(e.kind)||!['stone','wood'].includes(e.material||'stone'))throw Error('Invalid wall edge type or material.');
+  if(!['wall','door','window'].includes(e.kind)||!WALL_MATERIAL_IDS.includes(e.material||'stone'))throw Error('Invalid wall edge type or material.');
   const cells=edgeCells(e);if(!cells.some(p=>floor(map,p)))throw Error('Place wall edges beside floor.');
   if(e.kind!=='wall'){
    if(!cells.every(p=>floor(map,p)))throw Error('Doors and windows need floor on both sides.');

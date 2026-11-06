@@ -24,6 +24,7 @@ async function r226ProtectedLongbowMiss(attacker,defender,reason){
   breakInvisibility(attacker,"making a Longbow attack");
   playMissSound();
   await animateArrowProjectile(attacker,defender,false);
+  await focusRangedMissTarget(defender);
   setCombatMessage(reason,COMBAT_MESSAGE_MIN_HOLD_MS);
   log(reason,"system");
   return {hit:false,killed:false,damage:0,blockedByMagic:true};
@@ -66,6 +67,7 @@ async function r226ProtectedSlingMiss(attacker,defender){
     attacker.missileAmmoQuantity=Math.max(0,attacker.missileAmmoQuantity-1);
   }
   await animateSlingProjectile(attacker,defender,false);
+  await focusRangedMissTarget(defender);
   playMissSound();
   setCombatMessage(`${defender.name}'s Protection From Normal Missiles turns aside the sling shot.`,COMBAT_MESSAGE_MIN_HOLD_MS);
   log(`${attacker.name}'s sling missile is negated by Protection From Normal Missiles.`,"system");
@@ -233,7 +235,7 @@ async function resolveLongbowHit(attacker,defender){
   );
   onUnitDamaged(defender,damage);
 
-  await focusDamagedTargetIfOffscreen(defender);
+  await focusDamagedTargetIfOffscreen(defender,120,true);
 
   if(rawRoll===20){
     setCriticalRollNotification(
@@ -471,7 +473,7 @@ async function resolveSlingHit(attacker,defender){
   defender.hp=Math.max(0,defender.hp-damage);
   onUnitDamaged(defender,damage);
 
-  await focusDamagedTargetIfOffscreen(defender);
+  await focusDamagedTargetIfOffscreen(defender,120,true);
 
   if(rawRoll===20){
     setCriticalRollNotification(

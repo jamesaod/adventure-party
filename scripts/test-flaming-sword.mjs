@@ -10,3 +10,7 @@ weapon.position.set(0,0,0);weapon.rotation.z=0;const scene=new THREE.Group();sce
 assert(context.captureFlamingBlade({model:weapon},camera,scene).every(p=>p.blocked),'Body in front hides blade flames');
 body.position.z=-1;scene.updateMatrixWorld(true);assert(context.captureFlamingBlade({model:weapon},camera,scene).every(p=>!p.blocked),'Blade in front retains flames');
 console.log('PASS actual body depth hides rear sword flames and retains front sword flames');
+
+const {studioWeapon}=await import('../js/studio-equipment.mjs');const sword=studioWeapon('medieval-sword');assert(sword.flameSpan.base[0]<.2&&sword.flameSpan.tip[0]<sword.flameSpan.base[0],'Flames start beyond the crossguard and extend toward -X tip');
+weapon.position.set(0,0,0);weapon.rotation.set(0,0,0);const bladeOnly=context.captureFlamingBlade({model:weapon,weapon:sword},camera);
+assert(Math.abs(bladeOnly[0].x-(.5+.17/6))<1e-6);assert(Math.abs(bladeOnly.at(-1).x-(.5-.48/6))<1e-6);console.log('PASS production sword flame span excludes crossguard and grip');

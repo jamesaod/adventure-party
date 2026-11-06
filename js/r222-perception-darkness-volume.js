@@ -343,7 +343,8 @@ function r222PlanningCellBlocked(mob,cell){
     !mob ||
     !cell ||
     !inside(cell.x,cell.y) ||
-    isWall(cell.x,cell.y)
+    isWall(cell.x,cell.y) ||
+    (typeof isFirBlockedHex==="function" && isFirBlockedHex(cell.x,cell.y))
   ){
     return true;
   }
@@ -674,6 +675,11 @@ AdventurePartyCombatServices.register('r220WeightedClosestReachable','r222-perce
       y:mob.y
     }];
   }
+
+  // Commit to a complete risk-weighted route before spending this turn's
+  // movement. A valid detour may initially increase distance to the target.
+  const route=r220WeightedPathToAdjacent(mob,target,point);
+  if(route?.length>1)return route.slice(0,Math.max(0,Math.floor(maxSteps??mob.move??0))+1);
 
   const start={
     x:mob.x,

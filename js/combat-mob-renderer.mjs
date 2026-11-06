@@ -193,7 +193,8 @@ function captureFlamingBlade(attachment,camera,occluder=null){
   const size=box.getSize(new THREE.Vector3()),axis=['x','y','z'].sort((a,b)=>size[b]-size[a])[0],center=box.getCenter(new THREE.Vector3());
   const ray=new THREE.Raycaster(),forward=new THREE.Vector3();camera.getWorldDirection(forward);
   occluder?.updateWorldMatrix(true,true);
-  return Array.from({length:7},(_,i)=>{const t=.22+.73*i/6;p.copy(center);p[axis]=box.min[axis]+size[axis]*t;p.applyMatrix4(root.matrixWorld);const world=p.clone();p.project(camera);
+  const flameSpan=attachment.weapon?.flameSpan;
+  return Array.from({length:7},(_,i)=>{const t=i/6;if(flameSpan){p.fromArray(flameSpan.base).lerp(new THREE.Vector3().fromArray(flameSpan.tip),t);}else{p.copy(center);p[axis]=box.min[axis]+size[axis]*(.22+.73*t);}p.applyMatrix4(root.matrixWorld);const world=p.clone();p.project(camera);
     ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
     const distance=world.clone().sub(ray.ray.origin).dot(ray.ray.direction);
     const blocked=!!occluder&&ray.intersectObject(occluder,true).some(hit=>{let object=hit.object;while(object){if(object===root)return false;object=object.parent;}return hit.object.visible&&hit.distance<distance-.015;});

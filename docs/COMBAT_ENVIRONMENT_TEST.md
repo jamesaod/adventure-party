@@ -80,3 +80,10 @@ Raised Flaming Sword source intensity from 2.2 to 3.3 (50%). Added smooth indepe
 
 ### Unit illumination correction (environmentTest=58)
 Sprite shader now incorporates local spell/fire radiance before linear-to-display brightness conversion, consistent with its physical-light path. Former display-space addition left dark baked sprites underlit relative to floors. Neutral artwork hue, corpse saturation and source-art brightness cap remain. Browser GPU readback fixture verifies a nearby sword raises a dark unit red channel by more than 35 display levels while preserving its red/green ratio and brightness cap. Existing WebGL and GPU-lighting tests pass.
+
+### Blade-only sword flames (environmentTest=60)
+Inspected medieval-sword GLB geometry: grip at x=.34, crossguard approximately x=.20–.30, blade tip at x=-.50. Added explicit asset-local flame span from [.17,.109,0] to [-.48,.109,0]. Flame anchors now use this span instead of whole-weapon bounds, preserving existing pose projection and body/shield occlusion. Targeted tests verify the production endpoints exclude the guard and handle. Local change after repo checkpoint 8558c6f.
+
+### Direct physical attack target focus (environmentTest=61)
+Melee now centers its defender before windup, shared by ordinary attacks, extra attacks and melee reactions. Successful bow/sling hits explicitly center targets even when already on-screen; misses retain target focus and protected bow/sling misses now focus on arrival too. The off-screen-only helper remains the default for other callers, preserving spell presentation. Targeted camera-policy, missile, reaction and module-boundary checks pass.
+

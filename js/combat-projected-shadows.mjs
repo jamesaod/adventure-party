@@ -90,6 +90,7 @@ void main(){
 
 // Per-source union mask: R stores local penumbra radius, A stores shadow coverage.
 export const projectedShadowComposite=`
+uniform sampler2D snowMask;uniform vec4 snowBounds;uniform mat3 inverseView;uniform vec2 viewport,viewAnchor;uniform float viewZoom;uniform bool snowGround;
 uniform sampler2D mask;uniform vec2 texel;uniform bool localShadow;varying vec2 vUv;
 void main(){
  float a;
@@ -117,7 +118,11 @@ void main(){
    a+=texture2D(mask,vUv+vec2(cos(angle),sin(angle))*spread).a*.05;
   }
  }
- gl_FragColor=vec4(0.,0.,0.,a);
+ vec2 screen=vec2(vUv.x,1.-vUv.y)*viewport;
+ vec2 world=(inverseView*vec3(viewAnchor+(screen-viewAnchor)/viewZoom,1.)).xy;
+ vec2 suv=(world-snowBounds.xy)/snowBounds.zw;
+ float snow=0.;if(!localShadow&&snowGround&&all(greaterThanEqual(suv,vec2(0.)))&&all(lessThanEqual(suv,vec2(1.))))snow=texture2D(snowMask,suv).r;
+ gl_FragColor=vec4(vec3(.16,.34,.60)*snow,a);
 }`;
 
 // A point above a lamp cannot cast onto the floor below it. Clip crossing
@@ -132,11 +137,11 @@ export function clipShadowTriangleAtLight(points,uv,lightHeight){
  return result;
 }
 
-export function createProjectedShadowPass({renderer,camera,texture,flush,getView,onPaint}){
+export function createProjectedShadowPass({renderer,camera,texture,flush,getView,getSnow=()=>null,onPaint}){
  const solidMask=new THREE.DataTexture(new Uint8Array([255,255,255,255]),1,1);solidMask.needsUpdate=true;
  const scene=new THREE.Scene(),records=[],batches=new Map(),ids=new WeakMap();let lighting={solar:null,sources:[]};let sequence=0,slot=0,receiver=null,stats={batches:0,triangles:0};
  const maskTarget=new THREE.WebGLRenderTarget(1,1,{depthBuffer:false,stencilBuffer:false});
- const maskQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{mask:{value:maskTarget.texture},texel:{value:new THREE.Vector2(1,1)},localShadow:{value:false}},
+ const maskQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{snowMask:{value:null},snowBounds:{value:new THREE.Vector4()},inverseView:{value:new THREE.Matrix3()},viewport:{value:new THREE.Vector2()},viewAnchor:{value:new THREE.Vector2()},viewZoom:{value:1},snowGround:{value:false},mask:{value:maskTarget.texture},texel:{value:new THREE.Vector2(1,1)},localShadow:{value:false}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
   fragmentShader:projectedShadowComposite,transparent:true,depthTest:false,depthWrite:false}));
  maskQuad.frustumCulled=false;
@@ -198,7 +203,8 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
     u.texel.value.set(1/(batch.image.width||batch.image.naturalWidth||1),1/(batch.image.height||batch.image.naturalHeight||1));u.softness.value=batch.softness;
     u.wallReceiver.value=!!batch.wall;if(batch.wall){u.wallSpan.value.fromArray(batch.wall.span);u.wallHeight.value=batch.wall.height;}
     scene.add(record.mesh);renderer.render(scene,camera);scene.remove(record.mesh);stats.batches++;stats.triangles+=batch.positions.length/9;
-    }maskQuad.material.uniforms.localShadow.value=group[0].light.vector[3]>.5;renderer.setRenderTarget(target);scene.add(maskQuad);renderer.render(scene,camera);scene.remove(maskQuad);
+    }const su=maskQuad.material.uniforms,snow=getSnow();su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
+ maskQuad.material.uniforms.localShadow.value=group[0].light.vector[3]>.5;renderer.setRenderTarget(target);scene.add(maskQuad);renderer.render(scene,camera);scene.remove(maskQuad);
    }}finally{renderer.setRenderTarget(target);renderer.setClearColor(oldColor,oldAlpha);}
    batches.clear();onPaint();
   },

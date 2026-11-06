@@ -20,6 +20,8 @@ export const STUDIO_WEAPONS = Object.freeze([
     id: 'medieval-sword', label: 'Long Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing',
     file: 'assets/models/weapons/swords/medieval-sword.glb',
     grip: Object.freeze([0.34, 0.109, 0]), nativeScale: 0.55,
+    // Asset-local blade span: crossguard occupies x=.20–.30; tip points toward -X.
+    flameSpan: Object.freeze({base:Object.freeze([.17,.109,0]),tip:Object.freeze([-.48,.109,0])}),
     primaryAxis: Object.freeze([-1, 0, 0]),
     position: Object.freeze([0.015, 0.05, 0.005]), rotation: Object.freeze([0, -90, 0])
   }),

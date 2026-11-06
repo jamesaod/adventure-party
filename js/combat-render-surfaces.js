@@ -42,7 +42,7 @@ function drawTreeGroundShadow(decoration){
     const shadow=liveFirTreeRender(tileSet,decoration,{host:combatGpu,ground:true}).shadow;if(!shadow)return;
     const center=hexCenter(decoration.x,decoration.y),scale=tileSet.treeDrawHeight/210,left=center.x+shadow.left*scale,top=center.y+shadow.top*scale,width=shadow.width*scale,height=shadow.height*scale;
     const faces=explorationFloorFragments(visibleHexes()).filter(fragment=>{const p=hexCenter(fragment.point.x,fragment.point.y);return p.x>=left-HEX_W&&p.x<=left+width+HEX_W&&p.y>=top-HEX_ROW&&p.y<=top+height+HEX_ROW;}).map(fragment=>({points:fragment.polygon,uv:fragment.polygon.map(point=>{const p=screenPointForWorld(point);return[(p.x-left)/width,1-(p.y-top)/height];})}));
-    combatGpu.surface(faces,shadow.texture,{opacity:shadow.opacity});return;
+    combatGpu.surface(faces,shadow.texture,{opacity:shadow.opacity,sunShadow:true});return;
   }
   const live=liveFirTreeRender(tileSet,decoration);
   if(live){
@@ -1222,7 +1222,7 @@ function drawFirContactShadow(tree,tileSet){
   if(combatGpu&&combatSceneTerrain){
     const tiles=visibleHexes().filter(hex=>{const p=worldPointForHex(hex.x,hex.y);return Math.abs(p.x-center.x)<rx+HEX_W&&Math.abs(p.y-center.y)<ry+HEX_ROW*2;});
     const faces=explorationFloorFragments(tiles).map(fragment=>clipFirContactPolygon(fragment.polygon,left,top,left+rx*2,top+ry*2)).filter(points=>points.length>=3).map(points=>({points,uv:points.map(p=>[Math.max(0,Math.min(1,(p.x-left)/(rx*2))),Math.max(0,Math.min(1,1-(p.y-top)/(ry*2)))])}));
-    combatGpu.surface(faces,image);return;
+    combatGpu.surface(faces,image,{sunShadow:(globalThis.adventurePartySolar?.state()?.daylight||0)>.1});return;
   }
   const origin=screenPointForWorld({x:left,y:top}),u=battlefieldProjectVector({x:rx*2,y:0}),v=battlefieldProjectVector({x:0,y:ry*2});
   ctx.save();ctx.transform(u.x/128,u.y/128,v.x/128,v.y/128,origin.x,origin.y);ctx.drawImage(image,0,0);ctx.restore();

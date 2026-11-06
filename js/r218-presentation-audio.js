@@ -1,13 +1,11 @@
 /*
-  R218 — STINKING CLOUD OPACITY + TITLE MIDI DISABLE
+  R218 — STINKING CLOUD OPACITY + ATTACK PACING
   ===================================================
   Presentation-only tuning:
   - Stinking Cloud's rendered body is half as opaque as R217.
   - Wall of Fog and Fog Cloud retain their existing 50% global volume alpha.
   - The green Stinking Cloud outline remains at its existing strength so the
     affected tactical footprint stays readable.
-  - The title MIDI-derived sequencer is disabled for now. The shared Web Audio
-    context, SFX, weather audio, and the global SND toggle remain available.
 */
 
 /*
@@ -52,30 +50,6 @@ AdventurePartyCombatServices.register('combatActionPauseRemaining','r218-present
   );
 
   return Math.max(existingPause,attackPause);
-});
-
-/* Disable the title MIDI-derived music path without disturbing shared SFX. */
-const r218StopLegacyTitleMusic=AdventurePartyCombatServices.current('stopTitleMusic');
-
-titleEvents.length=0;
-
-AdventurePartyCombatServices.register('stopTitleMusic','r218-presentation-audio.js:62:stopTitleMusic',function(){
-  /*
-    Preserve the old cleanup once, so any already-scheduled oscillators/timers
-    are stopped safely if this file is hot-reloaded during development.
-  */
-  r218StopLegacyTitleMusic();
-  musicPlaying=false;
-  updateAudioIndicators();
-});
-
-AdventurePartyCombatServices.register('startTitleMusic','r218-presentation-audio.js:72:startTitleMusic',function(){
-  /*
-    Intentionally disabled in R218. Keep the callable compatibility surface so
-    screen routing and audio-unlock code do not need a parallel special case.
-  */
-  musicPlaying=false;
-  updateAudioIndicators();
 });
 
 AdventurePartyCombatServices.register('drawFogVolumeCell','r218-presentation-audio.js:81:drawFogVolumeCell',function(cell,effect=null){
