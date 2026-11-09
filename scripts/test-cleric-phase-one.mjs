@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const src=readFileSync('js/adventure-party.js','utf8');
 for(const name of ['CLERIC_CLASS','CLERIC_XP_LEVELS','CLERIC_SPELL_SLOT_ROWS',
   'PRIEST_SAVING_THROW_BANDS','function clericWisdomBonusSlots(',

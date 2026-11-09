@@ -1,21 +1,24 @@
+import {extractCombatFunction} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import * as sceneApi from '../js/exploration-encounters.mjs';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
-const draw=source.slice(source.indexOf('function draw(){'),source.indexOf('\nfunction flashAttack('));
+const draw=extractCombatFunction(source,'draw');
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
-    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
-    queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
+  const context={syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
+    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,BATTLEFIELD_LOGICAL_HEIGHT:100,architecturalWalls:[],
+    prepareCombatProjectedShadows:record('shadow receiver'),queueFlyingArrowGpuShadow:record('flying arrow shadow'),queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
     drawFighter:()=>calls.push(sun.drawingGround?'player shadow':'player'),drawStudioSpriteMob:()=>calls.push(sun.drawingGround?'orc shadow':'orc')};
   for(const name of [...draw.matchAll(/\b((?:draw|ensure|clip)[A-Z]\w*)\(/g)].map(m=>m[1]))context[name]??=record(name);
   vm.runInNewContext(draw+'\ndraw();',context);
   assert.equal(calls.filter(x=>x==='orc').length,1);
   assert.equal(calls.filter(x=>x==='orc shadow').length,1);
+  assert(calls.indexOf('shadow receiver')<calls.indexOf('player shadow'));
+  assert(calls.indexOf('flying arrow shadow')<calls.indexOf('orc'));
   assert.equal(calls.filter(x=>x==='drawWallTestLineOfSightMask').length,1);
   if(exploration){
     assert(calls.indexOf('drawWallTestLineOfSightMask')<calls.indexOf('orc'));
@@ -42,11 +45,11 @@ context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equa
 const image={complete:true,naturalWidth:1024,naturalHeight:1024};
 const tile=context.explorationMaterialTile(image);assert.equal(tile.width,512);assert.deepEqual(reductions,[[512,512]]);
 assert.equal(context.explorationMaterialTile(image),tile);assert.equal(reductions.length,1,'Reuse filtered texture rather than rebuilding it per frame');
-const shadows=source.slice(source.indexOf('function drawArchitecturalWallShadows(){'),source.indexOf('\nfunction closestPointOnWorldSegment('));
+const shadows=extractCombatFunction(source,'drawArchitecturalWallShadows');
 vm.runInNewContext(shadows+'\ndrawArchitecturalWallShadows();',{explorationTerrain:{},architecturalWalls:[{}]});
 console.log('PASS wall-edge mask uses room LOS polygons, cached texture prefilter and no indoor test-sun shadows');
 
-const waitCode=source.slice(source.indexOf('async function waitForCombatUnitRenders('),source.indexOf('\nfunction combatRenderingPanel('));
+const waitCode=extractCombatFunction(source,'waitForCombatUnitRenders');
 const waitContext={};vm.createContext(waitContext);vm.runInContext(waitCode,waitContext);
 let playerReady,enemyReady,finished=false;
 const player={appearanceRefreshPromise:new Promise(r=>{playerReady=r;})},enemy={appearanceRefreshPromise:new Promise(r=>{enemyReady=r;})};
@@ -81,9 +84,9 @@ Object.assign(context,{explorationEncounter:{map,origin:{x:3,z:6},openDoors:['3,
   ctx:{save(){},restore(){},transform(){},drawImage(){lightCalls.push(this.globalCompositeOperation);}}});
 context.drawExplorationIlluminationLayer();assert.deepEqual(lightCalls,['multiply','color-dodge']);assert.equal(uploads.length,2);
 context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Static lights/camera reuse their exposure map');
-context.game.player.x=1;context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Party lantern movement invalidates the exposure map');
+context.game.player.x=1;context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Moving Carl without an equipped light does not rebake a default lantern');
 context.screenPointForWorld=(p,elevation=0)=>{assert.equal(elevation,0);return {x:p.x+100,y:p.y+50};};
-context.drawExplorationIlluminationLayer();assert.equal(uploads.length,4,'Camera pans move the world-anchored exposure map without rebaking it');
+context.drawExplorationIlluminationLayer();assert.equal(uploads.length,2,'Camera pans move the world-anchored exposure map without rebaking it');
 context.screenPointForWorld=(p,elevation=0)=>{assert.equal(elevation,0);return p;};
 console.log('PASS shared hemisphere/torch/lantern exposure preserves material contrast and caches static lighting');
 
@@ -101,3 +104,4 @@ assert.equal(sceneApi.materialMetrics(terrain,35).wallHeight,35,'Six source rows
 context.explorationWallPattern(patternTarget,{a:{x:256,y:64}},35);
 assert.equal(transforms[2][4],wallTransform[4],'Adjacent wall faces keep a continuous horizontal texture phase');
 console.log('PASS anisotropic filtering, eight floor slabs per exploration square and six world-anchored wall rows at fixed wall height');
+

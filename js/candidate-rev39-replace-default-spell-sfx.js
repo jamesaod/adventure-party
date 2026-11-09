@@ -99,16 +99,15 @@
      POR #07 — UNIVERSAL CAST CUE REPLACEMENT
      ========================================================== */
 
-  const r39BasePlayPor07CastingSound=
-    playPor07CastingSound;
+  const r39BasePlayPor07CastingSound=AdventurePartyCombatServices.current('playPor07CastingSound');
 
-  playPor07CastingSound=function(){
+  AdventurePartyCombatServices.register('playPor07CastingSound','candidate-rev39-replace-default-spell-sfx.js:105:playPor07CastingSound',function(){
     if(r39SuppressPorCastDepth>0){
       return false;
     }
 
     return r39BasePlayPor07CastingSound();
-  };
+  });
 
 
   /*
@@ -116,10 +115,9 @@
     suppression flag active while the earlier R225/R230 wrapper chain runs so
     any attempted universal POR #07 playback becomes a no-op.
   */
-  const r39BaseCommitSpellCast=
-    commitSpellCast;
+  const r39BaseCommitSpellCast=AdventurePartyCombatServices.current('commitSpellCast');
 
-  commitSpellCast=function(
+  AdventurePartyCombatServices.register('commitSpellCast','candidate-rev39-replace-default-spell-sfx.js:122:commitSpellCast',function(
     caster,
     spell,
     action,
@@ -151,7 +149,7 @@
           );
       }
     }
-  };
+  });
 
 
   /*
@@ -195,16 +193,15 @@
      DQK #02 — GENERIC SUCCESSFUL SPELL-AFFECT REPLACEMENT
      ========================================================== */
 
-  const r39BasePlayDqkSpellAffectSound=
-    playDqkSpellAffectSound;
+  const r39BasePlayDqkSpellAffectSound=AdventurePartyCombatServices.current('playDqkSpellAffectSound');
 
-  playDqkSpellAffectSound=function(){
+  AdventurePartyCombatServices.register('playDqkSpellAffectSound','candidate-rev39-replace-default-spell-sfx.js:201:playDqkSpellAffectSound',function(){
     if(r39SuppressDqkAffectDepth>0){
       return false;
     }
 
     return r39BasePlayDqkSpellAffectSound();
-  };
+  });
 
 
   /*
@@ -212,10 +209,9 @@
     and calls the global DQK #02 player. Wrap the final addUnitEffect chain and
     hold suppression only around effects owned by the new custom-sound spells.
   */
-  const r39BaseAddUnitEffect=
-    addUnitEffect;
+  const r39BaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
 
-  addUnitEffect=function(
+  AdventurePartyCombatServices.register('addUnitEffect','candidate-rev39-replace-default-spell-sfx.js:218:addUnitEffect',function(
     unit,
     effectSpec
   ){
@@ -242,7 +238,7 @@
           );
       }
     }
-  };
+  });
 
 
   window.AdventurePartySpellSfxReplacement={

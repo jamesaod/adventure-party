@@ -30,7 +30,37 @@ jobs:
         run: |
           node --check js/adventure-party.js
           node --check js/game-script-loader.mjs
+          node --check js/mob-workshop.mjs
+          node scripts/test-mob-workshop.mjs
+          node scripts/test-mob-workshop-creature.mjs
+          node scripts/test-mob-workshop-hand-pose.mjs
+          node scripts/test-mob-workshop-fit.mjs
+          node scripts/test-workshop-hand-calibration.mjs
+          node scripts/test-workshop-fit-store.mjs
+          node scripts/test-workshop-project.mjs
+          node scripts/test-workshop-combat-contract.mjs
+          node scripts/test-workshop-publication.mjs
+          node scripts/test-workshop-grounding.mjs
           node scripts/test-game-script-loader.mjs
+          node scripts/test-combat-module-boundaries.mjs
+          node scripts/test-arrow-blood.mjs
+          node scripts/test-projected-shadows.mjs
+          node scripts/test-unit-shadow-proxy.mjs
+          node scripts/test-combat-model-shadow.mjs
+          node scripts/test-combat-death-scene.mjs
+          node scripts/test-tree-fire-particles.mjs
+          node scripts/test-burning-tree-audio.mjs
+          node scripts/test-flaming-sword.mjs
+          node scripts/test-flaming-sword-light.mjs
+          node scripts/test-ui-audio.mjs
+          node scripts/test-title-audio.mjs
+          node scripts/test-mob-ai-navigation.mjs
+          node scripts/test-physical-attack-focus.mjs
+          node scripts/test-combat-turn-flow.mjs
+          node scripts/test-combat-casting-lifecycle.mjs
+          node scripts/test-combat-spell-actions.mjs
+          node scripts/test-combat-missile-actions.mjs
+          node scripts/test-combat-action-entry.mjs
           node scripts/test-battlefield-font.mjs
           node scripts/test-combat-info-panel.mjs
           node scripts/test-quick-command.mjs
@@ -234,7 +264,12 @@ jobs:
           node scripts/test-portal-daylight.mjs
           node scripts/test-outdoor-grass.mjs
           node scripts/test-terrain-transitions.mjs
+          node scripts/test-broken-stone-road.mjs
+          node scripts/test-city-sidewalk.mjs
+          node scripts/test-city-materials.mjs
           node scripts/test-combat-webgl.mjs
+          node scripts/test-combat-direct-units.mjs
+          node scripts/test-combat-prepared-assets.mjs
           node scripts/test-combat-runtime.mjs
           node scripts/test-opportunity-attacks.mjs
           node scripts/test-combat-gpu-lighting.mjs

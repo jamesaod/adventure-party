@@ -57,7 +57,7 @@ function candidateHexVisibleToParty(
 }
 
 
-drawWallTestLineOfSightMask=function(){
+AdventurePartyCombatServices.register('drawWallTestLineOfSightMask','candidate-outdoor-los-visibility-mask.js:60:drawWallTestLineOfSightMask',function(){
   if((typeof combatSceneTerrain!=="undefined"&&combatSceneTerrain)||(typeof explorationTerrain!=="undefined" && explorationTerrain)){drawExplorationVisibilityMask();return;}
   if(!game){
     return;
@@ -149,7 +149,7 @@ drawWallTestLineOfSightMask=function(){
 
     ctx.restore();
   }
-};
+});
 
 
 window.AdventurePartyLosPresentation={

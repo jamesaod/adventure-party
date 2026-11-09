@@ -17,10 +17,9 @@ let r233MinuteMeteorLights=[];
    TRANSIENT ILLUMINATION SOURCES
    ============================================================ */
 
-const r233BaseIlluminationSources=
-  illuminationSources;
+const r233BaseIlluminationSources=AdventurePartyCombatServices.current('illuminationSources');
 
-illuminationSources=function(){
+AdventurePartyCombatServices.register('illuminationSources','r233-minute-meteor-illumination.js:23:illuminationSources',function(){
   const sources=
     r233BaseIlluminationSources();
 
@@ -44,7 +43,7 @@ illuminationSources=function(){
       })
     )
   );
-};
+});
 
 
 function r233MeteorGeometry(caster,results){
@@ -107,7 +106,7 @@ function r233MeteorGeometry(caster,results){
 }
 
 
-r227DrawMeteorVolleyFx=function(){
+AdventurePartyCombatServices.register('r227DrawMeteorVolleyFx','r233-minute-meteor-illumination.js:110:r227DrawMeteorVolleyFx',function(){
   const fx=r227MeteorVolleyFx;
 
   if(!fx?.meteors?.length){
@@ -239,10 +238,10 @@ r227DrawMeteorVolleyFx=function(){
   }
 
   ctx.restore();
-};
+});
 
 
-r227AnimateMeteorVolley=async function(caster,results){
+AdventurePartyCombatServices.register('r227AnimateMeteorVolley','r233-minute-meteor-illumination.js:245:r227AnimateMeteorVolley',async function(caster,results){
   if(!caster?.alive){
     return;
   }
@@ -332,18 +331,21 @@ r227AnimateMeteorVolley=async function(caster,results){
 
   }
 
+  // Miss offsets remain inside the target hex. Apply once after the volley arrives,
+  // for both player-selected and AI volleys, never while meteors are stored.
+  if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(results.filter(r=>r.target).map(r=>({x:r.target.x,y:r.target.y})),1);
   r233MinuteMeteorLights=[];
   r227MeteorVolleyFx=null;
 
   draw();
-};
+});
 
 
 /* ============================================================
    PLAYER-ASSIGNED VOLLEY — INDIVIDUAL OUTCOME PRESENTATION
    ============================================================ */
 
-r227ResolveSelectedMeteorVolley=async function(action,effect){
+AdventurePartyCombatServices.register('r227ResolveSelectedMeteorVolley','r233-minute-meteor-illumination.js:346:r227ResolveSelectedMeteorVolley',async function(action,effect){
   const caster=
     spellCasterForAction(action);
 
@@ -720,14 +722,14 @@ r227ResolveSelectedMeteorVolley=async function(action,effect){
   }
 
   return true;
-};
+});
 
 
 /* ============================================================
    AUTOMATED / QUICK VOLLEYS USE THE SAME LIGHT + RESULT PACING
    ============================================================ */
 
-r226FireMeteorVolley=async function(
+AdventurePartyCombatServices.register('r226FireMeteorVolley','r233-minute-meteor-illumination.js:730:r226FireMeteorVolley',async function(
   caster,
   target,
   count,
@@ -847,7 +849,7 @@ r226FireMeteorVolley=async function(
     hits,
     damage:totalDamage
   };
-};
+});
 
 
 window.AdventurePartyMinuteMeteorLight={

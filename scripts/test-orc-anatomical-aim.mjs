@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import { retargetHumanoidClip } from '../js/mixamo-retarget.mjs';
 
 const THREE = await import('data:text/javascript;base64,' +

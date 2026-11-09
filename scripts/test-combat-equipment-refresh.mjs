@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 globalThis.location = {href:'https://example.test/candidate/index.html'};
 const {compatibleStudioCombatModel} = await import('../js/combat-pose-recipe.mjs');
 const {preserveThinSpriteDetails} = await import('../js/studio-thin-detail.mjs');

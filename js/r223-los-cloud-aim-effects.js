@@ -334,10 +334,9 @@ function r223RenderEmptyAimHex(x,y){
 }
 
 
-const r223BaseUpdateUnitInfoPanel=
-  updateUnitInfoPanel;
+const r223BaseUpdateUnitInfoPanel=AdventurePartyCombatServices.current('updateUnitInfoPanel');
 
-updateUnitInfoPanel=function(){
+AdventurePartyCombatServices.register('updateUnitInfoPanel','r223-los-cloud-aim-effects.js:340:updateUnitInfoPanel',function(){
   if(!game) return;
 
   if(!aimMode){
@@ -396,7 +395,7 @@ updateUnitInfoPanel=function(){
     y,
     {append:true}
   );
-};
+});
 
 
 /* Public diagnostic hook for AIM/tile inspection. */
@@ -453,7 +452,7 @@ if(getSpellEntry("hypnotic-pattern")){
    R223 — DENSER DRAGON BREATH EDGE-OVERLAP VFX
    ============================================================ */
 
-drawDragonBreathFx=function(){
+AdventurePartyCombatServices.register('drawDragonBreathFx','r223-los-cloud-aim-effects.js:456:drawDragonBreathFx',function(){
   if(!dragonBreathFx) return;
 
   const fx=dragonBreathFx;
@@ -1083,4 +1082,4 @@ drawDragonBreathFx=function(){
   }
 
   ctx.restore();
-};
+});

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {harness} from './test-combat-result-panel.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 function setup(){
@@ -52,11 +52,27 @@ assert.deepEqual(fire.trace.filter(e=>e.event==='focus').map(e=>e.id),['orc','gn
 assert.equal(fire.b.hp,0);assert.equal(fire.c.hp,9);assert.equal(fire.a.hp,0,'Captured friendly target resolves even after the last hostile falls');
 assert(fire.trace.findIndex(e=>e.event==='explosion-complete')<fire.trace.findIndex(e=>e.event==='damage'));
 assert(fire.history.some(e=>e.text.includes('IMMUNE TO FIRE')));assert.equal(fire.trace.at(-1).event,'finish');
+// Window spillover halves the original roll before the ordinary save, once per unit.
+fire.trace.length=0;
+Object.assign(fire.b,{alive:true,hp:20});Object.assign(fire.c,{alive:true,hp:20,immune:false});Object.assign(fire.a,{alive:true,hp:20});
+s.rejectWindowTarget=()=>true;
+assert.equal(await complete(fire,s.castFireballFromScroll({spellId:'fireball'},{x:2,y:1})),false,'A blocked target is rejected before VFX or damage');
+assert.equal(fire.b.hp,20);assert.equal(fire.c.hp,20);assert.equal(fire.a.hp,20);
+s.rejectWindowTarget=()=>false;
+s.animateFireballProjectile=async(_caster,target)=>assert.equal(target.x,2,'Valid casts retain the selected aim hex');
+s.fireballBlastCells=target=>{assert.equal(target.x,2);return [];};
+s.resolveFireballEnvironment=(_origin,cells)=>cells;
+s.fireballEnvironmentDamageScale=u=>u===fire.a?1:.5;
+s.rollSpellSave=u=>({success:u===fire.c,modifiedRoll:15,targetNumber:10});
+assert.equal(await complete(fire,s.castFireballFromScroll({spellId:'fireball'},{x:2,y:1})),true);
+assert.equal(fire.b.hp,16,'Half-strength spillover: 8 becomes 4');
+assert.equal(fire.c.hp,18,'Successful save halves spillover again: 8 becomes 2');
+assert.equal(fire.a.hp,12,'Full exposure still receives the full original roll');
 // Extract the final (closure-owned) Magic Missile resolver, retaining its actual
 // allocation, Shield/Mirror Image checks and per-target damage implementation.
 const missile=setup(),m=missile.s;
 Object.assign(m,{COMBAT_MESSAGE_MIN_HOLD_MS:1000,spellCasterForAction:()=>missile.a,getSpellEntry:()=>({name:'Magic Missile',missileDamage:'1d4+1'}),r36MissileCount:()=>3,r36ValidTarget:()=>true,commitSpellCast:()=>true,exitAimMode(){},faceEntityToward(){},setUnitActionBanner(){},r36AnimateVolley:async()=>{assert.equal(missile.b.hp,5);assert.equal(missile.c.hp,5);missile.trace.push({event:'volley-complete'});return true;},getUnitEffect:()=>null,interceptWithMirrorImage:()=>false,rollDiceExpression:()=>({total:3}),playMagicMissileHitSound:()=>missile.cues.push({at:m.performance.now(),cue:'missile'}),r36TargetSummary:()=>'',setCombatMessage(){},finishTestSpellCast(){missile.trace.push({event:'finish'});}});
-const volley=read('js/candidate-rev36-magic-missile-volley.js'),start=volley.indexOf('  castMagicMissileFromScroll=');
+const volley=read('js/candidate-rev36-magic-missile-volley.js'),start=volley.indexOf("  AdventurePartyCombatServices.register('castMagicMissileFromScroll'");
 vm.runInContext(volley.slice(start,volley.indexOf('  /*\n    Keep Previewer Reset/Stop',start)),m);
 assert.equal(await complete(missile,m.castMagicMissileFromScroll({magicMissileTargetIds:['orc','gnoll','orc']},missile.b)),true);
 assert.deepEqual(missile.trace.filter(e=>e.event==='focus').map(e=>e.id),['orc','gnoll']);

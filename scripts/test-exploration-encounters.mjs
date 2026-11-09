@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {encounterAt,validateEncounters,terrainForEncounter,recordOutcome,readProgress,progressKey,torchPlacement,combatTorchLightPlacement,sceneLights,SCENE_STYLE} from '../js/exploration-encounters.mjs';
 const map=JSON.parse(readFileSync(new URL('../data/exploration/old-tollhouse.json',import.meta.url)));
 const initial={encounters:{},player:null},event=map.encounters[0];

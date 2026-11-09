@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const page=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const css=readFileSync(new URL('../css/adventure-party.css',import.meta.url),'utf8');
@@ -13,8 +13,8 @@ assert.ok(game.includes('const count=document.createElement("input")'));
 assert.ok(game.includes('const faction=document.createElement("select")'));
 assert.ok(game.includes('function deployConfiguredCombatMobs('));
 assert.ok(game.includes('makeStudioTestMob(group.type,index'));
-assert.ok(game.includes('mob.controller=friendly?"player":"mob"'));
-assert.ok(game.includes('occupiedHexesAt(mob,pos.x,pos.y'),'MOB footprint collision handling');
+assert.ok(game.includes("mob.controller=friendly?'player':'mob'"));
+assert.ok(game.includes('occupiedHexesAt(mob,p.x,p.y'),'MOB footprint collision handling');
 assert.ok(game.includes('selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition)'),
  'Studio sprite-test handoff remains supported');
 assert.ok(game.includes('const allies=configured.allies'));

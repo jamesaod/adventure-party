@@ -1,13 +1,15 @@
+import {extractCombatFunction} from './combat-test-source.mjs';
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const section=(from,to)=>source.slice(source.indexOf(from),source.indexOf(to,source.indexOf(from)));
 const node=()=>({textContent:'',innerHTML:'',hidden:false,children:[],classes:new Set(),classList:{toggle(name,on){if(on)this.owner.classes.add(name);else this.owner.classes.delete(name);}},replaceChildren(...children){this.children=children;}});
 const ui=Object.fromEntries(['unitInfoName','unitInfoMode','unitInfoRows','unitInfoEffects','unitInfoAbilities'].map(key=>{const el=node();el.classList.owner=el;return [key,el];}));
 let target=null,visible=true,effectsUnit=null;
 const context=vm.createContext({ui,document:{createElement:node},game:{player:{faction:'player'}},aimMode:false,aimCursor:{x:0,y:0},activeUnit:()=>target,unitAtHex:()=>target,isUnitVisibleToFriendlyParty:()=>visible,renderUnitStatusEffects:unit=>{effectsUnit=unit;}});
-vm.runInContext(section('function isFriendlyCombatUnit(','function pointInSimplePolygon(')+section('function unitHasRangedWeaponInHand(','function unitCanMakeLeavingHexFreeAttack(')+section('function unitHpDisplay(','function renderClassReport('),context);
+vm.runInContext(extractCombatFunction(source,'isFriendlyCombatUnit')+extractCombatFunction(source,'unitHasRangedWeaponInHand')+section('function unitHpDisplay(','function renderClassReport('),context);
 const rows=()=>ui.unitInfoRows.children.map(el=>el.textContent||el.innerHTML);
 target={id:'kobold',name:'Kobold',faction:'enemy',controller:'mob',hp:3,maxHp:4,ac:7,weapon:'Dagger'};
 const before=JSON.stringify(target);context.updateUnitInfoPanel();

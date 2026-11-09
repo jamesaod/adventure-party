@@ -1,7 +1,9 @@
+import {extractCombatFunction} from './combat-test-source.mjs';
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const section=(from,to)=>{
  const a=source.indexOf(from),b=source.indexOf(to,a);
  assert.ok(a>=0 && b>a,`Missing production section: ${from}`);
@@ -20,7 +22,7 @@ function harness(active='player'){
   selectedPlayerUnitForQuickCommand:()=>{const u=roster.find(u=>u.id===context.game.active);return u?.controller==='player'?u:null;},
   activeCombatants:()=>roster.filter(u=>u.alive&&!u.fled)});
  vm.runInContext(section('const quickCommandUnitIds=new Set();','/* Most recent randomized MOB deployment')+
-  section('function isFriendlyCombatUnit(','function pointInSimplePolygon(')+
+  extractCombatFunction(source,'isFriendlyCombatUnit')+
   section('function cancelQuickCommandForUnit(','function chooseQuickCommandTarget(')+
   section('function activateQuickCommand(','function playerDone(')+
   section('function handleCombatKey(','function handleCombatConditionsKey('),context);

@@ -60,7 +60,7 @@ function r234TraceHexPath(targetCtx,x,y){
 }
 
 
-drawWallTestLineOfSightMask=function(){
+AdventurePartyCombatServices.register('drawWallTestLineOfSightMask','r234-binary-hidden-los.js:63:drawWallTestLineOfSightMask',function(){
   if(game?.condition!=="wall"){
     return;
   }
@@ -148,7 +148,7 @@ drawWallTestLineOfSightMask=function(){
 
     ctx.restore();
   }
-};
+});
 
 
 window.AdventurePartyLosPresentation={

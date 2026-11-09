@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
 import {createAuthoringStore,SHARED_POSE_LIBRARY_ID} from '../js/authoring-store.mjs';
 import {createPoseLibrary,recordLibraryPose} from '../js/pose-library.mjs';

@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
@@ -14,7 +15,7 @@ for (let i = 0; i < HEX_FACINGS.length; i++) {
 }
 
 // The new studio must use the same palette as the existing Pixel Editor.
-const game = fs.readFileSync(new URL("../js/adventure-party.js", import.meta.url), "utf8");
+const game = readCombatFixture(new URL("../js/adventure-party.js", import.meta.url), "utf8");
 const start = game.indexOf("const VGA_BASE_COLORS=");
 const end = game.indexOf("const VGA_256_PALETTE=buildVga256Palette();", start);
 assert.ok(start >= 0 && end > start);
@@ -163,9 +164,9 @@ for (const options of [
     assert.equal(transparentImage[p + 3], unadjustedAlpha[p + 3]);
   }
 }
-const studioSource=fs.readFileSync(new URL("../js/3d-studio.mjs",import.meta.url),"utf8");
-const studioCaptureSource=fs.readFileSync(new URL("../js/studio-capture.mjs",import.meta.url),"utf8");
-const studioHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
+const studioSource=readCombatFixture(new URL("../js/3d-studio.mjs",import.meta.url),"utf8");
+const studioCaptureSource=readCombatFixture(new URL("../js/studio-capture.mjs",import.meta.url),"utf8");
+const studioHtml=readCombatFixture(new URL("../3d-studio.html",import.meta.url),"utf8");
 assert.ok(studioHtml.includes('id="studioAnimationFiles"')&&studioHtml.includes('id="studioLoadAnimationButton"'),
   'Studio exposes a separate humanoid FBX animation importer');
 assert.ok(studioSource.includes("from './mixamo-retarget.mjs?v=R238C140'")&&studioSource.includes('function loadAnimationFiles('),
@@ -250,7 +251,7 @@ assert.ok(studioSource.includes("['ambientIntensity', 5]"),
   'Environmental lighting normalization accepts 500 percent');
 assert.ok(studioSource.includes("measuredHeightInches") && studioSource.includes("pose: 'T-Pose'"),
   'Studio records T-Pose scale and measured height as unit calibration metadata');
-const equipmentUiHtml=fs.readFileSync(new URL("../3d-studio.html",import.meta.url),"utf8");
+const equipmentUiHtml=readCombatFixture(new URL("../3d-studio.html",import.meta.url),"utf8");
 for(const id of ['studioOffHandGripAlong','studioOffHandGripAcross','studioOffHandGripDepth']){
   assert.ok(equipmentUiHtml.includes(`id="${id}"`),`Studio exposes ${id} calibration control`);
 }

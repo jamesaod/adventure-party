@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -8,7 +9,7 @@ const auditionPath='assets/models/dungeon-crawler-carl/v2-ual2-two-handed-auditi
 const provenancePath='assets/models/dungeon-crawler-carl/v2-ual2-two-handed-audition/provenance.json';
 
 function readGlb(path){
-  const bytes=fs.readFileSync(new URL(path,root));
+  const bytes=readCombatFixture(new URL(path,root));
   assert.equal(bytes.readUInt32LE(0),0x46546c67,'GLB magic');
   assert.equal(bytes.readUInt32LE(4),2,'glTF 2');
   assert.equal(bytes.readUInt32LE(8),bytes.length,'complete GLB');
@@ -27,7 +28,7 @@ function readGlb(path){
 
 const original=readGlb(originalPath);
 const audition=readGlb(auditionPath);
-const provenance=JSON.parse(fs.readFileSync(new URL(provenancePath,root),'utf8'));
+const provenance=JSON.parse(readCombatFixture(new URL(provenancePath,root),'utf8'));
 
 assert.equal(audition.bytes.length,11896352);
 assert.equal(
@@ -70,7 +71,7 @@ assert.ok(
   'original Carl binary prefix preserved'
 );
 
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root),'utf8'));
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root),'utf8'));
 assert.equal(catalog.models.some(m=>m.id==='dungeon-crawler-carl-v2'),true,'Ver 2 remains selectable');
 assert.equal(catalog.models.some(m=>m.id==='dungeon-crawler-carl-v2-ual2-sword-test'),true,'UAL2 Sword Test remains selectable');
 const entry=catalog.models.find(m=>m.id==='dungeon-crawler-carl-v2-ual2-two-handed-audition');

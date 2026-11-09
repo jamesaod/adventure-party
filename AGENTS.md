@@ -1,5 +1,7 @@
 # Adventure Party â€” Session Start and Repository Workflow
 
+- Completed local ten-step combat cleanup (2026-11-05): docs/COMBAT_CLEANUP_CHECKPOINT.md and docs/COMBAT_ARCHITECTURE.md are the current handoff. 208 unchanged extracted bodies, 198 named legacy stages/125 services, 120/120 tests, internal-browser Wall/Grass/Shield/Fireball smoke QA passed. No push/deploy. Keep stable action owners, shared result timing and CPU visibility authority. Classic shared state remains intentional; do not restart completed cleanup.
+
 - Rev 274: Sun shadows shade whole outdoor floor hexes and wall fragments using their owning hex. Filtered floor exposure remains unshadowed; a constant face attribute subtracts only direct Sun energy, preserving local lights. Zero-loss and sealed-black batches retain the original shader path. Visibility probes exit the owning/joined CPU wall shells toward friendly observers, fixing compressed curved-wall and closed-door self-occlusion without changing gameplay LOS. No new passes, shadow maps or frame loop. See docs/WALL_VISIBILITY_HEX_SHADOWS.md.
 
 - Rev 273: Cached wall ground-shadow experiment uses production wall/door solids projected onto authored ground in the solar direction. Spatially indexed polygon union is cached per terrain/geometry/time; camera and MOB movement do not rebuild it. It attenuates only an outdoor-ground direct-sun share inside the existing exposure bake, preserving ambient/local lights and adding no GPU passes or loop. Wall shadows checkbox compares on/off. MOB cast shadows remain unchanged. Pending separate Rev272 QA: dark curved-wall patches and the door between round structures incorrectly dark in LOS; this experiment does NOT fix those. See docs/WALL_GROUND_SHADOWS.md.
@@ -148,7 +150,7 @@ This file is the first stop for any new ChatGPT / development session working on
 - **Older alternative:** `pixel-upload-worker.js` and `R158_SETUP.md` document a Cloudflare Worker gateway that accepts Base64 PNG + manifest from Pixel Studio and uses GitHub Contents API to upload to `pixel-inbox`. This is verified for PNG/JSON only, **not** a confirmed GLB upload path.
 - On a new session, **investigate the existing Rev 109 native-blob and Rev 58 temporary-transfer mechanism first**, before declaring binary repo uploads unsupported. Do not confuse evidence that transfers were successful with proof the local-to-connector bridge is currently available.
 
-## Candidate Rev 204 — armor
+## Candidate Rev 204 ï¿½ armor
 
 See [Armor and movement](docs/ARMOR_AND_MOVEMENT.md) for the shared PHB armor catalog, Worn armor selection and specific encumbrance movement. Preserve stable base movement and count carried armor separately from equipped AC.
 
@@ -213,3 +215,5 @@ Rev 244: experimental sprite brightness follows hex ground lighting/distance/spe
 Rev 245: portal-daylight.mjs derives diffuse sky apertures and attenuated indoor fill from existing environment/ambient paint and edge/door state. Floors, solid faces, sprite shading, distance relief and tactical illumination share the field. Preserve closed-room occlusion, cached transport/query fast paths and magical Darkness precedence; natural daylight never joins magical Light cancellation sources. See docs/COMBAT_LIGHTING_QA.md.
 
 Rev 246: experimental Outdoor / sky floor uses generated short grass in exploration and combat; indoor stone stays unchanged. Grass repeats once per authored three-metre square and uses runtime filtering. Load grass only for maps containing outdoor floor. Worn variant/provenance retained under assets/textures/exploration; no new map schema. See docs/COMBAT_LIGHTING_QA.md.
+
+- Persistent user-requested to-do notes: consult docs/USER_FOLLOW_UPS.md when discussing follow-ups or next steps; add newly requested notes there. Notes alone are not implementation authorization.

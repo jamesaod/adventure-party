@@ -1,0 +1,7 @@
+Queued by James for the pass AFTER Rev 255 (the corrected persistent-results pass):
+
+1. Opportunity attacks: moving from a hex adjacent to an enemy into another hex adjacent to that same enemy does not provoke. Only leaving that enemy's reach provokes.
+
+2. Rename archer guarding to Ranged Ambush. Fire only one arrow at an enemy entering range, and only if the archer previously had no other targets. Preserve this eligibility condition and single-arrow limit.
+
+Next after repository push (2026-11-05): narrow arrow fletching along shaft and project arrow shadows from sun position.

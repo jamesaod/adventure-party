@@ -38,7 +38,7 @@
   let lastGenerationMs=0;
   let lastSeed=0;
 
-  const baseDrawLightningTraceFx=r232DrawLightningTraceFx;
+  const baseDrawLightningTraceFx=AdventurePartyCombatServices.current('r232DrawLightningTraceFx');
 
   function clamp(value,min,max){
     return Math.min(max,Math.max(min,value));
@@ -1357,7 +1357,7 @@
     ctx.restore();
   }
 
-  r232DrawLightningTraceFx=function(fx){
+  AdventurePartyCombatServices.register('r232DrawLightningTraceFx','candidate-rev14-production-dbm-lightning.js:1360:r232DrawLightningTraceFx',function(fx){
     if(
       !fx?.r232Trace ||
       !Array.isArray(fx.segments) ||
@@ -1447,7 +1447,7 @@
       );
     }
     ctx.restore();
-  };
+  });
 
   window.AdventurePartyDbmLightningProduction={
     release:"Candidate Rev 14",

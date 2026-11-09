@@ -138,20 +138,20 @@ function r226DrawPersistentLevel3Fx(){
   r226DrawLineFx(r226GustFx,"gust");
 }
 
-const r226BaseDrawSpellAreaEffects=drawSpellAreaEffects;
-drawSpellAreaEffects=function(){
+const r226BaseDrawSpellAreaEffects=AdventurePartyCombatServices.current('drawSpellAreaEffects');
+AdventurePartyCombatServices.register('drawSpellAreaEffects','r226-level3-vfx.js:142:drawSpellAreaEffects',function(){
   r226BaseDrawSpellAreaEffects();
   r226DrawWindWalls();
-};
+});
 
-const r226BaseDrawPersistentCharmStatusFx=drawPersistentCharmStatusFx;
-drawPersistentCharmStatusFx=function(){
+const r226BaseDrawPersistentCharmStatusFx=AdventurePartyCombatServices.current('drawPersistentCharmStatusFx');
+AdventurePartyCombatServices.register('drawPersistentCharmStatusFx','r226-level3-vfx.js:148:drawPersistentCharmStatusFx',function(){
   r226BaseDrawPersistentCharmStatusFx();
   r226DrawPersistentLevel3Fx();
-};
+});
 
-const r226BaseHasPersistentStatusFx=hasPersistentStatusFx;
-hasPersistentStatusFx=function(){
+const r226BaseHasPersistentStatusFx=AdventurePartyCombatServices.current('hasPersistentStatusFx');
+AdventurePartyCombatServices.register('hasPersistentStatusFx','r226-level3-vfx.js:154:hasPersistentStatusFx',function(){
   return !!(
     r226BaseHasPersistentStatusFx() ||
     r226ActiveWindWalls().length ||
@@ -162,7 +162,7 @@ hasPersistentStatusFx=function(){
       ].some(id=>!!getUnitEffect(unit,id))
     )
   );
-};
+});
 
 
 /* ============================================================

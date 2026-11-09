@@ -5,7 +5,7 @@
   exposure individually after the shared continuous discharge.
 */
 
-r226CastLightningBolt=async function(action,targetHex){
+AdventurePartyCombatServices.register('r226CastLightningBolt','r233-lightning-result-pacing.js:8:r226CastLightningBolt',async function(action,targetHex){
   const caster=spellCasterForAction(action);
   const spell=getSpellEntry("lightning-bolt");
   const level=action.casterLevel||TEST_SPELL_CASTER_LEVEL;
@@ -77,6 +77,7 @@ r226CastLightningBolt=async function(action,targetHex){
     120
   );
 
+  if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(trace.cells||[],1);
   const ownedFx=r226LightningFx={
     r232Trace:true,
     segments:trace.segments,
@@ -249,4 +250,4 @@ r226CastLightningBolt=async function(action,targetHex){
   );
 
   return true;
-};
+});

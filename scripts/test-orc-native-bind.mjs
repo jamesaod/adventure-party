@@ -1,14 +1,15 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { ORC_NATIVE_BIND_REBASE, unpackCarlReference, rebaseOrcUal2Clips } from '../js/studio-orc-native-bind.mjs';
 
 const root = new URL('../', import.meta.url);
-const vendor = fs.readFileSync(new URL('assets/vendor/three/three.core.min.js', root));
+const vendor = readCombatFixture(new URL('assets/vendor/three/three.core.min.js', root));
 const THREE = await import(`data:text/javascript;base64,${vendor.toString('base64')}`);
 
 function glb(path) {
-  const bytes = fs.readFileSync(new URL(path,root));
+  const bytes = readCombatFixture(new URL(path,root));
   assert.equal(bytes.readUInt32LE(0),0x46546c67);
   const len = bytes.readUInt32LE(12), doc=JSON.parse(bytes.toString('utf8',20,20+len));
   const bin=bytes.subarray(28+len);
@@ -32,7 +33,7 @@ assert.equal(sha(proof.bytes),'2f88c4062f2fdba6b8738e0296a1e5764cff94f3e716153ea
 assert.equal(sha(carl.bytes),'5284bd3cd0b9fe6665c5d94ec0fc7fae8ec4a5856f0628f3084ae1190b044693');
 assert.deepEqual(proof.doc.nodes,rawOrc.doc.nodes,'Proof keeps the original Orc bind TRS');
 assert.deepEqual(proof.doc.skins,rawOrc.doc.skins,'Proof keeps the original inverse binds');
-const reference=JSON.parse(fs.readFileSync(new URL('data/ual2-carl-reference-bind.json',root),'utf8'));
+const reference=JSON.parse(readCombatFixture(new URL('data/ual2-carl-reference-bind.json',root),'utf8'));
 const ref=unpackCarlReference(reference);
 const norm=n=>n.replace(/[^a-z0-9]/gi,'').replace(/^mixamorig/i,'').toLowerCase();
 const carlNames=new Map(carl.doc.nodes.map(node=>[norm(node.name||''),node]));
@@ -107,7 +108,7 @@ for(const [key,carlRot] of ref){
     Math.hypot(transported.x+nativeQ.x,transported.y+nativeQ.y,transported.z+nativeQ.z,transported.w+nativeQ.w));
   assert.ok(distance<2e-5,`Bind mismatch on ${key}: ${distance}`);
 }
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root),'utf8'));
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root),'utf8'));
 const modelEntry=catalog.models.find(item=>item.id==='male-orc-fighter-ual2-native-bind-experiment');
 assert.ok(modelEntry,'New experiment can be selected');
 assert.equal(modelEntry.animationBindRebase,ORC_NATIVE_BIND_REBASE);

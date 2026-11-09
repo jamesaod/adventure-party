@@ -231,7 +231,7 @@ if (fs.existsSync(spellPreviewerPath)) {
 
 if (fs.existsSync(fireballProductionPath)) {
   const production = fs.readFileSync(fireballProductionPath, "utf8");
-  const fireballStart = production.indexOf("castFireballFromScroll=async function");
+  const fireballStart = production.indexOf("AdventurePartyCombatServices.register('castFireballFromScroll'");
   const fireballSource = fireballStart >= 0
     ? production.slice(fireballStart)
     : "";
@@ -258,7 +258,7 @@ requireFile(magicMissileProductionPath);
 if (fs.existsSync(magicMissileProductionPath)) {
   const production = fs.readFileSync(magicMissileProductionPath, "utf8");
 
-  if (!production.includes("castMagicMissileFromScroll=")) {
+  if (!production.includes("AdventurePartyCombatServices.register('castMagicMissileFromScroll'")) {
     fail("Production Magic Missile volley resolver is missing.");
   }
 
@@ -380,7 +380,7 @@ for (const path of [
   requireFile(path);
 }
 
-const gameSource = fs.readFileSync("js/adventure-party.js", "utf8");
+const gameSource = ["js/adventure-party.js", "js/combat-session-state.js", "js/combat-render-frame.js"].map(path=>fs.readFileSync(path,"utf8")).join("\n");
 
 for (const requiredToken of [
   "function makeOrcLeader(",

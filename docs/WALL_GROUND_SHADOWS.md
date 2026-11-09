@@ -1,4 +1,4 @@
-> Rev 274 supersedes smooth ground sampling: whole hexes and owning wall fragments now share stepped Sun shadow decisions. See WALL_VISIBILITY_HEX_SHADOWS.md.
+> Current local test restores smooth building ground shadows: cached silhouettes are sampled at actual light-map texels and filtered across hex boundaries. The Rev274 per-hex floor correction is no longer applied. Tree shadows and tactical LOS are unchanged.
 
 # Cached wall ground shadows, Rev273
 

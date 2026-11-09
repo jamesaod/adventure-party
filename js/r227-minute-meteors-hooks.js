@@ -2,17 +2,17 @@
    REPLACE R226 PLAYER AUTO-FIRE, PRESERVE AUTOMATED QUICK/NPC MODE
    ============================================================ */
 
-const r227BaseResolveMinuteMeteorsTurn=r226ResolveMinuteMeteorsTurn;
-r226ResolveMinuteMeteorsTurn=async function(actor){
+const r227BaseResolveMinuteMeteorsTurn=AdventurePartyCombatServices.current('r226ResolveMinuteMeteorsTurn');
+AdventurePartyCombatServices.register('r226ResolveMinuteMeteorsTurn','r227-minute-meteors-hooks.js:6:r226ResolveMinuteMeteorsTurn',async function(actor){
   if(r227PlayerDirectsMeteors(actor)){
     /* Never take over a normal player-controlled turn. */
     return false;
   }
   return await r227BaseResolveMinuteMeteorsTurn(actor);
-};
+});
 
-const r227BaseCastMinuteMeteors=r226CastMinuteMeteors;
-r226CastMinuteMeteors=async function(action,target){
+const r227BaseCastMinuteMeteors=AdventurePartyCombatServices.current('r226CastMinuteMeteors');
+AdventurePartyCombatServices.register('r226CastMinuteMeteors','r227-minute-meteors-hooks.js:15:r226CastMinuteMeteors',async function(action,target){
   const caster=spellCasterForAction(action);
 
   if(!r227PlayerDirectsMeteors(caster)){
@@ -77,15 +77,15 @@ r226CastMinuteMeteors=async function(action,target){
     effect,
     {fromInitialCast:true,originAction:action}
   );
-};
+});
 
 
 /* ============================================================
    CAST MENU: STORED METEORS ARE A DELIBERATE RELEASE ACTION
    ============================================================ */
 
-const r227BaseRenderSpellCastList=renderSpellCastList;
-renderSpellCastList=function(){
+const r227BaseRenderSpellCastList=AdventurePartyCombatServices.current('renderSpellCastList');
+AdventurePartyCombatServices.register('renderSpellCastList','r227-minute-meteors-hooks.js:88:renderSpellCastList',function(){
   r227BaseRenderSpellCastList();
 
   const caster=activePlayerControlledUnit() || game?.player;
@@ -124,10 +124,10 @@ renderSpellCastList=function(){
     subtitle.textContent=
       `${subtitle.textContent} Stored Minute Meteors are released manually; they never auto-fire.`;
   }
-};
+});
 
-const r227BaseBeginSelectedCombatSpell=beginSelectedCombatSpell;
-beginSelectedCombatSpell=function(spellId){
+const r227BaseBeginSelectedCombatSpell=AdventurePartyCombatServices.current('beginSelectedCombatSpell');
+AdventurePartyCombatServices.register('beginSelectedCombatSpell','r227-minute-meteors-hooks.js:130:beginSelectedCombatSpell',function(spellId){
   const caster=activePlayerControlledUnit();
   if(
     spellId==="melfs-minute-meteors" &&
@@ -139,6 +139,6 @@ beginSelectedCombatSpell=function(spellId){
     }
   }
   return r227BaseBeginSelectedCombatSpell(spellId);
-};
+});
 
 

@@ -117,7 +117,7 @@ function init() {
       if(equipmentDescriptor.poseProfileId==='bow'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Bow';
       if(equipmentDescriptor.poseProfileId==='sling'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Slings';
       if(equipmentDescriptor.poseProfileId==='direct-fire'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Direct Fire Weapons (Crossbow)';
-      if(equipmentDescriptor.poseProfileId==='wizard-staff-grip'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Wooden Staff 1';
+      if(equipmentDescriptor.poseProfileId==='wizard-staff-grip'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='Upright Staff Grip';
       if(equipmentDescriptor.poseProfileId==='one-handed-thrust'&&profileNameField.value.trim()==='One-handed swinging weapon')profileNameField.value='One-handed stabbing weapon';
       const rightHand = snap.equipment?.settings?.rightHand;
       for (const pose of POSE_NAMES) {

@@ -51,6 +51,8 @@ jobs:
             candidate-src/ site/candidate/
 
           touch site/.nojekyll
+          git -C stable rev-parse HEAD > site/BUILD_SHA.txt
+          git -C candidate-src rev-parse HEAD > site/candidate/BUILD_SHA.txt
 
           cat > site/candidate/QA_CHANNEL.txt <<'EOF'
           Adventure Party candidate QA build.

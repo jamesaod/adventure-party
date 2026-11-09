@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {quarterTowerSample,seedPack,parsePack,resizeMap,paintCell} from '../js/exploration-authoring.mjs';

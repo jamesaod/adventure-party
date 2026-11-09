@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const fs=readFileSync('js/priest-spells.js','utf8');
 const js=readFileSync('js/adventure-party.js','utf8');
 const html=readFileSync('index.html','utf8');

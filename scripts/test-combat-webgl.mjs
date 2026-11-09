@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
 import {combatProjection,triangulateSurfaces,createCombatRenderer} from '../js/combat-webgl.mjs';
 import {solidPrism} from '../js/exploration-combat-geometry.mjs';
@@ -49,7 +49,7 @@ console.log('PASS GPU projection matches tactical coordinates at all six rotatio
 const hooks=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const adapterName='function drawExplorationGpuSolids(',start=hooks.indexOf(adapterName),end=hooks.indexOf('\n}',start)+2;
 const draws=[];let samples=0,visibility=1;
-const gpuState={explorationEncounterApi:sceneApi,explorationTerrain:{cellW:128,cellH:72.746,torches:[]},explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
+const gpuState={explorationCityWallImages:{},explorationWallImageFor:()=>({id:'wall'}),explorationEncounterApi:sceneApi,explorationTerrain:{cellW:128,cellH:72.746,torches:[]},explorationEncounter:{origin:{x:0,z:0},openDoors:[]},
  battlefieldViewportBounds:()=>({left:-1000,right:1000,top:-1000,bottom:1000}),screenPointForWorld:(p,h=0)=>({x:p.x,y:p.y-h}),
  explorationVisualLights:()=>[],explorationRenderLights:()=>[],explorationDaylight:()=>null,
  explorationSurfaceExposure:()=>{samples++;return {multiply:[200,180,160],boost:[0,0,0]};},
@@ -84,8 +84,14 @@ console.log('PASS shader wall route transports base exposure/geometry without CP
 // Sealed surfaces stay opaque black even under the shader lighting route and full LOS.
 gpuState.explorationTerrain.isRenderablePoint=p=>p.y<0;visibility=1;draws.length=0;
 gpuState.drawExplorationGpuSolids([solidPrism({x:-40,y:0},{x:40,y:0},3,35)],{},true);
-const blackout=draws.filter(d=>d.options.dynamicLighting===false),outside=draws.filter(d=>d.options.dynamicLighting===true);
-assert(blackout.length>=3&&outside.length,'Keep visible exterior masonry beside black inward faces/caps/ends');
+let blackout=draws.filter(d=>d.options.dynamicLighting===false),outside=draws.filter(d=>d.options.dynamicLighting===true);
+assert(blackout.length>=3&&!outside.length,'Inside view keeps opaque sealed faces and excludes the rear exterior face');
+// Rotate to the exterior side: the visible masonry remains lit, while caps/ends
+// bordering the sealed interior stay black.
+gpuState.screenPointForWorld=(p,h=0)=>({x:p.x,y:-p.y-(h||p.elevation||0)});draws.length=0;
+gpuState.drawExplorationGpuSolids([solidPrism({x:-40,y:0},{x:40,y:0},3,35)],{},true);
+blackout=draws.filter(d=>d.options.dynamicLighting===false);outside=draws.filter(d=>d.options.dynamicLighting===true);
+assert(blackout.length>=3&&outside.length,'Outside view keeps lit exterior masonry beside black sealed caps/ends');
 for(const d of blackout)for(const s of d.surfaces){assert.deepEqual(Array.from(s.multiply),[0,0,0]);assert.deepEqual(Array.from(s.boost),[0,0,0]);assert(!s.lightPoints,'Sealed faces never receive shader light');}
 assert(outside.some(d=>d.surfaces.some(s=>s.multiply.some(v=>v>0))));
 console.log('PASS opaque sealed inward/end/cap faces override full LOS and shader lighting while exterior masonry remains');

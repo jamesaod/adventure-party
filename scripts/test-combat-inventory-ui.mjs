@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const page=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const catalog=readFileSync(new URL('../mob-catalog.html',import.meta.url),'utf8');

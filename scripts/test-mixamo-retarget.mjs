@@ -1,14 +1,15 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { retargetHumanoidClip } from '../js/mixamo-retarget.mjs';
 import { analyzeHumanoidRig, findHumanoidBone, humanoidFingerChains } from '../js/humanoid-rig.mjs';
 
-const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
+const source = readCombatFixture(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${source.toString('base64')}`);
 
 function readGlbJson(url) {
-  const bytes=fs.readFileSync(url);
+  const bytes=readCombatFixture(url);
   assert.equal(bytes.readUInt32LE(0),0x46546c67,'GLB magic');
   assert.equal(bytes.readUInt32LE(4),2,'GLB version');
   assert.equal(bytes.readUInt32LE(8),bytes.length,'GLB declared byte length');
@@ -241,7 +242,7 @@ for(const name of ['mixamorig:Hips','mixamorig:LeftHand','mixamorig:RightHand','
   assert.ok(orcNodeNames.has(name),`Orc GLB contains ${name}`);
 }
 
-const studioModels=JSON.parse(fs.readFileSync(new URL('../data/studio-models.json',import.meta.url),'utf8'));
+const studioModels=JSON.parse(readCombatFixture(new URL('../data/studio-models.json',import.meta.url),'utf8'));
 const orcEntry=studioModels.models.find(model=>model.id==='male-orc-fighter');
 assert.deepEqual(orcEntry,{
   id:'male-orc-fighter',
@@ -252,7 +253,7 @@ assert.deepEqual(orcEntry,{
   skinWeightRepair:'cross-limb-components-v1'
 },'Raw Orc source stays untouched, with opt-in skinning cleanup and no automatic runtime retargeting');
 
-const animationSources=JSON.parse(fs.readFileSync(new URL('../data/humanoid-animation-sources.json',import.meta.url),'utf8'));
+const animationSources=JSON.parse(readCombatFixture(new URL('../data/humanoid-animation-sources.json',import.meta.url),'utf8'));
 assert.equal(animationSources.version,1);
 const oneHanded=animationSources.families['one-handed-swing'];
 assert.deepEqual(oneHanded.clips,['UAL2_Sword_Ready','UAL2_Sword_Regular_A']);

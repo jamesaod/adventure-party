@@ -1,5 +1,17 @@
 # Combat point lighting - Candidate Rev 261
 
+## November 5, 2026: smooth local lighting is the default
+
+Combat now enables the shared fragment-shader lighting path by default; `?combatLighting=cpu` explicitly selects the previous reference appearance. This applies to exploration encounters, Combat Test and the production Spell Previewer through the shared scene adapter.
+
+Physical torch/lantern lights retain scene-metre Lambert response and distance/cutoff shading. Spell, area, unit and burning-tree emitters now convert their source coordinates into scene metres and evaluate smooth Euclidean 3D falloff at each floor/wall/door fragment. Spell/fire bounds cover the round world-space footprint rather than an axial hex contour. Tree-fire emission uses 2.5 m height, other spell emission 2.2 m unless an emitter supplies heightMetres. Existing colors, animation/flicker and source lifetimes are retained. Trees retain their existing per-surface local-light material path.
+
+GPU floors and walls carry the existing ambient/distance baseline without CPU local-light relief. Direct GPU light offsets that fading continuously. The old floor distance-overlay and per-hex radiance/glow passes are skipped on this route, avoiding duplicate shading and hex-shaped illumination steps. The seven-hex distance-visibility rule, authored ambient, daylight field, friendly LOS concealment, Darkness and targeting rules remain. This is a local-light conversion, not a new solar or ambient transport implementation.
+
+CPU visibility polygons still provide occlusion masks; the atlas now also invalidates when architectural wall identity changes, including rebuilt broken/opened geometry. The existing 32-source compatibility guard remains: a frame exceeding that budget uses the complete CPU reference route instead of dropping lights. Removing that overflow limitation requires a separate batching/data-texture change.
+
+Targeted GPU lighting, WebGL, exploration rendering and architecture regressions pass. The real WebGL fixture passes shader/color/resource readbacks. GPU diagnostics report `gpu-point-lights` and source count for live-scene verification.
+
 Rev 261 restores the earlier lighting appearance by default using the complete CPU reference route. WebGL still renders map meshes and spell effects. The per-pixel direct-light implementation below is retained as an opt-in experiment using ?combatLighting=gpu; ?combatLighting=cpu and no parameter both use the restored appearance. Test scenes now use authored exploration maps and the same LOS mask.
 
 Rev 260

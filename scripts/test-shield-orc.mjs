@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
 import {ITEM_CATALOG} from '../js/item-catalog.mjs';
 import {studioShield,normalizeShield} from '../js/studio-shield.mjs';

@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {extractCombatFunction} from './combat-test-source.mjs';
+const engine=fs.readFileSync('js/adventure-party.js','utf8'),events=[];const c=vm.createContext({isEntityOnBattlefieldScreen:()=>true,centerCameraOn:u=>events.push(u.id),draw:()=>events.push('draw'),sleep:async()=>{}});vm.runInContext(extractCombatFunction(engine,'focusDamagedTargetIfOffscreen'),c);
+assert.equal(await c.focusDamagedTargetIfOffscreen({id:'target'},0),false);assert.equal(await c.focusDamagedTargetIfOffscreen({id:'target'},0,true),true);assert.deepEqual(events,['target','draw']);
+Object.assign(c,{game:{over:false},unitDistance:()=>1,canMeleeReach:()=>true,attackPositionData:()=>({}),faceEntityToward(){},prepareUnitAttackWindup:async()=>{throw Error('windup reached');}});vm.runInContext(extractCombatFunction(fs.readFileSync('js/combat-melee-actions.js','utf8'),'resolveMeleeHit'),c);events.length=0;
+await assert.rejects(c.resolveMeleeHit({id:'attacker',alive:true},{id:'target',alive:true}),/windup reached/);assert.deepEqual(events,['target','draw'],'Melee focuses defender before windup');
+console.log('PASS on-screen physical targets explicitly centered; spell off-screen policy preserved; melee focus precedes animation');

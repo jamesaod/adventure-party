@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
@@ -6,7 +7,7 @@ import {
 } from '../js/studio-animations.mjs';
 
 // Node 20 can load the bundled ESM without changing this repository's package type.
-const source = fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
+const source = readCombatFixture(new URL('../assets/vendor/three/three.core.min.js', import.meta.url));
 const THREE = await import(`data:text/javascript;base64,${source.toString('base64')}`);
 const close = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-6,
   `${message}: expected ${expected}, received ${actual}`);
@@ -165,18 +166,18 @@ assert.equal(restoreAnimationIndex(choices, { clipIndex: 99, clipName: 'Attack' 
 assert.equal(restoreAnimationIndex(choices, { clipName: 'Named take' }), 0);
 assert.equal(restoreAnimationIndex([], { clipIndex: 0 }), -1);
 assert.equal(restoreAnimationIndex(choices, null), 0, 'A new model has no restore settings');
-const studioSource=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+const studioSource=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 for(const sample of ['0.0','0.5','1.0','1.5','2.0','2.5']){
   assert.ok(studioSource.includes(`UAL2_2H_Rest_Candidate_\${time.toFixed(1)}s`)||studioSource.includes('restSamples=[0,0.5,1.0,1.5,2.0,2.5]'),
     'Studio exposes frozen two-handed rest candidates');
 }
 assert.ok(studioSource.includes("UAL2_2H_Rest_Candidate_0\\.5s"),'0.5-second rest candidate is the default audition frame');
-const studioSource2=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+const studioSource2=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 assert.ok(studioSource2.includes("T-Pose (height calibration)"),'T-Pose is clearly distinguished from 2H rest candidates');
 assert.ok(studioSource2.includes("const restoredTPose")&&studioSource2.includes("clipSourceId === 't-pose'"),
   'Saved T-Pose calibration restores without being replaced by a 2H rest candidate');
 assert.ok(studioSource2.includes("/^UAL2_2H_Rest_Candidate_/i"),'Ready/reset logic recognizes 2H rest candidates');
-const studioSource3=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+const studioSource3=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 assert.ok(studioSource3.includes("restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'"),
   'Restored 2H audition workspaces inject frozen rest candidates');
 assert.ok(studioSource3.includes("ui.Clip.replaceChildren(new Option('T-Pose (height calibration)', '-1'))"),

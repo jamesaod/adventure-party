@@ -162,10 +162,9 @@ function candidatePresentCastingInterrupted(
 }
 
 
-const candidateBaseDisruptCasting=
-  r230DisruptCasting;
+const candidateBaseDisruptCasting=AdventurePartyCombatServices.current('r230DisruptCasting');
 
-r230DisruptCasting=function(
+AdventurePartyCombatServices.register('r230DisruptCasting','candidate-casting-interrupted-float.js:168:r230DisruptCasting',function(
   unit,
   reason="interruption"
 ){
@@ -183,17 +182,16 @@ r230DisruptCasting=function(
   }
 
   return disrupted;
-};
+});
 
 
 /* ============================================================
    STYLE
    ============================================================ */
 
-const candidateInterruptedBaseFloatingTextStyle=
-  r236FloatingTextStyle;
+const candidateInterruptedBaseFloatingTextStyle=AdventurePartyCombatServices.current('r236FloatingTextStyle');
 
-r236FloatingTextStyle=function(kind,alpha){
+AdventurePartyCombatServices.register('r236FloatingTextStyle','candidate-casting-interrupted-float.js:196:r236FloatingTextStyle',function(kind,alpha){
   if(kind==="casting-interrupted"){
     return {
       fontSize:13,
@@ -212,7 +210,7 @@ r236FloatingTextStyle=function(kind,alpha){
     kind,
     alpha
   );
-};
+});
 
 
 /* ============================================================

@@ -19,28 +19,36 @@ const evaluated=await loadGameModule('data:text/javascript,'+encodeURIComponent(
 assert.equal(evaluated.ready,true);
 await assert.rejects(loadGameModule('broken',{importModule:async()=>{throw Error('registry unavailable');}}),/registry unavailable/);
 await assert.rejects(loadGameModule('stalled',{importModule:()=>new Promise(()=>{}),timeoutMs:5}),/timed out/);
-const read=path=>readFileSync(new URL(path,root),'utf8');
+const read=path=>{const text=readFileSync(new URL(path,root),'utf8');return path!=='js/combat-services.js'&&text.includes('AdventurePartyCombatServices.')?readFileSync(new URL('js/combat-services.js',root),'utf8')+'\n'+text:text;};
 const html=read('index.html');
 const entries=[...html.matchAll(/<script src="([^"]+)" type="text\/plain" data-game-script="(classic|module)"><\/script>/g)]
   .map(([,src,type])=>({src,type}));
+// Equipment test hook is deliberately last, outside the core startup tail.
+const extension=entries.pop();assert.equal(extension.src,'js/low-poly-weapon-test.mjs');
 const pathOf=entry=>entry.src.split('?')[0];
 assert.ok(entries.length>40,'The complete existing engine runs behind the startup gate');
 assert.equal(pathOf(entries[0]),'js/priest-spells.js');
 assert.equal(pathOf(entries[1]),'js/repository-mobs.mjs');
-assert.equal(pathOf(entries[2]),'js/adventure-party.js');
-assert.equal(pathOf(entries.at(-6)),'js/sprite-set-runtime.mjs');
-assert.equal(entries.at(-6).type,'module');
+assert.equal(pathOf(entries[2]),'js/combat-services.js');
+assert(entries.some(e=>pathOf(e)==='js/adventure-party.js'));
+assert(entries.findIndex(e=>pathOf(e)==='js/combat-render-frame.js')<entries.findIndex(e=>pathOf(e)==='js/adventure-party.js'));
+assert.equal(pathOf(entries[3]),'js/combat-turn-flow.js');
+assert(pathOf(entries.find(e=>pathOf(e)==='js/combat-missile-actions.js')));
+assert(entries.some(e=>pathOf(e)==='js/combat-spell-actions.js'));
+assert.equal(pathOf(entries.at(-7)),'js/sprite-set-runtime.mjs');
+assert.equal(entries.at(-7).type,'module');
 assert.equal(pathOf(entries.at(-1)),'js/exploration-combat-hooks.js');
 assert.equal(pathOf(entries.at(-2)),'js/combat-runtime.js');
-assert.equal(pathOf(entries.at(-3)),'js/combat-lighting-hooks.js');
-assert.equal(pathOf(entries.at(-4)),'js/combat-spell-results.js');
-assert.equal(pathOf(entries.at(-5)),'js/combat-result-panel.js');
+assert.equal(pathOf(entries.at(-3)),'js/combat-environment-actions.js');
+assert.equal(pathOf(entries.at(-4)),'js/combat-lighting-hooks.js');
+assert.equal(pathOf(entries.at(-5)),'js/combat-spell-results.js');
+assert.equal(pathOf(entries.at(-6)),'js/combat-result-panel.js');
 const activeSources=[...html.matchAll(/<script\b([^>]*src="[^"]+"[^>]*)>/g)]
   .filter(([,attributes])=>!attributes.includes('type="text/plain"'));
 assert.equal(activeSources.length,1,'No game script can bypass ordered startup');
 assert.ok(activeSources[0][1].includes('js/game-script-loader.mjs'));
 for(const entry of entries){
-  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189|190|191|192|194|195|196|197|198|199|200|201|202|203|204|205|206|209|210|211|212|213|214|215|216|217|218|219|220|224|225|226|227|228|229|230|231|232|233|234|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255|256|257|258|259|260|261|262|263|264|265|266|267|269|270|272|273|274|275|276|277)$/,'Refresh the former shared R238 script cache');
+  assert.match(entry.src,/\?v=R238C(?:171|172|173|176|177|178|181|182|183|184|185|186|187|188|189|190|191|192|194|195|196|197|198|199|200|201|202|203|204|205|206|209|210|211|212|213|214|215|216|217|218|219|220|224|225|226|227|228|229|230|231|232|233|234|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255|256|257|258|259|260|261|262|263|264|265|266|267|269|270|272|273|274|275|276|277|278|279|280|281|282|283|284|285|286|287|288|289|290|291|292|293)$/,'Refresh the former shared R238 script cache');
   if(entry.type==='classic')new vm.Script(read(pathOf(entry)),{filename:pathOf(entry)});
 }
 
@@ -48,7 +56,7 @@ const helpers='js/r226-level3-helpers.js',systems='js/r226-level3-systems.js',ca
 function spellContext(){
   const context={game:{round:1},allUnits:()=>[],getUnitEffect:()=>null,
     removeUnitEffect:()=>false,breakInvisibility:()=>false};
-  for(const [,name] of read(systems).matchAll(/const r226Base\w+=(\w+);/g))context[name]=()=>{};
+  for(const [,name] of read(systems).matchAll(/const r226Base\w+=AdventurePartyCombatServices.current\('([^']+)'\);/g))context[name]=()=>{};
   return vm.createContext(context);
 }
 // Reproduce the screenshot's exact failure using the real expiry hook and a

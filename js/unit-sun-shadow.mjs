@@ -1,5 +1,6 @@
 /** Shared, presentation-only sun path and ground projection. No combat state. */
 import { CAMERA_ELEVATION } from './studio-core.mjs?v=R238C99';
+import {getModelShadow} from './combat-model-shadow.mjs';
 
 export const DEFAULT_SUN_HOUR=12;
 export function normalizeSunHour(value){
@@ -73,7 +74,12 @@ export function findShadowFootLine(rgba,width,height){
       parts.push({count,x:sumX/footPixels,y:footY+0.5});
     }
     parts.sort((a,b)=>b.count-a.count);
-    const contacts=parts.filter(p=>p.count>=Math.max(3,(parts[0]?.count||0)*0.12)).slice(0,2).sort((a,b)=>a.x-b.x);
+    // Shields can be larger disconnected components than either boot. Rank
+    // ground contacts by depth, not area; reject elevated equipment before
+    // fitting the stance. Keep enough vertical separation for isometric feet.
+    const contacts=parts.filter(p=>p.count>=Math.max(3,(parts[0]?.count||0)*0.12)&&
+      bottom+0.5-p.y<=(bottom-top+1)*0.24)
+      .sort((a,b)=>b.y-a.y||b.count-a.count).slice(0,2).sort((a,b)=>a.x-b.x);
     if(contacts.length===2&&contacts[1].x-contacts[0].x>=2){
       const slope=(contacts[1].y-contacts[0].y)/(contacts[1].x-contacts[0].x);
       if(Math.abs(slope)<=1.5)return {slope,intercept:contacts[0].y-slope*contacts[0].x,contacts};
@@ -133,5 +139,12 @@ export const unitSun={
   drawingGround:false,
   setGroundShadow,
   get hour(){return DEFAULT_SUN_HOUR;},
-  draw(ctx,source,options){drawUnitShadow(ctx,source,{...options,hour:DEFAULT_SUN_HOUR});}
+  draw(ctx,source,options){
+   if(globalThis.adventurePartyGpuShadows?.unit){
+    const modelShadow=globalThis.adventurePartyDirectUnits?.liveShadow(source,unitSun.caster)||getModelShadow(source);
+    if(modelShadow&&globalThis.adventurePartyGpuShadows.unit(null,{...options,modelShadow}))return;
+    const mask=shadowMask(source,options);if(mask&&globalThis.adventurePartyGpuShadows.unit(mask,{...options,footLine:shadowFootLine(mask)}))return;
+   }
+   drawUnitShadow(ctx,source,{...options,hour:DEFAULT_SUN_HOUR});
+ }
 };

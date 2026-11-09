@@ -181,7 +181,7 @@ if(typeof r220MobCanSeeUnit==="function"){
   R220 remembered-target pursuit uses its own memory list and therefore remains
   available to MOBs after current LOS is lost.
 */
-hostileCombatantsFor=function(unit){
+AdventurePartyCombatServices.register('hostileCombatantsFor','r222-perception-darkness-volume.js:184:hostileCombatantsFor',function(unit){
   if(!unit) return [];
 
   return activeCombatants().filter(other=>
@@ -189,10 +189,10 @@ hostileCombatantsFor=function(unit){
     other.faction!==unit.faction &&
     r222UnitCurrentlyVisible(unit,other)
   );
-};
+});
 
 
-nearestLivingPartyTarget=function(fromUnit){
+AdventurePartyCombatServices.register('nearestLivingPartyTarget','r222-perception-darkness-volume.js:195:nearestLivingPartyTarget',function(fromUnit){
   return livingPartyMembers()
     .filter(target=>
       r222UnitCurrentlyVisible(
@@ -206,17 +206,16 @@ nearestLivingPartyTarget=function(fromUnit){
         unitDistance(fromUnit,b) ||
       a.id.localeCompare(b.id)
     )[0] || null;
-};
+});
 
 
 /* ============================================================
    ATTACK / REACTION PERCEPTION GATES
    ============================================================ */
 
-const r222BaseCanMeleeAttackTarget=
-  canMeleeAttackTarget;
+const r222BaseCanMeleeAttackTarget=AdventurePartyCombatServices.current('canMeleeAttackTarget');
 
-canMeleeAttackTarget=function(attacker,target){
+AdventurePartyCombatServices.register('canMeleeAttackTarget','r222-perception-darkness-volume.js:219:canMeleeAttackTarget',function(attacker,target){
   if(
     !r222BaseCanMeleeAttackTarget(
       attacker,
@@ -238,13 +237,12 @@ canMeleeAttackTarget=function(attacker,target){
   }
 
   return true;
-};
+});
 
 
-const r222BaseMobCanMissileAttack=
-  mobCanMissileAttack;
+const r222BaseMobCanMissileAttack=AdventurePartyCombatServices.current('mobCanMissileAttack');
 
-mobCanMissileAttack=function(mob,target){
+AdventurePartyCombatServices.register('mobCanMissileAttack','r222-perception-darkness-volume.js:247:mobCanMissileAttack',function(mob,target){
   if(
     !r222UnitCurrentlyVisible(
       mob,
@@ -258,13 +256,12 @@ mobCanMissileAttack=function(mob,target){
     mob,
     target
   );
-};
+});
 
 
-const r222BaseUnitCanMakeLeavingHexFreeAttack=
-  unitCanMakeLeavingHexFreeAttack;
+const r222BaseUnitCanMakeLeavingHexFreeAttack=AdventurePartyCombatServices.current('unitCanMakeLeavingHexFreeAttack');
 
-unitCanMakeLeavingHexFreeAttack=function(
+AdventurePartyCombatServices.register('unitCanMakeLeavingHexFreeAttack','r222-perception-darkness-volume.js:267:unitCanMakeLeavingHexFreeAttack',function(
   attacker,
   mover
 ){
@@ -285,10 +282,10 @@ unitCanMakeLeavingHexFreeAttack=function(
     attacker,
     mover
   );
-};
+});
 
 
-maybeTriggerPlayerGuard=function(mob){
+AdventurePartyCombatServices.register('maybeTriggerPlayerGuard','r222-perception-darkness-volume.js:291:maybeTriggerPlayerGuard',function(mob){
   const guarder=
     livingPartyMembers()
       .filter(unit=>
@@ -326,7 +323,7 @@ maybeTriggerPlayerGuard=function(mob){
   draw();
 
   return true;
-};
+});
 
 
 /*
@@ -334,38 +331,7 @@ maybeTriggerPlayerGuard=function(mob){
   an automated combatant a hidden live target object, the central attack
   resolver refuses to exploit those hidden coordinates.
 */
-const r222BaseAttack=attack;
 
-attack=function(attacker,defender,options={}){
-  if(
-    attacker &&
-    defender &&
-    attacker.faction!==defender.faction &&
-    r222IsAutomatedAttacker(attacker) &&
-    !r222UnitCurrentlyVisible(
-      attacker,
-      defender
-    )
-  ){
-    log(
-      `${attacker.name} cannot visually acquire ${defender.name} through the obscuration.`,
-      "system"
-    );
-
-    return {
-      hit:false,
-      killed:false,
-      damage:0,
-      blockedByPerception:true
-    };
-  }
-
-  return r222BaseAttack(
-    attacker,
-    defender,
-    options
-  );
-};
 
 
 /* ============================================================
@@ -377,7 +343,8 @@ function r222PlanningCellBlocked(mob,cell){
     !mob ||
     !cell ||
     !inside(cell.x,cell.y) ||
-    isWall(cell.x,cell.y)
+    isWall(cell.x,cell.y) ||
+    (typeof isFirBlockedHex==="function" && isFirBlockedHex(cell.x,cell.y))
   ){
     return true;
   }
@@ -514,7 +481,7 @@ function r222PlanningTransitionBlocked(
   occupied hex. If the MOB actually tries to enter that hidden occupied hex,
   the normal movement execution still stops at the physical collision.
 */
-r220WeightedPathSearch=function(
+AdventurePartyCombatServices.register('r220WeightedPathSearch','r222-perception-darkness-volume.js:486:r220WeightedPathSearch',function(
   mob,
   start,
   {
@@ -620,10 +587,7 @@ r220WeightedPathSearch=function(
 
       const nextCost=
         cur.cost+
-        r220MobStepCost(
-          mob,
-          next
-        );
+        r220MobStepCost(mob,next,cur);
 
       const nk=
         key(next.x,next.y);
@@ -688,10 +652,10 @@ r220WeightedPathSearch=function(
   }
 
   return null;
-};
+});
 
 
-r220WeightedClosestReachable=function(
+AdventurePartyCombatServices.register('r220WeightedClosestReachable','r222-perception-darkness-volume.js:663:r220WeightedClosestReachable',function(
   mob,
   target,
   maxSteps
@@ -708,6 +672,11 @@ r220WeightedClosestReachable=function(
       y:mob.y
     }];
   }
+
+  // Commit to a complete risk-weighted route before spending this turn's
+  // movement. A valid detour may initially increase distance to the target.
+  const route=r220WeightedPathToAdjacent(mob,target,point);
+  if(route?.length>1)return route.slice(0,Math.max(0,Math.floor(maxSteps??mob.move??0))+1);
 
   const start={
     x:mob.x,
@@ -836,10 +805,7 @@ r220WeightedClosestReachable=function(
 
       const nextCost=
         cur.cost+
-        r220MobStepCost(
-          mob,
-          next
-        );
+        r220MobStepCost(mob,next,cur);
 
       const nk=
         key(next.x,next.y);
@@ -895,7 +861,7 @@ r220WeightedClosestReachable=function(
     start,
     best
   );
-};
+});
 
 
 /* ============================================================
@@ -1131,10 +1097,9 @@ function r222DarknessOpacityFactor(effect){
   Preserve R220's addAreaEffect behavior while attaching presentation metadata
   to new Darkness effects.
 */
-const r222BaseAddAreaEffect=
-  addAreaEffect;
+const r222BaseAddAreaEffect=AdventurePartyCombatServices.current('addAreaEffect');
 
-addAreaEffect=function(effect){
+AdventurePartyCombatServices.register('addAreaEffect','r222-perception-darkness-volume.js:1106:addAreaEffect',function(effect){
   if(
     effect?.type==="darkness" &&
     Array.isArray(effect.cells) &&
@@ -1158,7 +1123,7 @@ addAreaEffect=function(effect){
   }
 
   return r222BaseAddAreaEffect(effect);
-};
+});
 
 
 function r222FillRadialEllipse(
@@ -1364,7 +1329,7 @@ function r222DrawDarknessVolume(effect){
    AREA-EFFECT DRAWING WITHOUT DARKNESS HEX FILLS
    ============================================================ */
 
-drawSpellAreaEffects=function(){
+AdventurePartyCombatServices.register('drawSpellAreaEffects','r222-perception-darkness-volume.js:1336:drawSpellAreaEffects',function(){
   if(!game?.areaEffects?.length) return;
 
   for(const effect of game.areaEffects){
@@ -1470,14 +1435,14 @@ drawSpellAreaEffects=function(){
       }
     }
   }
-};
+});
 
 
 /* ============================================================
    LOS MASK: DARKNESS VISUAL VOLUME OWNS ITS OWN CELLS
    ============================================================ */
 
-drawWallTestLineOfSightMask=function(){
+AdventurePartyCombatServices.register('drawWallTestLineOfSightMask','r222-perception-darkness-volume.js:1449:drawWallTestLineOfSightMask',function(){
   if(!game) return;
 
   const architecturalMode=
@@ -1679,7 +1644,7 @@ drawWallTestLineOfSightMask=function(){
   );
 
   ctx.restore();
-};
+});
 
 
 /*
@@ -1687,17 +1652,16 @@ drawWallTestLineOfSightMask=function(){
   after that pass so it actually obscures creatures inside its volume rather
   than sitting underneath their sprites.
 */
-const r222BaseDrawVisibleArchitecturalWallsOverLOS=
-  drawVisibleArchitecturalWallsOverLOS;
+const r222BaseDrawVisibleArchitecturalWallsOverLOS=AdventurePartyCombatServices.current('drawVisibleArchitecturalWallsOverLOS');
 
-drawVisibleArchitecturalWallsOverLOS=function(){
+AdventurePartyCombatServices.register('drawVisibleArchitecturalWallsOverLOS','r222-perception-darkness-volume.js:1662:drawVisibleArchitecturalWallsOverLOS',function(){
   r222BaseDrawVisibleArchitecturalWallsOverLOS();
 
   for(const effect of game?.areaEffects || []){
     if(effect?.type!=="darkness") continue;
     r222DrawDarknessVolume(effect);
   }
-};
+});
 
 
 /* Public diagnostic hook for perception debugging. */

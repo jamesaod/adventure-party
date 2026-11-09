@@ -11,13 +11,13 @@ function combatResultLines(beat){
 }
 (()=>{
  const sources=new WeakMap(),deaths=new WeakMap(),outcomes=new WeakMap();
- const baseFlash=flashAttack;
- flashAttack=function(attacker,target,hit){if(target)outcomes.set(target,{attacker,gameRef:game,hit});return baseFlash(attacker,target,hit);};
+ const baseFlash=AdventurePartyCombatServices.current('flashAttack');
+ AdventurePartyCombatServices.register('flashAttack','combat-result-panel.js:15:flashAttack',function(attacker,target,hit){if(target)outcomes.set(target,{attacker,gameRef:game,hit});return baseFlash(attacker,target,hit);});
  let shownGame=null,turnGame=null,turnKey=null,shownAction=null,actionSequence=0;
  const actions=new WeakMap();
  let physicalAction=null;
  const baseHitSound=playAttackSound,baseRockSound=playRockImpactSound;
- const baseAgony=playAgonySound,baseDeathSound=playDeathSound;
+ const baseAgony=AdventurePartyCombatServices.current('playAgonySound'),baseDeathSound=AdventurePartyCombatServices.current('playDeathSound');
  function actionFor(unit){return actions.get(unit);}
  function captureImpact(base){return function(...args){
   if(physicalAction&&candidateCombatBeatPresentationEnabled()){
@@ -27,14 +27,14 @@ function combatResultLines(beat){
  };}
  playAttackSound=captureImpact(baseHitSound);
  playRockImpactSound=captureImpact(baseRockSound);
- playAgonySound=function(unit){
+ AdventurePartyCombatServices.register('playAgonySound','combat-result-panel.js:30:playAgonySound',function(unit){
   if(candidateCombatBeatPresentationEnabled())return;
   return baseAgony(unit);
- };
- playDeathSound=function(unit){
+ });
+ AdventurePartyCombatServices.register('playDeathSound','combat-result-panel.js:34:playDeathSound',function(unit){
   if(candidateCombatBeatPresentationEnabled())return;
   return baseDeathSound(unit);
- };
+ });
  // Reuse the game's audio mixer and noise voice for short elemental cues.
  function elementalSound(type){
   if(typeof queueSfx!=='function')return;
@@ -65,36 +65,37 @@ function combatResultLines(beat){
 
  let effectSound=null,capturingEffect=false;
  if(typeof playDqkSpellAffectSound==='function'){
-  const baseEffectSound=playDqkSpellAffectSound,baseEffect=addUnitEffect;
-  playDqkSpellAffectSound=function(...args){
+  const baseEffectSound=AdventurePartyCombatServices.current('playDqkSpellAffectSound'),baseEffect=AdventurePartyCombatServices.current('addUnitEffect');
+  AdventurePartyCombatServices.register('playDqkSpellAffectSound','combat-result-panel.js:69:playDqkSpellAffectSound',function(...args){
    if(capturingEffect&&candidateCombatBeatPresentationEnabled()){effectSound=()=>baseEffectSound(...args);return;}
    return baseEffectSound(...args);
-  };
-  addUnitEffect=function(...args){
+  });
+  AdventurePartyCombatServices.register('addUnitEffect','combat-result-panel.js:73:addUnitEffect',function(...args){
    const previous=effectSound,previousCapture=capturingEffect;effectSound=null;capturingEffect=true;
    try{return baseEffect(...args);}finally{effectSound=previous;capturingEffect=previousCapture;}
-  };
+  });
  }
- const baseQueue=candidateQueueCombatBeat;
- candidateQueueCombatBeat=function(unit,spec={}){
+ const baseQueue=AdventurePartyCombatServices.current('candidateQueueCombatBeat');
+ AdventurePartyCombatServices.register('candidateQueueCombatBeat','combat-result-panel.js:79:candidateQueueCombatBeat',function(unit,spec={}){
   const source=sources.get(unit),action=actionFor(unit);
   return baseQueue(unit,{...spec,sound:spec.sound||(['buff','debuff','condition'].includes(spec.category)?(effectSound||(typeof playMagicEffectSound==='function'?()=>playMagicEffectSound(spec.category):null)):null),meta:{...spec.meta,actionId:action?.id,action,targetName:unit?.name,attackerName:source?.name||candidateDamageBeatContext?.source||activeUnit()?.name||'An effect'}});
- };
- const baseRun=candidateRunCombatBeat;
- candidateRunCombatBeat=function(beat){
+ });
+ const baseRun=AdventurePartyCombatServices.current('candidateRunCombatBeat');
+ AdventurePartyCombatServices.register('candidateRunCombatBeat','combat-result-panel.js:84:candidateRunCombatBeat',function(beat){
   if(beat?.gameRef===game&&candidateCombatBeatPresentationEnabled()){
    show(beat);
    if(beat.category==='direct-damage'){
     const action=beat.meta?.action;
+    if(action?.physicalBlood){action.physicalBlood();action.physicalBlood=null;}
     if(action?.impact){action.impact();action.impact=null;}
     else if(['fire','acid','cold','electricity'].includes(beat.meta?.damageType))elementalSound(beat.meta.damageType);
     else baseHitSound();
    }else if(beat.category==='secondary-damage')elementalSound(beat.meta?.damageType);
   }
   return baseRun(beat);
- };
- const baseUpdate=updateUnitInfoPanel;
- updateUnitInfoPanel=function(){
+ });
+ const baseUpdate=AdventurePartyCombatServices.current('updateUnitInfoPanel');
+ AdventurePartyCombatServices.register('updateUnitInfoPanel','combat-result-panel.js:97:updateUnitInfoPanel',function(){
   if(shownGame&&shownGame!==game)clear();
   const following=result.scrollTop+result.clientHeight>=result.scrollHeight-4;
   const answer=baseUpdate();
@@ -102,7 +103,7 @@ function combatResultLines(beat){
   // Keep the latest result visible without disturbing someone reading above.
   if(following&&!result.hidden)result.scrollTop=result.scrollHeight;
   return answer;
- };
+ });
  // Source identity is retained across physical wind-up / projectile awaits.
  function physical(base){return async function(attacker,target,...args){
   const combat=game,previous=sources.get(target),previousAction=actions.get(target),previousPhysical=physicalAction;
@@ -118,23 +119,27 @@ function combatResultLines(beat){
    if(target){if(previous)sources.set(target,previous);else sources.delete(target);if(previousAction)actions.set(target,previousAction);else actions.delete(target);}
   }
  };}
- attack=physical(attack);longbowAttack=physical(longbowAttack);slingAttack=physical(slingAttack);
- const baseSpellDamage=applySpellDamage;
- applySpellDamage=function(source,target,...args){
+ // Physical action owners enter the result context explicitly.
+ const baseSpellDamage=AdventurePartyCombatServices.current('applySpellDamage');
+ AdventurePartyCombatServices.register('applySpellDamage','combat-result-panel.js:123:applySpellDamage',function(source,target,...args){
   if(!target)return baseSpellDamage(source,target,...args);
   const previous=sources.get(target),previousAction=actions.get(target);sources.set(target,source);actions.set(target,previousAction||{id:++actionSequence});
   try{return baseSpellDamage(source,target,...args);}finally{if(previous)sources.set(target,previous);else sources.delete(target);if(previousAction)actions.set(target,previousAction);else actions.delete(target);}
- };
- const baseDeath=triggerDeathFx;
- triggerDeathFx=function(unit){
+ });
+ const baseDeath=AdventurePartyCombatServices.current('triggerDeathFx');
+ AdventurePartyCombatServices.register('triggerDeathFx','combat-result-panel.js:129:triggerDeathFx',function(unit){
   if(unit&&deaths.get(unit)!==game&&candidateCombatBeatPresentationEnabled()){
    deaths.set(unit,game);candidateQueueCombatBeat(unit,{category:'death',text:'Goes down and is dying',show:()=>{baseDeathSound(unit);baseDeath(unit);}});
    return;
   }
   if(unit&&deaths.get(unit)===game&&candidateCombatBeatPresentationEnabled())return;
   return baseDeath(unit);
- };
- window.AdventurePartyCombatResults={withTarget(caster,target,resolve){
+ });
+ window.AdventurePartyCombatResults={physicalHit(attacker,target,damage,damageType='physical'){
+  if(!(damage>0)||!['physical','slashing','piercing','bludgeoning'].includes(String(damageType).toLowerCase()))return;const action=actions.get(target),combat=game;
+  const present=()=>{if(game===combat)startArrowBlood(attacker,target,damage);};
+  if(action&&candidateCombatBeatPresentationEnabled())action.physicalBlood=present;else present();
+ },physical(base,...args){return physical(base)(...args);},withTarget(caster,target,resolve){
   const previous=sources.get(target),previousAction=actions.get(target);
   sources.set(target,caster);actions.set(target,{id:++actionSequence,spellTarget:true});
   try{return resolve();}finally{

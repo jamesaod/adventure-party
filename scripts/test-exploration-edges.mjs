@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {upgradeEdgeMap,edgeAtSide,edgeKey,paintEdge,edgeLineBlocked,syncEdgeDoors,effectiveEdges} from '../js/exploration-edges.mjs';
 import {blankMap,blankEdgeMap,paintCell,seedPack,packIssues,parsePack,resizeMap} from '../js/exploration-authoring.mjs';
 import {validateMap,createExplorationState,act} from '../js/exploration-core.mjs';
@@ -41,6 +41,12 @@ for(const axis of ['h','v']){
  paintEdge(map,{axis,x:4,z:4},'window');const window=geometry(map,new Set()),a=window.terrain.project(near.x,near.z),b=window.terrain.project(far.x,far.z);
  assert(window.block(a,b,'movement'));assert(!window.block(a,b,'los'));assert(!window.block(a,b,'light'));assert(window.block(a,b,'projectile'));assert(window.block(a,b,'volume'));
  assert(edgeLineBlocked(map,new Set(),near,far,'movement'));assert(!edgeLineBlocked(map,new Set(),near,far,'los'));
+ // Broken glass opens only the projectile aperture, in both square-edge axes.
+ map.edges=map.edges.map(edge=>edge.kind==='window'?{...edge,broken:true}:edge);
+ const shattered=geometry(map,new Set());
+ assert(!shattered.block(a,b,'projectile'));assert(shattered.block(a,b,'movement'));assert(shattered.block(a,b,'volume'));
+ assert(!edgeLineBlocked(map,new Set(),near,far,'projectile'));assert(edgeLineBlocked(map,new Set(),near,far,'movement'));
+ assert(shattered.terrain.windows[0].broken);
  paintEdge(map,{axis,x:4,z:4},'erase');assert(!edgeLineBlocked(map,new Set(),near,far));
  assert.throws(()=>paintEdge(map,{axis:'h',x:0,z:0},'door'),/floor/);assert.throws(()=>paintEdge(map,{axis:'h',x:4,z:1},'erase'),/boundary/);
  paintEdge(map,{axis,x:4,z:4},'door',{width:.8,hinge:'end',initialOpen:true});assert(createExplorationState(map).openDoors.has(id));

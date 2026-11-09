@@ -1,3 +1,4 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -24,13 +25,13 @@ const workspace={captureFormatVersion:2,settings:{weaponActionProfileId:'bow'},a
 const combined=combinedCaptureGroup(workspace);
 assert.equal(combined.ready,capture);assert.equal(combined.prone,capture);assert.equal(combined.falling,capture);
 assert.equal(workspace.actionProfiles.bow,undefined);
-const source=fs.readFileSync(new URL('../js/studio-capture.mjs',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/studio-capture.mjs',import.meta.url),'utf8');
 const block=source.slice(source.indexOf('    if(ui.ActionProfile){\n      ui.ActionProfile.disabled'),source.indexOf('    if(ui.CaptureProfileSummary){'));
 const ui={ActionProfile:{options:[...CAPTURE_GROUP_CATALOG.values()].filter(g=>g.id!=='spell-casting').map(g=>({value:g.id}))}};
 vm.runInNewContext(block,{ui,busy:false,equipmentBusy:false,CAPTURE_GROUP_CATALOG,isSharedCaptureGroup,capturesByProfile:new Map([['one-handed-swing',{ready:{stale:true}}]]),getWorkspaceSettings:()=>({poseLibrary:library})});
 assert.match(ui.ActionProfile.options.find(o=>o.value==='one-handed-swing').textContent,/^✅/);
 assert.doesNotMatch(ui.ActionProfile.options.find(o=>o.value==='bow').textContent,/^✅/);
-const threeSource=fs.readFileSync(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
+const threeSource=readCombatFixture(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
 const THREE=await import(`data:text/javascript;base64,${threeSource.toString('base64')}`);
 const rig=new THREE.Group(),right=new THREE.Bone(),left=new THREE.Bone();
 right.name='mixamorigRightHand';left.name='mixamorigLeftHand';rig.add(right,left);
@@ -50,8 +51,8 @@ for(const [i,manager] of managers.entries()){
  await manager.setModel(rig,JSON.parse(JSON.stringify(settings)));
  assert.deepEqual(manager.snapshot().settings,settings,'Saved grips survive reload');
 }
-assert.equal(materials[0].metalness,.15);assert.equal(materials[4].metalness,.15);
-assert.ok(materials[0].color.r>new THREE.Color(0x808080).r);
+assert.equal(materials[0].metalness,1);assert.equal(materials[4].metalness,.15);
+assert.equal(materials[0].color.r,new THREE.Color(0x808080).r,'New weapon materials are preserved without legacy brightening');
 managers.forEach(m=>m.dispose());
 const memory=new Map(),store=createAuthoringStore({getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)},'/test/');
 assert.equal(store.library('humanoid-medium').profiles.bow.ready,null);
@@ -60,7 +61,7 @@ assert.equal(Object.values({...supplied.profiles,...supplied.sharedActionGroups}
 assert.equal(supplied.sharedActionGroups.magic.cast.timeSeconds,2.776666666666667);
 console.log('PASS batch: explicit-first fallbacks, assignment checkmarks, world XYZ for primary/off-hand/shield, brighter materials, supplied 25-frame preset');
 // The fallback render uses the existing capture path and restores the user's frame.
-const studio=fs.readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+const studio=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
 const fallbackFn=studio.slice(studio.indexOf('function renderFallbackCapture('),studio.indexOf('function readCapturePose('));
 let renderedAt;
 const state={clips:[{id:'old'},{id:'fallback'}],action:{time:1.2},playing:true,mixer:{update(){}}};

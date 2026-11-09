@@ -22,9 +22,9 @@ function r221IsKoboldFamily(unit){
    R221 — PRONE POSE NORMALIZATION
    ============================================================ */
 
-const r221BasePixelAssetIdForUnitPose=pixelAssetIdForUnitPose;
+const r221BasePixelAssetIdForUnitPose=AdventurePartyCombatServices.current('pixelAssetIdForUnitPose');
 
-pixelAssetIdForUnitPose=function(unit,poseName=null){
+AdventurePartyCombatServices.register('pixelAssetIdForUnitPose','r221-prone-cloud-shapes.js:27:pixelAssetIdForUnitPose',function(unit,poseName=null){
   if(!unit) return null;
 
   const pose=
@@ -51,19 +51,18 @@ pixelAssetIdForUnitPose=function(unit,poseName=null){
     unit,
     pose
   );
-};
+});
 
 
-const r221BaseShouldUseKoboldPronePose=
-  shouldUseKoboldPronePose;
+const r221BaseShouldUseKoboldPronePose=AdventurePartyCombatServices.current('shouldUseKoboldPronePose');
 
-shouldUseKoboldPronePose=function(unit){
+AdventurePartyCombatServices.register('shouldUseKoboldPronePose','r221-prone-cloud-shapes.js:60:shouldUseKoboldPronePose',function(unit){
   if(!r221IsKoboldFamily(unit)) return false;
   return r221BaseShouldUseKoboldPronePose(unit);
-};
+});
 
 
-drawKobold=function(k){
+AdventurePartyCombatServices.register('drawKobold','r221-prone-cloud-shapes.js:66:drawKobold',function(k){
   const c=hexCenter(k.x,k.y);
 
   if(game.active===k.id){
@@ -204,7 +203,7 @@ drawKobold=function(k){
     k,
     runtimeAnchorForAsset(koboldAssetId)
   );
-};
+});
 
 
 /* ============================================================
@@ -652,7 +651,7 @@ function r221FogMaskGeometry(
 }
 
 
-drawFogVolumeCell=function(cell,effect=null){
+AdventurePartyCombatServices.register('drawFogVolumeCell','r221-prone-cloud-shapes.js:655:drawFogVolumeCell',function(cell,effect=null){
   if(
     !cell ||
     !inside(cell.x,cell.y) ||
@@ -813,10 +812,10 @@ drawFogVolumeCell=function(cell,effect=null){
   */
 
   ctx.restore();
-};
+});
 
 
-drawFogEffectOutline=function(effect){
+AdventurePartyCombatServices.register('drawFogEffectOutline','r221-prone-cloud-shapes.js:819:drawFogEffectOutline',function(effect){
   if(
     !effect ||
     effect.type!=="fog" ||
@@ -1000,4 +999,4 @@ drawFogEffectOutline=function(effect){
   );
 
   ctx.restore();
-};
+});

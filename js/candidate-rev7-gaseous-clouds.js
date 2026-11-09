@@ -515,10 +515,9 @@ function candidateRev7DrawFogFormationCell(
    RENDER OVERRIDES
    ============================================================ */
 
-const candidateRev7PreviousDrawFogVolumeCell=
-  drawFogVolumeCell;
+const candidateRev7PreviousDrawFogVolumeCell=AdventurePartyCombatServices.current('drawFogVolumeCell');
 
-drawFogVolumeCell=function(
+AdventurePartyCombatServices.register('drawFogVolumeCell','candidate-rev7-gaseous-clouds.js:521:drawFogVolumeCell',function(
   cell,
   effect=null
 ){
@@ -554,13 +553,12 @@ drawFogVolumeCell=function(
     effect,
     raw
   );
-};
+});
 
 
-const candidateRev7PreviousDrawFogEffectOutline=
-  drawFogEffectOutline;
+const candidateRev7PreviousDrawFogEffectOutline=AdventurePartyCombatServices.current('drawFogEffectOutline');
 
-drawFogEffectOutline=function(effect){
+AdventurePartyCombatServices.register('drawFogEffectOutline','candidate-rev7-gaseous-clouds.js:563:drawFogEffectOutline',function(effect){
   if(
     !candidateIsGaseousAreaEffect(
       effect
@@ -588,7 +586,7 @@ drawFogEffectOutline=function(effect){
     has fully assembled.
   */
   return;
-};
+});
 
 
 /* ============================================================

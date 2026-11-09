@@ -54,3 +54,12 @@ label{display:grid;gap:6px;font-size:12px}input,select{font:inherit;color:#83e7e
 #editorGrid[data-view=wall] .edge-n{top:calc(-1 * var(--edge-border-top,1px));transform:translateY(-50%)}#editorGrid[data-view=wall] .edge-s{bottom:calc(-1 * var(--edge-border-bottom,1px));transform:translateY(50%)}
 #editorGrid[data-view=wall] .edge-w,#editorGrid[data-view=wall] .edge-e{top:calc(-1 * var(--edge-border-top,1px));bottom:calc(-1 * var(--edge-border-bottom,1px))}
 #editorGrid[data-view=wall] .edge-w{left:calc(-1 * var(--edge-border-left,1px));transform:translateX(-50%)}#editorGrid[data-view=wall] .edge-e{right:calc(-1 * var(--edge-border-right,1px));transform:translateX(50%)}
+
+/* Preview is an independent top-right panel, above selection settings. */
+@media(min-width:1151px){.editor-layout{grid-template-columns:200px minmax(320px,1fr) minmax(360px,.85fr);grid-template-areas:"tools map preview" "tools map inspector"}.tools{grid-area:tools}.map-work{grid-area:map}.map-preview{grid-area:preview}.inspector{grid-area:inspector}}
+.editor-layout>.map-preview{min-width:0;box-sizing:border-box;padding:14px;margin:0}.editor-layout>.map-preview canvas{height:420px}.sky-control{margin-bottom:14px}
+@media(max-width:1150px){.editor-layout>.map-preview{grid-column:1/-1;grid-row:1}.editor-layout>.map-preview canvas{height:380px}}
+@media(max-width:650px){.editor-layout>.map-preview{order:-1}.editor-layout>.map-preview canvas{height:320px}}
+
+#editorGrid .wall-face[data-material="red-brick"]{background:#a96750}
+#editorGrid .wall-face[data-material="beige-stone"]{background:#c5b393}

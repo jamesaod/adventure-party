@@ -8,10 +8,9 @@
   formation completes. Mechanical LOS behavior is unchanged.
 */
 
-const candidateRev8BaseDrawCompleteEllipse=
-  candidateRev7DrawCompleteEllipse;
+const candidateRev8BaseDrawCompleteEllipse=AdventurePartyCombatServices.current('candidateRev7DrawCompleteEllipse');
 
-candidateRev7DrawCompleteEllipse=function(
+AdventurePartyCombatServices.register('candidateRev7DrawCompleteEllipse','candidate-rev8-cloud-tufts.js:14:candidateRev7DrawCompleteEllipse',function(
   x,
   y,
   rx,
@@ -36,7 +35,7 @@ candidateRev7DrawCompleteEllipse=function(
     opacity,
     options
   );
-};
+});
 
 window.AdventurePartyGaseousSpellPresentation={
   ...(window.AdventurePartyGaseousSpellPresentation || {}),

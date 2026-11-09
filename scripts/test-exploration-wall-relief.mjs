@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {createStoneReliefMaterial,stoneReliefSwitch} from '../js/exploration-wall-relief.mjs';
 import {installPaintedAmbient} from '../js/exploration-painted-ambient.mjs';

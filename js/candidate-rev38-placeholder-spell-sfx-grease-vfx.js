@@ -526,10 +526,9 @@
     Route signature placeholder spell sounds through the existing production
     magic-effect entry point. All other effect kinds retain the prior audio.
   */
-  const r38BasePlayMagicEffectSound=
-    playMagicEffectSound;
+  const r38BasePlayMagicEffectSound=AdventurePartyCombatServices.current('playMagicEffectSound');
 
-  playMagicEffectSound=function(
+  AdventurePartyCombatServices.register('playMagicEffectSound','candidate-rev38-placeholder-spell-sfx-grease-vfx.js:532:playMagicEffectSound',function(
     kind="generic",
     index=0
   ){
@@ -553,20 +552,19 @@
           index
         );
     }
-  };
+  });
 
 
   /*
     Preserve the established magical Stinking Cloud cast sound, then layer the
     intentionally comic low gas accent beneath it.
   */
-  const r38BaseStinkingCloudCastSound=
-    playStinkingCloudCastSound;
+  const r38BaseStinkingCloudCastSound=AdventurePartyCombatServices.current('playStinkingCloudCastSound');
 
-  playStinkingCloudCastSound=function(){
+  AdventurePartyCombatServices.register('playStinkingCloudCastSound','candidate-rev38-placeholder-spell-sfx-grease-vfx.js:566:playStinkingCloudCastSound',function(){
     r38BaseStinkingCloudCastSound();
     r38PlayStinkingCloudFartSound();
-  };
+  });
 
 
   /* ==========================================================
@@ -854,13 +852,12 @@
   }
 
 
-  const r38BaseDrawSpellAreaEffects=
-    drawSpellAreaEffects;
+  const r38BaseDrawSpellAreaEffects=AdventurePartyCombatServices.current('drawSpellAreaEffects');
 
-  drawSpellAreaEffects=function(){
+  AdventurePartyCombatServices.register('drawSpellAreaEffects','candidate-rev38-placeholder-spell-sfx-grease-vfx.js:860:drawSpellAreaEffects',function(){
     r38BaseDrawSpellAreaEffects();
     r38DrawGreaseVfx();
-  };
+  });
 
 
   function r38HasGrease(){
@@ -912,10 +909,9 @@
   }
 
 
-  const r38BaseAddAreaEffect=
-    addAreaEffect;
+  const r38BaseAddAreaEffect=AdventurePartyCombatServices.current('addAreaEffect');
 
-  addAreaEffect=function(effectSpec){
+  AdventurePartyCombatServices.register('addAreaEffect','candidate-rev38-placeholder-spell-sfx-grease-vfx.js:918:addAreaEffect',function(effectSpec){
     const effect=
       r38BaseAddAreaEffect(
         effectSpec
@@ -926,18 +922,16 @@
     }
 
     return effect;
-  };
+  });
 
 
   if(
     typeof spellPreviewClearTransientPresentation===
       "function"
   ){
-    const r38BasePreviewClear=
-      spellPreviewClearTransientPresentation;
+    const r38BasePreviewClear=AdventurePartyCombatServices.current('spellPreviewClearTransientPresentation');
 
-    spellPreviewClearTransientPresentation=
-    function(){
+    AdventurePartyCombatServices.register('spellPreviewClearTransientPresentation','candidate-rev38-placeholder-spell-sfx-grease-vfx.js:939:spellPreviewClearTransientPresentation',function(){
       if(greaseFrame!==null){
         cancelCombatAnimationTick(
           greaseFrame
@@ -946,7 +940,7 @@
       }
 
       return r38BasePreviewClear();
-    };
+    });
   }
 
 

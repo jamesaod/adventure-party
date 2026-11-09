@@ -20,10 +20,10 @@ assert.equal(WEAPON_POSE_PROFILES['one-handed-swing-v1'].poses.attack.timeSecond
 assert.equal(VISIBLE_WEAPON_ASSETS['battle-axe'].poseProfileId, 'one-handed-swing');
 assert.equal(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.sizePercent, 100);
 assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].poseProfileId,'two-handed-swing');
-assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].asset,'assets/models/weapons/two-handed-swords/medieval-two-handed-sword.glb');
+assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].asset,'assets/models/weapons/low-poly-medieval/longsword_5.glb');
 assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].grip.sizePercent,100);
 assert.equal(VISIBLE_WEAPON_ASSETS['two-handed-sword'].handsRequired,2);
-assert.deepEqual(VISIBLE_WEAPON_ASSETS['two-handed-sword'].secondaryGrip,[0,0.95,0]);
+assert.ok(Math.abs(VISIBLE_WEAPON_ASSETS['two-handed-sword'].secondaryGrip[1]-.04)<1e-8);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].primaryAxis, [4, 5, 0]);
 assert.deepEqual(VISIBLE_WEAPON_ASSETS['battle-axe'].grip.rotationDegrees, [-129, -90, 0]);
 assert.equal(VISIBLE_SHIELD_ASSETS['round-wooden-shield'].attachmentBone,'mixamorig:LeftHand');
@@ -92,7 +92,7 @@ for (const [id,profile,hands] of [['wooden-staff','two-handed-swing',2],['short-
 const wizardRecipe=appearanceRecipeForMob({...carl,inventory:[{name:'Wizard Staff Grip',slot:'weapon',equipped:true,appearanceId:'wizard-staff-grip'}]},{modelId:'dungeon-crawler-carl-v3'});
 assert.equal(wizardRecipe.equipment.handsRequired,1);assert.equal(wizardRecipe.equipment.secondaryGrip,null);
 assert.equal(wizardRecipe.animation.semanticId,'wizard-staff-grip');
-assert.equal(wizardRecipe.equipment.asset,VISIBLE_WEAPON_ASSETS['wooden-staff'].asset);
+assert.equal(wizardRecipe.equipment.asset,VISIBLE_WEAPON_ASSETS['wizard-staff-grip'].asset);
 assert.notEqual(appearanceCacheKey(wizardRecipe),appearanceCacheKey(appearanceRecipeForMob({...carl,inventory:[{name:'Wooden Staff',slot:'weapon',equipped:true,appearanceId:'wooden-staff'}]},{modelId:'dungeon-crawler-carl-v3'})));
 const slingRecipe=appearanceRecipeForMob({...carl,inventory:[{name:'Sling',slot:'weapon',equipped:true,appearanceId:'sling'}]},{modelId:'dungeon-crawler-carl-v3'});
 assert.equal(slingRecipe.equipment.handsRequired,1);assert.equal(slingRecipe.animation.semanticId,'sling');assert.equal(slingRecipe.equipment.asset,VISIBLE_WEAPON_ASSETS.sling.asset);

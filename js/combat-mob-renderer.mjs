@@ -1,14 +1,15 @@
+import {loadCombatModel} from './combat-model-source.mjs';
+import {plantStandingFeet} from './standing-foot-contact.mjs';
+import {captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs';
 import {createBandedLighting} from './banded-lighting.mjs?v=R238C205';
 import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs?v=R238C202';
-import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } from './ground-shadow-geometry.mjs?v=R238C169';
-import { setGroundShadow } from './unit-sun-shadow.mjs?v=R238C169';
+import {captureModelShadow,setModelShadow,prepareModelShadow} from './combat-model-shadow.mjs';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C178';
 import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C178';
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
 import { prepareStudioAnimations } from './studio-animations.mjs?v=R238C82';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
@@ -36,7 +37,7 @@ const FACINGS=['E','NE','NW','W','SW','SE'];
 const LEGACY_POSES=['ready','attack','prone'];
 const WINDUP_POSES = SPRITE_POSES;
 
-const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
+const loadGltf=url=>loadCombatModel(new URL(url,import.meta.url).href);
 const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
 const vec3=(value,fallback)=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite)?value:fallback;
 
@@ -58,7 +59,7 @@ function loadImage(src){
     image.src=src;
   });
 }
-function normalizedFrame(recipe){
+export function normalizedFrame(recipe){
   const frame=recipe.renderSettings?.frame||{};
   return {
     width:Number.isInteger(frame.width)&&frame.width>0?frame.width:DEFAULT_FRAME.width,
@@ -93,7 +94,7 @@ function configureLights(scene,recipe){
   key.target.position.set(0,0,0);
   scene.add(key,key.target);
 }
-function buildSceneGraph(model,recipe){
+export function buildSceneGraph(model,recipe){
   const turntable=new THREE.Group();
   const calibration=new THREE.Group();
   const placement=new THREE.Group();
@@ -137,7 +138,7 @@ function buildSceneGraph(model,recipe){
   }
   return turntable;
 }
-function configureCamera(recipe,frame){
+export function configureCamera(recipe,frame){
   const transform=recipe.renderSettings?.transform;
   const captured=!!transform?.placement;
   const modelScale=finite(recipe.renderSettings?.modelScalePercent,100)/100;
@@ -184,7 +185,24 @@ function quantizedCanvas(source,width,height,style,{flipY=true}={}){
   return canvas;
 }
 
-function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,shadowMaterial,bandedLighting,shading){
+// Project the actual mounted blade into each captured pose, retaining its attachment.
+function captureFlamingBlade(attachment,camera,occluder=null){
+  if(!attachment?.model)return null;
+  const root=attachment.model;root.updateWorldMatrix(true,true);
+  const inverse=root.matrixWorld.clone().invert(),box=new THREE.Box3(),p=new THREE.Vector3();
+  root.traverse(mesh=>{if(!mesh.isMesh)return;const attr=mesh.geometry?.attributes.position;if(!attr)return;for(let i=0;i<attr.count;i++){p.fromBufferAttribute(attr,i).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);box.expandByPoint(p);}});
+  if(box.isEmpty())return null;
+  const size=box.getSize(new THREE.Vector3()),axis=['x','y','z'].sort((a,b)=>size[b]-size[a])[0],center=box.getCenter(new THREE.Vector3());
+  const ray=new THREE.Raycaster(),forward=new THREE.Vector3();camera.getWorldDirection(forward);
+  occluder?.updateWorldMatrix(true,true);
+  const flameSpan=attachment.weapon?.flameSpan;
+  return Array.from({length:7},(_,i)=>{const t=i/6;if(flameSpan){p.fromArray(flameSpan.base).lerp(new THREE.Vector3().fromArray(flameSpan.tip),t);}else{p.copy(center);p[axis]=box.min[axis]+size[axis]*(.22+.73*t);}p.applyMatrix4(root.matrixWorld);const world=p.clone();p.project(camera);
+    ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
+    const distance=world.clone().sub(ray.ray.origin).dot(ray.ray.direction);
+    const blocked=!!occluder&&ray.intersectObject(occluder,true).some(hit=>{let object=hit.object;while(object){if(object===root)return false;object=object.parent;}return hit.object.visible&&hit.distance<distance-.015;});
+    return {x:(p.x+1)/2,y:(1-p.y)/2,blocked};});
+}
+function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,bandedLighting,shading,preparedShadow){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
   renderer.setClearColor(0x000000,0);
@@ -235,15 +253,22 @@ function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,sh
     },{flipY:false}
   );
 
-  renderer.clear(true,true,true);
-  renderGroundShadow(renderer,scene,camera,shadowMaterial);
-  const shadowRaw=new Uint8Array(raw.length);
-  renderer.readRenderTargetPixels(target,0,0,frame.width,frame.height,shadowRaw);
-  const groundShadow=shadowPixelsCanvas(shadowRaw,frame.width,frame.height);
-  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight,groundShadow};
+  const modelShadow=captureModelShadow(turntable,camera,preparedShadow);
+  return {sourceCanvas,battlefieldCanvas,nativeWidth,nativeHeight,modelShadow};
 }
 
-export async function generateCombatSpriteSet(recipe){
+export async function generateCombatSpriteSet(recipe,{onProgress}={}){
+  const generationStarted=performance.now(),shadowTimings=[];
+  let lastProgressPaint=-Infinity;
+  const progress=async(step,reason)=>{
+    onProgress?.({step,reason});
+    // Let the loading panel paint before synchronous geometry/render work.
+    // Update its text at every stage, but do not wait a display frame per facing.
+    if(performance.now()-lastProgressPaint<50)return;
+    await new Promise(resolve=>{if(typeof requestAnimationFrame==='function'&&document.visibilityState==='visible')requestAnimationFrame(()=>setTimeout(resolve,0));else setTimeout(resolve,0);});
+    lastProgressPaint=performance.now();
+  };
+  await progress('Loading character model','The actual 3D model supplies both the visible sprites and accurate shadow shapes.');
   const modelUrl=recipe?.model?.url||(recipe?.mob?.type==='fighter'?DEFAULT_FIGHTER_MODEL_URL:null);
   if(!modelUrl)throw new Error(`No humanoid runtime model is registered for ${recipe?.mob?.type||'this MOB'}.`);
   const gltf=await loadGltf(modelUrl);
@@ -251,6 +276,7 @@ export async function generateCombatSpriteSet(recipe){
   // Source-only GLBs use the catalog's animation library, just as Studio does.
   // Keep the ID fallback for older Carl recipes without this metadata.
   if(recipe?.model?.animationLibrary==='uploaded-fbx'||recipe?.model?.id==='dungeon-crawler-carl-v3'){
+    await progress('Loading animation poses','Matching movement and attack poses to this character’s model.');
     gltf.animations=await loadUploadedFbxAnimations({
       appRoot:new URL('../',import.meta.url),targetModel:model,FBXLoader,THREE,
       prepareStudioAnimations,retargetHumanoidClip,
@@ -290,63 +316,22 @@ export async function generateCombatSpriteSet(recipe){
   });
   target.texture.colorSpace=THREE.SRGBColorSpace;
 
-  let attachment=null,shieldAttachment=null,offHandAttachment=null;
-  if(recipe.equipment){
-    const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
-    const preset=studioWeapon(id);
-    const hand=findWeaponHand(model,preset);
-    if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
-    const weaponUrl=weaponAssetUrl({file:recipe.equipment.asset,
-      assetSha256:recipe.equipment.asset===preset.file ? preset.assetSha256 : null},new URL('../',import.meta.url));
-    const weaponGltf=await loadGltf(weaponUrl.href);
-    const mount=resolveCombatWeaponMount(recipe.equipment,recipe.renderSettings,preset);
-    attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
-      rightHand:id,
-      presetRevision:preset.presetRevision||0,
-      sizePercent:mount.sizePercent,
-      position:mount.position,
-      rotation:mount.rotation,shaftRollDegrees:mount.shaftRollDegrees
-    });
-  }
-  const savedOffHand=normalizeOffHandEquipment(recipe.renderSettings?.offHandEquipment||{});
-  const primaryId=recipe.equipment?.studioId||recipe.equipment?.appearanceId||'none';
-  const samePrimary=(recipe.renderSettings?.equipment?.rightHand||'none')===primaryId;
-  if(savedOffHand.rightHand!=='none'&&samePrimary&&!recipe.shield&&studioWeapon(primaryId)?.handsRequired!==2){
-    const preset=studioWeapon(savedOffHand.rightHand),hand=findLeftHand(model);
-    if(!hand)throw new Error('The off-hand weapon needs a left-hand bone.');
-    const loaded=await loadGltf(weaponAssetUrl(preset,new URL('../',import.meta.url)).href);
-    offHandAttachment=createWeaponAttachment(THREE,hand,loaded.scene,savedOffHand,{attachmentHand:'left'});
-  }
-  if(recipe.shield){
-    const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
-    const leftHand=findLeftHand(model);
-    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to this humanoid.');
-    const shieldGltf=await loadGltf('../'+recipe.shield.asset);
-    const savedShield=studioShield(recipe.renderSettings?.shield?.leftHandShield)?.id===preset.id
-      ? recipe.renderSettings.shield : null;
-    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldGltf.scene,{
-      leftHandShield:preset.id,
-      presetRevision:preset.presetRevision||0,
-      sizePercent:finite(savedShield?.sizePercent,recipe.shield.mount?.sizePercent??100),
-      position:savedShield?.position??recipe.shield.mount?.position??preset.position,
-      rotation:savedShield?.rotation??recipe.shield.mount?.rotationDegrees??preset.rotation,
-      distanceInches:finite(savedShield?.distanceInches,0),
-      forearmSlideInches:finite(savedShield?.forearmSlideInches,0),
-      forearmRollDegrees:finite(savedShield?.forearmRollDegrees,0)
-    });
-  }
+  const {attachment,shieldAttachment,offHandAttachment}=await mountCombatEquipment(model,recipe);
 
   const mixer=new THREE.AnimationMixer(model);
-  const profile=recipe.poseProfile||poseProfileForHumanoid(recipe.animation?.semanticId||'one-handed-swing');
+  let profile=recipe.poseProfile||poseProfileForHumanoid(recipe.animation?.semanticId||'one-handed-swing');
+  // Older three-pose sets have a final death frame but no falling capture.
+  // Sample that same real death clip earlier, without changing saved recipes.
+  if(profile?.poses?.prone&&!profile.poses.falling)profile={...profile,poses:{...profile.poses,falling:{...profile.poses.prone,timeSeconds:(profile.poses.prone.timeSeconds||1)*.45}}};
   const byName=new Map(gltf.animations.map(clip=>[clip.name,clip]));
   const keyId=appearanceCacheKey(recipe).replace(/^mob-appearance-v1-/,'');
   const manifestId=`${recipe.mob?.type||'humanoid'}-live-${keyId}`;
   const poseNames=WINDUP_POSES.filter(name=>profile?.poses?.[name]);
   const images={},runtimeImages={},sourceUrls={},poses={};
-  const shadowMaterial=createGroundShadowMaterial();
   const bandedLighting=createBandedLighting();
   try{
     for(const capture of poseNames){
+      attachment?.setDrawn?.(capture==='windup');
       const pose=profile?.poses?.[capture];
       if(!pose) continue; // Absent pose is represented by fallback art in the combat renderer.
       // Prefer the captured clip from the matching baked model, but a stale
@@ -363,24 +348,39 @@ export async function generateCombatSpriteSet(recipe){
       action.paused=true;
       action.time=pose.rest?0:Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
+      const restoreStandingPose=capture==='ready'?plantStandingFeet(model):()=>{};
       poses[capture]={clip:pose.rest?'T-pose':clip.name,time:action.time,frames:{}};
+      const poseLabel=({ready:'standing',attack:'attack',prone:'fallen',windup:'attack preparation',cast:'spellcasting'})[capture]||capture;
+      await progress(`Preparing ${poseLabel} shadow`,'Simplifying the actual posed model toward 500 triangles to keep combat shadows efficient.');
+      const preparedShadow=prepareModelShadow(turntable,{targetTriangles:500});
+      const directUnit=captureDirectUnit(turntable,camera);
+      // Captures below still use the corrected rig. Restore only after all
+      // facings, before the next animation is sampled.
+      shadowTimings.push({pose:capture,...preparedShadow.stats});
       for(const facing of HEX_FACINGS){
+        await progress(`Rendering ${poseLabel} — facing ${facing.id}`,'Creating the matching sprite and shadow geometry so the unit looks correct when the map rotates.');
         const rendered=frameCanvases(
-          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,shadowMaterial,bandedLighting,recipe.renderSettings?.lighting?.shading
+          renderer,target,scene,camera,turntable,facing.yawRadians,frame,style,bandedLighting,recipe.renderSettings?.lighting?.shading,preparedShadow
         );
         const file=`${capture}-${facing.id.toLowerCase()}.png`;
         const src=rendered.sourceCanvas.toDataURL('image/png');
-        images[file]=await loadImage(src);
-        setGroundShadow(images[file],rendered.groundShadow);
-        sourceUrls[file]=src;
-        poses[capture].frames[facing.id]=file;
-
         const runtimeFile=`${capture}-${facing.id.toLowerCase()}-battlefield.png`;
         const runtimeSrc=rendered.battlefieldCanvas.toDataURL('image/png');
-        runtimeImages[runtimeFile]=await loadImage(runtimeSrc);
-        setGroundShadow(runtimeImages[runtimeFile],rendered.groundShadow);
+        [images[file],runtimeImages[runtimeFile]]=await Promise.all([loadImage(src),loadImage(runtimeSrc)]);
+        if(recipe.equipment?.appearanceId==='flaming-sword-5'){
+          const blade=captureFlamingBlade(attachment,camera,turntable);
+          const metadata=globalThis.adventurePartyFlamingBlades||(globalThis.adventurePartyFlamingBlades=new WeakMap());
+          if(blade){metadata.set(images[file],blade);metadata.set(runtimeImages[runtimeFile],blade);}
+        }
+        setDirectUnit(images[file],directUnit,facing.yawRadians);
+        setDirectUnit(runtimeImages[runtimeFile],directUnit,facing.yawRadians);
+        setModelShadow(images[file],rendered.modelShadow);
+        setModelShadow(runtimeImages[runtimeFile],rendered.modelShadow);
+        sourceUrls[file]=src;
+        poses[capture].frames[facing.id]=file;
         sourceUrls[runtimeFile]=runtimeSrc;
       }
+      restoreStandingPose();
     }
   }finally{
     attachment?.detach();
@@ -402,11 +402,12 @@ export async function generateCombatSpriteSet(recipe){
     });
     mixer.stopAllAction();
     bandedLighting.dispose();
-    shadowMaterial.dispose();
     target.dispose();
     renderer.dispose();
   }
 
+  document.documentElement.dataset.shadowPreparation=JSON.stringify({model:recipe.model?.url||recipe.mob?.type,poses:shadowTimings,shadowPreparationMs:shadowTimings.reduce((sum,p)=>sum+p.preparationMs,0),spriteSetMs:performance.now()-generationStarted});
+  onProgress?.({step:'Appearance ready',reason:'Sprites and simplified shadows are prepared and cached for combat.'});
   return {
     manifest:{
       schema:'adventure-party.sprite-set',version:1,id:manifestId,
@@ -446,4 +447,54 @@ export async function generateCombatSpriteSet(recipe){
     runtimeImages,
     sourceUrls
   };
+}
+
+export async function mountCombatEquipment(model,recipe){
+  let attachment=null,shieldAttachment=null,offHandAttachment=null;
+  if(recipe.equipment){
+    const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
+    const preset=studioWeapon(id);
+    const hand=findWeaponHand(model,preset);
+    if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
+    const weaponUrl=weaponAssetUrl({file:preset.presetRevision===100?preset.file:recipe.equipment.asset,
+      assetSha256:preset.presetRevision===100||recipe.equipment.asset===preset.file ? preset.assetSha256 : null},new URL('../',import.meta.url));
+    const weaponGltf=await loadGltf(weaponUrl.href);
+    const mount=resolveCombatWeaponMount(recipe.equipment,recipe.renderSettings,preset);
+    attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
+      rightHand:id,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:mount.sizePercent,
+      position:mount.position,
+      rotation:mount.rotation,shaftRollDegrees:mount.shaftRollDegrees
+    });
+  }
+  const savedOffHand=normalizeOffHandEquipment(recipe.renderSettings?.offHandEquipment||{});
+  const primaryId=recipe.equipment?.studioId||recipe.equipment?.appearanceId||'none';
+  const samePrimary=(recipe.renderSettings?.equipment?.rightHand||'none')===primaryId;
+  if(savedOffHand.rightHand!=='none'&&samePrimary&&!recipe.shield&&studioWeapon(primaryId)?.handsRequired!==2){
+    const preset=studioWeapon(savedOffHand.rightHand),hand=findLeftHand(model);
+    if(!hand)throw new Error('The off-hand weapon needs a left-hand bone.');
+    const loaded=await loadGltf(weaponAssetUrl(preset,new URL('../',import.meta.url)).href);
+    offHandAttachment=createWeaponAttachment(THREE,hand,loaded.scene,savedOffHand,{attachmentHand:'left'});
+  }
+  if(recipe.shield){
+    const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
+    const leftHand=findLeftHand(model);
+    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to this humanoid.');
+    const shieldGltf=await loadGltf('../'+recipe.shield.asset);
+    const savedShield=studioShield(recipe.renderSettings?.shield?.leftHandShield)?.id===preset.id
+      ? recipe.renderSettings.shield : null;
+    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldGltf.scene,{
+      leftHandShield:preset.id,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:finite(savedShield?.sizePercent,recipe.shield.mount?.sizePercent??100),
+      position:savedShield?.position??recipe.shield.mount?.position??preset.position,
+      rotation:savedShield?.rotation??recipe.shield.mount?.rotationDegrees??preset.rotation,
+      distanceInches:finite(savedShield?.distanceInches,0),
+      forearmSlideInches:finite(savedShield?.forearmSlideInches,0),
+      forearmRollDegrees:finite(savedShield?.forearmRollDegrees,0)
+    });
+  }
+
+return {attachment,shieldAttachment,offHandAttachment};
 }

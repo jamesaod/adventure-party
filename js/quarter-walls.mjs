@@ -1,3 +1,4 @@
+import {WALL_MATERIAL_IDS} from './city-materials.mjs';
 // One unit-radius quarter in one authored square; four adjacent quarters form
 // a circle over 2x2 cells. All views and collision consume these same chords.
 export const QUARTER_STEPS=16;
@@ -9,14 +10,14 @@ export function quarterPoints(q){const [dx,dz,a]=config[q.corner];return Array.f
 export function quarterFloor(q){const [dx,dz]=config[q.corner];return [{x:q.x+dx,z:q.z+dz},...quarterPoints(q)];}
 export function quarterSegments(map){return (map.quarterWalls||[]).flatMap(q=>{const points=quarterPoints(q);return points.slice(1).map((b,i)=>({id:`curve-${q.x}-${q.z}-${i}`,quarter:q,a:points[i],b,offset:(config[q.corner][2]+i/QUARTER_STEPS*Math.PI/2)}));});}
 export function quarterContains(q,p){const poly=quarterFloor(q);let sign=0;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],c=(b.x-a.x)*(p.z-a.z)-(b.z-a.z)*(p.x-a.x);if(Math.abs(c)<1e-8)continue;if(sign&&Math.sign(c)!==sign)return false;sign=Math.sign(c);}return true;}
-export function validateWallFaces(record){if(record.faceMaterials!==undefined&&(!record.faceMaterials||Array.isArray(record.faceMaterials)||typeof record.faceMaterials!=='object'||Object.keys(record.faceMaterials).some(k=>!['a','b'].includes(k))||Object.values(record.faceMaterials).some(v=>!['stone','wood'].includes(v))))throw Error('Wall faces must use stone or wood.');}
+export function validateWallFaces(record){if(record.faceMaterials!==undefined&&(!record.faceMaterials||Array.isArray(record.faceMaterials)||typeof record.faceMaterials!=='object'||Object.keys(record.faceMaterials).some(k=>!['a','b'].includes(k))||Object.values(record.faceMaterials).some(v=>!WALL_MATERIAL_IDS.includes(v))))throw Error('Unknown wall face material.');}
 export function validateQuarterWalls(map){
  if(map.quarterWalls===undefined)return;
  if(!Array.isArray(map.quarterWalls)||map.quarterWalls.length>map.width*map.height)throw Error('Invalid quarter-round wall list.');
- const used=new Set();for(const q of map.quarterWalls){const key=`${q.x},${q.z}`;validateWallFaces(q);if(q.outsideGround!==undefined&&!['auto','grass','dirt','stone'].includes(q.outsideGround))throw Error('Invalid outside floor material.');if(!Number.isInteger(q.x)||!Number.isInteger(q.z)||map.grid[q.z]?.[q.x]!=='.'||!Object.hasOwn(config,q.corner)||!['stone','wood'].includes(q.material||'stone')||used.has(key))throw Error('Invalid or duplicate quarter-round wall.');used.add(key);}
+ const used=new Set();for(const q of map.quarterWalls){const key=`${q.x},${q.z}`;validateWallFaces(q);if(q.outsideGround!==undefined&&!['auto','grass','dirt','stone'].includes(q.outsideGround))throw Error('Invalid outside floor material.');if(!Number.isInteger(q.x)||!Number.isInteger(q.z)||map.grid[q.z]?.[q.x]!=='.'||!Object.hasOwn(config,q.corner)||!WALL_MATERIAL_IDS.includes(q.material||'stone')||used.has(key))throw Error('Invalid or duplicate quarter-round wall.');used.add(key);}
 }
 export function paintQuarter(map,x,z,corner,material='stone',settings={}){
- if(!['stone','wood'].includes(material))throw Error('Choose stone or wood.');
+ if(!WALL_MATERIAL_IDS.includes(material))throw Error('Choose a wall material.');
  if(map.version!==2||map.grid[z]?.[x]!=='.')throw Error('Place quarter-round walls on floor squares.');
  const previous=map.quarterWalls||[],next=previous.filter(q=>q.x!==x||q.z!==z);
  if(corner!=='erase'){

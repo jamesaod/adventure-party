@@ -30,6 +30,7 @@ const CANDIDATE_COMBAT_BEAT_PRIORITY=Object.freeze({
 });
 
 let candidateCombatBeatSequence=0;
+let candidateCombatBeatGeneration=0;
 let candidateCombatBeatHoldUntil=0;
 let candidateDamageBeatContext=null;
 const candidateCombatBeatGroups=new Map();
@@ -213,7 +214,18 @@ function candidateStartNextCombatBeat(){
   const beat=candidateCombatBeatReady.shift();
   if(!beat){candidateCombatBeatActive=false;candidateCombatBeatHoldUntil=0;return;}
   candidateCombatBeatHoldUntil=performance.now()+(candidateCombatBeatReady.length+1)*CANDIDATE_COMBAT_BEAT_MS;
-  candidateRunCombatBeat(beat);
+  const generation=candidateCombatBeatGeneration;
+  try{
+    candidateRunCombatBeat(beat);
+  }catch(error){
+    // Results are presentation of already-resolved mechanics. A failed sound,
+    // death effect or render must not leave initiative waiting forever.
+    console.error('Combat result presentation failed',{
+      category:beat.category,unitId:beat.unitId,round:beat.gameRef?.round
+    },error);
+  }
+  // A presentation callback may leave combat or clear the queue itself.
+  if(generation!==candidateCombatBeatGeneration)return;
   // Chain from the actual presentation, so a slow/hidden tab cannot collapse
   // several overdue results into one unreadable frame after a stall.
   const timer=setTimeout(()=>{candidateCombatBeatTimers.delete(timer);candidateStartNextCombatBeat();},CANDIDATE_COMBAT_BEAT_MS);
@@ -243,15 +255,14 @@ function candidateFlushCombatBeats(){
    HOLD TURN PROGRESSION UNTIL THE VISIBLE SERIES FINISHES
    ============================================================ */
 
-const candidateBaseCombatActionPauseRemaining=
-  combatActionPauseRemaining;
+const candidateBaseCombatActionPauseRemaining=AdventurePartyCombatServices.current('combatActionPauseRemaining');
 
-combatActionPauseRemaining=function(){
+AdventurePartyCombatServices.register('combatActionPauseRemaining','candidate-combat-beat-sequence.js:249:combatActionPauseRemaining',function(){
   return Math.max(
     candidateBaseCombatActionPauseRemaining(),
     candidateCombatBeatRemaining()
   );
-};
+});
 
 
 /* ============================================================
@@ -278,10 +289,9 @@ function candidateWithDamageBeatContext(
 }
 
 
-const candidateBaseShowDamageText=
-  r236ShowDamageText;
+const candidateBaseShowDamageText=AdventurePartyCombatServices.current('r236ShowDamageText');
 
-r236ShowDamageText=function(unit,damage){
+AdventurePartyCombatServices.register('r236ShowDamageText','candidate-combat-beat-sequence.js:284:r236ShowDamageText',function(unit,damage){
   const amount=
     Math.max(
       0,
@@ -333,17 +343,16 @@ r236ShowDamageText=function(unit,damage){
       }
     }
   );
-};
+});
 
 
 /* ============================================================
    BUFF / DEBUFF APPLICATION BEATS
    ============================================================ */
 
-const candidateBaseAddUnitEffect=
-  addUnitEffect;
+const candidateBaseAddUnitEffect=AdventurePartyCombatServices.current('addUnitEffect');
 
-addUnitEffect=function(
+AdventurePartyCombatServices.register('addUnitEffect','candidate-combat-beat-sequence.js:346:addUnitEffect',function(
   unit,
   effectSpec
 ){
@@ -400,17 +409,16 @@ addUnitEffect=function(
   }
 
   return effect;
-};
+});
 
 
 /* ============================================================
    STYLE EXTENSIONS
    ============================================================ */
 
-const candidateBeatBaseFloatingTextStyle=
-  r236FloatingTextStyle;
+const candidateBeatBaseFloatingTextStyle=AdventurePartyCombatServices.current('r236FloatingTextStyle');
 
-r236FloatingTextStyle=function(kind,alpha){
+AdventurePartyCombatServices.register('r236FloatingTextStyle','candidate-combat-beat-sequence.js:413:r236FloatingTextStyle',function(kind,alpha){
   switch(kind){
     case "secondary-damage":
       return {
@@ -470,7 +478,7 @@ r236FloatingTextStyle=function(kind,alpha){
         alpha
       );
   }
-};
+});
 
 
 /* ============================================================
@@ -528,6 +536,7 @@ window.AdventurePartyCombatBeats={
   remainingMs:
     candidateCombatBeatRemaining,
   clear:()=>{
+      candidateCombatBeatGeneration++;
     for(const timer of candidateCombatBeatTimers){
       clearTimeout(timer);
     }

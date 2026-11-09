@@ -8,8 +8,11 @@ import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C204';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C202';
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
+import {isWorkshopUnit} from './workshop-unit-package.mjs';
+import {createWorkshopRepositoryMob} from './workshop-repository-mob.mjs';
 
 export function createRepositoryMob(template,catalog){
+ if(isWorkshopUnit(template))return createWorkshopRepositoryMob(template);
  template=normalizeMobDefinition(template);
  const ITEM_CATALOG=resolveEquipmentLibrary(template.references.equipmentLibrary);
  const entry=catalog.models.find(m=>m.id===template.modelId);
@@ -22,6 +25,12 @@ export function createRepositoryMob(template,catalog){
   const hp=rules.maxHp;
   Object.assign(unit,{repositoryMobId:template.id,sizeCategory:template.mob.size,heightInches:template.mob.heightInches,species:template.mob.species.toLowerCase(),footprintId:template.mob.footprint,repositoryMobModel:model,name:template.name,classId:sample.classId,level:sample.level,abilities:structuredClone(template.character.abilities),hp,maxHp:hp,ac:rules.ac,authoredBaseAc:rules.ac,unarmoredAc:rules.ac,thaco:rules.thaco,move:rules.move,authoredMove:rules.move,attacksPerRound:rules.attacksPerRound,morale:rules.morale,moraleLabel:String(rules.morale),xpValue:rules.xpValue,hitDiceLabel:rules.hitDice,hitDiceValue:match?+match[1]:1,brightLightAttackPenalty:template.mob.specialAbilities.includes('bright-light-penalty')?-1:0});
   unit.inventory=sample.equipment.map(e=>{const item=ITEM_CATALOG[e.itemId];return {name:item.name,type:({shield:'Shield',weapon:'Weapon',armor:'Armor',item:'Item'})[item.category],slot:item.slot,qty:e.quantity||1,equipped:e.slot!=='inventory',equippable:true,catalogItemId:item.id,catalogWeaponId:item.rules.catalogWeaponId,catalogArmorId:item.rules.catalogArmorId,appearanceId:item.appearance?.appearanceId||null,weaponPoseProfileId:item.rules?.poseProfileId||item.appearance?.poseProfileId,...item.rules};});
+  // Legacy templates omit ammunition. Seed their initial supply once at generation,
+  // never during an equipment refresh or an AI weapon switch.
+  for(const item of unit.inventory){
+   const ammo=({bow:['arrows','Arrows'],'direct-fire':['bolt-light','Light bolts'],sling:['sling-bullet','Sling bullets']})[item.weaponPoseProfileId];
+   if(ammo&&!unit.inventory.some(i=>i.type==='Ammo'&&i.catalogWeaponId===ammo[0]))unit.inventory.push({name:ammo[1],type:'Ammo',catalogWeaponId:ammo[0],qty:10,equipped:false,equippable:false});
+  }
   Object.assign(unit,generateMobRules(template,sample,rng));
   return unit;
  }

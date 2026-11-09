@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
 import {solidPrism,combatDoorSolids} from '../js/exploration-combat-geometry.mjs';
 import {SCENE_STYLE} from '../js/exploration-scene-style.mjs';
@@ -27,12 +27,18 @@ vm.createContext(sandbox);vm.runInContext(hooks.slice(start,end),sandbox);
 sandbox.explorationSurfaceExposure({x:31,y:0,z:59},{x:0,y:1,z:0},lights,new Set());assert(Math.abs(captures.at(-1).a.intensity-2.4*.45)<1e-9);assert.equal(captures.at(-1).l,lights);
 environment='indoor';sandbox.explorationSurfaceExposure({x:31,y:0,z:59},{x:0,y:1,z:0},lights,new Set());assert.equal(captures.at(-1).a.intensity,2.4);
 environment='outdoor';sandbox.explorationSurfaceExposure({x:31,y:3.5,z:59},{x:0,y:1,z:0},lights,new Set());assert(Math.abs(captures.at(-1).a.intensity-2.4*.45)<1e-9);
-sandbox.explorationSurfaceExposure({x:31,y:0,z:59},{x:0,y:1,z:0},lights,new Set(),false);assert.equal(captures.at(-1).a.intensity,2.4,'Filtered floor bake stays unshadowed');
+sandbox.explorationSurfaceExposure({x:31,y:0,z:59},{x:0,y:1,z:0},lights,new Set(),false);assert.equal(captures.at(-1).a.intensity,2.4,'Explicit solar-shadow opt-out preserves base exposure');
 console.log('PASS physical wall projection/length, horizon cap, union overlap, stable camera/unit cache, door invalidation, night suppression and outdoor-ground-only solar attenuation preserving local lights');
 
-sandbox.cubeRound=()=>({x:2,y:3});sandbox.HEX_W=64;sandbox.HEX_ROW=36;sandbox.worldPointForHex=()=>({x:128/3,y:-128/3});
+// Two samples within the same tactical hex can fall on opposite sides of the
+// building silhouette. No hex-centre snapping may enter the filtered bake.
+const sampled=[];sandbox.explorationWallGroundShadows=()=>({occlusion:p=>{sampled.push(p);return p.x<1.15?1:0;}});
+sandbox.cubeRound=()=>{throw Error('Building shadows must not snap to hex centres');};
 for(const x of [31,31.1,31.2])sandbox.explorationSurfaceExposure({x,y:0,z:59},{x:0,y:1,z:0},lights,new Set());
-console.log('PASS multiple points in a whole hex use the same shadow anchor');
+assert.deepEqual(sampled.map(p=>Math.round(p.x*10)),[10,11,12]);
+assert(captures.at(-3).a.intensity<captures.at(-1).a.intensity,'The shadow boundary can cross the middle of a hex');
+assert.equal(captures.at(-1).a.intensity,2.4);
+console.log('PASS actual-point building shadow samples within one hex, ready for smooth light-map filtering');
 
 assert.equal(field.occlusion({x:1,z:-1},.5),1,'Raised face can still be shaded by taller geometry');
 assert.equal(field.occlusion({x:1,z:-1},3.5),0,'Ground shadows cannot shade a face above the blocker');

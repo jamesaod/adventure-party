@@ -2,8 +2,8 @@
    CANCEL BEHAVIOR
    ============================================================ */
 
-const r227BaseExitAimMode=exitAimMode;
-exitAimMode=function(redraw=true,cancelPending=true){
+const r227BaseExitAimMode=AdventurePartyCombatServices.current('exitAimMode');
+AdventurePartyCombatServices.register('exitAimMode','r227-minute-meteors-ui.js:6:exitAimMode',function(redraw=true,cancelPending=true){
   const canceled=(
     cancelPending &&
     pendingAimAction?.meteorVolley
@@ -44,7 +44,7 @@ exitAimMode=function(redraw=true,cancelPending=true){
   }
 
   return result;
-};
+});
 
 
 /* ============================================================
@@ -78,17 +78,17 @@ function r227DrawMeteorSelectionMarkers(){
   }
 }
 
-const r227BaseDrawPersistentCharmStatusFx=drawPersistentCharmStatusFx;
-drawPersistentCharmStatusFx=function(){
+const r227BaseDrawPersistentCharmStatusFx=AdventurePartyCombatServices.current('drawPersistentCharmStatusFx');
+AdventurePartyCombatServices.register('drawPersistentCharmStatusFx','r227-minute-meteors-ui.js:82:drawPersistentCharmStatusFx',function(){
   r227BaseDrawPersistentCharmStatusFx();
   r227DrawMeteorSelectionMarkers();
-};
+});
 
-const r227BaseDrawProjectileFx=drawProjectileFx;
-drawProjectileFx=function(){
+const r227BaseDrawProjectileFx=AdventurePartyCombatServices.current('drawProjectileFx');
+AdventurePartyCombatServices.register('drawProjectileFx','r227-minute-meteors-ui.js:88:drawProjectileFx',function(){
   r227BaseDrawProjectileFx();
   r227DrawMeteorVolleyFx();
-};
+});
 
 
 /* ============================================================

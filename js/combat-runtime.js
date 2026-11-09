@@ -7,9 +7,11 @@ let combatFirTreesLoading=null;
 async function prepareCombatSession(){
  await ensureCombatRenderer();
  if(!combatSceneAssets)combatSceneAssets=(async()=>{
-  explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C276');
-  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C274')).createCombatTestMap;
+  explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C277');
+  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C280')).createCombatTestMap;
   const sources=[[explorationFloorImage,'assets/textures/exploration/floor.png?v=R238C206'],[explorationWallImage,'assets/textures/exploration/wall.png?v=R238C206'],[explorationDoorImage,'assets/textures/exploration/door.png?v=R238C206'],[explorationGrassImage,explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246'],[explorationWoodWallImage,explorationEncounterApi.WOOD_TEXTURES.wall+'?v=R238C274']];
+  for(const [id,asset] of Object.entries(explorationEncounterApi.CITY_WALL_TEXTURES))sources.push([explorationCityWallImages[id],asset.src]);
+  for(const [id,asset] of Object.entries(explorationEncounterApi.CITY_FLOOR_TEXTURES))sources.push([explorationCityFloorImages[id],asset.src]);
   await Promise.all(sources.map(async([image,url])=>{if(!image.src)image.src=url;await image.decode();}));
  })().catch(error=>{combatSceneAssets=null;throw error;});
  await combatSceneAssets;
@@ -29,9 +31,12 @@ async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  initializeFirMovementObstacles();
  const combat=game;
  fitBattleCanvas();
- let timer;
- try{await Promise.race([waitForCombatUnitRenders(allUnits()),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Unit rendering timed out. Please retry.')),120000);})]);}
- finally{clearTimeout(timer);}
+ let timer,rejectStall;
+ const heartbeat=()=>{if(timer!==undefined)clearTimeout(timer);timer=setTimeout(()=>rejectStall(Error('Unit rendering stopped making progress. Please retry.')),120000);};
+ const stalled=new Promise((_,reject)=>{rejectStall=reject;heartbeat();});
+ document.addEventListener('adventure-party:unit-render-progress',heartbeat);
+ try{await Promise.race([waitForCombatUnitRenders(allUnits()),stalled]);}
+ finally{clearTimeout(timer);document.removeEventListener('adventure-party:unit-render-progress',heartbeat);}
  if(generation!==combatSessionGeneration||game!==combat||!isCurrent())return false;
  if(scenario.autoStart)startRound();
  await presentCombatFrame();

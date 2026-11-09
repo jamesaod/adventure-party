@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { CROSS_LIMB_REPAIR, repairCrossLimbSkinning } from '../js/studio-skinning.mjs';
 
 const root = new URL('../', import.meta.url);
-const original = fs.readFileSync(new URL(
+const original = readCombatFixture(new URL(
   'assets/models/orcs/male-orc-fighter/male-orc-fighter.glb',root
 ));
 assert.equal(crypto.createHash('sha256').update(original).digest('hex'),
@@ -57,7 +58,7 @@ const attrs={
 const index=new Attribute(accessor(primitive.indices));
 // Mirror the real GLTFLoader: it sanitizes Mixamo colon-delimited bone
 // names before attaching the Skeleton. This was missing from Rev 104 CI.
-const threeSource=fs.readFileSync(new URL('assets/vendor/three/three.core.min.js',root));
+const threeSource=readCombatFixture(new URL('assets/vendor/three/three.core.min.js',root));
 const THREE=await import(`data:text/javascript;base64,${threeSource.toString('base64')}`);
 const sanitizeName=THREE.PropertyBinding.sanitizeNodeName;
 assert.equal(sanitizeName('mixamorig:LeftUpLeg'),'mixamorigLeftUpLeg');
@@ -104,7 +105,7 @@ for(let k=0;k<4;k++){
 assert.equal(repairCrossLimbSkinning(scene,CROSS_LIMB_REPAIR).correctedVertices,0,
   'Repair is idempotent when reopening a saved studio');
 assert.throws(()=>repairCrossLimbSkinning(scene,'not-a-profile'),/Unknown skin repair profile/);
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root),'utf8'));
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root),'utf8'));
 const repairedOrcs=catalog.models.filter(model=>model.skinWeightRepair===CROSS_LIMB_REPAIR);
 assert.deepEqual(repairedOrcs.map(model=>model.id).sort(),
   ['male-orc-fighter','male-orc-fighter-ual2-one-handed-proof'],
@@ -115,7 +116,7 @@ assert.ok(untouched&&!untouched.skinWeightRepair&&!untouched.animationBindRebase
 assert.ok(catalog.models.filter(model=>model.id.includes('carl'))
   .every(model=>model.skinWeightRepair===undefined),'No change to Carl models');
 
-const studio=fs.readFileSync(new URL('js/3d-studio.mjs',root),'utf8');
+const studio=readCombatFixture(new URL('js/3d-studio.mjs',root),'utf8');
 assert.ok(studio.includes('repairCrossLimbSkinning(loaded.model, effectiveModelDefaults.skinWeightRepair)'),
   'The Studio applies in-memory correction when loading the saved Orc');
 assert.ok(studio.includes('skinRepair: state.skinRepairReport'),

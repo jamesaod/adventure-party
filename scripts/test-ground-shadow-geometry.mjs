@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {groundShadowProjection,SHADOW_FLOOR_Y,createGroundShadowMaterial,renderGroundShadow} from '../js/ground-shadow-geometry.mjs';

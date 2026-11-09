@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createCombatTestMap} from '../js/combat-test-map.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {floorFragmentIndex,polygonArea} from '../js/combat-surface-lighting.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi').replace("import('./combat-fir-trees.mjs?v=treeit-live-1')",'Promise.resolve({createCombatFirTrees:async()=>({})})');
 function fixture(){
- const events=[],images=Array.from({length:5},()=>({src:'',decode:async()=>{events.push('image');}}));
- const c={sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],game:null,isKoboldUnit:()=>false,
+ const events=[],images=Array.from({length:10},()=>({src:'',decode:async()=>{events.push('image');}}));
+ const c={document:new EventTarget(),sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],explorationCityWallImages:{"red-brick":images[5],"beige-stone":images[6]},explorationCityWoodFloorImage:images[7],explorationCityFloorImages:{wood:images[7],'gray-stone':images[8],'gray-flagstone':images[9]},game:null,isKoboldUnit:()=>false,
   initializeFirMovementObstacles:()=>events.push('fir-obstacles'),newGame:(condition,scenario)=>{events.push('new');c.game=c.createCombatGame(condition,scenario.roster,scenario);},allUnits:()=>[c.game.player,...c.game.allies,...c.game.enemies],fitBattleCanvas:()=>events.push('fit'),waitForCombatUnitRenders:async()=>events.push('sprites'),presentCombatFrame:async()=>events.push('frame'),startRound:()=>{events.push('round');c.game.round++;},canvas:{dataset:{}},setTimeout,clearTimeout,HEX_W:64,HEX_ROW:31.5,MAP_MIN_X:-8,MAP_MAX_X:8,MAP_MIN_Y:-8,MAP_MAX_Y:8,WALL_TEST_ROOM:{left:-64,right:128,top:-63,bottom:63},worldPointForHex:(x,y)=>({x:(x+y/2)*64,y:y*31.5})};
  vm.createContext(c);vm.runInContext(source,c);return {c,events};
 }
@@ -20,7 +20,7 @@ for(const entry of ['combat-test','exploration','spell-preview']){
  assert(events.indexOf('renderer')<events.indexOf('new'));assert(events.indexOf('sprites')<events.indexOf('frame'));
  if(scenario.autoStart)assert(events.indexOf('sprites')<events.indexOf('round')&&events.indexOf('round')<events.indexOf('frame'));
  assert.equal(c.canvas.dataset.combatPipeline,'shared');
- const resets=await c.startCombatSession(scenario);assert.notEqual(resets,result);assert.equal(events.filter(x=>x==='image').length,5,'Every entry uses the same cached material dependency gate');
+ const resets=await c.startCombatSession(scenario);assert.notEqual(resets,result);assert.equal(events.filter(x=>x==='image').length,10,'Every entry uses the same cached material dependency gate');
 }
 const cancelled=fixture();let release;
 cancelled.c.ensureCombatRenderer=()=>new Promise(r=>release=r);
@@ -39,7 +39,7 @@ scene.c.configureStandaloneCombatScene('wall');
 assert.equal(converted.map.version,2);assert(!converted.synthetic,'Test maps cannot select the old synthetic renderer');
 const terrain=scene.c.combatSceneTerrain;
 assert(terrain.walls.every(w=>w.material==='exploration-stone'));
-assert.equal(terrain.doors.length,2);assert.equal(terrain.windows.length,1);
+assert.equal(terrain.doors.length,2);assert.equal(terrain.windows.length,7,'Wall Test has a complete row of seven windows');
 assert(terrain.spaces.some(s=>s.environment==='indoor')&&terrain.spaces.some(s=>s.environment==='outdoor'));
 assert(converted.map.torches.every(t=>sceneApi.torchPlacement(converted.map,t).attached),'Test torches use authored wall mounts');
 const fragments=floorFragmentIndex(terrain.spaces);
@@ -62,3 +62,20 @@ assert(preview.includes('await startCombatSession('));assert(read('js/adventure-
 console.log('PASS shared startup/material/sprite/frame gate, battle state and reset across all entries, cancellation/supersession, authored test maps, exact floor partitions and production-only Previewer spells');
 
 
+
+// A long but progressing appearance build must not hit an elapsed-time deadline.
+{
+ const {c}=fixture(),timers=new Map();let id=0,finish;
+ c.setTimeout=fn=>{timers.set(++id,fn);return id;};c.clearTimeout=key=>timers.delete(key);
+ c.waitForCombatUnitRenders=()=>new Promise(resolve=>finish=resolve);
+ const started=c.startCombatSession({source:'exploration',roster:{player:{id:'p'},allies:[],enemies:[]}});
+ while(!finish)await Promise.resolve();
+ const first=[...timers.keys()][0];c.document.dispatchEvent(new Event('adventure-party:unit-render-progress'));
+ assert(!timers.has(first),'Progress resets the stall timer');assert.equal(timers.size,1);
+ finish();await started;assert.equal(timers.size,0);
+ c.document.dispatchEvent(new Event('adventure-party:unit-render-progress'));assert.equal(timers.size,0,'Listener removed after success');
+ const stalled=c.startCombatSession({source:'exploration',roster:{player:{id:'p'},allies:[],enemies:[]}});finish=null;
+ while(!finish)await Promise.resolve();
+ const rejected=assert.rejects(stalled,/stopped making progress/);[...timers.values()][0]();await rejected;
+ assert.equal(timers.size,0,'Timer cleaned after failure');
+}

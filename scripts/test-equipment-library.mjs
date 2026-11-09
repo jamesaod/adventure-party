@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {resolveEquipmentLibrary,equipmentSnapshot,emptyEquipmentLibrary} from '../js/equipment-library-core.mjs?v=R238C204';
 import {sampleGeneration,offHandItems,primaryItems,generationWeaponTypes} from '../js/mob-generation.mjs?v=R238C204';
 import {normalizeMobDefinition} from '../js/mob-definition.mjs?v=R238C204';

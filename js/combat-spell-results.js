@@ -39,14 +39,14 @@ async function presentSpellTargetResults(caster,results,resolve,session=captureS
 }
 // A blast can include enemies and allies, including its caster. Finish only
 // after every captured target has resolved, even if one faction falls first.
-const spellResultsBaseVictory=checkCombatVictory,spellResultsBaseDefeat=checkPartyDefeat;
-checkCombatVictory=function(...args){return combatSpellResultsDepths.get(game)?false:spellResultsBaseVictory(...args);};
-checkPartyDefeat=function(...args){return combatSpellResultsDepths.get(game)?false:spellResultsBaseDefeat(...args);};
+const spellResultsBaseVictory=AdventurePartyCombatServices.current('checkCombatVictory'),spellResultsBaseDefeat=AdventurePartyCombatServices.current('checkPartyDefeat');
+AdventurePartyCombatServices.register('checkCombatVictory','combat-spell-results.js:43:checkCombatVictory',function(...args){return combatSpellResultsDepths.get(game)?false:spellResultsBaseVictory(...args);});
+AdventurePartyCombatServices.register('checkPartyDefeat','combat-spell-results.js:44:checkPartyDefeat',function(...args){return combatSpellResultsDepths.get(game)?false:spellResultsBaseDefeat(...args);});
 const spellResultsBaseClear=window.AdventurePartyCombatBeats.clear;
 window.AdventurePartyCombatBeats.clear=function(){combatSpellResultsGeneration++;return spellResultsBaseClear();};
 
 // Burning Hands and other cone/area callers share the same complete target beat.
-resolveAoeDamageSpell=async function({caster,spellName,targets,damage,saveForHalf=true,magicCasualtySource=spellName,damageType=null}){
+AdventurePartyCombatServices.register('resolveAoeDamageSpell','combat-spell-results.js:49:resolveAoeDamageSpell',async function({caster,spellName,targets,damage,saveForHalf=true,magicCasualtySource=spellName,damageType=null}){
  let koboldCasualties=0;
  const completed=await presentSpellTargetResults(caster,targets.map(unit=>({unit})),({unit})=>{
   const save=saveForHalf?rollSpellSave(unit,caster):null;
@@ -72,4 +72,4 @@ resolveAoeDamageSpell=async function({caster,spellName,targets,damage,saveForHal
   if(scheduled)await waitForCombatActionPause();
  }
  return true;
-};
+});

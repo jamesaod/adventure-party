@@ -1,8 +1,9 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const source = fs.readFileSync(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
+const source = readCombatFixture(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
 function productionFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function ${name}`);
@@ -60,6 +61,8 @@ for (const setId of ['studio-kobold', 'sprite-set:imported-orc-leader']) {
     const { sandbox, calls } = harness(true, setId);
     if (outcome === 'defeat') sandbox.game.player.alive = false;
     assert.equal(outcome === 'victory' ? sandbox.checkCombatVictory() : sandbox.checkPartyDefeat(), true);
+    assert.deepEqual(calls.navigation,[],'Resolved combat remains visible until acknowledged');
+    sandbox.handleCombatKey({key:' ',code:'Space',preventDefault(){}});
     assert.deepEqual(calls.navigation, [restoreUrl], `${setId} ${outcome} returns immediately`);
     assert.equal(calls.timers.length, 0, 'Studio tests do not wait for the ordinary death-effect delay');
     assert.deepEqual(calls.loot, []);
@@ -90,6 +93,8 @@ for (const outcome of ['victory', 'defeat']) {
   assert.equal(calls.timers.length, 1);
   assert.equal(calls.timers[0].delay, 1000, 'Ordinary combat retains its death-effect delay');
   calls.timers[0].callback();
+  assert.equal(calls.loot.length,0,'Loot waits for Space after result holds finish');
+  sandbox.handleCombatKey({key:' ',code:'Space',preventDefault(){}});
   assert.equal(calls.loot.length, 1, 'Ordinary combat still opens its results and loot screen');
   assert.deepEqual(calls.xp, outcome === 'victory' ? [100] : []);
   assert.equal(calls.loot[0][2], outcome === 'victory' ? 110 : 0);
@@ -134,7 +139,7 @@ assert.equal(scoped.calls.navigation[0],'./3d-studio.html?studioRestore=1&model=
 // Execute restoration with multiple weapon/shared groups, an empty selected
 // group, and newer editable work. Returning must never collapse this to the
 // combat sprite subset or roll back to an older test snapshot.
-const captureSource=fs.readFileSync(new URL('../js/studio-capture.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const captureSource=readCombatFixture(new URL('../js/studio-capture.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const restoreStart=captureSource.indexOf('  async function restore(');
 const restoreCode=captureSource.slice(restoreStart,captureSource.indexOf('\n\n\n  ui.ActionPose',restoreStart));
 const {CAPTURE_GROUP_CATALOG}=await import('../js/action-capture-groups.mjs');

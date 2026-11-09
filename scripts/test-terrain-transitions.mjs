@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
 import {inflateSync} from 'node:zlib';
 import {blankEdgeMap,terrainTransitionSample,paintCell,resizeMap,seedPack,parsePack,packIssues} from '../js/exploration-authoring.mjs';

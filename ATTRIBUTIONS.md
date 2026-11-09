@@ -88,3 +88,27 @@ The five fir variants derive from the fir sample in EVOLVED's TreeIt sample libr
 Source and credit — EVOLVED / evolved-software, https://www.evolved-software.com/treeit/treeit
 The supplied library license permits commercial copying and modification with attribution. Its original text is preserved at assets/terrain/treeit-firs/SAMPLE-LICENSE.txt and calls itself Creative Commons Attribution International without specifying a version.
 Changes include randomized seeds and scale, a second rotated foliage layer, green tint, interior shading, and twelve rendered rotation views per tree. Ground shadows are rendered separately from the actual branch and foliage-card geometry with filtered edges.
+
+## Window-breaking sound
+
+`assets/audio/sfx/environment/kenney-glass-break.ogg` is the unmodified `impactGlass_heavy_000.ogg` from Kenney’s [Impact Sounds](https://kenney.nl/assets/impact-sounds), licensed CC0. The original license is preserved alongside it as `KENNEY-LICENSE.txt`.
+
+## Selected replacement glass sound (local test)
+
+`assets/audio/sfx/environment/glass-break-selected.wav` derives from the user-selected “Glass Breaking Sound Effect HD | Glass Shattering Sound Effect” by Car Features: https://www.youtube.com/watch?v=TcnufvBffcY . Leading/trailing silence was trimmed (source 0.734104–4.078521 seconds); converted to 48 kHz stereo PCM WAV. This replaces the Kenney sound for the current local test. No CC0 license is claimed for this replacement.
+
+## Burning-tree fire loop
+“fire crackling loop.wav” by soundofsong, Freesound 650574, CC0. Game uses the public HQ MP3 preview. Source: https://freesound.org/people/soundofsong/sounds/650574/ — https://creativecommons.org/publicdomain/zero/1.0/
+
+## Exploration sky panoramas (CC0)
+Local 2048×1024 JPEG derivatives of Poly Haven's tonemapped equirectangular panoramas.
+- Clear Noon: Qwantani Noon (Pure Sky), Greg Zaal / Jarod Guest — https://polyhaven.com/a/qwantani_noon_puresky
+- Sunny Clouds: Kloofendal 48d Partly Cloudy (Pure Sky), Greg Zaal / Jarod Guest — https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+- Clear Morning: Autumn Field (Pure Sky), Sergej Majboroda / Jarod Guest — https://polyhaven.com/a/autumn_field_puresky
+License: https://polyhaven.com/license (CC0). Sky artwork selection does not replace authored ambient lighting.
+
+## User-provided UI and title audio
+- `assets/audio/sfx/ui/page-open.wav` — supplied as Inventory_Close_01.wav, requested for page/panel opening.
+- `assets/audio/sfx/ui/page-back.wav` — supplied as Inventory_Close_02.wav, requested for closing/back navigation.
+- `assets/audio/music/arcane-dust.wav` — supplied as 068_Arcane_Dust.wav, requested as the looping title-screen track.
+These files were supplied by the project owner for integration. Source licensing was not independently established in this pass.

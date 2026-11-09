@@ -1,10 +1,11 @@
+import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 const root=new URL('../',import.meta.url);
 const folder='assets/models/orcs/male-orc/';
-const raw=fs.readFileSync(new URL(folder+'male-orc.glb',root));
-const meta=JSON.parse(fs.readFileSync(new URL(folder+'male-orc.json',root)));
+const raw=readCombatFixture(new URL(folder+'male-orc.glb',root));
+const meta=JSON.parse(readCombatFixture(new URL(folder+'male-orc.json',root)));
 const sha=data=>createHash('sha256').update(data).digest('hex');
 assert.equal(sha(raw),meta.sha256);assert.equal(raw.length,meta.bytes);
 assert.equal(raw.toString('ascii',0,4),'glTF');assert.equal(raw.readUInt32LE(8),raw.length);
@@ -17,8 +18,8 @@ assert.equal(doc.images.length,1);const view=doc.bufferViews[doc.images[0].buffe
 const png=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
 assert.equal(sha(png),meta.sourceTextureSha256,'Original texture is byte-exact');
 assert.equal(png.readUInt32BE(16),2048);assert.equal(png.readUInt32BE(20),2048);
-const catalog=JSON.parse(fs.readFileSync(new URL('data/studio-models.json',root)));
-assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2']);
+const catalog=JSON.parse(readCombatFixture(new URL('data/studio-models.json',root)));
+assert.deepEqual(catalog.studioModelIds,['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2','male-orc-blue']);
 const entry=catalog.models.find(m=>m.id===meta.id);assert.equal(entry.file,folder+'male-orc.glb');
 assert.equal(entry.animationLibrary,'uploaded-fbx');assert.equal(entry.initialAnimation,'Sword And Shield Idle');
 console.log('PASS Male Orc: source texture preserved, 11,519 triangles, 65 unit-scale joints, shared animation catalog');
@@ -30,18 +31,21 @@ assert.equal(catalog.models.find(model=>model.mobType==='orc').id,'male-orc-figh
 // Exercise the actual catalog parser and selector/reset resolver, including
 // preset-revision migration that previously discarded non-sword overrides.
 const {default:vm}=await import('node:vm');
+const {orcWeaponFit}=await import('../js/orc-weapon-fit.mjs');
 const {studioWeapon,normalizeEquipment,STUDIO_WEAPONS}=await import('../js/studio-equipment.mjs');
 assert.equal(entry.label,'Orc, Male, Uniformed');
-const studio=fs.readFileSync(new URL('js/3d-studio.mjs',root),'utf8');
+const studio=readCombatFixture(new URL('js/3d-studio.mjs',root),'utf8');
 const parser=studio.slice(studio.indexOf('      const profileIds = entry.weaponAttachmentProfileIds'),studio.indexOf('      ids.add(entry.id);'));
 const profiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
 const model={...entry,weaponAttachmentProfiles:profiles};
 const state={libraryModels:[model],libraryModelId:'male-orc'};
 const resolver=studio.slice(studio.indexOf('function defaultEquipmentSettingsForModel('),studio.indexOf('async function changeEquipment('));
-const resolve=vm.runInNewContext(`${resolver};defaultEquipmentSettingsForModel`,{state,normalizeEquipment});
+const resolve=vm.runInNewContext(`${resolver};defaultEquipmentSettingsForModel`,{state,normalizeEquipment,studioWeapon,orcWeaponFit});
 for(const weapon of STUDIO_WEAPONS){
  const settings=resolve(weapon.id);
- if(weapon.file.includes('/batch-196/')){
+ if(weapon.presetRevision===100){
+  assert.deepEqual(settings,normalizeEquipment(orcWeaponFit('male-orc',weapon)),weapon.id+' current Orc socket');
+ }else if(weapon.file.includes('/batch-196/')){
   const p=profiles.find(p=>p.weaponIds.includes(weapon.id));assert.ok(p);assert.deepEqual(settings.position,Array.from(p.position));assert.deepEqual(settings.rotation,Array.from(p.rotation));
  }else if((weapon.handsRequired||1)===1&&weapon.id!=='spear'){
   assert.deepEqual(settings.position,[-0.020,0.050,0.005],weapon.id);
@@ -64,6 +68,6 @@ for(const other of [leader,carl]){
  const otherProfiles=vm.runInNewContext(`(()=>{${parser};return weaponAttachmentProfiles;})()`,{entry:other,attachmentProfiles:catalog.weaponAttachmentProfiles,studioWeapon});
  state.libraryModels.push({...other,weaponAttachmentProfiles:otherProfiles});
  state.libraryModelId=other.id;
- for(const weapon of STUDIO_WEAPONS){if(other===leader){const profile=otherProfiles.find(p=>p.weaponIds.includes(weapon.id));assert.ok(profile,weapon.id+' Leader profile');assert.deepEqual(resolve(weapon.id).rotation,Array.from(profile.rotation));assert.deepEqual(resolve(weapon.id).position,Array.from(profile.position));continue;}assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`); }
+ for(const weapon of STUDIO_WEAPONS){if(other===leader){const profile=otherProfiles.find(p=>p.weaponIds.includes(weapon.id));if(!profile){assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}));continue;}assert.deepEqual(resolve(weapon.id).rotation,Array.from(profile.rotation));assert.deepEqual(resolve(weapon.id).position,Array.from(profile.position));continue;}assert.deepEqual(resolve(weapon.id),normalizeEquipment({rightHand:weapon.id}),`${other.label} retains global weapon defaults`); }
 }
 console.log('PASS regular Orc calibration retained; Orc Leader resolves per-weapon profiles and Carl retains global defaults');

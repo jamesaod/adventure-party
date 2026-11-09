@@ -369,6 +369,7 @@
             </div>
             <p id="studioRangeStatus" class="studio-note studio-help" role="status"></p>
           </details>
+          <section id="studioActionClips" class="studio-animation-ranges"></section>
           <span id="studioWorkspaceStatus" class="studio-workspace-status" role="status" aria-live="polite">Preparing saved workspace…</span>
           <output id="studioCaptureCount" class="studio-chip" aria-live="polite">0 / 42 sprites</output>
         <label class="studio-field studio-set-name" for="studioSpriteSetName">
@@ -396,6 +397,7 @@
         <button id="studioTestCombatButton" class="studio-button studio-primary" type="button" disabled>Test in combat</button>
       <p id="studioSheetStatus" class="studio-note" role="status" aria-live="polite">Capture once to save sprites and frame references. Export includes every weapon/shared group and pose-library.json.</p>
         </section>
+      <section id="studioPreparedModels" class="studio-panel"></section>
       <div id="studioCaptureChecklistMount"></div>
       </section>
 
@@ -541,7 +543,8 @@
     <div id="studioError" class="studio-error chrome" role="alert" hidden></div>
     <noscript><p class="studio-error chrome">JavaScript is required to load models and display the studio.</p></noscript>
   </div>
+  <script type="module" src="js/studio-prepared-models.mjs"></script>
   <script type="module" src="js/3d-studio.mjs?v=R238C205"></script>
 
-</body>
+<script type="module" src="js/ui-audio.mjs?v=R238C293"></script></body>
 </html>

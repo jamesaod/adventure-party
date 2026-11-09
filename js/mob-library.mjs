@@ -3,7 +3,10 @@ import {browserAuthoringStore} from './authoring-store.mjs?v=R238C204';
 import {normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C204';
 import {normalizeGeneration} from './mob-generation.mjs?v=R238C204';
 import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C204';
+import {isWorkshopUnit,validateWorkshopUnit} from './workshop-unit-package.mjs';
+import {workshopRuntimeSupport} from './workshop-runtime-support.mjs';
 export function encounterReadiness(mob,catalog){
+ if(isWorkshopUnit(mob)){try{return workshopRuntimeSupport(validateWorkshopUnit(mob).draft);}catch(error){return {ready:false,reasons:[error.message]};}}
  const reasons=[];
  try{mob=normalizeMobDefinition(mob);const appearance=mob.references.studioAppearance||mob.references.poseLibrary.studioAppearance;
  if(!catalog.models.some(m=>m.id===mob.modelId))reasons.push('Model is unavailable.');
@@ -21,6 +24,6 @@ export function createMobLibrary(store,seeds,catalog){
 export async function loadMobLibrary(){
  const get=async path=>{const res=await fetch(new URL('../'+path,import.meta.url),{cache:'no-cache'});if(!res.ok)throw Error('Could not load '+path);return res.json();};
  const [manifest,catalog]=await Promise.all([get('data/mob-library.json'),get('data/studio-models.json')]);
- const seeds=await Promise.all(manifest.mobs.map(async item=>{const mob=await get(item.file);mob.mob.encounterEnabled=mob.mob.encounterEnabled??true;return normalizeMobDefinition(mob);}));
+ const seeds=await Promise.all(manifest.mobs.map(async item=>{const mob=await get(item.file);if(isWorkshopUnit(mob))return validateWorkshopUnit(mob);mob.mob.encounterEnabled=mob.mob.encounterEnabled??true;return normalizeMobDefinition(mob);}));
  return {library:createMobLibrary(browserAuthoringStore(),seeds,catalog),catalog,manifest};
 }

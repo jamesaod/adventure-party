@@ -1,1 +1,20 @@
-{"version":1,"mobs":[{"id":"orc-male-uniformed","file":"data/mobs/orc-male-uniformed.unit-package.json","encounterType":"orc"},{"id":"orc-archer","file":"data/mobs/orc-archer.unit-package.json","encounterType":"orc-archer"}]}
+{
+  "version": 1,
+  "mobs": [
+    {
+      "id": "orc-male-uniformed",
+      "file": "data/mobs/orc-male-uniformed.unit-package.json",
+      "encounterType": "orc"
+    },
+    {
+      "id": "orc-archer",
+      "file": "data/mobs/orc-archer.unit-package.json",
+      "encounterType": "orc-archer"
+    },
+    {
+      "id": "orc-male-uniformed-blue",
+      "file": "data/mobs/orc-male-uniformed-blue.unit-package.json",
+      "encounterType": "orc-blue"
+    }
+  ]
+}

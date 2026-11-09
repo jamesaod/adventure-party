@@ -184,10 +184,9 @@
     );
   }
 
-  const r36BaseActivateAimTarget=
-    activateAimTarget;
+  const r36BaseActivateAimTarget=AdventurePartyCombatServices.current('resolveAimAction');
 
-  activateAimTarget=async function(){
+  AdventurePartyCombatServices.register('resolveAimAction','candidate-rev36-magic-missile-volley.js:190:resolveAimAction',async function(){
     if(
       pendingAimAction?.spellId===
         "magic-missile"
@@ -205,7 +204,7 @@
     }
 
     return await r36BaseActivateAimTarget();
-  };
+  });
 
 
   /* Completion-time prompt: tell the player that each click assigns one dart. */
@@ -213,10 +212,9 @@
     typeof r231CompletionTargetPrompt===
     "function"
   ){
-    const r36BaseCompletionTargetPrompt=
-      r231CompletionTargetPrompt;
+    const r36BaseCompletionTargetPrompt=AdventurePartyCombatServices.current('r231CompletionTargetPrompt');
 
-    r231CompletionTargetPrompt=function(
+    AdventurePartyCombatServices.register('r231CompletionTargetPrompt','candidate-rev36-magic-missile-volley.js:219:r231CompletionTargetPrompt',function(
       spell,
       caster
     ){
@@ -244,7 +242,7 @@
         spell,
         caster
       );
-    };
+    });
   }
 
 
@@ -831,10 +829,9 @@
     ctx.restore();
   }
 
-  const r36BaseDrawProjectileFx=
-    drawProjectileFx;
+  const r36BaseDrawProjectileFx=AdventurePartyCombatServices.current('drawProjectileFx');
 
-  drawProjectileFx=function(){
+  AdventurePartyCombatServices.register('drawProjectileFx','candidate-rev36-magic-missile-volley.js:837:drawProjectileFx',function(){
     r36BaseDrawProjectileFx();
 
     if(
@@ -846,7 +843,7 @@
     }
 
     r36DrawVolleyFx();
-  };
+  });
 
   function r36EnsureImpactLoop(){
     if(
@@ -965,8 +962,7 @@
     Player allocations arrive in action.magicMissileTargetIds. Automated casts
     and callers that provide only one target stack all missiles on that target.
   */
-  castMagicMissileFromScroll=
-  async function(action,target){
+  AdventurePartyCombatServices.register('castMagicMissileFromScroll','candidate-rev36-magic-missile-volley.js:968:castMagicMissileFromScroll',async function(action,target){
     const resultSession=captureSpellTargetResults();
     const caster=
       spellCasterForAction(action);
@@ -1260,7 +1256,7 @@
     );
 
     return true;
-  };
+  });
 
 
   /*
@@ -1271,11 +1267,9 @@
     typeof spellPreviewClearTransientPresentation===
     "function"
   ){
-    const r36BasePreviewClear=
-      spellPreviewClearTransientPresentation;
+    const r36BasePreviewClear=AdventurePartyCombatServices.current('spellPreviewClearTransientPresentation');
 
-    spellPreviewClearTransientPresentation=
-    function(){
+    AdventurePartyCombatServices.register('spellPreviewClearTransientPresentation','candidate-rev36-magic-missile-volley.js:1277:spellPreviewClearTransientPresentation',function(){
       r36VolleyFx=null;
       r36ImpactFx=[];
 
@@ -1287,7 +1281,7 @@
       }
 
       return r36BasePreviewClear();
-    };
+    });
   }
 
 

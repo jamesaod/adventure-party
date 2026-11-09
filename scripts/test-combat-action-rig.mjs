@@ -1,0 +1,23 @@
+import {registerHooks} from 'node:module';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+registerHooks({resolve(s,c,n){return n(s==='three'?new URL('../assets/vendor/three/three.module.min.js',import.meta.url).href:s,c)}});
+const THREE=await import('../assets/vendor/three/three.module.min.js');
+const {GLTFLoader}=await import('../assets/vendor/three/addons/loaders/GLTFLoader.js');
+const {bindActionEntry}=await import('../js/combat-action-clips.mjs');
+const b=fs.readFileSync('assets/models/orcs/male-orc/male-orc.glb');
+const len=b.readUInt32LE(12),json=JSON.parse(b.subarray(20,20+len));
+json.materials=[];delete json.textures;delete json.images;
+for(const m of json.meshes)for(const p of m.primitives)delete p.material;
+json.buffers[0].uri='data:application/octet-stream;base64,'+b.subarray(28+len).toString('base64');
+globalThis.ProgressEvent=class{constructor(type,data){Object.assign(this,data)}};
+const {scene:model}=await new GLTFLoader().parseAsync(JSON.stringify(json),'');
+const lib=JSON.parse(fs.readFileSync('assets/animations/actions/male-orc.json'));
+const mixer=new THREE.AnimationMixer(model);
+for(const e of lib.entries){const clip=bindActionEntry(model,e);mixer.stopAllAction();const action=mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();
+ mixer.setTime(0);model.updateMatrixWorld(true);const first=new THREE.Box3().setFromObject(model,true);
+ mixer.setTime(clip.duration);model.updateMatrixWorld(true);const last=new THREE.Box3().setFromObject(model,true);
+ assert(last.max.y-last.min.y<first.max.y-first.min.y,'death must end lower than standing');
+ console.log(e.name,clip.tracks.length,'tracks; start/end height',first.max.y-first.min.y,last.max.y-last.min.y);
+}
+console.log('PASS shipped death clips bind to actual combat orc and finish prone');

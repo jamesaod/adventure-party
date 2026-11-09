@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {blankEdgeMap} from '../js/exploration-authoring.mjs';import {paintEdge} from '../js/exploration-edges.mjs';import {terrainForEncounter} from '../js/exploration-encounters.mjs';
 const map=blankEdgeMap('performance-regression','Performance regression');
 for(let x=2;x<14;x++)for(let z=2;z<14;z++)if((x+z)%4===0)paintEdge(map,{axis:(x+z)%8?'v':'h',x,z},x%5===0?'window':x%3===0?'door':'wall');

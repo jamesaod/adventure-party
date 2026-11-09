@@ -1,3 +1,4 @@
+import {WALL_MATERIAL_IDS} from './city-materials.mjs';
 import {validateWallFaces} from './wall-surfaces.mjs?v=R238C274';
 import {quarterAt,quarterSides,quarterSegments,validateQuarterWalls} from './quarter-walls.mjs?v=R238C274';
 // Canonical shared edges: h(x,z) is the north edge of cell x,z;
@@ -55,7 +56,7 @@ export function validateEdges(map){
   const key=edgeKey(e);
 
   if(keys.has(key)||typeof e.id!=='string'||!e.id||!/^[a-zA-Z0-9_:,.-]{1,120}$/.test(e.id)||ids.has(e.id))throw Error('Duplicate or missing wall edge identity.');keys.add(key);ids.add(e.id);
-  if(!['wall','door','window'].includes(e.kind)||!['stone','wood'].includes(e.material||'stone'))throw Error('Invalid wall edge type or material.');
+  if(!['wall','door','window'].includes(e.kind)||!WALL_MATERIAL_IDS.includes(e.material||'stone'))throw Error('Invalid wall edge type or material.');
   const cells=edgeCells(e);if(!cells.some(p=>floor(map,p)))throw Error('Place wall edges beside floor.');
   if(e.kind!=='wall'){
    if(!cells.every(p=>floor(map,p)))throw Error('Doors and windows need floor on both sides.');
@@ -79,7 +80,7 @@ export function blockingEdgeSegments(map,opened,mode='movement'){
  const edges=effectiveEdges(map),key=mode+':'+[...opened].sort().join('|');let cache=segmentCache.get(map);if(cache?.edges!==edges){cache={edges,values:new Map()};segmentCache.set(map,cache);}if(cache.values.has(key))return cache.values.get(key);
  const result=quarterSegments(map).map(s=>({...s,edge:{id:s.id,kind:'wall',material:s.quarter.material,curve:true}}));
  for(const edge of edges){
-  const g=edgeGeometry(edge),canPass=edge.kind==='door'&&opened.has(edge.id)||edge.kind==='window'&&['los','light'].includes(mode);
+  const g=edgeGeometry(edge),canPass=edge.kind==='door'&&opened.has(edge.id)||edge.kind==='window'&&(['los','light'].includes(mode)||edge.broken&&mode==='projectile');
   const intervals=canPass?[[0,(1-edge.width)/2],[(1+edge.width)/2,1]]:[[0,1]];
   for(const [a,b] of intervals)if(b-a>1e-7)result.push({edge,a:{x:g.a.x+(g.b.x-g.a.x)*a,z:g.a.z+(g.b.z-g.a.z)*a},b:{x:g.a.x+(g.b.x-g.a.x)*b,z:g.a.z+(g.b.z-g.a.z)*b}});
  }

@@ -1,3 +1,4 @@
+import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C204';
 import { studioWeapon } from './studio-equipment.mjs?v=R238C204';
 import { studioShield } from './studio-shield.mjs?v=R238C204';
 import { WEAPON_POSE_PROFILES, poseProfileForHumanoid, resolveHumanoidAnimationState, humanoidSpriteFamilySignature } from './humanoid-animation-catalog.mjs?v=R238C196';
@@ -77,6 +78,7 @@ function visibleWeapon(id, itemName, studioId) {
 }
 
 export const VISIBLE_WEAPON_ASSETS = Object.freeze({
+  ...Object.fromEntries(Object.values(ITEM_CATALOG).filter(i=>i.slot==='weapon'&&i.appearance?.presetRevision===100).map(i=>[i.id,visibleWeapon(i.id,i.name,i.appearance.studioId)])),
   'trident': visibleWeapon('trident', 'Trident', 'trident'),
   'scimitar': visibleWeapon('scimitar', 'Scimitar', 'scimitar'),
   'broadsword': visibleWeapon('broadsword', 'Broadsword', 'broadsword'),
@@ -128,7 +130,7 @@ export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = nu
   if (!unit) throw new Error('A MOB is required.');
   applyMobHeight(unit);
   const inventory = Array.isArray(unit.inventory) ? unit.inventory : [];
-  const equipped = inventory.find(item => item?.slot === 'weapon' && item?.equipped) || null;
+  const equipped = inventory.find(item => item?.slot === 'weapon' && item?.equipped && (!unit.workshopDefinition || item.startingLocation!=='off-hand')) || null;
   const visual = equipped?.appearanceId ? VISIBLE_WEAPON_ASSETS[equipped.appearanceId] : null;
   const equippedShield=inventory.find(item=>item?.slot==='shield'&&item?.equipped)||null;
   const shieldVisual=equippedShield?.appearanceId?VISIBLE_SHIELD_ASSETS[equippedShield.appearanceId]:null;
@@ -165,7 +167,10 @@ function canonical(value) {
 
 export function appearanceCacheKey(recipe) {
   // Deterministic non-cryptographic key suitable for an in-memory/browser cache namespace.
-  const text = canonical(recipe);
+  // Names and instance IDs do not affect pixels. Identical roster members
+  // should share preparation, while model/height/equipment/poses still differ.
+  const {id,name,...visualMob}=recipe.mob||{};
+  const text = canonical({...recipe,mob:visualMob,standingFootContactVersion:1});
   let hash = 2166136261;
   for (let i = 0; i < text.length; i++) {
     hash ^= text.charCodeAt(i);
