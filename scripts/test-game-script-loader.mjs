@@ -23,6 +23,8 @@ const read=path=>{const text=readFileSync(new URL(path,root),'utf8');return path
 const html=read('index.html');
 const entries=[...html.matchAll(/<script src="([^"]+)" type="text\/plain" data-game-script="(classic|module)"><\/script>/g)]
   .map(([,src,type])=>({src,type}));
+// Equipment test hook is deliberately last, outside the core startup tail.
+const extension=entries.pop();assert.equal(extension.src,'js/low-poly-weapon-test.mjs');
 const pathOf=entry=>entry.src.split('?')[0];
 assert.ok(entries.length>40,'The complete existing engine runs behind the startup gate');
 assert.equal(pathOf(entries[0]),'js/priest-spells.js');

@@ -14,10 +14,10 @@ for(const source of items){
  assert.ok(CAPTURE_GROUP_CATALOG.has(weapon.poseProfileId));
  assert.deepEqual(weapon.primaryAxis,[0,1,0]);
  assert.equal(weapon.handsRequired,source.handsRequired);
- assert.equal(normalizeEquipment({rightHand:source.id,shaftRollDegrees:37,presetRevision:1}).shaftRollDegrees,37);
+ assert.equal(normalizeEquipment({rightHand:source.id,shaftRollDegrees:37,presetRevision:weapon.presetRevision}).shaftRollDegrees,37);
  if(source.handsRequired===2)assert.ok(!STUDIO_OFF_HAND_WEAPONS.some(w=>w.id===source.id));
 }
-assert.equal(studioWeapon('medieval-sword').label,'Long Sword');
+assert.equal(studioWeapon('medieval-sword').label,'Flaming Sword +5');
 assert.equal(studioWeapon('wizard-staff-grip').label,'Wooden Staff 1');
 assert.equal(studioWeapon('recurve-bow').label,'Bow');
 console.log('PASS nine weapon catalog, combat appearance, capture-group and stable-ID rename integrations');

@@ -51,7 +51,7 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")'));
-assert.ok(game.includes('moduleUrl("js/combat-mob-renderer.mjs?v=R238C205")'));
+assert.ok(game.includes('moduleUrl("js/combat-prepared-assets.mjs?v=direct-assets-1")'));
 assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C202",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));
@@ -99,7 +99,7 @@ assert.ok(renderer.includes("recipe?.model?.animationLibrary==='uploaded-fbx'") 
 // must retain the canonical frame's 175% model / 109% hex body calibration.
 const core=readCombatFixture(new URL('../assets/vendor/three/three.core.min.js',import.meta.url));
 const THREE=await import(`data:text/javascript;base64,${core.toString('base64')}`);
-const bodyBuilder=new Function('THREE',`${renderer.slice(renderer.indexOf('const finite='),renderer.indexOf('function loadImage('))}\n${renderer.slice(renderer.indexOf('function buildSceneGraph('),renderer.indexOf('function configureCamera('))}\nreturn buildSceneGraph;`)(THREE);
+const bodyBuilder=new Function('THREE',`${renderer.slice(renderer.indexOf('const finite='),renderer.indexOf('function loadImage('))}\n${renderer.slice(renderer.indexOf('function buildSceneGraph('),renderer.indexOf('export function configureCamera('))}\nreturn buildSceneGraph;`)(THREE);
 function body(){return new THREE.Mesh(new THREE.BoxGeometry(1,2,.4),new THREE.MeshBasicMaterial());}
 const fallbackBody=body(),fallbackScene=bodyBuilder(fallbackBody,{renderSettings:{}});
 assert.ok(Math.abs(new THREE.Box3().setFromObject(fallbackScene,true).getSize(new THREE.Vector3()).y-3.815)<1e-6,'Fallback body must match the scale baked into the canonical camera/frame');

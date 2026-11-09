@@ -37,7 +37,7 @@ await off.select({rightHand:'spear'});assert.equal(left.children.length,0);
 // just the normalizer's returned Euler values.
 const handReference=JSON.parse(readCombatFixture(new URL('./fixtures/carl-uploaded-animation-reference.json',import.meta.url)));
 const offWeapons=STUDIO_OFF_HAND_WEAPONS;
-assert.deepEqual(offWeapons.map(weapon=>weapon.id),['medieval-sword','battle-axe','short-sword','dagger','scimitar','broadsword','mace','morning-star','flail','club']);
+assert.deepEqual(offWeapons.map(weapon=>weapon.id),['medieval-sword','battle-axe','short-sword','dagger','scimitar','broadsword','mace','morning-star','flail','club','long-sword','hand-axe','warhammer','warhammer-2']);
 for(const id of ['wizard-staff-grip','sling']){
   assert.equal(normalizeEquipment({rightHand:id}).rightHand,id,'Removed off-hand weapons remain available in the primary hand');
   await off.select({rightHand:id});assert.equal(left.children.length,0,'Saved/selected excluded off-hand gear cannot attach');
@@ -62,8 +62,8 @@ for(const weapon of offWeapons){
     }
   }
 }
-assert.deepEqual(normalizeOffHandEquipment({rightHand:'medieval-sword'}).rotation,[163,-180,0],'Keep the user-approved sword');
-const legacyMount={rightHand:'dagger',sizePercent:100,position:[.005,.065,-.005],rotation:[163,-180,0]};
+assert.deepEqual(normalizeOffHandEquipment({rightHand:'medieval-sword'}).rotation,[73,0,-90],'New sword uses normalized asset axis');
+const legacyMount={rightHand:'dagger',presetRevision:studioWeapon('dagger').presetRevision,sizePercent:100,position:[.005,.065,-.005],rotation:[163,-180,0]};
 assert.deepEqual(normalizeOffHandEquipment(legacyMount).rotation,legacyMount.rotation,'Do not silently rewrite saved/captured mounts');
 console.log(`PASS off-hand alignment: ${offWeapons.length} weapons, ${handReference.clips.length} uploaded clips, 70 sampled poses and six facings; calibrated axes and palm pivots`);
 primary.dispose();off.dispose();

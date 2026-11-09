@@ -9,7 +9,7 @@ for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
   const context={syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
-    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,architecturalWalls:[],
+    ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,BATTLEFIELD_LOGICAL_HEIGHT:100,architecturalWalls:[],
     prepareCombatProjectedShadows:record('shadow receiver'),queueFlyingArrowGpuShadow:record('flying arrow shadow'),queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
     drawFighter:()=>calls.push(sun.drawingGround?'player shadow':'player'),drawStudioSpriteMob:()=>calls.push(sun.drawingGround?'orc shadow':'orc')};

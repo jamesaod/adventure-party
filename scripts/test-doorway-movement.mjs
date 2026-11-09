@@ -29,7 +29,7 @@ assert.equal(doorwayCrossings(open.terrain,front,open.stand,()=>true).length,0,'
 
 const player={id:'player',alive:true,...front,turnMoves:0,halfMove:5,move:10,fullMove:false};
 const calls=[],logs=[],noop=()=>{};
-const env={game:{active:'player',over:false},activePlayerControlledUnit:()=>player,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,isCombatActionPauseActive:()=>false,
+const env={game:{active:'player',over:false},activePlayerControlledUnit:()=>player,sweepInProgress:false,mobGuardReactionInProgress:false,freeStrikeInProgress:false,isCombatActionPauseActive:()=>false,presentWalkTestStep:async()=>true,
  isWall:()=>false,architecturalWallBlocksStep:()=>false,enemyAtHex:()=>null,occupiedByAnyUnit:()=>false,unitTransitionBlocked:()=>false,
  log:m=>logs.push(m),performLeavingHexFreeAttacks:async()=>{calls.push('leave');return true;},updateFacingForStep:noop,setUnitActionBanner:noop,maybeRecenterCamera:noop,playMoveSound:noop,updateUi:noop,draw:noop,
  resolvePersistentAreaMovementStep:async()=>{calls.push('area');return {haltMovement:false};},triggerMobGuardsAgainst:async()=>calls.push('guard'),endTurn:noop};

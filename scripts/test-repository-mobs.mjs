@@ -18,7 +18,8 @@ console.log('PASS repository Orc template probabilities, stats, equipment, pinne
 const THREE=await import('../assets/vendor/three/three.module.min.js');
 const {studioWeapon}=await import('../js/studio-equipment.mjs');
 const catalog=read('../data/studio-models.json');
-const sword=studioWeapon('medieval-sword'),axe=studioWeapon('battle-axe');
+// This regression protects the legacy axe correction relative to its original sword axis.
+const sword={primaryAxis:[-1,0,0]},axe=studioWeapon('battle-axe');
 const profiles=catalog.weaponAttachmentProfiles;
 const swordGrip=profiles['uniformed-orc-one-handed-v1'],axeGrip=profiles['uniformed-orc-battle-axe-v1'];
 const q=r=>new THREE.Quaternion().setFromEuler(new THREE.Euler(...r.map(THREE.MathUtils.degToRad),'XYZ'));

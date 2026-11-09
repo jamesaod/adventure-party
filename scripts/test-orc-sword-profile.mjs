@@ -20,15 +20,15 @@ for(const entry of catalog.models.filter(entry=>/carl/i.test(entry.id))) {
   assert.equal(entry.weaponAttachmentProfileId,undefined,
     'Carl retains the independently approved global sword grip');
 }
-assert.deepEqual(studioWeapon('medieval-sword').rotation,[0,-90,0],
-  'Shared sword preset unchanged; Orc adjustment is opt-in only');
-assert.equal(STUDIO_WEAPONS.length,20,'Existing weapons plus the three Rev 144 imports use the shared attachment path');
+assert.deepEqual(studioWeapon('medieval-sword').rotation,[-90,0,0],
+  'New pack sword follows its normalized axis');
+assert.equal(STUDIO_WEAPONS.length,32,'Existing weapons plus the three Rev 144 imports use the shared attachment path');
 
 const hand=new THREE.Bone(); hand.name='mixamorig:RightHand';
 const root=new THREE.Group();root.add(hand);
 const sword=new THREE.Group();
 const settings=normalizeEquipment({rightHand:preset.weaponId,
-  position:preset.position,rotation:preset.rotation});
+  presetRevision:studioWeapon(preset.weaponId).presetRevision,position:preset.position,rotation:preset.rotation});
 const attachment=createWeaponAttachment(THREE,hand,sword,settings);
 root.updateWorldMatrix(true,true);
 const gripPoint=new THREE.Vector3(...studioWeapon('medieval-sword').grip);

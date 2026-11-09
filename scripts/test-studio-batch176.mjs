@@ -51,8 +51,8 @@ for(const [i,manager] of managers.entries()){
  await manager.setModel(rig,JSON.parse(JSON.stringify(settings)));
  assert.deepEqual(manager.snapshot().settings,settings,'Saved grips survive reload');
 }
-assert.equal(materials[0].metalness,.15);assert.equal(materials[4].metalness,.15);
-assert.ok(materials[0].color.r>new THREE.Color(0x808080).r);
+assert.equal(materials[0].metalness,1);assert.equal(materials[4].metalness,.15);
+assert.equal(materials[0].color.r,new THREE.Color(0x808080).r,'New weapon materials are preserved without legacy brightening');
 managers.forEach(m=>m.dispose());
 const memory=new Map(),store=createAuthoringStore({getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)},'/test/');
 assert.equal(store.library('humanoid-medium').profiles.bow.ready,null);

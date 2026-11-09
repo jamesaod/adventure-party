@@ -3,6 +3,7 @@ import {appearanceCacheKey} from './mob-appearance.mjs?v=R238C204';
 import {directUnitFrame,setDirectUnit,restoreDirectMaterials} from './combat-direct-units.mjs';
 import {getModelShadow,setModelShadow} from './combat-model-shadow.mjs';
 import {readPreparedAsset,requestPreparedAsset} from './combat-prepared-store.mjs';
+import {expandPreparedChunks} from './combat-prepared-chunks.mjs';
 
 export const PREPARED_VERSION=1;
 export function preparedAssetKey(recipe){return `direct-v${PREPARED_VERSION}-${appearanceCacheKey(recipe)}`;}
@@ -57,6 +58,15 @@ export async function loadPreparedCombatUnit(recipe,{onProgress}={}){
     try{pack=await readPreparedAsset(key);}catch(error){console.warn('Prepared model cache unavailable; using asset files.',error);}
   }
   if(pack?.cameraFrameVersion!==1 || (pack && !pack.equipmentLodVersion && pack.scene?.geometries?.some(g=>[54706,27364].includes((g.data?.index?.array?.length||0)/3))))pack=null;
+  if(!pack){const response=await fetch(new URL(`../assets/prepared-combat/${key}.json.gz`,import.meta.url));
+    if(response.ok){pack=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
+      await expandPreparedChunks(pack,async hash=>{
+        const chunk=await fetch(new URL(`../assets/prepared-combat/chunks/${hash}.json.gz`,import.meta.url));
+        if(!chunk.ok)throw Error(`Prepared geometry chunk load failed (${chunk.status}).`);
+        return new Response(chunk.body.pipeThrough(new DecompressionStream('gzip'))).json();
+      });
+    }else if(response.status!==404)throw Error(`Prepared model load failed (${response.status}).`);
+  }
   if(!pack){const response=await fetch(new URL(`../assets/combat-units/${key}.json.gz`,import.meta.url));
     if(response.ok){const stream=response.body.pipeThrough(new DecompressionStream('gzip'));pack=await new Response(stream).json();}
     else if(response.status!==404)throw Error(`Prepared model load failed (${response.status}).`);}

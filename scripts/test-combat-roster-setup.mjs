@@ -13,8 +13,8 @@ assert.ok(game.includes('const count=document.createElement("input")'));
 assert.ok(game.includes('const faction=document.createElement("select")'));
 assert.ok(game.includes('function deployConfiguredCombatMobs('));
 assert.ok(game.includes('makeStudioTestMob(group.type,index'));
-assert.ok(game.includes('mob.controller=friendly?"player":"mob"'));
-assert.ok(game.includes('occupiedHexesAt(mob,pos.x,pos.y'),'MOB footprint collision handling');
+assert.ok(game.includes("mob.controller=friendly?'player':'mob'"));
+assert.ok(game.includes('occupiedHexesAt(mob,p.x,p.y'),'MOB footprint collision handling');
 assert.ok(game.includes('selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition)'),
  'Studio sprite-test handoff remains supported');
 assert.ok(game.includes('const allies=configured.allies'));

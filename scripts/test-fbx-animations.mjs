@@ -155,8 +155,9 @@ Connections:  {
   {
     const THREE = await import(pathToFileURL(path.join(three, 'three.core.min.js')));
     const modelCatalog = JSON.parse(await fs.readFile(new URL('../data/studio-models.json', import.meta.url), 'utf8'));
-    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2']);
-    for(const modelId of modelCatalog.studioModelIds){
+    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2','male-orc-blue']);
+    // Independent Blender pose references exist for these six original rigs. Blue Orc is covered by its separate import/runtime tests.
+    for(const modelId of modelCatalog.studioModelIds.filter(id=>id!=='male-orc-blue')){
     const modelEntry = modelCatalog.models.find(model => model.id === modelId);
     if(modelId==='dungeon-crawler-carl-v3')assert.equal(modelEntry.label, 'Dungeon Crawler Carl Ver 3');
     assert.equal(modelEntry.animationLibrary, 'uploaded-fbx');
@@ -194,7 +195,7 @@ Connections:  {
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(accessor(attributes.WEIGHTS_0),4));
     const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshBasicMaterial());
     nodes[meshIndex].add(mesh); mesh.bind(skeleton,new THREE.Matrix4()); // Match GLTFLoader, including scaled Armature parents.
-    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${({'dungeon-crawler-carl-v3':'carl','blond-scale-mail-woman':'blond-scale-mail','male-orc':'male-orc','orc-leader-male-uniformed':'orc-leader','orc-female-shaman':'orc-female-shaman','orc-female-shaman-v2':'orc-female-shaman-v2'})[modelId]}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
+    const reference=JSON.parse(await fs.readFile(new URL(`./fixtures/${({'dungeon-crawler-carl-v3':'carl','blond-scale-mail-woman':'blond-scale-mail','male-orc':'male-orc','male-orc-blue':'male-orc','orc-leader-male-uniformed':'orc-leader','orc-female-shaman':'orc-female-shaman','orc-female-shaman-v2':'orc-female-shaman-v2'})[modelId]}-uploaded-animation-reference.json`,import.meta.url),'utf8'));
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),reference.targetSha256);
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
