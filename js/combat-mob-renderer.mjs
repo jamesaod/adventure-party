@@ -1,3 +1,6 @@
+import {loadCombatModel} from './combat-model-source.mjs';
+import {plantStandingFeet} from './standing-foot-contact.mjs';
+import {captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs';
 import {createBandedLighting} from './banded-lighting.mjs?v=R238C205';
 import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs?v=R238C202';
 import {captureModelShadow,setModelShadow,prepareModelShadow} from './combat-model-shadow.mjs';
@@ -7,7 +10,6 @@ import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R23
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
 import { prepareStudioAnimations } from './studio-animations.mjs?v=R238C82';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { HEX_FACINGS, CAMERA_ELEVATION, quantizeRgba } from './studio-core.mjs?v=R238C97';
 import { preserveThinSpriteDetails } from './studio-thin-detail.mjs?v=R238C119';
 import { spriteOutlinePixels } from './sprite-outline.mjs?v=R238C120';
@@ -35,7 +37,7 @@ const FACINGS=['E','NE','NW','W','SW','SE'];
 const LEGACY_POSES=['ready','attack','prone'];
 const WINDUP_POSES = SPRITE_POSES;
 
-const loadGltf=url=>new GLTFLoader().loadAsync(new URL(url,import.meta.url).href);
+const loadGltf=url=>loadCombatModel(new URL(url,import.meta.url).href);
 const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
 const vec3=(value,fallback)=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite)?value:fallback;
 
@@ -57,7 +59,7 @@ function loadImage(src){
     image.src=src;
   });
 }
-function normalizedFrame(recipe){
+export function normalizedFrame(recipe){
   const frame=recipe.renderSettings?.frame||{};
   return {
     width:Number.isInteger(frame.width)&&frame.width>0?frame.width:DEFAULT_FRAME.width,
@@ -92,7 +94,7 @@ function configureLights(scene,recipe){
   key.target.position.set(0,0,0);
   scene.add(key,key.target);
 }
-function buildSceneGraph(model,recipe){
+export function buildSceneGraph(model,recipe){
   const turntable=new THREE.Group();
   const calibration=new THREE.Group();
   const placement=new THREE.Group();
@@ -136,7 +138,7 @@ function buildSceneGraph(model,recipe){
   }
   return turntable;
 }
-function configureCamera(recipe,frame){
+export function configureCamera(recipe,frame){
   const transform=recipe.renderSettings?.transform;
   const captured=!!transform?.placement;
   const modelScale=finite(recipe.renderSettings?.modelScalePercent,100)/100;
@@ -314,52 +316,7 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
   });
   target.texture.colorSpace=THREE.SRGBColorSpace;
 
-  let attachment=null,shieldAttachment=null,offHandAttachment=null;
-  await progress('Fitting weapons and shield','The sprites and shadows must show the equipment this unit is currently using.');
-  if(recipe.equipment){
-    const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
-    const preset=studioWeapon(id);
-    const hand=findWeaponHand(model,preset);
-    if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
-    const weaponUrl=weaponAssetUrl({file:recipe.equipment.asset,
-      assetSha256:recipe.equipment.asset===preset.file ? preset.assetSha256 : null},new URL('../',import.meta.url));
-    const weaponGltf=await loadGltf(weaponUrl.href);
-    const mount=resolveCombatWeaponMount(recipe.equipment,recipe.renderSettings,preset);
-    attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
-      rightHand:id,
-      presetRevision:preset.presetRevision||0,
-      sizePercent:mount.sizePercent,
-      position:mount.position,
-      rotation:mount.rotation,shaftRollDegrees:mount.shaftRollDegrees
-    });
-  }
-  const savedOffHand=normalizeOffHandEquipment(recipe.renderSettings?.offHandEquipment||{});
-  const primaryId=recipe.equipment?.studioId||recipe.equipment?.appearanceId||'none';
-  const samePrimary=(recipe.renderSettings?.equipment?.rightHand||'none')===primaryId;
-  if(savedOffHand.rightHand!=='none'&&samePrimary&&!recipe.shield&&studioWeapon(primaryId)?.handsRequired!==2){
-    const preset=studioWeapon(savedOffHand.rightHand),hand=findLeftHand(model);
-    if(!hand)throw new Error('The off-hand weapon needs a left-hand bone.');
-    const loaded=await loadGltf(weaponAssetUrl(preset,new URL('../',import.meta.url)).href);
-    offHandAttachment=createWeaponAttachment(THREE,hand,loaded.scene,savedOffHand,{attachmentHand:'left'});
-  }
-  if(recipe.shield){
-    const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
-    const leftHand=findLeftHand(model);
-    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to this humanoid.');
-    const shieldGltf=await loadGltf('../'+recipe.shield.asset);
-    const savedShield=studioShield(recipe.renderSettings?.shield?.leftHandShield)?.id===preset.id
-      ? recipe.renderSettings.shield : null;
-    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldGltf.scene,{
-      leftHandShield:preset.id,
-      presetRevision:preset.presetRevision||0,
-      sizePercent:finite(savedShield?.sizePercent,recipe.shield.mount?.sizePercent??100),
-      position:savedShield?.position??recipe.shield.mount?.position??preset.position,
-      rotation:savedShield?.rotation??recipe.shield.mount?.rotationDegrees??preset.rotation,
-      distanceInches:finite(savedShield?.distanceInches,0),
-      forearmSlideInches:finite(savedShield?.forearmSlideInches,0),
-      forearmRollDegrees:finite(savedShield?.forearmRollDegrees,0)
-    });
-  }
+  const {attachment,shieldAttachment,offHandAttachment}=await mountCombatEquipment(model,recipe);
 
   const mixer=new THREE.AnimationMixer(model);
   let profile=recipe.poseProfile||poseProfileForHumanoid(recipe.animation?.semanticId||'one-handed-swing');
@@ -374,6 +331,7 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
   const bandedLighting=createBandedLighting();
   try{
     for(const capture of poseNames){
+      attachment?.setDrawn?.(capture==='windup');
       const pose=profile?.poses?.[capture];
       if(!pose) continue; // Absent pose is represented by fallback art in the combat renderer.
       // Prefer the captured clip from the matching baked model, but a stale
@@ -390,10 +348,14 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
       action.paused=true;
       action.time=pose.rest?0:Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
+      const restoreStandingPose=capture==='ready'?plantStandingFeet(model):()=>{};
       poses[capture]={clip:pose.rest?'T-pose':clip.name,time:action.time,frames:{}};
       const poseLabel=({ready:'standing',attack:'attack',prone:'fallen',windup:'attack preparation',cast:'spellcasting'})[capture]||capture;
       await progress(`Preparing ${poseLabel} shadow`,'Simplifying the actual posed model toward 500 triangles to keep combat shadows efficient.');
       const preparedShadow=prepareModelShadow(turntable,{targetTriangles:500});
+      const directUnit=captureDirectUnit(turntable,camera);
+      // Captures below still use the corrected rig. Restore only after all
+      // facings, before the next animation is sampled.
       shadowTimings.push({pose:capture,...preparedShadow.stats});
       for(const facing of HEX_FACINGS){
         await progress(`Rendering ${poseLabel} — facing ${facing.id}`,'Creating the matching sprite and shadow geometry so the unit looks correct when the map rotates.');
@@ -410,12 +372,15 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
           const metadata=globalThis.adventurePartyFlamingBlades||(globalThis.adventurePartyFlamingBlades=new WeakMap());
           if(blade){metadata.set(images[file],blade);metadata.set(runtimeImages[runtimeFile],blade);}
         }
+        setDirectUnit(images[file],directUnit,facing.yawRadians);
+        setDirectUnit(runtimeImages[runtimeFile],directUnit,facing.yawRadians);
         setModelShadow(images[file],rendered.modelShadow);
         setModelShadow(runtimeImages[runtimeFile],rendered.modelShadow);
         sourceUrls[file]=src;
         poses[capture].frames[facing.id]=file;
         sourceUrls[runtimeFile]=runtimeSrc;
       }
+      restoreStandingPose();
     }
   }finally{
     attachment?.detach();
@@ -482,4 +447,54 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
     runtimeImages,
     sourceUrls
   };
+}
+
+export async function mountCombatEquipment(model,recipe){
+  let attachment=null,shieldAttachment=null,offHandAttachment=null;
+  if(recipe.equipment){
+    const id=recipe.equipment.studioId||recipe.equipment.appearanceId;
+    const preset=studioWeapon(id);
+    const hand=findWeaponHand(model,preset);
+    if(!preset||!hand) throw new Error('The equipped weapon cannot be attached to this humanoid.');
+    const weaponUrl=weaponAssetUrl({file:preset.presetRevision===100?preset.file:recipe.equipment.asset,
+      assetSha256:preset.presetRevision===100||recipe.equipment.asset===preset.file ? preset.assetSha256 : null},new URL('../',import.meta.url));
+    const weaponGltf=await loadGltf(weaponUrl.href);
+    const mount=resolveCombatWeaponMount(recipe.equipment,recipe.renderSettings,preset);
+    attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
+      rightHand:id,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:mount.sizePercent,
+      position:mount.position,
+      rotation:mount.rotation,shaftRollDegrees:mount.shaftRollDegrees
+    });
+  }
+  const savedOffHand=normalizeOffHandEquipment(recipe.renderSettings?.offHandEquipment||{});
+  const primaryId=recipe.equipment?.studioId||recipe.equipment?.appearanceId||'none';
+  const samePrimary=(recipe.renderSettings?.equipment?.rightHand||'none')===primaryId;
+  if(savedOffHand.rightHand!=='none'&&samePrimary&&!recipe.shield&&studioWeapon(primaryId)?.handsRequired!==2){
+    const preset=studioWeapon(savedOffHand.rightHand),hand=findLeftHand(model);
+    if(!hand)throw new Error('The off-hand weapon needs a left-hand bone.');
+    const loaded=await loadGltf(weaponAssetUrl(preset,new URL('../',import.meta.url)).href);
+    offHandAttachment=createWeaponAttachment(THREE,hand,loaded.scene,savedOffHand,{attachmentHand:'left'});
+  }
+  if(recipe.shield){
+    const preset=studioShield(recipe.shield.studioId||recipe.shield.appearanceId);
+    const leftHand=findLeftHand(model);
+    if(!preset||!leftHand) throw new Error('The equipped shield cannot be attached to this humanoid.');
+    const shieldGltf=await loadGltf('../'+recipe.shield.asset);
+    const savedShield=studioShield(recipe.renderSettings?.shield?.leftHandShield)?.id===preset.id
+      ? recipe.renderSettings.shield : null;
+    shieldAttachment=createShieldAttachment(THREE,leftHand,shieldGltf.scene,{
+      leftHandShield:preset.id,
+      presetRevision:preset.presetRevision||0,
+      sizePercent:finite(savedShield?.sizePercent,recipe.shield.mount?.sizePercent??100),
+      position:savedShield?.position??recipe.shield.mount?.position??preset.position,
+      rotation:savedShield?.rotation??recipe.shield.mount?.rotationDegrees??preset.rotation,
+      distanceInches:finite(savedShield?.distanceInches,0),
+      forearmSlideInches:finite(savedShield?.forearmSlideInches,0),
+      forearmRollDegrees:finite(savedShield?.forearmRollDegrees,0)
+    });
+  }
+
+return {attachment,shieldAttachment,offHandAttachment};
 }

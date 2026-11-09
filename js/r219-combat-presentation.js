@@ -172,6 +172,7 @@ function r219AutomatedStepDelay(mode,baseDelay){
 }
 
 AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presentation.js:174:animateEntitySteps',async function(entity,steps,stepProvider,delay=145){
+  try{
   const senseContext=createHiddenMobMovementSenseContext();
 
   for(let i=0;i<steps;i++){
@@ -297,6 +298,12 @@ AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presenta
       );
     }
 
+    // This service overrides the base movement owner; share its live walk
+    // presentation before committing the integer gameplay coordinates.
+    if(mode==="visible" && !await presentWalkTestStep(entity,next,true)){
+      return false;
+    }
+
     entity.x=next.x;
     entity.y=next.y;
 
@@ -357,17 +364,15 @@ AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presenta
       }
     }
 
-    if(mode!=="silent"){
-      await sleep(
-        r219AutomatedStepDelay(mode,delay)
-      );
-    }
+    // Live movement supplies pacing; no pause between NPC hexes.
   }
 
   return true;
+  }finally{delete entity.walkPresentation;delete entity.walkStepClock;}
 });
 
 AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-presentation.js:370:animateMobAlongPath',async function(mob,path,maxSteps){
+  try{
   const steps=
     Math.min(maxSteps,Math.max(0,path.length-1));
 
@@ -406,6 +411,10 @@ AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-present
 
     if(mode!=="silent"){
       setUnitActionBanner(mob,"Moving");
+    }
+
+    if(mode==="visible" && !await presentWalkTestStep(mob,path[i],true)){
+      return false;
     }
 
     mob.x=path[i].x;
@@ -460,14 +469,11 @@ AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-present
       return false;
     }
 
-    if(mode!=="silent"){
-      await sleep(
-        r219AutomatedStepDelay(mode,105)
-      );
-    }
+    // Live movement supplies pacing; no pause between NPC hexes.
   }
 
   return true;
+  }finally{delete mob.walkPresentation;delete mob.walkStepClock;}
 });
 
 

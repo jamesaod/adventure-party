@@ -215,5 +215,5 @@ export function createStudioShield({THREE,loadAsset,disposeObject,onChange=()=>{
   }
   const worldPosition=()=>worldGripPosition(THREE,findLeftHand(model),settings.position);
   const withWorldPosition=(axis,value)=>({...normalizeShield(settings),position:setWorldGripAxis(THREE,findLeftHand(model),settings.position,axis,value)});
-  return {snapshot,select,setModel,dispose,worldPosition,withWorldPosition};
+  return {snapshot,select,setModel,dispose,worldPosition,withWorldPosition,getAttachmentSocket:()=>attachment?.socket||null};
 }

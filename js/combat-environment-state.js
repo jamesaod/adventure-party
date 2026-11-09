@@ -351,10 +351,20 @@ function sampleArrowBloodOffset(){
   const radius=HEX_W*1.5*(1-Math.cbrt(1-Math.random()));
   return {x:Math.cos(direction)*radius,y:Math.sin(direction)*radius};
 }
+function corpseMotionProgress(unit,now=performance.now()){
+  if(!Number.isFinite(unit?.deathPresentationStartedAt))return 0;
+  const t=Math.max(0,Math.min(1,(now-unit.deathPresentationStartedAt)/(unit.deathAnimationDurationMs||1000)));
+  return t*t*(3-2*t);
+}
+function corpsePresentationOffset(unit){
+  const t=corpseMotionProgress(unit),offset=unit.deathWorldOffset||{x:0,y:0};
+  return {x:offset.x*t,y:offset.y*t};
+}
+globalThis.adventurePartyCorpseProgress=corpseMotionProgress;
 function sampleCorpseOffset(unit){
   const center=worldPointForHex(unit.x,unit.y),vertices=architecturalHexCoreVertices(unit.x,unit.y,1);
   for(let attempt=0;attempt<12;attempt++){
-    const side=Math.floor(Math.random()*6),a=vertices[side],b=vertices[(side+1)%6],radius=Math.sqrt(Math.random()),mix=Math.random();
+    const side=Math.floor(Math.random()*6),a=vertices[side],b=vertices[(side+1)%6],radius=.5*Math.sqrt(Math.random()),mix=Math.random();
     const offset={x:radius*((1-mix)*(a.x-center.x)+mix*(b.x-center.x)),y:radius*((1-mix)*(a.y-center.y)+mix*(b.y-center.y))};
     const end={x:center.x+offset.x,y:center.y+offset.y},hit=environmentRayHit(center,end),t=hit?Math.max(0,hit.t-.03):1;
     const point={x:center.x+offset.x*t,y:center.y+offset.y*t};

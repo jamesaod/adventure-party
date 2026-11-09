@@ -1,3 +1,6 @@
+import {orcWeaponFit} from './orc-weapon-fit.mjs';
+import {plantStandingFeet} from './standing-foot-contact.mjs';
+import {createStudioActionClips} from './studio-action-clips.mjs';
 import {createBandedLighting,normalizedShading} from './banded-lighting.mjs?v=R238C205';
 const bandedLighting=createBandedLighting();
 import { unitSun, sunPosition, shadowMask } from './unit-sun-shadow.mjs?v=R238C169';
@@ -478,6 +481,8 @@ function resetPreviewReferenceToReady() {
 // their existing global weapon defaults; a model explicitly opts into a
 // calibrated profile by ID. Changing gear or pressing Reset grip reapplies it.
 function defaultEquipmentSettingsForModel(weaponId) {
+  const fit = orcWeaponFit(state.libraryModelId, studioWeapon(weaponId));
+  if (fit) return normalizeEquipment(fit);
   const entry = state.libraryModels.find(model => model.id === state.libraryModelId);
   const profile = entry?.weaponAttachmentProfiles?.find(profile => profile.weaponIds.includes(weaponId))
     || entry?.weaponAttachmentProfile;
@@ -1966,6 +1971,9 @@ function tick(timestamp) {
   }
   const moving = orbit.update();
   resizeRenderer();
+  const restoreStanding=state.model&&!state.playing&&(state.mainDirty||moving||state.previewsDirty)&&/idle|ready|rest/i.test(state.action?.getClip()?.name||'')
+    ?plantStandingFeet(state.model):()=>{};
+  try{
   if (state.previewsDirty && timestamp - state.lastPreview >= 1000 / LIVE_PREVIEW_FPS) {
     renderPreviews(timestamp);
     state.mainDirty = true;
@@ -1982,6 +1990,7 @@ function tick(timestamp) {
     }
     state.mainDirty = false;
   }
+  }finally{restoreStanding();}
   if ((state.playing && state.action) || moving || state.previewsDirty) requestFrame();
   else state.lastTick = 0;
 }
@@ -3151,6 +3160,19 @@ async function start() {
     if(state.unitPackage&&state.layoutId!==state.unitPackage.mob.footprint){state.layoutId=state.unitPackage.mob.footprint;poseCapture.invalidateCaptures('MOB footprint changed');changeSpriteFormat({refit:true});}
     useCurrentFormatAfterClear();
     selectFacing(state.facing);
+    createStudioActionClips({
+      getContext:()=>{if(!state.modelReady||state.modelLoading)throw Error('Wait for the model to finish loading.');return {modelId:state.libraryModelId,model:state.model,clip:state.action?.getClip()};},
+      preview:(clip,speed)=>{
+        equipment.restoreConstraints();state.mixer.stopAllAction();
+        state.action=state.mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce,1);
+        state.action.clampWhenFinished=true;state.action.timeScale=speed;state.action.play();
+        const previewAction=state.action,previewMixer=state.mixer;
+        const finished=event=>{if(event.action!==previewAction)return;previewMixer.removeEventListener('finished',finished);if(state.action===previewAction){state.playing=false;updateAnimationControls();invalidate();}};
+        previewMixer.addEventListener('finished',finished);
+        state.playing=true;state.lastTick=0;state.mixer.update(0);
+        equipment.applyConstraints();updateAnimationControls();invalidate();
+      }
+    })?.refresh();
     poseLibraryPanel=createStudioPoseLibrary({
       readOnly:query.get('preview')==='1',
       initialLibrary:query.get('preview')==='1'?(linkedLibrary||state.poseLibrary):(state.poseLibrary||linkedLibrary),
@@ -3204,3 +3226,4 @@ async function start() {
 }
 
 start().catch(error => { showError(error); status('Studio could not be initialized'); });
+

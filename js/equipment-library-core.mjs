@@ -30,7 +30,7 @@ export function resolveEquipmentLibrary(document={schema:LIBRARY_SCHEMA,version:
  }
  const catalog=clone(BASE),visiting=new Set(),done=new Set();
  // A plain base sword is distinct from the existing enchanted combat item.
- catalog['long-sword']={...clone(BASE['flaming-sword-5']),id:'long-sword',name:'Long Sword',rules:{...clone(BASE['flaming-sword-5'].rules),magicHitBonus:0,magicDamageBonus:0,bonusDamageExpression:'',bonusDamageType:''}};
+ catalog['long-sword']??={...clone(BASE['flaming-sword-5']),id:'long-sword',name:'Long Sword',rules:{...clone(BASE['flaming-sword-5'].rules),magicHitBonus:0,magicDamageBonus:0,bonusDamageExpression:'',bonusDamageType:''}};
  function resolve(id){
   if(done.has(id))return catalog[id];
   const record=definitions.get(id);

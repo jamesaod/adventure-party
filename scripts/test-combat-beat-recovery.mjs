@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {harness} from './test-combat-result-panel.mjs';
+
+const h=harness(),errors=[];
+h.s.console={error:(...args)=>errors.push(args)};
+h.s.candidateQueueCombatBeat(h.b,{category:'death',text:'Death',show(){throw new Error('Death presentation failed');}});
+h.s.candidateQueueCombatBeat(h.c,{category:'death',text:'Next death',show(){}});
+h.advance(0);
+assert.equal(errors.length,1,'Report the presentation failure');
+h.advance(1000);
+assert.equal(h.history.length,2,'Continue presenting subsequent results');
+h.advance(2000);
+assert.equal(h.s.combatActionPauseRemaining(),0,'Release initiative after a failed presentation');
+const cleared=harness();
+cleared.s.candidateQueueCombatBeat(cleared.b,{category:'death',text:'Exit',show(){cleared.s.window.AdventurePartyCombatBeats.clear();}});
+cleared.advance(0);
+cleared.advance(500);
+cleared.s.candidateQueueCombatBeat(cleared.c,{category:'death',text:'New result',show(){}});
+cleared.advance(500);
+assert(cleared.s.combatActionPauseRemaining()>0);
+cleared.advance(1000);
+assert.equal(cleared.s.combatActionPauseRemaining(),500,'A cancelled callback cannot prematurely release a new result');
+cleared.advance(1500);
+assert.equal(cleared.s.combatActionPauseRemaining(),0);
+console.log('PASS presentation exceptions cannot permanently hold initiative');

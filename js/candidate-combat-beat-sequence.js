@@ -30,6 +30,7 @@ const CANDIDATE_COMBAT_BEAT_PRIORITY=Object.freeze({
 });
 
 let candidateCombatBeatSequence=0;
+let candidateCombatBeatGeneration=0;
 let candidateCombatBeatHoldUntil=0;
 let candidateDamageBeatContext=null;
 const candidateCombatBeatGroups=new Map();
@@ -213,7 +214,18 @@ function candidateStartNextCombatBeat(){
   const beat=candidateCombatBeatReady.shift();
   if(!beat){candidateCombatBeatActive=false;candidateCombatBeatHoldUntil=0;return;}
   candidateCombatBeatHoldUntil=performance.now()+(candidateCombatBeatReady.length+1)*CANDIDATE_COMBAT_BEAT_MS;
-  candidateRunCombatBeat(beat);
+  const generation=candidateCombatBeatGeneration;
+  try{
+    candidateRunCombatBeat(beat);
+  }catch(error){
+    // Results are presentation of already-resolved mechanics. A failed sound,
+    // death effect or render must not leave initiative waiting forever.
+    console.error('Combat result presentation failed',{
+      category:beat.category,unitId:beat.unitId,round:beat.gameRef?.round
+    },error);
+  }
+  // A presentation callback may leave combat or clear the queue itself.
+  if(generation!==candidateCombatBeatGeneration)return;
   // Chain from the actual presentation, so a slow/hidden tab cannot collapse
   // several overdue results into one unreadable frame after a stall.
   const timer=setTimeout(()=>{candidateCombatBeatTimers.delete(timer);candidateStartNextCombatBeat();},CANDIDATE_COMBAT_BEAT_MS);
@@ -524,6 +536,7 @@ window.AdventurePartyCombatBeats={
   remainingMs:
     candidateCombatBeatRemaining,
   clear:()=>{
+      candidateCombatBeatGeneration++;
     for(const timer of candidateCombatBeatTimers){
       clearTimeout(timer);
     }

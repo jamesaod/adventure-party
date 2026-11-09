@@ -28,6 +28,7 @@ async function waitForCombatUnitRenders(units){
     while(pending){
       const result=await pending;
       if(pending!==unit.appearanceRefreshPromise){pending=unit.appearanceRefreshPromise;continue;}
+      if(unit.appearanceLoadError)throw Error(`${unit.name||unit.type}: ${unit.appearanceLoadError}`);
       if(!result && !unit.dynamicAppearanceSpriteSetId)throw Error(`Could not render ${unit.name||'unit'}. Please retry.`);
       break;
     }
@@ -152,37 +153,41 @@ function checkCombatVictory(){
 
 function deployConfiguredCombatMobs(condition,player){
   const allies=[],enemies=[];
-  const occupied=new Set(occupiedHexes(player).map(cell=>key(cell.x,cell.y)));
-  const roster=readCombatMobRoster();
   let index=0;
-  // Full battlefield fallback rather than a small preset encounter radius.
-  const positions=axialDisk({x:0,y:0},17)
-    .filter(pos=>inside(pos.x,pos.y)&&!isWall(pos.x,pos.y)&&hexDistance(pos,player)>=3);
-  for(const group of roster){
-    const friendly=group.faction==="friendly";
-    for(let n=0;n<group.count;n++){
-      const mob=makeStudioTestMob(group.type,index,{x:0,y:0});
-      mob.id=`roster-${group.type}-${index+1}`;
-      mob.faction=friendly?"player":"enemy";
-      mob.controller=friendly?"player":"mob";
-      const preferredRadius=friendly?4:9;
-      const candidates=positions.slice().sort((a,b)=>{
-        const da=Math.abs(hexDistance(a,player)-preferredRadius);
-        const db=Math.abs(hexDistance(b,player)-preferredRadius);
-        return da-db || a.y-b.y || a.x-b.x;
-      });
-      const placement=candidates.find(pos=>occupiedHexesAt(mob,pos.x,pos.y,hexDirectionIndexToward(pos,player))
-        .every(cell=>inside(cell.x,cell.y)&&!isWall(cell.x,cell.y)&&!occupied.has(key(cell.x,cell.y))));
-      if(!placement)throw new Error("Not enough free battlefield hexes for the configured MOB roster.");
-      mob.x=placement.x;mob.y=placement.y;
-      mob.facingHex=hexDirectionIndexToward(placement,player);
-      mob.facing=(player.x-placement.x)+(player.y-placement.y)*.5>=0?"right":"left";
-      occupiedHexes(mob).forEach(cell=>occupied.add(key(cell.x,cell.y)));
-      (friendly?allies:enemies).push(mob);index++;
-    }
+  for(const group of readCombatMobRoster())for(let n=0;n<group.count;n++){
+    const mob=makeStudioTestMob(group.type,index,{x:0,y:0});
+    mob.id='roster-'+group.type+'-'+(++index);
+    const friendly=group.faction==='friendly';
+    mob.faction=friendly?'player':'enemy';mob.controller=friendly?'player':'mob';
+    (friendly?allies:enemies).push(mob);
   }
-  lastMobDeployment={direction:"Custom MOB roster",count:index,condition};
-  return {allies,enemies};
+  const positions=axialDisk({x:0,y:0},17).filter(p=>inside(p.x,p.y)&&!isWall(p.x,p.y));
+  // Two compact formations. Ten hexes is the minimum gap between occupied
+  // opposing cells, including the player's footprint, rather than ring radii.
+  for(const direction of HEX_DIRS){
+    const enemyAnchor={x:player.x+direction.x*10,y:player.y+direction.y*10};
+    const occupied=new Set(occupiedHexes(player).map(c=>key(c.x,c.y)));
+    const friendlyCells=[...occupiedHexes(player)];let valid=true;
+    for(const [units,anchor,friendly] of [[allies,player,true],[enemies,enemyAnchor,false]]){
+      for(const mob of units){
+        const toward=friendly?enemyAnchor:player;
+        const candidates=positions.slice().sort((a,b)=>hexDistance(a,anchor)-hexDistance(b,anchor)||a.y-b.y||a.x-b.x);
+        const pos=candidates.find(p=>{
+          const cells=occupiedHexesAt(mob,p.x,p.y,hexDirectionIndexToward(p,toward));
+          return cells.every(c=>inside(c.x,c.y)&&!isWall(c.x,c.y)&&!occupied.has(key(c.x,c.y))&&
+            (friendly?hexDistance(c,enemyAnchor)>=10:friendlyCells.every(f=>hexDistance(c,f)>=10)));
+        });
+        if(!pos){valid=false;break;}
+        mob.x=pos.x;mob.y=pos.y;mob.facingHex=hexDirectionIndexToward(pos,toward);
+        mob.facing=(toward.x-pos.x)+(toward.y-pos.y)*.5>=0?'right':'left';
+        const cells=occupiedHexes(mob);cells.forEach(c=>occupied.add(key(c.x,c.y)));
+        if(friendly)friendlyCells.push(...cells);
+      }
+      if(!valid)break;
+    }
+    if(valid){lastMobDeployment={direction:'Opposing formations',anchor:enemyAnchor,anchorDistance:10,count:index,condition};return {allies,enemies};}
+  }
+  throw new Error('Not enough free battlefield space for formations separated by ten hexes.');
 }
 
 function newGame(condition=selectedCombatCondition,scenario={}){

@@ -251,7 +251,7 @@ function draw(){
     directly adjacent north wall cannot hide the skull-and-crossbones marker.
     drawDeathFx() still performs its own wall-test visibility check.
   */
-  drawDeathFx();
+  // Death skull overlay removed; retain animated corpses.
   drawCombatMessageBox();
 
   /*
@@ -263,6 +263,13 @@ function draw(){
   drawActivityDetectedFx();
   drawAimFriendlyFireWarning();
   if(currentScreen==="spell-preview"&&typeof spellPreviewDrawDevelopmentLabels==="function")spellPreviewDrawDevelopmentLabels();
+  ctx.restore();
+  // Screen-space diagnostics: actual battlefield frames, not pose sample rate.
+  ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
+  const measured=typeof combatFrames!=='undefined'?combatFrames?.diagnostics().recentFps:0;
+  ctx.font='12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(7,BATTLEFIELD_LOGICAL_HEIGHT-29,205,23);
+  ctx.fillStyle='#d5f5dd';ctx.fillText('FPS '+(measured?measured.toFixed(1):'—')+' | Models 30 FPS',12,BATTLEFIELD_LOGICAL_HEIGHT-10);
   ctx.restore();
   if(combatGpu)combatGpu.end();
 }

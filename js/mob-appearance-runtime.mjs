@@ -19,7 +19,7 @@ export class MobAppearanceRuntime {
 
     const cached = this.cache.get(key);
     if (cached) {
-      context.onProgress?.({step:'Reusing prepared appearance',reason:'The model, equipment and poses match a cached sprite and shadow set; no new rendering is needed.'});
+      context.onProgress?.({step:'Reusing prepared appearance',reason:'The model, equipment and poses match a cached 3D model and shadow set; no asset building is needed.'});
       return { key, recipe, spriteSet: cached, cached: true, inFlight: false,
         applied: this.revisions.get(id) === revision };
     }
@@ -30,7 +30,7 @@ export class MobAppearanceRuntime {
       pending = Promise.resolve().then(() => this.generateSpriteSet(recipe,{onProgress:context.onProgress}));
       this.inFlight.set(key, pending);
     }else{
-      context.onProgress?.({step:'Waiting for a matching appearance',reason:'Another unit needs the same model and equipment. They share one rendering job.'});
+      context.onProgress?.({step:'Waiting for a matching appearance',reason:'Another unit needs the same model and equipment. They share one asset load.'});
     }
 
     let spriteSet;

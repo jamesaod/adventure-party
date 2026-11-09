@@ -1,6 +1,7 @@
+import {catalogWeaponPreset} from './low-poly-weapons.mjs';
 import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
-import { itemCatalogEntry } from './item-catalog.mjs?v=R238C204';
+import { ITEM_CATALOG, itemCatalogEntry } from './item-catalog.mjs?v=R238C204';
 import {
   findHumanoidBone, humanoidFingerChains, normalizeHumanoidBoneName, analyzeHumanoidRig
 } from './humanoid-rig.mjs?v=R238C101';
@@ -15,7 +16,7 @@ const BOW_ITEM=itemCatalogEntry('recurve-bow');
 const SPEAR_ITEM=itemCatalogEntry('spear');
 const TWO_HANDED_SWORD_ITEM=itemCatalogEntry('two-handed-sword');
 if(!TWO_HANDED_SWORD_ITEM?.appearance)throw new Error('Two-Handed Sword catalog appearance is required.');
-export const STUDIO_WEAPONS = Object.freeze([
+const LEGACY_STUDIO_WEAPONS = Object.freeze([
   Object.freeze({
     id: 'medieval-sword', label: 'Long Sword', visualClass: 'sword', poseProfileId: 'one-handed-swing',
     file: 'assets/models/weapons/swords/medieval-sword.glb',
@@ -106,6 +107,9 @@ export const STUDIO_WEAPONS = Object.freeze([
   })
 ]);
 
+const upgraded=Object.values(ITEM_CATALOG).filter(i=>i.slot==='weapon'&&i.appearance?.presetRevision===100);
+const upgradedPresets=new Map(upgraded.map(i=>[i.appearance.studioId,Object.freeze(catalogWeaponPreset(i))]));
+export const STUDIO_WEAPONS=Object.freeze([...LEGACY_STUDIO_WEAPONS.map(w=>upgradedPresets.get(w.id)||w),...Array.from(upgradedPresets.values()).filter(w=>!LEGACY_STUDIO_WEAPONS.some(old=>old.id===w.id))]);
 export const EQUIPMENT_LIMITS = Object.freeze({
   sizePercent: Object.freeze({ min: 25, max: 200, step: 5 }),
   position: Object.freeze({ min: -1, max: 1, step: 0.005 }),
@@ -116,7 +120,8 @@ const bounded = (value, fallback, range) => Number.isFinite(value) ? Math.min(ra
 export function studioWeapon(id) { return STUDIO_WEAPONS.find(weapon => weapon.id === id) || null; }
 // Content-versioned requests refresh corrected assets without migrating saved grips.
 export function weaponAssetUrl(weapon, baseUrl) {
-  const url = new URL(weapon.file, baseUrl);
+  const optimized = {'assets/models/weapons/battle-axes/battle-axe.glb':'assets/models/weapons/battle-axes/battle-axe-combat.glb','assets/models/weapons/swords/medieval-sword.glb':'assets/models/weapons/swords/medieval-sword-combat.glb'};
+  const url = new URL(optimized[weapon.file] || weapon.file, baseUrl);
   if (weapon.assetSha256) url.searchParams.set('v', weapon.assetSha256);
   return url;
 }
@@ -519,6 +524,11 @@ export function createWeaponAttachment(THREE, hand, model, settings, options = {
     attachment.secondaryGripOffsetInches = [...normalized.secondaryGripOffsetInches];
     socket.updateWorldMatrix(true, true);
   }
+  attachment.setDrawn = drawn => model.traverse(node => {
+    if(node.name==='BowRest')node.visible=!drawn;
+    if(node.name==='BowDrawn')node.visible=!!drawn;
+  });
+  attachment.setDrawn(false);
   attachment.update = update;
   update(value);
   return attachment;
@@ -548,7 +558,8 @@ export const OFF_HAND_GRIPS = Object.freeze({
   'flail': Object.freeze({rotation:Object.freeze([73,0,-90])}),
   'club': Object.freeze({rotation:Object.freeze([73,0,-90])}),
 
-  'medieval-sword': Object.freeze({rotation:Object.freeze([163,-180,0])}),
+  'medieval-sword': Object.freeze({rotation:Object.freeze([73,0,-90])}),
+  ...Object.fromEntries(['long-sword','hand-axe','warhammer','warhammer-2'].map(id=>[id,Object.freeze({rotation:Object.freeze([73,0,-90])})])),
   'battle-axe': Object.freeze({rotation:Object.freeze([154,6,-51]),position:Object.freeze([-0.005,0.075,-0.005])}),
   'short-sword': Object.freeze({rotation:Object.freeze([-22,0,-90])}),
   'dagger': Object.freeze({rotation:Object.freeze([73,0,-90])})
@@ -558,12 +569,13 @@ export const STUDIO_OFF_HAND_WEAPONS = Object.freeze(STUDIO_WEAPONS.filter(weapo
 export function normalizeOffHandEquipment(value = {}) {
   const source=STUDIO_OFF_HAND_WEAPONS.some(weapon=>weapon.id===value?.rightHand) ? value : {rightHand:'none'};
   const settings=normalizeEquipment(source);
+  const useSaved=!(studioWeapon(settings.rightHand)?.presetRevision>=100 && (source.presetRevision||0)<100);
   const preset=OFF_HAND_GRIPS[settings.rightHand] || OFF_HAND_GRIPS['medieval-sword'];
   return {
     ...settings,
     sizePercent:bounded(source?.sizePercent,100,EQUIPMENT_LIMITS.sizePercent),
-    position:(preset.position || OFF_HAND_POSITION).map((fallback,axis)=>bounded(source?.position?.[axis],fallback,EQUIPMENT_LIMITS.position)),
-    rotation:preset.rotation.map((fallback,axis)=>bounded(source?.rotation?.[axis],fallback,EQUIPMENT_LIMITS.rotation))
+    position:(preset.position || OFF_HAND_POSITION).map((fallback,axis)=>bounded(useSaved?source?.position?.[axis]:undefined,fallback,EQUIPMENT_LIMITS.position)),
+    rotation:preset.rotation.map((fallback,axis)=>bounded(useSaved?source?.rotation?.[axis]:undefined,fallback,EQUIPMENT_LIMITS.rotation))
   };
 }
 
@@ -612,6 +624,10 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   }
   function applyConstraints() {
     if (disposed || offHand) return constraint;
+    if (attachment?.weapon?.handsRequired !== 2 || !attachment.weapon.secondaryGrip) {
+      constraint = { active: false, solved: false, error: null };
+      return constraint;
+    }
     // Save the clean authored animation pose. It is restored before the next
     // mixer evaluation so IK/body/finger corrections never accumulate.
     preConstraintPose = captureBonePose(model);
@@ -622,5 +638,5 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   function dispose() { restoreBonePose(preConstraintPose); preConstraintPose=null; disposed=true; ++request; detach(); model=null; loading=false; }
   const worldPosition=()=>worldGripPosition(THREE,handFor(studioWeapon(settings.rightHand)),settings.position);
   const withWorldPosition=(axis,value)=>({...normalize(settings),position:setWorldGripAxis(THREE,handFor(studioWeapon(settings.rightHand)),settings.position,axis,value)});
-  return { snapshot, select, setModel, restoreConstraints, applyConstraints, dispose, worldPosition, withWorldPosition };
+  return { snapshot, select, setModel, restoreConstraints, applyConstraints, dispose, worldPosition, withWorldPosition, getAttachmentSocket: () => attachment?.socket || null };
 }

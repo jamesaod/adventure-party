@@ -35,6 +35,39 @@ function applyInitiativeEffects(rolls){
   return rolls;
 }
 
+// Initiative handoffs have their own ownership. aiTimer is shared with AI and
+// status presentation, so losing/replacing that timer must not strand a slot.
+function scheduleCombatTurnHandoff(delay){
+  const combat=game,round=combat.round,index=combat.turnIndex;
+  const previous=combat.turnHandoff;
+  if(previous){clearTimeout(previous.timer);clearTimeout(previous.recovery);}
+  const handoff={round,index,timer:null,recovery:null,running:false};
+  combat.turnHandoff=handoff;
+  const current=()=>game===combat&&!combat.over&&combat.turnHandoff===handoff&&
+    combat.round===round&&combat.turnIndex===index&&!combat.active&&!combat.session?.pauseAfterAction;
+  const run=async(recovered=false)=>{
+    if(!current()||handoff.running)return;
+    handoff.running=true;
+    clearTimeout(handoff.timer);clearTimeout(handoff.recovery);
+    if(aiTimer===handoff.timer)aiTimer=null;
+    if(recovered){
+      combat.turnRecovery={round,index,reason:'initiative handoff timer did not complete'};
+      console.warn('Recovered idle combat initiative',combat.turnRecovery);
+    }
+    try{await beginTurn();}
+    catch(error){console.error('Combat initiative handoff failed',{round,index},error);}
+    finally{
+      handoff.running=false;
+      // Only an orphaned, unchanged slot can retry. Never replay an active turn.
+      if(current())handoff.recovery=setTimeout(()=>run(true),2000);
+    }
+  };
+  const wait=Math.max(16,Number.isFinite(delay)?delay:180);
+  handoff.timer=setTimeout(()=>run(false),wait);
+  handoff.recovery=setTimeout(()=>run(true),wait+2000);
+  aiTimer=handoff.timer;
+}
+
 async function beginTurn(){
   if(
     game &&
@@ -57,8 +90,7 @@ async function beginUnitTurn(){
 
   const holdRemaining=combatActionPauseRemaining();
   if(holdRemaining>0){
-    if(aiTimer) clearTimeout(aiTimer);
-    aiTimer=setTimeout(()=>{ aiTimer=null; beginTurn(); },holdRemaining);
+    scheduleCombatTurnHandoff(holdRemaining);
     return;
   }
 
@@ -142,16 +174,12 @@ function endTurn(){
   draw();
 
   if(game.session?.pauseAfterAction){game.session.actionComplete=true;return;}
-  const combat=game;
   const delay=Math.max(
     180,
     combatActionPauseRemaining()
   );
 
-  aiTimer=setTimeout(()=>{
-    aiTimer=null;
-    if(game===combat)beginTurn();
-  },delay);
+  scheduleCombatTurnHandoff(delay);
 }
 
 /* Combat owner: combat-turn-flow.js. Classic-script boundary; shared engine state and

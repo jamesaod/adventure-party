@@ -1,3 +1,30 @@
+// Reversible walk experiment: ?walkTest=1. Rules remain integer-hex based.
+async function presentWalkTestStep(unit,to,keepPose=false){
+  if(new URLSearchParams(location.search).get('walkTest')==='0')return true;
+  const session=game,now=performance.now(),duration=650;
+  const chain=unit.walkStepClock;
+  // Carry scheduler overshoot across adjacent steps instead of restarting at t=0.
+  // A reaction/other real pause starts a fresh segment, never a catch-up jump.
+  const continuing=keepPose && chain && chain.session===session &&
+    chain.x===unit.x && chain.y===unit.y && now-chain.completedAt<80;
+  const started=continuing ? chain.deadline : now;
+  const previous=unit.walkCycleSeconds||0;
+  globalThis.adventurePartyWalkBusy=true;
+  try{
+    while(game===session&&!game.over&&unit.alive&&!unit.fled){
+      const elapsed=Math.min(duration,Math.max(0,performance.now()-started));
+      unit.walkPresentation={from:{x:unit.x,y:unit.y},to:{x:to.x,y:to.y},t:elapsed/duration,seconds:previous+elapsed/1000};
+      // Intermediate centers are rule checkpoints, not extra held render frames.
+      if(keepPose && elapsed>=duration)break;
+      await presentCombatFrame();
+      if(elapsed>=duration)break;
+    }
+    unit.walkCycleSeconds=previous+duration/1000;
+    if(keepPose)unit.walkStepClock={session,x:to.x,y:to.y,deadline:started+duration,completedAt:performance.now()};
+    return game===session&&!game.over&&unit.alive&&!unit.fled;
+  }finally{if(!keepPose){delete unit.walkPresentation;delete unit.walkStepClock;}globalThis.adventurePartyWalkBusy=false;}
+}
+
 /* Combat owner: combat-movement.js. Classic-script boundary; shared engine state and
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
@@ -228,10 +255,32 @@ async function animateAiAlongPath(unit,path,maxSteps){
   return steps;
 }
 
-async function tryPlayerMove(dx,dy){
+// Held keyboard movement uses the same continuous segment clock as AI paths.
+let heldCombatMove=null,keyboardCombatMoveRunning=false;
+async function beginKeyboardCombatMove(code,dx,dy){
+  heldCombatMove={code,dx,dy};
+  if(keyboardCombatMoveRunning)return;
+  const unit=activePlayerControlledUnit(),session=game;
+  if(!unit)return;
+  keyboardCombatMoveRunning=true;
+  try{
+    while(heldCombatMove && game===session && !game.over && game.active===unit.id && unit.alive){
+      const direction=heldCombatMove,x=unit.x,y=unit.y;
+      await tryPlayerMove(direction.dx,direction.dy,{continuous:true});
+      if(unit.x===x && unit.y===y)break;
+    }
+  }finally{
+    heldCombatMove=null;keyboardCombatMoveRunning=false;
+    delete unit.walkPresentation;delete unit.walkStepClock;
+    draw();
+  }
+}
+function releaseKeyboardCombatMove(code){if(!code || heldCombatMove?.code===code)heldCombatMove=null;}
+
+async function tryPlayerMove(dx,dy,{continuous=false}={}){
   const p=activePlayerControlledUnit();
   if(
-    game.over || !p || game.active!==p.id || !p.alive ||
+    game.over || !p || game.active!==p.id || !p.alive || (p.walkPresentation && !continuous) ||
     sweepInProgress || mobGuardReactionInProgress || freeStrikeInProgress ||
     isCombatActionPauseActive()
   ) return;
@@ -288,6 +337,8 @@ async function tryPlayerMove(dx,dy){
   }
   updateFacingForStep(p,dx,dy);
   setUnitActionBanner(p,"Moving");
+  if(!await presentWalkTestStep(p,{x:nx,y:ny},continuous))return;
+  if(!p.alive||game.over)return;
   p.x=nx; p.y=ny; p.turnMoves+=moveCost;
   maybeRecenterCamera(p);
   playMoveSound();
@@ -734,6 +785,7 @@ function fleeStep(unit,threat){
 }
 
 async function animateEntitySteps(entity,steps,stepProvider,delay=145){
+  try{
   const senseContext=createHiddenMobMovementSenseContext();
 
   for(let i=0;i<steps;i++){
@@ -850,6 +902,8 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       );
     }
 
+    if(mode==='visible'&&!await presentWalkTestStep(entity,next,true))return false;
+    if(!entity.alive||game.over)return false;
     entity.x=next.x;
     entity.y=next.y;
 
@@ -902,15 +956,15 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       }
     }
 
-    if(mode!=="silent"){
-      await sleep(delay);
-    }
+    // No extra NPC inter-hex pause.
   }
 
   return true;
+}finally{delete entity.walkPresentation;delete entity.walkStepClock;}
 }
 
 async function animateMobAlongPath(mob,path,maxSteps){
+  try{
   const steps=Math.min(maxSteps,Math.max(0,path.length-1));
   const senseContext=createHiddenMobMovementSenseContext();
 
@@ -942,6 +996,8 @@ async function animateMobAlongPath(mob,path,maxSteps){
       setUnitActionBanner(mob,"Moving");
     }
 
+    if(mode==='visible'&&!await presentWalkTestStep(mob,path[i],true))return false;
+    if(!mob.alive||game.over)return false;
     mob.x=path[i].x;
     mob.y=path[i].y;
 
@@ -984,12 +1040,11 @@ async function animateMobAlongPath(mob,path,maxSteps){
     await triggerMobGuardsAgainst(mob);
     if(game.over || !mob.alive) return false;
 
-    if(mode!=="silent"){
-      await sleep(105);
-    }
+    // No extra NPC inter-hex pause.
   }
 
   return true;
+}finally{delete mob.walkPresentation;delete mob.walkStepClock;}
 }
 
 function rangedRetreatStep(unit,threat){

@@ -2,6 +2,33 @@
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
 
+let directMotionFramePending=false;
+function requestDirectMotionFrame(){
+  if(directMotionFramePending)return;
+  directMotionFramePending=true;
+  const session=game;
+  requestCombatAnimationTick(()=>{directMotionFramePending=false;if(game===session&&currentScreen==='combat')draw();});
+}
+
+function drawDirectCombatUnit(image,entity,center,width,height,anchor,opacity){
+  const direct=globalThis.adventurePartyDirectUnits;
+  if(!direct||!entity||!combatSceneTerrain||!combatGpu)return false;
+  const scale=combatShadowScale(),world=worldPointForHex(entity.x,entity.y);
+  if(!entity.alive&&entity.deathWorldOffset){const offset=corpsePresentationOffset(entity);world.x+=offset.x;world.y+=offset.y;}
+  const position=[world.x/scale[0],0,world.y/scale[2]];
+  const localLights=(prepareCombatProjectedShadows.sources||[]).filter(source=>{
+    if(Math.hypot(source.vector[0]-position[0],source.vector[2]-position[2])>=source.range)return false;
+    if(source.source&&!illuminationSourceReachesHex(source.source,entity.x,entity.y))return false;
+    return !worldLineBlockedByOtherArchitecturalWalls({x:source.vector[0]*scale[0],y:source.vector[2]*scale[2]},world,null);
+  }).map(source=>({position:source.vector.slice(0,3).map((v,i)=>v-position[i]),range:source.range,
+    intensity:source.power*12,color:(source.source?.color||[255,192,110]).map(v=>v/255)}))
+    .sort((a,b)=>b.intensity/(1+b.position.reduce((n,v)=>n+v*v,0))-a.intensity/(1+a.position.reduce((n,v)=>n+v*v,0))).slice(0,4);
+  return direct.draw(combatGpu,image,{x:center.x,y:center.y,width,height,anchor,opacity,
+    entity,requestMotionFrame:requestDirectMotionFrame,walkSeconds:entity.walkPresentation?.seconds,rotation:battlefieldRotation*Math.PI/3,pixelsPerMetre:scale[1],localLights,
+    solar:globalThis.adventurePartySolar?.state?.(),outdoor:!isIndoorWorldPoint(world),
+    ambientPercent:combatRenderAmbientAtHex(entity),saturation:entity.alive?1:.5});
+}
+
 function firTreeLocalLights(tree){
   const terrain=combatSceneTerrain,encounter=combatSceneContext,api=explorationEncounterApi;
   const origin=worldPointForHex(tree.x,tree.y),angle=battlefieldRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle);
@@ -389,6 +416,14 @@ function queueCombatUnitGpuShadow(image,options){
  if(options.modelShadow&&combatGpu.projectedShadows.modelGeometry){
   const scale=combatShadowScale(),capture=options.modelShadow;
   const {x,y,width,height,anchorX=.5,anchorY=1,flip=false}=options;
+  if(capture.gpu&&combatGpu.projectedShadows.queueModel){
+   const convert=(u,v,rise)=>{const point=combatShadowWorld({x:x+(u-anchorX)*width*(flip?-1:1),y:y+(v-anchorY)*height},0);point[1]=rise*height/scale[1];return point;};
+   const o=convert(0,0,0),a=convert(1,0,0),b=convert(0,1,0),c=convert(0,0,1);
+   const transform=[...a.map((v,i)=>v-o[i]),0,...b.map((v,i)=>v-o[i]),0,...c.map((v,i)=>v-o[i]),0,...o,1];
+   const world=worldPointForHex(unit.x,unit.y),origin=[world.x/scale[0],0,world.y/scale[2]];
+   for(const light of combatShadowLights(origin,unit.id))combatGpu.projectedShadows.queueModel({capture,transform,light,scale,opacity:light.opacity});
+   return true;
+  }
   const points=[],uv=[];
   for(let i=0;i<capture.positions.length;i+=3){
    const u=capture.positions[i],v=capture.positions[i+1],rise=capture.positions[i+2]*height;

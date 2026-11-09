@@ -7,11 +7,12 @@ const triple = value => Array.isArray(value) && value.length === 3 &&
   value.every(Number.isFinite);
 export function resolveCombatWeaponMount(equipped, renderSettings = {}, preset = {}) {
   const id = equipped?.studioId || equipped?.appearanceId;
+  if(preset.presetRevision===100 && equipped?.asset && equipped.asset!==preset.file) return {position:[...preset.position],rotation:[...preset.rotation],shaftRollDegrees:0,sizePercent:preset.defaultSizePercent||100};
   const saved = renderSettings?.equipment;
   const profile = renderSettings?.weaponAttachmentProfile;
-  const source = saved?.rightHand === id && triple(saved.position) && triple(saved.rotation)
+  const source = (preset.presetRevision!==100 || saved?.presetRevision===100) && saved?.rightHand === id && triple(saved.position) && triple(saved.rotation)
     ? saved
-    : profile?.weaponId === id && triple(profile.position) && triple(profile.rotation)
+    : (preset.presetRevision!==100 || profile?.presetRevision===100) && profile?.weaponId === id && triple(profile.position) && triple(profile.rotation)
       ? profile : null;
   return {
     position: [...(source?.position || (triple(equipped?.grip?.position) ? equipped.grip.position : preset.position))],

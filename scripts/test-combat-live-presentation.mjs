@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {setDirectUnit,sampleDirectPose} from '../js/combat-direct-units.mjs';
+const group=new THREE.Group(),mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshBasicMaterial());group.add(mesh);
+const camera=new THREE.OrthographicCamera(-4,4,4,-4,.1,100);camera.position.set(0,5,8);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+const walk={group,camera,sample(t){mesh.position.x=t;}},asset={walk,group:new THREE.Group(),camera};
+const frame={asset,yaw:.4},entity={alive:true,walkPresentation:{seconds:.1}},image={};setDirectUnit(image,asset,.4);
+assert.equal(sampleDirectPose(frame,entity).asset,walk);
+const first=globalThis.adventurePartyDirectUnits.liveShadow(image,entity);
+entity.walkPresentation.seconds=.8;
+const second=globalThis.adventurePartyDirectUnits.liveShadow(image,entity);
+assert.notDeepEqual(first.parts[0].matrix.elements,second.parts[0].matrix.elements,'Shadow transforms must follow the live pose without copying vertices');
+assert.equal(first.parts[0].geometry,second.parts[0].geometry,'GPU reuses immutable vertex buffers');
+assert.equal(globalThis.adventurePartyDirectUnits.liveShadow(image,entity),second,'Reuse unchanged pose');
+delete entity.walkPresentation;assert.equal(globalThis.adventurePartyDirectUnits.liveShadow(image,entity),null);
+console.log('PASS animated shadow follows live geometry and preserves static fallback');

@@ -31,9 +31,12 @@ async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  initializeFirMovementObstacles();
  const combat=game;
  fitBattleCanvas();
- let timer;
- try{await Promise.race([waitForCombatUnitRenders(allUnits()),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Unit rendering timed out. Please retry.')),120000);})]);}
- finally{clearTimeout(timer);}
+ let timer,rejectStall;
+ const heartbeat=()=>{if(timer!==undefined)clearTimeout(timer);timer=setTimeout(()=>rejectStall(Error('Unit rendering stopped making progress. Please retry.')),120000);};
+ const stalled=new Promise((_,reject)=>{rejectStall=reject;heartbeat();});
+ document.addEventListener('adventure-party:unit-render-progress',heartbeat);
+ try{await Promise.race([waitForCombatUnitRenders(allUnits()),stalled]);}
+ finally{clearTimeout(timer);document.removeEventListener('adventure-party:unit-render-progress',heartbeat);}
  if(generation!==combatSessionGeneration||game!==combat||!isCurrent())return false;
  if(scenario.autoStart)startRound();
  await presentCombatFrame();

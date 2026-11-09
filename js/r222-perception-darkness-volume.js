@@ -587,10 +587,7 @@ AdventurePartyCombatServices.register('r220WeightedPathSearch','r222-perception-
 
       const nextCost=
         cur.cost+
-        r220MobStepCost(
-          mob,
-          next
-        );
+        r220MobStepCost(mob,next,cur);
 
       const nk=
         key(next.x,next.y);
@@ -808,10 +805,7 @@ AdventurePartyCombatServices.register('r220WeightedClosestReachable','r222-perce
 
       const nextCost=
         cur.cost+
-        r220MobStepCost(
-          mob,
-          next
-        );
+        r220MobStepCost(mob,next,cur);
 
       const nk=
         key(next.x,next.y);

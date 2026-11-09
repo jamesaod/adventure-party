@@ -1,3 +1,4 @@
+import {treeScreenBounds} from './combat-tree-bounds.mjs';
 import {createFirSnowCaps} from './combat-fir-snow.mjs';
 import {createTreeFireParticles} from './combat-tree-fire-particles.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
@@ -102,6 +103,7 @@ export async function createCombatFirTrees(){
     return {healthy,bare};
   });
   const snowCaps=models.map(createFirSnowCaps);
+  const projectedBounds=new Map();
   const shadowTarget=new THREE.WebGLRenderTarget(16,16,{depthBuffer:false,stencilBuffer:false});
   const blurMaterial=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,transparent:false,
     uniforms:{source:{value:null},step:{value:new THREE.Vector2()}},
@@ -197,11 +199,15 @@ export async function createCombatFirTrees(){
     if(direct){
       const key=[variant,rotation,burnt].join(':');let self=directSelfCache.get(key);
       if(!self){self=shadowTemplate.clone();self.autoUpdate=false;self.needsUpdate=true;directSelfCache.set(key,self);}sun.shadow=self;
+      const boundsKey=[variant,rotation,burnt,burning].join(':');
+      let extent=projectedBounds.get(boundsKey);
+      if(!extent){extent=treeScreenBounds(treeBounds[variant][burnt?'bare':'healthy'],camera.matrixWorldInverse,rotation*Math.PI/6,burning&&!burnt);projectedBounds.set(boundsKey,extent);}
+      const bounds={x:direct.center.x+extent.x*direct.scale,y:direct.center.y+extent.y*direct.scale,width:extent.width*direct.scale,height:extent.height*direct.scale};
       try{direct.host.treeScene((gpu,view)=>{
         const scale=direct.scale*view.zoom,cx=view.anchor.x+(direct.center.x-view.anchor.x)*view.zoom,cy=view.anchor.y+(direct.center.y-view.anchor.y)*view.zoom;
-        camera.left=-cx/scale;camera.right=(view.width-cx)/scale;camera.top=cy/scale;camera.bottom=-(view.height-cy)/scale;camera.updateProjectionMatrix();
+        camera.left=((view.crop?.x||0)-cx)/scale;camera.right=camera.left+(view.crop?.width||view.width)/scale;camera.top=(cy-(view.crop?.y||0))/scale;camera.bottom=camera.top-(view.crop?.height||view.height)/scale;camera.updateProjectionMatrix();
         gpu.render(scene,camera);
-      });}finally{sun.shadow=shadowTemplate;scene.remove(flames);scene.remove(model);}
+      },{bounds});}finally{sun.shadow=shadowTemplate;scene.remove(flames);scene.remove(model);}
       return {direct:true};
     }
     renderer.render(scene,camera);scene.remove(flames);

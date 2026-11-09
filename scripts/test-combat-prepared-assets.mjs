@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs';
+import {setModelShadow,getModelShadow} from '../js/combat-model-shadow.mjs';
+import {serializePreparedAsset,hydratePreparedAsset,validatePreparedAsset} from '../js/combat-prepared-assets.mjs';
+globalThis.Image=class {set src(value){this.source=value;queueMicrotask(()=>this.onload());}};
+const root=new THREE.Group();root.add(new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshStandardMaterial({color:0x997744})));
+const camera=new THREE.OrthographicCamera(-2,2,3,-1,.1,100);camera.position.set(0,3,8);camera.lookAt(0,1,0);// Deliberately leave matrices stale, as happens immediately after lookAt.
+const asset=captureDirectUnit(root,camera),a={},b={};
+setDirectUnit(a,asset,0);setDirectUnit(b,asset,Math.PI);
+for(const image of [a,b])setModelShadow(image,{positions:new Float32Array([0,0,0,1,0,0,0,1,0]),indices:new Uint32Array([0,1,2]),stats:{triangles:1}});
+const recipe={mob:{type:'test',heightInches:72},model:{id:'test'},equipment:{id:'sword'}};
+const pack=serializePreparedAsset(recipe,{manifest:{id:'test'},images:{'ready.png':a},runtimeImages:{'ready-battlefield.png':b},sourceUrls:{'ready.png':'mask-a','ready-battlefield.png':'mask-b'}});
+const loaded=await hydratePreparedAsset(JSON.parse(JSON.stringify(pack)));
+assert.equal(directUnitFrame(loaded.images['ready.png']).asset,directUnitFrame(loaded.runtimeImages['ready-battlefield.png']).asset);
+assert.equal(directUnitFrame(loaded.runtimeImages['ready-battlefield.png']).yaw,Math.PI);
+const restored=directUnitFrame(loaded.images['ready.png']).asset.camera;restored.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+assert(new THREE.Vector3().project(restored).distanceTo(new THREE.Vector3().project(camera))<1e-8,'Saved camera must preserve the viewing angle and foot anchor');
+assert.equal(getModelShadow(loaded.images['ready.png']).indices.length,3);
+assert.equal(directUnitFrame(loaded.images['ready.png']).asset.group.children[0].material.userData.baseColor.getHex(),0x997744);
+assert.throws(()=>validatePreparedAsset({...pack,frames:{}},pack.key),/no poses/);
+assert.throws(()=>validatePreparedAsset(pack,'another-equipment'),/another equipment/);
+assert(!readFileSync('js/adventure-party.js','utf8').includes('generateSpriteSet:rendererModule.generateCombatSpriteSet'));
+assert(!readFileSync('js/combat-prepared-assets.mjs','utf8').includes('combat-mob-renderer'));
+console.log('PASS prepared geometry round trip, shared facings, materials, shadows, recipe validation and no combat-time build');

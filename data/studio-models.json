@@ -282,6 +282,22 @@
       "mobType": "orc",
       "animationLibrary": "uploaded-fbx",
       "initialAnimation": "Axe Stance"
+    },
+    {
+      "id": "male-orc-blue",
+      "label": "Orc, Male, Uniformed — Blue",
+      "file": "assets/models/orcs/male-orc-blue/male-orc-blue.glb",
+      "upAxis": "Y",
+      "mobType": "orc",
+      "animationLibrary": "uploaded-fbx",
+      "initialAnimation": "Sword And Shield Idle",
+      "weaponAttachmentProfileIds": [
+        "uniformed-orc-one-handed-v1",
+        "uniformed-orc-two-handed-sword-v1",
+        "uniformed-orc-two-handed-spear-v1",
+        "uniformed-orc-battle-axe-v1",
+        "uniformed-orc-batch-196-one-hand"
+      ]
     }
   ],
   "weaponAttachmentProfiles": {
@@ -615,6 +631,7 @@
     "male-orc",
     "orc-leader-male-uniformed",
     "orc-female-shaman",
-    "orc-female-shaman-v2"
+    "orc-female-shaman-v2",
+    "male-orc-blue"
   ]
 }

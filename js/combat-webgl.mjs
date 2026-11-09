@@ -1,3 +1,6 @@
+import {updateSurfaceBuffers,createTargetPool} from './combat-render-cache.mjs';
+import {createGpuOutline} from './combat-gpu-outline.mjs';
+import {combatPerformance as perf} from './combat-performance.mjs';
 import {createFirLitter} from './combat-fir-litter.mjs';
 import {configureTreeAntialiasing,treeAntialiasing} from './combat-tree-antialiasing.mjs';
 import {createSnowAccumulation} from './combat-snow.mjs';
@@ -129,10 +132,11 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  // Query both attachment formats: MAX_SAMPLES alone does not guarantee a
  // particular sample count is supported by color AND depth renderbuffers.
  configureTreeAntialiasing(Array.from(gl.getInternalformatParameter(gl.RENDERBUFFER,gl.RGBA8,gl.SAMPLES)||[]),Array.from(gl.getInternalformatParameter(gl.RENDERBUFFER,gl.DEPTH_COMPONENT24,gl.SAMPLES)||[]));
+ const unitTargets=createTargetPool((width,height,samples)=>new THREE.WebGLRenderTarget(width,height,{samples,depthBuffer:true,stencilBuffer:false}));
  const treeTarget=new THREE.WebGLRenderTarget(1,1,{samples:treeAntialiasing().samples,depthBuffer:true,stencilBuffer:false});
  const treeCompositeMaterial=new THREE.ShaderMaterial({
-  uniforms:{artwork:{value:treeTarget.texture}},
-  vertexShader:quadMaterial.vertexShader,
+  uniforms:{artwork:{value:treeTarget.texture},rect:{value:new THREE.Vector4()},viewport:{value:new THREE.Vector2()}},
+  vertexShader:'uniform vec4 rect;uniform vec2 viewport;varying vec2 vUv;void main(){vUv=uv;vec2 p=rect.xy+vec2(uv.x,1.-uv.y)*rect.zw;gl_Position=vec4(p.x/viewport.x*2.-1.,1.-p.y/viewport.y*2.,0.,1.);}',
   fragmentShader:`uniform sampler2D artwork;varying vec2 vUv;
    void main(){vec4 t=texture2D(artwork,vUv);if(t.a<=0.)discard;
     gl_FragColor=vec4(t.rgb/max(t.a,.00001),t.a);
@@ -146,21 +150,24 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  let litter=null,litterId=null;
  const records=[],textures=new Map();let slot=0,lost=false,disposed=false,view;
  let dirty=false,frameOpen=false,needsBackdrop=false,lighting=null;
+ let pendingUnits=[];
  const maskTexture=new THREE.CanvasTexture(raster);maskTexture.colorSpace=THREE.NoColorSpace;maskTexture.generateMipmaps=false;maskTexture.minFilter=maskTexture.magFilter=THREE.NearestFilter;maskTexture.flipY=true;
  const raw=raster.getContext('2d');
  const drawing=new Set(['fill','stroke','fillRect','strokeRect','fillText','strokeText','drawImage','putImageData']);
  // Keep Canvas 2D for sprite/VFX/UI authoring; flush only when it actually drew.
  const context=new Proxy(raw,{get(target,key){const value=Reflect.get(target,key,target);if(typeof value!=='function')return value;
-  return (...args)=>{if(drawing.has(key)){prepareOverlay();dirty=true;}return value.apply(target,args);};},set(target,key,value){Reflect.set(target,key,value,target);return true;}});
+  return (...args)=>{if(drawing.has(key)){flushUnits();if(raw.globalCompositeOperation!=='source-over')prepareBackdrop();dirty=true;}return value.apply(target,args);};},set(target,key,value){Reflect.set(target,key,value,target);return true;}});
  function clearRaster(){raw.save();raw.setTransform(1,0,0,1,0,0);raw.clearRect(0,0,raster.width,raster.height);raw.restore();dirty=false;}
  function paint(mesh){scene.add(mesh);renderer.render(scene,camera);scene.remove(mesh);}
- function prepareOverlay(){
+ function prepareOverlay(){ /* Source-over overlays need no GPU readback. */ }
+ function prepareBackdrop(){
   if(!needsBackdrop||lost||disposed)return;
+  if(dirty)flush();
   // Canvas effects use destination-dependent blends (lighter, multiply, etc.).
   // Seed their batch with the current GPU scene so those operations retain
   // their exact semantics. Call before installing an effect's local clip.
   raw.save();raw.setTransform(1,0,0,1,0,0);raw.globalAlpha=1;raw.globalCompositeOperation='copy';raw.filter='none';raw.shadowBlur=0;raw.shadowColor='transparent';
-  raw.drawImage(canvas,0,0);raw.restore();needsBackdrop=false;
+  perf.count('gpuToCanvasCopies');perf.measure('backdropCopy',()=>raw.drawImage(canvas,0,0));raw.restore();needsBackdrop=false;
  }
  function texture(image,repeat=false){
   if(image.isTexture)return image;
@@ -171,13 +178,21 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   t.magFilter=THREE.LinearFilter;t.anisotropy=repeat?Math.min(4,renderer.capabilities.getMaxAnisotropy()):1;
   t.needsUpdate=true;textures.set(image,t);return t;
  }
- function flush(){if(!dirty||lost||disposed)return;rasterTexture.needsUpdate=true;paint(quad);clearRaster();needsBackdrop=true;}
+ function flushUnits(){
+  if(!pendingUnits.length)return;const batch=pendingUnits;pendingUnits=[];
+  const left=Math.min(...batch.map(b=>b.bounds.x)),top=Math.min(...batch.map(b=>b.bounds.y));
+  const right=Math.max(...batch.map(b=>b.bounds.x+b.bounds.width)),bottom=Math.max(...batch.map(b=>b.bounds.y+b.bounds.height));
+  api.treeScene((gpu,view)=>{for(const item of batch){gpu.clearDepth();item.callback(gpu,view);}},{unit:true,bounds:{x:left,y:top,width:right-left,height:bottom-top}});
+  perf.count('unitCompositeBatches');perf.count('unitBatchMembers',batch.length);
+ }
+ function flush(){flushUnits();if(!dirty||lost||disposed)return;perf.count('canvasUploads');rasterTexture.needsUpdate=true;paint(quad);clearRaster();needsBackdrop=true;}
  function release(record){record.mesh.geometry.dispose();record.mesh.material.dispose();}
  const projectedShadows=createProjectedShadowPass({renderer,camera,texture,flush,getView:()=>view,getSnow:()=>snow,onPaint:()=>{needsBackdrop=true;}});
+ const outlines=createGpuOutline(renderer,flush,()=>view,()=>{needsBackdrop=true;});
  const lostListener=event=>{event.preventDefault();lost=true;onLost();};
  const restoredListener=()=>{lost=false;for(const t of textures.values())t.needsUpdate=true;rasterTexture.needsUpdate=true;maskTexture.needsUpdate=true;onRestored();};
  canvas.addEventListener('webglcontextlost',lostListener);canvas.addEventListener('webglcontextrestored',restoredListener);
- return {
+ const api={
   context,
   snowScene:(id,extent)=>snow.scene(id,extent),
   firLitter(id,trees,bounds,radius){if(id!==litterId){if(litter){const old=textures.get(litter.image);old?.dispose();textures.delete(litter.image);}litterId=id;litter=createFirLitter(trees,bounds,radius);}},
@@ -188,16 +203,35 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   projectedShadows,
   get available(){return !lost&&!disposed;},
   prepareOverlay,
-  treeScene(callback){
+  unitOutline(callback,options){if(lost||disposed||!frameOpen)return false;return outlines.draw(callback,options);},
+  unitScene(callback,bounds){
+   if(lost||disposed||!frameOpen)return false;if(dirty)flush();
+   // Overlapping silhouettes must be tone-mapped/composited separately.
+   if(pendingUnits.some(item=>{const b=item.bounds;return bounds.x<b.x+b.width+6&&bounds.x+bounds.width+6>b.x&&bounds.y<b.y+b.height+6&&bounds.y+bounds.height+6>b.y;}))flushUnits();
+   pendingUnits.push({callback,bounds});return true;
+  },
+  treeScene(callback,{unit=false,bounds=null}={}){
    if(lost||disposed||!frameOpen)return null;flush();
    const clearColor=renderer.getClearColor(new THREE.Color()),clearAlpha=renderer.getClearAlpha();
    const target=renderer.getRenderTarget(),tone=renderer.toneMapping,exposure=renderer.toneMappingExposure,shadows=renderer.shadowMap.enabled;
-   try{renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
-     const samples=treeAntialiasing().samples;
+   try{renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=!unit;renderer.shadowMap.type=THREE.PCFShadowMap;
+     const samples=treeAntialiasing().samples; // Reuse the same attachment between trees and units.
      if(treeTarget.samples!==samples){treeTarget.dispose();treeTarget.samples=samples;}
-     if(treeTarget.width!==canvas.width||treeTarget.height!==canvas.height)treeTarget.setSize(canvas.width,canvas.height);
-     renderer.setRenderTarget(treeTarget);renderer.setClearColor(0,0);renderer.clear(true,true,false);
-     const result=callback(renderer,view);
+     const left=bounds?Math.floor(view.anchor.x+(bounds.x-view.anchor.x)*view.zoom-3):0;
+     const top=bounds?Math.floor(view.anchor.y+(bounds.y-view.anchor.y)*view.zoom-3):0;
+     const crop={x:Math.max(0,left),y:Math.max(0,top)};
+     crop.width=bounds?Math.min(view.width,left+Math.ceil(bounds.width*view.zoom+6))-crop.x:view.width;
+     crop.height=bounds?Math.min(view.height,top+Math.ceil(bounds.height*view.zoom+6))-crop.y:view.height;
+     if(crop.width<=0||crop.height<=0){perf.count('offscreenModelPassesSkipped');return true;}
+     const targetWidth=Math.max(1,Math.ceil(crop.width*canvas.width/view.width)),targetHeight=Math.max(1,Math.ceil(crop.height*canvas.height/view.height));
+     let renderTarget=treeTarget;
+     if(bounds)renderTarget=unitTargets.get(targetWidth,targetHeight,samples);
+     else if(treeTarget.width!==targetWidth||treeTarget.height!==targetHeight)treeTarget.setSize(targetWidth,targetHeight);
+     treeCompositeMaterial.uniforms.artwork.value=renderTarget.texture;
+     treeCompositeMaterial.uniforms.rect.value.set(crop.x,crop.y,crop.width,crop.height);treeCompositeMaterial.uniforms.viewport.value.set(view.width,view.height);
+     perf.count(unit?'unitTargetPixels':'treeTargetPixels',targetWidth*targetHeight);
+     renderer.setRenderTarget(renderTarget);renderer.setClearColor(0,0);renderer.clear(true,true,false);
+     perf.count(unit?'unitPasses':'treePasses');const result=perf.measure(unit?'unitSubmission':'treeSubmission',()=>callback(renderer,{...view,crop}));
      // Render targets contain linear, premultiplied coverage. Tone-map once,
      // after resolving MSAA, then composite without dark fringes at the leaves.
      renderer.setRenderTarget(target);paint(treeComposite);return result;
@@ -207,10 +241,10 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   presentOverlay(){flush();},
   begin(nextView){
    if(lost||disposed)return false;
-   view=nextView;snow.begin();projectedShadows.begin();lighting=null;slot=0;frameOpen=true;needsBackdrop=false;clearRaster();renderer.info.reset();
+   perf.begin();view=nextView;snow.begin();projectedShadows.begin();lighting=null;slot=0;frameOpen=true;needsBackdrop=false;clearRaster();renderer.info.reset();
    const width=canvas.width,height=canvas.height;
    if(width>renderer.capabilities.maxTextureSize||height>renderer.capabilities.maxTextureSize)throw Error('Combat resolution exceeds this device’s graphics limits.');
-   if(raster.width!==width||raster.height!==height){raster.width=width;raster.height=height;}
+   if(raster.width!==width||raster.height!==height){rasterTexture.dispose();raster.width=width;raster.height=height;}
    renderer.setViewport(0,0,width,height);renderer.clear(true,false,false);
    camera.right=view.width;camera.bottom=view.height;camera.updateProjectionMatrix();return true;
   },
@@ -223,19 +257,12 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
      depthTest:false,depthWrite:false,side:THREE.DoubleSide,transparent:true,toneMapped:false});
     const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;records.push(record={mesh});
    }
-   const data=triangulateSurfaces(surfaces);let geometry=record.mesh.geometry;
-   if(geometry.getAttribute('position')&&geometry.getAttribute('position').array.length!==data.position.length){
-    // Dispose uploaded attributes before replacing their sizes: merely calling
-    // setAttribute would orphan the previous driver's buffers.
-    geometry.dispose();record.mesh.geometry=geometry=new THREE.BufferGeometry();
-   }
-   for(const [name,values,size] of [['surfaceSnow',data.snow,1],['surfaceSunLoss',data.sunLoss,3],['lightPoint',data.lightPoint,3],['lightNormal',data.lightNormal,3],['lightSampleWorld',data.lightWorld,2],['surfaceVisibility',data.visibility,1],['surfaceTint',data.tint,3],['position',data.position,3],['uv',data.uv,2],['surfaceMultiply',data.multiply,3],['surfaceBoost',data.boost,3],['surfaceAdd',data.add,3]]){
-    let attribute=geometry.getAttribute(name);
-    if(!attribute||attribute.array.length!==values.length)geometry.setAttribute(name,new THREE.Float32BufferAttribute(values,size).setUsage(THREE.DynamicDrawUsage));
-    else{attribute.array.set(values);attribute.needsUpdate=true;}
-   }
+   let geometry=record.mesh.geometry;
+   const vertices=surfaces.reduce((n,f)=>n+Math.max(0,f.points.length-2)*3,0);
+   if(geometry.getAttribute('position')&&geometry.getAttribute('position').count!==vertices){geometry.dispose();record.mesh.geometry=geometry=new THREE.BufferGeometry();}
+   updateSurfaceBuffers(geometry,surfaces,THREE,(name)=>perf.count(name));
    const u=record.mesh.material.uniforms,[a,b,c,d,tx,ty]=view.matrix;
-   
+
    u.useFirLitter.value=!!(needleLitter&&litter);u.firLitter.value=litter?texture(litter.image):null;if(litter)u.firLitterBounds.value.fromArray(litter.bounds);
    u.snowSunShadow.value=sunShadow;
    u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;
@@ -255,16 +282,18 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    }else{u.lightMultiply.value=null;u.lightBoost.value=null;}
    paint(record.mesh);needsBackdrop=true;
   },
-  end(){if(!frameOpen)return;projectedShadows.flush();projectedShadows.end();flush();snow.end(view);frameOpen=false;
+  end(){if(!frameOpen)return;projectedShadows.flush();projectedShadows.end();flush();perf.measure('snow',()=>snow.end(view));perf.end();if(perf.enabled)canvas.dataset.combatProfile=JSON.stringify(perf.snapshot());frameOpen=false;
    // A larger previous scene must not retain one GPU buffer per old wall.
    while(records.length>slot)release(records.pop());
    // Exposure maps are replaced after movement/door changes; release old maps.
-   for(const [image,t] of textures)if(image!==litter?.image&&image.tagName==='CANVAS'&&!projectedShadows.uses(image)&&!records.some(r=>r.mesh.material.uniforms.roadNormal.value===t||r.mesh.material.uniforms.artwork.value===t||r.mesh.material.uniforms.lightMultiply.value===t||r.mesh.material.uniforms.lightBoost.value===t)){t.dispose();textures.delete(image);}
+   const retainedTextures=new Set(records.flatMap(r=>{const u=r.mesh.material.uniforms;return [u.roadNormal.value,u.artwork.value,u.lightMultiply.value,u.lightBoost.value,u.groundScorchImage.value];}));
+   for(const [image,t] of textures)if(image!==litter?.image&&image.tagName==='CANVAS'&&!projectedShadows.uses(image)&&!retainedTextures.has(t)){t.dispose();textures.delete(image);}
    canvas.dataset.combatRenderer='three-webgl2';
    canvas.dataset.gpuStats=JSON.stringify({calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,shadowBatches:projectedShadows.diagnostics().batches,shadowTriangles:projectedShadows.diagnostics().triangles,shaderLights:lighting?.lights.length||0,lighting:lighting?'gpu-point-lights':'cpu-reference'});
   },
-  diagnostics(){return {backend:'three-webgl2',contextLost:lost,drawCalls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};},
+  diagnostics(){return {backend:'three-webgl2',targetPool:unitTargets.stats(),contextLost:lost,drawCalls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};},
   dispose(){if(disposed)return;disposed=true;canvas.removeEventListener('webglcontextlost',lostListener);canvas.removeEventListener('webglcontextrestored',restoredListener);
-   snow.dispose();projectedShadows.dispose();records.forEach(release);textures.forEach(t=>t.dispose());treeTarget.dispose();treeCompositeMaterial.dispose();quadGeometry.dispose();quadMaterial.dispose();rasterTexture.dispose();maskTexture.dispose();renderer.dispose();}
+   pendingUnits=[];outlines.dispose();snow.dispose();projectedShadows.dispose();records.forEach(release);textures.forEach(t=>t.dispose());treeTarget.dispose();unitTargets.dispose();treeCompositeMaterial.dispose();quadGeometry.dispose();quadMaterial.dispose();rasterTexture.dispose();maskTexture.dispose();renderer.dispose();}
  };
+ return api;
 }

@@ -1,3 +1,5 @@
+import {gpuCasterVertex} from './combat-gpu-casters.mjs';
+import {combatPerformance as perf} from './combat-performance.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 
 // Shared GPU planar shadows. Casters supply physical 3D points + alpha artwork;
@@ -139,6 +141,7 @@ export function clipShadowTriangleAtLight(points,uv,lightHeight){
 
 export function createProjectedShadowPass({renderer,camera,texture,flush,getView,getSnow=()=>null,onPaint}){
  const solidMask=new THREE.DataTexture(new Uint8Array([255,255,255,255]),1,1);solidMask.needsUpdate=true;
+ const palettes=new Map(),identityBones=new Float32Array(new THREE.Matrix4().elements);let paletteFrame=0;
  const scene=new THREE.Scene(),records=[],batches=new Map(),ids=new WeakMap();let lighting={solar:null,sources:[]};let sequence=0,slot=0,receiver=null,stats={batches:0,triangles:0};
  const maskTarget=new THREE.WebGLRenderTarget(1,1,{depthBuffer:false,stencilBuffer:false});
  const maskQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{snowMask:{value:null},snowBounds:{value:new THREE.Vector4()},inverseView:{value:new THREE.Matrix3()},viewport:{value:new THREE.Vector2()},viewAnchor:{value:new THREE.Vector2()},viewZoom:{value:1},snowGround:{value:false},mask:{value:maskTarget.texture},texel:{value:new THREE.Vector2(1,1)},localShadow:{value:false}},
@@ -148,10 +151,16 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
  function id(image){if(!ids.has(image))ids.set(image,++sequence);return ids.get(image);}
  function release(record){record.geometry.dispose();record.material.dispose();}
  return {
-  begin(){batches.clear();slot=0;stats={batches:0,triangles:0};},
+  begin(){paletteFrame++;batches.clear();slot=0;stats={batches:0,triangles:0};},
   receiver(value){receiver=value;},
   lighting(value){lighting=value;},
   modelGeometry(geometry){return {...geometry,image:solidMask};},
+  queueModel({capture,transform,light,scale,opacity}){
+   if(!receiver)return;
+   for(const part of capture.parts){const key='model:'+sequence++;
+    batches.set(key,{gpu:true,part,capture,transform,image:solidMask,light,scale,plane:[0,1,0,0],wall:null,softness:0,opacity});
+   }
+  },
   queue({points,uv,indices,image,light,plane=[0,1,0,0],wall=null,opacity=.3,scale,softness=1,silhouetteAnchor=null}){
    if(!receiver||!image||!light||!points.length)return;
    const key=[id(image),light.id,wall?.id||'ground',softness].join(':');
@@ -169,6 +178,8 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
   },
   flush(){
    if(!batches.size||!receiver)return;flush();const view=getView();
+   const fillPosition=new Float32Array(128),fillRange=new Float32Array(32),fillCount=Math.min(32,lighting.sources.length);
+   for(let i=0;i<fillCount;i++){const l=lighting.sources[i];fillPosition.set([...l.vector.slice(0,3),l.power],i*4);fillRange[i]=l.range;}
    const groups=new Map();for(const batch of batches.values()){if(!groups.has(batch.light.id))groups.set(batch.light.id,[]);groups.get(batch.light.id).push(batch);}
    const target=renderer.getRenderTarget(),oldColor=renderer.getClearColor(new THREE.Color()),oldAlpha=renderer.getClearAlpha();
    const size=renderer.getDrawingBufferSize(new THREE.Vector2()),factor=Math.min(1,1024/Math.max(size.x,size.y));
@@ -178,11 +189,24 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
     renderer.setRenderTarget(maskTarget);renderer.setClearColor(0,0);renderer.clear(true,false,false);
     for(const batch of group){
     let record=records[slot++];
-    if(!record){const geometry=new THREE.BufferGeometry(),material=new THREE.ShaderMaterial({vertexShader:projectedShadowVertex,fragmentShader:projectedShadowFragment,
-      uniforms:{shadowPixelScale:{value:1},lightPower:{value:1},lightRange:{value:1},solarAmbient:{value:new THREE.Vector2()},fillCount:{value:0},fillPosition:{value:new Float32Array(128)},fillRange:{value:new Float32Array(32)},light:{value:new THREE.Vector4()},receiverPlane:{value:new THREE.Vector4()},worldScale:{value:new THREE.Vector3()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1},
+    if(record&&record.gpu!==!!batch.gpu){release(record);records[slot-1]=record=null;}
+    if(!record){const geometry=new THREE.BufferGeometry(),material=new THREE.ShaderMaterial({vertexShader:batch.gpu?gpuCasterVertex(projectedShadowVertex):projectedShadowVertex,fragmentShader:batch.gpu?projectedShadowFragment.replace('varying vec3 vGround;','varying vec3 vProjected;').replace('void main(){','void main(){vec3 vGround=light.w>.5?vec3(vProjected.x/vProjected.y,0.,vProjected.z/vProjected.y):vProjected;'):projectedShadowFragment,
+      uniforms:{casterModel:{value:new THREE.Matrix4()},captureCamera:{value:new THREE.Matrix4()},frameToWorld:{value:new THREE.Matrix4()},bindMatrix:{value:new THREE.Matrix4()},bindMatrixInverse:{value:new THREE.Matrix4()},hasSkin:{value:false},bonePalette:{value:null},bonePaletteHeight:{value:1},strength:{value:1},shadowPixelScale:{value:1},lightPower:{value:1},lightRange:{value:1},solarAmbient:{value:new THREE.Vector2()},fillCount:{value:0},fillPosition:{value:new Float32Array(128)},fillRange:{value:new Float32Array(32)},light:{value:new THREE.Vector4()},receiverPlane:{value:new THREE.Vector4()},worldScale:{value:new THREE.Vector3()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1},
        artwork:{value:null},receiverMask:{value:null},maskBounds:{value:new THREE.Vector4()},texel:{value:new THREE.Vector2()},softness:{value:1},wallReceiver:{value:false},wallSpan:{value:new THREE.Vector4()},wallHeight:{value:3.5}},
       side:THREE.DoubleSide,forceSinglePass:true,blending:THREE.CustomBlending,blendEquation:THREE.MaxEquation,blendEquationAlpha:THREE.MaxEquation,blendSrc:THREE.OneFactor,blendDst:THREE.OneFactor,transparent:true,depthTest:false,depthWrite:false,toneMapped:false});
-     const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;record={geometry,material,mesh};records.push(record);}
+     const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;record={geometry,material,mesh,gpu:!!batch.gpu};records[slot-1]=record;}
+    if(batch.gpu){
+     const part=batch.part,u=record.material.uniforms;
+     if(record.source!==part.geometry){record.geometry.dispose();record.geometry=part.geometry.clone();record.mesh.geometry=record.geometry;record.source=part.geometry;}
+     const bones=part.bones||identityBones;
+     let palette=palettes.get(bones);
+     if(!palette){const texture=new THREE.DataTexture(bones,4,bones.length/16,THREE.RGBAFormat,THREE.FloatType);texture.needsUpdate=true;palette={texture,frame:paletteFrame};palettes.set(bones,palette);perf.count('shadowPaletteUploads');}
+     else perf.count('shadowPaletteReuses');
+     palette.frame=paletteFrame;
+     u.bonePalette.value=palette.texture;u.bonePaletteHeight.value=bones.length/16;u.hasSkin.value=!!part.bones;
+     if(part.bind)u.bindMatrix.value.copy(part.bind);if(part.unbind)u.bindMatrixInverse.value.copy(part.unbind);
+     u.casterModel.value.copy(part.matrix);u.captureCamera.value.copy(batch.capture.camera);u.frameToWorld.value.fromArray(batch.transform);u.strength.value=batch.opacity;
+    }else{
     if(record.geometry.getAttribute('casterPoint')?.array.length!==batch.positions.length){record.geometry.dispose();record.geometry=new THREE.BufferGeometry();record.mesh.geometry=record.geometry;}
     for(const [name,array,size] of [['casterPoint',batch.positions,3],['uv',batch.uv,2],['strength',batch.strength,1],['silhouetteAnchor',batch.anchors,4]]){
      let attribute=record.geometry.getAttribute(name);
@@ -191,25 +215,28 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
     }
     // Three.js requires a position attribute to determine non-indexed draw count.
     record.geometry.setAttribute('position',record.geometry.getAttribute('casterPoint'));
+    }
     const u=record.material.uniforms,[a,b,c,d,tx,ty]=view.matrix;
     u.shadowPixelScale.value=Math.max(Math.hypot(a*batch.scale[0],b*batch.scale[0]),Math.hypot(c*batch.scale[2],d*batch.scale[2]))*view.zoom*factor;
     u.lightPower.value=batch.light.power||1;u.lightRange.value=batch.light.range||1;
     u.solarAmbient.value.set(lighting.solar?.daylight||0,lighting.solar?.sky??1);
-    u.fillCount.value=Math.min(32,lighting.sources.length);u.fillPosition.value.fill(0);u.fillRange.value.fill(0);
-    lighting.sources.slice(0,32).forEach((l,i)=>{u.fillPosition.value.set([...l.vector.slice(0,3),l.power],i*4);u.fillRange.value[i]=l.range;});
+    u.fillCount.value=fillCount;u.fillPosition.value=fillPosition;u.fillRange.value=fillRange;
     u.light.value.fromArray(batch.light.vector);u.receiverPlane.value.fromArray(batch.plane);u.worldScale.value.fromArray(batch.scale);
     u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;
     u.artwork.value=texture(batch.image);u.receiverMask.value=texture(receiver.image);u.maskBounds.value.fromArray(receiver.bounds);
     u.texel.value.set(1/(batch.image.width||batch.image.naturalWidth||1),1/(batch.image.height||batch.image.naturalHeight||1));u.softness.value=batch.softness;
     u.wallReceiver.value=!!batch.wall;if(batch.wall){u.wallSpan.value.fromArray(batch.wall.span);u.wallHeight.value=batch.wall.height;}
-    scene.add(record.mesh);renderer.render(scene,camera);scene.remove(record.mesh);stats.batches++;stats.triangles+=batch.positions.length/9;
-    }const su=maskQuad.material.uniforms,snow=getSnow();su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
+    scene.add(record.mesh);
+    if(batch.gpu){const range=batch.part.geometry.drawRange;record.geometry.clearGroups();for(const g of batch.part.groups){const start=Math.max(g.start,range.start),end=Math.min(g.start+g.count,range.start+range.count);record.geometry.addGroup(start,Math.max(0,end-start),0);stats.triangles+=Math.max(0,end-start)/3;}record.geometry.setDrawRange(range.start,range.count);record.mesh.material=[record.material];perf.count('gpuModelShadowDraws');}
+    else stats.triangles+=batch.positions.length/9;
+    stats.batches++;
+    }renderer.render(scene,camera);scene.clear();perf.count('shadowSceneSubmissions');const su=maskQuad.material.uniforms,snow=getSnow();su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
  maskQuad.material.uniforms.localShadow.value=group[0].light.vector[3]>.5;renderer.setRenderTarget(target);scene.add(maskQuad);renderer.render(scene,camera);scene.remove(maskQuad);
-   }}finally{renderer.setRenderTarget(target);renderer.setClearColor(oldColor,oldAlpha);}
+   }}finally{scene.clear();renderer.setRenderTarget(target);renderer.setClearColor(oldColor,oldAlpha);}
    batches.clear();onPaint();
   },
-  end(){while(records.length>slot)release(records.pop());},
+  end(){while(records.length>slot)release(records.pop());for(const [key,p] of palettes)if(p.frame!==paletteFrame){p.texture.dispose();palettes.delete(key);}},
   uses(image){return records.slice(0,slot).some(r=>r.material.uniforms.artwork.value?.image===image||r.material.uniforms.receiverMask.value?.image===image);},
-  diagnostics(){return {...stats};},dispose(){records.forEach(release);records.length=0;batches.clear();solidMask.dispose();maskTarget.dispose();maskQuad.geometry.dispose();maskQuad.material.dispose();}
+  diagnostics(){return {...stats};},dispose(){for(const p of palettes.values())p.texture.dispose();palettes.clear();records.forEach(release);records.length=0;batches.clear();solidMask.dispose();maskTarget.dispose();maskQuad.geometry.dispose();maskQuad.material.dispose();}
  };
 }

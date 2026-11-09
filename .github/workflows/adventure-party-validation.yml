@@ -30,6 +30,17 @@ jobs:
         run: |
           node --check js/adventure-party.js
           node --check js/game-script-loader.mjs
+          node --check js/mob-workshop.mjs
+          node scripts/test-mob-workshop.mjs
+          node scripts/test-mob-workshop-creature.mjs
+          node scripts/test-mob-workshop-hand-pose.mjs
+          node scripts/test-mob-workshop-fit.mjs
+          node scripts/test-workshop-hand-calibration.mjs
+          node scripts/test-workshop-fit-store.mjs
+          node scripts/test-workshop-project.mjs
+          node scripts/test-workshop-combat-contract.mjs
+          node scripts/test-workshop-publication.mjs
+          node scripts/test-workshop-grounding.mjs
           node scripts/test-game-script-loader.mjs
           node scripts/test-combat-module-boundaries.mjs
           node scripts/test-arrow-blood.mjs
@@ -257,6 +268,8 @@ jobs:
           node scripts/test-city-sidewalk.mjs
           node scripts/test-city-materials.mjs
           node scripts/test-combat-webgl.mjs
+          node scripts/test-combat-direct-units.mjs
+          node scripts/test-combat-prepared-assets.mjs
           node scripts/test-combat-runtime.mjs
           node scripts/test-opportunity-attacks.mjs
           node scripts/test-combat-gpu-lighting.mjs

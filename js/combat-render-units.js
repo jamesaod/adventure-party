@@ -22,25 +22,47 @@ function drawScaleTestSprite(ctx,image,cx,bottomY,drawW,drawH,{shadowWidth=null,
   ctx.restore();
 }
 
+// Shared by GPU outlines and the canvas fallback; extend for future factions here.
+const hiddenUnitOutlineColors=Object.freeze({player:'#59aaff',enemy:'#ff5757'});
+function hiddenUnitOutlineColor(unit){
+  if(isPlayerControlledUnit(unit)||unit.faction==='player')return hiddenUnitOutlineColors.player;
+  return hiddenUnitOutlineColors[unit.faction]||hiddenUnitOutlineColors.enemy;
+}
+const hiddenOutlineMaskCache=new WeakMap();
 function drawHiddenUnitOutlines(ordered){
   if(!hiddenOutlineUnits.length)return;
+  const buckets=new Map(),cellSize=256;
+  for(let index=0;index<ordered.length;index++){
+    const actor=ordered[index];let polygons=null,bounds;
+    if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;bounds={left:center.x-h/2,right:center.x+h/2,top:center.y-h,bottom:center.y};}
+    else if(actor.wall||actor.outlineSolids){const solids=actor.outlineSolids||(typeof explorationWallGroundSolids==='function'?explorationWallGroundSolids(actor.wall):[]);polygons=solids.flatMap(s=>(s.faces||[]).map(f=>f.points.map(p=>screenPointForWorld(p,p.elevation))));const points=polygons.flat();if(!points.length)continue;bounds={left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};}
+    else continue;
+    const entry={actor,index,polygons,bounds};for(let x=Math.floor(bounds.left/cellSize);x<=Math.floor(bounds.right/cellSize);x++)for(let y=Math.floor(bounds.top/cellSize);y<=Math.floor(bounds.bottom/cellSize);y++){const key=x+','+y;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(entry);}
+  }
   for(const unit of hiddenOutlineUnits){
     if(!unit.entity.alive||unit.entity.fled||getUnitEffect(unit.entity,'invisibility')||!shouldRenderUnitUnderPartyVisibility(unit.entity))continue;
-    const friendly=isPlayerControlledUnit(unit.entity)||unit.entity.faction==='player';if(!friendly&&!isUnitVisibleToFriendlyParty(unit.entity))continue;const color=friendly?'#b2f4ef':'#ffc39e';
-    const frame=hiddenUnitOutlineFrame(unit.image,unit.width,unit.height,unit.flip,color),left=unit.x-frame.pad,top=unit.y-frame.pad;
-    const mask=document.createElement('canvas');mask.width=frame.ring.width;mask.height=frame.ring.height;const m=mask.getContext('2d');m.translate(-left,-top);
-    for(let i=unit.index+1;i<ordered.length;i++){
-      const actor=ordered[i];if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;
+    const friendly=isPlayerControlledUnit(unit.entity)||unit.entity.faction==='player';if(!friendly&&!isUnitVisibleToFriendlyParty(unit.entity))continue;const color=hiddenUnitOutlineColor(unit.entity);
+    const gpuOutline=typeof combatGpu!=='undefined'&&combatGpu?.unitOutline&&globalThis.adventurePartyDirectUnits?.gpuOutline;
+      const liveMask=!gpuOutline&&globalThis.adventurePartyDirectUnits?.liveOutline(unit.image,unit.entity,unit.width,unit.height);
+    const pad=Math.ceil(2.6/battlefieldZoom)+2;let frame=gpuOutline?{pad,ring:{width:Math.ceil(unit.width)+pad*2,height:Math.ceil(unit.height)+pad*2}}:hiddenUnitOutlineFrame(liveMask||unit.image,unit.width,unit.height,liveMask?false:unit.flip,color);const left=unit.x-frame.pad,top=unit.y-frame.pad;
+    let mask=hiddenOutlineMaskCache.get(unit.entity);if(!mask){mask=document.createElement('canvas');hiddenOutlineMaskCache.set(unit.entity,mask);}if(mask.width!==frame.ring.width||mask.height!==frame.ring.height){mask.width=frame.ring.width;mask.height=frame.ring.height;}const m=mask.getContext('2d');m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,mask.width,mask.height);m.translate(-left,-top);
+    const candidates=new Set();for(let x=Math.floor(left/cellSize);x<=Math.floor((left+mask.width)/cellSize);x++)for(let y=Math.floor(top/cellSize);y<=Math.floor((top+mask.height)/cellSize);y++)for(const entry of buckets.get(x+','+y)||[])if(entry.index>unit.index)candidates.add(entry);
+    for(const {actor,polygons,bounds} of candidates){
+      if(bounds.right<left||bounds.left>left+mask.width||bounds.bottom<top||bounds.top>top+mask.height)continue;if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;
         if(center.x+h/2<left||center.x-h/2>left+mask.width||center.y<top||center.y-h>top+mask.height)continue;
         const frame=actor.tree.outlineFrame;if(frame)m.drawImage(frame.image,frame.sx,frame.sy,frame.sourceTileWidth,frame.sourceTileHeight,frame.drawX,frame.drawY,frame.drawW,frame.drawH);
         else{const old=ctx;try{ctx=m;drawTreeDecoration(actor.tree);}finally{ctx=old;}}
       }else if(actor.wall||actor.outlineSolids){
-        const solids=actor.outlineSolids||(typeof explorationWallGroundSolids==='function'?explorationWallGroundSolids(actor.wall):[]);
-        m.fillStyle='#fff';for(const solid of solids)for(const face of solid.faces||[]){const polygon=face.points.map(point=>screenPointForWorld(point,point.elevation));if(tracePolygonOnContext(m,polygon))m.fill();}
+        m.fillStyle='#fff';for(const polygon of polygons)if(tracePolygonOnContext(m,polygon))m.fill();
       }
     }
-    const layer=document.createElement('canvas');layer.width=mask.width;layer.height=mask.height;const t=layer.getContext('2d');t.drawImage(frame.ring,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mask,0,0);
     const daylight=Math.max(0,Math.min(1,globalThis.adventurePartySolar?.state?.().daylight??1)),active=game.active?.id===unit.entity.id;
+    if(gpuOutline){
+      if(globalThis.adventurePartyDirectUnits.gpuOutline(combatGpu,unit.image,unit.entity,{mask,left,top,color,active,daylight,width:unit.width,height:unit.height,pad}))continue;
+      frame=hiddenUnitOutlineFrame(unit.image,unit.width,unit.height,unit.flip,color);
+    }
+    const layer=document.createElement('canvas');layer.width=mask.width;layer.height=mask.height;const t=layer.getContext('2d');t.drawImage(frame.ring,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mask,0,0);
+
     const backing=document.createElement('canvas');backing.width=mask.width;backing.height=mask.height;const b=backing.getContext('2d');b.drawImage(frame.backing,0,0);b.globalCompositeOperation='destination-in';b.drawImage(mask,0,0);
     ctx.save();ctx.globalAlpha=.45+.4*daylight;ctx.drawImage(backing,left,top);
     ctx.globalAlpha=Math.min(1,(active ? .92 : .78)+daylight*.1);ctx.drawImage(layer,left,top);ctx.restore();
@@ -57,6 +79,11 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     return;
   }
 
+  if(entity?.walkPresentation){const motion=entity.walkPresentation;
+    const from=hexCenter(motion.from.x,motion.from.y),to=hexCenter(motion.to.x,motion.to.y);
+    const anchor=hexCenter(entity.x,entity.y);
+    c={x:c.x+from.x+(to.x-from.x)*motion.t-anchor.x,y:c.y+from.y+(to.y-from.y)*motion.t-anchor.y};
+  }
   ctx.save();
   // Detailed 3D-generated sprites benefit from filtered downscaling; classic
   // pixel art keeps nearest-neighbor pixels. Never resample source assets.
@@ -120,7 +147,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     if(spriteFilter)ctx.filter=spriteFilter;
     for(const offset of visualMirrorOffsets(Math.min(4,imageCount))){
       try{
-        if(!gpuSprite||!drawExplorationGpuSprite(renderSource,entity,baseX+offset.x,baseY+offset.y,visualDrawW,visualDrawH))ctx.drawImage(renderSource,baseX+offset.x,baseY+offset.y,visualDrawW,visualDrawH);
+        if(!(typeof drawDirectCombatUnit==='function'&&drawDirectCombatUnit(renderSource,entity,{x:c.x+offset.x,y:c.y+offset.y},visualDrawW,visualDrawH,spriteAnchor,ctx.globalAlpha))&&(!gpuSprite||!drawExplorationGpuSprite(renderSource,entity,baseX+offset.x,baseY+offset.y,visualDrawW,visualDrawH)))ctx.drawImage(renderSource,baseX+offset.x,baseY+offset.y,visualDrawW,visualDrawH);
       }catch(error){
         console.error("Mirror Image sprite draw skipped.",error);
       }
@@ -144,7 +171,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
   ctx.save();
   if(spriteFilter)ctx.filter=spriteFilter;
   try{
-    if(!gpuSprite||!drawExplorationGpuSprite(renderSource,entity,-Math.round(visualDrawW*spriteAnchor.x),-Math.round(visualDrawH*spriteAnchor.y),visualDrawW,visualDrawH))ctx.drawImage(renderSource,-Math.round(visualDrawW*spriteAnchor.x),-Math.round(visualDrawH*spriteAnchor.y),visualDrawW,visualDrawH);
+    if(!(typeof drawDirectCombatUnit==='function'&&drawDirectCombatUnit(renderSource,entity,c,visualDrawW,visualDrawH,spriteAnchor,ctx.globalAlpha))&&(!gpuSprite||!drawExplorationGpuSprite(renderSource,entity,-Math.round(visualDrawW*spriteAnchor.x),-Math.round(visualDrawH*spriteAnchor.y),visualDrawW,visualDrawH)))ctx.drawImage(renderSource,-Math.round(visualDrawW*spriteAnchor.x),-Math.round(visualDrawH*spriteAnchor.y),visualDrawW,visualDrawH);
   }catch(error){
     console.error("Sprite draw skipped because the image source is invalid.",error);
   }finally{ctx.restore();}
@@ -192,7 +219,7 @@ function drawStudioSpriteMob(unit){
       unit.type==='juvenile-red-dragon'?juvenileRedDragonStandSprite:fighterSprite);
   if(!sprite?.complete||!sprite.naturalWidth)return;
   const center=unitFootprintScreenCenter(unit);
-  if(!unit.alive&&unit.deathWorldOffset){const offset=battlefieldProjectVector(unit.deathWorldOffset);center.x+=offset.x;center.y+=offset.y;}
+  if(!unit.alive&&unit.deathWorldOffset){const offset=battlefieldProjectVector(corpsePresentationOffset(unit));center.x+=offset.x;center.y+=offset.y;}
   const dimensions=frame?spriteRenderDimensions(frame.assetId,sprite):
     {width:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?50:32))),
      height:Math.max(1,Math.round((unitFootprintCellCount(unit)>1?54:35)))};
@@ -269,55 +296,8 @@ function drawKobold(k){
   );
 }
 
-function drawDeathFx(){
-  if(!deathFx) return;
-  if(!deathMarkerSprite.complete || !deathMarkerSprite.naturalWidth) return;
-
-  const deathSubject={
-    id:deathFx.unitId,
-    footprintId:deathFx.footprintId || "single",
-    facingHex:deathFx.facingHex,
-    x:deathFx.x,
-    y:deathFx.y
-  };
-
-  if(
-    game?.condition==="wall" &&
-    !occupiedHexes(deathSubject).some(cell=>
-      isHexVisibleToFriendlyParty(cell.x,cell.y)
-    )
-  ){
-    return;
-  }
-  const c=unitFootprintScreenCenter(deathSubject);
-  const elapsed=performance.now()-deathFx.started;
-
-  if(elapsed<0 || elapsed>1000) return;
-
-  /* Preserve the original flash cadence at roughly 8 Hz. */
-  const visible=Math.floor(elapsed/125)%2===0;
-  if(!visible) return;
-
-  const x=c.x;
-  const y=c.y-25;
-  const deathDims=spriteRenderDimensions("death-marker",deathMarkerSprite,40,40);
-  const drawW=deathDims.width;
-  const drawH=deathDims.height;
-  const renderSource=deathMarkerSprite._crispRenderSource || deathMarkerSprite;
-
-  ctx.save();
-  ctx.imageSmoothingEnabled=false;
-  ctx.shadowColor="rgba(0,0,0,0.9)";
-  ctx.shadowBlur=7;
-  ctx.drawImage(
-    renderSource,
-    x-Math.round(drawW/2),
-    y-Math.round(drawH/2),
-    drawW,
-    drawH
-  );
-  ctx.restore();
-}
+// Death feedback is the animated model and corpse, without a skull overlay.
+function drawDeathFx(){}
 
 function drawUnitBarks(){
   if(!game) return;

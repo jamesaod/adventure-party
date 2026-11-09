@@ -312,12 +312,12 @@ function combatRenderingPanel(){
   const panel=document.createElement('div');panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
   panel.style.cssText='position:fixed;inset:0;z-index:200000;background:#10101b;color:#77e7ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:24px';
   const wasInert=combatScreen.inert;combatScreen.inert=true;
-  const label=document.createElement('strong');label.textContent='Please wait, rendering Units';panel.append(label);document.body.append(panel);
+  const label=document.createElement('strong');label.textContent='Please wait, loading units';panel.append(label);document.body.append(panel);
   const task=document.createElement('div'),why=document.createElement('div'),history=document.createElement('div');
   task.style.cssText='font:18px/1.6 system-ui,sans-serif;text-align:center;max-width:760px;padding:0 20px';
   why.style.cssText='font:16px/1.6 system-ui,sans-serif;color:#bdc7d7;text-align:center;max-width:760px;padding:0 20px';
   history.style.cssText='font:14px/1.8 system-ui,sans-serif;color:#8192a9;text-align:center;max-width:760px;padding:0 20px';
-  task.textContent='Checking the units and their equipment…';why.textContent='Preparing the appearances needed for this battle.';panel.append(task,why,history);
+  task.textContent='Checking the units and their equipment…';why.textContent='Loading prepared models, textures and shadows.';panel.append(task,why,history);
   const recent=[];
   const progress=event=>{const {unitName,step,reason}=event.detail||{};if(!step)return;
     if(task.textContent&&!task.textContent.startsWith('Checking'))recent.push(task.textContent);
@@ -417,6 +417,7 @@ async function activateLauncherSelection(){
   }
 
   if(target==="mob-creator"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-creator.html");return;}
+  if(target==="mob-workshop"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-workshop.html");return;}
   if(target==="mob-catalog"){
     globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-catalog.html");
     return;
@@ -666,6 +667,8 @@ function noiseVoice(duration,volume,type="lowpass",frequency=700,q=0.7,delay=0){
 }
 
 function playMoveSound(){
+  // Hex-boundary thumps no longer match continuous model locomotion.
+  if(currentScreen==="combat"||currentScreen==="spell-preview")return;
   queueSfx(()=>{
     const now=audioCtx.currentTime;
     const osc=audioCtx.createOscillator();
@@ -1432,7 +1435,7 @@ function combatActionPauseRemaining(){
 }
 
 function isCombatActionPauseActive(){
-  return spellCastInProgress || combatActionPauseRemaining()>0;
+  return !!globalThis.adventurePartyWalkBusy || spellCastInProgress || combatActionPauseRemaining()>0;
 }
 
 async function waitForDeathActionPause(){
@@ -1453,7 +1456,8 @@ function triggerDeathFx(entity){
   if(!entity) return;
   if(!Number.isFinite(entity.deathPresentationStartedAt)){
     entity.deathPresentationStartedAt=performance.now();
-    entity.deathFacingHex=Math.floor(Math.random()*6);
+    entity.deathFacingHex=facingDirectionIndex(entity);
+    entity.deathRotationDelta=(Math.random()*2-1)*Math.PI;
     entity.deathWorldOffset=sampleCorpseOffset(entity);
     startArrowBlood(entity,entity,1,{death:true});
   }
@@ -1576,7 +1580,7 @@ async function ensureCombatRenderer(){
   canvas.parentElement.append(status);
   combatGpu=createCombatRenderer(canvas,combatRaster,{onLost:()=>{canvas.parentElement.append(status);status.hidden=false;status.style.display="grid";},onRestored:()=>{status.hidden=true;status.style.display="none";if(typeof combatFirTrees!=='undefined')combatFirTrees?.clearDirectShadows?.();draw();}});
   ctx=combatGpu.context;
-  combatFrames=createCombatFrameScheduler({render:()=>{draw();canvas.dataset.frameStats=JSON.stringify(combatFrames.diagnostics());},enabled:()=>!!game&&["combat","spell-preview"].includes(currentScreen)});
+  combatFrames=createCombatFrameScheduler({render:()=>{draw();canvas.dataset.frameStats=JSON.stringify(combatFrames.diagnostics());if(new URLSearchParams(location.search).has('combatDiagnostics'))canvas.dataset.combatDiagnostics=JSON.stringify({round:game?.round,active:game?.active,quick:quickCommandRunning,pause:combatActionPauseRemaining(),walk:!!globalThis.adventurePartyWalkBusy,spell:spellCastInProgress,beatActive:typeof candidateCombatBeatActive!=='undefined'&&candidateCombatBeatActive,units:allUnits().map(u=>({id:u.id,hp:u.hp,alive:u.alive,pose:u.poseName,until:u.poseUntil,attacks:u.attacksRemaining}))});},enabled:()=>!!game&&["combat","spell-preview"].includes(currentScreen)});
   return combatGpu;
  }).catch(error=>{combatGpuReady=null;throw error;});
  return combatGpuReady;
@@ -2888,7 +2892,9 @@ function setTemporaryUnitPose(unit,poseName,durationMs=null){
   );
 
   unit.poseName=poseName;
-  unit.poseUntil=performance.now()+duration;
+  const poseNow=performance.now();
+  unit.poseStartedAt=unit.workshopDefinition ? (globalThis.adventurePartyWorkshopAnimation?.poseStart(unit,poseName,poseNow) ?? poseNow) : poseNow;
+  unit.poseUntil=poseNow+duration;
 
   if(game) draw();
 
@@ -3669,7 +3675,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   // Stage the whole set before replacing any runtime references.
   UNIT_POSE_DEFINITIONS[id]={
     defaultPose:"stand",actionPose:"attack",
-    actionDurationMs:UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS,
+    actionDurationMs:Number.isFinite(manifest.actionDurationMs) ? manifest.actionDurationMs : (UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS),
     windupDurationMs:Number.isFinite(manifest.windupDurationMs) ? manifest.windupDurationMs : 250,
     directionalSprites,spriteLayout:footprint,mobType,
     partialPoses:manifest.partialPoses===true,actionProfileId:manifest.actionProfileId||null
@@ -5084,7 +5090,7 @@ function unitDepthSortPoint(unit){
   const centers=occupiedHexes(unit).map(cell=>hexCenter(cell.x,cell.y));
   if(!centers.length) return hexCenter(unit?.x||0,unit?.y||0);
 
-  const offset=!unit.alive&&unit.deathWorldOffset?battlefieldProjectVector(unit.deathWorldOffset):{x:0,y:0};
+  const offset=!unit.alive&&unit.deathWorldOffset?battlefieldProjectVector(corpsePresentationOffset(unit)):{x:0,y:0};
   return {
     x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length+offset.x,
     y:Math.max(...centers.map(point=>point.y))+offset.y
@@ -6276,9 +6282,9 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")),
-        import(moduleUrl("js/combat-mob-renderer.mjs?v=R238C205"))
+        import(moduleUrl("js/combat-prepared-assets.mjs?v=direct-assets-1"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
-        generateSpriteSet:rendererModule.generateCombatSpriteSet,
+        generateSpriteSet:rendererModule.loadPreparedCombatUnit,
         cacheLimit:24
       }));
     }
@@ -6287,7 +6293,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       import(new URL("js/combat-pose-recipe.mjs?v=R238C202",document.baseURI).href)
     ]);
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
-    const captured=unit.repositoryMobId&&!fromCombat ? window.adventurePartyRepositoryMobs.recipe(unit) : await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
+    const captured=unit.repositoryMobId&&(!fromCombat||unit.workshopDefinition) ? window.adventurePartyRepositoryMobs.recipe(unit) : await poseModule.loadCombatPoseRecipe({mobType:unit.type,fromCombat});
     if((unit.appearanceRevision||0)!==requestedRevision)return null;
     const result=await runtime.ensure(unit,{
       ...model,
@@ -6304,6 +6310,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!result.applied||(unit.appearanceRevision||0)!==requestedRevision)return null;
     const spriteSetId=window.adventurePartySpriteSets?.register(result.spriteSet);
     if(!spriteSetId)return null;
+    unit.appearanceLoadError=null;
     unit.dynamicAppearanceSpriteSetId=spriteSetId;
     unit.spriteSetId=spriteSetId;
     unit.footprintId=result.spriteSet.manifest?.layout?.id||unit.footprintId||"single";
@@ -6319,7 +6326,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     }));
     return result;
   }catch(error){
-    console.error("On-the-fly MOB appearance render failed; keeping the previous sprite set.",error);
+    unit.appearanceLoadError=String(error?.message||error);
+    console.error("Prepared MOB asset unavailable.",error);
     document.dispatchEvent(new CustomEvent("adventure-party:mob-appearance-error",{
       detail:{unitId:unit?.id||null,revision:requestedRevision,message:String(error?.message||error),reason}
     }));
@@ -12784,7 +12792,7 @@ function makeFighter(){
     f.x=0;
     f.y=0;
     f.alive=true;
-    delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;
+    delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;delete f.deathRotationDelta;delete f.deathAnimationDurationMs;
     f.fled=false;
     f.turnMoves=0;
     f.fullMove=false;
@@ -15201,7 +15209,7 @@ function rangedAiRangeBandFrom(unit,source,target){
     return {distance,band:"OUT",penalty:null};
   }
 
-  if(unit.rangedWeapon==="Longbow" || (unit.repositoryMobId && unit.missileCatalogId!=="sling" && unit.rangedWeapon)){
+  if(unit.rangedWeapon==="Longbow" || (unit.missileCatalogId!=="sling" && unit.rangedWeapon)){
     const increment=Math.max(1,unit.missileRangeIncrementHexes||7);
     const maxRange=Math.min(unit.missileMaxRangeHexes||increment*3,increment*3);
 
@@ -15282,6 +15290,15 @@ async function friendlyNpcTurn(npc){
     return;
   }
 
+  await selectCombatAiWeapon(npc);
+  if(!unitHasRangedWeaponInHand(npc)&&Array.isArray(npc.inventory)){
+    const choice=selectMobPartyTarget(npc),target=choice.target;
+    if(target){
+      if(!canMeleeReach(npc,target))await animateAiAlongPath(npc,choice.path||[],npc.move);
+      if(npc.alive&&!game.over&&canMeleeReach(npc,target)&&npc.turnMoves<=npc.halfMove)await attack(npc,target);
+    }
+    if(!game.over)endTurn();return;
+  }
   setUnitActionBanner(npc,"Choosing Target");
 
   log(
@@ -15479,14 +15496,15 @@ function mobCanMissileAttack(mob,target){
 }
 
 async function mobMissileAttack(mob,target){
-  if(mob.repositoryMobId && mob.rangedWeapon){
+  if(mob.rangedWeapon && mob.missileCatalogId){
     const rate=mob.missileRateOfFire||1;
     const shots=rate<1?(game.round%Math.round(1/rate)===1?1:0):Math.floor(rate);
     for(let shot=0;shot<shots;shot++){
       if(game.over||!mob.alive||!target.alive||!rangedAiCanAttackFrom(mob,mob,target))break;
       if(mob.missileCatalogId==="sling")await slingAttack(mob,target);
       else await longbowAttack(mob,target);
-    }return true;
+    }
+    await selectCombatAiWeapon(mob);return true;
   }
   if(mob.rangedWeapon==="Sling"){
     await slingAttack(mob,target);
@@ -15957,6 +15975,14 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
         continue;
       }
 
+      await selectCombatAiWeapon(p);
+      const shotTarget=unitHasRangedWeaponInHand(p)&&p.missileAmmoQuantity>0?bestRangedAiTargetFrom(p,p):null;
+      if(shotTarget){
+        if(p.missileCatalogId==="sling")await slingAttack(p,shotTarget);else await longbowAttack(p,shotTarget);
+        await selectCombatAiWeapon(p);
+        await waitForCombatActionPause();
+        playerDone();break;
+      }
       const adjacent=activeEnemies()
         .filter(enemy=>canMeleeReach(p,enemy))
         .sort((a,b)=>a.hp-b.hp || a.id.localeCompare(b.id));
@@ -15974,6 +16000,7 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
           break;
         }
 
+        delete p.walkPresentation;delete p.walkStepClock;
         const result=await attack(p,target);
 
         if(result?.hit || result?.criticalMiss){
@@ -16011,7 +16038,7 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
       }
 
       const next=choice.path[1];
-      await tryPlayerMove(next.x-p.x,next.y-p.y);
+      await tryPlayerMove(next.x-p.x,next.y-p.y,{continuous:true});
 
       if(
         !isQuickCommandUnit(p) ||
@@ -16020,9 +16047,10 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
         game.active!==p.id
       ) break;
 
-      await sleep(90);
+      // The shared movement clock provides pacing; do not hold at hex centers.
     }
   }finally{
+    delete selected.walkPresentation;delete selected.walkStepClock;
     quickCommandRunning=false;
     updateUi();
     draw();
@@ -17536,6 +17564,7 @@ async function mobTurn(mob){
     return;
   }
 
+  await selectCombatAiWeapon(mob);
   if(typeof tryMobBreakCombatWindow==='function'&&await tryMobBreakCombatWindow(mob))return;
   if(await repositoryMobCast(mob))return;
 
@@ -18289,6 +18318,40 @@ function equipCarlBowForCombatTest(unit){
  if(!arrows){arrows={name:"Arrows",type:"Ammo",catalogWeaponId:"arrows",qty:20,equipped:false,equippable:false};inventory.push(arrows);}
  arrows.qty=20;
 }
+// Shared AI loadout selection: inventory is authoritative; never mint ammunition.
+function bestCombatWeapon(unit,preferRanged=false){
+ const inventory=unit.inventory||[];
+ const average=value=>{const m=/^(\d+)d(\d+)([+-]\d+)?$/.exec(String(value||''));return m?+m[1]*(+m[2]+1)/2+(+m[3]||0):Number(value)||0;};
+ const candidates=inventory.filter(i=>i.slot==='weapon'||i.slot==='backup-weapon').filter(i=>{
+  if(i.qty===0||i.equippable===false)return false;
+  if(isMageCharacter(unit)&&!mageCanEquipItem(unit,i))return false;
+  if(unit.classId==='cleric'&&!clericCanEquipItem(unit,i))return false;
+  if(i.allowedRaces?.length&&!i.allowedRaces.includes(unit.species))return false;
+  if(i.allowedClasses?.length&&!i.allowedClasses.includes(unit.classId))return false;
+  return true;
+ }).map(item=>{
+  const missile=getMissileCatalogEntry(item.catalogMissileWeaponId||({bow:'bow-short','direct-fire':'crossbow-light',sling:'sling'})[item.weaponPoseProfileId]);
+  const ammo=missile&&(missile.ammoChoices||[missile.ammoId]).find(id=>inventory.some(i=>i.type==='Ammo'&&i.catalogWeaponId===id&&i.qty>0));
+  const base=getWeaponCatalogEntry(missile?ammo:item.catalogWeaponId);
+  const score=average(base?.damageSM||item.damageSM)+(item.magicDamageBonus??item.damageBonus??0)+(item.magicHitBonus??item.hitBonus??0)*.5;
+  return {item,missile,ammo,score};
+ }).filter(c=>!c.missile||c.ammo);
+ const ranged=candidates.filter(c=>c.missile),melee=candidates.filter(c=>!c.missile);
+ const choices=preferRanged&&ranged.length?ranged:melee;
+ choices.sort((a,b)=>b.score-a.score||Number(b.item.equipped)-Number(a.item.equipped));
+ return choices[0]?.item||null;
+}
+async function selectCombatAiWeapon(unit){
+ if(!Array.isArray(unit?.inventory)||!unit.inventory.some(i=>i.slot==='weapon'||i.slot==='backup-weapon'))return;
+ const threatened=hostileCombatantsFor(unit).some(e=>canMeleeReach(unit,e));
+ const selected=bestCombatWeapon(unit,!threatened);
+ const current=unit.inventory.find(i=>i.slot==='weapon'&&i.equipped)||null;
+ if(current===selected)return;
+ for(const item of unit.inventory){if(item.slot==='weapon'||item.slot==='backup-weapon'){item.equipped=item===selected;if(item===selected)item.slot='weapon';}}
+ syncFighterEquipment(unit);
+ await markMobAppearanceDirty(unit);
+}
+
 function syncRepositoryMissileEquipment(unit){
  // Equipment behavior comes from the equipped catalogue item, never the
  // unit's identity, allegiance or repository registration. Class/race
@@ -18303,8 +18366,8 @@ function syncRepositoryMissileEquipment(unit){
  const ammoId=missile.ammoId||missile.ammoChoices?.[0],ammo=getWeaponCatalogEntry(ammoId);
  if(!ammo)return;
  let stack=unit.inventory.find(i=>i.type==="Ammo"&&i.catalogWeaponId===ammoId);
- if(!stack){stack={name:ammo.name,type:"Ammo",catalogWeaponId:ammoId,qty:10,equipped:false,equippable:false};unit.inventory.push(stack);}
- unit.missileAmmoCatalogId=ammoId;unit.missileAmmoName=ammo.name;unit.missileAmmoQuantity=stack.qty;
+ 
+ unit.missileAmmoCatalogId=ammoId;unit.missileAmmoName=ammo.name;unit.missileAmmoQuantity=stack?.qty||0;
  unit.missileRangeIncrementHexes=Math.max(1,(missile.rangeIncrementFt||40)/10);
  unit.missileMaxRangeHexes=unit.missileRangeIncrementHexes*3;
  unit.slingShortRange=unit.missileRangeIncrementHexes;unit.slingMediumRange=unit.slingShortRange*2;unit.slingLongRange=unit.slingShortRange*3;
@@ -18368,12 +18431,13 @@ function syncFighterEquipment(fighter){
   fighter.ac=calculateArmorClass(fighter);
 }
 
-function toggleInventoryEquip(index){
+async function toggleInventoryEquip(index){
   const fighter=game?.player || persistentFighter;
   if(!fighter || !Array.isArray(fighter.inventory)) return;
 
   const item=fighter.inventory[index];
-  if(!item || !item.equippable) return;
+  if(!item || !item.equippable || fighter.equipmentLoadPending) return;
+  const previousEquipment=fighter.inventory.map(entry=>!!entry.equipped);
 
   if(item.equipped){
     item.equipped=false;
@@ -18390,7 +18454,21 @@ function toggleInventoryEquip(index){
 
   syncFighterEquipment(fighter);
   applyFighterClassRules(fighter);
-  markMobAppearanceDirty(fighter);
+  fighter.equipmentLoadPending=true;
+  const loading=combatRenderingPanel();
+  try{
+    await markMobAppearanceDirty(fighter);
+    if(fighter.appearanceLoadError){
+      const message=fighter.appearanceLoadError;
+      fighter.inventory.forEach((entry,i)=>entry.equipped=previousEquipment[i]);
+      syncFighterEquipment(fighter);applyFighterClassRules(fighter);fighter.appearanceLoadError=null;
+      document.getElementById('equipmentAssetNotice')?.remove();
+      const notice=document.createElement('div');notice.id='equipmentAssetNotice';notice.setAttribute('role','alert');
+      notice.style.cssText='position:fixed;top:20px;left:20px;right:20px;z-index:200001;padding:20px;background:#191923;color:#ffe6a0;font:16px system-ui';
+      notice.textContent='Equipment unchanged. '+message+' ';
+      const close=document.createElement('button');close.textContent='Dismiss';close.onclick=()=>notice.remove();notice.append(close);document.body.append(notice);
+    }
+  }finally{fighter.equipmentLoadPending=false;loading.finish();}
 
   if(game?.player===fighter){
     updateUi();
@@ -19301,8 +19379,8 @@ function hiddenUnitOutlineFrame(image,width,height,flip,color){
   t.globalCompositeOperation='destination-out';t.drawImage(shape,0,0);t.globalCompositeOperation='source-over';
   const backing=document.createElement('canvas');backing.width=shape.width;backing.height=shape.height;const b=backing.getContext('2d');
   for(let i=0;i<12;i++){const angle=i*Math.PI/6;b.drawImage(shape,Math.cos(angle)*2.6/zoom,Math.sin(angle)*2.6/zoom);}
-  b.globalCompositeOperation='destination-out';b.drawImage(shape,0,0);b.globalCompositeOperation='source-in';b.fillStyle='#101318';b.fillRect(0,0,backing.width,backing.height);
-  const result={ring,backing,pad};if(cache.size>=16)cache.delete(cache.keys().next().value);cache.set(id,result);return result;
+  b.globalCompositeOperation='destination-out';b.drawImage(shape,0,0);b.globalCompositeOperation='source-in';b.fillStyle=color;b.fillRect(0,0,backing.width,backing.height);b.globalCompositeOperation='source-atop';b.fillStyle='rgba(0,0,0,0.55)';b.fillRect(0,0,backing.width,backing.height);
+  const result={ring,backing,pad};if(cache.size>=16)cache.delete(cache.keys().next().value);if(!image._liveUnitMask)cache.set(id,result);return result;
 }
 
 
@@ -22401,7 +22479,7 @@ function handleCombatKey(event){
 
   if(dir){
     event.preventDefault();
-    tryPlayerMove(dir.x,dir.y);
+    beginKeyboardCombatMove(event.code||event.key,dir.x,dir.y);
     return;
   }
 
@@ -22484,6 +22562,8 @@ function handlePixelKey(event){
   }
 }
 
+document.addEventListener("keyup",event=>releaseKeyboardCombatMove(event.code||event.key));
+window.addEventListener("blur",()=>releaseKeyboardCombatMove());
 document.addEventListener("keydown",(event)=>{
   if(currentScreen==="launcher"){
     handleLauncherKey(event);
@@ -22840,3 +22920,4 @@ addEventListener('adventure-party:tree-aa-change',()=>{if(game)draw();});
 
 
 globalThis.adventurePartyUiAudio?.configure({getContext:()=>ensureAudioContext(),getDestination:()=>sfxGain,isEnabled:()=>audioEnabled});
+

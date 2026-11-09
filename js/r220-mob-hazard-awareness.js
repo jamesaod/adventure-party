@@ -780,7 +780,7 @@ function r220PursuitPointForTarget(mob,target){
    WEIGHTED PATH SEARCH
    ============================================================ */
 
-function r220MobStepCost(mob,next){
+function r220MobStepCost(mob,next,from=null){
   const footprint=occupiedHexesAt(mob,next.x,next.y);
   let hazardCost=0;
 
@@ -796,7 +796,15 @@ function r220MobStepCost(mob,next){
     );
   }
 
-  return 1+hazardCost;
+  let reactionCost=0;
+  if(from&&typeof allUnits==='function'&&typeof unitCanMakeLeavingHexFreeAttack==='function'){
+    const projected={...mob,x:from.x,y:from.y,facingHex:from.facingHex??mob.facingHex};
+    for(const enemy of allUnits()){
+      if(!r220MobCanSeeUnit(mob,enemy))continue;
+      if(unitCanMakeLeavingHexFreeAttack(enemy,projected)&&movementLeavesMeleeReach(enemy,projected,next))reactionCost+=1000;
+    }
+  }
+  return 1+hazardCost+reactionCost;
 }
 
 function r220ReconstructPath(came,start,end){
@@ -873,7 +881,7 @@ function r220WeightedPathSearch(
       if(unitTransitionBlocked(mob,cur,next)) continue;
 
       const nextSteps=cur.steps+1;
-      const nextCost=cur.cost+r220MobStepCost(mob,next);
+      const nextCost=cur.cost+r220MobStepCost(mob,next,cur);
       const nk=key(next.x,next.y);
       const knownCost=bestCost.get(nk);
       const knownSteps=bestSteps.get(nk);
@@ -1013,7 +1021,7 @@ function r220WeightedClosestReachable(mob,target,maxSteps){
       if(unitTransitionBlocked(mob,cur,next)) continue;
 
       const nextSteps=cur.steps+1;
-      const nextCost=cur.cost+r220MobStepCost(mob,next);
+      const nextCost=cur.cost+r220MobStepCost(mob,next,cur);
       const nk=key(next.x,next.y);
       const known=bestCost.get(nk);
       const knownSteps=bestSteps.get(nk);

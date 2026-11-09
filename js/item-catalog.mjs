@@ -1,6 +1,7 @@
+import {installLowPolyWeapons} from './low-poly-weapons.mjs';
 import {ITEM_LIGHT_PROFILES} from './item-lighting.mjs';
 import {ARMOR_ITEMS} from './armor-rules.mjs?v=R238C204';
-export const ITEM_CATALOG_VERSION=5;
+export const ITEM_CATALOG_VERSION=6;
 
 function freezeRecord(value){
   if(value&&typeof value==='object'){
@@ -10,7 +11,7 @@ function freezeRecord(value){
   return value;
 }
 
-export const ITEM_CATALOG=freezeRecord({
+export const ITEM_CATALOG=freezeRecord(installLowPolyWeapons({
   'shield-orc':{
   "id": "shield-orc",
   "name": "Shield, Orc",
@@ -1020,7 +1021,7 @@ export const ITEM_CATALOG=freezeRecord({
       }
     }
   }
-});
+}));
 
 export function itemCatalogEntry(id){
   return id?ITEM_CATALOG[id]||null:null;

@@ -933,7 +933,7 @@
     {
       "name": "drawSpriteFacing",
       "file": "combat-render-units.js",
-      "sha256": "20fc1eda3e4f9422f778aa117503fc643086ac49afb99bbaa0f294b9363e927b",
+      "sha256": "916a9355ac04100b6ae5b16c99d0d93afc4f397bb979834f506b148d54a4f364",
       "postExtractionChange": "Animated attached flaming blade, continuous fire presentation and positioned burning-tree audio; small sword light uses shared lighting sources."
     },
     {
@@ -1026,7 +1026,7 @@
     {
       "name": "waitForCombatUnitRenders",
       "file": "combat-session-state.js",
-      "sha256": "cceddf64f4bebbf7fdd4e32c0f39dea3a05930ac73b7c62a73f3de25f3edd17e"
+      "sha256": "2dce656c88f9bb0ad434bf4f8a065776800f88e63a3e4c8b39d90880d149656b"
     },
     {
       "name": "showCombat",

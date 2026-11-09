@@ -22,7 +22,7 @@ const DEFINITIONS=Object.freeze([
   ['direct-fire','Direct Fire Weapons (Crossbow)','ranged'],
   ['sling','Slings','ranged'],
   ['throw','Throw','ranged'],
-  ['wizard-staff-grip','Wooden Staff 1','melee']
+  ['wizard-staff-grip','Upright Staff Grip','melee']
 ]);
 const validId=id=>typeof id==='string'&&/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id);
 function normalizePose(pose){

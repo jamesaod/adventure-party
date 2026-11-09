@@ -215,3 +215,5 @@ Rev 244: experimental sprite brightness follows hex ground lighting/distance/spe
 Rev 245: portal-daylight.mjs derives diffuse sky apertures and attenuated indoor fill from existing environment/ambient paint and edge/door state. Floors, solid faces, sprite shading, distance relief and tactical illumination share the field. Preserve closed-room occlusion, cached transport/query fast paths and magical Darkness precedence; natural daylight never joins magical Light cancellation sources. See docs/COMBAT_LIGHTING_QA.md.
 
 Rev 246: experimental Outdoor / sky floor uses generated short grass in exploration and combat; indoor stone stays unchanged. Grass repeats once per authored three-metre square and uses runtime filtering. Load grass only for maps containing outdoor floor. Worn variant/provenance retained under assets/textures/exploration; no new map schema. See docs/COMBAT_LIGHTING_QA.md.
+
+- Persistent user-requested to-do notes: consult docs/USER_FOLLOW_UPS.md when discussing follow-ups or next steps; add newly requested notes there. Notes alone are not implementation authorization.

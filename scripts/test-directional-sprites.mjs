@@ -508,7 +508,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
     registeredStudioSpriteSets: new Map(), selectedStudioPlayerSpriteSets: new Map(), defaultStudioPlayerSpriteSets: new Map(),
     document: { getElementById: id => id === "beginBattleButton" ? button : null,
       querySelectorAll: selector => selector === "[data-combat-condition]" ? [conditionButton] : [mobButton],
-      dispatchEvent() {} }, Event,
+      dispatchEvent() {}, addEventListener() {}, removeEventListener() {} }, Event,
     setTimeout(callback, delay) { const timer = { callback, delay, active: true }; callbacks.push(timer); return timer; },
     clearTimeout(timer) { timer.active = false; }, clearInterval() {},
     stopTitleMusic() {}, stopWeatherAudio() {}, updateAudioIndicators() {}, updateCombatConditionSelection() {}, updateCombatMobSelection() {},

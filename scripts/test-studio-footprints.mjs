@@ -1,4 +1,4 @@
-import {readCombatFixture} from './combat-test-source.mjs';
+import {readCombatFixture,extractCombatFunction} from './combat-test-source.mjs';
 import * as armorRules from '../js/armor-rules.mjs';
 import {createRepositoryMobRegistry} from '../js/repository-mobs.mjs';
 import assert from 'node:assert/strict';
@@ -13,11 +13,7 @@ const lifecycleSource=readCombatFixture(new URL('../js/combat-casting-lifecycle.
 const source = readCombatFixture(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
 function productionFunction(name) {
   const code = ['r230InitiativeStore','r230PendingCastings','r230CastingStore','castingInitiativeSlots'].includes(name)?lifecycleSource:name==='createCombatGame'?readCombatFixture(new URL('../js/combat-runtime.js',import.meta.url),'utf8'):source;
-  const start = code.indexOf(`function ${name}(`);
-  assert.ok(start >= 0, `Missing production function ${name}`);
-  const end = code.indexOf('\n}', start);
-  assert.ok(end > start, `Unterminated production function ${name}`);
-  return code.slice(code.slice(start - 6, start) === 'async ' ? start - 6 : start, end + 2);
+  return extractCombatFunction(code,name);
 }
 function productionDeclaration(name, endMarker = '\n};') {
   const start = source.indexOf(`const ${name}=`);

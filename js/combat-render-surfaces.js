@@ -1151,7 +1151,9 @@ function drawFloor(){
 
 function drawActiveHex(entity,color){
   if(globalThis.adventurePartySun?.drawingGround)return;
-  for(const cell of occupiedHexes(entity)){
+  const motion=entity.walkPresentation;
+  const anchor=motion ? (motion.t>=0.5 ? motion.to : motion.from) : entity;
+  for(const cell of occupiedHexes({...entity,x:anchor.x,y:anchor.y})){
     const top=hexScreenVertices(cell.x,cell.y);
 
     polygonPath(top);

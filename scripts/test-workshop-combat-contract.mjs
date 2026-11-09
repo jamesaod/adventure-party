@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import {newDraft} from '../js/mob-workshop-core.mjs';
+import {ensureCreature} from '../js/mob-workshop-creature.mjs';
+import {saveFit} from '../js/mob-workshop-fit-store.mjs';
+import {workshopCombatInventory,workshopCombatFits,instantiateWorkshopCombat,workshopCombatReadiness} from '../js/workshop-combat-contract.mjs';
+
+const d=newDraft();d.model={id:'orc',file:'orc.glb'};ensureCreature(d);
+d.stats.int=0;d.classes=[{id:'fighter',level:3},{id:'mage',level:2}];
+d.inventoryItems=[{id:'long-sword',quantity:1,location:'main-hand'},{id:'shield-orc',quantity:1,location:'off-hand'},{id:'arrow',quantity:19,location:'back'}];
+d.equipment.armor='chain-mail';d.equipment.main='long-sword';
+const fit={rightHand:'long-sword',position:[1,2,3],rotation:[0,90,0],sizePercent:105};saveFit(d,'main',fit);
+d.equipment.main='none'; // Fitting selection must not replace inventory loadout.
+assert.deepEqual(workshopCombatFits(d).main,fit);
+const inv=workshopCombatInventory(d);
+assert.equal(inv.find(i=>i.catalogItemId==='arrow').type,'Ammo');
+assert.equal(inv.find(i=>i.catalogItemId==='arrow').qty,19);
+assert.equal(inv.find(i=>i.catalogItemId==='chain-mail').equipped,true);
+assert.equal(inv.filter(i=>i.catalogItemId==='chain-mail').length,1);
+const a=instantiateWorkshopCombat(d,{id:'a'}),b=instantiateWorkshopCombat(d,{id:'b'});
+assert.equal(a.ac,4);assert.equal(a.stats.int,0);assert.equal(a.classes.length,2);
+assert.deepEqual(a.saves,{death:14,wand:16,poly:15,breath:17,spell:17});
+a.inventory[2].qty=0;a.conditions.push('test');a.classes[0].level=99;a.hp=0;
+assert.equal(b.inventory[2].qty,19);assert.deepEqual(b.conditions,[]);assert.equal(b.classes[0].level,3);assert.equal(b.hp,8);
+assert.equal(d.inventoryItems[2].quantity,19);
+d.creature.combat.hpMode='roll';d.creature.combat.hitDice='2d8+2';
+assert.equal(instantiateWorkshopCombat(d,{id:'low',random:()=>0}).hp,4);
+assert.equal(instantiateWorkshopCombat(d,{id:'high',random:()=>.999}).hp,18);
+const ready=workshopCombatReadiness({draft:d,files:{'model.bin':new ArrayBuffer(4)}});
+assert.equal(ready.ready,false);
+assert(ready.reasons.some(r=>r.includes('publication')));
+assert(ready.reasons.some(r=>r.includes('animation assignments')));
+d.creature.combat.magicResistance=50;d.creature.body.fly=12;
+const gated=workshopCombatReadiness({draft:d,files:{'model.bin':new ArrayBuffer(4)}});
+assert(gated.reasons.some(r=>r.includes('Magic resistance')));
+assert(gated.reasons.some(r=>r.includes('Special movement')));
+console.log('Workshop combat boundary: inventory, fits, saves, instance isolation, HP policy and unsupported capability gates passed');
