@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
+const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/combat-environment-actions.js',import.meta.url),'utf8');
+const window={id:'pane',center:{x:1,y:0},broken:false};let committed=0,meleePicked=0;
+const context=vm.createContext({combatSceneTerrain:{windows:[window]},environmentHex:p=>p,worldPointForHex:(x,y)=>({x,y}),environmentRayHit:(from,to)=>!window.broken&&from.y>0&&to.y<=0?{windowId:'pane'}:null,pendingAimAction:{spellId:'fireball'},aimMode:true,aimCursor:{x:1,y:-1},spellCasterForAction:()=>({x:1,y:1,alive:true}),activePlayerControlledUnit:()=>({x:1,y:1,alive:true}),setCombatMessage(){},longbowAttack:async()=>{committed++;},missileMeleeTarget:(_a,b)=>{meleePicked++;return b;},resolvePreparedSpellAction:async()=>{committed++;return true;},resolveSlingAction:async()=>{committed++;return true;}});
+vm.runInContext(source.slice(source.indexOf('function environmentWindowAtTarget('),source.indexOf('function playEnvironmentGlass(')),context);
+for(const name of ['castPreparedCombatSpell','slingAttack']){const start=engine.indexOf('async function '+name+'('),end=engine.indexOf('\nasync function ',start+1);vm.runInContext(engine.slice(start,end),context);}
+const actor={x:1,y:1},beyond={x:1,y:-1};
+assert(context.combatWindowTargetBlocked(actor,beyond));
+assert(!context.combatWindowTargetBlocked(actor,{x:1,y:0}),'The pane itself remains a valid environmental target');
+assert(!context.combatWindowTargetBlocked(actor,actor),'Same-side/self targets remain valid');
+assert(context.environmentAimBlocked());
+assert.equal(await context.castPreparedCombatSpell({spellId:'fireball'},beyond),false);
+assert.equal(await context.castPreparedCombatSpell({spellId:'wall-of-fog'},beyond),false,'Non-projectile spells follow the same targeting rule');
+assert((await context.slingAttack(actor,beyond)).blockedByObstacle);
+assert.equal(committed,0,'Rejected targets never reach the spell/ammunition/action committers');
+window.broken=true;
+assert(!context.environmentAimBlocked());
+assert.equal(await context.castPreparedCombatSpell({spellId:'fireball'},beyond),true);
+assert.equal(committed,1);
+console.log('PASS common spell/missile window targeting, invalid AIM, pane/self targets and zero commit before rejection; broken glass restores targeting');

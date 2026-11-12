@@ -1,0 +1,3 @@
+Adventure Party candidate QA build.
+This path is generated from the repository's candidate branch.
+Stable production content remains at the site root and comes from main.

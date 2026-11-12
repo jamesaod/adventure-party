@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "families": {
+    "one-handed-swing": {
+      "label": "One-handed swinging weapon",
+      "carrier": "assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb",
+      "clips": [
+        "UAL2_Sword_Ready",
+        "UAL2_Sword_Regular_A"
+      ],
+      "source": "Quaternius Universal Animation Library 2",
+      "licenseFile": "assets/models/dungeon-crawler-carl/v2-ual2-sword-test/LICENSE-UAL2.txt",
+      "note": "Temporary repository animation carrier: the approved clips are read from Carl's proof GLB and retargeted at load time. The target character mesh is never replaced."
+    }
+  }
+}

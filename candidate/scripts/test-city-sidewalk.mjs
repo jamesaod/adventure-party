@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {blankEdgeMap,paintCell,seedPack,parsePack,resizeMap} from '../js/exploration-authoring.mjs';
+import {groundKind,validateGround} from '../js/exploration-ground.mjs';
+import {sidewalkSides,sidewalkAlongWall,SIDEWALK_HEIGHT} from '../js/city-sidewalk.mjs';
+import {roadStones,roadRelief,roadSignature} from '../js/broken-stone-road.mjs';
+import {terrainForEncounter} from '../js/exploration-encounters.mjs';
+const m=blankEdgeMap('sidewalk-test','Sidewalk test');for(let z=2;z<6;z++)for(let x=2;x<7;x++)paintCell(m,x,z,'ground-road');
+paintCell(m,3,3,'ground-sidewalk');paintCell(m,4,3,'ground-sidewalk');validateGround(m);assert.equal(groundKind(m,3,3),'sidewalk');assert(!sidewalkSides(m,3,3).includes('e'));assert(!sidewalkSides(m,4,3).includes('w'));assert.equal(SIDEWALK_HEIGHT,.15);
+const key=roadSignature(m,3,3);paintCell(m,4,3,'ground-road');assert(sidewalkSides(m,3,3).includes('e'));assert.notEqual(roadSignature(m,3,3),key);
+m.edges=[{axis:'v',x:3,z:3,kind:'wall',id:'test-wall'}];assert.equal(sidewalkAlongWall(m,3,3),'v');const vertical=roadStones(m,3,3);m.edges=[{axis:'h',x:3,z:3,kind:'wall',id:'test-wall'}];assert.equal(sidewalkAlongWall(m,3,3),'h');assert.notDeepEqual(roadStones(m,3,3),vertical);
+const restored=parsePack(JSON.stringify(seedPack(m))).maps[0];resizeMap(restored,18,18);assert.equal(groundKind(restored,3,3),'sidewalk');assert.deepEqual(roadRelief(restored,3,3,32),roadRelief(m,3,3,32));assert.equal(terrainForEncounter(restored,{x:3,z:3},new Set()).spaces.find(s=>s.id==='floor-3-3').ground,'sidewalk');console.log('PASS sidewalk paint, connections, erase, wall alignment, normal maps, save/resize and combat handoff');

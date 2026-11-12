@@ -1,0 +1,11 @@
+# Orc Archer — Candidate Rev 201
+
+Imported `humanoid-1793293421747.unit-package.json` as `data/mobs/orc-archer.unit-package.json`. The generic name/ID become Orc Archer / orc-archer; species becomes Orc. Authored generation remains: no class level 1 75%, Fighter 3 20%, Fighter 4 5%; Bow 100%; empty off hand 100%; Shield, Orc always carried, not equipped. The model is Orc Leader, Male, Uniformed at 135% / 109% hex scale, single hex. Bow Ready is Standing Idle at 0; Wind Up/Attack are Standing Aim Recoil at 0 / 0.2555 seconds. All other source assignments remain unchanged. The pose library display name now matches Orc Archer.
+
+Choose Orc Archer in combat setup's Add MOB list, with either allegiance. MOB Catalog provides its package for import/editing in MOB Creator. This is a distinct template; regular Orcs remain unchanged. The repository registry dispatches rendering by repository MOB ID, not model or faction.
+
+Portable Unit Packages need no sprite PNGs or captured camera. When camera data is absent, the shared renderer uses Studio's normalized rest-body framing formula once, before attaching equipment or playing animations; the exported scale and footprint determine battlefield dimensions. Existing captured-camera packages retain their exact camera path. Future model exports still carry model/scale/grips and source frame references.
+
+Repository MOBs assigned bows, crossbows or slings receive 10 matching ammunition on first assignment: arrows, bolts or sling bullets. Inventory quantities and the combat ammo counter remain synchronized, misses consume ammo, and empty stacks remain so equipment synchronization cannot refill them. Bow uses the existing short-bow catalog profile (matching the 59-inch asset); crossbow defaults to light crossbow. Explicit catalog missile IDs override those defaults. Existing ranged resolvers handle attacks and dedicated ranged AI handles positioning. No ammunition is consumed by a blocked or out-of-range shot. Carried shields do not give AC while the two-handed bow is equipped.
+
+To add another repository MOB, preserve its package, register it in repository-mobs, add its combat choice/factory routing and SPRITE_MOBS entry, and run the repository-MOB/ranged-ammo tests. Source pose weapons are calibration references, while generated equipment determines the visible runtime item.

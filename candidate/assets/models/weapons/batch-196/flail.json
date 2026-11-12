@@ -1,0 +1,72 @@
+{
+  "id": "flail",
+  "sourceTriangles": 70426,
+  "triangles": 4800,
+  "bytes": 416084,
+  "sha256": "683728f5311725f44d23dc607d4d8275b1655cefa0eaa4e579f153073ac097eb",
+  "textureResolution": 256,
+  "sourceAxis": [
+    0.015682017626599393,
+    0.5375351209766105,
+    0.8430955272327207
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "medieval-flail.zip",
+  "sourceArchiveSha256": "f1bea8b70b0994a03651bcfe83581cc38f81c3f32fd3ef1051fb64bd8d574210",
+  "sourceSha256": "b0806245e893f8466e680b6db2925f8ec8ef7975ff4de325be69f3934baa72c3",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        100.11373114585876,
+        88.43730020523071,
+        80.43517875671387
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "outputMean": [
+        100.1199951171875,
+        88.44154357910156,
+        80.43971252441406
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        125.55695271492004,
+        125.61288595199585,
+        252.2915439605713
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    },
+    "roughness": {
+      "sourceMean": [
+        133.3443157672882,
+        133.3443157672882,
+        133.3443157672882
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    },
+    "metallic": {
+      "sourceMean": [
+        94.79227447509766,
+        94.79227447509766,
+        94.79227447509766
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    }
+  }
+}

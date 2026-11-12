@@ -1,0 +1,21 @@
+{
+  "id": "male-orc-blue",
+  "sourceArchive": "tripo_convert_765f7612-30aa-4194-880b-4e1314432573.zip",
+  "sourceFile": "tripo_convert_765f7612-30aa-4194-880b-4e1314432573.fbx",
+  "sourceSha256": "47a2285d37d95081db53b66793166acdd1b9f8eb81628335377646f277bc4750",
+  "sourceTextureSha256": "f1d9563a1690b4949349c50b5b75bc3bf087c2cf7cbe3c672af93287832ac67a",
+  "triangles": 12321,
+  "sourceVertices": 6395,
+  "bones": 65,
+  "textureSize": [
+    512,
+    512
+  ],
+  "bytes": 1234056,
+  "sha256": "83dbcd9535a2edc38a30b48fe179170076c83c12da166872ceb0c4cf0681a30c",
+  "importer": "Blender 5.1.1",
+  "animationLibrary": "uploaded-fbx",
+  "retargetMode": "world-bind-delta",
+  "hipTranslation": "scaled-world-y",
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. Original PNG embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring."
+}

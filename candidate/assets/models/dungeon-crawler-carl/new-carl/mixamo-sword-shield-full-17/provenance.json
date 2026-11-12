@@ -1,0 +1,189 @@
+{
+  "method": "mixamo-xbot-world-delta-target-bind-bake-v2",
+  "source_glb": "New+DCC(1).glb",
+  "input_glb_sha256": "07fd945a1c9d08690b4619c997d700b2989d238c2b0cf68674ca0cc898962156",
+  "reference_fbx_sha256": "7cda48832cd2e612224c08f75269b7dea5731fa0d798abada6040fee94002e29",
+  "fps": 60,
+  "height_scale": 0.005185826538450732,
+  "basis_correction_degrees": 3.8123325618343165,
+  "source_animation_count": 0,
+  "clips": [
+    {
+      "name": "Mixamo_draw_sword_1",
+      "source_fbx": "draw sword 1.fbx",
+      "sha256": "a847576b3101382af6c0cafd29417d92c73256b7068a921b7dbbfa6a6e906202",
+      "duration": 0.5,
+      "frame_count": 31,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.011760987634472687,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sheath_sword_1",
+      "source_fbx": "sheath sword 1.fbx",
+      "sha256": "20a7944ca4903d09c370eacdacbf338c48823a0fbfc6f35f2fa610d0f32c4b03",
+      "duration": 1.2666666507720947,
+      "frame_count": 77,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.08326923621789159,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack_2",
+      "source_fbx": "sword and shield attack (2).fbx",
+      "sha256": "4b4424f01922fb084e8c6e87ce14071c83bc7742514dcc1287cff95d27ca0ce0",
+      "duration": 1.2999999523162842,
+      "frame_count": 79,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.20478934573765548,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack_3",
+      "source_fbx": "sword and shield attack (3).fbx",
+      "sha256": "23b14cf921762e6c96af1df2bc9e192127a3244e6805fc972130ca71ff6fe0de",
+      "duration": 1.7333333492279053,
+      "frame_count": 106,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.2770768669913639,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack_4",
+      "source_fbx": "sword and shield attack (4).fbx",
+      "sha256": "ef639b9ef713e80c538278c111af7fe8d93d1b61f32931af144e7f82eb5767a3",
+      "duration": 1.0,
+      "frame_count": 61,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.0970139832719578,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_attack",
+      "source_fbx": "sword and shield attack.fbx",
+      "sha256": "7b292846c427bb1530d0e617b134da00a5725b044bbfb3e9c2b206ec6f724897",
+      "duration": 2.3333332538604736,
+      "frame_count": 141,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.47158424194199894,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_block_2",
+      "source_fbx": "sword and shield block (2).fbx",
+      "sha256": "8cbe5ec9d16b86d11df635ff4804b8e741b94c42b7ec225051f357cac38f606d",
+      "duration": 0.5,
+      "frame_count": 31,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.14675166370892664,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_block_idle",
+      "source_fbx": "sword and shield block idle.fbx",
+      "sha256": "bef6f7ae41d7ce9900e10243be7c4496a30bc3d62d5a824635c1d0197e8b09f5",
+      "duration": 1.3666666746139526,
+      "frame_count": 83,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.14693260162405578,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_block",
+      "source_fbx": "sword and shield block.fbx",
+      "sha256": "af2ad0e3c816b06ba71482575c054c9e7ac7923220c5f34fbc08e625319ae31b",
+      "duration": 0.5666666626930237,
+      "frame_count": 35,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.15579255969239744,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_death",
+      "source_fbx": "sword and shield death.fbx",
+      "sha256": "b164a8891e685017b4498b2007a2f16dd7acab0c552055dde94dbacaf8963964",
+      "duration": 2.299999952316284,
+      "frame_count": 139,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.42072525588398113,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_idle",
+      "source_fbx": "sword and shield idle.fbx",
+      "sha256": "e87bae06d9fe84bdb42ea16640f33d8fe2b10fcefa147ad498de7b96cbf02b86",
+      "duration": 2.5,
+      "frame_count": 151,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.0832692339368578,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_run_2",
+      "source_fbx": "sword and shield run (2).fbx",
+      "sha256": "91c395b0edbe72878aa908aadae51e1d4b8b8a2c3edc773196ec3935f38e1980",
+      "duration": 0.5333333611488342,
+      "frame_count": 33,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.046157666716050025,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_run",
+      "source_fbx": "sword and shield run.fbx",
+      "sha256": "1dd45649be5e625c21dad5e204f4c3b867ae163faef4ab613638593e83c3ae0c",
+      "duration": 0.699999988079071,
+      "frame_count": 43,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.16040850362494277,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_strafe_2",
+      "source_fbx": "sword and shield strafe (2).fbx",
+      "sha256": "b5a4bffbc270fb06f4c12da91f9366e27cf46b2544dc8775ac8257681bddeaee",
+      "duration": 0.699999988079071,
+      "frame_count": 43,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.03570308568185306,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_strafe",
+      "source_fbx": "sword and shield strafe.fbx",
+      "sha256": "723983447acf3a7afa65aae70788944fa2cbb0ea63d10ccc3508289ce02b1a59",
+      "duration": 0.6666666865348816,
+      "frame_count": 41,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.049168295568030505,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_turn_2",
+      "source_fbx": "sword and shield turn (2).fbx",
+      "sha256": "91a2fbdb9df3a0200124b90d795e0f0edd3b88d4a8daa259540203082f1ad224",
+      "duration": 0.9333333373069763,
+      "frame_count": 57,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.08362539105014258,
+      "reference_bind_max_degrees": 1.1084652928940277
+    },
+    {
+      "name": "Mixamo_sword_and_shield_turn",
+      "source_fbx": "sword and shield turn.fbx",
+      "sha256": "63f44ad36cd6bb37f1e7f7dd1c4b823831374f087745a37a583e63237345c56e",
+      "duration": 0.8666666746139526,
+      "frame_count": 53,
+      "rotation_tracks": 65,
+      "max_hips_translation": 0.08755776602547212,
+      "reference_bind_max_degrees": 1.1084652928940277
+    }
+  ],
+  "in_place_policy": "Remove hips horizontal XZ delta; retain source yaw rotation and hips Y delta.",
+  "visual_qa": "PENDING: automated rig/GLB preservation does not establish visually correct limb geometry",
+  "output_glb_sha256": "65aec8f790b9de9dda10f2efa8561075fc144518b93b15b376f47c5c7e411f08",
+  "output_size_bytes": 2799568,
+  "count": 17,
+  "mapped_joint_count": 65,
+  "all_source_nodes_and_skins_preserved": true
+}

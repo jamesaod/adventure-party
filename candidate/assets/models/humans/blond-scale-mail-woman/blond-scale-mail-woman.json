@@ -1,0 +1,21 @@
+{
+  "id": "blond-scale-mail-woman",
+  "sourceArchive": "Blond+Haired+Woman+in+Scale+Mail.zip",
+  "sourceFile": "tripo_convert_de98a781-0abc-437e-899c-cd3858e1c721.fbx",
+  "sourceSha256": "0505426c854ecebb3fcccd199488e5d8c042cf34e374546f0d3985bc602e8508",
+  "sourceTextureSha256": "aedc56d7bc386a8532ab2d11a37c22f9896371bd2ff30b451612c15d68c5c12a",
+  "triangles": 10717,
+  "sourceVertices": 5680,
+  "bones": 65,
+  "textureSize": [
+    2048,
+    2048
+  ],
+  "bytes": 6885272,
+  "sha256": "005801aa3139a8ca9abe489201f67a2b5a0b0e25928687d4d036c14065b9736c",
+  "importer": "Blender 5.1.1",
+  "animationLibrary": "uploaded-fbx",
+  "retargetMode": "world-bind-delta",
+  "hipTranslation": "scaled-world-y",
+  "notes": "Original topology and skin retained; Y-up GLB conversion with armature unit scale normalized for shared hand mounts. Original PNG embedded byte-for-byte. Opaque nonmetallic base-color material; no geometry reduction or recoloring."
+}

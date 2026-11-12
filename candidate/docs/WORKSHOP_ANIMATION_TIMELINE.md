@@ -1,0 +1,13 @@
+# Workshop animation timeline — local R238C310
+
+The playback panel now contains a full-source timeline. Each stitched source clip has a distinct color; retained intervals are colored and skipped intervals remain grey. Source durations and speeds define the ruler. Changing trim starts/ends does not change the ruler extent, segment positions or scale. Playback skips the omitted intervals and uses the existing blended composition.
+
+IN and OUT handles occupy separate rows so adjacent clip boundaries remain selectable. Gold ▲ means String attaches (the existing `bowTiming.draw` event); coral ▼ means Arrow release. Dragging an event seeks to it and updates the string/arrow state. Completing a trim rebuilds the paused preview. Handles support arrow keys, Shift for larger increments, Home/End, pointer capture, cancellation and resizing. Clicking grey seeks to the nearest retained boundary. Exact numeric controls remain under Exact timing values.
+
+`animation-timeline.mjs` supplies generic segment/event editing, a DOM view, source/playback coordinate conversion and fixed ruler layout. The current stitch editor uses Notch and Shoot; the timeline can accept other segment lists. It adds no frame loop. The Workshop's existing loop updates the playhead.
+
+`bowSequenceTiming` and `bowSequenceSourceTiming` in `bow-animation-sequence.mjs` map source events to/from the compiled animation, including both source speeds and the blend overlap. Timeline handles, numeric timing and sequence composition use that mapping. Selecting a composed clip restores its bow timing, and new Notch selections default attachment to 25% of the source instead of zero (which prevented a pickup lead-in).
+
+Preview composition cannot overwrite animation tracks referenced by an assignment. **Apply sequence to Bow** stores the compiled tracks, source recipe and `bowTiming` on the draft's Bow assignment. Save draft preserves that project; export and normal MOB publication carry it to combat. Editing a draft does not silently overwrite an already published MOB. Combat continues using `bowArrowStateAt` and `workshopAttackTiming`: release determines the windup/impact boundary and the remainder of Shoot plays as recovery.
+
+Validation: `test-animation-timeline` covers fixed ruler/grey intervals, speed and blend mapping, marker ordering, real DOM-handler pointer/keyboard/cancel/resize behavior using a minimal DOM fixture, actual Workshop composition handlers, assignment isolation, serialization and combat arrow states/attack durations. Bow composition, arrow preview, portable projects, published reopening, combat contract and repository validation pass. Visual QA remains with the user; no preview delivery or remote publishing.

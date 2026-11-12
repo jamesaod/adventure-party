@@ -1,0 +1,34 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local server / temporary output
+*.log
+tmp/
+temp/
+.local/workshop-imports/
+.local/corpse-profile*.json
+
+# Packaged development artifacts
+*.zip
+
+# Local test captures
+*_test.png
+*_test2.png
+*_test3.png
+
+# Keep the current playable baseline in Git.
+# Historical numbered standalone HTML builds belong in Git history/tags,
+# not alongside index.html.
+adventure-party-r*.html
+
+# Local diagnostics and unshared authoring intermediates
+.local/
+work/
+__pycache__/
+assets/combat-units/
+

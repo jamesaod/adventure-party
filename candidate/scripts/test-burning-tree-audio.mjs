@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
+const source=fs.readFileSync('js/combat-effect-animation.js','utf8');let started=0,stopped=0,decoded=0,intervals=0;
+const node=()=>({connect(){},disconnect(){},gain:{value:0,setTargetAtTime(){}},pan:{setTargetAtTime(){}}});
+const context=vm.createContext({console,Math,Set,Map,performance:{now:()=>1000},setInterval:()=>++intervals,clearInterval(){},currentScreen:'combat',audioEnabled:true,audioReady:true,HEX_W:64,BATTLEFIELD_LOGICAL_WIDTH:800,BATTLEFIELD_LOGICAL_HEIGHT:600,sfxGain:node(),game:{player:{x:0,y:0},firFireStates:{a:{x:1,y:1,state:'burning'},b:{x:3,y:1,state:'burning'}}},getUnitById:()=>null,hexCenter:(x,y)=>({x:x*64,y:y*32}),fetch:async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(4)}),audioCtx:{state:'running',currentTime:0,decodeAudioData:async()=>{decoded++;return {duration:5};},createBufferSource:()=>({...node(),start(){started++;},stop(){stopped++;}}),createGain:node,createStereoPanner:node}});
+vm.runInContext(source,context);vm.runInContext('syncBurningTreeAudio()',context);await new Promise(r=>setTimeout(r,0));
+assert.equal(started,2);assert.equal(decoded,1);assert.equal(intervals,1);
+vm.runInContext('burningTreeAudio.next=0;syncBurningTreeAudio()',context);assert.equal(started,2,'Repeated frames reuse voices');
+vm.runInContext("game.firFireStates.a.state='burnt';burningTreeAudio.next=0;syncBurningTreeAudio()",context);assert.equal(stopped,1);
+vm.runInContext("currentScreen='launcher';burningTreeAudio.next=0;syncBurningTreeAudio()",context);assert.equal(stopped,2,'Leaving combat stops every voice');
+console.log('PASS shared fire decode, separate tree voices, stable reuse, burnout and combat-exit cleanup');

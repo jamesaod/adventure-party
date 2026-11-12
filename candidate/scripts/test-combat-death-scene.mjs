@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+import {extractCombatFunction} from './combat-test-source.mjs';
+let now=0;const math=Object.create(Math);math.random=()=>.5;
+const c=vm.createContext({game:{},Math:math,HEX_W:30,performance:{now:()=>now},worldPointForHex:(x,y)=>({x:x*30,y:y*20}),environmentSquash:()=>.6,environmentHex:p=>({x:Math.round(p.x/30),y:Math.round(p.y/20)}),environmentRayHit:()=>null,inside:()=>true,combatSceneTerrain:null,combatSceneContext:null,ensureTransientUnitFxLoop(){},draw(){}});
+const source=readFileSync('js/combat-environment-state.js','utf8');vm.runInContext(source.slice(source.indexOf('// Encounter-local arrow blood')),c);
+const attacker={x:0,y:0},target={x:2,y:2};c.startArrowBlood(attacker,target,3);const normal=c.game.bloodState.bursts[0];
+c.game={};c.startArrowBlood(target,target,1,{death:true});const death=c.game.bloodState.bursts[0],pool=c.game.bloodState.pools[0];
+assert.equal(death.drops.length,normal.drops.length*4);assert.equal(Math.max(...death.drops.map(d=>d.delay+d.duration)),normal.drops[0].duration*4);
+assert.equal(pool.started,1000);now=1000;c.settleCombatBlood();assert.ok(death.drops.some(d=>!d.settled),'Death continues emitting after normal splatter finishes');
+now=3999;assert.equal(c.settleCombatBlood(),true,'Pool animates for three seconds after prone transition');now=4001;assert.equal(c.settleCombatBlood(),false);
+const engine=readFileSync('js/adventure-party.js','utf8');
+c.unitPoseDefinition=()=>({});c.unitPoseSupportsPose=(_d,p)=>['falling','prone'].includes(p);
+vm.runInContext(extractCombatFunction(engine,'activeUnitPoseName'),c);
+const corpse={alive:false,deathPresentationStartedAt:100};assert.equal(c.activeUnitPoseName(corpse,1099),'falling');assert.equal(c.activeUnitPoseName(corpse,1100),'prone');assert.equal(c.activeUnitPoseName(corpse,10000),'prone');
+assert.equal(c.activeUnitPoseName({alive:false},50),'stand','Lethal target remains visible upright while awaiting its death beat');
+const frames=Object.fromEntries(['E','NE','NW','W','SW','SE'].map(name=>[name,{image:{complete:true,naturalWidth:10,naturalHeight:10},assetId:name}]));
+c.HEX_DIRS=Object.keys(frames).map(name=>({name}));c.facingDirectionIndex=()=>0;c.battlefieldRotation=0;
+c.unitPoseDefinition=()=>({defaultPose:'stand',directionalSprites:{stand:frames,falling:frames,prone:frames}});
+vm.runInContext(extractCombatFunction(engine,'directionalUnitPoseFrame'),c);
+corpse.deathFacingHex=4;
+assert.equal(c.directionalUnitPoseFrame(corpse,'falling').facing,'SW');assert.equal(c.directionalUnitPoseFrame(corpse,'prone').facing,'SW','Falling and prone keep one randomized facing');
+c.battlefieldRotation=1;assert.equal(c.directionalUnitPoseFrame(corpse,'prone').facing,'W','Corpse orientation remains world-fixed when camera rotates');
+const frameSource=readFileSync('js/combat-render-frame.js','utf8');
+assert.ok(frameSource.includes('if(corpse&&deathPresentationActive(corpse)&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse))'),'Corpse render list includes pending death beats without a visibility gap');
+c.allUnits=()=>[corpse];c.unitOccupiesHex=()=>true;vm.runInContext(extractCombatFunction(engine,'occupiedByAnyUnit'),c);assert.equal(c.occupiedByAnyUnit(0,0),false,'Corpse hex is passable');corpse.alive=true;assert.equal(c.occupiedByAnyUnit(0,0),true,'Live occupants still block');
+console.log('PASS fourfold death emission amount/duration, three-second pool activity, exact one-second falling/prone transition and corpse movement access');
+// Uniform triangle sampling stays within the death hex and stops at walls.
+c.architecturalHexCoreVertices=(x,y)=>{const p=c.worldPointForHex(x,y);return [[0,-10],[15,-5],[15,5],[0,10],[-15,5],[-15,-5]].map(([a,b])=>({x:p.x+a,y:p.y+b}));};
+const realRandom=Math.random;math.random=realRandom;
+for(let i=0;i<1000;i++){const offset=c.sampleCorpseOffset({x:0,y:0});assert.ok(Math.abs(offset.x)<=15+1e-9&&Math.abs(offset.y)<=10-Math.abs(offset.x)/3+1e-9);}
+math.random=()=>.5;const unrestricted=c.sampleCorpseOffset({x:0,y:0});c.environmentRayHit=()=>({t:.5});const restricted=c.sampleCorpseOffset({x:0,y:0});assert.ok(Math.hypot(restricted.x,restricted.y)<Math.hypot(unrestricted.x,unrestricted.y));
+c.game={};now=0;c.startArrowBlood(target,{...target,deathWorldOffset:{x:4,y:3}},1,{death:true});assert.equal(c.game.bloodState.pools[0].origin.x,64);assert.equal(c.game.bloodState.pools[0].origin.y,43,'Blood pool follows the body placement');
+console.log('PASS corpse positions inside hex, wall-bounded offsets and blood pool alignment');
+
+c.game={};c.startArrowBlood(target,{...target,fireDeath:true},5,{death:true});assert.equal(c.game.bloodState,undefined,"Fire death creates no blood or pool");
+
+// The last casualty must finish a long death clip before results may end combat.
+corpse.alive=false;corpse.deathAnimationDurationMs=2600;
+assert.equal(c.activeUnitPoseName(corpse,2699),'falling');
+assert.equal(c.activeUnitPoseName(corpse,2700),'prone');
+c.deathActionPauseUntil=1100;c.allUnits=()=>[corpse];
+vm.runInContext(extractCombatFunction(engine,'deathPauseRemaining'),c);
+now=1200;assert.equal(c.deathPauseRemaining(),1500);
+now=2700;assert.equal(c.deathPauseRemaining(),0);
+console.log('PASS death clip duration controls pose transition and combat end pause');

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {prepareCorpseSnow,advanceCorpseSnow,meltCorpseSnow,resetCorpseSnow} from '../js/combat-corpse-snow.mjs';
+const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial();group.add(new THREE.Mesh(new THREE.BoxGeometry(1,.2,2),mat));
+const entity={x:2,y:3,alive:false},start=performance.now(),amount=prepareCorpseSnow(group,entity);
+console.log('Exposure bake on box:',(performance.now()-start).toFixed(2),'ms (not a production model benchmark)');
+const mask=group.children[0].geometry.attributes.corpseSnowExposure;assert(Math.max(...mask.array)===1);assert(Math.min(...mask.array)===0);
+advanceCorpseSnow(new Map(),.5);assert.equal(amount.value,0);
+advanceCorpseSnow(new Map([['2,3',{}]]),.5);assert.equal(amount.value,.5);
+meltCorpseSnow(['9,9'],1);assert.equal(amount.value,.5);meltCorpseSnow(['2,3'],.5);assert.equal(amount.value,.25);
+resetCorpseSnow();assert.equal(amount.value,0);entity.alive=true;advanceCorpseSnow(new Map([['2,3',{}]]),1);assert.equal(amount.value,0);
+console.log('PASS slope exposure, outdoor eligibility, gradual accumulation, local melting, clear and resurrection');

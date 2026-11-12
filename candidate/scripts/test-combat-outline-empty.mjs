@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {extractCombatFunction} from './combat-test-source.mjs';
+const s=readFileSync('js/combat-render-units.js','utf8');let alpha=0,draws=0;
+const unit={entity:{id:'ally',alive:true,faction:'player'},index:0,x:0,y:0,width:20,height:20,image:{}};
+const mask={width:30,height:30,getContext:()=>({setTransform(){},clearRect(){},translate(){},drawImage(){},getImageData:()=>({data:new Uint8ClampedArray([0,0,0,alpha])})})};
+const c=vm.createContext({hiddenOutlineUnits:[unit],hiddenOutlineMaskCache:new WeakMap(),hiddenUnitOutlineColor:()=> '#59aaff',battlefieldZoom:1,game:{active:'ally'},document:{createElement:()=>mask},combatGpu:{unitOutline(){}},adventurePartyDirectUnits:{gpuOutline(){draws++;return true;}},hexCenter:()=>({x:10,y:20}),activeCombatTerrainTileSet:()=>({treeDrawHeight:40}),getUnitEffect:()=>false,shouldRenderUnitUnderPartyVisibility:()=>true,isPlayerControlledUnit:()=>true,isUnitVisibleToFriendlyParty:()=>true});
+vm.runInContext(extractCombatFunction(s,'drawHiddenUnitOutlines'),c);
+const actors=[{entity:unit.entity},{tree:{outlineFrame:{image:{}}}}];
+c.drawHiddenUnitOutlines(actors);assert.equal(draws,0,'Transparent tree rectangle must not submit a GPU silhouette');
+alpha=255;c.drawHiddenUnitOutlines(actors);assert.equal(draws,1,'Actual scenery coverage retains ally outlines');
+const webgl=readFileSync('js/combat-webgl.mjs','utf8');const body=webgl.match(/unitOutline\(callback,options\)\{([^}]+)\}/)[1];const events=[];
+vm.runInNewContext('(function(callback,options){'+body+'})()',{lost:false,disposed:false,frameOpen:true,flush:()=>events.push('models'),gpuPerf:{measure:(label,fn)=>{events.push(label);return fn();}},outlines:{draw:()=>events.push('silhouette')}});
+assert.deepEqual(events,['models','Outlines','silhouette']);console.log('PASS empty outline rejection and GPU timer attribution');

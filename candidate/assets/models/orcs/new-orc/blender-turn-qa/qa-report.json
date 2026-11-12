@@ -1,0 +1,388 @@
+{
+  "source": "New+Orc(1).glb",
+  "derived": "orc-turn-component-repair.glb",
+  "version": "5.2.2 LTS",
+  "method": "yaw-neutral limb aiming plus coherent pelvis/torso rotation; targeted cross-limb weight cleanup",
+  "repaired_vertices": 39,
+  "fixes": [
+    {
+      "vertex": 1499,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5356,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 1514,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5354,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5392,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5370,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5377,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5366,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5406,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5380,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5404,
+      "component": 214,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5365,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5353,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5364,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5403,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5362,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5401,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5418,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5399,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5415,
+      "component": 713,
+      "removed": "arm"
+    },
+    {
+      "vertex": 5402,
+      "component": 715,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5419,
+      "component": 715,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5405,
+      "component": 715,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5417,
+      "component": 715,
+      "removed": "leg"
+    },
+    {
+      "vertex": 5448,
+      "component": 715,
+      "removed": "leg"
+    },
+    {
+      "vertex": 7305,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10694,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 7307,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10695,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10697,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10728,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10732,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10734,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 7309,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10737,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10703,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10776,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10780,
+      "component": 949,
+      "removed": "leg"
+    },
+    {
+      "vertex": 10762,
+      "component": 949,
+      "removed": "leg"
+    }
+  ],
+  "before": [
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0,
+      "p99": 1.5271692165451696,
+      "p999": 2.5805994472876623,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 216,
+      "worst": 52.54216927098228
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0.25,
+      "p99": 1.5069130351833377,
+      "p999": 2.4527092933622736,
+      "edges_gt_2x": 46,
+      "edges_gt_1p5x": 200,
+      "worst": 56.55886212377972
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0.5,
+      "p99": 1.5388135012856083,
+      "p999": 2.623383704909819,
+      "edges_gt_2x": 55,
+      "edges_gt_1p5x": 238,
+      "worst": 67.70975649480945
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0.75,
+      "p99": 1.5530372963978725,
+      "p999": 2.645475590889622,
+      "edges_gt_2x": 53,
+      "edges_gt_1p5x": 235,
+      "worst": 70.39887514155156
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 1,
+      "p99": 1.5376180290173391,
+      "p999": 2.6928953535238898,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 211,
+      "worst": 76.91634544448505
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0,
+      "p99": 1.5275942974324763,
+      "p999": 2.5844785063949667,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 216,
+      "worst": 52.535614745893675
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0.25,
+      "p99": 1.533547177250013,
+      "p999": 2.5571316544253766,
+      "edges_gt_2x": 51,
+      "edges_gt_1p5x": 215,
+      "worst": 38.24526495058374
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0.5,
+      "p99": 1.5552114120134042,
+      "p999": 2.7105318021368388,
+      "edges_gt_2x": 62,
+      "edges_gt_1p5x": 229,
+      "worst": 38.57372000377442
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0.75,
+      "p99": 1.4869832004113364,
+      "p999": 2.5773588790193895,
+      "edges_gt_2x": 50,
+      "edges_gt_1p5x": 180,
+      "worst": 37.534860373957926
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 1,
+      "p99": 1.5029224229735534,
+      "p999": 2.578251842516609,
+      "edges_gt_2x": 51,
+      "edges_gt_1p5x": 198,
+      "worst": 50.16048884447072
+    }
+  ],
+  "after": [
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0,
+      "p99": 1.525057332283287,
+      "p999": 2.5805994472876623,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 214,
+      "worst": 52.54216927098228
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0.25,
+      "p99": 1.50331574371228,
+      "p999": 2.4527092933622736,
+      "edges_gt_2x": 46,
+      "edges_gt_1p5x": 198,
+      "worst": 56.55886212377972
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0.5,
+      "p99": 1.5376447092670111,
+      "p999": 2.623383704909819,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 235,
+      "worst": 67.70975649480945
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 0.75,
+      "p99": 1.5516533081148105,
+      "p999": 2.645475590889622,
+      "edges_gt_2x": 53,
+      "edges_gt_1p5x": 233,
+      "worst": 70.39887514155156
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn",
+      "fraction": 1,
+      "p99": 1.537227497795834,
+      "p999": 2.6928953535238898,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 209,
+      "worst": 76.91634544448505
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0,
+      "p99": 1.5250642822903893,
+      "p999": 2.5844785063949667,
+      "edges_gt_2x": 56,
+      "edges_gt_1p5x": 214,
+      "worst": 52.535614745893675
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0.25,
+      "p99": 1.5294080368338079,
+      "p999": 2.5571316544253766,
+      "edges_gt_2x": 51,
+      "edges_gt_1p5x": 212,
+      "worst": 38.24526495058374
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0.5,
+      "p99": 1.5543842138046327,
+      "p999": 2.7105318021368388,
+      "edges_gt_2x": 62,
+      "edges_gt_1p5x": 227,
+      "worst": 38.57372000377442
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 0.75,
+      "p99": 1.4851465139514055,
+      "p999": 2.5773588790193895,
+      "edges_gt_2x": 50,
+      "edges_gt_1p5x": 177,
+      "worst": 37.534860373957926
+    },
+    {
+      "clip": "Orc_Corrected_sword_and_shield_turn_2",
+      "fraction": 1,
+      "p99": 1.5012858847785526,
+      "p999": 2.578251842516609,
+      "edges_gt_2x": 51,
+      "edges_gt_1p5x": 196,
+      "worst": 50.16048884447072
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "club",
+  "sourceTriangles": 576,
+  "triangles": 576,
+  "bytes": 183384,
+  "sha256": "89cc8421a9474360d38e2a68e024c8a8fac6206aa111007ce56cc53a21b3d9b2",
+  "textureResolution": 256,
+  "sourceAxis": [
+    -0.02310282031499235,
+    0.9997327534731529,
+    0.0008254250307886384
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "neolithic_stone_club.zip",
+  "sourceArchiveSha256": "0bdc808f60a582e9617e63593b7666bd128136e5d6a6f147e59a82c228f1e34a",
+  "sourceSha256": "f8e7018f6df179e1a4632672abe5576b843835c2b7200d633a74a323e8d2ad18",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        89.73991203308105,
+        69.01005721092224,
+        56.67365574836731
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "outputMean": [
+        89.74165344238281,
+        69.01724243164062,
+        56.6837158203125
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        131.56852269172668,
+        131.8771369457245,
+        235.07197880744934
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    },
+    "packed": {
+      "sourceMean": [
+        255.0,
+        70.02713060379028,
+        0.0
+      ],
+      "sourceSize": [
+        2048,
+        2048
+      ]
+    }
+  }
+}
