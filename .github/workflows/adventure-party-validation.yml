@@ -24,7 +24,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: ".node-version"
+
+      - name: Run combat and Workshop regressions
+        run: |
+          node scripts/test-validation-workflow.mjs
+          node scripts/run-combat-regressions.mjs
 
       - name: Check game JavaScript syntax
         run: |
@@ -35,34 +40,16 @@ jobs:
           node scripts/test-mob-workshop-creature.mjs
           node scripts/test-mob-workshop-hand-pose.mjs
           node scripts/test-mob-workshop-fit.mjs
-          node scripts/test-workshop-hand-calibration.mjs
-          node scripts/test-workshop-fit-store.mjs
-          node scripts/test-workshop-project.mjs
-          node scripts/test-workshop-combat-contract.mjs
-          node scripts/test-workshop-publication.mjs
-          node scripts/test-workshop-grounding.mjs
           node scripts/test-game-script-loader.mjs
-          node scripts/test-combat-module-boundaries.mjs
-          node scripts/test-arrow-blood.mjs
           node scripts/test-projected-shadows.mjs
           node scripts/test-unit-shadow-proxy.mjs
-          node scripts/test-combat-model-shadow.mjs
-          node scripts/test-combat-death-scene.mjs
           node scripts/test-tree-fire-particles.mjs
           node scripts/test-burning-tree-audio.mjs
-          node scripts/test-flaming-sword.mjs
-          node scripts/test-flaming-sword-light.mjs
           node scripts/test-ui-audio.mjs
           node scripts/test-title-audio.mjs
           node scripts/test-mob-ai-navigation.mjs
           node scripts/test-physical-attack-focus.mjs
-          node scripts/test-combat-turn-flow.mjs
-          node scripts/test-combat-casting-lifecycle.mjs
-          node scripts/test-combat-spell-actions.mjs
-          node scripts/test-combat-missile-actions.mjs
-          node scripts/test-combat-action-entry.mjs
           node scripts/test-battlefield-font.mjs
-          node scripts/test-combat-info-panel.mjs
           node scripts/test-quick-command.mjs
 
       - name: Validate 3D studio projection and VGA rendering
@@ -115,21 +102,16 @@ jobs:
           node scripts/test-humanoid-animation-catalog.mjs
           node scripts/test-mob-appearance.mjs
           node scripts/test-mob-appearance-runtime.mjs
-          node scripts/test-combat-mob-renderer.mjs
-          node scripts/test-combat-equipment-refresh.mjs
-          node scripts/test-combat-capture-parity.mjs
-          node scripts/test-combat-outline.mjs
           node scripts/test-carl-ual2.mjs
           node scripts/test-carl-ual2-two-handed-audition.mjs
           node scripts/test-orc-ual2.mjs
           node scripts/test-orc-skinning.mjs
           node scripts/test-orc-native-bind.mjs
           node scripts/test-studio-qa-pack.mjs
-          node scripts/test-combat-inventory-ui.mjs
-          node scripts/test-combat-roster-setup.mjs
 
       - name: Require exact repository New Carl / New Orc binary models before release
-        run: node scripts/test-new-tripo-assets.mjs
+        run: |
+          node scripts/test-new-tripo-assets.mjs
           node scripts/test-woman-warrior-assets.mjs
           node scripts/test-warrior-recolor.mjs
           node scripts/test-cleric-phase-one.mjs
@@ -258,21 +240,10 @@ jobs:
           node scripts/test-wall-ground-shadows.mjs
           node scripts/test-editor-qa.mjs
           node scripts/test-exploration-combat-bounds.mjs
-          node scripts/test-combat-visibility-performance.mjs
-          node scripts/test-combat-view-environments.mjs
-          node scripts/test-combat-surface-lighting.mjs
           node scripts/test-portal-daylight.mjs
           node scripts/test-outdoor-grass.mjs
           node scripts/test-terrain-transitions.mjs
           node scripts/test-broken-stone-road.mjs
           node scripts/test-city-sidewalk.mjs
           node scripts/test-city-materials.mjs
-          node scripts/test-combat-webgl.mjs
-          node scripts/test-combat-direct-units.mjs
-          node scripts/test-combat-prepared-assets.mjs
-          node scripts/test-combat-runtime.mjs
-          node scripts/test-opportunity-attacks.mjs
-          node scripts/test-combat-gpu-lighting.mjs
-          node scripts/test-combat-result-panel.mjs
           node scripts/test-spell-target-results.mjs
-          node scripts/test-combat-frame-pacing.mjs

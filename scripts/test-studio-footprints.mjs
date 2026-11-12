@@ -1,3 +1,4 @@
+import {combatPresentationTestServices} from './combat-presentation-test-context.mjs';
 import {readCombatFixture,extractCombatFunction} from './combat-test-source.mjs';
 import * as armorRules from '../js/armor-rules.mjs';
 import {createRepositoryMobRegistry} from '../js/repository-mobs.mjs';
@@ -28,7 +29,7 @@ const walls = new Set(), occupied = new Set(), blockedEdges = new Set();
 const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
-const sandbox = {
+const sandbox = {...combatPresentationTestServices(),prepareCombatWalkPath:(unit,path)=>path,
   window:{adventurePartyArmorRules:armorRules,adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(readCombatFixture(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(readCombatFixture(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
   markMobAppearanceDirty:()=>Promise.resolve(null),
   PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
@@ -88,7 +89,7 @@ vm.runInContext([
   ...['RULESET', 'FIGHTER_CLASS', 'WEAPON_CATALOG', 'MISSILE_WEAPON_CATALOG', 'ARMOR_CATALOG', 'DEXTERITY_TABLE'].map(name => productionDeclaration(name)),
   productionDeclaration('FIGHTER_LEVELS', '\n];'),
   source.slice(mageStart, mageEnd), source.slice(spellStart, spellEnd),
-  ...functions.map(productionFunction)
+  ...[...functions,'isCarlCombatTestOverride'].map(productionFunction)
 ].join('\n'), sandbox);
 sandbox.getUnitEffect=()=>null;
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -296,7 +297,7 @@ for(const unit of sandbox.allUnits())for(const cell of sandbox.occupiedHexes(uni
 const sheetNodes=new Map();
 sandbox.document.getElementById=id=>{if(!sheetNodes.has(id))sheetNodes.set(id,{textContent:'',children:[],replaceChildren(){this.children=[];},append(...items){this.children.push(...items);}});return sheetNodes.get(id);};
 sandbox.document.createElement=()=>({textContent:''});
-sandbox.activePlayerControlledUnit=()=>sandbox.game.player;
+sandbox.activePlayerControlledUnit=()=>sandbox.game.player; sandbox.activeUnit=()=>sandbox.game.player;
 sandbox.isMageCharacter=unit=>unit.type==='mage';
 const beforeSheet=JSON.stringify(sandbox.game.player);
 sandbox.renderCharacterSheet();

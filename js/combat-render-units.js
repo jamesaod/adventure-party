@@ -42,11 +42,17 @@ function drawHiddenUnitOutlines(ordered){
   for(const unit of hiddenOutlineUnits){
     if(!unit.entity.alive||unit.entity.fled||getUnitEffect(unit.entity,'invisibility')||!shouldRenderUnitUnderPartyVisibility(unit.entity))continue;
     const friendly=isPlayerControlledUnit(unit.entity)||unit.entity.faction==='player';if(!friendly&&!isUnitVisibleToFriendlyParty(unit.entity))continue;const color=hiddenUnitOutlineColor(unit.entity);
+    // Reject unobstructed units before allocating masks or sampling their rigs.
+    const margin=Math.ceil(2.6/battlefieldZoom)+2;
+    const candidates=new Set();
+    for(let x=Math.floor((unit.x-margin)/cellSize);x<=Math.floor((unit.x+unit.width+margin)/cellSize);x++)for(let y=Math.floor((unit.y-margin)/cellSize);y<=Math.floor((unit.y+unit.height+margin)/cellSize);y++)for(const entry of buckets.get(x+','+y)||[]){
+      const b=entry.bounds;if(entry.index>unit.index&&b.right>=unit.x-margin&&b.left<=unit.x+unit.width+margin&&b.bottom>=unit.y-margin&&b.top<=unit.y+unit.height+margin)candidates.add(entry);
+    }
+    if(!candidates.size)continue;
     const gpuOutline=typeof combatGpu!=='undefined'&&combatGpu?.unitOutline&&globalThis.adventurePartyDirectUnits?.gpuOutline;
       const liveMask=!gpuOutline&&globalThis.adventurePartyDirectUnits?.liveOutline(unit.image,unit.entity,unit.width,unit.height);
     const pad=Math.ceil(2.6/battlefieldZoom)+2;let frame=gpuOutline?{pad,ring:{width:Math.ceil(unit.width)+pad*2,height:Math.ceil(unit.height)+pad*2}}:hiddenUnitOutlineFrame(liveMask||unit.image,unit.width,unit.height,liveMask?false:unit.flip,color);const left=unit.x-frame.pad,top=unit.y-frame.pad;
-    let mask=hiddenOutlineMaskCache.get(unit.entity);if(!mask){mask=document.createElement('canvas');hiddenOutlineMaskCache.set(unit.entity,mask);}if(mask.width!==frame.ring.width||mask.height!==frame.ring.height){mask.width=frame.ring.width;mask.height=frame.ring.height;}const m=mask.getContext('2d');m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,mask.width,mask.height);m.translate(-left,-top);
-    const candidates=new Set();for(let x=Math.floor(left/cellSize);x<=Math.floor((left+mask.width)/cellSize);x++)for(let y=Math.floor(top/cellSize);y<=Math.floor((top+mask.height)/cellSize);y++)for(const entry of buckets.get(x+','+y)||[])if(entry.index>unit.index)candidates.add(entry);
+    let mask=hiddenOutlineMaskCache.get(unit.entity);if(!mask){mask=document.createElement('canvas');hiddenOutlineMaskCache.set(unit.entity,mask);}if(mask.width!==frame.ring.width||mask.height!==frame.ring.height){mask.width=frame.ring.width;mask.height=frame.ring.height;}const m=mask.getContext('2d',{willReadFrequently:true});m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,mask.width,mask.height);m.translate(-left,-top);
     for(const {actor,polygons,bounds} of candidates){
       if(bounds.right<left||bounds.left>left+mask.width||bounds.bottom<top||bounds.top>top+mask.height)continue;if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;
         if(center.x+h/2<left||center.x-h/2>left+mask.width||center.y<top||center.y-h>top+mask.height)continue;
@@ -56,7 +62,12 @@ function drawHiddenUnitOutlines(ordered){
         m.fillStyle='#fff';for(const polygon of polygons)if(tracePolygonOnContext(m,polygon))m.fill();
       }
     }
-    const daylight=Math.max(0,Math.min(1,globalThis.adventurePartySolar?.state?.().daylight??1)),active=game.active?.id===unit.entity.id;
+    // Tree atlas rectangles include transparent margins. Reject empty coverage
+    // before a second rig render and the outline's texture sampling pass.
+    const alpha=m.getImageData(0,0,mask.width,mask.height).data;
+    let covered=false;for(let i=3;i<alpha.length;i+=4)if(alpha[i]){covered=true;break;}
+    if(!covered)continue;
+    const daylight=Math.max(0,Math.min(1,globalThis.adventurePartySolar?.state?.().daylight??1)),active=(game.active?.id||game.active)===unit.entity.id;
     if(gpuOutline){
       if(globalThis.adventurePartyDirectUnits.gpuOutline(combatGpu,unit.image,unit.entity,{mask,left,top,color,active,daylight,width:unit.width,height:unit.height,pad}))continue;
       frame=hiddenUnitOutlineFrame(unit.image,unit.width,unit.height,unit.flip,color);
@@ -121,8 +132,7 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     x:c.x-Math.round(visualDrawW*spriteAnchor.x),y:c.y-Math.round(visualDrawH*spriteAnchor.y)});
   const gpuSprite=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
   const brightness=!gpuSprite&&typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
-  let spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
-  if(!gpuSprite&&entity&&!entity.alive&&Number.isFinite(entity.deathPresentationStartedAt))spriteFilter=`${spriteFilter&&spriteFilter!=='none'?spriteFilter+' ':''}saturate(0.5)`;
+  const spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
   ctx.translate(c.x,c.y);
 
   if(shouldFlip){
@@ -176,7 +186,6 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
     console.error("Sprite draw skipped because the image source is invalid.",error);
   }finally{ctx.restore();}
 
-  drawFlamingSword(renderSource,entity,visualDrawW,visualDrawH,spriteAnchor);
   ctx.restore();
 }
 

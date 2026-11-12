@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const src=readFileSync('js/adventure-party.js','utf8');
+const code=src.match(/function workshopTargetPriority\(unit,a,b\)\{[\s\S]*?\n\}/)[0];
+const ctx=vm.createContext({});vm.runInContext(code,ctx);
+assert(ctx.workshopTargetPriority({workshopBehavior:{target:'weakest-visible'}},{hp:2},{hp:12})<0);
+assert.equal(ctx.workshopTargetPriority({},{hp:2},{hp:12}),0);
+assert.equal(ctx.workshopTargetPriority({workshopBehavior:{target:'nearest-visible'}},{hp:2},{hp:12}),0);
+const pack=JSON.parse(readFileSync('data/mobs/wood-elf-archer.workshop-unit.json','utf8'));
+assert.equal(pack.draft.creature.behavior.target,'weakest-visible');
+assert.equal(pack.draft.creature.behavior.style,'ranged');
+assert(pack.draft.inventoryItems.some(i=>i.id==='arrow'&&i.quantity===20));
+assert.equal(pack.draft.equipment.armor,'chain-mail');
+console.log('Published archer AI priority and approved loadout passed');

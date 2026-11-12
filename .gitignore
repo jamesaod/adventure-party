@@ -10,6 +10,8 @@ Thumbs.db
 *.log
 tmp/
 temp/
+.local/workshop-imports/
+.local/corpse-profile*.json
 
 # Packaged development artifacts
 *.zip
@@ -23,3 +25,10 @@ temp/
 # Historical numbered standalone HTML builds belong in Git history/tags,
 # not alongside index.html.
 adventure-party-r*.html
+
+# Local diagnostics and unshared authoring intermediates
+.local/
+work/
+__pycache__/
+assets/combat-units/
+

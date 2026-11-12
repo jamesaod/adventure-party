@@ -9,7 +9,7 @@ for(let i=0;i<1000;i++){const p=ctx.sampleCorpseOffset({x:0,y:0});assert(Math.hy
 const entity={alive:false,deathPresentationStartedAt:0,deathAnimationDurationMs:2000,deathWorldOffset:{x:4,y:2},deathRotationDelta:2};
 assert.equal(ctx.corpseMotionProgress(entity,0),0);assert.equal(ctx.corpseMotionProgress(entity,1000),.5);assert.equal(ctx.corpseMotionProgress(entity,2000),1);assert.equal(ctx.corpseMotionProgress(entity,3000),1);
 globalThis.adventurePartyCorpseProgress=ctx.corpseMotionProgress;
-const asset={group:new THREE.Group()},frame={asset,yaw:.4};
+const asset={group:new THREE.Group(),camera:new THREE.PerspectiveCamera()},frame={asset,yaw:.4};
 assert.equal(sampleDirectPose(frame,entity,undefined,0).yaw,.4);
 assert.equal(sampleDirectPose(frame,entity,undefined,1000).yaw,1.4);
 assert.equal(sampleDirectPose(frame,entity,undefined,2000).yaw,2.4);

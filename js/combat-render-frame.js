@@ -2,6 +2,8 @@
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
 
+function deathPresentationActive(unit){return !!unit&&!unit.alive&&Number.isFinite(unit.deathPresentationStartedAt);}
+
 function draw(){
   const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(typeof combatFrames!=="undefined"&&combatFrames&&!combatFrames.rendering){combatFrames.request();return;}
@@ -34,11 +36,12 @@ function draw(){
     density*anchor.y*(1-battlefieldZoom)
   );
   canvas.dataset.treeRenderer=directFirRendering()?'direct-mesh':'cached-images';
-  prepareCombatProjectedShadows(tiles);
-  drawFloor();
-  drawWallTestFloorPlan();
+  const profile=globalThis.adventurePartyCombatPerformance;
+  const timed=(name,fn)=>profile?profile.measure(name,fn):fn();
+  timed('shadowSetup',()=>prepareCombatProjectedShadows(tiles));
+  timed('terrain',()=>{drawFloor();drawWallTestFloorPlan();});
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
-  drawArchitecturalWallShadows();
+  timed('shadowDraw',()=>drawArchitecturalWallShadows());
   if(explorationTerrain){ctx.restore();ctx.save();clipExplorationFloor();drawWallTestLineOfSightMask();ctx.restore();}
 
   /*
@@ -53,11 +56,14 @@ function draw(){
   const actors=[];
   // Keep lethal targets visible while their queued death beat is pending;
   // only that beat changes their standing body to falling/prone scenery.
-  for(const corpse of [game.player,...(game.allies||[]),...(game.enemies||[])])if(corpse&&!corpse.alive&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse)){
+  for(const corpse of [game.player,...(game.allies||[]),...(game.enemies||[])])if(corpse&&deathPresentationActive(corpse)&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse)){
     const p=unitDepthSortPoint(corpse);
-    actors.push({sortY:p.y-.5,sortX:p.x,unit:true,entity:corpse,fn:()=>drawStudioSpriteMob(corpse)});
+    actors.push({sortY:p.y-.5,sortX:p.x,unit:true,groundCorpse:globalThis.adventurePartyCorpseProgress?.(corpse)>=1,groundRadius:{x:HEX_W*.6,y:HEX_H*.6},entity:corpse,fn:()=>drawStudioSpriteMob(corpse)});
   }
   const treeDecorations=visibleTreeDecorations(tiles);
+  const firContacts=[];
+  for(const tree of treeDecorations)drawFirContactShadow(tree,activeCombatTerrainTileSet(),firContacts);
+  if(combatGpu&&firContacts.length)combatGpu.surface(firContacts,drawFirContactShadow.image,{category:'Fir contact',sunShadow:(globalThis.adventurePartySolar?.state()?.daylight||0)>.1});
   for(const tree of treeDecorations)drawTreeGroundShadow(tree);
   const tileSet=activeCombatTerrainTileSet();
 
@@ -132,7 +138,7 @@ function draw(){
     }
   }
 
-  if(game.player.alive){
+  if(!deathPresentationActive(game.player)){
     const c=unitDepthSortPoint(game.player);
     actors.push({
       sortY:c.y,
@@ -143,7 +149,7 @@ function draw(){
   }
 
   for(const ally of game.allies || []){
-    if(!ally.alive || ally.fled) continue;
+    if(deathPresentationActive(ally) || ally.fled) continue;
 
     const c=unitDepthSortPoint(ally);
 
@@ -159,7 +165,7 @@ function draw(){
   }
 
   for(const enemy of game.enemies){
-    if(!enemy.alive || enemy.fled) continue;
+    if(deathPresentationActive(enemy) || enemy.fled) continue;
     if(!shouldRenderUnitUnderPartyVisibility(enemy)) continue;
 
     const depth=unitDepthSortPoint(enemy);
@@ -199,7 +205,7 @@ function draw(){
 
   const hasWeb=game.areaEffects?.some(effect=>effect.type==="web");
   if(!hasWeb&&typeof clearRaisedWeb==="function")clearRaisedWeb();
-  const outlineActors=explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y)):actors;
+  const outlineActors=explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y),unitDepthSortPoint):actors;
   hiddenOutlineUnits=[];
   for(let actorIndex=0;actorIndex<outlineActors.length;actorIndex++){
     const actor=outlineActors[actorIndex];hiddenOutlineCapture=actor.unit?{index:actorIndex}:null;
@@ -264,12 +270,15 @@ function draw(){
   drawAimFriendlyFireWarning();
   if(currentScreen==="spell-preview"&&typeof spellPreviewDrawDevelopmentLabels==="function")spellPreviewDrawDevelopmentLabels();
   ctx.restore();
+  if(globalThis.adventurePartyShowPerformance!==false){
   // Screen-space diagnostics: actual battlefield frames, not pose sample rate.
   ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
   const measured=typeof combatFrames!=='undefined'?combatFrames?.diagnostics().recentFps:0;
   ctx.font='12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';
   ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(7,BATTLEFIELD_LOGICAL_HEIGHT-29,205,23);
   ctx.fillStyle='#d5f5dd';ctx.fillText('FPS '+(measured?measured.toFixed(1):'—')+' | Models 30 FPS',12,BATTLEFIELD_LOGICAL_HEIGHT-10);
+  globalThis.drawCombatPerformanceChart?.(ctx,BATTLEFIELD_LOGICAL_WIDTH);
   ctx.restore();
+  }
   if(combatGpu)combatGpu.end();
 }

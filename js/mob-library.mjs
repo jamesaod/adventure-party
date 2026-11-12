@@ -3,8 +3,8 @@ import {browserAuthoringStore} from './authoring-store.mjs?v=R238C204';
 import {normalizeMobDefinition,mobReadiness} from './mob-definition.mjs?v=R238C204';
 import {normalizeGeneration} from './mob-generation.mjs?v=R238C204';
 import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C204';
-import {isWorkshopUnit,validateWorkshopUnit} from './workshop-unit-package.mjs';
-import {workshopRuntimeSupport} from './workshop-runtime-support.mjs';
+import {isWorkshopUnit,validateWorkshopUnit} from './workshop-unit-package.mjs?v=R238C313';
+import {workshopRuntimeSupport} from './workshop-runtime-support.mjs?v=R238C313';
 export function encounterReadiness(mob,catalog){
  if(isWorkshopUnit(mob)){try{return workshopRuntimeSupport(validateWorkshopUnit(mob).draft);}catch(error){return {ready:false,reasons:[error.message]};}}
  const reasons=[];

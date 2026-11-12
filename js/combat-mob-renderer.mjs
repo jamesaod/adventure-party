@@ -1,3 +1,4 @@
+import {markFlamingBlade} from './combat-weapon-flame.mjs?v=R238C299';
 import {loadCombatModel} from './combat-model-source.mjs';
 import {plantStandingFeet} from './standing-foot-contact.mjs';
 import {captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs';
@@ -6,7 +7,7 @@ import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs
 import {captureModelShadow,setModelShadow,prepareModelShadow} from './combat-model-shadow.mjs';
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
 import { FBXLoader } from '../assets/vendor/three/addons/loaders/FBXLoader.js?v=R238C178';
-import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C178';
+import { loadUploadedFbxAnimations } from './repository-fbx-animations.mjs?v=R238C316';
 import { retargetHumanoidClip } from './mixamo-retarget.mjs?v=R238C140';
 import { prepareStudioAnimations } from './studio-animations.mjs?v=R238C82';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
@@ -18,7 +19,7 @@ import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mj
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C202';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C204';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C196';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C204';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C312';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C204';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';
@@ -185,23 +186,6 @@ function quantizedCanvas(source,width,height,style,{flipY=true}={}){
   return canvas;
 }
 
-// Project the actual mounted blade into each captured pose, retaining its attachment.
-function captureFlamingBlade(attachment,camera,occluder=null){
-  if(!attachment?.model)return null;
-  const root=attachment.model;root.updateWorldMatrix(true,true);
-  const inverse=root.matrixWorld.clone().invert(),box=new THREE.Box3(),p=new THREE.Vector3();
-  root.traverse(mesh=>{if(!mesh.isMesh)return;const attr=mesh.geometry?.attributes.position;if(!attr)return;for(let i=0;i<attr.count;i++){p.fromBufferAttribute(attr,i).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);box.expandByPoint(p);}});
-  if(box.isEmpty())return null;
-  const size=box.getSize(new THREE.Vector3()),axis=['x','y','z'].sort((a,b)=>size[b]-size[a])[0],center=box.getCenter(new THREE.Vector3());
-  const ray=new THREE.Raycaster(),forward=new THREE.Vector3();camera.getWorldDirection(forward);
-  occluder?.updateWorldMatrix(true,true);
-  const flameSpan=attachment.weapon?.flameSpan;
-  return Array.from({length:7},(_,i)=>{const t=i/6;if(flameSpan){p.fromArray(flameSpan.base).lerp(new THREE.Vector3().fromArray(flameSpan.tip),t);}else{p.copy(center);p[axis]=box.min[axis]+size[axis]*(.22+.73*t);}p.applyMatrix4(root.matrixWorld);const world=p.clone();p.project(camera);
-    ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
-    const distance=world.clone().sub(ray.ray.origin).dot(ray.ray.direction);
-    const blocked=!!occluder&&ray.intersectObject(occluder,true).some(hit=>{let object=hit.object;while(object){if(object===root)return false;object=object.parent;}return hit.object.visible&&hit.distance<distance-.015;});
-    return {x:(p.x+1)/2,y:(1-p.y)/2,blocked};});
-}
 function frameCanvases(renderer,target,scene,camera,turntable,yaw,frame,style,bandedLighting,shading,preparedShadow){
   turntable.rotation.y=yaw;
   renderer.setRenderTarget(target);
@@ -349,6 +333,8 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
       action.time=pose.rest?0:Math.min(Math.max(0,pose.timeSeconds||0),clip.duration);
       mixer.update(0);
       const restoreStandingPose=capture==='ready'?plantStandingFeet(model):()=>{};
+      model.updateWorldMatrix(true,true);
+      attachment?.setDrawn?.(capture==='windup');
       poses[capture]={clip:pose.rest?'T-pose':clip.name,time:action.time,frames:{}};
       const poseLabel=({ready:'standing',attack:'attack',prone:'fallen',windup:'attack preparation',cast:'spellcasting'})[capture]||capture;
       await progress(`Preparing ${poseLabel} shadow`,'Simplifying the actual posed model toward 500 triangles to keep combat shadows efficient.');
@@ -367,11 +353,6 @@ export async function generateCombatSpriteSet(recipe,{onProgress}={}){
         const runtimeFile=`${capture}-${facing.id.toLowerCase()}-battlefield.png`;
         const runtimeSrc=rendered.battlefieldCanvas.toDataURL('image/png');
         [images[file],runtimeImages[runtimeFile]]=await Promise.all([loadImage(src),loadImage(runtimeSrc)]);
-        if(recipe.equipment?.appearanceId==='flaming-sword-5'){
-          const blade=captureFlamingBlade(attachment,camera,turntable);
-          const metadata=globalThis.adventurePartyFlamingBlades||(globalThis.adventurePartyFlamingBlades=new WeakMap());
-          if(blade){metadata.set(images[file],blade);metadata.set(runtimeImages[runtimeFile],blade);}
-        }
         setDirectUnit(images[file],directUnit,facing.yawRadians);
         setDirectUnit(runtimeImages[runtimeFile],directUnit,facing.yawRadians);
         setModelShadow(images[file],rendered.modelShadow);
@@ -459,6 +440,7 @@ export async function mountCombatEquipment(model,recipe){
     const weaponUrl=weaponAssetUrl({file:preset.presetRevision===100?preset.file:recipe.equipment.asset,
       assetSha256:preset.presetRevision===100||recipe.equipment.asset===preset.file ? preset.assetSha256 : null},new URL('../',import.meta.url));
     const weaponGltf=await loadGltf(weaponUrl.href);
+    markFlamingBlade(weaponGltf.scene,preset.flameSpan);
     const mount=resolveCombatWeaponMount(recipe.equipment,recipe.renderSettings,preset);
     attachment=createWeaponAttachment(THREE,hand,weaponGltf.scene,{
       rightHand:id,

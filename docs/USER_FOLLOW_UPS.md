@@ -15,3 +15,5 @@ Persistent notes requested by James. Add new requested follow-ups here; retain c
 - [ ] **Creature definitions → combat integration** (2026-11-09): Authoring foundation implemented; see MOB_WORKSHOP_CREATURE_DEFINITION.md. Next prove one Workshop-authored orc end to end in combat, then connect structured attacks, traits, spells, movement and behavior. Creature-specific animation work remains deferred; missing optional animations must stay visible in Review.
 
 - Progress on creature integration (2026-11-09): Basic repository publication, direct-model animations, equipment fits and stats now connected; controlled Workshop orc completed a real battle to victory. Structured attacks, spells, traits and special movement remain gated. See MOB_WORKSHOP_COMBAT_AUDIT.md for exact validation limits.
+
+- User requested combat AI development soon (2026-11-12): expand supported authored policies, race/group behavior, target choice and ranged positioning. Orc Warrior currently uses the approved default AI; original export requests reckless hazard handling and does not avoid opportunity attacks.

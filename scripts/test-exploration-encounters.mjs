@@ -1,3 +1,4 @@
+import {installCombatImageTestServices} from './combat-image-test-context.mjs';
 import assert from 'node:assert/strict';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {encounterAt,validateEncounters,terrainForEncounter,recordOutcome,readProgress,progressKey,torchPlacement,combatTorchLightPlacement,sceneLights,SCENE_STYLE} from '../js/exploration-encounters.mjs';
@@ -35,7 +36,7 @@ makeFighter:()=>({id:'player',hp:30,alive:true}),makeLibraryMob:()=>({hp:8,alive
 const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const facingStart=engine.indexOf('function hexDirectionIndexToward('),facingEnd=engine.indexOf('\n}',facingStart)+2;
 sandbox.HEX_DIRS=[{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:0},{x:-1,y:1},{x:0,y:1}];sandbox.hexDistance=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y));
-vm.createContext(sandbox);vm.runInContext(engine.slice(facingStart,facingEnd),sandbox);vm.runInContext(hook,sandbox);
+vm.createContext(installCombatImageTestServices(sandbox));vm.runInContext(engine.slice(facingStart,facingEnd),sandbox);vm.runInContext(hook,sandbox);
 const roster=sandbox.explorationUnits();assert.equal(roster.player.id,'player','Engine initiative resolves its controlled character by stable player ID');assert.equal(roster.player.controller,'player');assert.equal(roster.enemies.length,1);assert.notEqual(roster.enemies[0].x,roster.player.x);
 assert.equal(roster.enemies[0].facingHex,sandbox.hexDirectionIndexToward(roster.enemies[0],roster.player));assert.equal(roster.enemies[0].facing,'left');
 console.log('PASS encounter deployment preserves production player identity and non-overlapping opponents');

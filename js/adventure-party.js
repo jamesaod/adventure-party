@@ -115,6 +115,7 @@ function updateLauncherSelection(){
 }
 
 function showLauncher(){
+  stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();
   cancelPendingCombatStart({preserveDraft:currentScreen==="launcher"});
   globalThis.adventurePartyUiAudio?.transition(currentScreen,'launcher','back');
   currentScreen="launcher";
@@ -540,6 +541,8 @@ function ensureAudioContext(){
   sfxGain=audioCtx.createGain();
   sfxGain.gain.value=0.65;
   sfxGain.connect(audioCtx.destination);
+  preloadBowAudio(audioCtx);
+  globalThis.adventurePartyPreloadSnowSteps?.(audioCtx);
 
   weatherGain=audioCtx.createGain();
   weatherGain.gain.value=0.52;
@@ -1408,7 +1411,7 @@ function startDeathActionPause(){
 function deathPauseRemaining(){
   return Math.max(
     0,
-    Math.ceil(deathActionPauseUntil-performance.now())
+    Math.ceil(Math.max(deathActionPauseUntil,...allUnits().filter(unit=>unit&&!unit.alive&&Number.isFinite(unit.deathPresentationStartedAt)).map(unit=>unit.deathPresentationStartedAt+(Number.isFinite(unit.deathAnimationDurationMs)?unit.deathAnimationDurationMs:1000)))-performance.now())
   );
 }
 
@@ -1459,7 +1462,7 @@ function triggerDeathFx(entity){
     entity.deathFacingHex=facingDirectionIndex(entity);
     entity.deathRotationDelta=(Math.random()*2-1)*Math.PI;
     entity.deathWorldOffset=sampleCorpseOffset(entity);
-    startArrowBlood(entity,entity,1,{death:true});
+    if(!entity.fireDeath)startArrowBlood(entity,entity,1,{death:true});
   }
 
   startDeathActionPause();
@@ -1507,6 +1510,7 @@ soundToggle.addEventListener("click",async(event)=>{
   globalThis.adventurePartyUiAudio?.setEnabled(audioEnabled);
 
   if(!audioEnabled){
+    stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();
     stopTitleMusic();
     stopWeatherAudio();
 
@@ -1573,7 +1577,7 @@ async function presentCombatFrame(){
 }
 addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C281"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C341"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
@@ -1607,7 +1611,8 @@ const WEATHER_TYPES=[
   {id:"clear",label:"CLEAR"},
   {id:"rain",label:"RAIN"},
   {id:"snow",label:"SNOW"},
-  {id:"wind",label:"WIND"}
+  {id:"wind",label:"WIND"},
+  {id:"cloudy",label:"CLOUDY"}
 ];
 
 const WEATHER_SEVERITIES=[
@@ -2769,7 +2774,7 @@ function directionalUnitPoseFrame(unit,poseName=null){
   if(!poses) return null;
 
   const renderFacing=!unit.alive&&Number.isInteger(unit.deathFacingHex)?unit.deathFacingHex:facingDirectionIndex(unit);
-  const facing=HEX_DIRS[((renderFacing-(typeof battlefieldRotation==='number'?battlefieldRotation:0))%6+6)%6].name;
+  const facing=HEX_DIRS[((renderFacing-Math.round(typeof battlefieldRotation==='number'?battlefieldRotation:0))%6+6)%6].name;
   const requestedPose=poseName || activeUnitPoseName(unit) || definition.defaultPose || "stand";
   const defaultPose=definition.defaultPose || "stand";
   const loaded=frame=>frame?.image?.complete &&
@@ -2818,7 +2823,7 @@ function activeUnitPoseName(unit,now=performance.now()){
     // Lethal rules resolve before the queued death beat. Keep the body
     // upright during that interval rather than removing it from the scene.
     if(!Number.isFinite(unit.deathPresentationStartedAt))return definition.defaultPose||'stand';
-    if(now-unit.deathPresentationStartedAt<1000&&unitPoseSupportsPose(definition,'falling'))return 'falling';
+    if(now-unit.deathPresentationStartedAt<(Number.isFinite(unit.deathAnimationDurationMs)?unit.deathAnimationDurationMs:1000)&&unitPoseSupportsPose(definition,'falling'))return 'falling';
     if(unitPoseSupportsPose(definition,'prone'))return 'prone';
   }
 
@@ -2849,7 +2854,7 @@ function activeUnitPoseName(unit,now=performance.now()){
   if(
     unit.poseName &&
     Number.isFinite(unit.poseUntil) &&
-    now<unit.poseUntil &&
+    (now<unit.poseUntil || (unit.poseName==="windup" && unit.attackWindupPending)) &&
     unitPoseSupportsPose(definition,unit.poseName)
   ){
     return unit.poseName;
@@ -2902,7 +2907,7 @@ function setTemporaryUnitPose(unit,poseName,durationMs=null){
     if(!game || !unit) return;
 
     /* An older pose timer must never cancel a newer action pose. */
-    if((unit.poseUntil || 0)<=performance.now()){
+    if(!unit.attackWindupPending && (unit.poseUntil || 0)<=performance.now()){
       unit.poseName=definition.defaultPose || "stand";
       unit.poseUntil=0;
       draw();
@@ -2914,13 +2919,15 @@ function setTemporaryUnitPose(unit,poseName,durationMs=null){
 
 // Start an optional visual wind-up; the attack resolver can await this so
 // damage and hit effects happen after the preparation pose, not during it.
-async function prepareUnitAttackWindup(unit){
+async function prepareUnitAttackWindup(unit,{bowAudio=false}={}){
   const definition=unitPoseDefinition(unit);
   if(!unit || !definition?.directionalSprites?.windup ||
     !Object.values(definition.directionalSprites.windup).some(frame=>frame?.image)) return;
-  const duration=Math.max(0,Math.min(1500,definition.windupDurationMs ?? 250));
+  const duration=Math.max(0,Math.min(definition.actionProfileId==="bow"?60000:1500,definition.windupDurationMs ?? 250));
   if(!setTemporaryUnitPose(unit,"windup",duration)) return;
-  await sleep(duration);
+  unit.attackWindupPending=true;
+  const drawSound=bowAudio?playBowDrawSound(unit,duration,definition.bowDrawDelayMs):null;
+  try{await sleep(duration);}finally{drawSound?.stop();unit.attackWindupPending=false;}
 }
 
 function triggerUnitAttackPose(unit){
@@ -3229,7 +3236,10 @@ function terrainTreeClusterPositions(tileSet,seed){
   return positions;
 }
 
+let treeDecorationCache=null;
 function visibleTreeDecorations(tiles){
+  const terrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
+  const validTreeHex=(x,y)=>inside(x,y)&&(!terrain?.walkableHex||terrain.walkableHex(x,y))&&(!terrain?.isRenderableHex||terrain.isRenderableHex(x,y));
   const battlefieldTrees=game?.session?.source==='combat-test' && game.condition==='grass';
   if(explorationTerrain && !battlefieldTrees)return [];
   const tileSet=activeCombatTerrainTileSet();
@@ -3258,6 +3268,13 @@ function visibleTreeDecorations(tiles){
     maxY=Math.max(maxY,tile.y);
   }
 
+  const cacheKey=JSON.stringify([tileSet,MAP_MIN_X,MAP_MAX_X,MAP_MIN_Y,MAP_MAX_Y,[...visibleKeys]]);
+  const refresh=trees=>trees.filter(tree=>validTreeHex(tree.x,tree.y)&&!game?.firSpawnClearance?.has(key(tree.x,tree.y))).map(tree=>({...tree,occupied:!!livingUnitAt(tree.x,tree.y)}));
+  if(treeDecorationCache?.game===game&&treeDecorationCache.terrain===terrain&&treeDecorationCache.key===cacheKey){
+    globalThis.adventurePartyCombatPerformance?.count('treePlacementCacheHits');
+    return refresh(treeDecorationCache.trees);
+  }
+  globalThis.adventurePartyCombatPerformance?.count('treePlacementBuilds');
   const decorationsByKey=new Map();
 
   for(let x=minX-1;x<=maxX+1;x++){
@@ -3274,6 +3291,7 @@ function visibleTreeDecorations(tiles){
       const cluster=terrainTreeClusterPositions(tileSet,seed);
 
       cluster.forEach((position,index)=>{
+        if(!validTreeHex(position.x,position.y))return;
         const positionKey=key(position.x,position.y);
 
         /* R123: indoor architectural space never receives outdoor trees. */
@@ -3303,7 +3321,9 @@ function visibleTreeDecorations(tiles){
     }
   }
 
-  return [...decorationsByKey.values()].filter(tree=>!game?.firSpawnClearance?.has(key(tree.x,tree.y)));
+  const trees=[...decorationsByKey.values()];
+  treeDecorationCache={game,terrain,key:cacheKey,trees};
+  return refresh(trees);
 }
 
 
@@ -3332,7 +3352,7 @@ function countTreeHexesOnCurrentMap(){
 function treeRotationFrame(tileSet,decoration){
   const frames=tileSet.treeRotationFrames || 1;
   const rotation=terrainHash(decoration.x+7901,decoration.y-5107)%frames;
-  return ((rotation-battlefieldRotation*2)%frames+frames)%frames;
+  return ((rotation-Math.round(battlefieldRotation*2))%frames+frames)%frames;
 }
 
 function directFirRendering(){return !!(combatGpu?.treeScene&&ctx===combatGpu.context&&game?.session?.source==='combat-test'&&game.condition==='grass'&&new URLSearchParams(location.search).get('treeRenderer')!=='images');}
@@ -3676,6 +3696,7 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
   UNIT_POSE_DEFINITIONS[id]={
     defaultPose:"stand",actionPose:"attack",
     actionDurationMs:Number.isFinite(manifest.actionDurationMs) ? manifest.actionDurationMs : (UNIT_POSE_DEFINITIONS[mobType]?.actionDurationMs || UNIT_DEFAULT_ACTION_POSE_MS),
+    bowDrawDelayMs:Math.max(0,Number(manifest.bowDrawDelayMs)||0),
     windupDurationMs:Number.isFinite(manifest.windupDurationMs) ? manifest.windupDurationMs : 250,
     directionalSprites,spriteLayout:footprint,mobType,
     partialPoses:manifest.partialPoses===true,actionProfileId:manifest.actionProfileId||null
@@ -5090,10 +5111,12 @@ function unitDepthSortPoint(unit){
   const centers=occupiedHexes(unit).map(cell=>hexCenter(cell.x,cell.y));
   if(!centers.length) return hexCenter(unit?.x||0,unit?.y||0);
 
+  const motion=unit.walkPresentation;
+  const walk=motion?(()=>{const from=hexCenter(motion.from.x,motion.from.y),to=hexCenter(motion.to.x,motion.to.y),anchor=hexCenter(unit.x,unit.y);return {x:from.x+(to.x-from.x)*motion.t-anchor.x,y:from.y+(to.y-from.y)*motion.t-anchor.y};})():{x:0,y:0};
   const offset=!unit.alive&&unit.deathWorldOffset?battlefieldProjectVector(corpsePresentationOffset(unit)):{x:0,y:0};
   return {
-    x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length+offset.x,
-    y:Math.max(...centers.map(point=>point.y))+offset.y
+    x:centers.reduce((sum,point)=>sum+point.x,0)/centers.length+offset.x+walk.x,
+    y:Math.max(...centers.map(point=>point.y))+offset.y+walk.y
   };
 }
 
@@ -5325,14 +5348,21 @@ function configureArchitecturalSpaces(mode){
 function architecturalSpaceAtWorldPoint(point){
   if(!point) return null;
 
+  // Encounter geometry is replaced as a whole by the terrain/session owners.
+  // Reuse exact query results; keep the original predicate and overlap priority.
+  let cache=architecturalSpaceAtWorldPoint.cache;
+  if(!cache||cache.spaces!==architecturalSpaces||cache.length!==architecturalSpaces.length){
+    cache=architecturalSpaceAtWorldPoint.cache={spaces:architecturalSpaces,length:architecturalSpaces.length,points:new Map()};
+  }
+  const key=point.x+','+point.y;
+  if(cache.points.has(key))return cache.points.get(key);
+  let found=null;
   for(let i=architecturalSpaces.length-1;i>=0;i--){
     const space=architecturalSpaces[i];
-    if(space?.polygon?.length>=3 && pointInConvexPolygon(point,space.polygon)){
-      return space;
-    }
+    if(space?.polygon?.length>=3 && pointInConvexPolygon(point,space.polygon)){found=space;break;}
   }
-
-  return null;
+  if(cache.points.size>=8192)cache.points.delete(cache.points.keys().next().value);
+  cache.points.set(key,found);return found;
 }
 
 function environmentAtWorldPoint(point){
@@ -6123,8 +6153,10 @@ const CAMERA_EDGE_HEXES=4;
 // Battlefield presentation zoom: visual only, independent of map/hex rules.
 let battlefieldZoom=1;
 let battlefieldRotation=5; // Ground-plane view azimuth; world coordinates and rules never rotate.
+// Frame handles select the nearest of six views; direct models retain the residual angle.
+globalThis.adventurePartyUnitViewYawOffset=()=>-(battlefieldRotation-Math.round(battlefieldRotation))*Math.PI/3;
 const BATTLEFIELD_ZOOM_MIN=0.6;
-const BATTLEFIELD_ZOOM_MAX=1.8;
+const BATTLEFIELD_ZOOM_MAX=3.0;
 const BATTLEFIELD_ZOOM_STEP=0.1;
 
 function battlefieldZoomAnchor(){
@@ -6135,15 +6167,36 @@ function battlefieldViewportBounds(){
   const a=battlefieldZoomAnchor();
   return {left:a.x-a.x/battlefieldZoom,right:a.x+(BATTLEFIELD_LOGICAL_WIDTH-a.x)/battlefieldZoom,top:a.y-a.y/battlefieldZoom,bottom:a.y+(BATTLEFIELD_LOGICAL_HEIGHT-a.y)/battlefieldZoom};
 }
+let battlefieldRotationTween=null;
+let battlefieldRotationFrame=null;
 function rotateBattlefield(direction){
-  battlefieldRotation=(battlefieldRotation+direction+6)%6;hoverHex=null;
+  if(!direction){
+    if(battlefieldRotationFrame!==null)cancelAnimationFrame(battlefieldRotationFrame);
+    battlefieldRotationFrame=null;battlefieldRotationTween=null;
+    updateBattlefieldCompass();draw();return;
+  }
+  const target=(battlefieldRotationTween?.target??battlefieldRotation)+direction;
+  battlefieldRotationTween={from:battlefieldRotation,target,start:performance.now()};
+  hoverHex=null;
+  if(battlefieldRotationFrame===null)battlefieldRotationFrame=requestAnimationFrame(animateBattlefieldRotation);
+}
+function animateBattlefieldRotation(now){
+  battlefieldRotationFrame=null;
+  const tween=battlefieldRotationTween;if(!tween)return;
+  const t=Math.max(0,Math.min(1,(now-tween.start)/400));
+  const eased=t*t*(3-2*t);
+  battlefieldRotation=tween.from+(tween.target-tween.from)*eased;
+  if(t===1){battlefieldRotation=((tween.target%6)+6)%6;battlefieldRotationTween=null;}
+  updateBattlefieldCompass();draw();
+  if(battlefieldRotationTween)battlefieldRotationFrame=requestAnimationFrame(animateBattlefieldRotation);
+}
+function updateBattlefieldCompass(){
   const rose=document.getElementById('combatCompassRose');
   if(rose){
     const squash=HEX_ROW/(HEX_W*Math.sqrt(3)/2),directions={N:{x:0,y:-squash},S:{x:0,y:squash},E:{x:1,y:0},W:{x:-1,y:0}};
     rose.style.transform='';for(const label of rose.children){const v=battlefieldProjectVector(directions[label.textContent.trim()]),length=Math.hypot(v.x,v.y)||1;Object.assign(label.style,{left:`${46+v.x/length*36}px`,top:`${46+v.y/length*36}px`,right:'auto',bottom:'auto',transform:'translate(-50%,-50%)'});}
   }
-  const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${(battlefieldRotation>3?battlefieldRotation-6:battlefieldRotation)*60}°`;
-  draw();
+  const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${Math.round((((battlefieldRotation+3)%6+6)%6-3)*60)}°`;
 }
 
 function changeBattlefieldZoom(direction){
@@ -6271,8 +6324,24 @@ function humanoidRuntimeModel(unit){
   return unit?.repositoryMobModel || (unit?HUMANOID_RUNTIME_MODELS[unit.type]||null:null);
 }
 
+function combatEquipmentVisualSignature(unit){
+  return JSON.stringify({model:unit.repositoryMobId||unit.type,height:unit.heightInches,
+    items:(unit.inventory||[]).filter(item=>item.equipped).map(item=>{
+      const {quantity,qty,...visual}=item;return visual;
+    })});
+}
+
+async function reconcileCombatEquipmentVisual(unit){
+  if(!humanoidRuntimeModel(unit))return;
+  if(unit.equipmentLoadPending && unit.appearanceRefreshPromise)await unit.appearanceRefreshPromise;
+  const signature=combatEquipmentVisualSignature(unit);
+  if(unit.appliedEquipmentVisualSignature===signature && unit.spriteSetId===unit.dynamicAppearanceSpriteSetId)return;
+  await markMobAppearanceDirty(unit,{reason:'turn-start-equipment-check'});
+}
+
 async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipment-change"}={}){
   if(!unit)return null;
+  const visualSignature=combatEquipmentVisualSignature(unit);
   const model=humanoidRuntimeModel(unit);
   const fromCombat=!!unit.studioSpriteTest &&
     new URLSearchParams(location.search).get("studioSprite")==="draft";
@@ -6282,7 +6351,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")),
-        import(moduleUrl("js/combat-prepared-assets.mjs?v=direct-assets-1"))
+        import(moduleUrl("js/combat-prepared-assets.mjs?v=R238C313"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.loadPreparedCombatUnit,
         cacheLimit:24
@@ -6311,6 +6380,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     const spriteSetId=window.adventurePartySpriteSets?.register(result.spriteSet);
     if(!spriteSetId)return null;
     unit.appearanceLoadError=null;
+    unit.appliedEquipmentVisualSignature=visualSignature;
     unit.dynamicAppearanceSpriteSetId=spriteSetId;
     unit.spriteSetId=spriteSetId;
     unit.footprintId=result.spriteSet.manifest?.layout?.id||unit.footprintId||"single";
@@ -6607,6 +6677,13 @@ function updateFacingForStep(entity,dx,dy){
   if(unitFootprintDefinition(entity).rotates &&
     !canUnitRotateAt(entity,entity.x,entity.y,facing)) return false;
   entity.facingHex=facing;
+  // Continuous model heading; rules still use the nearest six-sided facing.
+  if(dx||dy){
+    const d=HEX_DIRS[facing];
+    const exact=Math.atan2(-dy*Math.sqrt(3)/2,dx+dy*.5);
+    const snapped=Math.atan2(-d.y*Math.sqrt(3)/2,d.x+d.y*.5);
+    entity.aimYawOffset=Math.atan2(Math.sin(exact-snapped),Math.cos(exact-snapped));
+  }
 
   /*
     Six-direction sprite sets use facingHex directly. Retain this projection
@@ -6678,18 +6755,42 @@ function isEntityOnBattlefieldScreen(entity,padding=0){
   );
 }
 
-async function focusRangedAttacker(attacker,settleMs=180){
-  if(!attacker) return;
-
-  centerCameraOn(attacker);
-  draw();
-
-  if(settleMs>0){
-    await sleep(settleMs);
-  }
+// Shared camera framing for missile and spell presentation; combat coordinates stay unchanged.
+let rangedCameraGeneration=0;
+let rangedFramingEnabled=true;
+async function frameRangedAction(attacker,target,duration=700){
+ if(!attacker||!target)return;
+ if(!rangedFramingEnabled)return;
+ const combat=game,generation=++rangedCameraGeneration;
+ const a=worldPointForHex(attacker.x,attacker.y),b=worldPointForHex(target.x,target.y);
+ const span=battlefieldProjectVector({x:b.x-a.x,y:b.y-a.y});
+ const width=BATTLEFIELD_LOGICAL_WIDTH,height=BATTLEFIELD_LOGICAL_HEIGHT;
+ const zoom=Math.min(battlefieldZoom,width/(Math.abs(span.x)+HEX_W*2),height/(Math.abs(span.y)+HEX_W*2.8));
+ const destinationZoom=Math.max(.15,zoom),anchor=battlefieldZoomAnchor();
+ // Extra vertical room includes standing models above their ground positions.
+ const offset=battlefieldProjectVector({x:(width/2-anchor.x)/destinationZoom,y:(height/2+HEX_W*.65-anchor.y)/destinationZoom},true);
+ const cy=((a.y+b.y)/2-offset.y)/HEX_ROW;
+ const cx=((a.x+b.x)/2-offset.x)/HEX_W-cy/2;
+ const from={x:camera.x,y:camera.y,zoom:battlefieldZoom},started=performance.now();
+ hoverHex=null;
+ while(game===combat&&generation===rangedCameraGeneration){
+  const t=Math.min(1,(performance.now()-started)/duration),ease=t*t*t*(t*(t*6-15)+10);
+  camera.x=from.x+(cx-from.x)*ease;camera.y=from.y+(cy-from.y)*ease;
+  battlefieldZoom=from.zoom+(destinationZoom-from.zoom)*ease;draw();
+  if(t>=1)break;
+  await new Promise(resolve=>window.requestCombatAnimationTick(resolve));
+ }
+}
+async function focusRangedAttacker(attacker,settleMs=180,target=null){
+ if(attacker&&target)faceEntityToward(attacker,target);
+ if(target&&rangedFramingEnabled)return frameRangedAction(attacker,target);
+ if(!attacker)return;
+ centerCameraOn(attacker);draw();
+ if(settleMs>0)await sleep(settleMs);
 }
 
 async function focusDamagedTargetIfOffscreen(target,settleMs=120,force=false){
+  if(rangedFramingEnabled)return false;
   if(
     !target ||
     (!force && isEntityOnBattlefieldScreen(target))
@@ -6708,6 +6809,7 @@ async function focusDamagedTargetIfOffscreen(target,settleMs=120,force=false){
 }
 
 async function focusRangedMissTarget(target,settleMs=150){
+  if(rangedFramingEnabled)return;
   if(!target) return;
 
   /*
@@ -9192,7 +9294,7 @@ function strengthSpellCombatDelta(unit){
 }
 
 function physicalDamageEffectModifier(attacker,attackKind="melee"){
-  let modifier=0;
+  let modifier=globalThis.AdventurePartyRaces.racialWeaponBonuses(attacker,attackKind).damage;
 
   if(getUnitEffect(attacker,"ray-enfeeblement")){
     modifier-=1;
@@ -9645,6 +9747,7 @@ function hasTransientUnitFx(now=performance.now()){
     (game && allUnits().some(u=>u?.alive&&!u.fled&&u.inventory?.some(item=>globalThis.AdventurePartyItemLighting?.profile(item)?.flicker))) ||
     castingGlowFx.length>0 ||
     fireDamageFx.length>0 ||
+    (game?.burnSmoke?.some(fx=>now<fx.started+fx.duration)) ||
     enlargeTransitionFx.length>0
   );
 }
@@ -9784,6 +9887,8 @@ function triggerFireDamageFx(unit,damage=1){
 
   const started=performance.now();
   const duration=combatEffectDuration(720);
+  unit.burnReaction={started,duration};
+  queueBurnSmoke(unit,true,started+duration*.45);
   const existing=fireDamageFx.find(fx=>fx.unitId===unit.id && started<fx.until);
 
   if(existing){
@@ -9806,6 +9911,7 @@ function triggerFireDamageFx(unit,damage=1){
 }
 
 function registerElementalDamageFx(unit,damageType,damage){
+  if(unit&&Number(damage)>0&&unit.hp<=0)unit.fireDeath=String(damageType||"").toLowerCase()==="fire";
   if(String(damageType||"").toLowerCase()==="fire" && Number(damage)>0){
     triggerFireDamageFx(unit,damage);
     igniteWebAtUnit(unit,"fire damage");
@@ -10213,8 +10319,8 @@ function spellHitDiceValue(unit){
   return 1;
 }
 
-function attackEffectModifier(attacker,defender){
-  let modifier=0;
+function attackEffectModifier(attacker,defender,attackKind=null){
+  let modifier=attackKind?globalThis.AdventurePartyRaces.racialWeaponBonuses(attacker,attackKind).hit:0;
 
   const blind=getUnitEffect(attacker,"blind");
   if(blind){
@@ -10840,7 +10946,7 @@ function mobMovementPresentationMode(mob,destination,senseContext){
 
 function drawAimAreaPreview(){
   if(typeof environmentAimBlocked==='function'&&environmentAimBlocked())return;
-  if(!aimMode || !pendingAimAction){
+  if(!aimMode || !pendingAimAction || pendingAimAction.targetSubmitted){
     return;
   }
 
@@ -12792,7 +12898,7 @@ function makeFighter(){
     f.x=0;
     f.y=0;
     f.alive=true;
-    delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;delete f.deathRotationDelta;delete f.deathAnimationDurationMs;
+    delete f.fireDeath;delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;delete f.deathRotationDelta;delete f.deathAnimationDurationMs;
     f.fled=false;
     f.turnMoves=0;
     f.fullMove=false;
@@ -15269,6 +15375,7 @@ function bestRangedAiTargetFrom(unit,source=unit){
   return rangedAiOpponents(unit)
     .filter(target=>rangedAiCanAttackFrom(unit,source,target))
     .sort((a,b)=>
+      workshopTargetPriority(unit,a,b) ||
       unitDistance(sourceEntity,a)-unitDistance(sourceEntity,b) ||
       a.hp-b.hp ||
       a.id.localeCompare(b.id)
@@ -15291,6 +15398,7 @@ async function friendlyNpcTurn(npc){
   }
 
   await selectCombatAiWeapon(npc);
+  if(await repositionElvenArcher(npc))return;
   if(!unitHasRangedWeaponInHand(npc)&&Array.isArray(npc.inventory)){
     const choice=selectMobPartyTarget(npc),target=choice.target;
     if(target){
@@ -15340,7 +15448,7 @@ async function friendlyNpcTurn(npc){
   */
   let target=bestRangedAiTargetFrom(npc,npc);
 
-  if(!target){
+  if(!target&&!isElvenBowTactician(npc)){
     const plan=pathToNearestRangedFiringHex(npc,{avoidThreatened:true});
 
     if(plan?.path?.length>1){
@@ -15978,10 +16086,16 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
       await selectCombatAiWeapon(p);
       const shotTarget=unitHasRangedWeaponInHand(p)&&p.missileAmmoQuantity>0?bestRangedAiTargetFrom(p,p):null;
       if(shotTarget){
-        if(p.missileCatalogId==="sling")await slingAttack(p,shotTarget);else await longbowAttack(p,shotTarget);
-        await selectCombatAiWeapon(p);
+        r226PreparePlayerAttackRate(p);
+        if(!(p.shotsRemaining>0)){playerDone();break;}
+        const result=p.missileCatalogId==="sling"
+          ? await slingAttack(p,shotTarget) : await longbowAttack(p,shotTarget);
+        if(result===false || result?.blockedByObstacle || result?.outOfRange || result?.outOfAmmo || result?.blockedBySlow){playerDone();break;}
+        p.shotsRemaining=Math.max(0,p.shotsRemaining-1);
         await waitForCombatActionPause();
-        playerDone();break;
+        if(!isQuickCommandUnit(p) || token!==quickCommandGeneration || game.over || game.active!==p.id)break;
+        if(p.shotsRemaining<=0 || result?.criticalMiss){playerDone();break;}
+        continue;
       }
       const adjacent=activeEnemies()
         .filter(enemy=>canMeleeReach(p,enemy))
@@ -17068,10 +17182,15 @@ function waitCurrentUnit(){
 
 
 
+// Only rank already-visible/legal candidates; never expose hidden targets.
+function workshopTargetPriority(unit,a,b){
+ return unit.workshopBehavior?.target==='weakest-visible' ? a.hp-b.hp : 0;
+}
 function selectMobPartyTarget(mob){
   const candidates=hostileCombatantsFor(mob)
     .slice()
     .sort((a,b)=>
+      workshopTargetPriority(mob,a,b) ||
       unitDistance(mob,a)-unitDistance(mob,b) ||
       a.id.localeCompare(b.id)
     );
@@ -17565,6 +17684,7 @@ async function mobTurn(mob){
   }
 
   await selectCombatAiWeapon(mob);
+  if(await repositionElvenArcher(mob))return;
   if(typeof tryMobBreakCombatWindow==='function'&&await tryMobBreakCombatWindow(mob))return;
   if(await repositoryMobCast(mob))return;
 
@@ -17671,7 +17791,7 @@ async function mobTurn(mob){
           ? bestRangedAiTargetFrom(mob,mob)
           : null;
 
-      if(!firingTarget){
+      if(!firingTarget&&!isElvenBowTactician(mob)){
         const plan=pathToNearestRangedFiringHex(mob,{avoidThreatened:true});
 
         if(plan?.path?.length>1){
@@ -18344,7 +18464,8 @@ function bestCombatWeapon(unit,preferRanged=false){
 async function selectCombatAiWeapon(unit){
  if(!Array.isArray(unit?.inventory)||!unit.inventory.some(i=>i.slot==='weapon'||i.slot==='backup-weapon'))return;
  const threatened=hostileCombatantsFor(unit).some(e=>canMeleeReach(unit,e));
- const selected=bestCombatWeapon(unit,!threatened);
+ const preferRanged=(unit.id==='player'&&unit.name==='Dungeon Crawler Carl')||unit.workshopBehavior?.style==='melee'?false:!threatened;
+ const selected=bestCombatWeapon(unit,preferRanged);
  const current=unit.inventory.find(i=>i.slot==='weapon'&&i.equipped)||null;
  if(current===selected)return;
  for(const item of unit.inventory){if(item.slot==='weapon'||item.slot==='backup-weapon'){item.equipped=item===selected;if(item===selected)item.slot='weapon';}}
@@ -18366,7 +18487,7 @@ function syncRepositoryMissileEquipment(unit){
  const ammoId=missile.ammoId||missile.ammoChoices?.[0],ammo=getWeaponCatalogEntry(ammoId);
  if(!ammo)return;
  let stack=unit.inventory.find(i=>i.type==="Ammo"&&i.catalogWeaponId===ammoId);
- 
+
  unit.missileAmmoCatalogId=ammoId;unit.missileAmmoName=ammo.name;unit.missileAmmoQuantity=stack?.qty||0;
  unit.missileRangeIncrementHexes=Math.max(1,(missile.rangeIncrementFt||40)/10);
  unit.missileMaxRangeHexes=unit.missileRangeIncrementHexes*3;
@@ -18589,7 +18710,7 @@ function renderStudioTestCharacterSheet(subject){
 }
 
 function renderCharacterSheet(){
-  const subject=activePlayerControlledUnit() || game?.player || persistentFighter;
+  const subject=activeUnit() || game?.player || persistentFighter;
   if(!subject) return;
 
   const subtitle=document.getElementById("sheetSubtitle");
@@ -18658,7 +18779,7 @@ function renderCharacterSheet(){
     return;
   }
 
-  const fighter=game?.player || persistentFighter;
+  const fighter=subject;
   if(!fighter) return;
   if(fighter.repositoryMobId){
     const rows=entries=>entries.map(([label,value])=>`<span>${String(label).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]))}</span><span>${String(value??'—').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>`).join('');
@@ -20857,24 +20978,13 @@ function drawFireballExplosionFx(){
     [255,244,170]
   ];
 
-  ctx.save();
+  const lobes=[], particles=[];
   /*
     R143: treat the requested transparency as a readable translucent flame
     body: 75% opacity / 25% transparency. Terrain and units remain visible
     through the blast without washing the flame colors away.
   */
   const fireballBodyOpacity=0.75*fade;
-
-  /*
-    R141: render the Fireball body to an offscreen canvas, then stamp a 2-pixel
-    black silhouette around the combined body so the entire flame mass reads as
-    one outlined object rather than many separately outlined lobes.
-  */
-  const bodyCanvas=document.createElement("canvas");
-  bodyCanvas.width=BATTLEFIELD_LOGICAL_WIDTH;
-  bodyCanvas.height=BATTLEFIELD_LOGICAL_HEIGHT;
-  const bodyCtx=bodyCanvas.getContext("2d");
-  bodyCtx.imageSmoothingEnabled=false;
 
   for(const cell of cells){
     const ring=Number.isFinite(cell.volumeDistance)
@@ -20903,9 +21013,9 @@ function drawFireballExplosionFx(){
       if(volumeDistance>growth+0.15) continue;
 
       const heat=Math.max(0,1-volumeDistance);
-      const lobes=3+Math.round(heat*2);
+      const lobeCount=3+Math.round(heat*2);
 
-      for(let i=0;i<lobes;i++){
+      for(let i=0;i<lobeCount;i++){
         const h1=hash01(cell.x,cell.y,layer,i+frame%3);
         const h2=hash01(cell.x+71,cell.y-37,layer,i+19);
         const h3=hash01(cell.x-43,cell.y+113,layer,i+31);
@@ -20933,34 +21043,11 @@ function drawFireballExplosionFx(){
         /* Outer lobes are intentionally fully opaque in the current experiment. */
         const alpha=1;
 
-        bodyCtx.fillStyle=`rgba(${r},${g},${b},${alpha})`;
-        bodyCtx.beginPath();
-        bodyCtx.ellipse(
-          c.x+ox,
-          c.y-z+oy,
-          radiusPx,
-          ry,
-          0,
-          0,
-          Math.PI*2
-        );
-        bodyCtx.fill();
+        lobes.push([c.x+ox,c.y-z+oy,radiusPx,ry,r,g,b,1,1]);
 
         /* Small inner glow volume on hotter lobes; still spherical, no squares. */
         if(heat>0.50 && h1>0.42){
-          const innerAlpha=1;
-          bodyCtx.fillStyle=`rgba(255,232,112,${innerAlpha})`;
-          bodyCtx.beginPath();
-          bodyCtx.ellipse(
-            c.x+ox-radiusPx*0.14,
-            c.y-z+oy-ry*0.16,
-            radiusPx*0.58,
-            ry*0.54,
-            0,
-            0,
-            Math.PI*2
-          );
-          bodyCtx.fill();
+          lobes.push([c.x+ox-radiusPx*0.14,c.y-z+oy-ry*0.16,radiusPx*0.58,ry*0.54,255,232,112,1,1]);
         }
       }
     }
@@ -20992,95 +21079,6 @@ function drawFireballExplosionFx(){
       )
     );
 
-  ctx.save();
-  ctx.globalCompositeOperation="lighter";
-
-  const targetLight=
-    ctx.createRadialGradient(
-      targetCenter.x,
-      targetCenter.y-HEX_H*0.16,
-      0,
-      targetCenter.x,
-      targetCenter.y-HEX_H*0.16,
-      illuminationRadius
-    );
-
-  targetLight.addColorStop(
-    0,
-    `rgba(255,118,30,${0.48*fade})`
-  );
-
-  targetLight.addColorStop(
-    0.30,
-    `rgba(238,61,12,${0.34*fade})`
-  );
-
-  targetLight.addColorStop(
-    0.64,
-    `rgba(183,31,8,${0.19*fade})`
-  );
-
-  targetLight.addColorStop(
-    0.88,
-    `rgba(119,15,5,${0.075*fade})`
-  );
-
-  targetLight.addColorStop(
-    1,
-    "rgba(82,8,3,0)"
-  );
-
-  ctx.fillStyle=targetLight;
-  ctx.beginPath();
-  ctx.arc(
-    targetCenter.x,
-    targetCenter.y-HEX_H*0.16,
-    illuminationRadius,
-    0,
-    Math.PI*2
-  );
-  ctx.fill();
-
-  /*
-    Heavy organic glow generated from the exact moving Fireball body.
-  */
-  ctx.filter="blur(16px)";
-  ctx.globalAlpha=
-    0.34*fade;
-  ctx.drawImage(
-    bodyCanvas,
-    0,
-    0
-  );
-
-  ctx.filter="blur(7px)";
-  ctx.globalAlpha=
-    0.30*fade;
-  ctx.drawImage(
-    bodyCanvas,
-    0,
-    0
-  );
-
-  ctx.filter="none";
-  ctx.restore();
-
-  /*
-    Paint the actual body last so its original temperature palette remains
-    crisp inside the glow.
-  */
-  ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=
-    fireballBodyOpacity;
-
-  ctx.drawImage(
-    bodyCanvas,
-    0,
-    0
-  );
-
-  ctx.globalAlpha=1;
-
   /* Light fire-only grain/dither filter pass. */
   if(growth>0.10 && fade>0){
     const c=hexCenter(fx.x,fx.y);
@@ -21105,8 +21103,7 @@ function drawFireballExplosionFx(){
       const sw=Math.round(size*(0.85+growth*0.30));
       const sh=Math.max(2,Math.round(sw*(0.90+0.22*h1)));
       const [r,g,b]=grainPalette[i%grainPalette.length];
-      ctx.fillStyle=`rgba(${r},${g},${b},${0.68*fade})`;
-      ctx.fillRect(Math.round(px),Math.round(py),sw,sh);
+      particles.push([Math.round(px)+sw/2,Math.round(py)+sh/2,sw/2,sh/2,r,g,b,0.68*fade,0]);
     }
   }
 
@@ -21135,21 +21132,14 @@ function drawFireballExplosionFx(){
       const size=sizeRoll>0.92 ? 3 : (sizeRoll>0.48 ? 2 : 1);
       const alpha=Math.max(0,(1-life))*0.72*fade;
 
-      ctx.fillStyle=i%3===0
-        ? `rgba(255,236,132,${alpha})`
-        : (i%3===1
-          ? `rgba(255,132,20,${alpha})`
-          : `rgba(196,45,8,${alpha})`);
-
-      if(i%4===0){
-        ctx.fillRect(Math.round(px),Math.round(py),size,Math.max(2,size+2));
-      }else{
-        ctx.fillRect(Math.round(px),Math.round(py),size,size);
-      }
+      const color=i%3===0?[255,236,132]:i%3===1?[255,132,20]:[196,45,8];
+      const height=i%4===0?Math.max(2,size+2):size;
+      particles.push([Math.round(px)+size/2,Math.round(py)+height/2,size/2,height/2,...color,alpha,0]);
     }
   }
 
-  ctx.restore();
+  combatGpu?.fireball({lobes,particles,fade,opacity:fireballBodyOpacity,
+    light:[targetCenter.x,targetCenter.y-HEX_H*0.16,illuminationRadius]});
 }
 
 
@@ -22076,19 +22066,7 @@ function ensurePersistentStatusFxLoop(){
   return true;
 }
 
-function drawFireDamageFx(){
-  if(!game)return;
-  const now=performance.now();
-  for(const fx of fireDamageFx){
-    const unit=getUnitById(fx.unitId);if(!unit||unit.fled||!shouldRenderUnitUnderPartyVisibility(unit))continue;
-    const t=(now-fx.started)/fx.duration;if(t<0||t>=1)continue;
-    const c=unitFootprintScreenCenter(unit),fade=Math.min(1,t*9,(1-t)*3),intensity=Math.max(.7,Number(fx.intensity)||1);
-    for(let i=0;i<9;i++){const phase=i*2.399,x=c.x+Math.sin(phase)*9,y=c.y-3-(i%3)*6;drawFlowingFlame(x,y,4.5,12*intensity+(i%3)*4,now,phase,fade*.85);}
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    for(let i=0;i<18;i++){const life=((now-fx.started)*.001*(.7+(i%4)*.15)+i*.618)%1;ctx.globalAlpha=fade*(1-life)*.8;ctx.fillStyle=i%3?'#ff9c24':'#ffe3a0';ctx.beginPath();ctx.arc(c.x+Math.sin(i*2.4+life*3)*(5+life*8),c.y-8-life*32,.45+(1-life)*.45,0,Math.PI*2);ctx.fill();}
-    ctx.restore();
-  }
-}
+function drawFireDamageFx(){drawBurnSmoke();}
 
 function drawAreaDamageFx(){
   if(!areaDamageFx || !game) return;
@@ -22165,7 +22143,7 @@ function drawWhiteBattlefieldText(textValue,x,y,{fontSize=14,maxWidth=null}={}){
 
 function drawAimFriendlyFireWarning(){
   if(typeof environmentAimBlocked==='function'&&environmentAimBlocked())return;
-  if(!aimMode || !pendingAimAction) return;
+  if(!aimMode || !pendingAimAction || pendingAimAction.targetSubmitted) return;
   if(game?.condition==="wall" && !isHexVisibleToWallTestObserver(aimCursor.x,aimCursor.y)) return;
 
   const preview=aimAreaPreviewForAction(
@@ -22663,8 +22641,8 @@ canvas.addEventListener("click",(event)=>{
   if(!activePlayerControlledUnit()) return;
 
   /* Movement click:
-     compute a route to the clicked destination and take exactly
-     one legal step along it. A new click recomputes the route. */
+     follow the complete legal route within remaining movement.
+     Reactions and terrain effects still resolve at each rule checkpoint. */
   clickPathStep(h);
 });
 
@@ -22907,7 +22885,13 @@ window.adventurePartyGameStartup?.ready.then(()=>{
 // Isolated experimental view controls: no turn, movement or door-state mutation.
 document.getElementById("rotateCombatLeft")?.addEventListener("click",()=>rotateBattlefield(-1));
 document.getElementById("rotateCombatRight")?.addEventListener("click",()=>rotateBattlefield(1));
+document.getElementById("rangedFramingToggle")?.addEventListener("click",event=>{
+ rangedFramingEnabled=!rangedFramingEnabled;++rangedCameraGeneration;
+ event.currentTarget.setAttribute('aria-pressed',String(rangedFramingEnabled));
+ event.currentTarget.textContent='Ranged framing: '+(rangedFramingEnabled?'ON':'OFF');
+});
 
+addEventListener('adventure-party:grass-change',()=>{if(game)draw();});
 addEventListener('adventure-party:solar-change',()=>{if(game)draw();});
 addEventListener('adventure-party:snow-change',()=>{if(game)draw();});
 addEventListener('adventure-party:tree-aa-change',()=>{if(game)draw();});

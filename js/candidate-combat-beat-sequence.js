@@ -38,6 +38,12 @@ let candidateCombatBeatFlushQueued=false;
 const candidateCombatBeatTimers=new Set();
 const candidateCombatBeatReady=[];
 let candidateCombatBeatActive=false;
+let candidateCombatBeatBatch=null;
+function candidateWithSimultaneousCombatBeats(resolve){
+ const previous=candidateCombatBeatBatch;
+ candidateCombatBeatBatch=previous||{id:"simultaneous-"+(++candidateCombatBeatSequence)};
+ try{return resolve();}finally{candidateCombatBeatBatch=previous;}
+}
 
 
 /* ============================================================
@@ -162,7 +168,7 @@ function candidateQueueCombatBeat(
         : R236_FLOAT_RISE_PX,
     show,
     sound,
-    meta:{...meta}
+    meta:{...meta,...(candidateCombatBeatBatch?{simultaneousBatch:candidateCombatBeatBatch.id,actionId:candidateCombatBeatBatch.id}:{})}
   };
 
   group.pending.push(beat);
@@ -216,7 +222,9 @@ function candidateStartNextCombatBeat(){
   candidateCombatBeatHoldUntil=performance.now()+(candidateCombatBeatReady.length+1)*CANDIDATE_COMBAT_BEAT_MS;
   const generation=candidateCombatBeatGeneration;
   try{
-    candidateRunCombatBeat(beat);
+    for(const member of beat.simultaneousBeats||[beat]){
+      try{candidateRunCombatBeat(member);}catch(error){console.error("Combat batch member failed",error);}
+    }
   }catch(error){
     // Results are presentation of already-resolved mechanics. A failed sound,
     // death effect or render must not leave initiative waiting forever.
@@ -242,10 +250,18 @@ function candidateFlushCombatBeats(){
   const first=new Map();
   for(const beat of pending){const key=beat.meta?.actionId??null;if(!first.has(key))first.set(key,beat.id);}
   pending.sort((a,b)=>first.get(a.meta?.actionId??null)-first.get(b.meta?.actionId??null)||a.priority-b.priority||a.id-b.id);
-  candidateCombatBeatReady.push(...pending);
+  const batches=new Map(),ready=[];
+  for(const beat of pending){
+    const key=beat.meta?.simultaneousBatch;
+    if(!key){ready.push(beat);continue;}
+    let batch=batches.get(key);
+    if(!batch){batch={...beat,simultaneousBeats:[]};batches.set(key,batch);ready.push(batch);}
+    batch.simultaneousBeats.push(beat);
+  }
+  candidateCombatBeatReady.push(...ready);
   if(!pending.length)return;
   let startsAt=Math.max(now,candidateCombatBeatHoldUntil);
-  for(const beat of pending){startsAt+=CANDIDATE_COMBAT_BEAT_MS;candidateCombatBeatGroupFor(beat.unit).nextAvailableAt=startsAt;}
+  for(const beat of ready){startsAt+=CANDIDATE_COMBAT_BEAT_MS;for(const member of beat.simultaneousBeats||[beat])candidateCombatBeatGroupFor(member.unit).nextAvailableAt=startsAt;}
   candidateCombatBeatHoldUntil=startsAt;
   if(!candidateCombatBeatActive){candidateCombatBeatActive=true;candidateStartNextCombatBeat();}
 }

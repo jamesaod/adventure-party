@@ -506,7 +506,7 @@ AdventurePartyCombatServices.register('castFireballFromScroll','r233-multi-resul
   );
 
   let koboldCasualties=0;
-  if(!await presentSpellTargetResults(caster,results,result=>{
+  if(!await presentSimultaneousSpellTargetResults(caster,results,result=>{
     const {unit,damage,immune,save}=result;
     if(immune||damage<=0){
       candidateQueueCombatBeat(unit,{category:'condition',text:immune?'Immune to fire':'Takes no Fireball damage',sound:()=>{}});

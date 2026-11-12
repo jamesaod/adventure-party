@@ -1,3 +1,4 @@
+import {combatPresentationTestServices} from './combat-presentation-test-context.mjs';
 import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,7 +22,7 @@ const functions = [
 const restoreUrl = './3d-studio.html?studioRestore=1';
 function harness(studioTest, spriteSetId = 'studio-kobold') {
   const calls = { navigation: [], loot: [], xp: [], timers: [], cleared: [], launcher: 0, charms: 0, updates: 0 };
-  const sandbox = {
+  const sandbox = {...combatPresentationTestServices(),
     game: {
       studioSpriteTest: studioTest, over: false, active: 'player', xpPool: 100,
       player: { id: 'player', name: 'Carl', alive: true, hp: 20, maxHp: 50, stats: { str: 18 } },

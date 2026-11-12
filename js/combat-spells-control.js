@@ -28,6 +28,7 @@ async function castCharmPersonSpell(action,target){
   exitAimMode(false,false);
   setUnitActionBanner(caster,"Casting Charm Person");
 
+  if(resistRacialSpell(target,spell))return await finishResistedRacialSpell(target,caster,spell,action);
   const save=rollSpellSave(target,caster);
 
   setLastRoll(
@@ -256,6 +257,7 @@ async function castSleepSpell(action,targetHex){
     if(hd>hdPool) continue;
 
     hdPool-=hd;
+    if(resistRacialSpell(unit,spell))continue;
     affected.push(unit);
 
     addUnitEffect(unit,{
@@ -371,6 +373,7 @@ async function castTauntSpell(action,target){
     );
 
   for(const unit of candidates){
+    if(resistRacialSpell(unit,spell))continue;
     const save=rollSpellSave(unit,caster);
 
     if(save.success){
@@ -679,6 +682,7 @@ async function castHypnoticPatternSpell(action,targetHex){
   for(const unit of targets){
     const hd=spellHitDiceValue(unit);
     if(hd>hdRemaining) continue;
+    if(resistRacialSpell(unit,spell))continue;
     const save=rollSpellSave(unit,caster);
     if(save.success) continue;
 
@@ -780,6 +784,7 @@ async function castRayOfEnfeeblementSpell(action,target){
   pendingAimAction=null;
   exitAimMode(false,false);
 
+  if(resistRacialSpell(target,spell))return await finishResistedRacialSpell(target,caster,spell,action);
   const save=rollSpellSave(target,caster);
   if(save.success){
     setCombatMessage(`${target.name} resists Ray of Enfeeblement.`,COMBAT_MESSAGE_MIN_HOLD_MS);
@@ -830,6 +835,7 @@ async function castScareSpell(action,targetHex){
     if(spellHitDiceValue(unit)>=6) continue;
     if(isUndeadUnit(unit) || unit.isExtraplanar || unit.extraplanar) continue;
 
+    if(resistRacialSpell(unit,spell))continue;
     const race=String(unit.race||"").toLowerCase();
     const group=String(unit.classGroup||"").toLowerCase();
     const receivesSave=race.includes("elf") || group==="priest";
@@ -950,6 +956,7 @@ async function castTashasHideousLaughterSpell(action,targetHex){
       intelligence<=12 ? -4 :
       intelligence<=14 ? -2 : 0;
 
+    if(resistRacialSpell(unit,spell))continue;
     if(rollSpellSave(unit,caster,savePenalty).success) continue;
 
     addUnitEffect(unit,{

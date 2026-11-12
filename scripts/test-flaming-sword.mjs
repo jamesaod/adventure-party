@@ -1,16 +1,37 @@
-import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import * as THREE from '../assets/vendor/three/three.module.min.js';import {extractCombatFunction} from './combat-test-source.mjs';
-const context=vm.createContext({THREE});vm.runInContext(extractCombatFunction(fs.readFileSync('js/combat-mob-renderer.mjs','utf8'),'captureFlamingBlade'),context);
-const weapon=new THREE.Group();weapon.add(new THREE.Mesh(new THREE.BoxGeometry(.1,2,.1),new THREE.MeshBasicMaterial()));const camera=new THREE.OrthographicCamera(-3,3,3,-3,.1,100);camera.position.set(0,0,10);camera.lookAt(0,0,0);camera.updateMatrixWorld();
-const initial=context.captureFlamingBlade({model:weapon},camera);weapon.position.x=1;const moved=context.captureFlamingBlade({model:weapon},camera);
-assert(initial[1].y<initial[0].y,'Blade extends along the real weapon long axis');for(let i=0;i<2;i++)assert(Math.abs(moved[i].x-initial[i].x-1/6)<1e-6,'Anchors follow mounted weapon world transform');
-weapon.rotation.z=Math.PI/2;const rotated=context.captureFlamingBlade({model:weapon},camera);assert(Math.abs(rotated[0].y-rotated[1].y)<1e-6,'Flame anchors rotate with weapon pose');assert.equal(context.captureFlamingBlade(null,camera),null);
-console.log('PASS flame anchors follow actual mounted weapon translation and pose rotation');
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {markFlamingBlade,preparedBladeTemplates,restorePreparedBlade,hasFlamingSword,createWeaponFlameMask} from '../js/combat-weapon-flame.mjs';
+import {createUnitBurnEffect} from '../js/combat-unit-burn-effect.mjs';
+import {captureDirectUnit,sampleDirectPose} from '../js/combat-direct-units.mjs';
+const root=new THREE.Group(),hand=new THREE.Bone(),weapon=new THREE.Group();root.add(hand);hand.add(weapon);
+const blade=new THREE.Mesh(new THREE.BufferGeometry().copy(new THREE.BoxGeometry(.08,1,.025)),new THREE.MeshStandardMaterial());blade.position.y=.65;weapon.add(blade);
+const grip=new THREE.Mesh(new THREE.BufferGeometry().copy(new THREE.CylinderGeometry(.06,.06,.25,7)),new THREE.MeshStandardMaterial());weapon.add(grip);
+const body=new THREE.Mesh(new THREE.BufferGeometry().copy(new THREE.SphereGeometry(.3,9,5)),new THREE.MeshStandardMaterial());root.add(body);
+const camera=new THREE.OrthographicCamera(-2,2,2,-2,.1,20);camera.position.set(0,2,6);camera.lookAt(0,.5,0);camera.updateMatrixWorld();
+assert.equal(markFlamingBlade(weapon,{base:[0,.2,0],tip:[0,1.15,0]}),2);
+assert([...grip.geometry.getAttribute('flameBlade').array].every(v=>v<0),'Grip is excluded from the flame silhouette');
+assert.equal(body.geometry.getAttribute('flameBlade'),undefined,'Body is an occluder, never a sword emitter');
+const templates=preparedBladeTemplates(weapon),snapshot=captureDirectUnit(root,camera);
+assert.equal(snapshot.group.children.filter(m=>m.geometry.getAttribute('flameBlade')).length,2,'Prepared pose captures retain the blade coordinates');
+for(const m of snapshot.group.children)m.geometry.deleteAttribute('flameBlade');
+assert.equal(restorePreparedBlade(snapshot.group,templates),2,'Old posed assets recover the blade from source topology');
+assert.equal(snapshot.group.children[2].geometry.getAttribute('flameBlade'),undefined,'Migration does not mark the body');
+const roundTrip=new THREE.ObjectLoader().parse(snapshot.group.toJSON());assert.equal(roundTrip.children.filter(m=>m.geometry.getAttribute('flameBlade')).length,2,'Prepared serialization retains the attachment mask');
+const entity={id:'sword',alive:true,inventory:[{equipped:true,catalogItemId:'flaming-sword-5'}]},asset={group:root,camera,workshopSample(_entity,seconds){hand.rotation.z=seconds;hand.position.x=seconds*.1;return true;}};
+let previous;
+for(let facing=0;facing<6;facing++)for(const seconds of [0,.4,.9]){
+ const result=sampleDirectPose({asset,yaw:facing*Math.PI/3},entity,seconds,seconds*1000);
+ const tip=weapon.localToWorld(new THREE.Vector3(0,1.15,0)).project(camera);
+ assert.equal(result.asset,asset);assert.equal(result.yaw,facing*Math.PI/3);assert(tip.toArray().every(Number.isFinite));
+ if(previous)assert(tip.distanceTo(previous)>1e-4,'The source silhouette moves with animation and all six view angles');previous=tip;
+ assert.equal(blade.geometry.getAttribute('flameBlade').array.at(-1),templates[0].attribute.array.at(-1),'Blade coordinates remain model-local through animation');
+}
+const pass=createWeaponFlameMask(),originals=[];root.traverse(m=>{if(m.isMesh)originals.push([m,m.material]);});
+assert.throws(()=>pass.draw({render(){throw Error('device lost');}},root,camera),/device lost/);
+for(const [mesh,material] of originals)assert.equal(mesh.material,material,'Mask errors restore body and weapon materials');pass.dispose();
+assert(hasFlamingSword(entity));assert(!hasFlamingSword({...entity,alive:false}));
+for(const patch of [{equipped:false},{lit:false},{lightEnabled:false},{qty:0},{catalogItemId:'long-sword'},{startingLocation:'off-hand'}])assert(!hasFlamingSword({...entity,inventory:[{...entity.inventory[0],...patch}]}));
+console.log('PASS model-attached blade coordinates, grip/body exclusion, prepared migration and serialization, animated poses at six view angles, material restoration, equipment and light state.');
 
-weapon.position.set(0,0,0);weapon.rotation.z=0;const scene=new THREE.Group();scene.add(weapon);const body=new THREE.Mesh(new THREE.BoxGeometry(1,3,.5),new THREE.MeshBasicMaterial());body.position.z=1;scene.add(body);scene.updateMatrixWorld(true);
-assert(context.captureFlamingBlade({model:weapon},camera,scene).every(p=>p.blocked),'Body in front hides blade flames');
-body.position.z=-1;scene.updateMatrixWorld(true);assert(context.captureFlamingBlade({model:weapon},camera,scene).every(p=>!p.blocked),'Blade in front retains flames');
-console.log('PASS actual body depth hides rear sword flames and retains front sword flames');
-
-const {studioWeapon}=await import('../js/studio-equipment.mjs');const sword=studioWeapon('medieval-sword');assert(sword.flameSpan.base[1]>.12&&sword.flameSpan.tip[1]>sword.flameSpan.base[1],'Flames start beyond the crossguard and extend toward +Y tip');
-weapon.position.set(0,0,0);weapon.rotation.set(0,0,0);const bladeOnly=context.captureFlamingBlade({model:weapon,weapon:sword},camera);
-assert(Math.abs(bladeOnly[0].y-(.5-.29/6))<1e-6);assert(Math.abs(bladeOnly.at(-1).y-(.5-.98/6))<1e-6);console.log('PASS production sword flame span excludes crossguard and grip');
+const effect=createUnitBurnEffect(),view={width:100,height:100},crop={x:0,y:0,width:50,height:50};effect.update({texture:null,crop,time:1,opacity:1,core:.25,scale:3},view);assert.equal(effect.mesh.material.uniforms.core.value,.25);effect.update({texture:null,crop,time:2,opacity:.8},view);assert.equal(effect.mesh.material.uniforms.core.value,0,'Unit burns retain their original edge-only silhouette after drawing a flaming weapon');assert.equal(effect.mesh.material.uniforms.flameScale.value,1,'Unit burn flame size stays unchanged');effect.dispose();
+console.log('PASS shared flame shader resets sword core fill for ordinary unit burn reactions');

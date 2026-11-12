@@ -27,10 +27,10 @@ console.log('PASS arrow blood timing, miss suppression, ballistic settlement, wa
 
 // Exercise cached stain rendering with a lightweight Canvas boundary.
 let stamps=0,painted=0;const brush={beginPath(){},ellipse(){},fill(){}};
-Object.assign(c,{game:{bloodState:state},HEX_W:30,HEX_ROW:20,document:{createElement:()=>{stamps++;return {getContext:()=>brush};}},
+Object.assign(c,{combatGpu:null,game:{bloodState:state},HEX_W:30,HEX_ROW:20,document:{createElement:()=>{stamps++;return {getContext:()=>brush};}},
  ctx:{save(){},restore(){},transform(){},drawImage(){painted++;}},screenPointForWorld:p=>p,battlefieldProjectVector:p=>p,
  isHexVisibleToFriendlyParty:()=>true,combatSpriteBrightness:()=>.25});
-const surfaces=readFileSync('js/combat-render-surfaces.js','utf8');vm.runInContext(surfaces.slice(surfaces.indexOf('function drawCombatBloodStains')),c);
+const surfaces=readFileSync('js/combat-render-surfaces.js','utf8');vm.runInContext(surfaces.slice(surfaces.indexOf('function bloodSnowCover')),c);
 c.drawCombatBloodStains();assert(painted>0);const built=stamps;c.drawCombatBloodStains();assert.equal(stamps,built,'Settled stains reuse cached per-hex stamps');
 c.isHexVisibleToFriendlyParty=()=>false;const before=painted;c.drawCombatBloodStains();assert.equal(painted,before,'Hidden terrain does not reveal stains');
 console.log('PASS cached stain rendering and friendly visibility gate');

@@ -3,6 +3,7 @@
  * Extracted without changing rule or presentation bodies. */
 
 function exitCombat(){
+  stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();
   document.getElementById('combatEndPrompt')?.remove?.();
   window.AdventurePartyCombatBeats?.clear();
   if(typeof returnFromExplorationCombat==='function'&&returnFromExplorationCombat("retreat"))return;
@@ -191,6 +192,7 @@ function deployConfiguredCombatMobs(condition,player){
 }
 
 function newGame(condition=selectedCombatCondition,scenario={}){
+  stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();
   document.getElementById('combatEndPrompt')?.remove?.();
   window.AdventurePartyCombatBeats?.clear();
   battlefieldRotation=5;

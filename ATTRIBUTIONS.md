@@ -112,3 +112,16 @@ License: https://polyhaven.com/license (CC0). Sky artwork selection does not rep
 - `assets/audio/sfx/ui/page-back.wav` — supplied as Inventory_Close_02.wav, requested for closing/back navigation.
 - `assets/audio/music/arcane-dust.wav` — supplied as 068_Arcane_Dust.wav, requested as the looping title-screen track.
 These files were supplied by the project owner for integration. Source licensing was not independently established in this pass.
+
+## Tileable Grass Textures — Set 1
+- Author: **Cethiel**
+- Source: https://opengameart.org/content/tileable-grass-textures-set-1
+- License: **CC0 1.0 Universal** — https://creativecommons.org/publicdomain/zero/1.0/
+- Local assets: `assets/textures/grass-cethiel-set-1/Grass_01.png` through `Grass_04.png`, and their matching `Grass_01_Nrm.png` through `Grass_04_Nrm.png` normal maps.
+- Original PNG files retained unmodified; used as selectable battlefield grass materials. The website preview is not used.
+
+## Snow footsteps - qubodup
+Four dry snow steps by Iwan (qubodup) Gabovitch, CC0-1.0.
+Source: https://opengameart.org/content/4-dry-snow-steps
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Runtime: assets/audio/sfx/snow/step-1.wav through step-4.wav. Original FLACs and author note are retained alongside them. Trimmed silence, normalized peaks to 0.7 and converted to mono 16-bit PCM WAV. SOURCE.json records exact sample rates, trim bounds, gains and original/output SHA-256 hashes.

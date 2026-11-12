@@ -15,6 +15,7 @@ const r231BaseBeginMageCombatSpell=AdventurePartyCombatServices.current('beginMa
 AdventurePartyCombatServices.register('beginMageCombatSpell','r231-target-at-completion-hooks.js:16:beginMageCombatSpell',function(spellId){
   const spell=getSpellEntry(spellId);
   const caster=activePlayerControlledUnit();
+  if(isCarlCombatTestOverride(caster)) return r231BaseBeginMageCombatSpell(spellId);
 
   if(
     !spell ||
@@ -52,6 +53,7 @@ const r231BaseBeginCombatTestSpell=AdventurePartyCombatServices.current('beginCo
 AdventurePartyCombatServices.register('beginCombatTestSpell','r231-target-at-completion-hooks.js:54:beginCombatTestSpell',function(spellId){
   const spell=getSpellEntry(spellId);
   const caster=activePlayerControlledUnit();
+  if(isCarlCombatTestOverride(caster)) return r231BaseBeginCombatTestSpell(spellId);
 
   if(
     !spell ||
@@ -91,6 +93,7 @@ const r231BaseUseInventoryItem=AdventurePartyCombatServices.current('useInventor
 
 AdventurePartyCombatServices.register('useInventoryItem','r231-target-at-completion-hooks.js:95:useInventoryItem',function(index){
   const fighter=game?.player;
+  if(isCarlCombatTestOverride(fighter)) return r231BaseUseInventoryItem(index);
   const item=fighter?.inventory?.[index];
 
   if(

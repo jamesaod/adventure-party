@@ -7,3 +7,18 @@ unit.inventory[0].equipped=true;unit.inventory[0].lightEnabled=false;assert.equa
 const ctx=vm.createContext({game:{condition:'grass'},performance:{now:()=>1000},AdventurePartyItemLighting:{sources:itemLightSources},adventurePartySolar:{state:()=>({daylight:1})},firFireLightSources:()=>[],allUnits:()=>[unit],getUnitEffect:()=>null,illuminationAreaEffects:()=>[]});vm.runInContext(extractCombatFunction(fs.readFileSync('js/combat-lighting-services.js','utf8'),'illuminationSources'),ctx);const sources=ctx.illuminationSources();assert.equal(sources[0].visualScale,.04);const packed=packCombatLights(sources.map(s=>({...s,kind:'spell',height:s.heightMetres,range:s.radiusHexes,bounds:[0,0,64,32]})));assert([...packed.color.slice(0,4)].every(Number.isFinite));assert.equal(ITEM_LIGHT_PROFILES['flaming-sword-5'].intensity,3.3);
 const catalog=await import('../js/item-catalog.mjs');assert.equal(catalog.itemCatalogEntry('flaming-sword-5').rules.lightSource,ITEM_LIGHT_PROFILES['flaming-sword-5']);
 console.log('PASS shared equipment light profiles, catalog contract, player/MOB parity, equipped/lit/disabled states, flicker, daylight contrast and GPU packing');
+
+// Visual emission follows feet between hexes without moving tactical light/LOS.
+const moving={...unit,x:4,y:5,walkPresentation:{from:{x:4,y:5},to:{x:5,y:4},t:0}};
+const visual=vm.createContext({combatLightingFrame:0,illuminationSources:()=>itemLightSources(moving,{now:1000}),combatSpellEffectLights:()=>[]});
+vm.runInContext(extractCombatFunction(fs.readFileSync('js/exploration-combat-hooks.js','utf8'),'explorationRenderLights'),visual);
+for(const t of [0,.25,.5,.75,1]){
+ moving.walkPresentation.t=t;visual.combatLightingFrame++;
+ const rule=itemLightSources(moving,{now:1000})[0],render=visual.explorationRenderLights()[0];
+ assert.equal(rule.x,4);assert.equal(rule.y,5);
+ assert.equal(render.x,4+t);assert.equal(render.y,5-t);
+ assert.equal(render.visualOffsetMetres.x,rule.visualOffsetMetres.x,'Flicker/sway preserved');
+}
+moving.x=5;moving.y=4;delete moving.walkPresentation;visual.combatLightingFrame++;
+assert.equal(visual.explorationRenderLights()[0].x,5);assert.equal(visual.explorationRenderLights()[0].y,4);
+console.log('PASS carried light moves continuously with the holder; tactical light stays on its hex; arrival does not jump');

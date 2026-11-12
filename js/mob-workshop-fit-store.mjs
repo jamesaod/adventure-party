@@ -1,14 +1,15 @@
 // Durable fits belong to a model, item and socket; the slot mirror is legacy UI state.
 export function fitKey(draft, slot, item = draft.equipment[slot]) {
-  if (!['main', 'off', 'shield'].includes(slot)) throw Error('Unknown equipment fit slot.');
+  if (!['main', 'off', 'shield', 'back'].includes(slot)) throw Error('Unknown equipment fit slot.');
   return JSON.stringify([draft.model?.id || draft.model?.file || 'unassigned', slot, item]);
 }
 export function migrateFits(draft) {
   const e = draft.equipment;
+  e.back ??= 'auto';
   e.fitsByItem ??= {};
   e.grips ??= {};
   if (e.fitStoreVersion === 1) return;
-  for (const slot of ['main', 'off', 'shield']) {
+  for (const slot of ['main', 'off', 'shield', 'back']) {
     if (e[slot] && e[slot] !== 'none' && e.grips[slot])
       e.fitsByItem[fitKey(draft, slot)] ??= structuredClone(e.grips[slot]);
   }

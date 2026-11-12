@@ -17,10 +17,10 @@ export function sampleSnowGround(region,random=Math.random){
 }
 export function createHexSnow(){
  const hexes=new Map();let regions=[],total=0;
- return {hexes,
+ return {hexes,get area(){return total;},
  update(faces){const grouped=new Map();for(const f of faces){if(!f.snowEligible||!f.snowHex)continue;const key=f.snowHex;let group=grouped.get(key);if(!group)grouped.set(key,group=[]);group.push(f);}
  regions=[];total=0;for(const [key,group] of grouped){const region=snowTriangles(group);if(!region.area)continue;const old=hexes.get(key);const cell={...region,amount:old?.amount||0,key};hexes.set(key,cell);total+=region.area;regions.push({cell,end:total});}},
- spawn(random=Math.random){if(!total)return null;const pick=random()*total;const {cell}=regions.find(r=>pick<r.end)||regions.at(-1);return {...sampleSnowGround(cell,random),hex:cell.key};},
+ spawn(random=Math.random){if(!total)return null;const pick=random()*total;let lo=0,hi=regions.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(pick<regions[mid].end)hi=mid;else lo=mid+1;}const {cell}=regions[lo];return {...sampleSnowGround(cell,random),hex:cell.key};},
  land(key,random=Math.random){const cell=hexes.get(key);if(!cell)return [];cell.amount=Math.min(1,cell.amount+1/cell.area);return Array.from({length:4},()=>sampleSnowGround(cell,random));},
  accumulate(seconds,rate){const delta=Math.max(0,seconds)*Math.max(0,rate);if(!delta)return false;let changed=false;for(const cell of hexes.values()){const next=Math.min(1,cell.amount+delta);if(next!==cell.amount){cell.amount=next;changed=true;}}return changed;},
  melt(key,fraction=1){const cell=hexes.get(key);if(!cell||!cell.amount||!(fraction>0))return null;cell.amount*=1-Math.max(0,Math.min(1,fraction));return cell;},

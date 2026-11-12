@@ -625,6 +625,7 @@ async function castPriestCombatSpell(action,hex,target){
      break;
    case 'command':
    case 'hold':{
+     if(resistRacialSpell(target,spell))break;
      if(rollSpellSave(target,caster).success)break;
      effect(target,spell.id,spell.name,'debuff',spell.kind==='command'?1:Math.max(1,Math.floor(level/2)),
        {disabledActionsRemaining:1});

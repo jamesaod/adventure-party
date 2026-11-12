@@ -1,5 +1,7 @@
-import {validateDraft} from './mob-workshop-core.mjs';
-import {migrateFits} from './mob-workshop-fit-store.mjs';
+import {normalizeQuiverArrows} from './quiver-arrow-settings.mjs?v=R238C312';
+import {normalizeBackEquipment} from './studio-back-equipment.mjs?v=R238C312';
+import {validateDraft} from './mob-workshop-core.mjs?v=R238C313';
+import {migrateFits,savedFit} from './mob-workshop-fit-store.mjs';
 
 // Validate portable dependencies before replacing the currently open project.
 // Combat publishing can reuse this boundary; this is not a deployment adapter.
@@ -36,7 +38,9 @@ export function validateWorkshopProject(value) {
     }
   }
   migrateFits(draft);
+  normalizeBackEquipment({...savedFit(draft,'back'),item:draft.equipment.back});
   for (const settings of Object.values(draft.equipment.fitsByItem)) {
+    if(settings?.arrows)normalizeQuiverArrows(settings.arrows);
     if (!settings || !['position','rotation'].every(k=>Array.isArray(settings[k]) && settings[k].length===3 && settings[k].every(Number.isFinite)) ||
         !Number.isFinite(settings.sizePercent) || settings.sizePercent<=0)
       throw Error('Invalid saved equipment fit.');

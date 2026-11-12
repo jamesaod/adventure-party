@@ -9,6 +9,8 @@ async function prepareCombatSession(){
  if(!combatSceneAssets)combatSceneAssets=(async()=>{
   explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C277');
   combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C280')).createCombatTestMap;
+  // Combat floor detail is deliberately modest; preserve full-resolution source art.
+  explorationFloorImage.combatTextureLimit=256;explorationGrassImage.combatTextureLimit=256;
   const sources=[[explorationFloorImage,'assets/textures/exploration/floor.png?v=R238C206'],[explorationWallImage,'assets/textures/exploration/wall.png?v=R238C206'],[explorationDoorImage,'assets/textures/exploration/door.png?v=R238C206'],[explorationGrassImage,explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246'],[explorationWoodWallImage,explorationEncounterApi.WOOD_TEXTURES.wall+'?v=R238C274']];
   for(const [id,asset] of Object.entries(explorationEncounterApi.CITY_WALL_TEXTURES))sources.push([explorationCityWallImages[id],asset.src]);
   for(const [id,asset] of Object.entries(explorationEncounterApi.CITY_FLOOR_TEXTURES))sources.push([explorationCityFloorImages[id],asset.src]);
@@ -21,7 +23,7 @@ async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  const generation=++combatSessionGeneration;
  await prepareCombatSession();
  if(scenario.source==='combat-test' && scenario.condition==='grass'){
-  if(!combatFirTreesLoading)combatFirTreesLoading=import('./combat-fir-trees.mjs?v=treeit-live-1')
+  if(!combatFirTreesLoading)combatFirTreesLoading=import('./combat-fir-trees.mjs?v=R238C329')
    .then(module=>module.createCombatFirTrees()).then(trees=>combatFirTrees=trees)
    .catch(error=>{combatFirTreesLoading=null;throw error;});
   await combatFirTreesLoading;

@@ -639,6 +639,7 @@
             <div id="combatCompassRose" aria-label="World directions"><span class="north">N</span><span class="west">W</span><span class="east">E</span><span class="south">S</span></div>
             <div><button id="rotateCombatLeft" class="combat-action" type="button">Rotate Left</button><button id="rotateCombatRight" class="combat-action" type="button">Rotate Right</button></div>
             <small id="combatCompassStatus" aria-live="polite">View -60°</small>
+            <div><button id="rangedFramingToggle" class="combat-action" type="button" aria-pressed="true">Ranged framing: ON</button></div>
           </div>
         </section></aside>
 
@@ -780,34 +781,40 @@
 </section>
 
 <script src="js/priest-spells.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-  <script src="js/repository-mobs.mjs?v=R238C274" type="text/plain" data-game-script="module"></script>
+  <script src="js/repository-mobs.mjs?v=R238C313" type="text/plain" data-game-script="module"></script>
 <script src="js/combat-services.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-turn-flow.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-melee-actions.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-movement.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
+<script src="js/racial-traits.mjs?v=R238C311" type="text/plain" data-game-script="module"></script>
+<script src="js/combat-racial-traits.js?v=R238C311" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-melee-actions.js?v=R238C311" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-movement.js?v=R238C342" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-reactions.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-spells-damage.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-spells-control.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-spells-support.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-environment-state.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-spells-control.js?v=R238C311" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-spells-support.js?v=R238C311" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-environment-state.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-visibility.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-targeting.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/ui-audio.mjs?v=R238C293" type="text/plain" data-game-script="module"></script>
-<script src="js/item-lighting.mjs?v=R238C293" type="text/plain" data-game-script="module"></script>
-<script src="js/combat-lighting-services.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-render-frame.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-render-surfaces.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-render-units.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-effect-animation.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-session-state.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/adventure-party.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-missile-actions.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
+<script src="js/item-lighting.mjs?v=R238C325" type="text/plain" data-game-script="module"></script>
+<script src="js/combat-lighting-services.js?v=R238C325" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-render-frame.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-render-surfaces.js?v=R238C340" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-render-units.js?v=R238C319" type="text/plain" data-game-script="classic"></script>
+<script src="js/arrow-visual-profile.mjs?v=R238C305" type="text/plain" data-game-script="module"></script>
+<script src="js/combat-effect-animation.js?v=R238C309" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-session-state.js?v=R238C303" type="text/plain" data-game-script="classic"></script>
+<script src="js/bow-audio.js?v=R238C304" type="text/plain" data-game-script="classic"></script>
+<script src="js/snow-step-audio.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-elven-archer-ai.js?v=R238C340" type="text/plain" data-game-script="classic"></script>
+<script src="js/adventure-party.js?v=R238C341" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-missile-actions.js?v=R238C311" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-spell-actions.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-day-night.mjs?v=R238C274" type="text/plain" data-game-script="module"></script>
+<script src="js/combat-day-night.mjs?v=R238C339" type="text/plain" data-game-script="module"></script>
 <script src="js/los-wall-boundary-fix.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/obscuring-volume-los.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r218-presentation-audio.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/r219-combat-presentation.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
+<script src="js/r219-combat-presentation.js?v=R238C340" type="text/plain" data-game-script="classic"></script>
 <script src="js/r220-mob-hazard-awareness.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r221-prone-cloud-shapes.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r222-perception-darkness-volume.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
@@ -819,7 +826,7 @@
 <script src="js/r226-level3-helpers.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r226-level3-systems.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r226-level3-casts-a.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/r226-level3-casts-b.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
+<script src="js/r226-level3-casts-b.js?v=R238C311" type="text/plain" data-game-script="classic"></script>
 <script src="js/r226-level3-casts-c.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r226-level3-casts-d.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/r226-level3-dispatch.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
@@ -867,10 +874,10 @@
 <script src="js/sprite-set-runtime.mjs?v=R238C202" type="text/plain" data-game-script="module"></script>
 <script src="js/combat-result-panel.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
 <script src="js/combat-spell-results.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-lighting-hooks.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-environment-actions.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/combat-runtime.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
-<script src="js/exploration-combat-hooks.js?v=R238C293" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-lighting-hooks.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-environment-actions.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
+<script src="js/combat-runtime.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
+<script src="js/exploration-combat-hooks.js?v=R238C339" type="text/plain" data-game-script="classic"></script>
 <script src="js/low-poly-weapon-test.mjs" type="text/plain" data-game-script="module"></script>
 <script type="module" src="js/game-script-loader.mjs?v=R238C213"></script>
 </body>

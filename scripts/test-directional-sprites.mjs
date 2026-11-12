@@ -1,3 +1,4 @@
+import {combatPresentationTestServices} from './combat-presentation-test-context.mjs';
 import {readCombatFixture} from './combat-test-source.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -41,7 +42,7 @@ const framedAsset = {
 };
 const legacyProneAsset = { spec: { renderWidth: 35, renderHeight: 18, nativeFacing: "right" } };
 const registeredAssets = [];
-const sandbox = {drawFlamingSword:()=>{},
+const sandbox = {...combatPresentationTestServices(),drawFlamingSword:()=>{},
   HEX_DIRS,
   UNIT_FOOTPRINTS: SPRITE_LAYOUTS,
   STUDIO_FOOTPRINTS: new Map(),
@@ -502,7 +503,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
   const screen = () => ({ classList: { add() {}, remove() {} } });
   const repositoryWaits = new Map(repository.map(id => [id, deferred()]));
   const draftWait = deferred(), graphicsWait = deferred();
-  const context = {
+  const context = {...combatPresentationTestServices(),
     currentScreen: "combat-conditions", pendingCombatStart: null, studioDraftAutoSelect: true,
     selectedCombatCondition: "grass", selectedMobEncounter: "kobolds", selectedStudioSpriteSetId: "studio-kobold",
     registeredStudioSpriteSets: new Map(), selectedStudioPlayerSpriteSets: new Map(), defaultStudioPlayerSpriteSets: new Map(),

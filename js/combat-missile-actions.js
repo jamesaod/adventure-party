@@ -17,13 +17,15 @@ function r226NormalMissileProtected(defender){
 
 async function r226ProtectedLongbowMiss(attacker,defender,reason){
   if(!attacker?.alive || !defender?.alive) return {hit:false,killed:false,damage:0};
-  await focusRangedAttacker(attacker);
+  await focusRangedAttacker(attacker,180,defender);
   attacker.weaponInHand="ranged";
   faceEntityToward(attacker,defender);
+  await prepareUnitAttackWindup(attacker,{bowAudio:true});
   triggerUnitAttackPose(attacker);
   breakInvisibility(attacker,"making a Longbow attack");
-  playMissSound();
-  await animateArrowProjectile(attacker,defender,false);
+  if(!usesSelectedBowAudio(attacker))playMissSound();
+  const flight=await animateArrowProjectile(attacker,defender,false);
+  if(flight?.cancelled)return {hit:false,killed:false,damage:0,cancelled:true};
   await focusRangedMissTarget(defender);
   setCombatMessage(reason,COMBAT_MESSAGE_MIN_HOLD_MS);
   log(reason,"system");
@@ -53,7 +55,7 @@ async function r226ProtectedSlingMiss(attacker,defender){
   }
   if(projectilePathBlocked(attacker,defender)) return await resolveSlingHit(attacker,defender);
 
-  await focusRangedAttacker(attacker);
+  await focusRangedAttacker(attacker,180,defender);
   setUnitActionBanner(attacker,"Preparing Sling");
   playSlingWindupSound();
   await sleep(300);
@@ -109,7 +111,7 @@ async function resolveLongbowHit(attacker,defender){
   const position=
     attackPositionData(attacker,defender);
 
-  await focusRangedAttacker(attacker);
+  await focusRangedAttacker(attacker,180,defender);
 
   attacker.weaponInHand="ranged";
   setUnitActionBanner(attacker,`Firing ${attacker.rangedWeapon || "Longbow"} — ${position.label}`);
@@ -120,7 +122,7 @@ async function resolveLongbowHit(attacker,defender){
     defender.y-attacker.y
   );
 
-  await prepareUnitAttackWindup(attacker);
+  await prepareUnitAttackWindup(attacker,{bowAudio:true});
   if(!consumeMissileAmmo(attacker))return {hit:false,killed:false,damage:0,outOfAmmo:true};
   triggerUnitAttackPose(attacker);
   updateUi();
@@ -137,7 +139,7 @@ async function resolveLongbowHit(attacker,defender){
     (attacker.missileAttackBonus||0)+
     dexMissileAdjustment+
     range.penalty+
-    attackEffectModifier(attacker,defender);
+    attackEffectModifier(attacker,defender,"missile");
 
   const targetArmorClass=effectiveArmorClassForAttack(
     attacker,
@@ -167,21 +169,22 @@ async function resolveLongbowHit(attacker,defender){
     `${range.band} ${range.distance} hexes`
   );
 
-  if(resolution.hit){
-    /* Confirmed Longbow hit: retain the existing successful-hit sound. */
+  if(resolution.hit&&!usesSelectedBowAudio(attacker)){
+    /* Preserve the existing sound for other missile weapons. */
     playAttackSound();
   }
 
-  await animateArrowProjectile(
+  const flight=await animateArrowProjectile(
     attacker,
     defender,
     resolution.hit
   );
+  if(flight?.cancelled)return {hit:false,killed:false,damage:0,cancelled:true};
 
   if(!resolution.hit){
     await focusRangedMissTarget(defender);
 
-    playMissSound();
+    if(!usesSelectedBowAudio(attacker))playMissSound();
     if(rawRoll===1){
       setCriticalRollNotification(
         attacker,
@@ -209,12 +212,14 @@ async function resolveLongbowHit(attacker,defender){
   }
 
   if(interceptWithMirrorImage(defender,attacker)){
-    playMissSound();
+    if(usesSelectedBowAudio(attacker))playBowImpactSound(attacker,false);
+    else playMissSound();
     setCombatMessage(`${defender.name}'s Mirror Image is struck by the arrow.`,COMBAT_MESSAGE_MIN_HOLD_MS);
     flashAttack(attacker,defender,false);
     return {hit:false,killed:false,damage:0,mirrorImage:true};
   }
 
+  playBowImpactSound(attacker,true);
   const bow=getMissileCatalogEntry(attacker.missileCatalogId||"bow-long");
   const damageExpression=damageExpressionForSize(
     bow,
@@ -354,7 +359,7 @@ async function resolveSlingHit(attacker,defender){
   const position=
     attackPositionData(attacker,defender);
 
-  await focusRangedAttacker(attacker);
+  await focusRangedAttacker(attacker,180,defender);
 
   setUnitActionBanner(attacker,`Preparing Sling — ${position.label}`);
 
@@ -392,7 +397,7 @@ async function resolveSlingHit(attacker,defender){
     (attacker.missileAttackBonus||0)+
     dexMissileAdjustment+
     range.penalty+
-    attackEffectModifier(attacker,defender);
+    attackEffectModifier(attacker,defender,"missile");
 
   /* THAC0/AC target before range, Dexterity, or other attack modifiers. */
   const targetArmorClass=effectiveArmorClassForAttack(
