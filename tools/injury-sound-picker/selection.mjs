@@ -1,0 +1,6 @@
+export const uses=['injury','heavy-injury','death','effort'];
+export function cleanChoices(catalog,raw={}){const result={};for(const clip of catalog.clips){const choice=raw?.[clip.id];if(choice&&typeof choice==='object')result[clip.id]={use:uses.includes(choice.use)?choice.use:'injury',notes:typeof choice.notes==='string'?choice.notes.slice(0,2000):''};}return result;}
+export function selectionExport(catalog,raw,notes='',now=new Date()){
+ const choices=cleanChoices(catalog,raw),selected=catalog.clips.filter(c=>choices[c.id]);
+ return {schema:'adventure-party.injury-sound-choices',version:1,catalogId:catalog.id,exportedAt:now.toISOString(),notes:typeof notes==='string'?notes.slice(0,8000):'',selected:selected.map(clip=>({id:clip.id,voiceId:clip.voiceId,voice:clip.voiceLabel,gender:clip.gender,label:clip.label,use:choices[clip.id].use,notes:choices[clip.id].notes,clipPath:'tools/injury-sound-picker/'+clip.file,durationSeconds:clip.durationSeconds,sha256:clip.sha256,source:{...catalog.sources.find(s=>s.id===clip.sourceId),file:clip.sourceFile,recordingPath:'tools/injury-sound-picker/'+clip.sourceRecording,startSeconds:clip.startSeconds,endSeconds:clip.endSeconds,sha256:clip.sourceSha256}}))};
+}

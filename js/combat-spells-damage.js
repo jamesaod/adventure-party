@@ -62,7 +62,7 @@ async function castMagicMissileFromScroll(action,target){
   exitAimMode(false,false);
   updateUi();
 
-  await focusRangedAttacker(caster);
+  await focusRangedAttacker(caster,180,target);
   setUnitActionBanner(caster,"Casting Magic Missile");
   playAttackSound();
 
@@ -178,13 +178,7 @@ async function castFireballFromScroll(action,targetHex){
 
   setUnitActionBanner(caster,"Casting Fireball");
 
-  /*
-    R138: Fireball belongs visually to its destination. Center the camera on
-    the selected blast hex before any Fireball projectile/explosion VFX begins.
-  */
-  centerCameraOn(targetHex);
-  draw();
-  await sleep(160);
+  await frameRangedAction(caster,targetHex);
 
   /* Small fiery projectile from caster to selected blast hex. */
   await animateFireballProjectile(caster,targetHex);

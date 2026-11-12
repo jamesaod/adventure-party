@@ -1,3 +1,4 @@
+import {installCombatImageTestServices} from './combat-image-test-context.mjs';
 import {extractCombatFunction} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -8,7 +9,7 @@ const draw=extractCombatFunction(source,'draw');
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
+  const context={deathPresentationActive:()=>false,syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,BATTLEFIELD_LOGICAL_HEIGHT:100,architecturalWalls:[],
     prepareCombatProjectedShadows:record('shadow receiver'),queueFlyingArrowGpuShadow:record('flying arrow shadow'),queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},
@@ -40,7 +41,7 @@ const context={battlefieldProjectVector:p=>p,battlefieldViewportBounds:()=>({lef
   friendlyVisibilityObservers:()=>[{x:0,y:0}],observerVisibilityContext:()=>({polygon:[{x:0,y:0},{x:100,y:0},{x:100,y:100},{x:0,y:100}]}),
   screenPointForWorld:(p,elevation=0)=>{assert.equal(elevation,0,'Polygon indices must not become vertex heights');return p;},tracePolygonOnContext:(_ctx,p)=>{paths.push(p);return true;},hasActiveObscuringLosVolume:()=>false,
   visibleHexes:()=>{throw Error('Architectural floor visibility must not use hex centers');},BATTLEFIELD_LOGICAL_WIDTH:100,BATTLEFIELD_LOGICAL_HEIGHT:100,ctx:{drawImage(){}}};
-vm.createContext(context);vm.runInContext(hooks.slice(0,hooks.indexOf('function configureExplorationTerrain()')),context);
+vm.createContext(installCombatImageTestServices(context));vm.runInContext(hooks.slice(0,hooks.indexOf('function configureExplorationTerrain()')),context);
 context.drawExplorationVisibilityMask();assert.equal(paths.length,1);assert.equal(paths[0][1].x,100);assert.equal(fills[0],'rgba(8,8,12,0.90)','Unseen room floor remains faintly visible at 10%');
 const image={complete:true,naturalWidth:1024,naturalHeight:1024};
 const tile=context.explorationMaterialTile(image);assert.equal(tile.width,512);assert.deepEqual(reductions,[[512,512]]);

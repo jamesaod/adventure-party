@@ -1,3 +1,6 @@
+/* Presentation dependency: frameRangedAction is owned by adventure-party.js.
+ * Owner tests supply camera/audio services via combat-presentation-test-context.
+ */
 /* Prepared spell action owner (classic-script module using shared engine services).
  * Public environmental admission remains castPreparedCombatSpell.
  * Explicit call order: sound context -> caster focus -> completion cleanup ->
@@ -129,6 +132,8 @@ async function resolveSpellCastContext(
 }
 
 async function dispatchPreparedSpellEffect(action,targetHex,targetUnit){
+ const framingCaster=spellCasterForAction(action);
+ if(framingCaster&&(targetUnit||targetHex))await frameRangedAction(framingCaster,targetUnit||targetHex);
   switch(action?.spellId){
     case "blink": return await r226CastBlink(action);
     case "dispel-magic": return await r226CastDispelMagic(action,targetHex);

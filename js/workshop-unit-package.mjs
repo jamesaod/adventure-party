@@ -1,5 +1,5 @@
-import {validateWorkshopProject} from './mob-workshop-project.mjs';
-import {readiness} from './mob-workshop-core.mjs';
+import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C313';
+import {readiness} from './mob-workshop-core.mjs?v=R238C313';
 export const PACKAGE_SCHEMA='adventure-party.workshop-unit';
 export function isWorkshopUnit(value){return value?.schema===PACKAGE_SCHEMA;}
 export function createWorkshopUnit(project,{id,modelFile,sha256}={}){
@@ -7,7 +7,7 @@ export function createWorkshopUnit(project,{id,modelFile,sha256}={}){
  const missing=readiness(draft).filter(c=>!c.ok);
  if(missing.length)throw Error(missing.map(c=>c.label).join('\n'));
  if(!/^[a-z0-9][a-z0-9-]{1,79}$/.test(id||''))throw Error('Use a stable lowercase unit ID.');
- if(!/^[a-f0-9]{64}$/.test(sha256||'')||modelFile!==`assets/workshop-units/${id}/${sha256}.glb`)throw Error('Invalid published model reference.');
+ if(!/^[a-f0-9]{64}$/.test(sha256||'')||!['glb','fbx'].some(ext=>modelFile===`assets/workshop-units/${id}/${sha256}.${ext}`))throw Error('Invalid published model reference.');
  return {schema:PACKAGE_SCHEMA,version:1,id,name:draft.name,draft,model:{file:modelFile,sha256},mob:{encounterEnabled:true,revision:1}};
 }
 export function validateWorkshopUnit(pack){

@@ -25,7 +25,7 @@ async function presentSpellTargetResults(caster,results,resolve,session=captureS
    const unit=result.unit;
    if(!unit?.alive||unit.fled)continue;
    if(!await waitForSpellTargetResults(session))return false;
-   centerCameraOn(unit);
+   if(typeof rangedFramingEnabled==='undefined'||!rangedFramingEnabled)centerCameraOn(unit);
    hoverHex=null;
    draw();
    await presentCombatFrame();
@@ -35,6 +35,22 @@ async function presentSpellTargetResults(caster,results,resolve,session=captureS
    if(!await waitForSpellTargetResults(session))return false;
   }
   return spellTargetResultsCurrent(session);
+ }finally{combatSpellResultsDepths.set(session.gameRef,Math.max(0,(combatSpellResultsDepths.get(session.gameRef)||0)-1));}
+}
+// Resolve all victims in one frame and hold turn progression once.
+async function presentSimultaneousSpellTargetResults(caster,results,resolve,session=captureSpellTargetResults()){
+ combatSpellResultsDepths.set(session.gameRef,(combatSpellResultsDepths.get(session.gameRef)||0)+1);
+ try{
+  if(!await waitForSpellTargetResults(session))return false;
+  candidateWithSimultaneousCombatBeats(()=>{
+   for(const result of results){
+    if(!spellTargetResultsCurrent(session))break;
+    if(!result.unit?.alive||result.unit.fled)continue;
+    window.AdventurePartyCombatResults.withTarget(caster,result.unit,()=>resolve(result));
+   }
+  });
+  hoverHex=null;updateUi();draw();
+  return await waitForSpellTargetResults(session);
  }finally{combatSpellResultsDepths.set(session.gameRef,Math.max(0,(combatSpellResultsDepths.get(session.gameRef)||0)-1));}
 }
 // A blast can include enemies and allies, including its caster. Finish only

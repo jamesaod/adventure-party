@@ -10,6 +10,16 @@ export function solarState(hour=12){
  const t=Math.max(0,Math.min(1,(altitude+6)/58)),sky=.025+.975*t*t*(3-2*t);
  return {hour,latitude:SOLAR_LATITUDE,direction,altitude,azimuth,sky,daylight:Math.max(0,Math.cos(h)),warmth:1-Math.max(0,Math.min(1,altitude/25)),phase:altitude>=-.00001?'day':altitude>=-6?'twilight':'night'};
 }
+// Presentation only: preserve astronomical direction and gameplay visibility.
+export function weatherSolarState(sun,weather={}){
+ const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+ const strength=Math.max(0,Math.min(1,Number(weather.intensity)||0));
+ const profiles={cloudy:[.12,.75],rain:[.3,.9],snow:[.18,.85]};
+ const [ambientLoss,directLoss]=profiles[weather.type]||[0,0];
+ const day=smooth(-6,25,sun.altitude);
+ const sky=sun.sky*(1+.35*day)*(1-ambientLoss*strength*day);
+ return {...sun,sky,daylight:sun.daylight*(1-directLoss*strength),lightingKey:[sun.hour,weather.type||'clear',strength].join(':')};
+}
 export function hourFromPointer(x,y){return wrapHour((Math.atan2(y,x)+Math.PI/2)*12/Math.PI+12);}
 const noonDirection=solarState(12).direction;
 export function solarFaceGain(normal,sun){

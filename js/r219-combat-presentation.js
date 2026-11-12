@@ -96,7 +96,8 @@ AdventurePartyCombatServices.register('animateMagicEffectOnUnits','r219-combat-p
   const targets=(units || []).filter(unit=>unit?.alive && !unit.fled);
   if(!targets.length) return;
 
-  const staggerMs=combatEffectDuration(Math.min(
+  const simultaneous=kind==='sleep';
+  const staggerMs=simultaneous?0:combatEffectDuration(Math.min(
     240,
     Math.max(140,720/Math.max(1,targets.length))
   ));
@@ -126,14 +127,14 @@ AdventurePartyCombatServices.register('animateMagicEffectOnUnits','r219-combat-p
 
       if(!fx.cameraFocused){
         fx.cameraFocused=true;
-        if(unit){
+        if(unit&&!simultaneous){
           r219FocusSpellAffectedUnit(unit);
         }
       }
 
       if(!fx.soundPlayed){
         fx.soundPlayed=true;
-        if(options.playSound!==false){
+        if(options.playSound!==false&&(!simultaneous||index===0)){
           playMagicEffectSound(fx.kind,index);
         }
       }
@@ -300,7 +301,7 @@ AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presenta
 
     // This service overrides the base movement owner; share its live walk
     // presentation before committing the integer gameplay coordinates.
-    if(mode==="visible" && !await presentWalkTestStep(entity,next,true)){
+    if(mode==="visible" && !await presentWalkTestStep(entity,prepareCombatReactiveWalkStep(entity,next,i<steps-1),true)){
       return false;
     }
 
@@ -372,6 +373,7 @@ AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presenta
 });
 
 AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-presentation.js:370:animateMobAlongPath',async function(mob,path,maxSteps){
+  path=prepareCombatWalkPath(mob,path,maxSteps);
   try{
   const steps=
     Math.min(maxSteps,Math.max(0,path.length-1));

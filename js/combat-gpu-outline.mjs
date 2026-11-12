@@ -18,7 +18,7 @@ export function createGpuOutline(renderer,flush,getView,onPaint){
    // WebGL2 storage is immutable. Poses/zoom change mask sizes, even on reused canvases.
    if(maskWidth!==mask.width||maskHeight!==mask.height){occlusion.dispose();maskWidth=mask.width;maskHeight=mask.height;}
    occlusion.image=mask;occlusion.needsUpdate=true;
-   const u=material.uniforms;u.texel.value.set(1/mask.width,1/mask.height);u.radius.value=1/view.zoom;u.color.value.set(color,THREE.SRGBColorSpace).convertLinearToSRGB();u.alpha.value.set(.45+.4*daylight,Math.min(1,(active?.92:.78)+daylight*.1));
+   const u=material.uniforms;u.texel.value.set(1/mask.width,1/mask.height);u.radius.value=1/view.zoom;u.color.value.setStyle(color,THREE.SRGBColorSpace).convertLinearToSRGB();u.alpha.value.set(.45+.4*daylight,Math.min(1,(active?.92:.78)+daylight*.1));
    u.rect.value.set(view.anchor.x+(left-view.anchor.x)*view.zoom,view.anchor.y+(top-view.anchor.y)*view.zoom,mask.width*view.zoom,mask.height*view.zoom);u.viewport.value.set(view.width,view.height);
    renderer.render(scene,camera);perf.count('gpuOutlinePasses');onPaint();return true;
   }finally{renderer.setRenderTarget(old);renderer.setClearColor(clear,clearAlpha);}

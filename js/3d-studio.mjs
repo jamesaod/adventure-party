@@ -8,7 +8,7 @@ import { createGroundShadowMaterial, renderGroundShadow, shadowPixelsCanvas } fr
 import { SPRITE_POSES } from './sprite-set-core.mjs?v=R238C202';
 import * as THREE from 'three';
 import { gripSettingsReport } from './weapon-shaft-roll.mjs?v=R238C194';
-import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C178';
+import { loadUploadedFbxAnimations, CARL_ANIMATION_RECIPE } from './repository-fbx-animations.mjs?v=R238C316';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';

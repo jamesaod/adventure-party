@@ -1,6 +1,7 @@
-import {validateWorkshopProject} from './mob-workshop-project.mjs';
-import {readiness} from './mob-workshop-core.mjs';
-import {instantiateCreature} from './mob-workshop-creature.mjs';
+import {raceProfile} from './racial-traits.mjs?v=R238C311';
+import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C313';
+import {readiness} from './mob-workshop-core.mjs?v=R238C313';
+import {instantiateCreature} from './mob-workshop-creature.mjs?v=R238C313';
 import {ITEM_CATALOG} from './item-catalog.mjs';
 import {savedFit} from './mob-workshop-fit-store.mjs';
 
@@ -54,12 +55,12 @@ export function workshopCombatFits(draft,inventory=workshopCombatInventory(draft
 export function instantiateWorkshopCombat(draft,{id,random=Math.random}={}) {
   const instance=instantiateCreature(clone(draft),{id,random}),c=instance.definition;
   const abilities=Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,draft.stats[k]]));
-  return {id,name:draft.name,hp:instance.hp,maxHp:instance.maxHp,
+  return {id,name:draft.name,raceId:c.raceId,race:raceProfile(c.raceId).label,gender:c.gender,moraleOverride:c.moraleOverride,hp:instance.hp,maxHp:instance.maxHp,
     ac:instance.ac,authoredBaseAc:draft.stats.ac,unarmoredAc:draft.stats.ac,
     thaco:instance.thaco,move:draft.stats.move,authoredMove:draft.stats.move,
-    attacksPerRound:1,hitDiceLabel:c.combat.hitDice,
-    hitDiceValue:Number.parseInt(c.combat.hitDice,10),
-    morale:draft.stats.morale,moraleLabel:String(draft.stats.morale),xpValue:draft.stats.xp,
+    attacksPerRound:1,hitDiceLabel:instance.hitDiceLabel,
+    hitDiceValue:instance.hitDiceValue,lessThanOneHitDie:instance.lessThanOneHitDie,
+    morale:c.stats.morale,moraleLabel:String(c.stats.morale),xpValue:draft.stats.xp,
     heightInches:draft.height/0.0254,sizeCategory:c.body.size,species:draft.stats.species,
     abilities,stats:clone(abilities),classes:clone(draft.classes||[]),
     classId:draft.classes?.[0]?.id||'none',level:draft.classes?.[0]?.level||1,
@@ -92,6 +93,7 @@ export function workshopCombatConnections(draft,consumers={}) {
   require('behavior',true,'Workshop behavior preferences are not connected.');
   require('naturalAttacks',draft.creature.attacks.length,'Natural attack routines are not connected.');
   require('spells',draft.creature.spells.length,'Authored spell uses are not connected.');
+  require('racialTraits',draft.raceId==='elf','Racial combat traits are not connected.');
   require('traits',draft.creature.traits.length,'Authored traits need registered combat handlers.');
   require('magicResistance',draft.creature.combat.magicResistance>0,'Magic resistance is not connected.');
   require('specialMovement',['fly','swim','climb','burrow'].some(k=>draft.creature.body[k]>0),'Special movement is not connected.');

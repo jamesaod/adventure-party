@@ -140,10 +140,8 @@ function resolveFireballEnvironment(origin,baseCells){
 }
 function fireballEnvironmentDamageScale(unit,cells){return Math.max(0,...occupiedHexes(unit).map(hex=>Math.max(0,...cells.filter(cell=>cell.x===hex.x&&cell.y===hex.y).map(cell=>cell.damageScale??1))));}
 function missileMeleeTarget(attacker,intended){
- if(!intended?.alive)return intended;const melee=allUnits().filter(unit=>unit.alive&&!unit.fled&&unit.id!==attacker.id&&unit.faction!==intended.faction&&(canMeleeReach(unit,intended)||canMeleeReach(intended,unit)));
- if(!melee.length)return intended;const candidates=[intended,...melee],weights=candidates.map(unit=>{const size=String(unit.sizeCategory||unit.size||unit.creatureSize||'M').toLowerCase();return size.startsWith('tiny')||size==='t'?1/3:size.startsWith('small')||size==='s'?.5:size.startsWith('large')||size==='l'?2:size.startsWith('huge')||size==='h'?4:size.startsWith('garg')||size==='g'?6:1;});
- let roll=Math.random()*weights.reduce((a,b)=>a+b,0),selected=intended;for(let i=0;i<candidates.length;i++){roll-=weights[i];if(roll<=0){selected=candidates[i];break;}}
- if(selected!==intended)log(`${attacker.name}'s shot into melee targets ${selected.name} instead of ${intended.name}.`,'system');return selected;
+ // Keep the chosen target. Misses may hit adjacent enemies through the stray-arrow path.
+ return intended;
 }
 function resolveEnvironmentArrow(attacker,target,{empty=false}={}){
  const from=worldPointForHex(attacker.x,attacker.y),aim=worldPointForHex(target.x,target.y);
@@ -152,7 +150,8 @@ function resolveEnvironmentArrow(attacker,target,{empty=false}={}){
  // A near attack-roll miss does not prove an armor/shield deflection.
  // Scatter ordinary misses before or beyond the target rather than at its feet.
  const deflected=false,scatter=(Math.random()-.5)*HEX_W*.65;
- const short=!empty&&Math.random()<.5;
+ // Close misses always travel past the target; a short landing looks like a limp release.
+ const short=!empty&&hexDistance(attacker,target)>=3&&Math.random()<.5;
  const distance=empty?0:HEX_W*(.5+Math.random()*2);
  const extra=short?-Math.min(distance,length*(.25+Math.random()*.55)):distance;
  const point={x:aim.x+dx/length*extra-dy/length*scatter,y:aim.y+dy/length*extra*environmentSquash()+dx/length*scatter*environmentSquash()};
@@ -161,7 +160,7 @@ function resolveEnvironmentArrow(attacker,target,{empty=false}={}){
  // Optional house rule: intersect the resolved scattered ray, stopping at the first wall.
  if(!empty&&!deflected&&attacker.environmentMissileRoll&&document.getElementById('strayArrowTest')?.checked){
   const ray={x:point.x-from.x,y:(point.y-from.y)/environmentSquash()},rayLength=Math.hypot(ray.x,ray.y)||1;
-  const beyond=allUnits().filter(unit=>unit.alive&&!unit.fled&&unit.id!==target.id&&unit.id!==attacker.id).map(unit=>{
+  const beyond=allUnits().filter(unit=>unit.alive&&!unit.fled&&unit.id!==target.id&&unit.id!==attacker.id&&unit.faction!==attacker.faction&&hexDistance(unit,target)===1).map(unit=>{
    const p=worldPointForHex(unit.x,unit.y),r={x:p.x-from.x,y:(p.y-from.y)/environmentSquash()},along=(r.x*ray.x+r.y*ray.y)/rayLength,side=Math.abs(r.x*ray.y-r.y*ray.x)/rayLength;
    return{unit,along,side,t:along/rayLength};
   }).filter(entry=>entry.along>length&&entry.t<Math.min(1,hit?.t??1)&&entry.side<HEX_W*.25).sort((a,b)=>a.t-b.t)[0];
@@ -175,8 +174,8 @@ function environmentArrowScreen(impact){return screenPointForWorld(impact,impact
 async function finishEnvironmentArrow(attacker,impact){
  if(!impact)return;if(impact.windowId){breakCombatWindow(impact.windowId,{cause:'arrow'});return;}
  if(impact.strayTargetId){
-  const target=getUnitById(impact.strayTargetId);if(!target?.alive)return;
-  const range=longbowRangeBand(attacker,target),bonus=(attacker.missileAttackBonus||0)+dexterityAdjustments(attacker.stats?.dex??10).missile+(range.penalty||0)+attackEffectModifier(attacker,target)-6;
+  const target=getUnitById(impact.strayTargetId);if(!target?.alive||target.faction===attacker.faction)return;
+  const range=longbowRangeBand(attacker,target),bonus=(attacker.missileAttackBonus||0)+dexterityAdjustments(attacker.stats?.dex??10).missile+(range.penalty||0)+attackEffectModifier(attacker,target,"missile")-6;
   const roll=resolveMissileAttackD20(d(20),attacker.thaco-effectiveArmorClassForAttack(attacker,target,'small-device-missile'),bonus);
   const protectedMiss=r226NormalMissileProtected(target)||r226LineCrossesWindWall(attacker,target);
   await presentSpellTargetResults(attacker,[{unit:target}],()=>{
@@ -228,15 +227,14 @@ async function fireAtEnvironmentHex(actor,hex){
  const range=longbowRangeBand(actor,hex);if(range.penalty===null){setCombatMessage('Out of missile range.');return false;}
  const candidate=unitAtHex(hex.x,hex.y),target=candidate&&isHexVisibleToFriendlyParty(candidate.x,candidate.y)?candidate:null;environmentActionInProgress=true;
  try{if(target&&target.id!==actor.id){const result=await longbowAttack(actor,target);if(result?.blockedByObstacle||result?.outOfRange||result?.outOfAmmo||result?.blockedBySlow)return false;}else{
-   const impact=resolveEnvironmentArrow(actor,hex,{empty:true});await focusRangedAttacker(actor);updateFacingForStep(actor,hex.x-actor.x,hex.y-actor.y);await prepareUnitAttackWindup(actor);
+   const impact=resolveEnvironmentArrow(actor,hex,{empty:true});await focusRangedAttacker(actor,180,hex);updateFacingForStep(actor,hex.x-actor.x,hex.y-actor.y);await prepareUnitAttackWindup(actor,{bowAudio:true});
    if(!consumeMissileAmmo(actor)){setCombatMessage('Out of ammunition.');return false;}triggerUnitAttackPose(actor);breakInvisibility(actor,'firing a missile');
    await animateArrowProjectile(actor,{...hex,environmentImpact:impact},false);log(`${actor.name} fires at hex ${hex.x},${hex.y}.`,'system');}
   actor.shotsRemaining=Math.max(0,actor.shotsRemaining-1);if(!actor.shotsRemaining){actor.attacksRemaining=0;exitAimMode(false,false);endTurn();}updateUi();draw();return true;
  }finally{environmentActionInProgress=false;}
 }
-const environmentControls=document.createElement('div');environmentControls.id='combatEnvironmentControls';environmentControls.innerHTML='<button id="breakCombatWindow" class="combat-action" type="button">Break Window</button><label><input id="strayArrowTest" type="checkbox"> Stray arrows (test)</label>';
+const environmentControls=document.createElement('div');environmentControls.id='combatEnvironmentControls';environmentControls.innerHTML='<label><input id="strayArrowTest" type="checkbox"> Stray arrows (test)</label>';
 document.getElementById('combatCompass').append(environmentControls);
-environmentControls.querySelector('button').addEventListener('click',async()=>{const actor=activePlayerControlledUnit();if(!actor||environmentActionInProgress||game.over||game.active!==actor.id||combatActionPauseRemaining()>0)return;environmentActionInProgress=true;try{if(!await breakNearbyCombatWindow(actor))setCombatMessage('Stand beside an intact window with an attack remaining.');else if(!actor.attacksRemaining)endTurn();}finally{environmentActionInProgress=false;}});
 for(const name of ['keydown','keyup'])environmentControls.addEventListener(name,event=>event.stopPropagation());
 
 // Explicitly called by the shared updateUi after its standard controls are updated.

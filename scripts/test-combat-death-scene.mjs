@@ -23,7 +23,7 @@ corpse.deathFacingHex=4;
 assert.equal(c.directionalUnitPoseFrame(corpse,'falling').facing,'SW');assert.equal(c.directionalUnitPoseFrame(corpse,'prone').facing,'SW','Falling and prone keep one randomized facing');
 c.battlefieldRotation=1;assert.equal(c.directionalUnitPoseFrame(corpse,'prone').facing,'W','Corpse orientation remains world-fixed when camera rotates');
 const frameSource=readFileSync('js/combat-render-frame.js','utf8');
-assert.ok(frameSource.includes('if(corpse&&!corpse.alive&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse))'),'Corpse render list includes pending death beats without a visibility gap');
+assert.ok(frameSource.includes('if(corpse&&deathPresentationActive(corpse)&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse))'),'Corpse render list includes pending death beats without a visibility gap');
 c.allUnits=()=>[corpse];c.unitOccupiesHex=()=>true;vm.runInContext(extractCombatFunction(engine,'occupiedByAnyUnit'),c);assert.equal(c.occupiedByAnyUnit(0,0),false,'Corpse hex is passable');corpse.alive=true;assert.equal(c.occupiedByAnyUnit(0,0),true,'Live occupants still block');
 console.log('PASS fourfold death emission amount/duration, three-second pool activity, exact one-second falling/prone transition and corpse movement access');
 // Uniform triangle sampling stays within the death hex and stops at walls.
@@ -33,3 +33,15 @@ for(let i=0;i<1000;i++){const offset=c.sampleCorpseOffset({x:0,y:0});assert.ok(M
 math.random=()=>.5;const unrestricted=c.sampleCorpseOffset({x:0,y:0});c.environmentRayHit=()=>({t:.5});const restricted=c.sampleCorpseOffset({x:0,y:0});assert.ok(Math.hypot(restricted.x,restricted.y)<Math.hypot(unrestricted.x,unrestricted.y));
 c.game={};now=0;c.startArrowBlood(target,{...target,deathWorldOffset:{x:4,y:3}},1,{death:true});assert.equal(c.game.bloodState.pools[0].origin.x,64);assert.equal(c.game.bloodState.pools[0].origin.y,43,'Blood pool follows the body placement');
 console.log('PASS corpse positions inside hex, wall-bounded offsets and blood pool alignment');
+
+c.game={};c.startArrowBlood(target,{...target,fireDeath:true},5,{death:true});assert.equal(c.game.bloodState,undefined,"Fire death creates no blood or pool");
+
+// The last casualty must finish a long death clip before results may end combat.
+corpse.alive=false;corpse.deathAnimationDurationMs=2600;
+assert.equal(c.activeUnitPoseName(corpse,2699),'falling');
+assert.equal(c.activeUnitPoseName(corpse,2700),'prone');
+c.deathActionPauseUntil=1100;c.allUnits=()=>[corpse];
+vm.runInContext(extractCombatFunction(engine,'deathPauseRemaining'),c);
+now=1200;assert.equal(c.deathPauseRemaining(),1500);
+now=2700;assert.equal(c.deathPauseRemaining(),0);
+console.log('PASS death clip duration controls pose transition and combat end pause');

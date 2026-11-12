@@ -950,6 +950,9 @@ function beginScheduledSpellCast(fallback,
     path. That is where Deafness checks, spoken incantations, invisibility
     breaking, and the R225 universal casting sound now occur.
   */
+  if(typeof isCarlCombatTestOverride==='function'&&isCarlCombatTestOverride(caster)){
+    return fallback(caster,spell,action,0);
+  }
   if(action?.r230Completing){
     return fallback(
       caster,

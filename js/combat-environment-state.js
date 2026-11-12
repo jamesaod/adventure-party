@@ -7,14 +7,15 @@ function initializeFirMovementObstacles(){
   game.firSpawnClearance=new Set(allUnits().flatMap(unit=>occupiedHexes(unit)).map(cell=>key(cell.x,cell.y)));
   const tiles=[];
   for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))tiles.push({x,y});
-  game.firBlockedHexes=new Set(visibleTreeDecorations(tiles).map(tree=>key(tree.x,tree.y)));
+  game.firDecorations=new Map(visibleTreeDecorations(tiles).map(tree=>[key(tree.x,tree.y),tree]));
+  game.firBlockedHexes=new Set(game.firDecorations.keys());
 }
 
 function addTerrainScorch(cells,strength=.75){
   if(typeof combatGpu!=="undefined")combatGpu?.meltSnow?.(cells,1);
   if(!game)return;game.terrainScorch??={};let changed=false;
   for(const cell of cells){if(!inside(cell.x,cell.y))continue;const id=key(cell.x,cell.y),old=game.terrainScorch[id];
-    if(!old||old.strength<strength){game.terrainScorch[id]={x:cell.x,y:cell.y,strength};changed=true;}}
+    if(!old||old.strength<strength){game.terrainScorch[id]={x:cell.x,y:cell.y,strength};changed=true;if(typeof queueBurnSmoke==="function")queueBurnSmoke(cell,false);}}
   if(changed){game.scorchRevision=(game.scorchRevision||0)+1;game.scorchCache=null;}
 }
 
@@ -374,7 +375,7 @@ function sampleCorpseOffset(unit){
   return {x:0,y:0};
 }
 function startArrowBlood(attacker,target,damage,{death=false}={}){
-  if(!game||!(damage>0)||!attacker||!target)return;
+  if(!game||!(damage>0)||!attacker||!target||target.fireDeath)return;
   const state=combatBloodState(),origin=worldPointForHex(target.x,target.y),squash=environmentSquash();
   if(death&&target.deathWorldOffset){origin.x+=target.deathWorldOffset.x;origin.y+=target.deathWorldOffset.y;}
   const drops=[];
@@ -396,4 +397,22 @@ function startArrowBlood(attacker,target,damage,{death=false}={}){
     (state.pools??=[]).push({origin,hex:{x:target.x,y:target.y},started:started+1000,contour});
   }
   ensureTransientUnitFxLoop();draw();
+}
+
+// Presentation only: smoke never changes visibility or targeting rules.
+function queueBurnSmoke(source,unit=false,started=performance.now()){
+ if(!game)return;game.burnSmoke??=[];const id=unit?'unit:'+source.id:'ground:'+source.x+','+source.y;
+ game.burnSmoke=game.burnSmoke.filter(fx=>performance.now()<fx.started+fx.duration&&fx.id!==id);
+ game.burnSmoke.push({id,unitId:unit?source.id:null,x:source.x,y:source.y,started,duration:unit?6500:9000,seed:Math.random()*20});
+ if(game.burnSmoke.length>48)game.burnSmoke.splice(0,game.burnSmoke.length-48);
+ ensureTransientUnitFxLoop();
+}
+function drawBurnSmoke(){
+ if(!game?.burnSmoke)return;const now=performance.now();game.burnSmoke=game.burnSmoke.filter(fx=>now<fx.started+fx.duration);
+ for(const fx of game.burnSmoke){const t=(now-fx.started)/fx.duration;if(t<0)continue;const unit=fx.unitId?getUnitById(fx.unitId):null;
+ if(fx.unitId&&(!unit||unit.fled||!shouldRenderUnitUnderPartyVisibility(unit)))continue;
+ if(!unit&&!isHexVisibleToFriendlyParty(fx.x,fx.y))continue;
+ const p=unit?unitFootprintScreenCenter(unit):hexCenter(fx.x,fx.y);
+ combatGpu?.burnSmoke?.({x:p.x,y:p.y,width:unit?48:HEX_W,height:unit?85:HEX_W*1.2,age:(now-fx.started)/1000,fade:Math.min(1,t*5,(1-t)*3),seed:fx.seed});
+ }
 }

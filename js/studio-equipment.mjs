@@ -1,3 +1,4 @@
+import {createBowString} from './procedural-bow-string.mjs?v=R238C312';
 import {catalogWeaponPreset} from './low-poly-weapons.mjs';
 import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
 import {worldGripPosition,setWorldGripAxis,applyEquipmentMaterialOverrides} from './equipment-adjustments.mjs?v=R238C176';
@@ -121,7 +122,8 @@ export function studioWeapon(id) { return STUDIO_WEAPONS.find(weapon => weapon.i
 // Content-versioned requests refresh corrected assets without migrating saved grips.
 export function weaponAssetUrl(weapon, baseUrl) {
   const optimized = {'assets/models/weapons/battle-axes/battle-axe.glb':'assets/models/weapons/battle-axes/battle-axe-combat.glb','assets/models/weapons/swords/medieval-sword.glb':'assets/models/weapons/swords/medieval-sword-combat.glb'};
-  const url = new URL(optimized[weapon.file] || weapon.file, baseUrl);
+  const morph = {'assets/models/weapons/low-poly-medieval/bow_1.glb':'assets/models/weapons/low-poly-medieval/bow_1-morph.glb','assets/models/weapons/low-poly-medieval/bow_2.glb':'assets/models/weapons/low-poly-medieval/bow_2-morph.glb'};
+  const url = new URL(morph[weapon.file] || optimized[weapon.file] || weapon.file, baseUrl);
   if (weapon.assetSha256) url.searchParams.set('v', weapon.assetSha256);
   return url;
 }
@@ -521,13 +523,25 @@ export function createWeaponAttachment(THREE, hand, model, settings, options = {
     socket.position.fromArray(normalized.position);
     socket.quaternion.copy(weaponGripQuaternion(THREE, normalized.rotation, weapon.primaryAxis, normalized.shaftRollDegrees));
     socket.scale.setScalar(weapon.nativeScale * normalized.sizePercent / 100);
+    // Workshop source rigs may be authored in centimeters rather than meters.
+    // Keep equipment dimensions in world meters, while retaining the hand rotation.
+    let root=hand;while(root&&!root.userData.workshopPhysicalEquipment)root=root.parent;
+    if(root){
+      const inherited=hand.getWorldScale(new THREE.Vector3());
+      for(const axis of ['x','y','z'])if(Number.isFinite(inherited[axis])&&Math.abs(inherited[axis])>1e-8)socket.scale[axis]/=Math.abs(inherited[axis]);
+    }
     attachment.secondaryGripOffsetInches = [...normalized.secondaryGripOffsetInches];
     socket.updateWorldMatrix(true, true);
   }
-  attachment.setDrawn = drawn => model.traverse(node => {
+  const bowString=createBowString(THREE,model,hand);
+  attachment.setDrawn = drawn => bowString ? bowString.update(drawn) : model.traverse(node => {
     if(node.name==='BowRest')node.visible=!drawn;
     if(node.name==='BowDrawn')node.visible=!!drawn;
   });
+  attachment.setBowState=(state,sizeScale=1)=>bowString?bowString.update(state?.phase==='nocked',state,sizeScale):attachment.setDrawn(state?.phase==='nocked');
+  attachment.calibrateArrowPickup=bowString?.calibratePickup;
+  attachment.getArrowPickup=()=>bowString?.getPickup()||null;
+  attachment.detach=()=>{bowString?.dispose();socket.removeFromParent();};
   attachment.setDrawn(false);
   attachment.update = update;
   update(value);
@@ -638,5 +652,5 @@ export function createStudioEquipment({ THREE, loadAsset, disposeObject, onChang
   function dispose() { restoreBonePose(preConstraintPose); preConstraintPose=null; disposed=true; ++request; detach(); model=null; loading=false; }
   const worldPosition=()=>worldGripPosition(THREE,handFor(studioWeapon(settings.rightHand)),settings.position);
   const withWorldPosition=(axis,value)=>({...normalize(settings),position:setWorldGripAxis(THREE,handFor(studioWeapon(settings.rightHand)),settings.position,axis,value)});
-  return { snapshot, select, setModel, restoreConstraints, applyConstraints, dispose, worldPosition, withWorldPosition, getAttachmentSocket: () => attachment?.socket || null };
+  return { setDrawn: value => attachment?.setDrawn(value), setBowState: state => attachment?.setBowState(state), getArrowPickup:()=>attachment?.getArrowPickup()||null, snapshot, select, setModel, restoreConstraints, applyConstraints, dispose, worldPosition, withWorldPosition, getAttachmentSocket: () => attachment?.socket || null };
 }

@@ -74,6 +74,8 @@ function fallbackRecipe(reason = 'No complete Carl capture workspace was found.'
  * model at the recorded animation/time and renders current equipment on demand.
  */
 export async function loadCombatPoseRecipe({ mobType = 'fighter', fromCombat = false } = {}) {
+  // Published combat must not inherit an unrelated browser-local authoring draft.
+  if (!fromCombat) return fallbackRecipe('Using published combat assets.');
   let workspace;
   try {
     // "Test in combat" atomically saves its exact frames and settings together.

@@ -17,12 +17,14 @@ export async function loadUploadedFbxAnimations({
     if ((entry.retargetMode && !['world-bind-delta','anatomical-aim'].includes(entry.retargetMode)) ||
         !entry.id || seen.has(entry.id) || typeof entry.label !== 'string' || !entry.label ||
         url.origin !== appRoot.origin || !url.pathname.startsWith(appRoot.pathname + 'assets/animations/') ||
-        !/\.fbx$/i.test(url.pathname)) throw new Error('Invalid uploaded animation entry.');
+        !/\.(?:fbx|glb)$/i.test(url.pathname)) throw new Error('Invalid uploaded animation entry.');
     seen.add(entry.id);
     return {...entry, url};
   });
   const result = [];
-  for (const entry of entries) {
+  // Workshop consumes GLB clips through its own shared animation runtime.
+  // This owner remains the uploaded-FBX library used by legacy Studio recipes.
+  for (const entry of entries.filter(entry=>/\.fbx$/i.test(entry.url.pathname))) {
     onStatus(`Loading uploaded animation: ${entry.label}…`);
     const response = await fetchAsset(entry.url, {cache:'force-cache'});
     if (!response.ok) throw new Error(`${entry.label} returned ${response.status}.`);

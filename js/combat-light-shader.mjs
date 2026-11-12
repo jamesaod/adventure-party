@@ -20,12 +20,15 @@ export const combatLightGLSL=`
   for(int i=0;i<32;i++){
    if(i>=emitterCount)break;
    vec4 source=emitterPosition[i],shape=emitterShape[i],color=emitterColor[i];
-   if(emitterVisibility(i,world,normal)<.5)continue;
+   if(color.a<=0.)continue;
    if(source.w<.5){
-    vec3 delta=source.xyz-point;float d=length(delta);
-    if(d>=shape.x)continue;
+    vec3 delta=source.xyz-point;float distanceSquared=dot(delta,delta);
+    if(shape.x<=0.||distanceSquared>=shape.x*shape.x)continue;
+    float d=sqrt(distanceSquared);
     float alignment=max(0.,dot(delta,normal)/max(.01,d));
-    float cutoff=pow(max(0.,1.-pow(d/shape.x,4.)),2.);
+    if(alignment<=0.||emitterVisibility(i,world,normal)<.5)continue;
+    float ratioSquared=distanceSquared/(shape.x*shape.x);
+    float cutoff=1.-ratioSquared*ratioSquared;cutoff*=cutoff;
     linearBase+=color.rgb*color.a*alignment*cutoff/(3.14159265359*max(.01,pow(d,shape.y)));
    }else{
     // Spell/fire coordinates originate in axial cells, but their visible
@@ -33,9 +36,11 @@ export const combatLightGLSL=`
     vec2 origin=vec2((source.x+source.y*.5)*64.,source.y*31.5)*lightWorld.xy+lightWorld.zw;
     vec3 delta=vec3(origin.x,source.z,origin.y)-point;
     float radius=shape.x*64.*lightWorld.x;
-    float d=length(delta)/max(.01,radius);
-    if(d>=1.)continue;
-    float falloff=pow(1.-d*d,2.);
+    float radiusSafe=max(.01,radius);
+    float ratioSquared=dot(delta,delta)/(radiusSafe*radiusSafe);
+    if(ratioSquared>=1.)continue;
+    if(emitterVisibility(i,world,normal)<.5)continue;
+    float falloff=1.-ratioSquared;falloff*=falloff;
     float diffuse=mix(1.,max(0.,dot(normal,normalize(delta))),relief);
     radiance+=color.rgb*color.a*.18*falloff*diffuse;
    }

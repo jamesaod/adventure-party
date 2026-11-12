@@ -298,6 +298,91 @@
       "rigCompatibility": "meshy-neutral-bind-world-v2",
       "retargetMode": "world-bind-delta",
       "restoreSkinBindPose": true
+    },
+    {
+      "id": "ual2-bow-notch",
+      "label": "UAL2 Bow Notch",
+      "file": "assets/animations/ual2/ual2-bow-notch.glb",
+      "bytes": 257940,
+      "sha256": "9f2cca38e49741649dd9aab7560146f1f601549d5a87a602efdb889acec4f9f3",
+      "actionProfiles": [
+        "bow"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "retargetMode": "world-bind-delta",
+      "sourceAnimation": "Bow_Notch",
+      "sourceArchive": "Universal Animation Library 2[Source].zip",
+      "sourceMember": "Unreal-Godot/UAL2.glb",
+      "license": "assets/animations/ual2/LICENSE.txt"
+    },
+    {
+      "id": "ual2-bow-shoot",
+      "label": "UAL2 Bow Shoot",
+      "file": "assets/animations/ual2/ual2-bow-shoot.glb",
+      "bytes": 115860,
+      "sha256": "b611d49327d4ae0e9ee55f0363af193169e96517d09d53ecc31f37efcb7ed191",
+      "actionProfiles": [
+        "bow"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "retargetMode": "world-bind-delta",
+      "sourceAnimation": "Bow_Shoot",
+      "sourceArchive": "Universal Animation Library 2[Source].zip",
+      "sourceMember": "Unreal-Godot/UAL2.glb",
+      "license": "assets/animations/ual2/LICENSE.txt"
+    },
+    {
+      "id": "ual1-idle",
+      "label": "UAL1 Idle",
+      "file": "assets/animations/ual1/ual1-idle.glb",
+      "bytes": 257940,
+      "sha256": "e3c6c783b28e7990b20528abd62bf15527a55f6b1aa6157683c0a99faf51fa03",
+      "actionProfiles": [
+        "idle"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "retargetMode": "world-bind-delta",
+      "sourceAnimation": "Idle_Loop",
+      "sourceArchive": "Universal Animation Library[Standard].zip",
+      "sourceMember": "Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb",
+      "license": "assets/animations/ual1/LICENSE.txt"
+    },
+    {
+      "id": "ual1-jog-fwd",
+      "label": "UAL1 Jog FWD",
+      "file": "assets/animations/ual1/ual1-jog-fwd.glb",
+      "bytes": 137456,
+      "sha256": "0276e0b28232a3b731f0c80bd982ede6fedb84da7cea1ab35156b9fb742aeeec",
+      "actionProfiles": [
+        "move"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "retargetMode": "world-bind-delta",
+      "sourceAnimation": "Jog_Fwd_Loop",
+      "sourceArchive": "Universal Animation Library[Standard].zip",
+      "sourceMember": "Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb",
+      "license": "assets/animations/ual1/LICENSE.txt"
+    },
+    {
+      "id": "ual1-walk-loop",
+      "label": "UAL1 Walk Loop",
+      "file": "assets/animations/ual1/ual1-walk-loop.glb",
+      "bytes": 168724,
+      "sha256": "0310438baa7f9470dca22f83730222a63033724e5edbd3ec445f4ecd11271fb4",
+      "actionProfiles": [
+        "move"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "retargetMode": "world-bind-delta",
+      "sourceAnimation": "Walk_Loop",
+      "sourceArchive": "Universal Animation Library[Standard].zip",
+      "sourceMember": "Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb",
+      "license": "assets/animations/ual1/LICENSE.txt"
     }
   ]
 }

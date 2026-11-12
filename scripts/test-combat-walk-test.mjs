@@ -21,7 +21,7 @@ for(const service of ['animateEntitySteps','animateMobAlongPath']){
    const unit={x:2,y:3,alive:true,controller:'mob'};
    let walkCalls=0,sleepCalls=0;
    const noop=()=>{};
-   const ctx={game:{over:false},
+   const ctx={prepareCombatReactiveWalkStep:(u,p)=>p,prepareCombatWalkPath:(u,p)=>p,game:{over:false},
     AdventurePartyCombatServices:{register(name,owner,fn){if(name===service)this.fn=fn;}},
     createHiddenMobMovementSenseContext:()=>({}),mobMovementPresentationMode:()=>mode,
     unitTransitionBlocked:()=>false,performLeavingHexFreeAttacks:async()=>true,
@@ -74,7 +74,7 @@ console.log('PASS continuous multi-hex speed, pose phase and no catch-up after i
  const movement=fs.readFileSync('js/combat-movement.js','utf8');
  const start=movement.indexOf('let heldCombatMove='),end=movement.indexOf('async function tryPlayerMove(',start);
  const unit={id:'friendly',x:0,y:0,alive:true};let steps=0;
- const ctx={game:{active:unit.id,over:false},activePlayerControlledUnit:()=>unit,draw:()=>{},tryPlayerMove:async(dx,dy,options)=>{assert.equal(options.continuous,true);unit.x+=dx;steps++;if(steps===2)vm.runInContext('releaseKeyboardCombatMove()',ctx);}};
+ const ctx={clickMovementRunning:false,game:{active:unit.id,over:false},activePlayerControlledUnit:()=>unit,draw:()=>{},tryPlayerMove:async(dx,dy,options)=>{assert.equal(options.continuous,true);unit.x+=dx;steps++;if(steps===2)vm.runInContext('releaseKeyboardCombatMove()',ctx);}};
  vm.createContext(ctx);vm.runInContext(movement.slice(start,end),ctx);
  await vm.runInContext('beginKeyboardCombatMove("KeyD",1,0)',ctx);
  assert.equal(steps,2);assert.equal(unit.x,2);assert.equal(unit.walkPresentation,undefined);

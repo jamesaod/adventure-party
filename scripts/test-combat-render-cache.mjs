@@ -31,3 +31,14 @@ const first=pool.get(33,35,2);assert.equal(pool.get(40,40,2),first);pool.get(80,
 let seed=71;const random=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
 for(let trial=0;trial<100;trial++){const actors=Array.from({length:100},(_,i)=>({id:i,sortX:random()*1000,sortY:random()*1000,...(i%3?{entity:{x:random()*1000,y:random()*1000}}:{wall:{a:{x:random()*1000,y:random()*1000},b:{x:random()*1000,y:random()*1000}}})}));assert.deepEqual(orderSurfaceActors(actors,p=>p,p=>p).map(a=>a.id),reference(actors,p=>p,p=>p).map(a=>a.id));}
 console.log('PASS terrain mutation/cache, rounded LRU target lifecycle, and 100 randomized ordering comparisons');
+
+const shadowGeometry=new THREE.BufferGeometry();
+updateSurfaceBuffers(shadowGeometry,[f],THREE,()=>{},true);
+assert.deepEqual(Object.keys(shadowGeometry.attributes).sort(),['position','uv']);
+assert.deepEqual([...shadowGeometry.attributes.position.array],triangulateSurfaces([f]).position);
+const sv=shadowGeometry.attributes.position.version;
+updateSurfaceBuffers(shadowGeometry,[f],THREE,()=>{},true);
+assert.equal(shadowGeometry.attributes.position.version,sv);
+f.points[0].y+=1;updateSurfaceBuffers(shadowGeometry,[f],THREE,()=>{},true);
+assert.equal(shadowGeometry.attributes.position.version,sv+1);
+console.log('PASS shadow-only buffers retain geometry and mutation detection without lighting attributes');

@@ -3,6 +3,8 @@
  * Extracted without changing rule or presentation bodies. */
 
 let directMotionFramePending=false;
+// Character presentation only; the map ambient and sun/local-light sources stay unchanged.
+const COMBAT_UNIT_AMBIENT_MULTIPLIER=1.5;
 function requestDirectMotionFrame(){
   if(directMotionFramePending)return;
   directMotionFramePending=true;
@@ -13,7 +15,8 @@ function requestDirectMotionFrame(){
 function drawDirectCombatUnit(image,entity,center,width,height,anchor,opacity){
   const direct=globalThis.adventurePartyDirectUnits;
   if(!direct||!entity||!combatSceneTerrain||!combatGpu)return false;
-  const scale=combatShadowScale(),world=worldPointForHex(entity.x,entity.y);
+  const scale=combatShadowScale(),motion=entity.walkPresentation,t=motion?Math.max(0,Math.min(1,motion.t)):0;
+  const world=motion?worldPointForHex(motion.from.x+(motion.to.x-motion.from.x)*t,motion.from.y+(motion.to.y-motion.from.y)*t):worldPointForHex(entity.x,entity.y);
   if(!entity.alive&&entity.deathWorldOffset){const offset=corpsePresentationOffset(entity);world.x+=offset.x;world.y+=offset.y;}
   const position=[world.x/scale[0],0,world.y/scale[2]];
   const localLights=(prepareCombatProjectedShadows.sources||[]).filter(source=>{
@@ -23,10 +26,16 @@ function drawDirectCombatUnit(image,entity,center,width,height,anchor,opacity){
   }).map(source=>({position:source.vector.slice(0,3).map((v,i)=>v-position[i]),range:source.range,
     intensity:source.power*12,color:(source.source?.color||[255,192,110]).map(v=>v/255)}))
     .sort((a,b)=>b.intensity/(1+b.position.reduce((n,v)=>n+v*v,0))-a.intensity/(1+a.position.reduce((n,v)=>n+v*v,0))).slice(0,4);
+  let snowGroundLight=null;
+  if(!entity.alive&&explorationGpuLighting&&direct.corpseSnowAmount?.(entity)>0){
+    const point=explorationGpuPoint(world),exposure=explorationSurfaceExposure({x:point[0],y:0,z:point[2]},{x:0,y:1,z:0},explorationVisualLights(),new Set(combatSceneContext.openDoors));
+    const visibility=explorationVisibilityAtHex(entity,[]);
+    snowGroundLight=exposure.multiply.map((v,i)=>Math.max(.01**(1/2.2),v/Math.max(.0001,255-exposure.boost[i]))*visibility);
+  }
   return direct.draw(combatGpu,image,{x:center.x,y:center.y,width,height,anchor,opacity,
-    entity,requestMotionFrame:requestDirectMotionFrame,walkSeconds:entity.walkPresentation?.seconds,rotation:battlefieldRotation*Math.PI/3,pixelsPerMetre:scale[1],localLights,
+    entity,equipmentEffects:!getUnitEffect(entity,'invisibility'),snowGroundLight,requestMotionFrame:requestDirectMotionFrame,walkSeconds:entity.walkPresentation?.seconds,rotation:battlefieldRotation*Math.PI/3,pixelsPerMetre:scale[1],groundMetresScale:[scale[0],scale[2]],localLights,
     solar:globalThis.adventurePartySolar?.state?.(),outdoor:!isIndoorWorldPoint(world),
-    ambientPercent:combatRenderAmbientAtHex(entity),saturation:entity.alive?1:.5});
+    ambientPercent:combatRenderAmbientAtHex(entity)*COMBAT_UNIT_AMBIENT_MULTIPLIER,saturation:1});
 }
 
 function firTreeLocalLights(tree){

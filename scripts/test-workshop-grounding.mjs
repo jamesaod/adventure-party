@@ -21,3 +21,19 @@ grounding.reset();assert.equal(model.position.y,0);
 hips.position.y=1;grounding.apply();
 assert(Math.abs(feet[1].getWorldPosition(point).y-4)<1e-6);
 console.log('Workshop root travel and grounding preserve limb motion, world scale and reset without drift.');
+
+// A corpse must follow the ground even after the battlefield group moves.
+const corpseGroup=new THREE.Group(),corpseModel=new THREE.Group();corpseGroup.add(corpseModel);
+const geom=new THREE.BoxGeometry(1,2,1);geom.translate(0,1,0);
+const count=geom.attributes.position.count;
+geom.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(new Uint16Array(count*4),4));
+const weights=new Float32Array(count*4);for(let i=0;i<count;i++)weights[i*4]=1;
+geom.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+const skin=new THREE.SkinnedMesh(geom,new THREE.MeshBasicMaterial()),bone=new THREE.Bone();
+skin.add(bone);skin.bind(new THREE.Skeleton([bone]));corpseModel.add(skin);
+const cg=createWorkshopGrounding(THREE,corpseModel,corpseGroup);
+corpseGroup.position.y=5;bone.position.y=2;cg.applyCorpse();skin.computeBoundingBox();
+assert(Math.abs(skin.boundingBox.clone().applyMatrix4(skin.matrixWorld).min.y-5)<1e-6);
+cg.reset();bone.position.y=3;cg.applyCorpse();skin.computeBoundingBox();
+assert(Math.abs(skin.boundingBox.clone().applyMatrix4(skin.matrixWorld).min.y-5)<1e-6);
+console.log('PASS corpse body grounding after animation, translation and repeated reset.');

@@ -5,7 +5,7 @@ import {createCombatTestMap} from '../js/combat-test-map.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {floorFragmentIndex,polygonArea} from '../js/combat-surface-lighting.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi').replace("import('./combat-fir-trees.mjs?v=treeit-live-1')",'Promise.resolve({createCombatFirTrees:async()=>({})})');
+const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi').replace("import('./combat-fir-trees.mjs?v=R238C329')",'Promise.resolve({createCombatFirTrees:async()=>({})})');
 function fixture(){
  const events=[],images=Array.from({length:10},()=>({src:'',decode:async()=>{events.push('image');}}));
  const c={document:new EventTarget(),sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],explorationCityWallImages:{"red-brick":images[5],"beige-stone":images[6]},explorationCityWoodFloorImage:images[7],explorationCityFloorImages:{wood:images[7],'gray-stone':images[8],'gray-flagstone':images[9]},game:null,isKoboldUnit:()=>false,

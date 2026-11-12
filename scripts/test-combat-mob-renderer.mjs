@@ -51,7 +51,7 @@ for(const token of [
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
 assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")'));
-assert.ok(game.includes('moduleUrl("js/combat-prepared-assets.mjs?v=direct-assets-1")'));
+assert.match(game,/moduleUrl\("js\/combat-prepared-assets\.mjs\?v=[^"]+"\)/,'Combat loads the shared prepared asset owner with a cache version');
 assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C202",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
 assert.ok(!game.includes('import("./js/combat-mob-renderer.mjs'));

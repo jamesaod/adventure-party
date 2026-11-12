@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {combatPresentationTestServices} from './combat-presentation-test-context.mjs';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
 import {createCombatFrameScheduler} from '../js/combat-frame-scheduler.mjs';
@@ -32,7 +33,7 @@ for(const displayHz of [54,60,144]){
 const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
 const extract=(name,prefix='function ')=>{const a=source.indexOf(prefix+name+'(');assert(a>=0,name);return source.slice(a,source.indexOf('\n}',a)+2);};
 let now=0;const samples=[];
-const context={addTerrainScorch(){},igniteFirTrees(){},performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,
+const context={...combatPresentationTestServices(),addTerrainScorch(){},igniteFirTrees(){},performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,
  presentCombatFrame:async()=>{samples.push({now,projectile:context.projectileFx&&{...context.projectileFx},explosion:context.fireballExplosionFx&&{...context.fireballExplosionFx}});now+=1000/30;}};
 vm.createContext(context);vm.runInContext([extract('combatEffectDuration'),extract('animateArrowProjectile','async function '),extract('animateFireballExplosion','async function ')].join('\n'),context);
 assert.equal(context.combatEffectDuration(280),560);

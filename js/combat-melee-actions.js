@@ -134,7 +134,7 @@ async function resolveMeleeHit(attacker,defender,options={}){
   const totalAttackBonus=
     (attacker.attackBonus || 0)+
     weaponHitBonus+
-    attackEffectModifier(attacker,defender);
+    attackEffectModifier(attacker,defender,"melee");
 
   /* Roll the physical attack die BEFORE applying any modifier. */
   const rawRoll=d(20);
@@ -261,6 +261,7 @@ async function resolveMeleeHit(attacker,defender,options={}){
   }
 
   if(secondaryDamage>0){
+    const aliveBeforeSecondary=defender.hp>0;
     defender.hp=Math.max(0,defender.hp-secondaryDamage);
 
     if(typeof candidateWithDamageBeatContext==="function"){
@@ -286,6 +287,7 @@ async function resolveMeleeHit(attacker,defender,options={}){
         "fire",
         secondaryDamage
       );
+      if(!aliveBeforeSecondary)defender.fireDeath=false;
     }
   }
 

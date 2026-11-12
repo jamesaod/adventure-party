@@ -1,4 +1,5 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {FBXLoader} from '../assets/vendor/three/addons/loaders/FBXLoader.js';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 function clone(root){
  const result=root.clone(true),copies=new Map();
@@ -17,7 +18,8 @@ async function sourceModel(key,expectedHash){
  const response=await fetch(key);if(!response.ok)throw Error('Cannot load combat model: '+response.status);
  const bytes=await response.arrayBuffer(),loader=new GLTFLoader();
  if(expectedHash){const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');if(hash!==expectedHash)throw Error('Published Workshop model checksum mismatch.');}
- const source=await loader.parseAsync(bytes,new URL('.',key).href);
+ const isFbx=/\.fbx$/i.test(new URL(key).pathname);
+ const source=isFbx?(()=>{const scene=new FBXLoader().parse(bytes,new URL('.',key).href);return {scene,animations:scene.animations||[]};})():await loader.parseAsync(bytes,new URL('.',key).href);
  if(shadowModels.has(new URL(key).pathname.split('/').pop())){
   try{const response=await fetch(key.replace(/\.glb$/i,'.shadow.json'));if(response.ok){const pack=await response.json(),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');if(pack.version===1&&pack.sourceSha256===hash)source.shadowPack=pack;}}
   catch(error){console.warn('Optional shadow LOD unavailable; using source geometry.',error);}
@@ -30,7 +32,7 @@ export async function loadCombatModel(url,{sha256}={}){
  if(!sources.has(cacheKey))sources.set(cacheKey,sourceModel(key,sha256).catch(error=>{sources.delete(cacheKey);throw error;}));
  const source=await sources.get(cacheKey),scene=clone(source.scene),materials=new Map(),textures=new Map();
  const originalMeshes=[];source.scene.traverse(o=>{if(o.isMesh)originalMeshes.push(o);});let meshIndex=0;
- scene.traverse(o=>{if(!o.isMesh)return;const original=originalMeshes[meshIndex++],association=source.parser.associations.get(original);o.geometry=o.geometry.clone();
+ scene.traverse(o=>{if(!o.isMesh)return;const original=originalMeshes[meshIndex++],association=source.parser?.associations.get(original);o.geometry=o.geometry.clone();
   const record=source.shadowPack?.meshes[association?.meshes+':'+association?.primitives];
   if(record){const shadow=new THREE.BufferGeometry();shadow.setAttribute('position',new THREE.Float32BufferAttribute(record.position,3));shadow.setIndex(record.index);if(record.skinIndex){shadow.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(record.skinIndex,4));shadow.setAttribute('skinWeight',new THREE.Float32BufferAttribute(record.skinWeight,4));}registerShadowGeometry(o.geometry,shadow);}
   const copy=m=>{if(materials.has(m))return materials.get(m);const c=m.clone();materials.set(m,c);for(const [k,t] of Object.entries(c))if(t?.isTexture){if(!textures.has(t)){const n=t.clone();n.needsUpdate=true;textures.set(t,n);}c[k]=textures.get(t);}return c;};

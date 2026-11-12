@@ -141,7 +141,7 @@ export const unitSun={
   get hour(){return DEFAULT_SUN_HOUR;},
   draw(ctx,source,options){
    if(globalThis.adventurePartyGpuShadows?.unit){
-    const modelShadow=globalThis.adventurePartyDirectUnits?.liveShadow(source,unitSun.caster)||getModelShadow(source);
+    const modelShadow=globalThis.adventurePartyDirectUnits?.liveShadow(source,unitSun.caster,options.width)||getModelShadow(source);
     if(modelShadow&&globalThis.adventurePartyGpuShadows.unit(null,{...options,modelShadow}))return;
     const mask=shadowMask(source,options);if(mask&&globalThis.adventurePartyGpuShadows.unit(mask,{...options,footLine:shadowFootLine(mask)}))return;
    }

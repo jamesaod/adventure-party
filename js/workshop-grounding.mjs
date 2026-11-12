@@ -18,8 +18,25 @@ export function createWorkshopGrounding(THREE,model,group){
  group.updateMatrixWorld(true);
  const lowest=()=>Math.min(...contacts.map(bone=>bone.getWorldPosition(point).y));
  const ground=contacts.length>=2?lowest():null;
+ // Measure the animated body, not attached weapons, for lying poses.
+ const body=[];model.traverse(node=>{if(node.isSkinnedMesh)body.push(node);});
+ const bounds=new THREE.Box3();
+ function bodyFloor(){
+  group.updateMatrixWorld(true);let min=Infinity;
+  for(const mesh of body){mesh.skeleton.update();mesh.computeBoundingBox();bounds.copy(mesh.boundingBox).applyMatrix4(mesh.matrixWorld);min=Math.min(min,bounds.min.y);}
+  return min;
+ }
+ const restFloor=bodyFloor();
+ const restContact=Number.isFinite(restFloor)?group.worldToLocal(new THREE.Vector3(0,restFloor,0)):null;
+ function shift(delta){
+  if(!Number.isFinite(delta))return;
+  const parent=model.parent,origin=parent.worldToLocal(new THREE.Vector3());
+  model.position.add(parent.worldToLocal(new THREE.Vector3(0,delta,0)).sub(origin));
+  group.updateMatrixWorld(true);
+ }
  return {
   reset(){model.position.copy(base);},
+  applyCorpse(){if(restContact){group.updateMatrixWorld(true);shift(group.localToWorld(restContact.clone()).y-bodyFloor());}},
   apply(){
    if(ground===null)return;
    group.updateMatrixWorld(true);

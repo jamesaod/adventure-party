@@ -49,17 +49,27 @@ export function faceLightFragments(face,w=64,row=31.5){
 }
 // Stable topological order: use wall side at the actor's foot, never a long
 // diagonal wall's far endpoint. Unrelated scenery retains its painter order.
-export function orderSurfaceActors(actors,project,unitPoint){
+export function orderSurfaceActors(actors,project,unitPoint,unitScreenPoint=u=>project(unitPoint(u))){
  const base=[...actors].sort((a,b)=>a.sortY-b.sortY||a.sortX-b.sortX),edges=base.map(()=>new Set()),degree=base.map(()=>0);
  const add=(a,b)=>{if(!edges[a].has(b)){edges[a].add(b);degree[b]++;}};
  const buckets=new Map(),size=128;
- for(let j=0;j<base.length;j++)if(base[j].entity){const p=project(unitPoint(base[j].entity)),key=Math.floor(p.x/size)+','+Math.floor(p.y/size);if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push({j,p});}
+ for(let j=0;j<base.length;j++)if(base[j].entity){const p=unitScreenPoint(base[j].entity),key=Math.floor(p.x/size)+','+Math.floor(p.y/size);if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push({j,p});}
  for(let i=0;i<base.length;i++)if(base[i].wall){
   const wall=base[i].wall,a=project(wall.a),b=project(wall.b);if(Math.abs(b.x-a.x)<.01)continue;
   const left=Math.min(a.x,b.x)-24,right=Math.max(a.x,b.x)+24,top=Math.min(a.y,b.y)-120,bottom=Math.max(a.y,b.y)+120;
   for(let x=Math.floor(left/size);x<=Math.floor(right/size);x++)for(let yCell=Math.floor(top/size);yCell<=Math.floor(bottom/size);yCell++)for(const {j,p} of buckets.get(x+','+yCell)||[]){
    if(p.x<left||p.x>right)continue;const t=Math.max(0,Math.min(1,(p.x-a.x)/(b.x-a.x))),y=a.y+(b.y-a.y)*t;
    if(Math.abs(p.y-y)>120)continue;if(p.y>=y-.01)add(i,j);else add(j,i);
+  }
+ }
+ // A settled body is below feet crossing its ground footprint. Keep wall-side
+ // constraints authoritative; distant bodies retain ordinary painter order.
+ for(let i=0;i<base.length;i++)if(base[i].groundCorpse){
+  const p=unitScreenPoint(base[i].entity),r=base[i].groundRadius;
+  for(let x=Math.floor((p.x-r.x)/size);x<=Math.floor((p.x+r.x)/size);x++)for(let y=Math.floor((p.y-r.y)/size);y<=Math.floor((p.y+r.y)/size);y++)for(const {j,p:q} of buckets.get(x+','+y)||[])if(base[j].entity?.alive){
+   if(((p.x-q.x)/r.x)**2+((p.y-q.y)/r.y)**2>1)continue;
+   if(base.some((a,k)=>a.wall&&((edges[j].has(k)&&edges[k].has(i))||(edges[i].has(k)&&edges[k].has(j)))))continue;
+   add(i,j);
   }
  }
  const done=new Uint8Array(base.length),result=[],heap=[];

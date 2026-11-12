@@ -197,7 +197,7 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
      const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;record={geometry,material,mesh,gpu:!!batch.gpu};records[slot-1]=record;}
     if(batch.gpu){
      const part=batch.part,u=record.material.uniforms;
-     if(record.source!==part.geometry){record.geometry.dispose();record.geometry=part.geometry.clone();record.mesh.geometry=record.geometry;record.source=part.geometry;}
+     if(record.source!==part.geometry){record.geometry.dispose();record.geometry=part.geometry.clone();record.mesh.geometry=record.geometry;record.mesh.updateMorphTargets();record.source=part.geometry;}
      const bones=part.bones||identityBones;
      let palette=palettes.get(bones);
      if(!palette){const texture=new THREE.DataTexture(bones,4,bones.length/16,THREE.RGBAFormat,THREE.FloatType);texture.needsUpdate=true;palette={texture,frame:paletteFrame};palettes.set(bones,palette);perf.count('shadowPaletteUploads');}

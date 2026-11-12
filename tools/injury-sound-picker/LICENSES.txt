@@ -1,0 +1,80 @@
+Adventure Party — Injury voice audition library
+Source and license check: 2026-11-11
+
+Male recordings
+Title: Male Grunt/Yelling sounds
+Author: HaelDB
+Page: https://opengameart.org/content/male-gruntyelling-sounds
+Download: https://opengameart.org/sites/default/files/yelling%20sounds.zip
+Selected license: CC0 1.0 Universal, one of the licenses offered on the page.
+https://creativecommons.org/publicdomain/zero/1.0/
+The archive contains 62 separate WAV files in four filename groups. Voice 4 is
+the group without a numeric prefix. Group labels are audition identifiers.
+
+Female recording
+Title: Female Hurt Grunts & Groans
+Author: AuraVoice / Nocturnal_Vanguard
+Page: https://opengameart.org/content/female-hurt-grunts-groans
+Download: https://opengameart.org/sites/default/files/female_hurt_grunts_groans_1.ogg
+License: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+The author explicitly states no credit is required.
+
+Processing
+Male files are retained as individual takes. The female recording is split
+into seven reactions at pauses. Leading and trailing silence is trimmed,
+with about 100 ms padding where available and 4 ms fades at clip edges.
+Sample rates, channel counts and recorded levels are preserved. No generated
+voices, pitch changes or character assignments have been applied.
+The original recordings are kept in originals/. Exact timestamps and SHA-256
+checksums are recorded in catalog.json and included in the selection export.
+
+This page is an audition tool. Choosing or exporting clips does not change
+the game's sounds; the JSON records choices for later integration.
+
+Female expansion — 2026-11-11 (16 additional clips)
+
+Title: Female RPG Voice Starter Pack
+Author: cicifyre / Cici Fyre
+Page: https://opengameart.org/content/female-rpg-voice-starter-pack
+Download: https://opengameart.org/sites/default/files/RPG%20Voice%20Starter%20Pack.zip
+License: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+Nine damaged takes: three each from the original Type 1, Type 2 and Type 3
+folders. These are three performed voice styles, not three separate actors.
+The author says credit is appreciated but not required.
+
+Title: Female Warrior Grunts
+Author: SkyRae
+Page: https://opengameart.org/content/female-warrior-grunts
+Download: https://opengameart.org/sites/default/files/Grunts%20HD%20Deep.mp3
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/
+Attribution: Female Warrior Grunts by SkyRae,
+https://opengameart.org/content/female-warrior-grunts, licensed CC BY 3.0
+(https://creativecommons.org/licenses/by/3.0/). Split into five individual
+takes, silence trimmed, converted to WAV, and 4 ms edge fades applied.
+
+Title: Female RPG Character voice pack
+Author: RiddlesYouThis
+Page: https://opengameart.org/node/27664
+Downloads: https://opengameart.org/sites/default/files/gah.ogg
+           https://opengameart.org/sites/default/files/oww.ogg
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/
+Attribution: Female RPG Character voice pack by RiddlesYouThis,
+https://opengameart.org/node/27664, licensed CC BY 3.0
+(https://creativecommons.org/licenses/by/3.0/). Gah and Oww takes trimmed,
+converted to WAV, and 4 ms edge fades applied.
+
+Expansion processing: original files retained under originals/. Audition
+copies are PCM16 WAV at the original sample rate and channel count, with
+100 ms padding where available and 4 ms edge fades. No pitch changes.
+SkyRae's decoded MP3 slightly exceeds PCM16 range; all five takes receive
+the same small attenuation to avoid clipping (exact gain in catalog source
+processingNote). Other recorded levels are preserved. Existing 69 clip IDs,
+audio files and source timings are
+unchanged; browser selection storage remains compatible. New clips are
+marked female-expansion-2026-11-11 in catalog.json. JSON exports carry the
+credit text above for CC BY clips, for inclusion in the game's credits if
+those recordings are selected for later integration.

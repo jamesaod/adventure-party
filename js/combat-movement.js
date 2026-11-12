@@ -1,3 +1,92 @@
+// Tactical selection is contextual; movement remains authoritative on integer hexes.
+let clickMovementRunning=false;
+function combatManualTurnActive(){
+ const p=activePlayerControlledUnit();
+ return !!(game&&!game.over&&game.round>0&&p?.alive&&!p.fled&&game.active===p.id&&!isQuickCommandUnit(p)&&!quickCommandRunning);
+}
+function combatMovementSelectionActive(){
+ const p=activePlayerControlledUnit();
+ return !!(combatManualTurnActive()&&hoverHex&&!aimMode&&!clickMovementRunning&&!p.walkPresentation&&!isCombatActionPauseActive());
+}
+function combatTacticalGridVisible(){return combatManualTurnActive()&&(!!(aimMode&&!pendingAimAction?.targetSubmitted)||combatMovementSelectionActive());}
+function combatReachableMovement(unit){
+ const budget=Math.max(0,Math.floor((unit.move||0)-(unit.turnMoves||0)));
+ const signature=[unit.id,unit.x,unit.y,unit.facingHex,budget,...allUnits().map(u=>[u.id,u.x,u.y,u.facingHex,u.alive,u.fled].join(':'))].join('|');
+ const cache=combatReachableMovement.cache;
+ if(cache&&cache.game===game&&cache.signature===signature&&cache.walls===architecturalWalls)return cache.cells;
+ const start={x:unit.x,y:unit.y,facingHex:facingDirectionIndex(unit),steps:0,parent:null},queue=[start],cells=new Map(),seen=new Set();
+ const rotates=unitFootprintDefinition(unit).rotates;
+ for(let i=0;i<queue.length&&i<24000;i++){
+  const node=queue[i],id=key(node.x,node.y);if(!cells.has(id))cells.set(id,node);
+  if(node.steps>=budget)continue;
+  for(let facing=0;facing<HEX_DIRS.length;facing++){
+   const d=HEX_DIRS[facing],next={x:node.x+d.x,y:node.y+d.y,facingHex:rotates?facing:node.facingHex,steps:node.steps+1,parent:node};
+   const state=key(next.x,next.y)+':'+next.facingHex;
+   if(seen.has(state)||unitTransitionBlocked(unit,node,next,next.facingHex))continue;
+   seen.add(state);queue.push(next);
+  }
+ }
+ combatReachableMovement.cache={game,signature,walls:architecturalWalls,cells};return cells;
+}
+function roundedMovementHex(p){
+ let x=Math.round(p.x),y=Math.round(p.y),z=Math.round(-p.x-p.y);
+ const a=Math.abs(x-p.x),b=Math.abs(y-p.y),c=Math.abs(z+p.x+p.y);
+ if(a>b&&a>c)x=-y-z;else if(b>c)y=-x-z;return {x,y};
+}
+function sampleCombatWalkCurve(c,t){
+ const u=1-t;return {x:u*u*u*c[0].x+3*u*u*t*c[1].x+3*u*t*t*c[2].x+t*t*t*c[3].x,y:u*u*u*c[0].y+3*u*u*t*c[1].y+3*u*t*t*c[2].y+t*t*t*c[3].y};
+}
+function combatWalkCurveClear(unit,curve,facing){
+ // Sweep a small body disk for every occupied footprint cell. Sample in the
+ // uncompressed ground plane; also test wall crossings between samples.
+ const offsets=footprintOffsetsForFacing(unit,facing),radius=.23;
+ let previous=null;
+ for(let i=0;i<=24;i++){
+  const p=sampleCombatWalkCurve(curve,i/24);
+  for(const o of offsets)for(let k=0;k<9;k++){
+   const angle=k*Math.PI/4,dy=k===8?0:Math.sin(angle)*radius/.8660254,dx=k===8?0:Math.cos(angle)*radius-dy/2;
+   const q={x:p.x+o.x+dx,y:p.y+o.y+dy},cell=roundedMovementHex(q);
+   if(!inside(cell.x,cell.y)||isWall(cell.x,cell.y)||isFirBlockedHex(cell.x,cell.y)||occupiedByAnyUnit(cell.x,cell.y,unit.id))return false;
+   if(architecturalWallBlocksWorldLine(worldPointForHex(p.x+o.x,p.y+o.y),worldPointForHex(q.x,q.y),'movement'))return false;
+   if(previous&&architecturalWallBlocksWorldLine(worldPointForHex(previous.x+o.x+dx,previous.y+o.y+dy),worldPointForHex(q.x,q.y),'movement'))return false;
+  }
+  previous=p;
+ }
+ return true;
+}
+function prepareCombatWalkPath(unit,path,maxSteps=path.length-1){
+ const route=path.slice(0,Math.max(0,maxSteps)+1).map(p=>({...p}));
+ if(route.length<2)return route;
+ // Rounding is conservative for rotating large footprints: preserve their
+ // validated turn locations until a continuous turning footprint is available.
+ const rotating=unitFootprintDefinition(unit).rotates;
+ for(const strength of (rotating?[0]:[.18,.09,0])){
+  const points=route.map((p,i)=>i&&i<route.length-1?{x:p.x+strength*(route[i-1].x+route[i+1].x-2*p.x),y:p.y+strength*(route[i-1].y+route[i+1].y-2*p.y)}:{x:p.x,y:p.y});
+  let clear=true;
+  for(let i=1;i<route.length;i++){
+   const a=points[i-1],b=points[i],prev=points[Math.max(0,i-2)],next=points[Math.min(points.length-1,i+1)];
+   const c=strength?[a,{x:a.x+(b.x-prev.x)/6,y:a.y+(b.y-prev.y)/6},{x:b.x-(next.x-a.x)/6,y:b.y-(next.y-a.y)/6},b]:[a,{x:a.x+(b.x-a.x)/3,y:a.y+(b.y-a.y)/3},{x:a.x+2*(b.x-a.x)/3,y:a.y+2*(b.y-a.y)/3},b];
+   route[i].walkCurve=c;
+   if(strength&&!combatWalkCurveClear(unit,c,route[i].facingHex??facingDirectionIndex(unit))){clear=false;break;}
+  }
+  if(clear)return route;
+ }
+ return route;
+}
+
+function prepareCombatReactiveWalkStep(unit,next,more){
+ if(next.walkCurve)return next;
+ const m=unit.walkPresentation,t=m?.t||0;
+ const start=m?{x:m.from.x+(m.to.x-m.from.x)*t,y:m.from.y+(m.to.y-m.from.y)*t}:{x:unit.x,y:unit.y};
+ const dx=next.x-unit.x,dy=next.y-unit.y;
+ for(const amount of (unitFootprintDefinition(unit).rotates?[0]:[.08,0])){
+  const end={x:next.x+(more?-dy*amount:0),y:next.y+(more?dx*amount:0)};
+  const curve=[start,{x:start.x+(end.x-start.x)/3,y:start.y+(end.y-start.y)/3},{x:start.x+(end.x-start.x)*2/3,y:start.y+(end.y-start.y)*2/3},end];
+  if(combatWalkCurveClear(unit,curve,facingDirectionIndex(unit)))return {...next,walkCurve:curve};
+ }
+ return next;
+}
+
 // Reversible walk experiment: ?walkTest=1. Rules remain integer-hex based.
 async function presentWalkTestStep(unit,to,keepPose=false){
   if(new URLSearchParams(location.search).get('walkTest')==='0')return true;
@@ -9,11 +98,14 @@ async function presentWalkTestStep(unit,to,keepPose=false){
     chain.x===unit.x && chain.y===unit.y && now-chain.completedAt<80;
   const started=continuing ? chain.deadline : now;
   const previous=unit.walkCycleSeconds||0;
+  let curve=to.walkCurve;
+  if(curve&&!combatWalkCurveClear(unit,curve,facingDirectionIndex(unit)))curve=null;
   globalThis.adventurePartyWalkBusy=true;
   try{
     while(game===session&&!game.over&&unit.alive&&!unit.fled){
       const elapsed=Math.min(duration,Math.max(0,performance.now()-started));
-      unit.walkPresentation={from:{x:unit.x,y:unit.y},to:{x:to.x,y:to.y},t:elapsed/duration,seconds:previous+elapsed/1000};
+      const t=elapsed/duration,point=curve?sampleCombatWalkCurve(curve,t):null;
+      unit.walkPresentation={from:point||{x:unit.x,y:unit.y},to:point||{x:to.x,y:to.y},t,seconds:previous+elapsed/1000};
       // Intermediate centers are rule checkpoints, not extra held render frames.
       if(keepPose && elapsed>=duration)break;
       await presentCombatFrame();
@@ -244,6 +336,7 @@ async function animateAiAlongPath(unit,path,maxSteps){
     path.length-1
   );
 
+  path=prepareCombatWalkPath(unit,path,steps);
   let index=1;
   await animateEntitySteps(
     unit,
@@ -258,6 +351,7 @@ async function animateAiAlongPath(unit,path,maxSteps){
 // Held keyboard movement uses the same continuous segment clock as AI paths.
 let heldCombatMove=null,keyboardCombatMoveRunning=false;
 async function beginKeyboardCombatMove(code,dx,dy){
+  if(clickMovementRunning)return;
   heldCombatMove={code,dx,dy};
   if(keyboardCombatMoveRunning)return;
   const unit=activePlayerControlledUnit(),session=game;
@@ -277,7 +371,7 @@ async function beginKeyboardCombatMove(code,dx,dy){
 }
 function releaseKeyboardCombatMove(code){if(!code || heldCombatMove?.code===code)heldCombatMove=null;}
 
-async function tryPlayerMove(dx,dy,{continuous=false}={}){
+async function tryPlayerMove(dx,dy,{continuous=false,walkCurve=null}={}){
   const p=activePlayerControlledUnit();
   if(
     game.over || !p || game.active!==p.id || !p.alive || (p.walkPresentation && !continuous) ||
@@ -337,7 +431,7 @@ async function tryPlayerMove(dx,dy,{continuous=false}={}){
   }
   updateFacingForStep(p,dx,dy);
   setUnitActionBanner(p,"Moving");
-  if(!await presentWalkTestStep(p,{x:nx,y:ny},continuous))return;
+  if(!await presentWalkTestStep(p,{x:nx,y:ny,walkCurve},continuous))return;
   if(!p.alive||game.over)return;
   p.x=nx; p.y=ny; p.turnMoves+=moveCost;
   maybeRecenterCamera(p);
@@ -691,40 +785,30 @@ function pathToClosestReachable(start,target,mover,maxSteps){
   return path;
 }
 
-function clickPathStep(targetHex){
-  const p=activePlayerControlledUnit();
-  if(game?.over || !p || game?.active!==p.id || !p.alive || aimMode || isCombatActionPauseActive()) return;
-
-  if(targetHex.x===p.x && targetHex.y===p.y) return;
-  const clickedEnemy=enemyAtHex(targetHex.x,targetHex.y);
-  let path;
-
-  if(clickedEnemy){
-    if(canMeleeReach(p,clickedEnemy)){
-      const contact=occupiedHexes(clickedEnemy).find(cell=>
-        hexDistance(p,cell)===1 &&
-        !architecturalWallBlocksStep(p,cell)
-      );
-
-      if(contact){
-        tryPlayerMove(contact.x-p.x,contact.y-p.y);
-      }
-      return;
-    }
-    path=pathToAdjacent(p,clickedEnemy,p);
-  }else{
-    path=pathToHex(p,targetHex,p);
+async function clickPathStep(targetHex){
+ const p=activePlayerControlledUnit(),session=game;
+ if(game?.over||!p||game.active!==p.id||!p.alive||aimMode||clickMovementRunning||p.walkPresentation||isCombatActionPauseActive())return;
+ const enemy=enemyAtHex(targetHex.x,targetHex.y);
+ if(enemy&&canMeleeReach(p,enemy)){
+  const contact=occupiedHexes(enemy).find(c=>hexDistance(p,c)===1&&!architecturalWallBlocksStep(p,c));
+  if(contact)await tryPlayerMove(contact.x-p.x,contact.y-p.y);return;
+ }
+ // Use exactly the same bounded search as the green movement overlay.
+ combatReachableMovement.cache=null;
+ const node=combatReachableMovement(p).get(key(targetHex.x,targetHex.y));
+ if(!node||!node.steps){if(!node)log('That destination is outside your available movement or blocked.','system');return;}
+ const path=[];for(let n=node;n;n=n.parent)path.push({x:n.x,y:n.y,facingHex:n.facingHex});path.reverse();
+ const route=prepareCombatWalkPath(p,path);
+ clickMovementRunning=true;
+ try{
+  for(const next of route.slice(1)){
+   if(game!==session||game.over||game.active!==p.id||!p.alive||p.fled||aimMode)break;
+   if(unitTransitionBlocked(p,p,next,next.facingHex))break;
+   const x=p.x,y=p.y;
+   await tryPlayerMove(next.x-x,next.y-y,{continuous:true,walkCurve:next.walkCurve});
+   if(p.x!==next.x||p.y!==next.y)break;
   }
-
-  if(!path || path.length<2){ log("No path to that hex.","system"); return; }
-  const next=path[1];
-  const dx=next.x-p.x;
-  const dy=next.y-p.y;
-  if(!HEX_DIRS.some(dir=>dir.x===dx && dir.y===dy)){
-    log("Pathfinding could not produce a legal next step.","system");
-    return;
-  }
-  tryPlayerMove(dx,dy);
+ }finally{clickMovementRunning=false;delete p.walkPresentation;delete p.walkStepClock;combatReachableMovement.cache=null;draw();}
 }
 
 function fleeStep(unit,threat){
@@ -902,7 +986,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       );
     }
 
-    if(mode==='visible'&&!await presentWalkTestStep(entity,next,true))return false;
+    if(mode==='visible'&&!await presentWalkTestStep(entity,prepareCombatReactiveWalkStep(entity,next,i<steps-1),true))return false;
     if(!entity.alive||game.over)return false;
     entity.x=next.x;
     entity.y=next.y;
@@ -964,6 +1048,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
 }
 
 async function animateMobAlongPath(mob,path,maxSteps){
+  path=prepareCombatWalkPath(mob,path,maxSteps);
   try{
   const steps=Math.min(maxSteps,Math.max(0,path.length-1));
   const senseContext=createHiddenMobMovementSenseContext();

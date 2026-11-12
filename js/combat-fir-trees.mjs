@@ -158,7 +158,7 @@ export async function createCombatFirTrees(){
     if(lost)return null;
     const capAmount=burning||burnt?0:Math.round(Math.max(0,Math.min(1,snowAmount))*100)/100;
     snowCoverage.value=0; // Keep green foliage; snow is separate geometry.
-    const nextKey=[solar.hour,ambient,viewRotation,capAmount].join(':');
+    const nextKey=[solar.lightingKey??solar.hour,ambient,viewRotation,capAmount].join(':');
     if(nextKey!==stateKey){cache.clear();stateKey=nextKey;}
     const key=variant+':'+rotation+':'+instanceKey+':'+burnt;
     const cached=cache.get(key),active=liveLighting?lights.slice(0,4):[],lightKey=JSON.stringify(active)+(burning?":"+Math.floor(performance.now()/33):"");
@@ -188,7 +188,7 @@ export async function createCombatFirTrees(){
     snowCaps[variant].set(direct?.ground?0:capAmount);
     const model=models[variant];model.traverse(mesh=>{if(mesh.isMesh&&mesh.material.alphaTest>0)mesh.visible=!burnt;});model.rotation.y=rotation*Math.PI/6;scene.add(model);
     if(direct){
-      const nextSunKey=[solar.hour,viewRotation].join(':');if(nextSunKey!==directSunKey){clearDirectShadows();directSunKey=nextSunKey;}
+      const nextSunKey=[solar.lightingKey??solar.hour,viewRotation].join(':');if(nextSunKey!==directSunKey){for(const entry of directGroundCache.values())entry.target.dispose();directGroundCache.clear();for(const entry of directSelfCache.values())entry.needsUpdate=true;directSunKey=nextSunKey;}
       if(direct.ground){let shadow=null;try{if(solar.altitude>0)shadow=directGround(model,variant,rotation,burnt,light,solar,direct.host);}finally{scene.remove(model);}return {shadow,direct:true};}
     }
     if(!direct)renderer.setSize(384,512,false);
@@ -213,7 +213,7 @@ export async function createCombatFirTrees(){
     renderer.render(scene,camera);scene.remove(flames);
     const body=document.createElement('canvas');body.width=384;body.height=512;
     body.getContext('2d').drawImage(renderer.domElement,0,0);
-    const nextShadowState=[solar.hour,viewRotation].join(':');if(nextShadowState!==shadowState){shadowCache.clear();shadowState=nextShadowState;}
+    const nextShadowState=[solar.lightingKey??solar.hour,viewRotation].join(':');if(nextShadowState!==shadowState){shadowCache.clear();shadowState=nextShadowState;}
     const shadowKey=[variant,rotation,burnt].join(':');
     let shadow=shadowCache.get(shadowKey)||null;
     if(solar.altitude>0&&!shadow){
@@ -250,7 +250,7 @@ export async function createCombatFirTrees(){
     const key=[variant,rotation,burnt].join(':');if(silhouetteCache.has(key))return silhouetteCache.get(key);
     const body=get(variant,rotation,{solar:solarState(0),ambient:0,burnt}).body;silhouetteCache.set(key,body);return body;
   }
-  return {get,silhouette,clearDirectShadows,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
+  return {canopyRadius(variant){const b=treeBounds[variant]?.healthy;return b?Math.max(b.max.x-b.min.x,b.max.z-b.min.z)/2:0;},get,silhouette,clearDirectShadows,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
 }
 
 function addCanopyExposure(geometry){

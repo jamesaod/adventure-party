@@ -114,6 +114,7 @@ async function r226CastHoldPerson(action,targetHex){
   const savePenalty=candidates.length<=1 ? -3 : candidates.length===2 ? -1 : 0;
   const held=[];
   for(const unit of candidates){
+    if(resistRacialSpell(unit,spell))continue;
     const save=rollSpellSave(unit,caster,savePenalty);
     if(save.success) continue;
     addUnitEffect(unit,{

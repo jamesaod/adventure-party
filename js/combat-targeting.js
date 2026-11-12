@@ -309,7 +309,7 @@ function validCreatureTargetWithinRange(caster,target,spell,casterLevel,allowFri
 }
 
 async function resolveAimAction(){
-  if(!aimMode || !game || game.over) return false;
+  if(!aimMode || !game || game.over || pendingAimAction?.targetSubmitted) return false;
 
   const target=unitAtHex(aimCursor.x,aimCursor.y);
 
@@ -337,11 +337,20 @@ async function resolveAimAction(){
       return false;
     }
 
-    return await castPreparedCombatSpell(
-      action,
-      {x:aimCursor.x,y:aimCursor.y},
-      target
-    );
+    // Hide targeting immediately, before asynchronous framing and casting.
+    const submittedAction=pendingAimAction;
+    const targetHex={x:aimCursor.x,y:aimCursor.y};
+    submittedAction.targetSubmitted=true;
+    draw();
+    try{
+      return await castPreparedCombatSpell(action,targetHex,target);
+    }finally{
+      // Rejected targets retain AIM so the player can choose again.
+      if(pendingAimAction===submittedAction){
+        delete submittedAction.targetSubmitted;
+        draw();
+      }
+    }
   }
 
   const actor=activePlayerControlledUnit();

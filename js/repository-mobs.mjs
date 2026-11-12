@@ -1,6 +1,6 @@
 import * as armorRules from './armor-rules.mjs?v=R238C274';
 if(typeof window!=='undefined')window.adventurePartyArmorRules=armorRules;
-import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C204';
+import {loadMobLibrary,encounterReadiness} from './mob-library.mjs?v=R238C313';
 import {generateMobRules} from './mob-class-rules.mjs?v=R238C203';
 import {sampleGeneration} from './mob-generation.mjs?v=R238C204';
 import {resolveEquipmentLibrary} from './equipment-library-core.mjs?v=R238C204';
@@ -8,8 +8,8 @@ import {normalizeMobDefinition} from './mob-definition.mjs?v=R238C204';
 import {poseWithFallback} from './pose-fallbacks.mjs?v=R238C176';
 import {spriteLayoutDimensions} from './sprite-layouts.mjs?v=R238C202';
 import {CAMERA_ELEVATION} from './studio-core.mjs?v=R238C99';
-import {isWorkshopUnit} from './workshop-unit-package.mjs';
-import {createWorkshopRepositoryMob} from './workshop-repository-mob.mjs';
+import {isWorkshopUnit} from './workshop-unit-package.mjs?v=R238C313';
+import {createWorkshopRepositoryMob} from './workshop-repository-mob.mjs?v=R238C313';
 
 export function createRepositoryMob(template,catalog){
  if(isWorkshopUnit(template))return createWorkshopRepositoryMob(template);

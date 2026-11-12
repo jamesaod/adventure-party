@@ -1,3 +1,6 @@
+/* Presentation dependencies: playBowReleaseSound/playBowImpactSound in bow-audio.js;
+ * presentCombatFrame in the shared scheduler bridge. No independent frame loop.
+ */
 /* Combat owner: combat-effect-animation.js. Classic-script boundary; shared engine state and
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
@@ -27,19 +30,25 @@ function combatArrowShadowPoint(screen,elevation=0,wall=null){
 
 // Shared physical-arrow silhouette for flight and retained impacts.
 function drawCombatArrowSilhouette(tail,tip,{tailHeight=16,tipHeight=16,wall=null}={}){
+  const visual=globalThis.AdventurePartyArrowVisual;
   function shape(a,b,isShadow){
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1;
     const ux=dx/length,uy=dy/length,nx=-uy,ny=ux;
-    ctx.strokeStyle=isShadow?'rgba(0,0,0,.38)':'#080808';ctx.lineWidth=isShadow?.9:.85;
+    ctx.strokeStyle=isShadow?'rgba(0,0,0,.38)':visual.wood;ctx.lineWidth=visual.shaftWidth;
     ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-    ctx.strokeStyle=isShadow?'rgba(0,0,0,.38)':'#ffffff';ctx.lineWidth=.8;
+    ctx.strokeStyle=isShadow?'rgba(0,0,0,.38)':visual.feather;ctx.lineWidth=visual.featherStroke;
     // Long, narrow vanes hug the rear of the shaft instead of flaring into a V.
     ctx.beginPath();
     for(const side of [-1,1]){
-      ctx.moveTo(a.x+ux*.7+nx*side*.6,a.y+uy*.7+ny*side*.6);
-      ctx.lineTo(a.x+ux*5+nx*side*.6,a.y+uy*5+ny*side*.6);
+      ctx.moveTo(a.x+ux*visual.featherStart+nx*side*(visual.featherWidth-visual.featherStroke)/2,a.y+uy*visual.featherStart+ny*side*(visual.featherWidth-visual.featherStroke)/2);
+      ctx.lineTo(a.x+ux*(visual.featherStart+visual.featherLength)+nx*side*(visual.featherWidth-visual.featherStroke)/2,a.y+uy*(visual.featherStart+visual.featherLength)+ny*side*(visual.featherWidth-visual.featherStroke)/2);
     }
     ctx.stroke();
+    ctx.fillStyle=isShadow?'rgba(0,0,0,.38)':visual.head;
+    ctx.beginPath();ctx.moveTo(b.x+ux*visual.headLength,b.y+uy*visual.headLength);
+    ctx.lineTo(b.x+nx*visual.headWidth/2,b.y+ny*visual.headWidth/2);
+    ctx.lineTo(b.x-nx*visual.headWidth/2,b.y-ny*visual.headWidth/2);
+    ctx.closePath();ctx.fill();
   }
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
   if(typeof combatGpu!=='undefined'&&combatGpu?.projectedShadows){if(wall)queueCombatArrowGpuShadow(tail,tip,{tailHeight,tipHeight,wall});}
@@ -54,10 +63,8 @@ async function animateArrowProjectile(attacker,defender,hit){
   const from=hexCenter(attacker.x,attacker.y);
   const to=hexCenter(defender.x,defender.y);
 
-  const startPoint={
-    x:from.x,
-    y:from.y-16
-  };
+  const startPoint=attacker.bowReleaseScreenPoint||{x:from.x,y:from.y-16};
+  delete attacker.bowReleaseScreenPoint;
 
   const environmentImpact=defender.environmentImpact||(!hit&&typeof resolveEnvironmentArrow==='function'?resolveEnvironmentArrow(attacker,defender):null);
   const endPoint=environmentImpact?environmentArrowScreen(environmentImpact):hit
@@ -74,6 +81,7 @@ async function animateArrowProjectile(attacker,defender,hit){
     Math.min(300,100+distance*0.22)
   ));
 
+  const bowFlight=playBowReleaseSound(attacker);
   const started=performance.now();
 
   let ownedFx=null;
@@ -90,13 +98,16 @@ async function animateArrowProjectile(attacker,defender,hit){
     };
 
     await presentCombatFrame();
-    if(projectileFx!==ownedFx)return;
+    if(projectileFx!==ownedFx){bowFlight?.stop();return {cancelled:true};}
 
     if(t>=1) break;
 
   }
 
   projectileFx=null;
+  // Any failed shot, including walls, ground, glass and stray arrows, uses Mud Thud.
+  // Successful target contact is confirmed by the resolver after Mirror Image.
+  if(!hit)playBowImpactSound(attacker,false);
   if(environmentImpact)await finishEnvironmentArrow(attacker,environmentImpact);
   await presentCombatFrame();
 }
@@ -445,13 +456,6 @@ function drawFlowingFlame(x,y,width,height,time,seed=0,alpha=1){
     ctx.beginPath();ctx.moveTo(x-w*.5,y);ctx.bezierCurveTo(x-w,y-h*.4,x+sway-w*.2,y-h*.75,x+sway,y-h);ctx.bezierCurveTo(x+sway+w*.5,y-h*.65,x+w*.7,y-h*.2,x+w*.5,y);ctx.fill();
   }ctx.restore();
 }
-function drawFlamingSword(image,entity,w,h,anchor){
-  if(!entity?.alive||getUnitEffect(entity,'invisibility'))return;
-  const blade=globalThis.adventurePartyFlamingBlades?.get(image);if(!blade)return;
-  const now=performance.now(),ox=-Math.round(w*anchor.x),oy=-Math.round(h*anchor.y);
-  for(let i=0;i<blade.length;i++){const point=blade[i];if(point.blocked)continue;const x=ox+w*point.x,y=oy+h*point.y;drawFlowingFlame(x,y,h*.018,h*(.045+.012*Math.sin(i+now*.008)),now,i*1.7,.8);}
-}
-
 // One decoded asset, independent positioned voices; only active fires allocate nodes.
 const burningTreeAudio={buffer:null,pending:null,failed:false,voices:new Map(),timer:null,next:0};
 function syncBurningTreeAudio(){

@@ -1,6 +1,7 @@
 {
   "format": 1,
   "owners": [
+    "combat-racial-traits.js",
     "combat-turn-flow.js",
     "combat-melee-actions.js",
     "combat-movement.js",

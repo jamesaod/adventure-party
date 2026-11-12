@@ -8,7 +8,8 @@ export function createWorkshopFit({THREE,scene,camera,renderer,controls,managers
  function detach(){gizmo.detach();start=null;controls.enabled=true;}
  function refresh(){
   detach();const socket=manager().getAttachmentSocket();
-  $('fitBone').textContent=socket?'Attached to '+socket.parent.name+' · catalog grip origin':'Choose a weapon or shield to fit.';
+  $('fitBone').textContent=getSlot()==='quiverArrows'?(socket?'Arrow bundle · offsets from the quiver pickup point':'Bundle handles need a bow and a Bow animation with time before String Draw.'):
+   socket?'Attached to '+socket.parent.name+' · catalog grip origin':'Choose equipment to fit. For Back, select Quiver to enable its handles.';
   if(socket&&isActive()&&$('fitEnabled').checked)gizmo.attach(socket);
  }
  gizmo.addEventListener('dragging-changed',e=>{controls.enabled=!e.value;if(e.value){pause();start=captureFit(THREE,gizmo.object,manager().snapshot().settings,getSlot()==='shield');}else start=null;});

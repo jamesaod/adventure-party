@@ -52,6 +52,7 @@ function humanoidRigBasis(THREE, model) {
 }
 
 function targetBindData(THREE, model) {
+  model?.updateWorldMatrix(true, true);
   const byRole = new Map();
   const worldByBone = new Map();
   const roleByBone = semanticRoleByBone(model);
@@ -60,8 +61,11 @@ function targetBindData(THREE, model) {
     if (!object.isSkinnedMesh) return;
     const skeleton = object.skeleton;
     if (!skeleton?.bones?.length || skeleton.boneInverses.length !== skeleton.bones.length) return;
+    // Bring authored bind matrices into the same world frame as the preview.
+    // This includes the external up-axis/height holder without altering skin binds.
+    const bindToWorld = object.matrixWorld.clone().multiply(object.bindMatrix.clone().invert());
     skeleton.bones.forEach((bone, index) => {
-      if (!worldByBone.has(bone)) worldByBone.set(bone, skeleton.boneInverses[index].clone().invert());
+      if (!worldByBone.has(bone)) worldByBone.set(bone, bindToWorld.clone().multiply(skeleton.boneInverses[index].clone().invert()));
     });
   });
 
@@ -322,7 +326,7 @@ export function retargetHumanoidClip(THREE, clip, sourceModel, targetModel, labe
             ? desiredWorld.get(parentRole)
             : parentRole && target.has(parentRole)
               ? target.get(parentRole).bindWorldQuaternion
-              : new THREE.Quaternion();
+              : targetInfo.bone.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
           const local = parentWorld.clone().invert().multiply(targetWorld).normalize();
           valuesByRole.get(role).push(local.x,local.y,local.z,local.w);
           pending.delete(role);

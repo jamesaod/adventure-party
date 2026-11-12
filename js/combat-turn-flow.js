@@ -1,3 +1,5 @@
+// Temporary normal-combat-test convenience; never applies to other units or exploration.
+function isCarlCombatTestOverride(unit){return unit?.id==='player'&&unit?.name==='Dungeon Crawler Carl'&&!(typeof explorationEncounter!=='undefined'&&explorationEncounter);}
 /* Shared combat turn/initiative owner. Preserve existing status, result-hold,
  * player/AI and session-pause ordering. Casting records remain lifecycle-owned. */
 function rollInitiative(){
@@ -29,6 +31,7 @@ function rollUnitInitiative(){
 function applyInitiativeEffects(rolls){
   for(const entry of rolls){
     const unit=getUnitById(entry.id);
+    if(isCarlCombatTestOverride(unit)){entry.roll=-100;entry.tie=-100;continue;}
     if(getUnitEffect(unit,"haste")) entry.roll=Math.max(0,entry.roll-2);
   }
   rolls.sort((a,b)=>a.roll-b.roll || a.tie-b.tie || a.id.localeCompare(b.id));
@@ -107,6 +110,10 @@ async function beginUnitTurn(){
     beginTurn();
     return;
   }
+
+  const visualCheckGame=game,visualCheckTurn=game.turnIndex;
+  if(typeof reconcileCombatEquipmentVisual==="function")await reconcileCombatEquipmentVisual(actor);
+  if(game!==visualCheckGame||game.over||game.turnIndex!==visualCheckTurn)return;
 
   game.active=actorId;
   if(typeof beginCombatResultTurn==="function")beginCombatResultTurn(actorId);

@@ -1,5 +1,5 @@
-import {solarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C274';
-import {treeAntialiasing,setTreeAntialiasing,observeTreeAntialiasing} from './combat-tree-antialiasing.mjs';
+import {solarState,weatherSolarState,solarTimeLabel,hourFromPointer,wrapHour} from './solar-clock.mjs?v=R238C274';
+import {installGrassSelector} from './combat-grass-selector.mjs';
 window.adventurePartySnow={intensity:0,showFlakes:true,paused:false,revision:0};
 let snowFrame=null;
 function tickSnow(){snowFrame=null;if(document.hidden||!host?.getClientRects().length)return;window.dispatchEvent(new Event("adventure-party:snow-change"));if(!window.adventurePartySnow.paused&&(window.adventurePartySnow.intensity||window.adventurePartySnow.activeCount))snowFrame=window.requestCombatAnimationTick(tickSnow);}
@@ -9,7 +9,9 @@ let wallShadows=new URLSearchParams(location.search).get('wallSunShadows')!=='of
 let dayTestFrame=null,dayTestRunning=false,dayTestMinute=720;
 let committed=12,pending=12,committedState=solarState(12),timer=null,dragging=false;
 const commit=()=>{clearTimeout(timer);timer=null;if(committed===pending)return;committed=pending;committedState=solarState(committed);window.dispatchEvent(new CustomEvent('adventure-party:solar-change',{detail:committedState}));};
-window.adventurePartySolar={state:()=>committedState,wallShadows:()=>wallShadows,setHour(hour){stopDayTest();pending=Math.round(wrapHour(hour)*6)/6%24;paint();commit();}};
+let visualKey='',visualState=null;
+function currentVisualSolar(){const weather=window.getWeatherSnapshot?.()||{};const snow=window.adventurePartySnow?.intensity||0;const effective=snow>0?{type:'snow',intensity:snow}:weather;const key=[committed,effective.type,effective.intensity].join(':');if(key!==visualKey){visualKey=key;visualState=weatherSolarState(committedState,effective);}return visualState;}
+window.adventurePartySolar={state:currentVisualSolar,wallShadows:()=>wallShadows,setHour(hour){stopDayTest();pending=Math.round(wrapHour(hour)*6)/6%24;paint();commit();}};
 function stopDayTest(){
  dayTestRunning=false;if(dayTestFrame!==null)window.cancelCombatAnimationTick(dayTestFrame);dayTestFrame=null;
  const button=host?.querySelector('#solarDayTest');if(button){button.setAttribute('aria-pressed','false');button.textContent='DAY TEST: OFF';}
@@ -46,17 +48,17 @@ if(host){
  <g class="solar-numerals" fill="#eed38b" text-anchor="middle"><text x="100" y="21">XII</text><text x="18" y="105">VI</text><text x="181" y="105">XVIII</text><text x="100" y="188">XXIV</text></g>
  <line class="solar-hand" x1="100" y1="100" stroke="#e1bc62" stroke-width="2"/><circle cx="100" cy="100" r="5" fill="#d8ad51" stroke="#f8e3a3"/>
  <g class="solar-marker" fill="#ffe49a" stroke="#bd8731"><path d="M0-12L3-7L9-9L7-3L12 0L7 3L9 9L3 7L0 12L-3 7L-9 9L-7 3L-12 0L-7-3L-9-9L-3-7Z"/><circle r="6"/></g></svg>
- <div class="solar-time"></div><div class="solar-position"></div><small>EQUINOX · 38° N</small><label class="wall-shadow-toggle"><input id="wallSunShadows" type="checkbox"> WALL SHADOWS</label><button id="solarDayTest" type="button" aria-pressed="false" title="Animate one solar minute per combat frame (30 FPS target)">DAY TEST: OFF</button><label style="display:block;margin-top:10px">SNOWFALL <output id="snowAmount">0%</output><input id="combatSnowCoverage" aria-label="Snowfall intensity" type="range" min="0" max="100" value="0" style="display:block;width:100%"></label><label style="display:block"><input id="snowFlakes" type="checkbox" checked> FALLING FLAKES</label><button id="snowPause" type="button">PAUSE SNOW</button><button id="snowClear" type="button">CLEAR SNOW</button>`;
- host.insertAdjacentHTML('beforeend','<label style="display:block;margin-top:10px">TREE ANTIALIASING <output id="treeAAAmount"></output><input id="treeAA" aria-label="Tree antialiasing" type="range" min="0" step="1" style="display:block;width:100%"></label>');
- const treeAA=host.querySelector('#treeAA');
- observeTreeAntialiasing(({levels,samples})=>{treeAA.max=levels.length-1;treeAA.value=levels.indexOf(samples);treeAA.disabled=levels.length===1;const label=samples?samples+'×':'OFF';treeAA.setAttribute('aria-valuetext',label);host.querySelector('#treeAAAmount').textContent=label;treeAA.title=levels.length===1?'Multisampling unavailable on this device':'Supported levels: '+levels.map(n=>n?n+'×':'Off').join(', ');});
- treeAA.addEventListener('input',()=>{setTreeAntialiasing(treeAntialiasing().levels[Number(treeAA.value)]);window.dispatchEvent(new Event('adventure-party:tree-aa-change'));});
- for(const name of ['keydown','keyup','pointerdown'])treeAA.addEventListener(name,e=>e.stopPropagation());
+ <div class="solar-time"></div><div class="solar-position"></div><small>EQUINOX · 38° N</small><label class="wall-shadow-toggle"><input id="wallSunShadows" type="checkbox"> WALL SHADOWS</label><button id="solarDayTest" type="button" aria-pressed="false" title="Animate one solar minute per combat frame (30 FPS target)">DAY TEST: OFF</button><label style="display:block;margin-top:10px">SNOWFALL <output id="snowAmount">0%</output><input id="combatSnowCoverage" aria-label="Snowfall intensity" type="range" min="0" max="100" value="0" style="display:block;width:100%"></label><label style="display:block"><input id="snowFlakes" type="checkbox" checked> FALLING FLAKES</label><button id="snowPause" type="button">PAUSE SNOW</button><button id="snowClear" type="button">CLEAR SNOW</button><div style="display:flex;gap:4px;margin-top:4px"><button id="snowLess" type="button" style="flex:1" aria-label="Subtract three inches of snow">−3 INCHES</button><button id="snowMore" type="button" style="flex:1" aria-label="Add three inches of snow">+3 INCHES</button></div><button id="performanceToggle" type="button" aria-pressed="true">HIDE PERFORMANCE STATS</button>`;
+ installGrassSelector(host);
+ window.adventurePartyShowPerformance=true;
+ const performanceToggle=host.querySelector('#performanceToggle');
+ performanceToggle.addEventListener('click',()=>{const shown=window.adventurePartyShowPerformance=!window.adventurePartyShowPerformance;performanceToggle.textContent=shown?'HIDE PERFORMANCE STATS':'SHOW PERFORMANCE STATS';performanceToggle.setAttribute('aria-pressed',String(shown));window.draw?.();});
+ for(const name of ['keydown','keyup'])performanceToggle.addEventListener(name,e=>e.stopPropagation());
  const flakesToggle=host.querySelector('#snowFlakes');flakesToggle.addEventListener('change',()=>{window.adventurePartySnow.showFlakes=flakesToggle.checked;wakeSnow();});for(const name of ['keydown','keyup'])flakesToggle.addEventListener(name,e=>e.stopPropagation());
  const snow=host.querySelector('#combatSnowCoverage');
  snow.addEventListener('input',()=>{window.adventurePartySnow.intensity=Number(snow.value)/100;wakeSnow();host.querySelector('#snowAmount').textContent=snow.value+'%';window.dispatchEvent(new Event('adventure-party:snow-change'));});
  for(const name of ['keydown','keyup','pointerdown'])snow.addEventListener(name,e=>e.stopPropagation());
- for(const id of ['snowPause','snowClear']){const button=host.querySelector('#'+id);for(const name of ['keydown','keyup'])button.addEventListener(name,e=>e.stopPropagation());button.addEventListener('click',()=>{const state=window.adventurePartySnow;if(id==='snowClear')state.revision++;else{state.paused=!state.paused;button.textContent=state.paused?'RESUME SNOW':'PAUSE SNOW';}window.dispatchEvent(new Event('adventure-party:snow-change'));wakeSnow();});}
+ for(const id of ['snowPause','snowClear','snowLess','snowMore']){const button=host.querySelector('#'+id);for(const name of ['keydown','keyup'])button.addEventListener(name,e=>e.stopPropagation());button.addEventListener('click',()=>{const state=window.adventurePartySnow;if(id==='snowClear'){state.fillRequested=false;state.depthAdjustments=[];state.revision++;}else if(id==='snowLess'||id==='snowMore')(state.depthAdjustments??=[]).push(id==='snowMore'?3:-3);else{state.paused=!state.paused;button.textContent=state.paused?'RESUME SNOW':'PAUSE SNOW';}window.dispatchEvent(new Event('adventure-party:snow-change'));wakeSnow();});}
  addEventListener('visibilitychange',()=>{if(!document.hidden&&window.adventurePartySnow.intensity)wakeSnow();});
  const testButton=host.querySelector('#solarDayTest');testButton.addEventListener('click',event=>{event.stopPropagation();toggleDayTest();});for(const name of ['keydown','keyup'])testButton.addEventListener(name,event=>event.stopPropagation());
  const shadowToggle=host.querySelector('#wallSunShadows');shadowToggle.checked=wallShadows;
