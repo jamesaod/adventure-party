@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
-const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const extract=name=>{const start=source.indexOf('function '+name+'(');return source.slice(start,source.indexOf('\nfunction ',start+1));};
 const context=vm.createContext({getMissileCatalogEntry:id=>id==='bow-short'?{id,ammoId:'arrows',rateOfFire:2,rangeIncrementFt:50}:null,getWeaponCatalogEntry:id=>id==='arrows'?{name:'Arrows'}:null});
 for(const name of ['equipCarlBowForCombatTest','syncRepositoryMissileEquipment','consumeMissileAmmo'])vm.runInContext(extract(name),context);

@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {ambientContactShare,featherTrunkShelter} from '../js/combat-fir-contact.mjs';
+import {configureSnowShelter,snowExposureAt,snowShelterUniforms} from '../js/combat-snow-shelter.mjs?v=tree-snow-grains1';
+assert.equal(ambientContactShare(0,12,3),0,'Contact cannot remove direct-only illumination');
+assert.equal(ambientContactShare(2,0),1,'Overcast/night ambient retains contact');
+assert(ambientContactShare(2,12)<ambientContactShare(2,0));
+assert(ambientContactShare(2,12,4)<ambientContactShare(2,12));
+const ambient=5,sun=12,local=3,occlusion=.48;
+assert.equal((ambient+sun+local)*(1-occlusion*ambientContactShare(ambient,sun,local)),ambient*(1-occlusion)+sun+local,'Only ambient contribution is removed');
+configureSnowShelter([{x:0,y:0,radius:40}],[-100,-100,200,200],40,.57);
+const texture=snowShelterUniforms.snowShelter.value;featherTrunkShelter(texture.image.data);
+assert.equal(snowExposureAt(0,0),0);assert(snowExposureAt(15,0)<.001,'Protected inner ring');
+const samples=[16,20,24,28,32,36,40,45].map(x=>snowExposureAt(x,0));
+for(let i=1;i<samples.length;i++)assert(samples[i]>=samples[i-1]);
+assert(samples[3]>0&&samples[3]<1);assert.equal(samples.at(-1),1);
+assert(Math.abs(snowExposureAt(24,0)-snowExposureAt(0,24*.57))<.015,'Feather is circular in ground coordinates');
+assert.equal(snowShelterUniforms.snowShelter.value,texture,'All snow consumers share one field');
+console.log('PASS ambient-only contact, sun/local-light preservation, protected trunk ring and shared feathered shelter');

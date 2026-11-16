@@ -1,13 +1,14 @@
+// Retired standalone Studio UI assertions removed; shared runtime tests remain.
 import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const renderer=readCombatFixture(new URL('../js/combat-mob-renderer.mjs', import.meta.url),'utf8');
+const renderer=readCombatFixture(new URL('../js/combat-mob-renderer.mjs?v=tree-snow-grains1', import.meta.url),'utf8');
 const recipe=readCombatFixture(new URL('../js/combat-pose-recipe.mjs', import.meta.url),'utf8');
-const game=readCombatFixture(new URL('../js/adventure-party.js', import.meta.url),'utf8');
-const studio=readCombatFixture(new URL('../js/3d-studio.mjs', import.meta.url),'utf8');
+const game=readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url),'utf8');
+
 const index=readCombatFixture(new URL('../index.html', import.meta.url),'utf8');
-const studioHtml=readCombatFixture(new URL('../3d-studio.html', import.meta.url),'utf8');
+
 
 for(const token of [
   "const WINDUP_POSES = SPRITE_POSES;",
@@ -50,7 +51,7 @@ for(const token of [
 ]) assert.ok(recipe.includes(token), `capture recipe missing ${token}`);
 
 assert.ok(game.includes('markMobAppearanceDirty(player,{reason:"combat-start"})'));
-assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")'));
+assert.ok(game.includes('moduleUrl("js/mob-appearance-runtime.mjs?v=R238C432")'));
 assert.match(game,/moduleUrl\("js\/combat-prepared-assets\.mjs\?v=[^"]+"\)/,'Combat loads the shared prepared asset owner with a cache version');
 assert.ok(game.includes('new URL("js/combat-pose-recipe.mjs?v=R238C202",document.baseURI)'));
 assert.ok(!renderer.includes('const flipped=new Uint8Array'), 'runtime renderer must not pre-flip before quantizeRgba');
@@ -69,19 +70,18 @@ assert.ok(renderer.includes("battlefieldCanvas=quantizedCanvas(") &&
   'Dynamic equipment renderer must downsample before VGA quantization');
 assert.ok(renderer.includes("[images[file],runtimeImages[runtimeFile]]=await Promise.all([loadImage(src),loadImage(runtimeSrc)])"),
   'Dynamic equipment renderer returns dedicated native combat images');
-assert.ok(game.includes('window.adventurePartySpriteSets?.register(result.spriteSet)'));
+assert.ok(game.includes('runtime.registerAppearance(result.spriteSet,'));
+assert.ok(game.includes('window.adventurePartySpriteSets?.register(set)'));
 assert.ok(game.includes('unit.dynamicAppearanceSpriteSetId=spriteSetId'));
-assert.ok(studio.includes('clipSourceId: animationSourceId'));
-assert.ok(studio.includes('state.previewReferenceBounds'));
-assert.ok(studio.includes('shieldEquipment'));
-assert.ok(studio.includes('distanceInches'));
-assert.ok(studio.includes('forearmSlideInches'));
-assert.ok(studio.includes('forearmRollDegrees'));
-for(const id of ['studioShieldScale','studioShieldDistance','studioShieldForearmSlide','studioShieldForearmRoll','studioResetShieldButton']){
-  assert.ok(studioHtml.includes(`id="${id}"`), `Studio shield control missing ${id}`);
-}
-assert.ok(studio.includes('renderFallbackPreviews'));
-assert.ok(studio.includes("ctx.strokeStyle = '#e3ca79'"));
+
+
+
+
+
+
+
+
+
 assert.ok(index.includes('<script type="importmap">'));
 assert.ok(index.includes('"three": "./assets/vendor/three/three.module.min.js"'));
 console.log('PASS captured-pose combat generation, upright runtime frames, weapon/shield refresh and Studio QA integration');
@@ -108,3 +108,6 @@ assert.ok(Math.abs(new THREE.Box3().setFromObject(explicit,true).getSize(new THR
 const capturedScene=bodyBuilder(body(),{renderSettings:{modelScalePercent:125,hexScalePercent:109,transform:{placement:{scale:3,position:[0,0,0]},upAxis:'Y',heading:0}}});
 assert.ok(Math.abs(new THREE.Box3().setFromObject(capturedScene,true).getSize(new THREE.Vector3()).y-8.175)<1e-6,'Studio placement must not acquire the legacy fallback factor');
 console.log('PASS delayed fallback body scale and exact Studio scale preservation');
+
+
+

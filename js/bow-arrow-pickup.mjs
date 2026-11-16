@@ -1,3 +1,4 @@
+import {muteBowLeather} from './muted-bow-leather.mjs';
 import {findHumanoidBone} from './humanoid-rig.mjs';
 import {ARROW_VISUAL} from './arrow-visual-profile.mjs?v=R238C305';
 import {normalizeQuiverArrows,quiverArrowOffset} from './quiver-arrow-settings.mjs?v=R238C312';
@@ -33,6 +34,7 @@ export function createBowArrowPickup(THREE,rig,nockBone,arrow){
   return ['nocked','released'].includes(state?.phase)?1:settings.widthPercent/100;
  }
  function calibrate(model,{arrowSocket=null,bundleSettings}={}){
+  if(model&&!arrowSocket)muteBowLeather(model);
   clear();ownsQuiver=!arrowSocket;quiverBody=arrowSocket?null:model;
   if(arrowSocket)quiver=arrowSocket;
   else{

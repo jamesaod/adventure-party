@@ -1,0 +1,78 @@
+{
+  "source": "SweetBirch_Green.spm / SweetBirch_Green_LOD1.obj",
+  "method": "Eight original connected major limbs; smaller connected branches assigned to nearest major limb. Bark geometry/UVs retained; mesh pivots centered for tumbling. Bare wood prototype; no new SpeedTree source authored.",
+  "pieces": [
+    {
+      "name": "Birch_detached_limb_1",
+      "triangles": 360,
+      "origin": [
+        10.116439415478759,
+        416.5108909453177,
+        8.974649176288844
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_2",
+      "triangles": 996,
+      "origin": [
+        -46.094004702633974,
+        282.88715538879063,
+        80.9449660163685
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_3",
+      "triangles": 1374,
+      "origin": [
+        5.7137240223341585,
+        256.5858447564612,
+        98.81689034485213
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_4",
+      "triangles": 744,
+      "origin": [
+        85.90119910213501,
+        329.1814018529241,
+        -110.8753819688941
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_5",
+      "triangles": 1044,
+      "origin": [
+        -77.78617934704437,
+        194.86408784405236,
+        -91.9916726835376
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_6",
+      "triangles": 912,
+      "origin": [
+        65.61725102886223,
+        186.00268482107097,
+        -39.177962324686966
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_7",
+      "triangles": 558,
+      "origin": [
+        -105.09696445438315,
+        349.7561886103426,
+        -85.06016200917139
+      ]
+    },
+    {
+      "name": "Birch_detached_limb_8",
+      "triangles": 114,
+      "origin": [
+        -10.217753502824698,
+        368.9214729577253,
+        -31.89180895527919
+      ]
+    }
+  ]
+}

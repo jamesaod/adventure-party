@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {markFlamingBlade,preparedBladeTemplates,restorePreparedBlade,hasFlamingSword,createWeaponFlameMask} from '../js/combat-weapon-flame.mjs';
 import {createUnitBurnEffect} from '../js/combat-unit-burn-effect.mjs';
-import {captureDirectUnit,sampleDirectPose} from '../js/combat-direct-units.mjs';
+import {captureDirectUnit,sampleDirectPose} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
 const root=new THREE.Group(),hand=new THREE.Bone(),weapon=new THREE.Group();root.add(hand);hand.add(weapon);
 const blade=new THREE.Mesh(new THREE.BufferGeometry().copy(new THREE.BoxGeometry(.08,1,.025)),new THREE.MeshStandardMaterial());blade.position.y=.65;weapon.add(blade);
 const grip=new THREE.Mesh(new THREE.BufferGeometry().copy(new THREE.CylinderGeometry(.06,.06,.25,7)),new THREE.MeshStandardMaterial());weapon.add(grip);

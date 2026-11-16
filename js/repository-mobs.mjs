@@ -61,7 +61,8 @@ export function createRepositoryMobRegistry(templates,catalog){
 if(typeof window!=='undefined'&&document.getElementById('buildMetadata')){
  const {library,catalog,manifest}=await loadMobLibrary();
  const aliases=new Map(manifest.mobs.map(m=>[m.encounterType,m.id]));
- const apiFor=id=>{const mob=library.get(id);if(!mob)throw Error('MOB was deleted or is unavailable: '+id);return createRepositoryMob(mob,catalog);};
+ const runtimeEntries=new WeakMap();
+ const apiFor=id=>{const mob=library.get(id);if(!mob)throw Error('MOB was deleted or is unavailable: '+id);let api=runtimeEntries.get(mob);if(!api){api=createRepositoryMob(mob,catalog);runtimeEntries.set(mob,api);}return api;};
  window.adventurePartyRepositoryMobs={
   apply:(unit,rng,id)=>apiFor(id||'orc-male-uniformed').apply(unit,rng),
   recipe:unit=>apiFor(unit.repositoryMobId).recipe(unit),

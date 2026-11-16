@@ -8,6 +8,7 @@ export class MobAppearanceRuntime {
     this.cache = new MobAppearanceCache(cacheLimit);
     this.revisions = new Map();
     this.inFlight = new Map();
+    this.registrations = new WeakMap();
   }
   async refresh(unit, context = {}) {
     applyMobHeight(unit);
@@ -42,6 +43,15 @@ export class MobAppearanceRuntime {
     this.cache.set(key, spriteSet);
     const applied = this.revisions.get(id) === revision;
     return { key, recipe, spriteSet, cached: false, inFlight: reusedInFlight, applied };
+  }
+  // Prepared sets are shared immutable results. A replacement registry record
+  // invalidates this fast path, even when it has the same manifest ID.
+  registerAppearance(spriteSet, {register, current}) {
+    const cached=this.registrations.get(spriteSet);
+    if(cached && current(cached.id)===cached.record)return cached.id;
+    const id=register(spriteSet),record=id&&current(id);
+    if(id&&record)this.registrations.set(spriteSet,{id,record});
+    return id;
   }
   ensure(unit, context = {}) {
     return this.refresh(unit, context);

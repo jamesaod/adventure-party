@@ -1,3 +1,4 @@
+// Retired standalone Studio UI assertions removed; shared runtime tests remain.
 import assert from 'node:assert/strict';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
@@ -102,7 +103,7 @@ for(const flip of [false,true])for(const scale of [0.5,1,2.4]){
 
 // Exercise the production sprite ground pass: exact facing, pose, scale and
 // anchor, without drawing the body twice or revealing invisible units.
-const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const a=engine.indexOf('function drawSpriteFacing('),b=engine.indexOf('function clearCombatMessage(',a);
 const calls=[];
 const sandbox={ctx:{save(){},restore(){},translate(){},scale(){},drawImage(){calls.push('body');}},
@@ -117,12 +118,12 @@ assert.equal(calls[0].options.flip,true);assert.equal(calls[0].options.anchorY,0
 sandbox.getUnitEffect=()=>({});sandbox.drawSpriteFacing(image,{x:0,y:0},80,100,'left');assert.equal(calls.length,1,'Invisible units have no revealing ground silhouette');
 sandbox.getUnitEffect=()=>null;sandbox.adventurePartySun.drawingGround=false;sandbox.drawSpriteFacing(image,{x:0,y:0},80,100,'left');assert.equal(calls.at(-1),'body');
 assert.ok(engine.indexOf('globalThis.adventurePartySun.caster=actor.entity;actor.fn()')<engine.lastIndexOf('  actors.sort('),'Shadows are beneath depth-sorted actors');
-const studio=readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
+
 const capture=readFileSync(new URL('../js/studio-capture.mjs',import.meta.url),'utf8');
-assert.ok(studio.includes('if(sunShadowMesh)sunShadowMesh.visible=false;'),'3D ground shadow is excluded from the capture atlas');
-assert.ok(!studio.includes('sunHour:unitSun.hour')&&!studio.includes('unitSun.setHour'),'Old workspace hour cannot override noon');
+
+
 assert.ok(capture.includes("target.searchParams.delete('sunHour')"),'Combat handoff drops legacy hours');
-for(const file of ['3d-studio.html','index.html']){
+for(const file of ['index.html']){
  const html=readFileSync(new URL('../'+file,import.meta.url),'utf8');
  assert.ok(!/id="(?:studio|combatSetup|combat)SunHour/.test(html),'No time sliders remain in '+file);
 }

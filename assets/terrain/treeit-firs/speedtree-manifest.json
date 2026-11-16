@@ -1,0 +1,36 @@
+{
+  "generator": "SpeedTree Modeler 10.2.0",
+  "localBuild": "R238C436",
+  "variants": [
+    {
+      "id": "fir-01",
+      "triangles": 4268,
+      "materials": 2
+    },
+    {
+      "id": "fir-02",
+      "triangles": 2950,
+      "materials": 2
+    },
+    {
+      "id": "fir-03",
+      "triangles": 3024,
+      "materials": 2
+    },
+    {
+      "id": "fir-04",
+      "triangles": 3366,
+      "materials": 2
+    },
+    {
+      "id": "fir-05",
+      "triangles": 3808,
+      "materials": 2
+    }
+  ],
+  "source": "User-authored AdventureParty_Fir_01 through 05, saved as SPM and FBX in the Adventure Party Development workspace. Bark and needle artwork supplied with the installed SpeedTree sample assets.",
+  "conversion": "Blender FBX import, world Z-up to glTF Y-up, uniform normalization matching previous first fir height (724.35152 before runtime 0.18 scale). Separate opaque bark and alpha-mask needles; color and normal textures. Subsurface export retained in source workspace, not wired into the standard game material.",
+  "atlases": "Five rows x twelve rotations; body 384x512 cells, shadow 512x512 cells. Top atlas five 256x256 cells. Production fir renderer used for body/shadow, no duplicate foliage meshes.",
+  "foliage": "Original unstretched geometry restored; 1024px exports retained. Needle alpha 0.10 and premultipliedAlpha true for correct MSAA compositing.",
+  "needleAlbedoMultiplier": 0.5
+}

@@ -1,3 +1,4 @@
+import {muteBowLeather} from './muted-bow-leather.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {FBXLoader} from '../assets/vendor/three/addons/loaders/FBXLoader.js';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
@@ -38,9 +39,13 @@ export async function loadCombatModel(url,{sha256}={}){
   const copy=m=>{if(materials.has(m))return materials.get(m);const c=m.clone();materials.set(m,c);for(const [k,t] of Object.entries(c))if(t?.isTexture){if(!textures.has(t)){const n=t.clone();n.needsUpdate=true;textures.set(t,n);}c[k]=textures.get(t);}return c;};
   o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);
  });
+ if(/\/(?:bow_2(?:_1)?|quiver)\.glb(?:\?|$)/.test(key))muteBowLeather(scene);
  // Keep the source cache bounded. In-flight consumers already hold their source.
  if(sources.size>8){const oldest=sources.keys().next().value;const pending=sources.get(oldest);sources.delete(oldest);pending.then(asset=>{asset.scene.traverse(o=>{o.geometry?.dispose();for(const m of [o.material].flat().filter(Boolean)){for(const t of Object.values(m))if(t?.isTexture)t.dispose();m.dispose();}});}).catch(()=>{});}
  return {...source,scene,scenes:[scene],animations:source.animations.map(c=>c.clone())};
 }
 
 
+
+// Reuse the established skeleton-safe clone in isolated rig experiments.
+export {clone as cloneCombatRig};

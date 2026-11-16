@@ -26,7 +26,7 @@ function audioHarness({deferred=false}={}){
 }
 const audio=audioHarness();await audio.ready();await audio.ready();assert.deepEqual(audio.counts(),{fetches:5,decodes:5});
 const archer={missileCatalogId:'bow-short',missileAmmoQuantity:3};
-const draw=audio.c.playBowDrawSound(archer,2500);assert.equal(audio.events[0].role,'draw');assert.equal(audio.events[0].args[0],10.8);assert.equal(audio.events[0].args[2],1.7);draw.stop();assert(audio.events[0].source.stopped);
+const draw=audio.c.playBowDrawSound(archer,2500);assert.equal(audio.events[0].role,'draw');assert.equal(audio.events[0].args[0],10.5);assert.equal(audio.events[0].args[2],1.7);draw.stop();assert(audio.events[0].source.stopped);
 const voices=audio.c.playBowReleaseSound(archer);audio.c.playBowImpactSound(archer,true);audio.c.playBowImpactSound(archer,false);
 assert.deepEqual(audio.events.map(e=>e.role),['draw','release','flight','hit','miss']);voices.stop();assert(audio.events[1].source.stopped&&audio.events[2].source.stopped);
 audio.c.stopBowSounds();assert(audio.events.every(e=>e.source.stopped));
@@ -63,7 +63,7 @@ function combatHarness({hit=true,mirror=false,cancel=false,environment=null,bow=
   unitAtHex:()=>null,isHexVisibleToFriendlyParty:()=>true,r226PreparePlayerAttackRate(){},exitAimMode(){},endTurn(){}});
  for(const name of ['focusRangedAttacker','focusRangedMissTarget','focusDamagedTargetIfOffscreen'])c[name]=async()=>{};
  for(const name of ['faceEntityToward','setUnitActionBanner','updateFacingForStep','updateUi','breakInvisibility','playNaturalAttackRollSound','setLastRoll','setCombatMessage','log','flashAttack','draw'])c[name]=()=>{};
- for(const name of ['resolveLongbowHit','r226ProtectedLongbowMiss'])vm.runInContext(declaration('js/combat-missile-actions.js',name),c);
+ for(const name of ['bowAttackRollInputs','resolveLongbowHit','r226ProtectedLongbowMiss'])vm.runInContext(declaration('js/combat-missile-actions.js',name),c);
  vm.runInContext(declaration('js/combat-effect-animation.js','animateArrowProjectile'),c);
  vm.runInContext(declaration('js/combat-environment-actions.js','fireAtEnvironmentHex'),c);
  return {c,a,b,trace};

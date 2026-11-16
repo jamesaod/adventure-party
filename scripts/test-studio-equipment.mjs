@@ -416,60 +416,6 @@ assert.ok(posePanel.includes("'medieval-two-handed-sword'"));
 assert.ok(posePanel.includes("poseProfileId: 'two-handed-swing'"));
 assert.ok(posePanel.includes("heightInches: snap.mobType === 'fighter' ? 76 : null"));
 assert.ok(posePanel.includes("bodyReferenceHeightInches: snap.mobType === 'fighter' ? 76 : null"));
-const studio = readCombatFixture(new URL('../js/3d-studio.mjs', import.meta.url), 'utf8');
-const mixerEvaluationCount=(studio.match(/state\.mixer\.update\(/g)||[]).length;
-const inlineRestoreCount=(studio.match(/equipment\.restoreConstraints\(\); state\.mixer\.update\(/g)||[]).length;
-assert.equal(mixerEvaluationCount-inlineRestoreCount,2,
-  'setClip and action-clip preview restore constraints before setting up their actions');
-const setClipStart=studio.indexOf('function setClip(index) {');
-const setClipEnd=studio.indexOf('function updateAnimationControls()',setClipStart);
-const setClipSource=studio.slice(setClipStart,setClipEnd);
-assert.ok(setClipSource.indexOf('equipment.restoreConstraints();')>=0 &&
-  setClipSource.indexOf('equipment.restoreConstraints();')<setClipSource.indexOf('state.mixer.update(0);'),
-  'setClip restores the pre-IK skeleton before evaluating an authored animation');
-
-assert.ok(studio.includes("selectedWeapon?.handsRequired === 2")&&studio.includes("shieldEquipment.select('none')"),
-  'Selecting a two-handed weapon actively unequips the shield');
-assert.ok(studio.includes("normalizeShield(value).leftHandShield!=='none'&&studioWeapon(equipment.snapshot().settings.rightHand)?.handsRequired===2")&&studio.includes("await equipment.select('none')"),
-  'Equipping a shield actively removes an equipped two-handed weapon');
-assert.ok(studio.includes("requestedWeapon?.handsRequired===2")&&studio.includes("leftHandShield:'none'"),
-  'Workspace/model restore normalizes illegal two-handed weapon plus shield states');
-assert.ok(studio.includes("Two-handed weapons and shields are mutually exclusive"),
-  'Capture rejects an impossible two-handed weapon plus shield state');
-const extract = (start, end) => studio.slice(studio.indexOf(start), studio.indexOf(end, studio.indexOf(start)));
-// Changing equipment affects the next capture; prior frames retain their own
-// captured loadout and remain available for export/combat.
-let invalidations=0, selectionCount=0;
-const editable = vm.createContext({
-  state: { modelReady: true, modelLoading: false, disposed: false, model: {} },
-  poseCapture: {
-    snapshot: () => ({ captureCount: 6 }),
-    invalidateCaptures: () => { invalidations++; },
-    saveWorkspace() {}
-  },
-  equipment: { select: async () => { selectionCount++; return true; } },
-  shieldEquipment: { snapshot: () => ({settings:{leftHandShield:'none'}}) },
-  studioWeapon: () => ({handsRequired:1}),
-  resetPreviewReferenceToReady() {},
-  updateEquipmentControls() {}
-});
-vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), editable);
-await vm.runInContext('changeEquipment({rightHand:"medieval-sword"})', editable);
-assert.equal(selectionCount,1,'Captured poses do not block equipment changes');
-assert.equal(invalidations,0,'Equipment edits preserve earlier captured loadouts');
-for (const gear of [{ loading: true, settings }, { loading: false, attached: false, settings, error: 'Sword unavailable' }]) {
-  const capture = vm.createContext({
-    state: { modelReady: true, model: {}, action: {} },
-    equipment: { snapshot: () => gear },
-    offHandEquipment: { snapshot: () => ({settings:{rightHand:'none'}}) },
-    shieldEquipment: { snapshot: () => ({ settings: { leftHandShield: 'none' }, attached: false, error: '' }) }
-  });
-  vm.runInContext(extract('function readCapturePose(', '\nfunction renderPreviews('), capture);
-  assert.throws(() => vm.runInContext('readCapturePose()', capture), /finish loading|Sword unavailable/);
-}
-
-console.log('Studio weapon integrity, animated sword grip (4 clips × 6 facings), workspace settings, capture locks and loading/disposal races passed.');
-
 // Spear integration: real binary, packed 512px PBR maps and shared mount controls.
 const spear = STUDIO_WEAPONS.find(weapon => weapon.id === 'spear');
 assert.equal(spear.handsRequired, 1);
@@ -493,21 +439,6 @@ assert.deepEqual(spearMount.socket.position.toArray(), [0.02,0.03,0.04]);
 assert.equal(normalizeEquipment({...spearSettings,sizePercent:125}).sizePercent,125);
 spearMount.detach();
 console.log('PASS spear: low-poly binary, palette texture, 1H Stab mapping and adjustable shared mount');
-
-let spearShieldRemovals = 0;
-const spearSelection = vm.createContext({
-  state:{modelReady:true,modelLoading:false,disposed:false,model:{}},
-  studioWeapon: id => STUDIO_WEAPONS.find(weapon => weapon.id === id),
-  equipment:{select:async () => true},
-  offHandEquipment:{select:async()=>true},
-  shieldEquipment:{snapshot:() => ({settings:{leftHandShield:'round-wooden-shield'}}),
-    select:async value => {assert.equal(value,'none');spearShieldRemovals++;}},
-  poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
-  resetPreviewReferenceToReady(){},updateEquipmentControls(){}
-});
-vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('), spearSelection);
-await vm.runInContext('changeEquipment({rightHand:"spear"})', spearSelection);
-assert.equal(spearShieldRemovals,0,'One-handed spear preserves the shield through the shared selection path');
 
 // Color-only updates refresh the HTTP cache without resetting approved grips.
 assert.equal(spear.assetSha256, spearMetadata.sha256);
@@ -557,21 +488,6 @@ const bowAxis=new THREE.Vector3(...bow.primaryAxis).applyEuler(new THREE.Euler(.
 assert.ok(bowAxis.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(1),'Bow stands upright in the independently recovered aim pose');
 console.log('PASS bow: left-hand mount, adjustable grip, retained textures, opaque atlas compatibility and authored draw-arm pose');
 
-let selectedBowClip=-1,bowShieldRemovals=0;
-const bowSelection=vm.createContext({
-  state:{modelReady:true,modelLoading:false,disposed:false,model:{},clips:[{userData:{}},{userData:{actionProfiles:['bow']}}]},
-  studioWeapon:id=>STUDIO_WEAPONS.find(weapon=>weapon.id===id),
-  equipment:{select:async()=>true},
-  offHandEquipment:{select:async()=>true},
-  shieldEquipment:{snapshot:()=>({settings:{leftHandShield:'round-wooden-shield'}}),select:async value=>{assert.equal(value,'none');bowShieldRemovals++;}},
-  poseCapture:{invalidateCaptures(){},saveWorkspace(){}},
-  resetPreviewReferenceToReady(){},updateEquipmentControls(){},setClip:index=>{selectedBowClip=index;}
-});
-vm.runInContext(extract('async function changeEquipment(', '\nfunction setModelReady('),bowSelection);
-await vm.runInContext('changeEquipment({rightHand:"recurve-bow"})',bowSelection);
-assert.equal(selectedBowClip,1,'Selecting bow chooses the uploaded bow animation by its existing action-profile association');
-assert.equal(bowShieldRemovals,1);
-
 // The crossbow shares the right-hand attachment while retaining the authored support-hand pose.
 const crossbow=STUDIO_WEAPONS.find(weapon=>weapon.id==='crossbow');
 assert.equal(crossbow.poseProfileId,'direct-fire');assert.equal(crossbow.handsRequired,2);
@@ -585,11 +501,6 @@ close(crossbowModel.localToWorld(new THREE.Vector3(...crossbow.grip)),bowRight.l
 assert.deepEqual(crossbowAttachment.secondaryGripOffsetInches,[1,-.5,.25]);
 assert.equal(solveTwoHandedGrip(THREE,{model:bowRig,attachment:crossbowAttachment}).active,false);
 crossbowAttachment.detach();assert.equal(bowRight.children.length,0);
-selectedBowClip=-1;bowShieldRemovals=0;
-vm.runInContext("state.clips=[{userData:{actionProfiles:['bow']}},{userData:{actionProfiles:['direct-fire']}}]",bowSelection);
-await vm.runInContext('changeEquipment({rightHand:"crossbow"})',bowSelection);
-assert.equal(selectedBowClip,1,'Crossbow selects the uploaded direct-fire clip, not the bow clip');
-assert.equal(bowShieldRemovals,1);
 const crossbowHandQuaternion=bowReference.clips.find(clip=>clip.id==='rifle-aim-to-down').frames[0].worldQuaternions.RightHand;
 const crossbowUp=new THREE.Vector3(0,0,1).applyEuler(new THREE.Euler(...crossbow.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...crossbowHandQuaternion).normalize());
 assert.ok(crossbowUp.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(5),'Crossbow limbs stay level in the recovered rifle aim pose');
@@ -610,11 +521,6 @@ for (const [id,profile,hands] of [['wooden-staff','two-handed-swing',2],['short-
   assert.ok(Math.abs(mount.socket.scale.x-weapon.nativeScale*1.15)<1e-10);
   assert.deepEqual(mount.secondaryGripOffsetInches,[1,-.5,.25]);
   mount.detach();assert.equal(bowRight.children.length,0);
-  selectedBowClip=-1;bowShieldRemovals=0;
-  vm.runInContext(`state.clips=[{userData:{actionProfiles:['bow']}},{userData:{actionProfiles:['${profile}']}}]`,bowSelection);
-  await vm.runInContext(`changeEquipment({rightHand:'${id}'})`,bowSelection);
-  assert.equal(selectedBowClip,1,id+' selects its uploaded animation profile');
-  assert.equal(bowShieldRemovals,hands===2?1:0,id+' handles shields by hand requirement');
   assert.equal(crypto.createHash('sha256').update(glb(weapon.file).bytes).digest('hex'),weapon.assetSha256);
   assert.equal(weaponAssetUrl(weapon,'https://example.test/candidate/').searchParams.get('v'),weapon.assetSha256);
 }
@@ -640,10 +546,6 @@ await wizardManager.select(wizardSettings);wizardRig.updateWorldMatrix(true,true
 close(wizardModel.localToWorld(new THREE.Vector3(...wizardStaff.grip)),wizardRight.localToWorld(new THREE.Vector3(.02,.06,-.01)),'Wizard staff keeps its adjustable pivot in the right palm');
 assert.deepEqual(normalizeEquipment(wizardSettings),wizardManager.snapshot().settings);
 wizardManager.dispose();assert.equal(wizardRight.children.length,0);
-selectedBowClip=-1;bowShieldRemovals=0;
-vm.runInContext("state.clips=[{userData:{actionProfiles:['two-handed-swing']}},{userData:{actionProfiles:['one-handed-swing','wizard-staff-grip']}}]",bowSelection);
-await vm.runInContext('changeEquipment({rightHand:"wizard-staff-grip"})',bowSelection);
-assert.equal(selectedBowClip,1);assert.equal(bowShieldRemovals,0,'One-handed wizard grip permits a shield');
 const wizardHandQuaternion=bowReference.clips.find(clip=>clip.id==='sword-and-shield-idle').frames[0].worldQuaternions.RightHand;
 const wizardAxis=new THREE.Vector3(...wizardStaff.primaryAxis).applyEuler(new THREE.Euler(...wizardStaff.rotation.map(THREE.MathUtils.degToRad),'XYZ')).applyQuaternion(new THREE.Quaternion(...wizardHandQuaternion).normalize());
 assert.ok(wizardAxis.angleTo(new THREE.Vector3(0,1,0))<THREE.MathUtils.degToRad(.01),'Wizard staff starts upright in the independently recovered uploaded idle pose');
@@ -673,12 +575,6 @@ await slingManager.select(slingCustom);slingRig.updateWorldMatrix(true,true);
 close(slingModel.localToWorld(new THREE.Vector3(...sling.grip)),slingRig.children[0].localToWorld(new THREE.Vector3(.02,.03,.04)),'Sling grip remains in palm under custom scale/rotation/offset');
 assert.deepEqual(normalizeEquipment(slingCustom),slingManager.snapshot().settings);slingManager.dispose();
 // Verify catalog preview seeking only runs for the specified model and clip.
-Object.assign(bowSelection,{updateAnimationControls(){},invalidate(){}});
-vm.runInContext(`state.libraryModelId='dungeon-crawler-carl-v3';state.clips=[{userData:{actionProfiles:['sling'],studioAnimationId:'uploaded:goalie-throw:0'}}];state.action={time:0,paused:false,getClip:()=>({duration:3.833333333})};state.mixer={update(){}};equipment.restoreConstraints=()=>{};equipment.applyConstraints=()=>{};`,bowSelection);
-bowShieldRemovals=0;await vm.runInContext("changeEquipment({rightHand:'sling'})",bowSelection);
-assert.equal(selectedBowClip,0);assert.equal(bowShieldRemovals,0);assert.equal(bowSelection.state.action.time,47/30);assert.equal(bowSelection.state.action.paused,true);
-vm.runInContext("state.libraryModelId='other-rig';state.action.time=.4",bowSelection);
-await vm.runInContext("changeEquipment({rightHand:'sling'})",bowSelection);assert.equal(bowSelection.state.action.time,.4);
 console.log('PASS sling: vertical hanging pose, adjustable hand mount, no body IK, correct profile/animation and model-specific preview frame');
 
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs';
+import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
 
 const root=new THREE.Group(),placement=new THREE.Group();root.add(placement);placement.position.set(2,3,4);
 const mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshStandardMaterial({color:0x884422}));placement.add(mesh);

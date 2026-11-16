@@ -25,7 +25,7 @@ console.log('PASS unified MOB records, no duplicates, local overrides, availabil
 
 // Execute actual encounter-choice and generic character-sheet branches.
 const vm=await import('node:vm');
-const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const fn=name=>{const start=game.indexOf('function '+name+'(');return game.slice(start,game.indexOf('\n}',start)+2);};
 const context={window:{adventurePartyRepositoryMobs:{choices:()=>library.available().map(m=>['mob:'+m.id,m.name]),managedTypes:['orc-archer']}},COMBAT_MOB_CHOICES:[['orc-archer','Old archer'],['kobold','Kobold']]};
 vm.runInNewContext(fn('availableCombatMobChoices'),context);

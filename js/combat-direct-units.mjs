@@ -1,8 +1,9 @@
-import {installUnitSnowOcclusion,bindUnitSnowOcclusion,unitSnowGroundMatrix} from './combat-unit-snow-occlusion.mjs';
+import {lightingProfile,LIGHTING_GLSL,bindLightingProfile} from './combat-lighting-profile.mjs';
+import {installUnitSnowOcclusion,bindUnitSnowOcclusion,unitSnowGroundMatrix} from './combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
 import {arrowScaleForFrame} from './arrow-visual-profile.mjs?v=R238C305';
 import {hasFlamingSword} from './combat-weapon-flame.mjs?v=R238C299';
-import {sampleSnowFootfalls,pressCorpseIntoSnow} from './combat-snow-footprints.mjs';
-import {prepareCorpseSnow,updateCorpseSnowMap,registerCorpseSnow,snowDisplayToLinear,corpseSnowTint} from './combat-corpse-snow.mjs';
+import {sampleSnowFootfalls,pressCorpseIntoSnow} from './combat-snow-footprints.mjs?v=shore-snow1';
+import {setCorpseSnowWater,renderCorpseSnowLayers,prepareCorpseSnow,updateCorpseSnowMap,registerCorpseSnow,snowAmbientDisplay,corpseSnowTint} from './combat-corpse-snow.mjs?v=tree-snow-grains1';
 import {warmBowMaterials} from './equipment-visual-states.mjs';
 import {shadowGeometryFor,registerShadowGeometry,captureShadowGeometry} from './combat-shadow-geometry.mjs';
 import {snapshotGpuCaster} from './combat-gpu-casters.mjs';
@@ -18,14 +19,26 @@ const finalizer=typeof FinalizationRegistry==='function'?new FinalizationRegistr
   const shadow=shadowGeometryFor(resource.geometry);if(shadow!==resource.geometry)shadow.dispose();resource.geometry.dispose();for(const material of resource.materials){if(!resource.sharedTextures)for(const value of Object.values(material))if(value?.isTexture)value.dispose();material.dispose();}resources.delete(resource);
 }):null;
 
+export function isShieldSurface(object){for(let node=object;node;node=node.parent)if(node.userData?.studioShield||node.userData?.combatShieldSurface||/shield/i.test(node.name||''))return true;return false;}
 function prepareDirectMaterial(m){
+  // Retain authored material values; shared controls set the matte bounds.
   m.userData.saturation={value:1};
-  m.onBeforeCompile=shader=>{shader.uniforms.unitSaturation=m.userData.saturation;
-    shader.fragmentShader='uniform float unitSaturation;\n'+shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb=mix(vec3(dot(diffuseColor.rgb,vec3(.2126,.7152,.0722))),diffuseColor.rgb,unitSaturation);');};
-  m.customProgramCacheKey=()=>'direct-unit-saturation-1';
+  bindLightingProfile(m);
+
+  m.onBeforeCompile=shader=>{shader.uniforms.unitSaturation=m.userData.saturation;shader.uniforms.apMaterial=m.userData.apMaterial;shader.uniforms.apLight=m.userData.apLight;
+    shader.fragmentShader=LIGHTING_GLSL+'uniform float unitSaturation;\n'+shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb=mix(vec3(dot(diffuseColor.rgb,vec3(.2126,.7152,.0722))),diffuseColor.rgb,unitSaturation);').replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n roughnessFactor=max(apMaterial.x,roughnessFactor);').replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\n metalnessFactor=min(apMaterial.y,metalnessFactor);');
+    // Standard, Lambert, Phong and Toon share ReflectedLight, but only
+    // Standard declares totalDiffuse. Unlit bow/arrow helpers must retain
+    // their authored color instead of receiving a reflected-light treatment.
+    if(m.isMeshStandardMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial||m.isMeshToonMaterial)
+     shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','vec3 apTotalDiffuse=reflectedLight.directDiffuse+reflectedLight.indirectDiffuse;\noutgoingLight+=apDiffuse(apTotalDiffuse*apLight.x)-apTotalDiffuse;\n#include <opaque_fragment>');
+    if(m.userData.combatShieldSurface){shader.uniforms.shieldNoSpecular={get value(){return globalThis.adventurePartyShieldSpecularTest===false?0:1;}};
+     shader.fragmentShader='uniform float shieldNoSpecular;\n'+shader.fragmentShader.replace('#include <lights_fragment_end>','#include <lights_fragment_end>\n reflectedLight.directSpecular*=mix(1.,apMaterial.z,shieldNoSpecular);reflectedLight.indirectSpecular*=mix(1.,apMaterial.z,shieldNoSpecular);');}
+  };
+  m.customProgramCacheKey=()=>'direct-unit-lighting-389-'+!!m.userData.combatShieldSurface;
   m.userData.baseColor=m.color.clone();m.userData.baseOpacity=m.opacity;installUnitSnowOcclusion(m);
 }
-export function restoreDirectMaterials(root){root.traverse(object=>{if(!object.isMesh)return;object.frustumCulled=false;const materials=[object.material].flat();for(const m of materials)prepareDirectMaterial(m);const resource={geometry:object.geometry,materials};resources.add(resource);finalizer?.register(object,resource);});}
+export function restoreDirectMaterials(root){root.traverse(object=>{if(!object.isMesh)return;object.frustumCulled=false;const materials=[object.material].flat();for(const m of materials){if(isShieldSurface(object))m.userData.combatShieldSurface=true;prepareDirectMaterial(m);}const resource={geometry:object.geometry,materials};resources.add(resource);finalizer?.register(object,resource);});}
 export function captureDirectUnit(root,camera,{shareTextures=false}={}){
   const copyTexture=t=>t?(shareTextures?t:t.clone()):null;
   const started=performance.now(),group=new THREE.Group(),inverse=new THREE.Matrix4();
@@ -53,11 +66,12 @@ export function captureDirectUnit(root,camera,{shareTextures=false}={}){
       m.emissiveIntensity=source.emissiveIntensity??1;m.aoMapIntensity=source.aoMapIntensity??1;
       m.visible=source.visible;
       if(!shareTextures){if(m.map)m.map.needsUpdate=true;if(m.alphaMap)m.alphaMap.needsUpdate=true;}
+      m.userData.combatShieldSurface=!!source.userData.combatShieldSurface||isShieldSurface(object);
       prepareDirectMaterial(m);
       return m;
     });
     const mesh=new THREE.Mesh(geometry,Array.isArray(object.material)?materials:materials[0]);
-    mesh.frustumCulled=false;group.add(mesh);triangles+=(geometry.index?.count||position.count)/3;
+    mesh.userData.combatShieldSurface=isShieldSurface(object);mesh.frustumCulled=false;group.add(mesh);triangles+=(geometry.index?.count||position.count)/3;
     const resource={geometry,materials,sharedTextures:shareTextures};resources.add(resource);
     // The token holds resources, never the mesh itself.
     finalizer?.register(mesh,resource);
@@ -84,6 +98,7 @@ function draw(gpu,image,options){
     // Shared rigs must be sampled when the batch executes, not when queued.
     const {asset,yaw,animating}=sampleDirectPose(frame,options.entity,options.walkSeconds,undefined,width);
     if(animating)options.requestMotionFrame?.();
+    setCorpseSnowWater(asset.corpseSnow,options.stream?.water||0);
     if(asset.corpseSnow?.value>0&&!asset.corpseSnowPrepared){
       perf.measure('corpseSnowBake',()=>prepareCorpseSnow(asset.group,options.entity,asset.corpseSnow));asset.corpseSnowPrepared=true;
       asset.group.traverse(mesh=>{if(!mesh.userData.corpseSnowShell)return;const resource={geometry:mesh.geometry,materials:[mesh.material],sharedTextures:true};resources.add(resource);finalizer?.register(mesh,resource);});
@@ -96,46 +111,54 @@ function draw(gpu,image,options){
     const top=(y-height*anchor.y)*view.zoom+view.anchor.y*(1-view.zoom);
     camera.left=original.left-(left-(view.crop?.x||0))/scaleX;camera.right=camera.left+(view.crop?.width||view.width)/scaleX;
     camera.top=original.top+(top-(view.crop?.y||0))/scaleY;camera.bottom=camera.top-(view.crop?.height||view.height)/scaleY;camera.updateProjectionMatrix();
+    const profile=lightingProfile(options.lightingProfile);
     const rotation=options.rotation||0,c=Math.cos(rotation),s=Math.sin(rotation);
     const d=solar?.direction||{x:0,y:1,z:0};sun.position.set(c*d.x-s*d.z,d.y,s*d.x+c*d.z);
-    sun.intensity=outdoor?2.2*(solar?.daylight??1):0;
-    ambient.intensity=Math.max(.015,ambientPercent/100*(outdoor?(solar?.sky??1):1)*.65);
+    sun.intensity=outdoor?2.2*(solar?.daylight??1)*profile.sun:0;
+    ambient.intensity=Math.max(.015,ambientPercent/100*(outdoor?(solar?.sky??1):1)*.65*profile.sky);
     // Units/metre are derived from the same captured frame and standing height
     // used by sprites; light coordinates are supplied in physical metres.
     const factor=options.pixelsPerMetre*(original.top-original.bottom)/height/Math.sqrt(1-original.matrixWorld.elements[6]**2);
     lights.forEach((light,i)=>{const source=localLights[i];light.intensity=0;if(!source)return;
       const [lx,ly,lz]=source.position;light.position.set((c*lx-s*lz)*factor,ly*factor,(s*lx+c*lz)*factor);
-      light.color.setRGB(...source.color);light.distance=source.range*factor;light.decay=2;light.intensity=source.intensity*factor*factor;
+      light.color.setRGB(...source.color,profile.linearLightColors?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace);light.distance=source.range*factor;light.decay=2;light.intensity=source.intensity*factor*factor*profile.local;
     });
     asset.group.rotation.y=yaw;
     asset.group.updateMatrixWorld(true);
     if(weaponFlame){weaponFlame.root=asset.group;weaponFlame.camera=camera;}
-    sampleSnowFootfalls(asset.group,options.entity,{...options,poseSeconds:modelPoseSeconds(now/1000),modelUnitsPerMetre:factor},view,original);
+    sampleSnowFootfalls(asset.group,options.entity,{...options,y:options.y-(options.stream?.drop||0),poseSeconds:modelPoseSeconds(now/1000),modelUnitsPerMetre:factor,onGroundRig:()=>gpu.trackGroundFootfalls?.(options.entity),onGroundFootfall:(x,y)=>gpu.groundFootfall?.(options.entity,x,y)},view,original);
     asset.group.traverse(node=>{
       if(!node.userData.drawnArrow||!node.visible||!options.entity)return;
       const tip=node.localToWorld(new THREE.Vector3(0,1,0)).project(original);
       options.entity.bowReleaseScreenPoint={x:x-width*anchor.x+(tip.x+1)*width/2,y:y-height*anchor.y+(1-tip.y)*height/2};
     });
+    const groundOptions=options.stream?.drop?{...options,y:options.y-options.stream.drop}:options;
     const snowSurface=options.entity&&options.outdoor!==false?gpu.unitSnowSurface:null;
-    if(snowSurface||asset.workshopPoseKey==='settled')unitSnowGroundMatrix(original,options,view,snowGroundMatrix);
+    if(snowSurface||gpu.unitWaterSurface?.active||options.stream?.water>0||asset.workshopPoseKey==='settled')unitSnowGroundMatrix(original,groundOptions,view,snowGroundMatrix);
     if(asset.workshopPoseKey==='settled'&&options.outdoor!==false)pressCorpseIntoSnow(asset.group,options.entity,snowGroundMatrix);
     const snowTint=asset.corpseSnow?.value>0?corpseSnowTint(asset.corpseSnow.value):null;
-    const snowLight=asset.corpseSnow?.value>0?snowDisplayToLinear((options.snowGroundLight||[0,0,0]).map((v,i)=>v*snowTint[i]),renderer.getRenderTarget?.()?.texture?.type===THREE.HalfFloatType):null;
+    const snowLight=asset.corpseSnow?.value>0?snowAmbientDisplay((options.snowGroundLight||[0,0,0]).map((v,i)=>v*snowTint[i])):null;
     asset.group.traverse(object=>{if(!object.isMesh)return;for(const m of Array.isArray(object.material)?object.material:[object.material]){
-      bindUnitSnowOcclusion(m,snowSurface,snowGroundMatrix,factor,!!options.entity);
+      bindLightingProfile(m,profile);
+      bindUnitSnowOcclusion(m,snowSurface,snowGroundMatrix,factor,!!options.entity&&options.outdoor!==false,options.stream?.water||0,gpu.unitWaterSurface,options.stream?.depth||0);
       if(m.userData.corpseSnowMetres)m.userData.corpseSnowMetres.value=factor;
-      if(snowLight&&m.userData.corpseSnowGroundLight)m.userData.corpseSnowGroundLight.value.copy(snowLight);
-      m.color.copy(m.userData.baseColor);if(options.entity?.fireDeath&&!options.entity.alive)m.color.multiplyScalar(.045);m.userData.saturation.value=options.entity?.fireDeath&&!options.entity.alive?0:saturation;
-      m.opacity=m.userData.baseOpacity*opacity;const transparent=m.opacity<1||m.userData.baseOpacity<1;if(m.transparent!==transparent){m.transparent=transparent;m.needsUpdate=true;}
+      if(snowLight&&m.userData.corpseSnowGroundDisplay)m.userData.corpseSnowGroundDisplay.value.copy(snowLight);
+      m.color.copy(m.userData.baseColor);if(options.entity&&!options.entity.alive)m.color.multiplyScalar(options.stream?.wetShade??1);if(options.entity?.fireDeath&&!options.entity.alive)m.color.multiplyScalar(.045);m.userData.saturation.value=options.entity?.fireDeath&&!options.entity.alive?0:saturation;
+      m.opacity=m.userData.baseOpacity*opacity;const transparent=!!m.userData.corpseSnowShell||m.opacity<1||m.userData.baseOpacity<1;if(m.transparent!==transparent){m.transparent=transparent;m.needsUpdate=true;}
     }});
-    scene.add(asset.group);try{warmBowMaterials(renderer,scene,camera,asset.group);renderer.render(scene,camera);}finally{scene.remove(asset.group);}
+    scene.add(asset.group);try{
+      warmBowMaterials(renderer,scene,camera,asset.group);
+      const target=renderer.getRenderTarget();if(target){target.userData??={};target.userData.corpseDisplaySpace=!!asset.corpseSnowPrepared;}
+      renderCorpseSnowLayers(renderer,scene,camera,asset.group,asset.corpseSnow?.value||0);
+    }finally{scene.remove(asset.group);}
     document.documentElement.dataset.directUnitTriangles=String(asset.triangles);
     return true;
-  },{x:x-width*anchor.x,y:y-height*anchor.y,width,height},burn,weaponFlame,settledCorpseImage(frame,{...options,snowSurfaceRevision:gpu.unitSnowSurface?gpu.unitSnowRevision:null}));
+  },{x:x-width*anchor.x,y:y-height*anchor.y,width,height},burn,weaponFlame,settledCorpseImage(frame,{...options,waterSurfaceRevision:[gpu.unitWaterSurface?.revision,gpu.unitWaterSurface?.level,options.stream?.depth],snowSurfaceRevision:gpu.unitSnowSurface?gpu.unitSnowRevision:null}));
   return result===true;
 }
-export const MODEL_ANIMATION_FPS=30;
-export const modelPoseSeconds=seconds=>Math.floor(seconds*MODEL_ANIMATION_FPS)/MODEL_ANIMATION_FPS;
+// Zero means uncapped: sample the elapsed-time pose on every display frame.
+export const MODEL_ANIMATION_FPS=0;
+export const modelPoseSeconds=seconds=>seconds;
 // A settled corpse owns a baked pose, never resampling the shared live rig.
 const settledCorpses=new WeakMap();
 export function corpseSnowAmount(entity){const cached=settledCorpses.get(entity);return entity&&!entity.alive&&cached&&Number.isFinite(entity.deathPresentationStartedAt)&&cached.started===entity.deathPresentationStartedAt?cached.asset.corpseSnow?.value||0:0;}
@@ -144,7 +167,7 @@ export function settledCorpseImage(frame,options){
  if(!e||e.alive||!c||c.source!==frame.asset||c.started!==e.deathPresentationStartedAt)return null;
  const {x,y,width,height,anchor,rotation,solar,ambientPercent,outdoor,localLights,opacity=1,saturation=1,snowGroundLight}=options;
  return {owner:c.asset,key:JSON.stringify([frame.yaw,globalThis.adventurePartyUnitViewYawOffset?.()||0,e.aimYawOffset||0,e.deathRotationDelta||0,
-  x,y,width,height,anchor,rotation,solar,ambientPercent,outdoor,localLights,opacity,saturation,options.pixelsPerMetre,!!e.fireDeath,c.asset.corpseSnow?.value||0,snowGroundLight,options.snowSurfaceRevision])};
+  x,y,width,height,anchor,rotation,solar,ambientPercent,outdoor,localLights,opacity,saturation,options.pixelsPerMetre,!!e.fireDeath,c.asset.corpseSnow?.value||0,snowGroundLight,options.snowSurfaceRevision,options.waterSurfaceRevision,options.stream?.wetShade,options.lightingProfile,globalThis.adventurePartyShieldSpecularTest])};
 }
 // Share animation sampling across body, shadow and occluded outline passes.
 export function sampleDirectPose(frame,entity,walkSeconds=entity?.walkPresentation?.seconds,now=performance.now(),width){
@@ -169,7 +192,7 @@ export function sampleDirectPose(frame,entity,walkSeconds=entity?.walkPresentati
   perf.count('corpseBakes');
  }
  const viewOffset=globalThis.adventurePartyUnitViewYawOffset?.()||0;
- const yaw=frame.yaw+viewOffset+(entity?.aimYawOffset||0)+(entity?.deathRotationDelta||0)*deathProgress;
+ const yaw=frame.yaw+viewOffset+(entity?.walkPresentation?.yawOffset??entity?.aimYawOffset??0)+(entity?.deathRotationDelta||0)*deathProgress;
  asset.group.rotation.y=yaw;asset.group.updateMatrixWorld(true);
  return {asset,yaw,animating:animating||(deathProgress>0&&deathProgress<1),live:!!asset.workshopSample||asset!==frame.asset};
 }

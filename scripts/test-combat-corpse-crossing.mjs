@@ -24,3 +24,9 @@ const live={id:'live',entity:{x:0,y:-5,alive:true},sortY:-5,sortX:0};
 const wall={id:'wall',wall:{a:{x:-100,y:0},b:{x:100,y:0}},sortY:0,sortX:0};
 assert.deepEqual(orderSurfaceActors([corpse,wall,live],p=>p,p=>p).map(a=>a.id),['live','wall','corpse'],'Never pull a unit through an intervening wall');
 console.log('PASS corpse crossing in six camera directions, interpolated walking, and intervening walls');
+
+for(const settled of [false,true]){
+ const old={id:'old',entity:{x:0,y:5,alive:false,deathPresentationStartedAt:100},groundCorpse:true,groundRadius:{x:40,y:30},sortY:5,sortX:0};
+ const recent={id:'recent',entity:{x:0,y:-5,alive:false,deathPresentationStartedAt:200},groundCorpse:settled,groundRadius:{x:40,y:30},sortY:-5,sortX:0};
+ assert.deepEqual(orderSurfaceActors([recent,old],p=>p,p=>p).map(a=>a.id),['old','recent'],'Later death stays above overlapping older corpse during fall and after settling');
+}

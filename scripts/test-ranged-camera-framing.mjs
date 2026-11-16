@@ -12,5 +12,14 @@ for(let rotation=0;rotation<6;rotation++){
  await c.frameRangedAction({x:2,y:3},{x:18,y:14});
  for(const e of [{x:2,y:3},{x:18,y:14}]){const p=world(e.x,e.y),cam=world(c.camera.x,c.camera.y),v=project({x:p.x-cam.x,y:p.y-cam.y}),x=anchor.x+v.x*c.battlefieldZoom,y=anchor.y+v.y*c.battlefieldZoom;assert(x>0&&x<W&&y>0&&y<H);assert(y-hex*c.battlefieldZoom>0);}
  assert(now>=700&&now<735);
+ const afterFirst=now;
+ await c.frameRangedAction({x:2,y:3},{x:18,y:14});
+ assert.equal(now,afterFirst,'Repeated shot must not wait for a stationary camera');
+ c.camera.x+=2;
+ await c.frameRangedAction({x:2,y:3},{x:18,y:14});
+ assert(now>=afterFirst+700,'Manual pan must still trigger framing');
+ const afterPan=now;
+ await c.frameRangedAction({x:2,y:3},{x:22,y:15});
+ assert(now>=afterPan+700,'A new target must still be framed');
 }
 console.log('PASS ranged camera fits attacker and target at all six rotations with bounded smooth transition.');

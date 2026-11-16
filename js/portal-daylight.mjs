@@ -1,4 +1,4 @@
-import {solarAmbient,solarFaceGain,solarPalette} from './solar-clock.mjs?v=R238C274';
+import {solarAmbient,solarFaceGain,solarPalette} from './solar-clock.mjs?v=R238C380';
 import {effectiveEdges,edgeBetween,edgeKey,edgeGeometry,doorKey,edgeLineBlocked} from './exploration-edges.mjs?v=R238C274';
 import {isOutdoor,ambientLightAt} from './exploration-environment.mjs?v=R238C262';
 import {SCENE_STYLE,ambientForCell,sceneLightVisible} from './exploration-scene-style.mjs?v=R238C274';

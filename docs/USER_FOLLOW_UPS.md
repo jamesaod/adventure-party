@@ -17,3 +17,50 @@ Persistent notes requested by James. Add new requested follow-ups here; retain c
 - Progress on creature integration (2026-11-09): Basic repository publication, direct-model animations, equipment fits and stats now connected; controlled Workshop orc completed a real battle to victory. Structured attacks, spells, traits and special movement remain gated. See MOB_WORKSHOP_COMBAT_AUDIT.md for exact validation limits.
 
 - User requested combat AI development soon (2026-11-12): expand supported authored policies, race/group behavior, target choice and ranged positioning. Orc Warrior currently uses the approved default AI; original export requests reckless hazard handling and does not avoid opportunity attacks.
+
+- [ ] **Shield arrow deflection with sound — deferred** (2026-11-12): James requested filing this for later after trying the standalone local demo. Preserve `shield-deflection-test.html`, `js/shield-deflection-test.mjs`, and `js/shield-deflection-test-motion.mjs`; local URL: http://127.0.0.1:8276/shield-deflection-test.html. Combat is unchanged; integration remains deferred. Trigger: modified attack roll misses the required hit number by exactly 1 or 2, defender has a shield, and shot arrives within the forward shield arc (supersedes critical miss). Arrow converts forward motion into spin and a lofted deflection before landing. Selected trial sounds: Metal short tick by jorickhoofd (Freesound 160052, CC BY 4.0), spinning lasso by zapsplat.com (Freesound 719638, CC0), and existing bow Mud Thud for landing. Downloaded preview assets and provenance are in `assets/audio/sfx/shield-deflection/`; landing is `assets/audio/sfx/bow/miss.wav`. Demo has replay, pause, timeline, motion controls, volume and mute; browser load/audio decoding and 12 trigger combinations passed. Sound choices are experimental, not final approval for combat. Resume only when requested.
+
+- [ ] **Ground-cover and map-authoring ideas — deferred** (2026-11-12): Improve contextual stick placement, with more debris around trees. Explore patches of other ground materials and a possible manual terrain-painting tool for battle maps. James is considering using the combat map for exploration with a switch to turn-based combat, but has not decided. These are future considerations, not authorization to change exploration architecture.
+
+- [x] **Next title/QA batch — queued 2026-11-14:** Display published game version, candidate revision, local build, and last update date/time as four separate lines in that order. Use accurate build provenance and America/New_York for the requested timestamp. Also repair garbled punctuation/text encoding on the title screen and during combat. User requested these for the next batch while the current title/menu/module cleanup proceeds.
+
+- [x] **Next title/pre-battle presentation batch — queued 2026-11-14:** Use the existing Press Start 2P font on the title screen (user called it Player Ready 2P). Pre-battle preparation uses a fixed-size centered box with a themed border, a scrollable action/history log, and a final "Press Space to Continue" prompt; wait for Space after preparation.
+
+- [x] **Following menu cleanup — queued 2026-11-14:** Remove the visible COMBAT FONT / Press Start 2P status line from menus. Requested while the current presentation batch was underway; keep font loading itself.
+
+- Completed 2026-11-14, local R238C407: removed title menu heading/button frames/font-status line; centered left-aligned uppercase green Press Start 2P lists use a separate asterisk column and mouse/keyboard selection. Renamed Combat Map Editor entry; its editor implementation remains a forthcoming task. Audio status is the sole borderless sound toggle, including keyboard activation.
+
+- [x] **Next Combat Map Editor texture batch — queued 2026-11-14:** User asked to collect these links without interrupting the first editor build. Import/integrate in the next update, not this initial version:
+  - https://polyhaven.com/a/forest_leaves_02
+  - https://polyhaven.com/a/grass_ground
+  - https://polyhaven.com/a/forest_ground_06
+  - https://polyhaven.com/a/rocky_terrain_02
+  - https://polyhaven.com/a/forrest_ground_01
+  - https://polyhaven.com/a/mud_cracked_dry_riverbed_002
+  - https://polyhaven.com/a/dry_river_pebbles
+
+- [x] **Next map boundary update — queued 2026-11-14:** Add a hard/soft boundary selection. Hard boundaries connect straight lines across other hexes to form solid shapes. Requested for the next update; not part of the texture/isometric batch.
+
+- Completed local R238C410: soft hex brush plus straight-sided hard polygons, preview/finish/cancel/remove, undo and export/import.
+
+- Local R238C418: terrain snow physical depth capped at 12 inches in CPU and GLSL, including footprint rim deformation and manual depth controls. Snow coverage coats and particle deposition remain intact. Combat scrolling performance investigation requested alongside the cap.
+
+- [ ] **Stream Phase 4 — requested 2026-11-14:** Reduce uniformity of the river-stone bed and add a muddy transition along the banks. User requested layering phases 2 and 3 first; keep this for the next tuning pass.
+
+
+- **Superseded by R238C453, 2026-11-14:** Stream stone-bed variation/muddy-transition phases are replaced by the requested simpler bare-dirt, wet-mud, still-puddle baseline with grass-blended banks. Do not restore the decorative layers without a new request.
+
+
+- [x] **Next batch — stream wading, requested 2026-11-14:** Make units visually follow the streambed, smoothly interpolating their height down/up the banks. Occlude submerged legs beneath the water surface and keep footstep splashes at the waterline. Preserve movement costs and combat rules. Completed locally in R238C454 after the requested batch authorization.
+
+- Local R238C454: implemented streambed-following presentation, submerged-body clipping and preserved waterline foot splashes. Channel-fitted 1024px depth mask and derivative-filtered waterline replace the coarse shoreline. No flow animation or movement-rule changes.
+
+
+- [x] **Snow exclusion on water — requested 2026-11-15:** Snow must not accumulate on puddles or streams. Apply this requirement to the environmental/grass-and-snow test and shared snow accumulation behavior. Implemented in shared accumulation and the terrain lab: water excludes grain deposits, Full cover and manual depth; rising water clears existing snow. CPU regressions and hidden-browser GPU checks pass.
+
+
+- [ ] **Next thought experiment — 2026-11-15:** Discuss shafts of light through branches on foggy days and light beams shining upward from beneath trees. User explicitly queued this after tree wind/explosion response; no lighting implementation requested yet.
+
+- [ ] **Tree catalog expansion — 2026-11-15:** Create two additional variants each of White Oak and Sugar Maple (three of each total). User asked to explore and establish tree wind/explosion response first; catalog authoring remains queued.
+
+- [ ] **Jagged major branch ends — deferred (2026-11-15):** User rejected the native-cap fitting experiment. Active fall rendering is restored to the original detached limbs; torn trunk/stump remains. Source experiment is preserved under tools/tree-production/branch-breaks for later, low-priority work.

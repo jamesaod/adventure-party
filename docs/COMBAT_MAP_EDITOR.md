@@ -1,0 +1,42 @@
+# Combat Map Editor — first authoring version
+
+Local entry: combat-map-editor.html, reached through Combat Map Editor on the title menu. Uses existing grass/dirt/stone ground textures and five fir variants from the game atlas. 1–128 hexes per dimension, ten feet per hex, axial parallelogram coordinates matching combat's axial neighbor convention.
+
+Left palette supports texture painting and tree placement/removal. Drag strokes interpolate intervening hexes; brush radius supports 1/7/19 cells, trees one per hex. Ground painting leaves trees intact. Undo/redo retain 30 edits, including resize/import. Resize preserves top-left coordinates and asks before cropping. Wheel zoom, right/middle-drag pan, Fit Map, grid toggle. Rendering is event-driven, not a continuous game loop.
+
+Modules: combat-map-palette.mjs owns stable texture/tree IDs and sources; combat-map-document.mjs owns schema/validation/hex math; combat-map-renderer.mjs owns terrain blending and atlas rendering; combat-map-editor.mjs owns controls, history and persistence. Add textures to the palette (up to eight texture samplers). Three-way blending uses identical weights at shared vertices and normalized squared interpolated weights in the shader; global terrain UVs avoid texture phase seams. Tree images are editor markers from the existing fir atlas.
+
+Portable JSON uses format adventure-party-combat-map, version 1, grid dimensions/layout/scale, terrain cells and blend version, and stable tree placements. Import validates before changing the current map. Browser draft key adventure-party:combat-map-editor:v1 is isolated from exploration maps and combat saves. Export/reimport preserves authored data; renderer details are derived.
+
+This version authors and exports hex maps. Loading these authored maps into live combat, elevation/water behavior, and the newly supplied Poly Haven texture batch are subsequent work. Existing combat and the Exploration Map Editor are unchanged.
+
+Validation: scripts/test-combat-map-editor.mjs; browser painting, tree placement/removal, undo/redo, resize, export/import, reload and menu navigation.
+
+## R238C409
+Seven Poly Haven 1K diffuse textures are vendored locally; source URLs and checksums are in assets/textures/polyhaven/sources.json. The bounded texture palette scrolls independently. Isometric View matches combat rotation 5 and its 31.5/(64*sqrt(3)/2) ground compression, with inverse painting input and upright, depth-sorted trees. View changes do not alter exported map data. Hard/soft polygon boundaries remain queued for the next update.
+
+## R238C410: boundaries
+Soft mode retains the blended hex brush. Hard mode clicks free-position corners across hexes; Finish Shape/Enter fills a simple polygon. Escape cancels. Remove Shape deletes the topmost polygon under a click. Hard shapes overlay the soft terrain in authoring order and preserve trees. Soft painting edits the underlying hex terrain; remove a covering hard shape to reveal it. Optional terrain.shapes stores texture, boundary:hard and unprojected points in version 1 exports. Legacy maps remain valid. Polygons are clipped to visible map hexes; shrinking hides out-of-bounds parts, and expanding can reveal them again. Validation rejects self-intersections, degenerate polygons and oversized input.
+
+## R238C411: elevation
+Paint Elevation assigns a selected whole level 0–6, each 2.5 feet (maximum 15 feet; updated in R238C412), using the existing brush. Optional terrain.elevations rows preserve heights in undo, drafts and exports; missing rows mean level 0. Resize preserves retained cells and starts new cells at 0. Isometric rendering has abrupt vertical faces and raised textured tops, with depth-tested geometry and surface ray picking. Hard polygons follow each tile top and trees anchor at tile elevation. Top view shows height labels. No ramps, slope transitions or combat movement integration are added.
+
+R238C412 changes the level increment to 2.5 feet and halves rendered height. Existing authored level numbers are retained. Exposed vertical faces use the existing Dirt texture with vertical UV mapping, independently of the top texture.
+
+## R238C413: scene detail, sun and automatic boundaries
+Reuses production createGroundCover geometry, deterministic placements, grass/rock/stick materials and tuning, with an editor projection and raised roots. Grass/debris are restricted to Grass and Grass Ground, including polygon overrides. Wind is held still in this event-driven authoring view. Scene Details toggles cover and shadows; Sun time uses the combat equinox/38N solar path, with debounced shadow rebuilding. Cached ground shadows project raised terrain solids and real fir silhouettes onto receiving tile elevations; no ongoing shadow loop. Editor tree shadows are static silhouette projections, not combat model animation shadows. Detail/light controls are preview-only. Hard automatically draws straight winner-weight boundaries between painted regions and saves terrain.boundary; Soft blends those regions. Draw Texture retains the freeform polygon tool. Automatic boundary mode applies to the map terrain globally; polygons retain crisp authored edges.
+
+## R238C414: local hard groups and texture scale
+Boundary selection is a brush preference, not a map mutation. Each texture-painted cell stores hard/soft in terrain.boundaries; soft repaint removes its automatic hard membership. Adjacent matching hard cells generate corner-to-corner local convex bridges, clipped to receiving hexes and elevations; other hard textures are protected. Disconnected regions do not connect and group holes are not globally convex-filled. Draw Texture remains independent. Legacy terrain.boundary is preserved on import and materialized per-cell on the first texture paint. Texture detail size edits terrain.textureScales for the selected texture map-wide (0.125–4, default 1); values below 1 reduce apparent detail size. Both settings round-trip and support undo.
+
+Flat view uses a new overhead canopy atlas rendered from the existing five fir models; isometric view retains upright view-relative frames. Shift + wheel rotates by 60 degrees around the viewport center while preserving zoom; ordinary wheel zoom is unchanged. Ground, picking, grass, trees and shadows use the rotated view.
+
+## R238C415: hard-edge infill and material maps
+Automatic same-texture bridges are drawn after all hard-cell interiors and may fill partial neighboring hexes of any texture up to their straight boundary. Draw Texture overlays remain last.
+Poly Haven 1K effect assets and checksums are in assets/textures/polyhaven/effects/manifest.json. Four GPU texture arrays carry color, OpenGL normals/height, AO-roughness-metalness, and specular/mask data. Packed ARM channels supersede their duplicate standalone AO/roughness files; OpenGL normals supersede DirectX alternatives. Shader lighting uses normals, AO, roughness/metalness and the available specular map with the editor Sun. Height maps drive bounded parallax surface relief, not additional terrain elevation or silhouette displacement. Rocky Terrain Mask is retained as auxiliary material-selection data, not treated as a fabricated lighting effect. Material effects toggles a color-only comparison. All effects follow each texture scale and material blending.
+
+## R238C416: rectangular footprint
+New and imported editor maps use odd-r-rectangle: alternating rows offset by half a hex, with width columns and height rows. Old axial-parallelogram exports and drafts migrate on load, preserving each indexed terrain/elevation/boundary cell and tree; drawn polygon edges are continuously sheared into the new row layout. New exports carry the new layout identifier. Neighbor queries, strokes, brushes, terrain walls, hard groups, shadows, cover height lookup and picking now use offset-row coordinates. Physical hex proportions mean equal column/row counts are approximately, not exactly, square.
+
+## R238C417: spaced hard-texture roads
+Matching hard-painted cells now also bridge across a single staggered-row gap (the six distance-sqrt(3) neighbor directions). Their full-width corner hull creates straight-sided roads through the intervening half-hexes. This is local connectivity, not a global convex hull: distant islands remain disconnected. The rule applies to every texture; soft or differently textured endpoints do not connect. Generated road surfaces participate in ground-cover masking, elevation clipping and existing exports through the original painted cells.

@@ -19,7 +19,7 @@ export function encounterReadiness(mob,catalog){
 }
 export function createMobLibrary(store,seeds,catalog){
  function records(){const local=store.mobs(),deleted=new Set(store.deletedMobIds());return [...seeds.filter(m=>!local.some(l=>l.id===m.id)),...local].filter(m=>!deleted.has(m.id)).sort((a,b)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id)).map(mob=>({mob,origin:local.some(m=>m.id===mob.id)?(seeds.some(m=>m.id===mob.id)?'Local changes to published MOB':'Browser MOB'):'Published MOB',...encounterReadiness(mob,catalog)}));}
- return {records,get:id=>records().find(r=>r.mob.id===id)?.mob||null,save:mob=>{if(mob.mob.encounterEnabled){const ready=encounterReadiness(mob,catalog);if(!ready.ready)throw Error(ready.reasons.join(' '));}return store.saveMob(mob);},delete:mob=>store.deleteMob(mob.id,mob.mob.revision),restore:mob=>store.restoreMob(mob),available:()=>records().filter(r=>r.mob.mob.encounterEnabled&&r.ready).map(r=>r.mob)};
+ return {records,get:id=>{if(store.deletedMobIds().includes(id))return null;return store.mobs().find(m=>m.id===id)||seeds.find(m=>m.id===id)||null;},save:mob=>{if(mob.mob.encounterEnabled){const ready=encounterReadiness(mob,catalog);if(!ready.ready)throw Error(ready.reasons.join(' '));}return store.saveMob(mob);},delete:mob=>store.deleteMob(mob.id,mob.mob.revision),restore:mob=>store.restoreMob(mob),available:()=>records().filter(r=>r.mob.mob.encounterEnabled&&r.ready).map(r=>r.mob)};
 }
 export async function loadMobLibrary(){
  const get=async path=>{const res=await fetch(new URL('../'+path,import.meta.url),{cache:'no-cache'});if(!res.ok)throw Error('Could not load '+path);return res.json();};

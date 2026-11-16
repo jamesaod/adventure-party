@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';import vm from 'node:vm';import crypto from 'node:crypto';
+import {CombatPuddleEffects} from '../js/combat-puddle-effects.mjs';
+const env={};vm.createContext(env);vm.runInContext(fs.readFileSync(new URL('../js/combat-audio-rules.js',import.meta.url),'utf8'),env);
+const {selectedCombatVoice:voice,chooseCombatAudioClip:pick,combatFootstepSurface:surface}=env;
+assert.equal(voice({name:'Dungeon Crawler Carl',type:'fighter'}),'male');assert.equal(voice({type:'workshop-wood-elf-archer'}),'female');assert.equal(voice({race:'Elf',name:'Aria',team:'enemy'}),'female');assert.equal(voice({type:'orc'}),null);assert.equal(voice({type:'kobold'}),null);
+let last=null;const seen=new Set();let seed=1;for(let i=0;i<1000;i++){const chosen=pick(['a','b','c','d'],last,()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/2**32));assert.notEqual(chosen,last);seen.add(chosen);last=chosen;}assert.equal(seen.size,4);assert.equal(pick(['only'],'only'),'only');assert.equal(pick([],null),null);
+assert.equal(surface({wear:.1}),'grass');assert.equal(surface({wear:.8}),'dirt');assert.equal(surface({wear:.8,wetness:.7}),'mud');assert.equal(surface({wear:.8,wetness:1,water:.01}),'water');assert.equal(surface({kind:'dirt',wetness:.7}),'mud');assert.equal(surface({snow:true,water:.1}),null);assert.equal(surface({kind:'stone'}),null);assert.equal(surface({indoor:true}),null);
+const selection=JSON.parse(fs.readFileSync(new URL('../assets/audio/sfx/voices/selection.json',import.meta.url)));assert.equal(selection.selected.length,17);
+for(const c of selection.selected)assert.equal(crypto.createHash('sha256').update(fs.readFileSync(new URL('../'+c.gamePath,import.meta.url))).digest('hex'),c.sha256,'Keep the exact selected recording');
+const calls=[],unit={alive:true},face={groundKind:'dirt',grass:false,snowEligible:1,points:[{x:-100,y:-100},{x:100,y:-100},{x:100,y:100},{x:-100,y:100}]};
+const fx=new CombatPuddleEffects({elevation:()=>0,water:()=>0,step:(x,y,u,f)=>calls.push(f.groundKind)});fx.collect([face]);fx.walk([{entity:unit,x:0,y:0}]);fx.walk([{entity:unit,x:22,y:0}]);assert.deepEqual(calls,['dirt'],'Dry authored dirt triggers steps without puddles');fx.walk([{entity:unit,x:22,y:0}]);assert.equal(calls.length,1,'Idle does not repeat footsteps');
+console.log('PASS selected voice mapping, random nonrepeat, exact clip hashes and terrain stride audio');

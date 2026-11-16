@@ -26,7 +26,8 @@ const CANDIDATE_COMBAT_BEAT_PRIORITY=Object.freeze({
   "buff":30,
   "debuff":40,
   "condition":50,
-  "death":60
+  "death":60,
+  "speech":70
 });
 
 let candidateCombatBeatSequence=0;
@@ -168,7 +169,7 @@ function candidateQueueCombatBeat(
         : R236_FLOAT_RISE_PX,
     show,
     sound,
-    meta:{...meta,...(candidateCombatBeatBatch?{simultaneousBatch:candidateCombatBeatBatch.id,actionId:candidateCombatBeatBatch.id}:{})}
+    meta:{...meta,...(candidateCombatBeatBatch&&category!=='speech'?{simultaneousBatch:candidateCombatBeatBatch.id,actionId:candidateCombatBeatBatch.id}:{})}
   };
 
   group.pending.push(beat);

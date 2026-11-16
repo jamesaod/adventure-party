@@ -1,10 +1,10 @@
 import {loadMobLibrary} from './mob-library.mjs?v=R238C204';
-import {renderMobPreview} from './mob-preview.mjs?v=R238C205';
+import {renderMobPreview} from './mob-preview.mjs?v=tree-snow-grains1';
 const root=document.getElementById('mobCards'),status=document.getElementById('libraryStatus');
 try{const {library,catalog}=await loadMobLibrary();let sequence=Promise.resolve();const previews=new Map();
  const render=()=>{root.replaceChildren();for(const record of library.records()){
  const {mob,origin,ready,reasons}=record;if(!(mob.name+' '+mob.modelId).toLowerCase().includes(document.getElementById('mobSearch').value.toLowerCase()))continue;
- const card=document.createElement('article');card.className='panel mob-card';const title=document.createElement('a');title.href='./mob-creator.html?mob='+encodeURIComponent(mob.id);title.textContent=mob.name;
+ const card=document.createElement('article');card.className='panel mob-card';const title=document.createElement('h2');title.textContent=mob.name;
  const stage=document.createElement('div');stage.className='preview-stage';const img=document.createElement('img');img.alt=mob.name+' preview';stage.append(img);
  const detail=document.createElement('p');detail.textContent=origin+' · '+mob.modelId;
  const availability=document.createElement('p');const on=mob.mob.encounterEnabled&&ready;availability.className=on?'status-on':'status-off';availability.textContent=on?'● Available in combat':'● Not available'+(reasons.length?' — '+reasons.join(' '):'');

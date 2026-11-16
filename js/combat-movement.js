@@ -9,9 +9,21 @@ function combatMovementSelectionActive(){
  return !!(combatManualTurnActive()&&hoverHex&&!aimMode&&!clickMovementRunning&&!p.walkPresentation&&!isCombatActionPauseActive());
 }
 function combatTacticalGridVisible(){return combatManualTurnActive()&&(!!(aimMode&&!pendingAimAction?.targetSubmitted)||combatMovementSelectionActive());}
+function combatGridHexInRange(x,y){
+ if(!combatTacticalGridVisible())return false;
+ const cell={x,y},unit=pendingAimAction?spellCasterForAction(pendingAimAction):activePlayerControlledUnit();
+ if(!unit)return false;
+ if(!aimMode)return combatReachableMovement(unit).has(key(x,y));
+ if(pendingAimAction){
+  const spell=getSpellEntry(pendingAimAction.spellId);if(!spell)return false;
+  const range=spellRangeHexes(spell,pendingAimAction.casterLevel||unit.level);
+  return unitDistance(unit,cell)<=Math.max(spell.targetMode==='direction'?1:0,range);
+ }
+ return rangedAiRangeBandFrom(unit,unit,cell).band!=='OUT';
+}
 function combatReachableMovement(unit){
  const budget=Math.max(0,Math.floor((unit.move||0)-(unit.turnMoves||0)));
- const signature=[unit.id,unit.x,unit.y,unit.facingHex,budget,...allUnits().map(u=>[u.id,u.x,u.y,u.facingHex,u.alive,u.fled].join(':'))].join('|');
+ const signature=[game.treeFallRevision,treeFallEntries().map(({state})=>oakDebrisSettled(state)).join(','),game.oakFallTest,game.oakFallTest?.startedAt,(typeof oakDebrisSettled==='function'?oakDebrisSettled(game.oakFallTest):game.oakFallTest?.settled),unit.id,unit.x,unit.y,unit.facingHex,budget,...allUnits().map(u=>[u.id,u.x,u.y,u.facingHex,u.alive,u.fled].join(':'))].join('|');
  const cache=combatReachableMovement.cache;
  if(cache&&cache.game===game&&cache.signature===signature&&cache.walls===architecturalWalls)return cache.cells;
  const start={x:unit.x,y:unit.y,facingHex:facingDirectionIndex(unit),steps:0,parent:null},queue=[start],cells=new Map(),seen=new Set();
@@ -36,6 +48,14 @@ function roundedMovementHex(p){
 function sampleCombatWalkCurve(c,t){
  const u=1-t;return {x:u*u*u*c[0].x+3*u*u*t*c[1].x+3*u*t*t*c[2].x+t*t*t*c[3].x,y:u*u*u*c[0].y+3*u*u*t*c[1].y+3*u*t*t*c[2].y+t*t*t*c[3].y};
 }
+function combatWalkDirection(dx,dy){return Math.atan2(-dy*Math.sqrt(3)/2,dx+dy*.5);}
+function combatWalkFacingHeading(unit){return ((Number.isInteger(unit.facingHex)?unit.facingHex:unit.facing==='left'?3:0)%6+6)%6*Math.PI/3;}
+function combatWalkAngleDifference(a,b){return Math.atan2(Math.sin(a-b),Math.cos(a-b));}
+function combatWalkArc(curve){
+ const lengths=[0];let previous=curve[0];
+ for(let i=1;i<=32;i++){const p=sampleCombatWalkCurve(curve,i/32),dx=p.x-previous.x,dy=p.y-previous.y;lengths.push(lengths[i-1]+Math.hypot(dx+dy*.5,dy*Math.sqrt(3)/2));previous=p;}
+ return {length:lengths[32],parameter(progress){const distance=progress*lengths[32];let i=1;while(i<32&&lengths[i]<distance)i++;return (i-1+(distance-lengths[i-1])/Math.max(1e-9,lengths[i]-lengths[i-1]))/32;}};
+}
 function combatWalkCurveClear(unit,curve,facing){
  // Sweep a small body disk for every occupied footprint cell. Sample in the
  // uncompressed ground plane; also test wall crossings between samples.
@@ -48,6 +68,7 @@ function combatWalkCurveClear(unit,curve,facing){
    const q={x:p.x+o.x+dx,y:p.y+o.y+dy},cell=roundedMovementHex(q);
    if(!inside(cell.x,cell.y)||isWall(cell.x,cell.y)||isFirBlockedHex(cell.x,cell.y)||occupiedByAnyUnit(cell.x,cell.y,unit.id))return false;
    if(architecturalWallBlocksWorldLine(worldPointForHex(p.x+o.x,p.y+o.y),worldPointForHex(q.x,q.y),'movement'))return false;
+   if(k===8&&previous&&typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep({x:previous.x+o.x,y:previous.y+o.y},{x:p.x+o.x,y:p.y+o.y}))return false;
    if(previous&&architecturalWallBlocksWorldLine(worldPointForHex(previous.x+o.x+dx,previous.y+o.y+dy),worldPointForHex(q.x,q.y),'movement'))return false;
   }
   previous=p;
@@ -60,7 +81,7 @@ function prepareCombatWalkPath(unit,path,maxSteps=path.length-1){
  // Rounding is conservative for rotating large footprints: preserve their
  // validated turn locations until a continuous turning footprint is available.
  const rotating=unitFootprintDefinition(unit).rotates;
- for(const strength of (rotating?[0]:[.18,.09,0])){
+ for(const strength of (rotating?[0]:[.32,.24,.16,.08,0])){
   const points=route.map((p,i)=>i&&i<route.length-1?{x:p.x+strength*(route[i-1].x+route[i+1].x-2*p.x),y:p.y+strength*(route[i-1].y+route[i+1].y-2*p.y)}:{x:p.x,y:p.y});
   let clear=true;
   for(let i=1;i<route.length;i++){
@@ -90,7 +111,10 @@ function prepareCombatReactiveWalkStep(unit,next,more){
 // Reversible walk experiment: ?walkTest=1. Rules remain integer-hex based.
 async function presentWalkTestStep(unit,to,keepPose=false){
   if(new URLSearchParams(location.search).get('walkTest')==='0')return true;
-  const session=game,now=performance.now(),duration=650;
+  const session=game,now=performance.now();
+  let curve=to.walkCurve;
+  if(curve&&!combatWalkCurveClear(unit,curve,facingDirectionIndex(unit)))curve=null;
+  const arc=curve?combatWalkArc(curve):null,duration=650*(arc?.length||1);
   const chain=unit.walkStepClock;
   // Carry scheduler overshoot across adjacent steps instead of restarting at t=0.
   // A reaction/other real pause starts a fresh segment, never a catch-up jump.
@@ -98,14 +122,17 @@ async function presentWalkTestStep(unit,to,keepPose=false){
     chain.x===unit.x && chain.y===unit.y && now-chain.completedAt<80;
   const started=continuing ? chain.deadline : now;
   const previous=unit.walkCycleSeconds||0;
-  let curve=to.walkCurve;
-  if(curve&&!combatWalkCurveClear(unit,curve,facingDirectionIndex(unit)))curve=null;
+  let heading=unit.walkPresentation?.heading??unit.walkStartHeading??(combatWalkFacingHeading(unit)+(unit.aimYawOffset||0)),headingElapsed=0;
   globalThis.adventurePartyWalkBusy=true;
   try{
     while(game===session&&!game.over&&unit.alive&&!unit.fled){
       const elapsed=Math.min(duration,Math.max(0,performance.now()-started));
-      const t=elapsed/duration,point=curve?sampleCombatWalkCurve(curve,t):null;
-      unit.walkPresentation={from:point||{x:unit.x,y:unit.y},to:point||{x:to.x,y:to.y},t,seconds:previous+elapsed/1000};
+      const t=elapsed/duration,parameter=arc?arc.parameter(t):t,point=curve?sampleCombatWalkCurve(curve,parameter):null;
+      const a=curve?sampleCombatWalkCurve(curve,Math.max(0,parameter-.001)):unit,b=curve?sampleCombatWalkCurve(curve,Math.min(1,parameter+.001)):to;
+      const targetHeading=combatWalkDirection(b.x-a.x,b.y-a.y),limit=Math.PI*2.5*Math.max(0,elapsed-headingElapsed)/1000;
+      heading+=Math.max(-limit,Math.min(limit,combatWalkAngleDifference(targetHeading,heading)));headingElapsed=elapsed;
+      const yawOffset=combatWalkAngleDifference(heading,combatWalkFacingHeading(unit));unit.aimYawOffset=yawOffset;
+      unit.walkPresentation={from:point||{x:unit.x,y:unit.y},to:point||{x:to.x,y:to.y},t,seconds:previous+elapsed/1000,heading,yawOffset};
       // Intermediate centers are rule checkpoints, not extra held render frames.
       if(keepPose && elapsed>=duration)break;
       await presentCombatFrame();
@@ -234,7 +261,7 @@ function canUnitRotateAt(unit,x,y,toFacing,fromFacing=facingDirectionIndex(unit)
       if(!canUnitStandAt(unit,x,y,facing)) return false;
       const from=occupiedHexesAt(unit,x,y,previous);
       const to=occupiedHexesAt(unit,x,y,facing);
-      if(from.some((cell,index)=>architecturalWallBlocksStep(cell,to[index]))) return false;
+      if(from.some((cell,index)=>architecturalWallBlocksStep(cell,to[index])||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cell,to[index])))) return false;
       previous=facing;
     }
     return true;
@@ -253,7 +280,7 @@ function unitTransitionBlocked(unit,from,to,facingHex=null){
 
   const sourceCells=occupiedHexesAt(unit,from.x,from.y,destinationFacing);
   const targetCells=occupiedHexesAt(unit,to.x,to.y,destinationFacing);
-  return sourceCells.some((cell,index)=>architecturalWallBlocksStep(cell,targetCells[index]));
+  return sourceCells.some((cell,index)=>architecturalWallBlocksStep(cell,targetCells[index])||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cell,targetCells[index])));
 }
 
 function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
@@ -654,7 +681,7 @@ function pathToHex(start,target,mover){
         if(unitTransitionBlocked(mover,cur,next)) continue;
       }else{
         if(isWall(nx,ny)) continue;
-        if(architecturalWallBlocksStep(cur,next)) continue;
+        if(architecturalWallBlocksStep(cur,next)||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cur,next))) continue;
         if(occupiedByAnyUnit(nx,ny,null)) continue;
       }
 

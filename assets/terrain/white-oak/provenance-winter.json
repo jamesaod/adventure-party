@@ -1,0 +1,8 @@
+{
+  "source": "WhiteOak_Winter.spm / WhiteOak_Winter.obj",
+  "triangles": 9036,
+  "modelUnitsPerMetre": 43.38933076913966,
+  "groundPlaneSourceMetres": 0.2,
+  "rootPlacement": "Ground 0.20 m above authored trunk origin; underground geometry clipped on GPU.",
+  "sourceHeightMetres": 22.105
+}

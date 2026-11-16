@@ -1,3 +1,4 @@
+// Retired standalone Studio UI assertions removed; shared runtime tests remain.
 import assert from 'node:assert/strict';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {preserveThinSpriteDetails} from '../js/studio-thin-detail.mjs';
@@ -55,17 +56,13 @@ preserveThinSpriteDetails(haze,sw,sh,dim,tw,th);
 assert.equal(dim[3],0,'Sub-threshold antialias haze does not become a new pixel');
 
 const capture=readFileSync('js/studio-capture.mjs','utf8');
-const studio=readFileSync('js/3d-studio.mjs','utf8');
-const studioPage=readFileSync('3d-studio.html','utf8');
+
+
 const gamePage=readFileSync('index.html','utf8');
-assert.ok(studioPage.includes('Candidate Rev 277') &&
-  /js\/3d-studio\.mjs\?v=R238C\d+/.test(studioPage) &&
-  studio.includes('./studio-capture.mjs?v=R238C204'),
-  'Candidate Studio must load current capture code rather than stale cached modules');
-assert.ok(gamePage.includes('Candidate Rev 277') &&
-  gamePage.includes('"candidateRevision":277') &&
-  gamePage.includes('js/sprite-set-runtime.mjs?v=R238C202'),
-  'Candidate game label, metadata and sprite loader must agree on Rev 267');
+
+const build=JSON.parse(gamePage.match(/<script id="buildMetadata" type="application\/json">\s*([\s\S]*?)\s*<\/script>/)[1]);
+assert.equal(build.localBuild,build.release+'C'+build.candidateRevision);
+assert.ok(gamePage.includes('id="buildLabel"')&&gamePage.includes('js/sprite-set-runtime.mjs?v='),'Build label and versioned sprite loader remain present');
 
 assert.ok(capture.includes('function invalidateCaptures(')&&
   capture.includes('capture.stale = true')&&
@@ -75,20 +72,14 @@ assert.ok(capture.includes("if (busy) return;"),
   '3D Studio combat test accepts incomplete pose captures');
 assert.ok(!capture.includes("if (busy || freshCount() !== 18) return;"),
   'Old 18-frame guard cannot block the five-pose combat handoff');
-assert.ok(studio.includes("state.playing = restoreSettings ? !!restoreSettings.playing : false"),
-  'Newly loaded animations start paused; a restored workspace keeps its own playback state');
-assert.ok(studio.includes('poseCapture?.invalidateCaptures(\'Lighting changed\')') &&
-  !studio.includes("poseCapture?.invalidateCaptures('Weapon or grip changed',{allProfiles:false})"),
-  'Lighting invalidates captures; equipment edits preserve independent pose snapshots');
-assert.ok(studio.includes('preserveThinSpriteDetails(supersampleImage.data'),
-  'Native battlefield rendering includes coverage-safe downsampling');
+
+
+
 console.log('PASS Rev 118: 36 captured/runtime PNGs, thin swords in all six directions, stale capture protection, paused default');
 
 assert.ok(capture.includes('capturesByProfile')&&capture.includes('partialPoses:true'));
 
-assert.ok(studioPage.includes('id="studioActionPose"') &&
-  studioPage.includes('id="studioCaptureSelectedPoseButton"'),
-  'Studio must expose selectable action poses and a dedicated record button');
+
 assert.ok(capture.includes("if(includeQaSheet)jobs.push") &&
   capture.includes("packageFiles(exported,{includeQaSheet:false})"),
   'Combat and profile export must not package the QA-only sprite sheet');

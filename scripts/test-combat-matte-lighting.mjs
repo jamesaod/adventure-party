@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {restoreDirectMaterials} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+import {solarState,weatherSolarState} from '../js/solar-clock.mjs?v=R238C380';
+assert.equal(weatherSolarState(solarState(12),{type:'clear'}).sky,1.35);
+assert(weatherSolarState(solarState(12),{type:'snow',intensity:1}).sky<1.35);
+assert.equal(weatherSolarState(solarState(0),{type:'clear'}).sky,solarState(0).sky);
+const material=new T.MeshStandardMaterial({roughness:.1,metalness:1}),mesh=new T.Mesh(new T.BoxGeometry(),material);
+restoreDirectMaterials(mesh);assert.equal(material.roughness,.92);assert.equal(material.metalness,.1);
+const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <metalnessmap_fragment>'};material.onBeforeCompile(shader);
+assert(shader.fragmentShader.includes('roughnessFactor=max(apMaterial.x,roughnessFactor)'));assert(shader.fragmentShader.includes('metalnessFactor=min(apMaterial.y,metalnessFactor)'));
+console.log('PASS restored battlefield clear-noon sky, weather/night preservation and texture-proof matte material limits');

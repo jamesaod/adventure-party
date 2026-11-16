@@ -1,0 +1,15 @@
+# Static scene preparation caches — 16 November 2026
+
+Local optimization pass; appearance review remains with James. Preserves rendering density, geometry, water animation, snow deposits and tactical visibility.
+
+- visibleHexes retains up to eight padding-specific viewport lists, keyed by camera, rotation, zoom/anchor, viewport dimensions, map bounds and hex scale. Tree test selection reuses the viewport key set while occupancy and tree records are refreshed each call.
+- Floor fragment projection resets when terrain changes even if the viewport list is unchanged. Floor descriptions/material groups, UVs and physical lighting coordinates are retained for unchanged terrain, fragments, map contents, origin, scale and artwork identities. Visibility is still evaluated every frame; lighting maps and live shader inputs remain live. In-place grid/ground/environment edits invalidate through serialized row contents.
+- Only the owned floor groups carry _surfaceRevision. Visibility edits increment it; structural edits replace the groups. Both GPU source-texture packing and ordinary vertex-buffer preparation can skip numeric scans for an unchanged owned group/revision/topology. Unversioned callers retain full numeric comparisons, including in-place edits.
+- Owned floor faces carry stable geometry keys. Grass avoids rebuilding coordinate strings and face maps when the face sequence and visibility are unchanged. Existing layout, wind, snow, season, corpse, tree and stream invalidation stays in place.
+- Water-contact lookup indexes owned faces into 128-unit cells, maintaining original face order. Reuses the index across identical collections, rebuilds on collection changes and clears on scene changes. Water level and visibility are sampled live; unversioned polygons use the original full scan.
+
+Measured comparison: two fresh 1600x1000 headless Chrome pages, same seeded scene, 240 warm-up frames and 120 measured frames each. Original CPU frame submission 11.48 ms; optimized 7.91 ms (~31% lower). Terrain category 2.30 -> 0.52 ms; surface buffers 1.20 -> 0.30 ms (categories overlap, do not sum). Rendering counts match: 805 floor faces, 42,048 floor triangles, 84,497 ground-cover instances, 79 ground-cover draws, six tree passes. GPU timing varied; this is a CPU improvement, not a promised FPS/GPU speedup. Previous shadow-mask optimization was enabled in both cases.
+
+Validation: test-combat-static-cache covers revision reuse/invalidation, topology changes, unversioned edits, indexed/full-scan water parity, visibility/water changes, incremental collection and scene reset. Viewport regression covers reuse, pan and map-bound invalidation. Live parity comparison confirms original/cached floor faces match at rest, after pan/rotation/zoom, visibility changes, new terrain identity, night lighting, snow and stream-width changes.
+
+Workspace work/static-scene-cache contains original backups, install script, browser parity check, seeded A/B benchmark script and benchmark.json. Keep local; no publishing performed.

@@ -6,6 +6,6 @@ const source=readFileSync('.github/workflows/adventure-party-validation.yml','ut
 assert(!/run: node[^\n]*\n[ \t]+node /.test(source),'Multiple commands require a YAML block scalar');
 assert.match(source,/node scripts\/run-combat-regressions\.mjs/);
 const files=combatRegressionFiles();
-for(const name of ['test-combat-spell-actions','test-combat-frame-pacing','test-workshop-arrow-preview','test-bow-audio','test-animation-timeline','test-combat-corpse-performance'])assert(files.includes('scripts/'+name+'.mjs'),name+' must run in CI');
+for(const name of ['test-combat-spell-actions','test-combat-frame-pacing','test-workshop-arrow-preview','test-bow-audio','test-animation-timeline','test-combat-corpse-performance','test-torn-tree-breaks','test-fallen-tree-occlusion','test-outline-mask-cache','test-american-beech'])assert(files.includes('scripts/'+name+'.mjs'),name+' must run in CI');
 for(const file of files)assert(!source.includes('node '+file+'\n'),'Do not run '+file+' twice');
 console.log('PASS CI command boundaries and automatic combat/Workshop regression coverage');

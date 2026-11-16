@@ -4,14 +4,15 @@ import * as THREE from '../assets/vendor/three/three.module.min.js';
 // conversion: preserve the authored palette, additive glows and 75% body.
 export function createFireballEffect(renderer){
  const scene=new THREE.Scene(),camera=new THREE.Camera();
- const viewport={value:new THREE.Vector2(1,1)};
+ const viewport={value:new THREE.Vector2(1,1)},origin={value:new THREE.Vector2()},extent={value:new THREE.Vector2(1,1)};
+ const corners=[[-1,-1],[1,-1],[-1,1],[-1,1],[1,-1],[1,1]];
  const makeTarget=()=>new THREE.WebGLRenderTarget(1,1,{depthBuffer:false,stencilBuffer:false});
  const body=makeTarget(),scratch=makeTarget(),wide=makeTarget(),narrow=makeTarget();
  const geometry=new THREE.BufferGeometry();let capacity=0;
- const material=new THREE.ShaderMaterial({uniforms:{viewport},side:THREE.DoubleSide,transparent:true,depthTest:false,depthWrite:false,toneMapped:false,
+ const material=new THREE.ShaderMaterial({uniforms:{viewport,origin,extent},side:THREE.DoubleSide,transparent:true,depthTest:false,depthWrite:false,toneMapped:false,
  vertexShader:`attribute vec2 corner;attribute vec4 tint;attribute float roundShape;
- varying vec2 p;varying vec4 color;varying float shape;uniform vec2 viewport;
- void main(){p=corner;color=tint;shape=roundShape;gl_Position=vec4(position.x/viewport.x*2.-1.,1.-position.y/viewport.y*2.,0.,1.);}`,
+ varying vec2 p;varying vec4 color;varying float shape;uniform vec2 viewport,origin,extent;
+ void main(){p=corner;color=tint;shape=roundShape;vec2 local=position.xy-origin;gl_Position=vec4(local.x/extent.x*2.-1.,1.-local.y/extent.y*2.,0.,1.);}`,
  fragmentShader:`varying vec2 p;varying vec4 color;varying float shape;
  void main(){float coverage=1.;if(shape>.5){float d=length(p);coverage=1.-smoothstep(1.-fwidth(d),1.,d);}
  if(coverage<=0.)discard;gl_FragColor=vec4(color.rgb,color.a*coverage);}`});
@@ -22,10 +23,10 @@ export function createFireballEffect(renderer){
  fragmentShader:`uniform sampler2D image;uniform vec2 direction;uniform float sigma;varying vec2 uv0;
  void main(){vec4 sum=vec4(0.);float weights=0.;for(int i=-16;i<=16;i++){float x=float(i)*sigma*3./16.;float w=exp(-.5*x*x/(sigma*sigma));sum+=texture2D(image,uv0+direction*x)*w;weights+=w;}gl_FragColor=sum/weights;}`});
  const blur=new THREE.Mesh(quad,blurMaterial);blur.frustumCulled=false;
- const uniforms={image:{value:body.texture},viewport,anchor:{value:new THREE.Vector2()},zoom:{value:1},opacity:{value:1},light:{value:new THREE.Vector3()},fade:{value:1},radial:{value:false}};
+ const uniforms={image:{value:body.texture},viewport,origin,extent,anchor:{value:new THREE.Vector2()},zoom:{value:1},opacity:{value:1},light:{value:new THREE.Vector3()},fade:{value:1},radial:{value:false}};
  const compositeMaterial=new THREE.ShaderMaterial({uniforms,transparent:true,premultipliedAlpha:true,depthTest:false,depthWrite:false,toneMapped:false,
- vertexShader:`uniform vec2 viewport,anchor;uniform float zoom;varying vec2 uv0;varying vec2 pixel;
- void main(){uv0=uv;pixel=vec2(uv.x,1.-uv.y)*viewport;vec2 p=anchor+(pixel-anchor)*zoom;gl_Position=vec4(p.x/viewport.x*2.-1.,1.-p.y/viewport.y*2.,0.,1.);}`,
+ vertexShader:`uniform vec2 viewport,anchor,origin,extent;uniform bool radial;uniform float zoom;varying vec2 uv0;varying vec2 pixel;
+ void main(){uv0=uv;pixel=radial?vec2(uv.x,1.-uv.y)*viewport:origin+vec2(uv.x,1.-uv.y)*extent;vec2 p=anchor+(pixel-anchor)*zoom;gl_Position=vec4(p.x/viewport.x*2.-1.,1.-p.y/viewport.y*2.,0.,1.);}`,
  fragmentShader:`uniform sampler2D image;uniform float opacity,fade;uniform vec3 light;uniform bool radial;varying vec2 uv0;varying vec2 pixel;
  void main(){if(!radial){gl_FragColor=texture2D(image,uv0)*opacity;return;}
  float d=length(pixel-light.xy)/light.z;if(d>1.)discard;
@@ -43,12 +44,13 @@ export function createFireballEffect(renderer){
    geometry.setAttribute('tint',new THREE.BufferAttribute(new Float32Array(capacity*4),4).setUsage(THREE.DynamicDrawUsage));
    geometry.setAttribute('roundShape',new THREE.BufferAttribute(new Float32Array(capacity),1).setUsage(THREE.DynamicDrawUsage));
   }
-  let n=0;for(const [x,y,rx,ry,r,g,b,a,round] of items)for(const [u,v] of [[-1,-1],[1,-1],[-1,1],[-1,1],[1,-1],[1,1]]){
+  let n=0;for(const [x,y,rx,ry,r,g,b,a,round] of items){if(a<=0||x+rx<origin.value.x||y+ry<origin.value.y||x-rx>origin.value.x+extent.value.x||y-ry>origin.value.y+extent.value.y)continue;for(const [u,v] of corners){
    geometry.attributes.position.setXYZ(n,x+u*rx,y+v*ry,0);geometry.attributes.corner.setXY(n,u,v);
    geometry.attributes.tint.setXYZW(n,r/255,g/255,b/255,a);geometry.attributes.roundShape.setX(n,round);n++;
   }
-  geometry.setDrawRange(0,count);for(const attr of Object.values(geometry.attributes))attr.needsUpdate=true;
-  if(count)paint(mesh);
+  }
+  geometry.setDrawRange(0,n);for(const attr of Object.values(geometry.attributes)){attr.clearUpdateRanges();attr.addUpdateRange(0,n*attr.itemSize);attr.needsUpdate=true;}
+  if(n)paint(mesh);
  }
  function soften(output,sigma){
   blurMaterial.uniforms.sigma.value=sigma;blurMaterial.uniforms.image.value=body.texture;
@@ -60,7 +62,15 @@ export function createFireballEffect(renderer){
   draw(data,view){
    const previous=renderer.getRenderTarget(),clear=renderer.getClearColor(new THREE.Color()),alpha=renderer.getClearAlpha();
    try{
-    viewport.value.set(view.width,view.height);for(const target of [body,scratch,wide,narrow])if(target.width!==view.width||target.height!==view.height)target.setSize(view.width,view.height);
+    viewport.value.set(view.width,view.height);
+    // Include the entire 3-sigma glow kernel. Tile bounds avoid reallocating
+    // targets for every tiny change in the animated blast silhouette.
+    let left=view.width,top=view.height,right=0,bottom=0;
+    for(const items of [data.lobes,data.particles])for(const [x,y,rx,ry,,,,a] of items){if(a<=0)continue;left=Math.min(left,x-rx-50);top=Math.min(top,y-ry-50);right=Math.max(right,x+rx+50);bottom=Math.max(bottom,y+ry+50);}
+    left=Math.max(0,Math.min(view.width-1,Math.floor(left/64)*64));top=Math.max(0,Math.min(view.height-1,Math.floor(top/64)*64));
+    right=Math.max(left+1,Math.min(view.width,Math.ceil(right/64)*64));bottom=Math.max(top+1,Math.min(view.height,Math.ceil(bottom/64)*64));
+    origin.value.set(left,top);extent.value.set(right-left,bottom-top);
+    for(const target of [body,scratch,wide,narrow]){const scale=target===body?1:.5,w=Math.max(1,Math.ceil(extent.value.x*scale)),h=Math.max(1,Math.ceil(extent.value.y*scale));if(target.width!==w||target.height!==h)target.setSize(w,h);}
     renderer.setClearColor(0,0);renderer.setRenderTarget(body);renderer.clear();shapes(data.lobes);
     soften(wide,16);soften(narrow,7);renderer.setRenderTarget(previous);
     uniforms.anchor.value.set(view.anchor.x,view.anchor.y);uniforms.zoom.value=view.zoom;

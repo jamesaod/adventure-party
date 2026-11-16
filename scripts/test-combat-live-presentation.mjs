@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {setDirectUnit,sampleDirectPose} from '../js/combat-direct-units.mjs';
+import {setDirectUnit,sampleDirectPose} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
 const group=new THREE.Group(),mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshBasicMaterial());group.add(mesh);
 const camera=new THREE.OrthographicCamera(-4,4,4,-4,.1,100);camera.position.set(0,5,8);camera.lookAt(0,0,0);camera.updateMatrixWorld();
 const walk={group,camera,sample(t){mesh.position.x=t;}},asset={walk,group:new THREE.Group(),camera};

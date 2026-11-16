@@ -1,5 +1,5 @@
 import {listPreparedAssets,pendingPreparedAssets,writePreparedAsset,finishPreparedAsset} from './combat-prepared-store.mjs';
-import {preparedAssetKey,serializePreparedAsset,validatePreparedAsset} from './combat-prepared-assets.mjs';
+import {preparedAssetKey,serializePreparedAsset,validatePreparedAsset} from './combat-prepared-assets.mjs?v=tree-snow-grains1';
 
 // Explicit authoring operation: never imported or invoked by combat's loader.
 const loadoutLabel=recipe=>`${recipe.mob.name||recipe.mob.type} / ${recipe.equipment?.itemName||'Unarmed'} / ${recipe.shield?.itemName||'No shield'}`;
@@ -23,7 +23,7 @@ if(host){
     build.disabled=true;
     try{
       const recipes=await refresh();if(!recipes.length)return;
-      const {generateCombatSpriteSet}=await import('./combat-mob-renderer.mjs');
+      const {generateCombatSpriteSet}=await import('./combat-mob-renderer.mjs?v=tree-snow-grains1');
       for(let i=0;i<recipes.length;i++){
         const recipe=recipes[i],key=preparedAssetKey(recipe),started=performance.now();
         const set=await generateCombatSpriteSet(structuredClone(recipe),{onProgress:({step})=>status.textContent=`Building ${i+1}/${recipes.length}: ${recipe.mob.name||recipe.mob.type} — ${step}`});

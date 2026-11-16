@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Snow ambient GPU regression</title>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three/three.module.min.js"}}</script>
+<style>body{background:#18202a;color:#dce4eb;font:14px system-ui}canvas{border:1px solid #687889}pre{white-space:pre-wrap}</style>
+<body><h1>Snow ambient GPU regression</h1><p id="result" role="status">Comparing ground and corpse snow…</p><div id="views"></div><pre id="details"></pre>
+<script type="module">
+import * as T from '../../assets/vendor/three/three.module.min.js';
+import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=R238C390';
+import {prepareCorpseSnow,updateCorpseSnowMap,renderCorpseSnowLayers,snowAmbientDisplay,corpseSnowTint} from '../../js/combat-corpse-snow.mjs';
+const result=document.getElementById('result'),details=document.getElementById('details'),check=(ok,msg)=>{if(!ok)throw Error(msg);};
+try{
+ const width=192,height=128,canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;document.getElementById('views').append(canvas);
+ const gpu=createCombatRenderer(canvas,document.createElement('canvas')),art=document.createElement('canvas');art.width=art.height=1;art.getContext('2d').fillRect(0,0,1,1);
+ const view={width,height,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]};
+ const face={snowEligible:1,snowHex:'0,0',points:[{x:0,y:0},{x:width,y:0},{x:width,y:height},{x:0,y:height}],multiply:[1,1,1]};
+ globalThis.adventurePartySnow={revision:1,paused:true,intensity:0,showFlakes:false,fillRequested:true};
+ gpu.snowScene('ambient-test',[0,0,width,height]);gpu.snowGround([face]);gpu.begin(view);gpu.surface([face],art,{category:'Floor'});gpu.end();
+ check(gpu.unitSnowSurface,'Ground snow must be fully populated, not a fallback color swatch');
+ const group=new T.Group(),body=new T.Mesh(new T.BoxGeometry(1,.2,1),new T.MeshStandardMaterial({color:0x331111})),amount={value:4};group.add(body);prepareCorpseSnow(group,{alive:false},amount);updateCorpseSnowMap(amount);
+ const scene=new T.Scene(),camera=new T.OrthographicCamera(-1,1,4/3,-4/3,.1,10);camera.position.set(0,4,.001);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+ const lamp=new T.PointLight(0xffc06e,0,10,2);lamp.position.set(0,1,0);scene.add(group,lamp,new T.AmbientLight(0xffffff,.6));
+ const gl=canvas.getContext('webgl2');const pixel=(x,y)=>{const p=new Uint8Array(4);gl.readPixels(x,height-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);return [...p];};
+ function render(factor,power=0,coverage=4){
+  face.multiply=factor;amount.value=coverage;updateCorpseSnowMap(amount);lamp.intensity=power;
+  const ambient=snowAmbientDisplay(factor.map((v,i)=>v*corpseSnowTint(4)[i]));
+  group.traverse(o=>{if(o.isMesh&&o.material.userData.corpseSnowGroundDisplay)o.material.userData.corpseSnowGroundDisplay.value.copy(ambient);});
+  gpu.begin(view);gpu.surface([face],art,{category:'Floor'});
+  gpu.treeScene(renderer=>{renderer.getRenderTarget().userData.corpseDisplaySpace=true;renderCorpseSnowLayers(renderer,scene,camera,group,coverage);return true;},{unit:true,bounds:{x:96,y:0,width:96,height:128}});gpu.end();
+  return {ground:pixel(32,64),cap:pixel(144,64)};
+ }
+ const rows=[];
+ for(const [name,factor] of [['night',[.08,.11,.16]],['twilight',[.3,.35,.42]],['overcast',[.7,.74,.78]],['snow-white',[1,1,1]],['clipped noon',[1.6,1.8,2.1]]]){
+  const sample=render(factor);sample.cap.slice(0,3).forEach((c,i)=>check(Math.abs(c-sample.ground[i])<=2,name+' ambient mismatch '+JSON.stringify(sample)));rows.push({name,...sample});
+ }
+ const factor=[.08,.11,.16],baseline=render(factor).cap;let previous=baseline;
+ for(const power of [.01,.1,1,10,100,1e6]){
+  const sample=render(factor,power);sample.cap.slice(0,3).forEach((c,i)=>{check(c>=baseline[i]-1&&c>=previous[i]-1,'Lamp darkened snow');check(c<=baseline[i]+(255-baseline[i])*.35+2,'Night snow whited out');});previous=sample.cap;rows.push({power,...sample});
+ }
+ check(previous[0]>previous[1]&&previous[1]>previous[2],'Bright night reflection must retain warm light color');
+ // Partial shell opacity still blends in display space; ambient snow over the
+ // identical ground color must remain unchanged at all accumulation stages.
+ body.visible=false;
+ for(const amount of [1,2,3,4]){const sample=render([.3,.35,.42],0,amount);sample.cap.slice(0,3).forEach((c,i)=>check(Math.abs(c-sample.ground[i])<=2,'Partial cap/ground blend mismatch'));}
+ body.visible=true;
+ // Both supported target formats must preserve display color without inverse
+ // tone-map values clipping inside the unit target.
+ gpu.begin(view);let formatChecks=0;
+ gpu.treeScene(renderer=>{
+  const saved=renderer.getRenderTarget(),samples=[];
+  for(const type of [T.UnsignedByteType,T.HalfFloatType]){
+   if(type===T.HalfFloatType&&!renderer.extensions.has('EXT_color_buffer_float'))continue;
+   const target=new T.WebGLRenderTarget(48,64,{type});renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderCorpseSnowLayers(renderer,scene,camera,group,4);
+   const values=type===T.HalfFloatType?new Uint16Array(4):new Uint8Array(4),decode=v=>type===T.HalfFloatType?T.DataUtils.fromHalfFloat(v):v/255;renderer.readRenderTargetPixels(target,24,32,1,1,values);samples.push(Array.from(values,decode));formatChecks++;
+   body.visible=false;
+   for(const coverage of [1,2,3,4]){amount.value=coverage;updateCorpseSnowMap(amount);renderer.clear();renderCorpseSnowLayers(renderer,scene,camera,group,coverage);renderer.readRenderTargetPixels(target,24,32,1,1,values);check(Math.abs(decode(values[3])-coverage/4)<.01,'Snow opacity must follow its four accumulation layers');}
+   body.visible=true;target.dispose();
+  }
+  if(samples.length===2)samples[0].forEach((v,i)=>check(Math.abs(v-samples[1][i])<.006,'RGBA8/HDR snow color disagreement'));
+  renderer.setRenderTarget(saved);return true;
+ },{unit:true,bounds:{x:96,y:0,width:96,height:128}});gpu.end();check(formatChecks>0,'Target format checks must execute');
+ render([1.6,1.8,2.1]);details.textContent=JSON.stringify(rows,null,2);
+ result.textContent='PASS — production ground/corpse snow match within 2/255 from night to clipped noon; lamp highlights stay bounded and colored; partial opacity and RGBA8/HDR targets agree.';
+ document.body.dataset.result=JSON.stringify({passed:true,rows});
+ gpu.dispose();group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
+}catch(error){result.textContent='FAIL — '+error.message;document.body.dataset.result='failed';console.error(error);}
+</script></body></html>

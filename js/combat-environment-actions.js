@@ -192,6 +192,23 @@ async function finishEnvironmentArrow(attacker,impact){
 
  if(!impact.wallId&&!inside(impact.hex.x,impact.hex.y))return;const state=combatEnvironment();state.arrows.push({...impact,id:++state.sequence});if(state.arrows.length>256)state.arrows.shift();
 }
+// Retained ground arrows belong to the bare-ground surface, below accumulated snow.
+function drawGroundArrowSurface(arrow){
+ if(typeof combatGpu==="undefined"||!combatGpu?.surface)return false;
+ let image=drawGroundArrowSurface.image;
+ if(!image){image=document.createElement('canvas');image.width=128;image.height=32;const c=image.getContext('2d'),v=globalThis.AdventurePartyArrowVisual;
+ c.strokeStyle=v.wood;c.lineWidth=6.8;c.beginPath();c.moveTo(8,16);c.lineTo(110,16);c.stroke();
+ c.strokeStyle=v.feather;c.lineWidth=4;for(const y of [11,21]){c.beginPath();c.moveTo(9,y);c.lineTo(32,y);c.stroke();}
+ c.fillStyle=v.head;c.beginPath();c.moveTo(125,16);c.lineTo(110,10);c.lineTo(110,22);c.closePath();c.fill();drawGroundArrowSurface.image=image;}
+ const squash=environmentSquash(),length=Math.hypot(arrow.direction.x,arrow.direction.y/squash)||1,ux=arrow.direction.x/length,uy=arrow.direction.y/length,nx=-uy/squash,ny=ux*squash;
+ const tail={x:arrow.x-arrow.direction.x*16,y:arrow.y-arrow.direction.y*16},tip={x:arrow.x+ux*2,y:arrow.y+uy*2},half=2;
+ const points=[{x:tail.x-nx*half,y:tail.y-ny*half,elevation:.05},{x:tip.x-nx*half,y:tip.y-ny*half,elevation:.05},{x:tip.x+nx*half,y:tip.y+ny*half,elevation:.05},{x:tail.x+nx*half,y:tail.y+ny*half,elevation:.05}];
+ // Each corner rests on the same bed field as the rendered stream. The
+ // water mask hides submerged fragments instead of floating the decal on top.
+ for(const point of points){if(typeof isIndoorWorldPoint==='function'&&isIndoorWorldPoint(point))continue;const bed=combatGpu.unitGroundSample?.(point.x,point.y);if(bed)point.elevation=.05-(bed.bedDepth??bed.depth??0)*10;}
+ const brightness=Math.max(.25,Math.min(1,combatSpriteBrightness({...arrow.hex,alive:true})));
+ combatGpu.surface([{points,uv:[[0,1],[1,1],[1,0],[0,0]],snowEligible:0,multiply:[brightness,brightness,brightness]}],image,{groundArrow:true,category:'Other surfaces'});return true;
+}
 function drawEnvironmentArrow(arrow){
  let point=arrow;
  if(arrow.wallId){
@@ -204,11 +221,11 @@ function drawEnvironmentArrow(arrow){
   if(typeof explorationWallFragmentVisible==='function'&&!explorationWallFragmentVisible({points:[arrow]},normal,isArchitecturalWallVisibleToFriendlyParty(wall),wall))return;
   const offset=(wall.thickness||3)/2+.35;
   point={...arrow,x:arrow.x+normal.x*offset,y:arrow.y+normal.z*offset*squash};
- }else if(!isHexVisibleToFriendlyParty(arrow.hex.x,arrow.hex.y))return;
+ }else{if(!isHexVisibleToFriendlyParty(arrow.hex.x,arrow.hex.y))return;if(drawGroundArrowSurface(arrow))return;}
  const tip=environmentArrowScreen(point),tail=screenPointForWorld({x:point.x-arrow.direction.x*16,y:point.y-arrow.direction.y*16},(arrow.height||0)+5);
  ctx.save();ctx.globalAlpha=Math.max(.25,Math.min(1,combatSpriteBrightness({...arrow.hex,alive:true})));if(!arrow.wallId&&typeof queueCombatArrowGpuShadow==='function')queueCombatArrowGpuShadow(tail,tip,{tailHeight:(arrow.height||0)+5,tipHeight:arrow.height||0});drawCombatArrowSilhouette(tail,tip,{tailHeight:(arrow.height||0)+5,tipHeight:arrow.height||0,wall:arrow.wallId?architecturalWalls.find(w=>w.id===arrow.wallId):null});ctx.restore();
 }
-function drawEnvironmentGroundArrows(){settleCombatBlood();drawCombatBloodStains();for(const arrow of game?.environmentState?.arrows||[])if(!arrow.wallId)drawEnvironmentArrow(arrow);}
+function drawEnvironmentGroundArrows(){settleCombatBlood();for(const arrow of game?.environmentState?.arrows||[])if(!arrow.wallId)drawEnvironmentArrow(arrow);}
 async function breakNearbyCombatWindow(unit,preferred=null){
  const windows=(combatSceneTerrain?.windows||[]).filter(window=>!window.broken&&hexDistance(unit,environmentHex(window.center))<=1.5);
  const window=preferred?windows.find(window=>window.id===preferred):windows[0];if(!window||!(unit.attacksRemaining>0))return false;
@@ -233,9 +250,7 @@ async function fireAtEnvironmentHex(actor,hex){
   actor.shotsRemaining=Math.max(0,actor.shotsRemaining-1);if(!actor.shotsRemaining){actor.attacksRemaining=0;exitAimMode(false,false);endTurn();}updateUi();draw();return true;
  }finally{environmentActionInProgress=false;}
 }
-const environmentControls=document.createElement('div');environmentControls.id='combatEnvironmentControls';environmentControls.innerHTML='<label><input id="strayArrowTest" type="checkbox"> Stray arrows (test)</label>';
-document.getElementById('combatCompass').append(environmentControls);
-for(const name of ['keydown','keyup'])environmentControls.addEventListener(name,event=>event.stopPropagation());
+// Stray-arrow test control retired; production environmental targeting remains.
 
 // Explicitly called by the shared updateUi after its standard controls are updated.
 function updateEnvironmentAimUi(){
@@ -243,3 +258,11 @@ function updateEnvironmentAimUi(){
  ui.unitInfoRows.insertAdjacentHTML('beforeend','<span>Target</span><span class="bad">INVALID — INTACT WINDOW</span>');
  if(pendingAimAction){const button=document.getElementById('castButton');if(button)button.disabled=true;}
 }
+
+// Resettable oak destruction with reserved fall space and persistent debris obstacles.
+function setGodTreeStatus(text){const node=document.getElementById('godTreeStatus');if(node)node.textContent=text;}
+window.toggleGodTreeTool=function(){if(!game?.testTrees)return;game.godTreeTool=!game.godTreeTool;const button=document.getElementById('godTreeTool');button?.setAttribute('aria-pressed',String(game.godTreeTool));if(button)button.textContent=game.godTreeTool?'GOD TOOL: FELL TREE':'GOD TOOL';canvas.style.cursor=game.godTreeTool?'crosshair':'';setGodTreeStatus(game.godTreeTool?'Click a tree’s base hex to fell it with the selected break.':'');};
+function fellGodTree(tree,breakType=globalThis.adventurePartyTreeBreakType||'torn'){if(!tree||treeFallFor(tree)||!combatFirTrees||!directFirRendering())return false;const navigation=prepareOakFallNavigation(tree);if(!navigation){setGodTreeStatus('Move units clear and let movement finish.');return false;}const state={...navigation,breakType:breakType==='cut'?'cut':'torn',startedAt:performance.now()-(matchMedia('(prefers-reduced-motion: reduce)').matches?6000:0)};game.treeFalls??=new Map();game.treeFalls.set(key(tree.x,tree.y),{tree,state});if(tree===game.oakTestTree)game.oakFallTest=state;game.treeFallRevision=(game.treeFallRevision||0)+1;combatReachableMovement.cache=null;playOakFallSound(state);updateTreeEnvironment();combatFirTrees.clearDirectShadows();setGodTreeStatus((tree.species==='white-oak'?'White Oak':tree.species==='american-beech'?'American Beech':tree.species==='sweet-birch'?'Sweet Birch':'Sugar Maple')+' falling.');draw();ensureGroundCoverAnimation();return true;}
+window.resetGodTrees=function(){if(!game)return;game.treeFalls?.clear();game.oakFallTest=null;game.treeFallRevision=(game.treeFallRevision||0)+1;game.treeWoodSignature=null;game.allLeafSources=null;stopOakFallSound();combatReachableMovement.cache=null;combatFirTrees?.clearDirectShadows();setGodTreeStatus('Trees restored.');draw();};
+window.toggleOakFallTest=function(){if(treeFallFor(game.oakTestTree)){resetGodTrees();return true;}return fellGodTree(game.oakTestTree);};
+

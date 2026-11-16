@@ -8,8 +8,8 @@ import {bowArrowStateAt,bowPickupTime} from './equipment-visual-states.mjs?v=R23
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {loadCombatModel} from './combat-model-source.mjs';
 import {validateWorkshopUnit} from './workshop-unit-package.mjs?v=R238C313';
-import {buildSceneGraph,configureCamera,normalizedFrame,mountCombatEquipment} from './combat-mob-renderer.mjs?v=R238C312';
-import {restoreDirectMaterials,setDirectUnit} from './combat-direct-units.mjs';
+import {buildSceneGraph,configureCamera,normalizedFrame,mountCombatEquipment} from './combat-mob-renderer.mjs?v=tree-snow-grains1';
+import {restoreDirectMaterials,setDirectUnit} from './combat-direct-units.mjs?v=tree-snow-grains1';
 import {createWorkshopAnimationSelector,workshopAttackTiming} from './workshop-animation-runtime.mjs';
 import {createHandPose} from './mob-workshop-hand-pose.mjs';
 import {removeWorkshopRootTravel,createWorkshopGrounding} from './workshop-grounding.mjs';
@@ -54,7 +54,7 @@ export async function loadWorkshopCombatUnit(recipe,{onProgress}={}){
  for(const [pose,slot] of Object.entries(mapping)){
   poses[pose]={frames:{}};
   const asset={group,camera,triangles,workshopSample(entity,walkSeconds,now,arrowScale=1){
-   const selected=select(entity,slot,walkSeconds,Math.floor(now*30/1000)*1000/30);
+   const selected=select(entity,slot,walkSeconds,now);
    if(shared.key!==selected.key||shared.ammo!==entity?.missileAmmoQuantity||shared.arrowScale!==arrowScale){
       perf.count('workshopPoseEvaluations');
     hand.restore();mixer.stopAllAction();grounding.reset();

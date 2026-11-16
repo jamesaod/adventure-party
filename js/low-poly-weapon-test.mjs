@@ -19,7 +19,7 @@ if(typeof window!=='undefined'&&new URLSearchParams(location.search).has('weapon
    const {appearanceRecipeForMob}=await import('./mob-appearance.mjs');
    const {loadCombatPoseRecipe}=await import('./combat-pose-recipe.mjs');
    const {requestPreparedAsset}=await import('./combat-prepared-store.mjs');
-   const {preparedAssetKey}=await import('./combat-prepared-assets.mjs');
+   const {preparedAssetKey}=await import('./combat-prepared-assets.mjs?v=tree-snow-grains1');
    const source=typeof game!=='undefined'&&game?.player||make();
    const unit=structuredClone(source);addWeaponTestInventory(unit);
    const captured=unit.repositoryMobId?window.adventurePartyRepositoryMobs.recipe(unit):await loadCombatPoseRecipe({mobType:unit.type});

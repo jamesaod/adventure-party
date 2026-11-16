@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {CombatWetBasins,basinDepth,basinWaterDepth,BASIN_MAX_METRES} from '../js/combat-wet-basins.mjs';
+assert.equal(basinDepth(0),0);assert.equal(basinDepth(.35),0);
+assert.equal(basinDepth(1),.1524);assert.equal(basinDepth(2),.1524);
+for(let i=1;i<=100;i++)assert(basinDepth(i/100)>=basinDepth((i-1)/100));
+assert.equal(basinWaterDepth(.03,.08),0,'Shallow rims remain above pooled water');
+assert(basinWaterDepth(.15,.08)>0,'Water appears in the deeper center first');
+assert.equal(basinWaterDepth(.15,1),.15);
+const heavy=new CombatWetBasins(),light=new CombatWetBasins();
+for(let i=0;i<480;i++){heavy.step(.25,{type:'rain',intensity:1});light.step(.25,{type:'rain',intensity:.55});}
+assert.equal(heavy.wet,1);assert(heavy.water>.10&&heavy.water<=BASIN_MAX_METRES);
+assert(heavy.water>light.water,'Heavy rain pools more than light rain');
+while(heavy.water>0)heavy.step(.25,{});
+assert(heavy.wet>.5,'Puddles disappear before saturated mud dries');
+for(let i=0;i<1600;i++)heavy.step(.25,{});
+assert.equal(heavy.active,false);
+const snow=new CombatWetBasins();for(let i=0;i<600;i++)snow.step(.25,{type:'snow',intensity:1});assert.equal(snow.active,false);
+const timed=new CombatWetBasins(),rain={type:'rain',intensity:1};timed.scene('a');timed.update(0,rain);timed.update(100,rain);assert.equal(timed.wet,0);timed.update(250,rain);assert(timed.wet>0);
+const before=timed.wet;timed.update(50000,rain,true);timed.update(100000,rain);assert.equal(timed.wet,before,'Hidden time does not accumulate rain');timed.scene('a');assert.equal(timed.wet,before);timed.scene('b');assert.equal(timed.active,false,'New encounters start dry');
+console.log('PASS combat basin depth, pooling, rainfall, drainage, drying, tick bounds and scene reset');

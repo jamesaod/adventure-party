@@ -11,9 +11,9 @@ const allLayoutPresets = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRES
 
 // Run the game's actual footprint, movement, factory, and rendering functions.
 const lifecycleSource=readCombatFixture(new URL('../js/combat-casting-lifecycle.js',import.meta.url),'utf8');
-const source = readCombatFixture(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
+const source = readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url), 'utf8');
 function productionFunction(name) {
-  const code = ['r230InitiativeStore','r230PendingCastings','r230CastingStore','castingInitiativeSlots'].includes(name)?lifecycleSource:name==='createCombatGame'?readCombatFixture(new URL('../js/combat-runtime.js',import.meta.url),'utf8'):source;
+  const code = ['r230InitiativeStore','r230PendingCastings','r230CastingStore','castingInitiativeSlots'].includes(name)?lifecycleSource:name==='createCombatGame'?readCombatFixture(new URL('../js/combat-runtime.js?v=tree-snow-grains1',import.meta.url),'utf8'):source;
   return extractCombatFunction(code,name);
 }
 function productionDeclaration(name, endMarker = '\n};') {
@@ -29,7 +29,7 @@ const walls = new Set(), occupied = new Set(), blockedEdges = new Set();
 const image = { complete: true, naturalWidth: 320, naturalHeight: 280 };
 const draws = [];
 const project = (x, y) => ({ x: 64 * (x + y / 2), y: 31.5 * y });
-const sandbox = {...combatPresentationTestServices(),prepareCombatWalkPath:(unit,path)=>path,
+const sandbox = {expireCombatGroundHeat(){},...combatPresentationTestServices(),prepareCombatWalkPath:(unit,path)=>path,
   window:{adventurePartyArmorRules:armorRules,adventurePartyRepositoryMobs:createRepositoryMobRegistry(['orc-male-uniformed','orc-archer'].map(id=>JSON.parse(readCombatFixture(new URL('../data/mobs/'+id+'.unit-package.json',import.meta.url),'utf8'))),JSON.parse(readCombatFixture(new URL('../data/studio-models.json',import.meta.url),'utf8')))},
   markMobAppearanceDirty:()=>Promise.resolve(null),
   PRIEST_SPELLS: {}, // Isolated classic-script VM does not load the priest catalog.
@@ -62,7 +62,7 @@ const functions = [
   'key', 'hexDistance', 'facingDirectionIndex', 'hexDirectionIndexToward', 'unitPoseDefinition',
   'unitFootprintDefinition', 'rotateAxialOffset', 'footprintOffsetsForFacing', 'occupiedHexesAt',
   'occupiedHexes', 'unitFootprintCellCount', 'unitOccupiesHex', 'unitFootprintScreenCenter',
-  'unitDistance', 'isFirBlockedHex', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
+  'unitDistance', 'treeFallEntries', 'oakDebrisSettled', 'oakDebrisBlocksStep', 'isFirBlockedHex', 'canUnitStandAt', 'canUnitRotateAt', 'unitTransitionBlocked', 'updateFacingForStep', 'faceEntityToward',
   'searchRotatingFootprintPath', 'pathToHex', 'axialDisk',
   'makeKobold', 'makeKoboldBodyguard', 'makeKoboldSlinger', 'repositoryAttacksThisRound', 'makeOrc', 'makeLegacyOrc', 'makeOrcLeader', 'makeOrcShaman',
   'makeLargeMobTest', 'makeStudioTestMob', 'makeLibraryMob', 'libraryTestPlayer', 'availableCombatMobChoices', 'makeStudioTestPlayer', 'deployConfiguredCombatMobs', 'drawStudioSpriteMob',
@@ -268,7 +268,7 @@ for (const layout of allLayoutPresets) {
   assert.equal(sandbox.allUnits().filter(unit => unit.type === 'fighter').length, 1, 'Restart cannot add another Carl');
 }
 assert.equal(sandbox.returnToStudioFromCombat(), true);
-assert.deepEqual(studioReturns, ['./3d-studio.html?studioRestore=1']);
+assert.deepEqual(studioReturns, ['./index.html?menu=game-mechanics']);
 for (const type of ['orc','orc-leader','ranger','mage']) {
   sandbox.selectedStudioSpriteSetId = `test-${type}-single`;
   sandbox.newGame('grass');

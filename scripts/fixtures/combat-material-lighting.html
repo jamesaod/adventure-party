@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Combat material GPU regression</title><script type="importmap">{"imports":{"three":"../../assets/vendor/three/three.module.min.js"}}</script><body><p id="result" role="status">Compiling combat material variants…</p><script type="module">
+import * as T from '../../assets/vendor/three/three.module.min.js';
+import {restoreDirectMaterials} from '../../js/combat-direct-units.mjs?v=R238C391';
+import {prepareCorpseSnow,updateCorpseSnowMap,renderCorpseSnowLayers,snowAmbientDisplay} from '../../js/combat-corpse-snow.mjs';
+const result=document.getElementById('result');
+try{
+ const renderer=new T.WebGLRenderer({antialias:false});renderer.setSize(100,100);document.body.append(renderer.domElement);
+ renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+ renderer.debug.onShaderError=(gl,program,vertex,fragment)=>{throw Error(gl.getShaderInfoLog(vertex)+'\n'+gl.getShaderInfoLog(fragment));};
+ const scene=new T.Scene(),camera=new T.PerspectiveCamera(40,1,.01,100);camera.position.set(0,2,4);camera.lookAt(0,0,0);
+ scene.add(new T.HemisphereLight(0xdce8ff,0x655a43,1),new T.PointLight(0xffb070,12));
+ const samples=[];
+ for(const Material of [T.MeshStandardMaterial,T.MeshPhysicalMaterial,T.MeshLambertMaterial,T.MeshPhongMaterial,T.MeshToonMaterial,T.MeshBasicMaterial])for(const shield of [false,true])for(const snow of [false,true]){
+  const group=new T.Group(),m=new Material({color:0x84664a}),mesh=new T.Mesh(new T.BoxGeometry(1,.2,1),m);mesh.userData.combatShieldSurface=shield;group.add(mesh);restoreDirectMaterials(group);
+  const amount={value:snow?4:0};
+  if(snow){prepareCorpseSnow(group,{alive:false},amount);updateCorpseSnowMap(amount);group.traverse(o=>{if(o.isMesh&&o.material.userData.corpseSnowGroundDisplay)o.material.userData.corpseSnowGroundDisplay.value.copy(snowAmbientDisplay([.6,.65,.7]));});}
+  scene.add(group);renderer.compile(scene,camera);renderCorpseSnowLayers(renderer,scene,camera,group,amount.value);scene.remove(group);samples.push([m.type,shield,snow]);
+ }
+ result.textContent='PASS — 24 real GPU variants: six material families × body/shield × bare/snow.';document.body.dataset.result=JSON.stringify({passed:samples.length,samples});
+ renderer.dispose();
+}catch(error){result.textContent='FAIL — '+error.message;document.body.dataset.result='failed';console.error(error);}
+</script></body></html>

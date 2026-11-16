@@ -53,7 +53,7 @@ export function workshopCombatFits(draft,inventory=workshopCombatInventory(draft
 // Registration is intentionally separate, so an unimplemented capability cannot
 // accidentally become encounter-selectable just because its JSON parses.
 export function instantiateWorkshopCombat(draft,{id,random=Math.random}={}) {
-  const instance=instantiateCreature(clone(draft),{id,random}),c=instance.definition;
+  const instance=instantiateCreature(clone({...draft,clips:[]}),{id,random}),c=instance.definition;
   const abilities=Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,draft.stats[k]]));
   return {id,name:draft.name,raceId:c.raceId,race:raceProfile(c.raceId).label,gender:c.gender,moraleOverride:c.moraleOverride,hp:instance.hp,maxHp:instance.maxHp,
     ac:instance.ac,authoredBaseAc:draft.stats.ac,unarmoredAc:draft.stats.ac,

@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {validateShape,insideShape,clipToHex} from '../js/combat-map-shapes.mjs';
+import {createMap,exportMap,parseMap,resizeMap,corner} from '../js/combat-map-document.mjs';
+const textures=new Set(['stone']);const shape={boundary:'hard',texture:'stone',points:[{x:0,y:0},{x:300,y:0},{x:300,y:150},{x:100,y:75},{x:0,y:150}]};
+assert.deepEqual(validateShape(shape,textures),shape);assert(insideShape({x:50,y:50},shape.points));assert(!insideShape({x:400,y:50},shape.points));
+for(const points of [[{x:0,y:0},{x:10,y:10},{x:0,y:10},{x:10,y:0}],[{x:0,y:0},{x:10,y:0},{x:20,y:0}],[{x:0,y:0},{x:10,y:10},{x:10,y:10}],[{x:NaN,y:0},{x:10,y:0},{x:0,y:10}]])assert.throws(()=>validateShape({...shape,points},textures));
+const map=createMap();map.terrain.shapes=[shape];assert.deepEqual(parseMap(exportMap(map)),map);assert.deepEqual(resizeMap(map,2,2).terrain.shapes,[shape]);assert(!parseMap(exportMap(createMap())).terrain.shapes);
+const hex=Array.from({length:6},(_,i)=>corner(i));const clipped=clipToHex([{x:-100,y:-100},{x:100,y:-100},{x:0,y:100}],hex);assert(clipped.length>=3);assert(clipped.every(p=>p.y>=-32-1e-6&&p.y<=32+1e-6&&Math.abs(p.x)<=Math.sqrt(3)*16+1e-6));assert.equal(clipToHex([{x:100,y:100},{x:200,y:100},{x:100,y:200}],hex).length,0);
+const straight=clipToHex([{x:0,y:-100},{x:100,y:0},{x:0,y:100}],hex);assert(straight.filter(p=>Math.abs(p.x)<1e-8).length>=2,'A cut across a hex keeps its straight x=0 boundary');
+assert.throws(()=>parseMap(JSON.stringify({...map,terrain:{...map.terrain,shapes:Array(257).fill(shape)}})));
+console.log('PASS concave shape validation, crossing/degenerate rejection, straight hex clipping, legacy and shape round trips, resize and limits');

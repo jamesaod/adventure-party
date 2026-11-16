@@ -13,16 +13,21 @@ function triangleWeights(divisions){
  }
  snowWeights.set(divisions,weights);return weights;
 }
+const indexedWeights=new Map();
+function sampleWeights(d,indexed){if(!indexed)return triangleWeights(d);if(!indexedWeights.has(d)){const unique=[],indices=[],seen=new Map();for(const w of triangleWeights(d)){const key=w.join(',');if(!seen.has(key)){seen.set(key,unique.length);unique.push(w);}indices.push(seen.get(key));}indexedWeights.set(d,{unique,indices});}return indexedWeights.get(d).unique;}
 const faceSnowDivisions=(f,d)=>f.snowEligible>0?d:1;
-export function surfaceVertexCount(faces,snowDivisions=1){let vertices=0;for(const f of faces)if(f.points.length>=3)vertices+=(f.points.length-2)*3*(faceSnowDivisions(f,snowDivisions)**2);return vertices;}
-export function updateSurfaceBuffers(geometry,faces,THREE,count=()=>{},shadowOnly=false,snowDivisions=1){
- if(shadowOnly)snowDivisions=1;
- const vertices=surfaceVertexCount(faces,snowDivisions);
+export function surfaceVertexCount(faces,snowDivisions=1,indexed=false){let vertices=0;for(const f of faces)if(f.points.length>=3)vertices+=(f.points.length-2)*(indexed?sampleWeights(faceSnowDivisions(f,snowDivisions),true).length:3*(faceSnowDivisions(f,snowDivisions)**2));return vertices;}
+export function updateSurfaceBuffers(geometry,faces,THREE,count=()=>{},shadowOnly=false,snowDivisions=1,indexed=false){
+ if(shadowOnly){snowDivisions=1;indexed=false;}
+ const priorRevision=geometry.userData.surfaceRevision;
+ if(faces._surfaceRevision!==undefined&&priorRevision?.faces===faces&&priorRevision.revision===faces._surfaceRevision&&priorRevision.shadowOnly===shadowOnly&&priorRevision.divisions===snowDivisions&&priorRevision.indexed===indexed){count('surfaceRevisionReuses');return priorRevision.vertices;}
+ const vertices=surfaceVertexCount(faces,snowDivisions,indexed);
  const cache=geometry.userData.surfaceCache||(geometry.userData.surfaceCache={});
- let topologyChanged=cache.snowDivisions!==snowDivisions;cache.snowDivisions=snowDivisions;
+ let topologyChanged=cache.snowDivisions!==snowDivisions||cache.indexed!==indexed;cache.indexed=indexed;cache.snowDivisions=snowDivisions;
  const topology=cache.snowTopology||(cache.snowTopology=[]);let faceIndex=0;
- for(const f of faces){const divided=faceSnowDivisions(f,snowDivisions);if(topology[faceIndex]!==divided)topologyChanged=true;topology[faceIndex++]=divided;}
+ for(const f of faces){const divided=f.points.length+":"+faceSnowDivisions(f,snowDivisions);if(topology[faceIndex]!==divided)topologyChanged=true;topology[faceIndex++]=divided;}
  if(topology.length!==faceIndex)topologyChanged=true;topology.length=faceIndex;
+ if(indexed&&(topologyChanged||!geometry.index)){const indices=[];let base=0;for(const f of faces){if(f.points.length<3)continue;const d=faceSnowDivisions(f,snowDivisions),weights=sampleWeights(d,true);for(let i=1;i<f.points.length-1;i++){for(const index of indexedWeights.get(d).indices)indices.push(base+index);base+=weights.length;}}geometry.setIndex(indices);}else if(!indexed&&geometry.index)geometry.setIndex(null);
  for(const [name,[size,read]] of (shadowOnly?shadowFields:fieldEntries)){
   const constant=!perVertexFields.has(name);
   const snapshot=cache[name]||(cache[name]=[]);let cursor=0,changed=topologyChanged;
@@ -34,12 +39,13 @@ export function updateSurfaceBuffers(geometry,faces,THREE,count=()=>{},shadowOnl
   if(!attribute||attribute.array.length!==vertices*size){attribute=new THREE.BufferAttribute(new Float32Array(vertices*size),size).setUsage(THREE.DynamicDrawUsage);geometry.setAttribute(name,attribute);changed=true;}
   if(!changed){count('surfaceAttributesReused');continue;}
   let offset=0,base=0;for(const f of faces){const n=f.points.length;if(n<3)continue;base++;
-   const weights=triangleWeights(faceSnowDivisions(f,snowDivisions));
+   const weights=sampleWeights(faceSnowDivisions(f,snowDivisions),indexed);
    for(let i=1;i<n-1;i++)for(const w of weights)for(let k=0;k<size;k++)attribute.array[offset++]=constant?snapshot[base+k]:w[0]*snapshot[base+k]+w[1]*snapshot[base+i*size+k]+w[2]*snapshot[base+(i+1)*size+k];
    base+=(constant?1:n)*size;
   }
   attribute.needsUpdate=true;count('surfaceAttributeUploads');
  }
+ geometry.userData.surfaceRevision={faces,revision:faces._surfaceRevision,shadowOnly,divisions:snowDivisions,indexed,vertices};
  return vertices;
 }
 

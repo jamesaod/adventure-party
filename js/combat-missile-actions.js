@@ -4,6 +4,14 @@
  * Projectile/VFX, equipment, LOS and environment impact services remain shared.
  * Preserve existing protected-shot costs and sling return values in this extraction.
  */
+// Shared read-only bow roll inputs for attack resolution and AI selection.
+function bowAttackRollInputs(attacker,defender,range=longbowRangeBand(attacker,defender)){
+ const dexMissileAdjustment=dexterityAdjustments(attacker.stats?.dex??10).missile;
+ const totalAttackBonus=(attacker.missileAttackBonus||0)+dexMissileAdjustment+range.penalty+attackEffectModifier(attacker,defender,'missile');
+ const targetArmorClass=effectiveArmorClassForAttack(attacker,defender,'small-device-missile');
+ return {dexMissileAdjustment,totalAttackBonus,targetArmorClass,targetNumber:attacker.thaco-targetArmorClass};
+}
+
 async function resolveLongbowAction(attacker,defender){
   return window.AdventurePartyCombatResults.physical(resolveProtectedLongbow,attacker,defender);
 }
@@ -132,23 +140,7 @@ async function resolveLongbowHit(attacker,defender){
   /* R97: do not play the successful-hit transient until the roll is known to hit. */
   const rawRoll=d(20);
 
-  const dexMissileAdjustment=
-    dexterityAdjustments(attacker.stats?.dex ?? 10).missile;
-
-  const totalAttackBonus=
-    (attacker.missileAttackBonus||0)+
-    dexMissileAdjustment+
-    range.penalty+
-    attackEffectModifier(attacker,defender,"missile");
-
-  const targetArmorClass=effectiveArmorClassForAttack(
-    attacker,
-    defender,
-    "small-device-missile"
-  );
-
-  const targetNumber=
-    attacker.thaco-targetArmorClass;
+  const {totalAttackBonus,targetNumber}=bowAttackRollInputs(attacker,defender,range);
 
   const resolution=resolveMissileAttackD20(
     rawRoll,

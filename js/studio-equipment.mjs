@@ -1,3 +1,4 @@
+import {muteBowLeather} from './muted-bow-leather.mjs';
 import {createBowString} from './procedural-bow-string.mjs?v=R238C312';
 import {catalogWeaponPreset} from './low-poly-weapons.mjs';
 import {normalizeShaftRoll,weaponGripQuaternion} from './weapon-shaft-roll.mjs?v=R238C194';
@@ -514,7 +515,7 @@ export function createWeaponAttachment(THREE, hand, model, settings, options = {
   // The bow's source riser has slight transmission. Its extra render pass
   // corrupts scissored six-facing atlas tiles; use the authored opaque override
   // for both Studio and combat without changing source textures or the GLB.
-  applyEquipmentMaterialOverrides(model,weapon.materialOverrides);
+  applyEquipmentMaterialOverrides(model,weapon.materialOverrides);if(weapon.id==='composite-longbow'||/bow_2/.test(weapon.file||''))muteBowLeather(model);
   const socket = new THREE.Group(); socket.name = (options.attachmentHand || weapon.attachmentHand) === 'left' ? 'StudioLeftHandEquipment' : 'StudioRightHandEquipment'; socket.userData.studioEquipment = true;
   const grip = new THREE.Group(); grip.name = 'WeaponGripOrigin'; grip.position.fromArray(weapon.grip).multiplyScalar(-1); grip.add(model); socket.add(grip); hand.add(socket);
   const attachment = { socket, model, weapon, secondaryGripOffsetInches:[0,0,0], update:null, detach: () => socket.removeFromParent() };

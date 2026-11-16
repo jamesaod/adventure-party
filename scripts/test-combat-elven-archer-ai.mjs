@@ -9,3 +9,7 @@ enemies=[{x:1,y:0,alive:true,bow:false}];u=archer();assert.equal(await c.reposit
 enemies=[{x:2,y:0,alive:true,bow:false}];blocked=new Set(c.HEX_DIRS.map(d=>d.x+','+d.y));assert.equal(c.elvenArcherPositionPlan(archer()),null);blocked.clear();u=archer();u.raceId='orc';assert.equal(await c.repositionElvenArcher(u),false);
 u=archer();u.halfMove=1;assert.equal(await c.repositionElvenArcher(u),true,'Full reposition consumes attack');assert(u.turnMoves>1);u=archer();u.missileAmmoQuantity=0;const before=moves;await c.repositionElvenArcher(u);assert.equal(moves,before);
 console.log('PASS Elf medium-range holding, short-range retreat, long-range approach, safe paths, adjacent hold/melee, blocked routes, move budget and non-Elf/ammo exclusions');
+
+// All automatic turn owners must enter the same range policy before shooting.
+const main=readFileSync('js/adventure-party.js','utf8');
+for(const name of ['friendlyNpcTurn','mobTurn','runQuickCommandPlayerTurn']){const start=main.indexOf('async function '+name+'('),end=main.indexOf('\n}',start);assert(main.slice(start,end).includes('await repositionElvenArcher('),name+' uses range policy');}

@@ -62,48 +62,37 @@ const launcherScreen=document.getElementById("launcherScreen");
 const combatScreen=document.getElementById("combatScreen");
 const combatConditionsScreen=document.getElementById("combatConditionsScreen");
 const xpLootScreen=document.getElementById("xpLootScreen");
-const pixelScreen=document.getElementById("pixelScreen");
 const spellbookScreen=document.getElementById("spellbookScreen");
 const classbookScreen=document.getElementById("classbookScreen");
 const spellPreviewScreen=document.getElementById("spellPreviewScreen");
-const launcherButtons=[...document.querySelectorAll(".launcher-menu button")];
+let launcherMenu="main";
+let launcherButtons=[...document.querySelectorAll("#mainMenu button")];
+function setLauncherMenu(menu,{focus=false}={}){
+  launcherMenu=menu==="game-mechanics"?"game-mechanics":"main";
+  const mechanics=launcherMenu==="game-mechanics";
+  document.getElementById("mainMenu").hidden=mechanics;
+  document.getElementById("gameMechanicsMenu").hidden=!mechanics;
+  launcherButtons=[...document.querySelectorAll(mechanics?"#gameMechanicsMenu button":"#mainMenu button")];
+  launcherSelection=mechanics?0:1;
+  updateLauncherSelection();
+  if(focus)launcherButtons[launcherSelection]?.focus();
+}
+
 
 function renderBuildMetadata(){
-  const source=document.getElementById("buildMetadata");
-  const label=document.getElementById("buildLabel");
-  if(!source || !label) return;
-
+  const source=document.getElementById("buildMetadata"),label=document.getElementById("buildLabel");
+  if(!source||!label)return;
   try{
-    const build=JSON.parse(source.textContent || "{}");
-    const builtAt=new Date(build.builtAt);
-
-    if(
-      typeof build.architecture!=="string" ||
-      typeof build.release!=="string" ||
-      !Number.isFinite(builtAt.getTime())
-    ){
-      throw new Error("Invalid build metadata.");
-    }
-
-    const dateText=new Intl.DateTimeFormat(undefined,{
-      year:"numeric",
-      month:"short",
-      day:"numeric"
-    }).format(builtAt);
-
-    const timeText=new Intl.DateTimeFormat(undefined,{
-      hour:"numeric",
-      minute:"2-digit"
-    }).format(builtAt);
-
-    label.innerHTML=
-      build.architecture+"<br>"+
-      "Build "+build.release+"<br>"+
-      dateText+" • "+timeText;
-  }catch(error){
-    label.textContent="BUILD METADATA ERROR";
-    console.error(error);
-  }
+    const build=JSON.parse(source.textContent||"{}"),updated=new Date(build.builtAt);
+    if(!Number.isFinite(updated.getTime())||!build.publishedRelease||!Number.isInteger(build.candidateRevision)||!build.localBuild)throw Error("Incomplete build metadata");
+    const time=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(updated);
+    label.replaceChildren(...[
+      "Published Game: "+build.publishedRelease,
+      "Candidate Rev: "+build.candidateRevision,
+      "Local Build: "+build.localBuild,
+      "Updated: "+time
+    ].map(text=>{const row=document.createElement('div');row.textContent=text;return row;}));
+  }catch(error){label.textContent="BUILD METADATA ERROR";console.error(error);}
 }
 
 renderBuildMetadata();
@@ -115,7 +104,7 @@ function updateLauncherSelection(){
 }
 
 function showLauncher(){
-  stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();
+  stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();globalThis.adventurePartyStopSelectedAudio?.();
   cancelPendingCombatStart({preserveDraft:currentScreen==="launcher"});
   globalThis.adventurePartyUiAudio?.transition(currentScreen,'launcher','back');
   currentScreen="launcher";
@@ -165,7 +154,6 @@ function showLauncher(){
   combatScreen.classList.remove("active");
   combatConditionsScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
-  pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
   spellPreviewScreen?.classList.remove("active");
@@ -173,15 +161,15 @@ function showLauncher(){
 
   updateAudioIndicators();
 
-  if(audioEnabled && audioReady){
-    startTitleMusic();
-  }
 }
 
 let selectedCombatCondition="grass";
 let selectedMobEncounter="custom";
-const combatMobRoster=[];
-let combatMobRowSequence=0;
+const combatMobRoster=[
+  {rowId:1,type:"mob:orc-warrior",count:12,faction:"hostile"},
+  {rowId:2,type:"mob:wood-elf-archer",count:6,faction:"friendly"}
+];
+let combatMobRowSequence=2;
 const COMBAT_MOB_CHOICES=[
   ["kobold","Kobold"],["kobold-bodyguard","Kobold Body Guard"],
   ["kobold-slinger","Kobold Slinger"],["orc","Orc"],["orc-archer","Orc Archer"],
@@ -252,13 +240,7 @@ function isStudioTestCombat(combat=game){
 }
 
 function studioReturnUrl(){
-  const source=new URLSearchParams(window.location.search || "");
-  if(source.has("testMob"))return "./mob-creator.html?mob="+encodeURIComponent(source.get("testMob"));
-  const query=new URLSearchParams("studioRestore=1");
-  for(const key of ["model","mob","poseLibrary","preview"]){
-    if(source.has(key))query.set(key,source.get(key));
-  }
-  return "./3d-studio.html?"+query.toString();
+  return "./index.html?menu=game-mechanics";
 }
 
 function returnToStudioFromCombat(){
@@ -291,10 +273,8 @@ function showCombatConditions(){
   if(currentScreen!=="combat-conditions") cancelPendingCombatStart({preserveDraft:true});
   globalThis.adventurePartyUiAudio?.transition(currentScreen,'combat-conditions','open');
   currentScreen="combat-conditions";
-  stopTitleMusic();
   launcherScreen.classList.remove("active");
   combatScreen.classList.remove("active");
-  pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
   spellPreviewScreen?.classList.remove("active");
@@ -310,42 +290,71 @@ function showCombatConditions(){
 
 
 function combatRenderingPanel(){
-  const panel=document.createElement('div');panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
-  panel.style.cssText='position:fixed;inset:0;z-index:200000;background:#10101b;color:#77e7ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:24px';
-  const wasInert=combatScreen.inert;combatScreen.inert=true;
-  const label=document.createElement('strong');label.textContent='Please wait, loading units';panel.append(label);document.body.append(panel);
-  const task=document.createElement('div'),why=document.createElement('div'),history=document.createElement('div');
-  task.style.cssText='font:18px/1.6 system-ui,sans-serif;text-align:center;max-width:760px;padding:0 20px';
-  why.style.cssText='font:16px/1.6 system-ui,sans-serif;color:#bdc7d7;text-align:center;max-width:760px;padding:0 20px';
-  history.style.cssText='font:14px/1.8 system-ui,sans-serif;color:#8192a9;text-align:center;max-width:760px;padding:0 20px';
-  task.textContent='Checking the units and their equipment…';why.textContent='Loading prepared models, textures and shadows.';panel.append(task,why,history);
-  const recent=[];
-  const progress=event=>{const {unitName,step,reason}=event.detail||{};if(!step)return;
-    if(task.textContent&&!task.textContent.startsWith('Checking'))recent.push(task.textContent);
-    task.textContent=unitName?`${unitName} — ${step}`:step;why.textContent=reason||'';
-    history.replaceChildren(...recent.slice(-3).map(text=>{const row=document.createElement('div');row.textContent=text;return row;}));
+  const previousFocus=document.activeElement,wasInert=combatScreen.inert;
+  const panel=document.createElement('div');panel.id='combatPreparation';panel.className='combat-preparation-overlay';
+  const box=document.createElement('section');box.className='combat-preparation-box chrome';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-labelledby','combatPreparationTitle');
+  const label=document.createElement('h2');label.id='combatPreparationTitle';label.textContent='Preparing for Battle';
+  const task=document.createElement('p');task.className='preparation-task';task.setAttribute('role','status');task.textContent='Preparing the battlefield and units…';
+  const why=document.createElement('p');why.className='preparation-reason';why.textContent='Loading models, equipment, textures and shadows.';
+  const history=document.createElement('ol');history.className='preparation-history';history.tabIndex=0;history.setAttribute('aria-label','Preparation action history');
+  const prompt=document.createElement('p');prompt.className='preparation-prompt';prompt.tabIndex=-1;prompt.textContent='Please wait…';
+  const actions=document.createElement('div');actions.className='preparation-actions';
+  box.append(label,task,why,history,prompt,actions);panel.append(box);document.body.append(panel);combatScreen.inert=true;
+  let state='loading',resolveReady=null,readyPromise=null,lastEntry='';
+  const append=(text,reason='')=>{
+    const signature=text+'\n'+reason;if(signature===lastEntry)return;lastEntry=signature;
+    const atBottom=history.scrollHeight-history.scrollTop-history.clientHeight<24;
+    const row=document.createElement('li'),title=document.createElement('div');title.textContent=text;row.append(title);
+    if(reason){const detail=document.createElement('p');detail.textContent=reason;row.append(detail);}
+    history.append(row);if(atBottom)history.scrollTop=history.scrollHeight;
   };
-  document.addEventListener('adventure-party:unit-render-progress',progress);
-  const block=event=>{if(!panel.contains(event.target))event.stopImmediatePropagation();};window.addEventListener('keydown',block,true);
-  return {finish(){combatScreen.inert=wasInert;panel.remove();window.removeEventListener('keydown',block,true);document.removeEventListener('adventure-party:unit-render-progress',progress);},fail(error){
+  append(task.textContent,why.textContent);
+  const progress=event=>{if(state!=='loading')return;const {unitName,step,reason}=event.detail||{};if(!step)return;
+    task.textContent=unitName?`${unitName} — ${step}`:step;why.textContent=reason||'';append(task.textContent,why.textContent);
+  };
+  const continueReady=()=>{if(state!=='ready')return;state='continued';resolveReady?.(true);resolveReady=null;};
+  const block=event=>{
+    // Keep gameplay shortcuts out of the modal; normal scrolling and Tab still work.
+    event.stopImmediatePropagation();
+    if((event.code==='Space'||event.key===' ')&&state!=='failed'){event.preventDefault();if(!event.repeat)continueReady();}
+    if(event.key==='Tab'){
+      const targets=[history,...actions.querySelectorAll('button')];
+      if(event.shiftKey&&document.activeElement===targets[0]){event.preventDefault();targets.at(-1).focus();}
+      else if(!event.shiftKey&&document.activeElement===targets.at(-1)){event.preventDefault();targets[0].focus();}
+    }
+  };
+  document.addEventListener('adventure-party:unit-render-progress',progress);window.addEventListener('keydown',block,true);history.focus();
+  const finish=()=>{
+    if(state==='closed')return;state='closed';resolveReady?.(false);resolveReady=null;
+    document.removeEventListener('adventure-party:unit-render-progress',progress);window.removeEventListener('keydown',block,true);
+    combatScreen.inert=wasInert;panel.remove();
+    if(previousFocus?.isConnected&&previousFocus.getClientRects().length)previousFocus.focus();
+  };
+  return {finish,ready(){
+    if(state==='closed'||state==='failed')return Promise.resolve(false);
+    if(readyPromise)return readyPromise;
+    readyPromise=new Promise(resolve=>{resolveReady=resolve;});state='ready';
     document.removeEventListener('adventure-party:unit-render-progress',progress);
-    label.textContent='Combat could not start';const detail=document.createElement('p');detail.textContent=error.message;
-    const retry=document.createElement('button');retry.textContent='Retry';retry.onclick=()=>location.reload();panel.append(detail,retry);
+    label.textContent='Preparation Complete';task.textContent='The battlefield is ready.';why.textContent='Review the actions below before continuing.';
+    append('Preparation complete.');prompt.textContent='Press Space to Continue';prompt.classList.add('ready');panel.dataset.state='ready';prompt.focus();
+    return readyPromise;
+  },fail(error){
+    if(state==='closed')return;state='failed';resolveReady?.(false);resolveReady=null;document.removeEventListener('adventure-party:unit-render-progress',progress);
+    label.textContent='Combat Could Not Start';task.textContent=error?.message||String(error);why.textContent='Review the action history, then retry or return to setup.';append('Preparation failed',task.textContent);prompt.textContent='';
+    const retry=document.createElement('button');retry.textContent='Retry';retry.onclick=()=>location.reload();
+    const back=document.createElement('button');back.textContent='Return to Setup';back.onclick=()=>{finish();showCombatConditions();};actions.append(retry,back);retry.focus();
   }};
 }
-
 
 
 function showSpellBook(){
   globalThis.adventurePartyUiAudio?.transition(currentScreen,'spellbook','open');
   currentScreen="spellbook";
 
-  stopTitleMusic();
   launcherScreen.classList.remove("active");
   combatConditionsScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
   combatScreen.classList.remove("active");
-  pixelScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
   spellPreviewScreen?.classList.remove("active");
   spellbookScreen.classList.add("active");
@@ -358,12 +367,10 @@ function showClassBook(){
   globalThis.adventurePartyUiAudio?.transition(currentScreen,'classbook','open');
   currentScreen="classbook";
 
-  stopTitleMusic();
   launcherScreen.classList.remove("active");
   combatConditionsScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
   combatScreen.classList.remove("active");
-  pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   spellPreviewScreen?.classList.remove("active");
   classbookScreen.classList.add("active");
@@ -372,31 +379,20 @@ function showClassBook(){
   updateAudioIndicators();
 }
 
-async function showPixelEditor(){
-  globalThis.adventurePartyUiAudio?.transition(currentScreen,'pixel','open');
-  currentScreen="pixel";
-
-  stopTitleMusic();
-  launcherScreen.classList.remove("active");
-  combatConditionsScreen?.classList.remove("active");
-  xpLootScreen?.classList.remove("active");
-  combatScreen.classList.remove("active");
-  spellbookScreen.classList.remove("active");
-  classbookScreen.classList.remove("active");
-  spellPreviewScreen?.classList.remove("active");
-  pixelScreen.classList.add("active");
-
-  updateAudioIndicators();
-
-  await initializePixelEditor();
-}
-
 async function activateLauncherSelection(){
   const button=launcherButtons[launcherSelection];
+  if(!button)return;
   const target=button.dataset.screen;
 
   await unlockAudio();
 
+  if(target==="game-mechanics"||target==="main-menu"){
+    globalThis.adventurePartyUiAudio?.play(target==="main-menu"?'back':'open');
+    setLauncherMenu(target,{focus:true});return;
+  }
+  if(target==="equipment-library"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./equipment-library.html");return;}
+  if(target==="terrain-lab"){window.location.assign("./terrain-lab.html");return;}
+  if(target==="combat-map"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./combat-map-editor.html");return;}
   if(target==="combat"){
     showCombatConditions();
     return;
@@ -412,12 +408,7 @@ async function activateLauncherSelection(){
     return;
   }
 
-  if(target==="pixel"){
-    await showPixelEditor();
-    return;
-  }
 
-  if(target==="mob-creator"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-creator.html");return;}
   if(target==="mob-workshop"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-workshop.html");return;}
   if(target==="mob-catalog"){
     globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-catalog.html");
@@ -427,10 +418,6 @@ async function activateLauncherSelection(){
   if(target==="explorer"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./map-editor.html");return;}
   if(target==="exploration-test"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./exploration.html");return;}
 
-  if(target==="3d-studio"){
-    globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./3d-studio.html");
-    return;
-  }
 
   if(target==="spell-preview"){
     if(typeof window.showSpellPreviewer==="function"){
@@ -444,19 +431,14 @@ async function activateLauncherSelection(){
   alert(button.textContent+" is not connected yet.");
 }
 
-launcherButtons.forEach((button,index)=>{
-  button.addEventListener("mouseenter",()=>{
-    launcherSelection=index;
-    updateLauncherSelection();
-  });
-
-  button.addEventListener("click",async()=>{
-    launcherSelection=index;
-    updateLauncherSelection();
-    await activateLauncherSelection();
-  });
+document.querySelectorAll(".launcher-menu button").forEach(button=>{
+  const select=()=>{const index=launcherButtons.indexOf(button);if(index>=0){launcherSelection=index;updateLauncherSelection();}};
+  button.addEventListener("mouseenter",select);
+  button.addEventListener("focus",select);
+  button.addEventListener("click",async()=>{select();await activateLauncherSelection();});
 });
 
+if(new URLSearchParams(location.search).get("menu")==="game-mechanics")setLauncherMenu("game-mechanics");
 updateLauncherSelection();
 
 
@@ -485,7 +467,6 @@ document.getElementById("xpLootLauncherButton")?.addEventListener("click",showLa
 
 let audioEnabled=(()=>{try{return sessionStorage.getItem('adventure-party-audio-muted')!=='true';}catch{return true;}})();
 let audioCtx=null;
-let musicGain=null;
 let sfxGain=null;
 let weatherGain=null;
 let noiseBuffer=null;
@@ -494,17 +475,15 @@ let audioReady=false;
 let activeWeatherAudio=null;
 let activeWeatherAudioSignature="";
 
-let musicPlaying=false;
-let titleLoopBuffer=null,titleLoopLoading=null,titleLoopSource=null,titleLoopGeneration=0;
 
 const queuedSfx=[];
 
-const soundToggle=document.getElementById("soundToggle");
+const soundToggle=document.getElementById("launcherAudioStatus");
 const launcherAudioStatus=document.getElementById("launcherAudioStatus");
 const sfxStatus=document.getElementById("sfxStatus");
 
 function updateAudioIndicators(){
-  soundToggle.textContent=audioEnabled ? "SND:ON" : "SND:OFF";
+  soundToggle.setAttribute("aria-label",audioEnabled ? "Mute sound" : "Unmute sound");
   soundToggle.classList.toggle("off",!audioEnabled);
   soundToggle.setAttribute("aria-pressed",String(audioEnabled));
 
@@ -516,11 +495,11 @@ function updateAudioIndicators(){
   }
 
   if(audioReady){
-    launcherAudioStatus.textContent=musicPlaying ? "TITLE MUSIC PLAYING" : "AUDIO READY";
+    launcherAudioStatus.textContent="AUDIO READY";
     sfxStatus.innerHTML="<strong>SFX</strong> READY";
     sfxStatus.className="command ready";
   }else{
-    launcherAudioStatus.textContent="AUDIO ON — AWAITS FIRST INPUT";
+    launcherAudioStatus.textContent="AUDIO ON";
     sfxStatus.innerHTML="<strong>SFX</strong> LOCKED";
     sfxStatus.className="command locked";
   }
@@ -534,15 +513,12 @@ function ensureAudioContext(){
 
   audioCtx=new AudioCtor();
 
-  musicGain=audioCtx.createGain();
-  musicGain.gain.value=0.13;
-  musicGain.connect(audioCtx.destination);
 
   sfxGain=audioCtx.createGain();
   sfxGain.gain.value=0.65;
   sfxGain.connect(audioCtx.destination);
   preloadBowAudio(audioCtx);
-  globalThis.adventurePartyPreloadSnowSteps?.(audioCtx);
+  globalThis.adventurePartyPreloadSnowSteps?.(audioCtx);globalThis.adventurePartyPreloadSelectedAudio?.(audioCtx);
 
   weatherGain=audioCtx.createGain();
   weatherGain.gain.value=0.52;
@@ -562,10 +538,6 @@ function ensureAudioContext(){
 
     if(audioReady){
       flushQueuedSfx();
-
-      if(currentScreen==="launcher" && audioEnabled){
-        startTitleMusic();
-      }
 
       syncWeatherAudio();
     }
@@ -593,29 +565,11 @@ async function unlockAudio(){
   if(audioReady){
     flushQueuedSfx();
 
-    if(currentScreen==="launcher" && audioEnabled){
-      startTitleMusic();
-    }
-
     syncWeatherAudio();
   }
 
   updateAudioIndicators();
   return audioReady;
-}
-
-async function startTitleMusic(){
-  if(!audioEnabled||!audioReady||!audioCtx||currentScreen!=='launcher'||musicPlaying)return;
-  const ticket=++titleLoopGeneration;
-  try{
-    if(!titleLoopBuffer){titleLoopLoading??=fetch('assets/audio/music/arcane-dust.wav').then(r=>{if(!r.ok)throw Error('Title audio '+r.status);return r.arrayBuffer();}).then(data=>audioCtx.decodeAudioData(data)).then(buffer=>titleLoopBuffer=buffer).finally(()=>titleLoopLoading=null);await titleLoopLoading;}
-    if(ticket!==titleLoopGeneration||!audioEnabled||!audioReady||currentScreen!=='launcher')return;
-    const source=audioCtx.createBufferSource();source.buffer=titleLoopBuffer;source.loop=true;source.connect(musicGain);titleLoopSource=source;musicPlaying=true;source.start();updateAudioIndicators();
-  }catch(error){console.warn('Title loop unavailable:',error);musicPlaying=false;updateAudioIndicators();}
-}
-function stopTitleMusic(){
-  titleLoopGeneration++;if(titleLoopSource){try{titleLoopSource.stop();}catch{}titleLoopSource.disconnect();titleLoopSource=null;}
-  musicPlaying=false;updateAudioIndicators();
 }
 
 function queueSfx(fn){
@@ -1329,6 +1283,7 @@ function playMagicMissileHitSound(index=0){
 }
 
 function playDeathSound(entity){
+  showUnitReaction(entity,0,'death');
   queueSfx(()=>{
     const now=audioCtx.currentTime+0.02;
     const osc=audioCtx.createOscillator();
@@ -1510,25 +1465,16 @@ soundToggle.addEventListener("click",async(event)=>{
   globalThis.adventurePartyUiAudio?.setEnabled(audioEnabled);
 
   if(!audioEnabled){
-    stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();
-    stopTitleMusic();
-    stopWeatherAudio();
-
-    if(musicGain) musicGain.gain.value=0;
+    stopBowSounds();globalThis.adventurePartyStopSnowSteps?.();globalThis.adventurePartyStopSelectedAudio?.();
+      stopWeatherAudio();
     if(sfxGain) sfxGain.gain.value=0;
     if(weatherGain) weatherGain.gain.value=0;
   }else{
     ensureAudioContext();
-
-    if(musicGain) musicGain.gain.value=0.13;
     if(sfxGain) sfxGain.gain.value=0.65;
     if(weatherGain) weatherGain.gain.value=0.52;
 
     await unlockAudio();
-
-    if(currentScreen==="launcher"){
-      startTitleMusic();
-    }
 
     syncWeatherAudio();
   }
@@ -1577,14 +1523,14 @@ async function presentCombatFrame(){
 }
 addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=R238C341"),import("./combat-frame-scheduler.mjs?v=R238C249")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=tree-snow-grains1"),import("./combat-frame-scheduler.mjs?v=R238C395")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
   canvas.parentElement.append(status);
   combatGpu=createCombatRenderer(canvas,combatRaster,{onLost:()=>{canvas.parentElement.append(status);status.hidden=false;status.style.display="grid";},onRestored:()=>{status.hidden=true;status.style.display="none";if(typeof combatFirTrees!=='undefined')combatFirTrees?.clearDirectShadows?.();draw();}});
   ctx=combatGpu.context;
-  combatFrames=createCombatFrameScheduler({render:()=>{draw();canvas.dataset.frameStats=JSON.stringify(combatFrames.diagnostics());if(new URLSearchParams(location.search).has('combatDiagnostics'))canvas.dataset.combatDiagnostics=JSON.stringify({round:game?.round,active:game?.active,quick:quickCommandRunning,pause:combatActionPauseRemaining(),walk:!!globalThis.adventurePartyWalkBusy,spell:spellCastInProgress,beatActive:typeof candidateCombatBeatActive!=='undefined'&&candidateCombatBeatActive,units:allUnits().map(u=>({id:u.id,hp:u.hp,alive:u.alive,pose:u.poseName,until:u.poseUntil,attacks:u.attacksRemaining}))});},enabled:()=>!!game&&["combat","spell-preview"].includes(currentScreen)});
+  combatFrames=createCombatFrameScheduler({fps:0,presentationActive:()=>currentScreen==='combat'&&!!game&&!game.over&&!computerCameraFraming&&computerCameraEligible(activeUnit())&&!matchMedia('(prefers-reduced-motion: reduce)').matches,render:()=>{draw();canvas.dataset.frameStats=JSON.stringify(combatFrames.diagnostics());if(new URLSearchParams(location.search).has('combatDiagnostics'))canvas.dataset.combatDiagnostics=JSON.stringify({round:game?.round,active:game?.active,quick:quickCommandRunning,pause:combatActionPauseRemaining(),walk:!!globalThis.adventurePartyWalkBusy,spell:spellCastInProgress,beatActive:typeof candidateCombatBeatActive!=='undefined'&&candidateCombatBeatActive,units:allUnits().map(u=>({id:u.id,hp:u.hp,alive:u.alive,pose:u.poseName,until:u.poseUntil,attacks:u.attacksRemaining}))});},enabled:()=>!!game&&["combat","spell-preview"].includes(currentScreen)});
   return combatGpu;
  }).catch(error=>{combatGpuReady=null;throw error;});
  return combatGpuReady;
@@ -1622,6 +1568,7 @@ const WEATHER_SEVERITIES=[
 ];
 
 const weatherState={
+  amounts:null,
   typeIndex:0,
   severityIndex:0,
   windDirection:1,
@@ -2025,10 +1972,12 @@ function syncWeatherAudio(){
 }
 
 function currentWeatherType(){
+  if(weatherState.amounts){const a=weatherState.amounts;return WEATHER_TYPES.find(t=>t.id===(a.rain>0?"rain":a.snow>0?"snow":a.wind>0?"wind":a.cloudiness>0?"cloudy":"clear"));}
   return WEATHER_TYPES[weatherState.typeIndex] || WEATHER_TYPES[0];
 }
 
 function currentWeatherSeverity(){
+  if(weatherState.amounts){const a=weatherState.amounts,key=currentWeatherType().id,intensity=a[key==="cloudy"?"cloudiness":key]||0;return {id:JSON.stringify(a),label:Math.round(intensity*100)+"%",intensity,windStrength:a.wind};}
   return WEATHER_SEVERITIES[weatherState.severityIndex] || WEATHER_SEVERITIES[0];
 }
 
@@ -2037,6 +1986,7 @@ function getWeatherSnapshot(){
   const severity=currentWeatherSeverity();
   return {
     type:type.id,
+    amounts:weatherState.amounts?{...weatherState.amounts}:null,
     severity:severity.id,
     intensity:severity.intensity,
     windDirection:weatherState.windDirection,
@@ -2070,12 +2020,12 @@ function updateWeatherTestControls(){
 }
 
 function weatherAnimationTick(now){
-  if(currentWeatherType().id==="clear"){
+  if(currentWeatherType().id==="clear"&&!combatGpu?.wetGroundActive?.()){
     weatherAnimationFrame=null;
     weatherLastFrame=0;
     return;
   }
-  if(!weatherLastFrame || now-weatherLastFrame>=(combatFrames?0:32)){
+  if(!weatherLastFrame || now-weatherLastFrame>=(currentWeatherType().id==="clear"&&!combatGpu?.puddleEffectsActive?.()&&!combatGpu?.streamMotionActive?.()?250:(combatFrames?0:32))){
     weatherLastFrame=now;
     if(game && document.getElementById("combatScreen")?.classList.contains("active")){
       draw();
@@ -2085,7 +2035,7 @@ function weatherAnimationTick(now){
 }
 
 function syncWeatherAnimation(){
-  if(currentWeatherType().id==="clear"){
+  if(currentWeatherType().id==="clear"&&!combatGpu?.wetGroundActive?.()){
     if(weatherAnimationFrame!==null){
       cancelCombatAnimationTick(weatherAnimationFrame);
       weatherAnimationFrame=null;
@@ -2101,6 +2051,7 @@ function syncWeatherAnimation(){
 }
 
 function cycleWeatherType(){
+  weatherState.amounts=null;
   weatherState.typeIndex=(weatherState.typeIndex+1)%WEATHER_TYPES.length;
   updateWeatherTestControls();
   syncWeatherAnimation();
@@ -2108,6 +2059,7 @@ function cycleWeatherType(){
 }
 
 function cycleWeatherSeverity(){
+  weatherState.amounts=null;
   weatherState.severityIndex=(weatherState.severityIndex+1)%WEATHER_SEVERITIES.length;
   updateWeatherTestControls();
   syncWeatherAnimation();
@@ -2118,12 +2070,32 @@ weatherTypeButton?.addEventListener("click",cycleWeatherType);
 weatherSeverityButton?.addEventListener("click",cycleWeatherSeverity);
 updateWeatherTestControls();
 
+// Streak-only presentation; ground rings and splash particles retain their original owners.
+const rainStreakSprites=new Map();let rainStreakLast=null,rainStreakDrift=0;
+function rainStreakSprite(tone){
+ if(rainStreakSprites.has(tone))return rainStreakSprites.get(tone);
+ const image=document.createElement('canvas');image.width=8;image.height=64;const brush=image.getContext('2d');
+ const rgb=tone==='warm'?'224,214,192':tone==='night'?'151,174,197':'194,213,225';
+ const along=brush.createLinearGradient(0,0,0,64);along.addColorStop(0,'rgba('+rgb+',0)');along.addColorStop(.35,'rgba('+rgb+',.35)');along.addColorStop(.78,'rgba('+rgb+',1)');along.addColorStop(1,'rgba('+rgb+',0)');brush.fillStyle=along;brush.fillRect(0,0,8,64);
+ brush.globalCompositeOperation='destination-in';const across=brush.createLinearGradient(0,0,8,0);across.addColorStop(0,'transparent');across.addColorStop(.5,'white');across.addColorStop(1,'transparent');brush.fillStyle=across;brush.fillRect(0,0,8,64);
+ rainStreakSprites.set(tone,image);return image;
+}
 function drawRainWeather(now,severity){
   const width=BATTLEFIELD_LOGICAL_WIDTH;
   const height=BATTLEFIELD_LOGICAL_HEIGHT;
   const counts=[216,396,660];
-  const count=counts[weatherState.severityIndex] || counts[0];
+  const count=weatherState.amounts?Math.round(660*severity.intensity):(counts[weatherState.severityIndex] || counts[0]);
   const wind=severity.windStrength*weatherState.windDirection;
+  const dt=rainStreakLast===null?0:Math.min(.05,Math.max(0,(now-rainStreakLast)/1000));rainStreakLast=now;
+  const gust=.78+.17*Math.sin(now*.00075)+.05*Math.sin(now*.00183);
+  const drift=145*wind*gust;rainStreakDrift+=dt*drift;
+  const solar=globalThis.adventurePartySolar?.state?.();
+  const daylight=Math.max(0,Math.min(1,solar?.sky??1));
+  const warmth=(solar?.warmth||0)*Math.max(0,solar?.daylight||0);
+  const sprite=rainStreakSprite(warmth>.25?'warm':daylight<.2?'night':'day');
+  // Falling rain covers only the viewport, independently of map zoom.
+  ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
+  ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
   ctx.fillStyle="rgba(28,38,54,"+(0.035+severity.intensity*0.045)+")";
   ctx.fillRect(0,0,width,height);
   ctx.lineCap="butt";
@@ -2133,30 +2105,22 @@ function drawRainWeather(now,severity){
     const r2=weatherHash(i+213.1);
     const depth=0.55+r2*0.75;
     const fallSpeed=(0.20+r1*0.11)*depth*(0.85+severity.intensity*0.35);
-    const driftSpeed=0.020*wind*depth;
-    const x=weatherWrap(r0*width+now*driftSpeed,width+120)-60;
+    const driftSpeed=drift*.001*depth;
+    const x=weatherWrap(r0*width+rainStreakDrift*depth,width+120)-60;
     const y=weatherWrap(r1*height+now*fallSpeed,height+70)-35;
-    const length=(7+r2*11)*depth*(0.85+severity.intensity*0.35);
+    const length=Math.hypot(driftSpeed,fallSpeed)*(30+r2*12);
     const motionMagnitude=Math.hypot(driftSpeed,fallSpeed) || 1;
     const lineDx=length*(driftSpeed/motionMagnitude);
     const lineDy=length*(fallSpeed/motionMagnitude);
-    ctx.beginPath();
-    ctx.moveTo(x,y);
-    ctx.lineTo(x+lineDx,y+lineDy);
-    ctx.strokeStyle="rgba(184,210,229,"+(0.16+0.28*depth*severity.intensity)+")";
-    ctx.lineWidth=depth>1.05 ? 1.4 : 1;
-    ctx.stroke();
-    if(i%17===0 && y>height*0.70 && y<height-8){
-      const splash=2+depth*1.5;
-      ctx.beginPath();
-      ctx.moveTo(x-splash,y+length*0.18);
-      ctx.lineTo(x,y);
-      ctx.lineTo(x+splash,y+length*0.18);
-      ctx.strokeStyle="rgba(204,224,238,"+(0.12+0.20*severity.intensity)+")";
-      ctx.lineWidth=1;
-      ctx.stroke();
-    }
+    // Soft cached artwork: no per-drop gradients, lights, collision tests or new frame loop.
+    const glint=.7+.3*weatherHash(i+74.1);
+    ctx.save();ctx.translate(x,y);ctx.rotate(-Math.atan2(lineDx,lineDy));
+    ctx.globalAlpha=(.09+.23*daylight)*glint*(.6+.4*severity.intensity);
+    const streakWidth=1.1+1.15*r2;
+    ctx.drawImage(sprite,-streakWidth/2,0,streakWidth,length);ctx.restore();
+
   }
+  ctx.restore();
 }
 
 function drawSnowWeather(now,severity){
@@ -2194,7 +2158,7 @@ function drawWindWeather(now,severity){
   const height=BATTLEFIELD_LOGICAL_HEIGHT;
   /* R177: wind VFX density increased 3x from the R175 field for stronger readability. */
   const counts=[432,756,1224];
-  const count=counts[weatherState.severityIndex] || counts[0];
+  const count=weatherState.amounts?Math.round(1224*severity.intensity):(counts[weatherState.severityIndex] || counts[0]);
   const direction=weatherState.windDirection;
   const speed=(0.055+severity.windStrength*0.075)*direction;
   ctx.fillStyle="rgba(129,112,83,"+(0.010+severity.intensity*0.018)+")";
@@ -2224,6 +2188,7 @@ function drawWindWeather(now,severity){
 }
 
 function drawWeatherVfx(now=performance.now()){
+  if(weatherState.amounts){const a=weatherState.amounts;ctx.save();if(a.rain>0)drawRainWeather(now,{intensity:a.rain,windStrength:a.wind});if(a.wind>0)drawWindWeather(now,{intensity:a.wind,windStrength:a.wind});ctx.restore();return;}
   const type=currentWeatherType();
   if(type.id==="clear") return;
   const severity=currentWeatherSeverity();
@@ -2240,10 +2205,18 @@ function drawWeatherVfx(now=performance.now()){
 
 window.AdventurePartyWeather={
   getState:getWeatherSnapshot,
+  setAmount(kind,value){
+    if(!['snow','rain','cloudiness','wind'].includes(kind))return;
+    const amount=Number(value);if(!Number.isFinite(amount))return;
+    weatherState.amounts??={snow:window.adventurePartySnow?.intensity||0,rain:0,cloudiness:0,wind:0};
+    weatherState.amounts[kind]=Math.max(0,Math.min(1,amount));
+    syncWeatherAnimation();syncWeatherAudio();window.dispatchEvent(new Event('adventure-party:solar-change'));
+  },
   cycleType:cycleWeatherType,
   cycleSeverity:cycleWeatherSeverity
 };
 
+for(const kind of ['rain','cloudiness','wind']){const slider=document.getElementById('combatWeather-'+kind);slider?.addEventListener('input',()=>{document.getElementById(kind+'Amount').textContent=slider.value+'%';window.AdventurePartyWeather.setAmount(kind,Number(slider.value)/100);});for(const name of ['keydown','keyup','pointerdown'])slider?.addEventListener(name,e=>e.stopPropagation());}
 const battleWrap=canvas.closest(".battle-wrap");
 const CANVAS_ASPECT=canvas.width/canvas.height;
 
@@ -2937,7 +2910,7 @@ function triggerUnitAttackPose(unit){
 }
 
 
-const GRASS_OUTDOORS_TREE_SHEET_SRC='assets/terrain/treeit-firs/fir-body-atlas.png';
+const GRASS_OUTDOORS_TREE_SHEET_SRC='assets/terrain/treeit-firs/fir-body-atlas.png?v=R238C436';
 
 const GRASS_OUTDOORS_TILE_SHEET_SRC='assets/terrain/grass-outdoors-tiles.png';
 
@@ -3016,7 +2989,7 @@ const GRASS_OUTDOORS_TILESET=registerTerrainTileSet({
   treeRows:5,
   treeVariantCount:5,
   treeRotationFrames:12,
-  treeShadowSheetSrc:'assets/terrain/treeit-firs/fir-shadow-atlas.png',
+  treeShadowSheetSrc:'assets/terrain/treeit-firs/fir-shadow-atlas.png?v=R238C436',
   treeSourceTileWidth:384,
   treeSourceTileHeight:512,
   treeBaseAnchorX:192,
@@ -3254,6 +3227,17 @@ function visibleTreeDecorations(tiles){
     return [];
   }
 
+  // Tree crowns can enter the screen before their ground anchors. Use a
+  // separate scenery scan so the floor keeps its tight viewport bounds.
+  const height=battlefieldTrees?400:(tileSet.treeDrawHeight||240);
+  const width=height*(tileSet.treeSourceTileWidth||192)/(tileSet.treeSourceTileHeight||216);
+  tiles=visibleHexes(Math.max(height,width));
+  // Cache only the viewport selection. Occupancy and tree state remain live.
+  if(game.testTrees){
+   let selection=visibleTreeDecorations.selection;
+   if(!selection||selection.tiles!==tiles){selection={tiles,keys:new Set(tiles.map(t=>key(t.x,t.y)))};visibleTreeDecorations.selection=selection;}
+   return game.testTrees.filter(t=>selection.keys.has(key(t.x,t.y))).map(t=>({...t,occupied:!!livingUnitAt(t.x,t.y)}));
+  }
   const visibleKeys=new Set();
   let minX=Infinity;
   let maxX=-Infinity;
@@ -3269,7 +3253,10 @@ function visibleTreeDecorations(tiles){
   }
 
   const cacheKey=JSON.stringify([tileSet,MAP_MIN_X,MAP_MAX_X,MAP_MIN_Y,MAP_MAX_Y,[...visibleKeys]]);
-  const refresh=trees=>trees.filter(tree=>validTreeHex(tree.x,tree.y)&&!game?.firSpawnClearance?.has(key(tree.x,tree.y))).map(tree=>({...tree,occupied:!!livingUnitAt(tree.x,tree.y)}));
+  const streamBankClear=tree=>{if(typeof combatGpu==='undefined'||!combatGpu?.streamSample)return true;const p=worldPointForHex(tree.x,tree.y);return combatGpu.streamSample(p.x,p.y).depth<.025;};
+  const exclusionOwners=[...(game.firDecorations?.values()||[])].filter(tree=>adventurePartyTreeEnvironment.treeExclusionProfile(tree).radius>0);
+  if(game.testTrees)return game.testTrees.filter(t=>visibleKeys.has(key(t.x,t.y))).map(t=>({...t,occupied:!!livingUnitAt(t.x,t.y)}));
+  const refresh=trees=>trees.filter(tree=>!exclusionOwners.some(owner=>adventurePartyTreeEnvironment.treeExcludesTree(owner,tree))&&streamBankClear(tree)&&validTreeHex(tree.x,tree.y)&&!game?.firSpawnClearance?.has(key(tree.x,tree.y))).map(tree=>({...tree,...(game.oakTestTree?.x===tree.x&&game.oakTestTree?.y===tree.y?{species:game.oakTestTree.species,tileIndex:5}:{}),occupied:!!livingUnitAt(tree.x,tree.y)}));
   if(treeDecorationCache?.game===game&&treeDecorationCache.terrain===terrain&&treeDecorationCache.key===cacheKey){
     globalThis.adventurePartyCombatPerformance?.count('treePlacementCacheHits');
     return refresh(treeDecorationCache.trees);
@@ -3349,21 +3336,35 @@ function countTreeHexesOnCurrentMap(){
   return visibleTreeDecorations(allTiles).length;
 }
 
-function treeRotationFrame(tileSet,decoration){
-  const frames=tileSet.treeRotationFrames || 1;
-  const rotation=terrainHash(decoration.x+7901,decoration.y-5107)%frames;
-  return ((rotation-Math.round(battlefieldRotation*2))%frames+frames)%frames;
+// Stable presentation scale; shared models and cached shadows stay at source size.
+function treeSizeScale(tree){
+  if(adventurePartyTreeEnvironment.isBroadleaf(tree))return 1;
+  return .33+.67*(terrainHash(tree.x+12071,tree.y-3907)%10001)/10000;
 }
 
-function directFirRendering(){return !!(combatGpu?.treeScene&&ctx===combatGpu.context&&game?.session?.source==='combat-test'&&game.condition==='grass'&&new URLSearchParams(location.search).get('treeRenderer')!=='images');}
+function treeRotationFrame(tileSet,decoration,continuous=false){
+  const frames=tileSet.treeRotationFrames || 1;
+  const rotation=terrainHash(decoration.x+7901,decoration.y-5107)%frames;
+  return ((rotation-(continuous?battlefieldRotation*2:Math.round(battlefieldRotation*2)))%frames+frames)%frames;
+}
+
+function directFirRendering(){return !!(typeof combatFirTrees!=='undefined'&&combatFirTrees&&!combatFirTrees.disposed&&combatGpu?.treeScene&&ctx===combatGpu.context&&game?.session?.source==='combat-test'&&game.condition==='grass'&&new URLSearchParams(location.search).get('treeRenderer')!=='images');}
 function liveFirTreeRender(tileSet,decoration,direct=null){
   if(typeof combatFirTrees==='undefined' || !combatFirTrees || game?.session?.source!=='combat-test' || game.condition!=='grass')return null;
-  return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration),{
+  const snowAmount=combatGpu?.treeSnowAmount?.(decoration.x,decoration.y)||0;
+  let snowGroundLight=null;
+  if(snowAmount>0&&explorationGpuLighting&&combatSceneContext){
+    const world=worldPointForHex(decoration.x,decoration.y),point=explorationGpuPoint(world);
+    const exposure=explorationSurfaceExposure({x:point[0],y:0,z:point[2]},{x:0,y:1,z:0},[],new Set(combatSceneContext.openDoors));
+    snowGroundLight=exposure.multiply.map((v,i)=>Math.max(.01**(1/2.2),v/Math.max(.0001,255-exposure.boost[i]))*explorationVisibilityAtHex(decoration,[]));
+  }
+  return combatFirTrees.get(decoration.tileIndex,treeRotationFrame(tileSet,decoration,true),{
     solar:globalThis.adventurePartySolar?.state?.(),
     ambient:combatRenderAmbientAtHex(decoration),viewRotation:battlefieldRotation,direct,
     burning:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==='burning',
     firePhaseValue:terrainRand(decoration.x,decoration.y,911),fireParticles:Math.max(1,Math.min(192,Math.floor(2048/Math.max(1,firFireLightSources().length)))),
-    snowAmount:combatGpu?.snowAmount?.(decoration.x,decoration.y)||0,
+    motionTime:game.treeMotionTime,motionSource:(()=>{const p=worldPointForHex(decoration.x,decoration.y);return {x:p.x,z:p.y/.568329};})(),
+    snowAmount,snowGroundLight,fallState:adventurePartyTreeEnvironment.isBroadleaf(decoration)?treeFallFor(decoration):null,
     burnt:game.firFireStates?.[key(decoration.x,decoration.y)]?.state==="burnt",instanceKey:decoration.x+":"+decoration.y,lights:firTreeLocalLights(decoration)
   });
 }
@@ -3376,17 +3377,16 @@ function liveFirTreeRender(tileSet,decoration,direct=null){
 
 
 /* ============================================================
-   PIXEL EDITOR
-   Edits current in-game assets using explicit source/workspace/render dimensions, VGA 256 colors, anchors, and save/submit handoff.
+   SHARED SPRITE REGISTRY
+   Combat still consumes these source dimensions, render sizes and anchors.
    ============================================================ */
 
-const PIXEL_EDITOR_GRID_SIZE=64;
 
 /*
   R162 canonical sprite asset specification.
   These fields intentionally separate four things that used to be conflated:
     sourceWidth/sourceHeight   - immutable original PNG dimensions
-    workspaceWidth/Height      - Pixel Studio editing canvas
+    workspaceWidth/Height      - original capture canvas
     renderWidth/renderHeight   - intended in-game display size
     anchorX/anchorY             - workspace pixel placed on the battlefield origin
 */
@@ -3717,7 +3717,6 @@ function registerStudioSpriteSet({manifest,images,runtimeImages=null,sourceUrls,
     battlefieldSourceHeight:manifest.battlefield?.height||null,
     renderWidth:frame.renderWidth,renderHeight:frame.renderHeight
   });
-  if(currentScreen==="pixel") renderPixelAssetList();
   if(game && currentScreen==="combat") draw();
   document.dispatchEvent(new Event("adventure-party:sprite-state"));
   return id;
@@ -3798,1237 +3797,6 @@ function spriteRenderDimensions(id,image,fallbackWidth=null,fallbackHeight=null)
   const height=fallbackHeight || image?.naturalHeight || image?.height || 1;
   return {width,height};
 }
-
-
-const VGA_BASE_COLORS=[
-  "#000000","#0000AA","#00AA00","#00AAAA","#AA0000","#AA00AA","#AA5500","#AAAAAA",
-  "#555555","#5555FF","#55FF55","#55FFFF","#FF5555","#FF55FF","#FFFF55","#FFFFFF"
-];
-const VGA_CUBE_LEVELS=[0x00,0x33,0x66,0x99,0xCC,0xFF];
-
-function rgbToHex(r,g,b){
-  return `#${[r,g,b].map(value=>value.toString(16).padStart(2,"0")).join("").toUpperCase()}`;
-}
-
-function buildVga256Palette(){
-  const palette=[...VGA_BASE_COLORS];
-
-  for(const r of VGA_CUBE_LEVELS){
-    for(const g of VGA_CUBE_LEVELS){
-      for(const b of VGA_CUBE_LEVELS){
-        palette.push(rgbToHex(r,g,b));
-      }
-    }
-  }
-
-  for(let i=0;i<24;i++){
-    const value=8+i*10;
-    palette.push(rgbToHex(value,value,value));
-  }
-
-  return palette.slice(0,256);
-}
-
-const VGA_256_PALETTE=buildVga256Palette();
-
-let pixelEditorAsset=null;
-let pixelEditorTool="pencil";
-let pixelEditorZoom=8;
-let pixelEditorPainting=false;
-let pixelSelectedColor="#FFCC33";
-
-const pixelCanvas=document.getElementById("pixelCanvas");
-const pixelCtx=pixelCanvas.getContext("2d",{willReadFrequently:true});
-const pixelPreview=document.getElementById("pixelPreview");
-const pixelPreviewCtx=pixelPreview.getContext("2d");
-const pixelAssetList=document.getElementById("pixelAssetList");
-const pixelAssetTitle=document.getElementById("pixelAssetTitle");
-const pixelAssetSize=document.getElementById("pixelAssetSize");
-const pixelStatus=document.getElementById("pixelStatus");
-const pixelPalette=document.getElementById("pixelPalette");
-const pixelSelectedColorSwatch=document.getElementById("pixelSelectedColorSwatch");
-const pixelSelectedColorLabel=document.getElementById("pixelSelectedColorLabel");
-const pixelZoom=document.getElementById("pixelZoom");
-const pixelSourceScale=document.getElementById("pixelSourceScale");
-const pixelSourceScaleValue=document.getElementById("pixelSourceScaleValue");
-const pixelFitScaleButton=document.getElementById("pixelFitScaleButton");
-const pixelOriginalScaleButton=document.getElementById("pixelOriginalScaleButton");
-const pixelGridToggle=document.getElementById("pixelGridToggle");
-const pixelPencilButton=document.getElementById("pixelPencilButton");
-const pixelEraserButton=document.getElementById("pixelEraserButton");
-const pixelSubmitName=document.getElementById("pixelSubmitName");
-const pixelSubmitCategory=document.getElementById("pixelSubmitCategory");
-const pixelSubmitType=document.getElementById("pixelSubmitType");
-const pixelSubmitNotes=document.getElementById("pixelSubmitNotes");
-const pixelSubmitEndpoint=document.getElementById("pixelSubmitEndpoint");
-const pixelSubmitKey=document.getElementById("pixelSubmitKey");
-const pixelSubmitButton=document.getElementById("pixelSubmitButton");
-const pixelDownloadSubmissionButton=document.getElementById("pixelDownloadSubmissionButton");
-const pixelSubmitResult=document.getElementById("pixelSubmitResult");
-const pixelSaveButton=document.getElementById("pixelSaveButton");
-const pixelSourceWidth=document.getElementById("pixelSourceWidth");
-const pixelSourceHeight=document.getElementById("pixelSourceHeight");
-const pixelWorkspaceWidth=document.getElementById("pixelWorkspaceWidth");
-const pixelWorkspaceHeight=document.getElementById("pixelWorkspaceHeight");
-const pixelRenderWidth=document.getElementById("pixelRenderWidth");
-const pixelRenderHeight=document.getElementById("pixelRenderHeight");
-const pixelAnchorX=document.getElementById("pixelAnchorX");
-const pixelAnchorY=document.getElementById("pixelAnchorY");
-const pixelScaleMode=document.getElementById("pixelScaleMode");
-const pixelLockAspect=document.getElementById("pixelLockAspect");
-const pixelResizeWorkspaceButton=document.getElementById("pixelResizeWorkspaceButton");
-const koboldScaleTestButton=document.getElementById("koboldScaleTestButton");
-const koboldScaleTestOverlay=document.getElementById("koboldScaleTestOverlay");
-const koboldScaleTestClose=document.getElementById("koboldScaleTestClose");
-const koboldScaleTestCanvas=document.getElementById("koboldScaleTestCanvas");
-const koboldScaleTestCtx=koboldScaleTestCanvas?.getContext("2d");
-
-
-
-
-function drawScaleTestLabel(ctx,textValue,x,y,color="#f0d978"){
-  ctx.save();
-  ctx.font='400 12px "Press Start 2P", "Courier New", monospace';
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  ctx.lineWidth=3;
-  ctx.strokeStyle="#050507";
-  ctx.fillStyle=color;
-  ctx.strokeText(textValue,x,y);
-  ctx.fillText(textValue,x,y);
-  ctx.restore();
-}
-
-
-
-function renderKoboldScaleTest(){
-  const ctx=koboldScaleTestCtx;
-  if(!ctx) return;
-
-  const W=koboldScaleTestCanvas.width;
-  const H=koboldScaleTestCanvas.height;
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle="#14131b";
-  ctx.fillRect(0,0,W,H);
-  ctx.imageSmoothingEnabled=false;
-
-  ctx.save();
-  ctx.font='400 16px "Press Start 2P", "Courier New", monospace';
-  ctx.textAlign="left";
-  ctx.textBaseline="middle";
-  ctx.fillStyle="#f0d978";
-  ctx.fillText("LIVE KOBOLD REFERENCES",24,28);
-  ctx.fillStyle="#7ee7ff";
-  ctx.fillText("PRONE CANDIDATES — choose 1–5",448,28);
-  ctx.restore();
-
-  const panels=[];
-
-  function livePanel(label,image,referenceHeight,targetHeight=28){
-    const scale=targetHeight/referenceHeight;
-    return {
-      label,
-      image,
-      drawW:Math.max(1,Math.round(image.naturalWidth*scale)),
-      drawH:Math.max(1,Math.round(image.naturalHeight*scale)),
-      prone:false
-    };
-  }
-
-  panels.push(livePanel("Kobold",koboldSprite,koboldSprite.naturalHeight||116));
-  panels.push(livePanel("Body Guard",koboldBodyguardSprite,koboldBodyguardSprite.naturalHeight||93));
-  panels.push(livePanel("Slinger",koboldSlingerStandSprite,128));
-
-  const proneOptions=[14,15,16,17,18];
-  for(let i=0;i<proneOptions.length;i++){
-    const targetHeight=proneOptions[i];
-    const scale=targetHeight/(koboldProneSprite.naturalHeight||111);
-    panels.push({
-      label:`Option ${i+1}`,
-      sublabel:`${targetHeight}px`,
-      image:koboldProneSprite,
-      drawW:Math.max(1,Math.round(koboldProneSprite.naturalWidth*scale)),
-      drawH:Math.max(1,Math.round(koboldProneSprite.naturalHeight*scale)),
-      prone:true
-    });
-  }
-
-  const panelW=140;
-  const startX=74;
-  const cellY=190;
-  const baselineY=218;
-
-  for(let i=0;i<panels.length;i++){
-    const p=panels[i];
-    const cx=startX+i*panelW;
-
-    if(i===3){
-      ctx.save();
-      ctx.strokeStyle="#545167";
-      ctx.lineWidth=2;
-      ctx.beginPath();
-      ctx.moveTo(cx-panelW/2+1,52);
-      ctx.lineTo(cx-panelW/2+1,340);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    ctx.save();
-    ctx.fillStyle=i<3 ? "#1d1b29" : "#231f18";
-    ctx.strokeStyle=i<3 ? "#5a5868" : "#817447";
-    ctx.lineWidth=2;
-    ctx.fillRect(cx-64,52,128,278);
-    ctx.strokeRect(cx-64,52,128,278);
-    ctx.restore();
-
-    drawScaleTestLabel(ctx,p.label,cx,74,i<3 ? "#7ee7ff" : "#fff19a");
-    if(p.sublabel) drawScaleTestLabel(ctx,p.sublabel,cx,94,"#b8b4c5");
-
-    drawScaleTestHex(ctx,cx,cellY,116,86);
-
-    if(p.prone){
-      /* Requested comparison shadow: touching the sprite and as wide as it is. */
-      drawScaleTestSprite(ctx,p.image,cx,baselineY,p.drawW,p.drawH,{
-        shadowWidth:p.drawW,
-        shadowHeight:6
-      });
-    }else{
-      drawScaleTestSprite(ctx,p.image,cx,baselineY,p.drawW,p.drawH,{
-        shadowWidth:Math.max(22,p.drawW*0.72),
-        shadowHeight:6,
-        nativeFacing:"right",
-        facing:"right"
-      });
-    }
-
-    if(p.prone){
-      drawScaleTestLabel(ctx,`${p.drawW}×${p.drawH}`,cx,304,"#c6c3d0");
-    }else{
-      drawScaleTestLabel(ctx,"LIVE SCALE",cx,304,"#9aa0aa");
-    }
-  }
-
-  ctx.save();
-  ctx.fillStyle="#7ee7ff";
-  ctx.font='400 13px "Press Start 2P", "Courier New", monospace';
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  ctx.fillText(
-    "Prone shadows shown at full rendered sprite width and touching the sprite bottom. Current combat prone remains 20px.",
-    W/2,
-    370
-  );
-  ctx.fillStyle="#b8b4c5";
-  ctx.fillText("Tell me which Option number looks best and I will apply that exact engine scale to combat.",W/2,400);
-  ctx.restore();
-}
-
-function openKoboldScaleTest(){
-  if(!koboldScaleTestOverlay) return;
-  koboldScaleTestOverlay.classList.add("show");
-  koboldScaleTestOverlay.setAttribute("aria-hidden","false");
-
-  const images=[koboldSprite,koboldBodyguardSprite,koboldSlingerStandSprite,koboldProneSprite];
-  if(images.every(img=>img.complete && img.naturalWidth)){
-    renderKoboldScaleTest();
-  }else{
-    Promise.all(images.map(img=>
-      img.complete && img.naturalWidth
-        ? Promise.resolve()
-        : new Promise(resolve=>{
-            img.addEventListener("load",resolve,{once:true});
-            img.addEventListener("error",resolve,{once:true});
-          })
-    )).then(renderKoboldScaleTest);
-  }
-}
-
-function closeKoboldScaleTest(){
-  if(!koboldScaleTestOverlay) return;
-  koboldScaleTestOverlay.classList.remove("show");
-  koboldScaleTestOverlay.setAttribute("aria-hidden","true");
-}
-
-koboldScaleTestButton?.addEventListener("click",openKoboldScaleTest);
-koboldScaleTestClose?.addEventListener("click",closeKoboldScaleTest);
-koboldScaleTestOverlay?.addEventListener("click",event=>{
-  if(event.target===koboldScaleTestOverlay) closeKoboldScaleTest();
-});
-
-function loadImageSource(src){
-  return new Promise((resolve,reject)=>{
-    const image=new Image();
-
-    image.onload=()=>resolve(image);
-    image.onerror=()=>reject(new Error("Unable to load sprite image."));
-    image.src=src;
-  });
-}
-
-function fitScaleForImageToWorkspace(image,width,height){
-  const sourceWidth=image?.naturalWidth || image?.width || 1;
-  const sourceHeight=image?.naturalHeight || image?.height || 1;
-  return Math.min(width/sourceWidth,height/sourceHeight,1);
-}
-
-function getAssetSourceScale(asset,image){
-  const spec=asset?.spec || {};
-  if(spec.scaleMode==="actual") return 1;
-  if(spec.scaleMode==="fit"){
-    return fitScaleForImageToWorkspace(
-      image,
-      spec.workspaceWidth || PIXEL_EDITOR_GRID_SIZE,
-      spec.workspaceHeight || PIXEL_EDITOR_GRID_SIZE
-    );
-  }
-
-  const numeric=Number(asset?.sourceScale);
-  if(Number.isFinite(numeric) && numeric>0){
-    return numeric;
-  }
-  return 1;
-}
-
-function renderSourceImageToAssetCanvas(asset,image,scale=null,{resetAnchor=true}={}){
-  if(!asset?.editCtx || !asset?.editCanvas || !image) return;
-
-  const sourceWidth=image.naturalWidth || image.width || 0;
-  const sourceHeight=image.naturalHeight || image.height || 0;
-  const resolvedScale=Math.max(0.05,Number(scale ?? getAssetSourceScale(asset,image)) || 1);
-  const drawW=Math.max(1,Math.round(sourceWidth*resolvedScale));
-  const drawH=Math.max(1,Math.round(sourceHeight*resolvedScale));
-  const dx=Math.floor((asset.editCanvas.width-drawW)/2);
-  const dy=Math.floor((asset.editCanvas.height-drawH)/2);
-
-  asset.sourceScale=resolvedScale;
-  asset.editCtx.clearRect(0,0,asset.editCanvas.width,asset.editCanvas.height);
-  asset.editCtx.drawImage(image,dx,dy,drawW,drawH);
-
-  if(resetAnchor && asset.spec && !asset.spec.preserveFrame){
-    asset.spec.anchorX=Math.round((dx+drawW/2)*2)/2;
-    asset.spec.anchorY=Math.round((dy+drawH)*2)/2;
-  }
-}
-
-async function ensurePixelAssetCanvas(asset){
-  if(asset.editCanvas && asset.editCtx) return asset;
-
-  const sourceImage=
-    asset.gameImage.complete && asset.gameImage.naturalWidth
-      ? asset.gameImage
-      : await loadImageSource(asset.originalSrc);
-
-  if(asset.spec){
-    asset.spec.sourceWidth=sourceImage.naturalWidth || asset.spec.sourceWidth;
-    asset.spec.sourceHeight=sourceImage.naturalHeight || asset.spec.sourceHeight;
-  }
-
-  const editCanvas=document.createElement("canvas");
-  editCanvas.width=asset.spec?.workspaceWidth || PIXEL_EDITOR_GRID_SIZE;
-  editCanvas.height=asset.spec?.workspaceHeight || PIXEL_EDITOR_GRID_SIZE;
-
-  const editCtx=editCanvas.getContext("2d",{willReadFrequently:true});
-  editCtx.imageSmoothingEnabled=false;
-
-  asset.editCanvas=editCanvas;
-  asset.editCtx=editCtx;
-  renderSourceImageToAssetCanvas(asset,sourceImage,getAssetSourceScale(asset,sourceImage),{resetAnchor:true});
-
-  return asset;
-}
-
-function setPixelSelectedColor(color){
-  pixelSelectedColor=String(color || "#000000").toUpperCase();
-  if(pixelSelectedColorSwatch){
-    pixelSelectedColorSwatch.style.background=pixelSelectedColor;
-  }
-  if(pixelSelectedColorLabel){
-    pixelSelectedColorLabel.textContent=`Selected: ${pixelSelectedColor}`;
-  }
-
-  if(pixelPalette){
-    const buttons=pixelPalette.querySelectorAll(".pixel-palette-button");
-    buttons.forEach(button=>{
-      button.classList.toggle(
-        "active",
-        button.dataset.color===pixelSelectedColor
-      );
-    });
-  }
-}
-
-function renderPixelPalette(){
-  if(!pixelPalette) return;
-  pixelPalette.innerHTML="";
-
-  for(const color of VGA_256_PALETTE){
-    const button=document.createElement("button");
-    button.type="button";
-    button.className="pixel-palette-button";
-    button.dataset.color=color;
-    button.title=color;
-    button.setAttribute("aria-label",`Select color ${color}`);
-    button.style.background=color;
-    button.addEventListener("click",()=>{
-      setPixelSelectedColor(color);
-    });
-    pixelPalette.appendChild(button);
-  }
-
-  setPixelSelectedColor(pixelSelectedColor);
-}
-
-function updatePixelSourceScaleUi(){
-  const asset=pixelEditorAsset;
-  const percent=Math.round((Number(asset?.sourceScale || 1) || 1)*100);
-
-  if(pixelSourceScale){
-    pixelSourceScale.value=String(Math.max(10,Math.min(300,percent)));
-    pixelSourceScale.disabled=asset?.spec?.scaleMode!=="custom";
-  }
-  if(pixelSourceScaleValue){
-    pixelSourceScaleValue.textContent=`${percent}%`;
-  }
-}
-
-function updatePixelPropertiesUi(){
-  const asset=pixelEditorAsset;
-  const spec=asset?.spec;
-  if(!spec) return;
-
-  const workspaceLimit=spec.preserveFrame ? 1024 : 512;
-  if(pixelWorkspaceWidth) pixelWorkspaceWidth.max=String(workspaceLimit);
-  if(pixelWorkspaceHeight) pixelWorkspaceHeight.max=String(workspaceLimit);
-  if(pixelSourceWidth) pixelSourceWidth.value=spec.sourceWidth ?? "";
-  if(pixelSourceHeight) pixelSourceHeight.value=spec.sourceHeight ?? "";
-  if(pixelWorkspaceWidth) pixelWorkspaceWidth.value=spec.workspaceWidth ?? PIXEL_EDITOR_GRID_SIZE;
-  if(pixelWorkspaceHeight) pixelWorkspaceHeight.value=spec.workspaceHeight ?? PIXEL_EDITOR_GRID_SIZE;
-  if(pixelRenderWidth){
-    pixelRenderWidth.value=spec.renderWidth ?? "";
-    pixelRenderWidth.step=spec.preserveFrame ? "any" : "1";
-    pixelRenderWidth.max=spec.preserveFrame ? "4096" : "512";
-  }
-  if(pixelRenderHeight){
-    pixelRenderHeight.value=spec.renderHeight ?? "";
-    pixelRenderHeight.step=spec.preserveFrame ? "any" : "1";
-    pixelRenderHeight.max=spec.preserveFrame ? "4096" : "512";
-  }
-  if(pixelAnchorX) pixelAnchorX.value=spec.anchorX ?? 0;
-  if(pixelAnchorY) pixelAnchorY.value=spec.anchorY ?? 0;
-  if(pixelScaleMode) pixelScaleMode.value=spec.scaleMode || "fit";
-  if(pixelLockAspect) pixelLockAspect.checked=spec.lockAspect!==false;
-}
-
-function clampNumber(value,min,max,fallback){
-  const numeric=Number(value);
-  if(!Number.isFinite(numeric)) return fallback;
-  return Math.max(min,Math.min(max,numeric));
-}
-
-function readPixelPropertiesFromUi({renderChanged=null}={}){
-  const asset=pixelEditorAsset;
-  const spec=asset?.spec;
-  if(!spec) return;
-
-  const workspaceLimit=spec.preserveFrame ? 1024 : 512;
-  spec.workspaceWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,workspaceLimit,spec.workspaceWidth || 64));
-  spec.workspaceHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,workspaceLimit,spec.workspaceHeight || 64));
-  spec.anchorX=clampNumber(pixelAnchorX?.value,0,spec.workspaceWidth,spec.anchorX || 0);
-  spec.anchorY=clampNumber(pixelAnchorY?.value,0,spec.workspaceHeight,spec.anchorY || 0);
-  spec.scaleMode=pixelScaleMode?.value || spec.scaleMode || "fit";
-  spec.lockAspect=pixelLockAspect?.checked!==false;
-
-  const renderLimit=spec.preserveFrame ? 4096 : 512;
-  const renderPrecision=value=>spec.preserveFrame ? value : Math.round(value);
-  let renderWidth=renderPrecision(clampNumber(pixelRenderWidth?.value,1,renderLimit,spec.renderWidth || 1));
-  let renderHeight=renderPrecision(clampNumber(pixelRenderHeight?.value,1,renderLimit,spec.renderHeight || 1));
-
-  if(spec.lockAspect && renderChanged){
-    const sourceAspect=(spec.sourceWidth || 1)/(spec.sourceHeight || 1);
-    if(renderChanged==="width"){
-      renderHeight=Math.max(1,renderPrecision(renderWidth/sourceAspect));
-    }else if(renderChanged==="height"){
-      renderWidth=Math.max(1,renderPrecision(renderHeight*sourceAspect));
-    }
-    if(spec.preserveFrame && Math.max(renderWidth,renderHeight)>renderLimit){
-      const fit=renderLimit/Math.max(renderWidth,renderHeight);
-      renderWidth*=fit;
-      renderHeight*=fit;
-    }
-  }
-
-  spec.renderWidth=renderWidth;
-  spec.renderHeight=renderHeight;
-
-  updatePixelPropertiesUi();
-  updatePixelSourceScaleUi();
-
-  if(currentScreen==="combat") draw();
-}
-
-async function rescalePixelEditorAsset(scaleValue){
-  const asset=pixelEditorAsset;
-  if(!asset) return;
-
-  const sourceImage=await loadImageSource(asset.originalSrc);
-  const numeric=Math.max(0.1,(Number(scaleValue) || 100)/100);
-  asset.sourceScale=numeric;
-  if(asset.spec) asset.spec.scaleMode="custom";
-  renderSourceImageToAssetCanvas(asset,sourceImage,numeric,{resetAnchor:true});
-  asset.dirty=true;
-  pixelStatus.textContent=`${asset.label}: source rescaled to ${Math.round(numeric*100)}% inside the workspace.`;
-  renderPixelEditor();
-}
-
-async function fitPixelEditorAssetToGrid(){
-  const asset=pixelEditorAsset;
-  if(!asset) return;
-
-  const sourceImage=await loadImageSource(asset.originalSrc);
-  if(asset.spec) asset.spec.scaleMode="fit";
-  const fitScale=fitScaleForImageToWorkspace(
-    sourceImage,
-    asset.spec?.workspaceWidth || PIXEL_EDITOR_GRID_SIZE,
-    asset.spec?.workspaceHeight || PIXEL_EDITOR_GRID_SIZE
-  );
-  asset.sourceScale=fitScale;
-  renderSourceImageToAssetCanvas(asset,sourceImage,fitScale,{resetAnchor:true});
-  asset.dirty=true;
-  pixelStatus.textContent=`${asset.label}: auto-fit to ${asset.editCanvas.width} × ${asset.editCanvas.height} at ${Math.round(fitScale*100)}%.`;
-  renderPixelEditor();
-}
-
-async function setPixelEditorAssetOriginalScale(){
-  const asset=pixelEditorAsset;
-  if(!asset) return;
-
-  const sourceImage=await loadImageSource(asset.originalSrc);
-  if(asset.spec) asset.spec.scaleMode="actual";
-  asset.sourceScale=1;
-  renderSourceImageToAssetCanvas(asset,sourceImage,1,{resetAnchor:true});
-  asset.dirty=true;
-  pixelStatus.textContent=`${asset.label}: source restored to 100% inside the workspace.`;
-  renderPixelEditor();
-}
-
-async function applyPixelScaleMode(){
-  const asset=pixelEditorAsset;
-  if(!asset?.spec) return;
-  asset.spec.scaleMode=pixelScaleMode?.value || "fit";
-
-  if(asset.spec.scaleMode==="fit"){
-    await fitPixelEditorAssetToGrid();
-  }else if(asset.spec.scaleMode==="actual"){
-    await setPixelEditorAssetOriginalScale();
-  }else{
-    updatePixelSourceScaleUi();
-    updatePixelPropertiesUi();
-  }
-}
-
-function resizeCanvasPreservingPixels(sourceCanvas,newWidth,newHeight,anchorX,anchorY){
-  const result=document.createElement("canvas");
-  result.width=newWidth;
-  result.height=newHeight;
-  const resultCtx=result.getContext("2d",{willReadFrequently:true});
-  resultCtx.imageSmoothingEnabled=false;
-
-  const dx=Math.floor((newWidth-sourceCanvas.width)/2);
-  const dy=Math.floor((newHeight-sourceCanvas.height)/2);
-  resultCtx.drawImage(sourceCanvas,dx,dy);
-
-  return {
-    canvas:result,
-    ctx:resultCtx,
-    anchorX:clampNumber(anchorX+dx,0,newWidth,newWidth/2),
-    anchorY:clampNumber(anchorY+dy,0,newHeight,newHeight)
-  };
-}
-
-function resizePixelEditorWorkspace(){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas || !asset.spec) return;
-
-  const workspaceLimit=asset.spec.preserveFrame ? 1024 : 512;
-  const newWidth=Math.round(clampNumber(pixelWorkspaceWidth?.value,16,workspaceLimit,asset.spec.workspaceWidth));
-  const newHeight=Math.round(clampNumber(pixelWorkspaceHeight?.value,16,workspaceLimit,asset.spec.workspaceHeight));
-
-  if(newWidth===asset.editCanvas.width && newHeight===asset.editCanvas.height){
-    readPixelPropertiesFromUi();
-    pixelStatus.textContent=`${asset.label}: workspace is already ${newWidth} × ${newHeight}.`;
-    return;
-  }
-
-  const resized=resizeCanvasPreservingPixels(
-    asset.editCanvas,
-    newWidth,
-    newHeight,
-    asset.spec.anchorX || 0,
-    asset.spec.anchorY || 0
-  );
-
-  asset.editCanvas=resized.canvas;
-  asset.editCtx=resized.ctx;
-  asset.spec.workspaceWidth=newWidth;
-  asset.spec.workspaceHeight=newHeight;
-  asset.spec.anchorX=resized.anchorX;
-  asset.spec.anchorY=resized.anchorY;
-  asset.dirty=true;
-
-  pixelStatus.textContent=`${asset.label}: workspace resized to ${newWidth} × ${newHeight}; existing pixels were preserved.`;
-  renderPixelEditor();
-}
-
-function renderPixelAssetList(){
-  pixelAssetList.innerHTML="";
-
-  for(const asset of pixelEditorAssets){
-    const button=document.createElement("button");
-    button.type="button";
-    button.className="pixel-asset-button";
-    button.textContent=
-      asset.label+
-      (asset.dirty ? " *" : "");
-
-    button.classList.toggle(
-      "active",
-      pixelEditorAsset?.id===asset.id
-    );
-
-    button.addEventListener("click",()=>{
-      selectPixelAsset(asset.id);
-    });
-
-    pixelAssetList.appendChild(button);
-  }
-}
-
-function drawPixelChecker(ctx,width,height,cell=8){
-  ctx.clearRect(0,0,width,height);
-
-  for(let y=0;y<height;y+=cell){
-    for(let x=0;x<width;x+=cell){
-      const even=((x/cell)+(y/cell))%2===0;
-      ctx.fillStyle=even ? "#313139" : "#1f1f26";
-      ctx.fillRect(x,y,cell,cell);
-    }
-  }
-}
-
-function renderPixelEditor(){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas) return;
-
-  const source=asset.editCanvas;
-  const zoom=pixelEditorZoom;
-
-  pixelCanvas.width=source.width*zoom;
-  pixelCanvas.height=source.height*zoom;
-
-  pixelCtx.imageSmoothingEnabled=false;
-  drawPixelChecker(
-    pixelCtx,
-    pixelCanvas.width,
-    pixelCanvas.height,
-    Math.max(4,zoom)
-  );
-
-  pixelCtx.drawImage(
-    source,
-    0,0,
-    source.width,source.height,
-    0,0,
-    pixelCanvas.width,pixelCanvas.height
-  );
-
-  if(pixelGridToggle.checked && zoom>=5){
-    pixelCtx.save();
-    pixelCtx.strokeStyle="rgba(210,214,226,0.18)";
-    pixelCtx.lineWidth=1;
-
-    for(let x=0;x<=source.width;x++){
-      const px=x*zoom+0.5;
-      pixelCtx.beginPath();
-      pixelCtx.moveTo(px,0);
-      pixelCtx.lineTo(px,pixelCanvas.height);
-      pixelCtx.stroke();
-    }
-
-    for(let y=0;y<=source.height;y++){
-      const py=y*zoom+0.5;
-      pixelCtx.beginPath();
-      pixelCtx.moveTo(0,py);
-      pixelCtx.lineTo(pixelCanvas.width,py);
-      pixelCtx.stroke();
-    }
-
-    pixelCtx.restore();
-  }
-
-  pixelAssetTitle.textContent=
-    asset.label+
-    (asset.dirty ? " — EDITED" : "");
-
-  pixelAssetSize.textContent=
-    `${source.width} × ${source.height} px workspace`;
-
-  updatePixelSourceScaleUi();
-  updatePixelPropertiesUi();
-  renderPixelPreview();
-  renderPixelAssetList();
-}
-
-function renderPixelPreview(){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas) return;
-
-  drawPixelChecker(
-    pixelPreviewCtx,
-    pixelPreview.width,
-    pixelPreview.height,
-    12
-  );
-
-  const source=asset.editCanvas;
-  const maxW=pixelPreview.width-24;
-  const maxH=pixelPreview.height-24;
-
-  const scale=Math.max(
-    1,
-    Math.floor(
-      Math.min(
-        maxW/source.width,
-        maxH/source.height
-      )
-    )
-  );
-
-  const drawW=source.width*scale;
-  const drawH=source.height*scale;
-  const dx=Math.floor((pixelPreview.width-drawW)/2);
-  const dy=Math.floor((pixelPreview.height-drawH)/2);
-
-  pixelPreviewCtx.imageSmoothingEnabled=false;
-  pixelPreviewCtx.drawImage(
-    source,
-    0,0,
-    source.width,source.height,
-    dx,dy,
-    drawW,drawH
-  );
-}
-
-async function selectPixelAsset(id){
-  const asset=pixelEditorAssets.find(item=>item.id===id);
-  if(!asset) return;
-
-  await ensurePixelAssetCanvas(asset);
-
-  pixelEditorAsset=asset;
-  pixelStatus.textContent=
-    `${asset.label}: ${asset.spec.sourceWidth} × ${asset.spec.sourceHeight} source; ${asset.spec.workspaceWidth} × ${asset.spec.workspaceHeight} workspace; ${asset.spec.renderWidth} × ${asset.spec.renderHeight} in game.`;
-
-  if(pixelSubmitName && !pixelSubmitName.dataset.userEdited){
-    pixelSubmitName.value=asset.label;
-  }
-  if(pixelSubmitCategory && asset.defaultCategory){
-    pixelSubmitCategory.value=asset.defaultCategory;
-  }
-
-  renderPixelEditor();
-}
-
-async function initializePixelEditor(){
-  renderPixelPalette();
-  renderPixelAssetList();
-
-  const preferred=
-    pixelEditorAsset?.id ||
-    "fighter";
-
-  await selectPixelAsset(preferred);
-}
-
-function pixelCanvasPoint(event){
-  const rect=pixelCanvas.getBoundingClientRect();
-
-  return {
-    x:(event.clientX-rect.left)*(pixelCanvas.width/rect.width),
-    y:(event.clientY-rect.top)*(pixelCanvas.height/rect.height)
-  };
-}
-
-function editPixelAtEvent(event){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas) return;
-
-  const point=pixelCanvasPoint(event);
-  const x=Math.floor(point.x/pixelEditorZoom);
-  const y=Math.floor(point.y/pixelEditorZoom);
-
-  if(
-    x<0 ||
-    y<0 ||
-    x>=asset.editCanvas.width ||
-    y>=asset.editCanvas.height
-  ){
-    return;
-  }
-
-  if(pixelEditorTool==="eraser"){
-    asset.editCtx.clearRect(x,y,1,1);
-  }else{
-    asset.editCtx.fillStyle=pixelSelectedColor;
-    asset.editCtx.fillRect(x,y,1,1);
-  }
-
-  asset.dirty=true;
-
-  pixelStatus.textContent=
-    `${asset.label}: edited pixel ${x}, ${y}.`;
-
-  renderPixelEditor();
-}
-
-function setPixelEditorTool(tool){
-  pixelEditorTool=tool;
-
-  pixelPencilButton.classList.toggle(
-    "active",
-    tool==="pencil"
-  );
-
-  pixelEraserButton.classList.toggle(
-    "active",
-    tool==="eraser"
-  );
-}
-
-async function resetPixelEditorAsset(){
-  const asset=pixelEditorAsset;
-  if(!asset) return;
-
-  const original=await loadImageSource(asset.originalSrc);
-  const spec=asset.spec || {};
-
-  asset.editCanvas.width=spec.workspaceWidth || PIXEL_EDITOR_GRID_SIZE;
-  asset.editCanvas.height=spec.workspaceHeight || PIXEL_EDITOR_GRID_SIZE;
-  asset.editCtx=asset.editCanvas.getContext(
-    "2d",
-    {willReadFrequently:true}
-  );
-
-  asset.editCtx.imageSmoothingEnabled=false;
-  renderSourceImageToAssetCanvas(asset,original,getAssetSourceScale(asset,original),{resetAnchor:true});
-
-  asset.dirty=true;
-
-  pixelStatus.textContent=
-    `${asset.label}: reloaded from source using ${spec.scaleMode || "fit"} scale mode.`;
-
-  renderPixelEditor();
-}
-
-function opaqueBoundsForCanvas(canvas){
-  const c=canvas.getContext("2d",{willReadFrequently:true});
-  const image=c.getImageData(0,0,canvas.width,canvas.height);
-  const data=image.data;
-  let minX=canvas.width;
-  let minY=canvas.height;
-  let maxX=-1;
-  let maxY=-1;
-
-  for(let y=0;y<canvas.height;y++){
-    for(let x=0;x<canvas.width;x++){
-      const alpha=data[(y*canvas.width+x)*4+3];
-      if(alpha===0) continue;
-      if(x<minX) minX=x;
-      if(y<minY) minY=y;
-      if(x>maxX) maxX=x;
-      if(y>maxY) maxY=y;
-    }
-  }
-
-  if(maxX<minX || maxY<minY){
-    return {x:0,y:0,width:canvas.width,height:canvas.height};
-  }
-
-  return {
-    x:minX,
-    y:minY,
-    width:maxX-minX+1,
-    height:maxY-minY+1
-  };
-}
-
-function trimmedRuntimeCanvasForAsset(asset){
-  if(asset.spec?.preserveFrame){
-    return {
-      canvas:asset.editCanvas,
-      anchor:{
-        x:asset.spec.anchorX/asset.editCanvas.width,
-        y:asset.spec.anchorY/asset.editCanvas.height
-      }
-    };
-  }
-
-  const bounds=opaqueBoundsForCanvas(asset.editCanvas);
-  const trimmed=document.createElement("canvas");
-  trimmed.width=bounds.width;
-  trimmed.height=bounds.height;
-  const c=trimmed.getContext("2d",{willReadFrequently:true});
-  c.imageSmoothingEnabled=false;
-  c.drawImage(
-    asset.editCanvas,
-    bounds.x,bounds.y,bounds.width,bounds.height,
-    0,0,bounds.width,bounds.height
-  );
-
-  const spec=asset.spec || {};
-  const anchorX=clampNumber((spec.anchorX ?? asset.editCanvas.width/2)-bounds.x,0,bounds.width,bounds.width/2);
-  const anchorY=clampNumber((spec.anchorY ?? asset.editCanvas.height)-bounds.y,0,bounds.height,bounds.height);
-
-  return {
-    canvas:trimmed,
-    anchor:{
-      x:bounds.width ? anchorX/bounds.width : 0.5,
-      y:bounds.height ? anchorY/bounds.height : 1
-    }
-  };
-}
-
-function applyPixelEditorAsset(){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas) return;
-
-  readPixelPropertiesFromUi();
-  const runtime=trimmedRuntimeCanvasForAsset(asset);
-  const dataUrl=runtime.canvas.toDataURL("image/png");
-  asset.runtimeAnchor=runtime.anchor;
-
-  asset.gameImage._crispPrepared=false;
-  asset.gameImage._crispRenderSource=null;
-  asset.gameImage.onload=()=>{
-    if(typeof prepareCrispPixelSprite==="function"){
-      prepareCrispPixelSprite(asset.gameImage);
-    }
-    if(game){
-      draw();
-    }
-  };
-
-  asset.gameImage.src=dataUrl;
-  asset.dirty=false;
-
-  pixelStatus.textContent=
-    `${asset.label}: applied at ${asset.spec.renderWidth} × ${asset.spec.renderHeight} game pixels.`;
-
-  renderPixelEditor();
-}
-
-function savePixelEditorAsset(){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas) return;
-
-  readPixelPropertiesFromUi();
-  const preferredName=(pixelSubmitName?.value || asset.label || asset.id).trim();
-  const fileName=`${sanitizeSubmissionSlug(preferredName)}.png`;
-  downloadDataUrl(fileName,asset.editCanvas.toDataURL("image/png"));
-  pixelStatus.textContent=`${asset.label}: saved as ${fileName}.`;
-}
-
-const PIXEL_SUBMIT_ENDPOINT_STORAGE_KEY="adventureParty.pixelSubmitEndpoint";
-const PIXEL_SUBMIT_KEY_STORAGE_KEY="adventureParty.pixelSubmitKey";
-
-function setPixelSubmitResult(message,state=""){
-  if(!pixelSubmitResult) return;
-  pixelSubmitResult.textContent=message;
-  pixelSubmitResult.className="pixel-submit-result"+(state ? ` ${state}` : "");
-}
-
-function sanitizeSubmissionSlug(value){
-  return String(value || "sprite")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g,"-")
-    .replace(/^-+|-+$/g,"")
-    .slice(0,64) || "sprite";
-}
-
-function timestampForSubmission(date=new Date()){
-  const pad=value=>String(value).padStart(2,"0");
-  return `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
-}
-
-function dateFolderForSubmission(date=new Date()){
-  const pad=value=>String(value).padStart(2,"0");
-  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
-}
-
-function canvasToBase64Png(canvas){
-  const dataUrl=canvas.toDataURL("image/png");
-  return dataUrl.slice(dataUrl.indexOf(",")+1);
-}
-
-function buildPixelSubmission(){
-  const asset=pixelEditorAsset;
-  if(!asset?.editCanvas){
-    throw new Error("Choose a sprite before submitting.");
-  }
-
-  readPixelPropertiesFromUi();
-
-  const now=new Date();
-  const name=(pixelSubmitName?.value || asset.label || asset.id).trim();
-  if(!name){
-    throw new Error("Asset Name is required.");
-  }
-
-  const slug=sanitizeSubmissionSlug(name);
-  const submissionId=`${timestampForSubmission(now)}-${slug}`;
-  const folder=`pixel-inbox/${dateFolderForSubmission(now)}/${submissionId}`;
-
-  const manifest={
-    schemaVersion:1,
-    submissionId,
-    name,
-    category:pixelSubmitCategory?.value || "units",
-    submissionType:pixelSubmitType?.value || "new",
-    sourceAssetId:asset.id,
-    sourceAssetLabel:asset.label,
-    width:asset.editCanvas.width,
-    height:asset.editCanvas.height,
-    spriteSpec:{
-      sourceWidth:asset.spec?.sourceWidth ?? null,
-      sourceHeight:asset.spec?.sourceHeight ?? null,
-      workspaceWidth:asset.spec?.workspaceWidth ?? asset.editCanvas.width,
-      workspaceHeight:asset.spec?.workspaceHeight ?? asset.editCanvas.height,
-      renderWidth:asset.spec?.renderWidth ?? null,
-      renderHeight:asset.spec?.renderHeight ?? null,
-      anchorX:asset.spec?.anchorX ?? null,
-      anchorY:asset.spec?.anchorY ?? null,
-      scaleMode:asset.spec?.scaleMode || "fit",
-      lockAspect:asset.spec?.lockAspect!==false,
-      nativeFacing:asset.spec?.nativeFacing || "right"
-    },
-    format:"png",
-    submittedAt:now.toISOString(),
-    source:"Adventure Party Pixel Studio",
-    notes:(pixelSubmitNotes?.value || "").trim(),
-    files:{
-      sprite:`${folder}/sprite.png`,
-      manifest:`${folder}/manifest.json`
-    }
-  };
-
-  return {
-    submissionId,
-    folder,
-    spritePngBase64:canvasToBase64Png(asset.editCanvas),
-    manifest,
-    latest:{
-      schemaVersion:1,
-      submissionId,
-      path:folder,
-      submittedAt:manifest.submittedAt,
-      name:manifest.name,
-      category:manifest.category,
-      submissionType:manifest.submissionType
-    }
-  };
-}
-
-function downloadTextFile(name,textValue,mimeType="application/json"){
-  const blob=new Blob([textValue],{type:mimeType});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download=name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-function downloadDataUrl(name,dataUrl){
-  const a=document.createElement("a");
-  a.href=dataUrl;
-  a.download=name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-function downloadPixelSubmissionPackage(){
-  try{
-    const submission=buildPixelSubmission();
-    downloadDataUrl(`${submission.submissionId}.png`,pixelEditorAsset.editCanvas.toDataURL("image/png"));
-    setTimeout(()=>{
-      downloadTextFile(
-        `${submission.submissionId}.manifest.json`,
-        JSON.stringify(submission.manifest,null,2)
-      );
-    },120);
-    setPixelSubmitResult(`Downloaded PNG + manifest for ${submission.submissionId}.`,"success");
-  }catch(error){
-    setPixelSubmitResult(error?.message || "Unable to package submission.","error");
-  }
-}
-
-async function submitPixelAssetToRepository(){
-  let submission;
-  try{
-    submission=buildPixelSubmission();
-  }catch(error){
-    setPixelSubmitResult(error?.message || "Unable to build submission.","error");
-    return;
-  }
-
-  const endpoint=(pixelSubmitEndpoint?.value || "").trim();
-  if(!endpoint){
-    setPixelSubmitResult("No upload endpoint configured. Use Download Submission Package, or paste your secure endpoint URL.","error");
-    return;
-  }
-
-  localStorage.setItem(PIXEL_SUBMIT_ENDPOINT_STORAGE_KEY,endpoint);
-  setPixelSubmitResult(`Uploading ${submission.submissionId}…`,"pending");
-  pixelSubmitButton.disabled=true;
-
-  try{
-    const uploadKey=(pixelSubmitKey?.value || "").trim();
-    if(uploadKey){
-      localStorage.setItem(PIXEL_SUBMIT_KEY_STORAGE_KEY,uploadKey);
-    }
-
-    const headers={"Content-Type":"application/json"};
-    if(uploadKey){
-      headers["X-Upload-Key"]=uploadKey;
-    }
-
-    const response=await fetch(endpoint,{
-      method:"POST",
-      headers,
-      body:JSON.stringify(submission)
-    });
-
-    let result={};
-    try{
-      result=await response.json();
-    }catch(_error){
-      result={};
-    }
-
-    if(!response.ok){
-      throw new Error(result.error || `Upload failed (${response.status}).`);
-    }
-
-    const path=result.path || submission.folder;
-    setPixelSubmitResult(`Submitted successfully: ${path}`,"success");
-    pixelStatus.textContent=`${submission.manifest.name}: sent to repository as ${submission.submissionId}.`;
-  }catch(error){
-    setPixelSubmitResult(
-      `${error?.message || "Upload failed."} Your sprite remains open in Pixel Studio.`,
-      "error"
-    );
-  }finally{
-    pixelSubmitButton.disabled=false;
-  }
-}
-
-function initializePixelRepositorySubmission(){
-  if(pixelSubmitEndpoint){
-    pixelSubmitEndpoint.value=localStorage.getItem(PIXEL_SUBMIT_ENDPOINT_STORAGE_KEY) || "";
-    pixelSubmitEndpoint.addEventListener("change",()=>{
-      localStorage.setItem(PIXEL_SUBMIT_ENDPOINT_STORAGE_KEY,pixelSubmitEndpoint.value.trim());
-    });
-  }
-  if(pixelSubmitKey){
-    pixelSubmitKey.value=localStorage.getItem(PIXEL_SUBMIT_KEY_STORAGE_KEY) || "";
-    pixelSubmitKey.addEventListener("change",()=>{
-      localStorage.setItem(PIXEL_SUBMIT_KEY_STORAGE_KEY,pixelSubmitKey.value.trim());
-    });
-  }
-  pixelSubmitName?.addEventListener("input",()=>{
-    pixelSubmitName.dataset.userEdited="true";
-  });
-  pixelSubmitButton?.addEventListener("click",submitPixelAssetToRepository);
-  pixelDownloadSubmissionButton?.addEventListener("click",downloadPixelSubmissionPackage);
-}
-
-initializePixelRepositorySubmission();
-
-pixelPencilButton.addEventListener("click",()=>{
-  setPixelEditorTool("pencil");
-});
-
-pixelEraserButton.addEventListener("click",()=>{
-  setPixelEditorTool("eraser");
-});
-
-pixelZoom.addEventListener("change",()=>{
-  pixelEditorZoom=Number(pixelZoom.value) || 8;
-  renderPixelEditor();
-});
-
-pixelSourceScale?.addEventListener("input",()=>{
-  if(pixelSourceScaleValue){
-    pixelSourceScaleValue.textContent=`${pixelSourceScale.value}%`;
-  }
-});
-
-pixelSourceScale?.addEventListener("change",()=>{
-  rescalePixelEditorAsset(pixelSourceScale.value);
-});
-
-pixelFitScaleButton?.addEventListener("click",fitPixelEditorAssetToGrid);
-pixelOriginalScaleButton?.addEventListener("click",setPixelEditorAssetOriginalScale);
-
-pixelScaleMode?.addEventListener("change",applyPixelScaleMode);
-pixelLockAspect?.addEventListener("change",()=>readPixelPropertiesFromUi());
-pixelRenderWidth?.addEventListener("change",()=>readPixelPropertiesFromUi({renderChanged:"width"}));
-pixelRenderHeight?.addEventListener("change",()=>readPixelPropertiesFromUi({renderChanged:"height"}));
-pixelAnchorX?.addEventListener("change",()=>readPixelPropertiesFromUi());
-pixelAnchorY?.addEventListener("change",()=>readPixelPropertiesFromUi());
-pixelResizeWorkspaceButton?.addEventListener("click",resizePixelEditorWorkspace);
-
-pixelGridToggle.addEventListener("change",()=>{
-  renderPixelEditor();
-});
-
-pixelCanvas.addEventListener("pointerdown",(event)=>{
-  event.preventDefault();
-  pixelEditorPainting=true;
-  pixelCanvas.setPointerCapture(event.pointerId);
-  editPixelAtEvent(event);
-});
-
-pixelCanvas.addEventListener("pointermove",(event)=>{
-  if(!pixelEditorPainting) return;
-  editPixelAtEvent(event);
-});
-
-pixelCanvas.addEventListener("pointerup",(event)=>{
-  pixelEditorPainting=false;
-  if(pixelCanvas.hasPointerCapture(event.pointerId)){
-    pixelCanvas.releasePointerCapture(event.pointerId);
-  }
-});
-
-pixelCanvas.addEventListener("pointercancel",()=>{
-  pixelEditorPainting=false;
-});
-
-document.getElementById("pixelApplyButton")
-  .addEventListener("click",applyPixelEditorAsset);
-
-pixelSaveButton?.addEventListener("click",savePixelEditorAsset);
-
-document.getElementById("pixelResetButton")
-  .addEventListener("click",resetPixelEditorAsset);
-
-document.getElementById("pixelReturnButton")
-  .addEventListener("click",showLauncher);
-
 
 
 /* R72 temporary finite tactical battlefield.
@@ -6191,12 +4959,9 @@ function animateBattlefieldRotation(now){
   if(battlefieldRotationTween)battlefieldRotationFrame=requestAnimationFrame(animateBattlefieldRotation);
 }
 function updateBattlefieldCompass(){
-  const rose=document.getElementById('combatCompassRose');
-  if(rose){
-    const squash=HEX_ROW/(HEX_W*Math.sqrt(3)/2),directions={N:{x:0,y:-squash},S:{x:0,y:squash},E:{x:1,y:0},W:{x:-1,y:0}};
-    rose.style.transform='';for(const label of rose.children){const v=battlefieldProjectVector(directions[label.textContent.trim()]),length=Math.hypot(v.x,v.y)||1;Object.assign(label.style,{left:`${46+v.x/length*36}px`,top:`${46+v.y/length*36}px`,right:'auto',bottom:'auto',transform:'translate(-50%,-50%)'});}
-  }
-  const status=document.getElementById('combatCompassStatus');if(status)status.textContent=`View ${Math.round((((battlefieldRotation+3)%6+6)%6-3)*60)}°`;
+ const rose=document.getElementById('combatCompassRose'),bearing=(( -battlefieldRotation*60)%360+360)%360;
+ if(rose){for(const label of rose.querySelectorAll('[data-bearing]')){const delta=((Number(label.dataset.bearing)-bearing+540)%360)-180;label.style.left=(50+delta/1.8)+'%';label.hidden=Math.abs(delta)>90;}rose.setAttribute('aria-label','Map facing '+Math.round(bearing)%360+' degrees');}
+ const status=document.getElementById('combatCompassStatus');if(status)status.textContent='MAP FACING '+String(Math.round(bearing)%360).padStart(3,'0')+'°';
 }
 
 function changeBattlefieldZoom(direction){
@@ -6350,8 +5115,8 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
     if(!combatMobAppearanceRuntimePromise){
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
-        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C204")),
-        import(moduleUrl("js/combat-prepared-assets.mjs?v=R238C313"))
+        import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C432")),
+        import(moduleUrl("js/combat-prepared-assets.mjs?v=tree-snow-grains1"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.loadPreparedCombatUnit,
         cacheLimit:24
@@ -6377,7 +5142,10 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       }
     });
     if(!result.applied||(unit.appearanceRevision||0)!==requestedRevision)return null;
-    const spriteSetId=window.adventurePartySpriteSets?.register(result.spriteSet);
+    const spriteSetId=runtime.registerAppearance(result.spriteSet,{
+      register:set=>window.adventurePartySpriteSets?.register(set),
+      current:id=>registeredStudioSpriteSets.get(id)
+    });
     if(!spriteSetId)return null;
     unit.appearanceLoadError=null;
     unit.appliedEquipmentVisualSignature=visualSignature;
@@ -6667,6 +5435,7 @@ function isAdjacent(a,b){
 
 function updateFacingForStep(entity,dx,dy){
   if(!entity) return;
+  entity.walkStartHeading=facingDirectionIndex(entity)*Math.PI/3+(entity.aimYawOffset||0);
 
   const target={
     x:(entity.x||0)+dx,
@@ -6699,8 +5468,26 @@ function updateFacingForStep(entity,dx,dy){
   return true;
 }
 
+let computerCameraTick=null,computerCameraTime=0,computerCameraFraming=false;
+function computerCameraEligible(unit){
+ return !!unit&&!!unit.walkPresentation&&globalThis.adventurePartyWalkBusy===true&&(!isPlayerControlledUnit(unit)||isQuickCommandUnit(unit))&&unit.alive&&!unit.fled&&
+  (unit.controller!=='mob'||mobPositionVisibleToFriendlyParty(unit));
+}
+function updateComputerCameraFollow(){
+ const unit=activeUnit();
+ if(computerCameraFraming||!computerCameraEligible(unit)||game?.over||currentScreen!=='combat'){computerCameraTime=0;return;}
+ const now=performance.now(),dt=computerCameraTime?Math.min(.1,(now-computerCameraTime)/1000):1/60;computerCameraTime=now;
+ const walk=unit.walkPresentation,t=walk?.t||0;
+ const x=walk?walk.from.x+(walk.to.x-walk.from.x)*t:unit.x,y=walk?walk.from.y+(walk.to.y-walk.from.y)*t:unit.y;
+ const blend=matchMedia('(prefers-reduced-motion: reduce)').matches?1:1-Math.exp(-12*dt);
+ camera.x+=(x-camera.x)*blend;camera.y+=(y-camera.y)*blend;
+ if(Math.hypot(x-camera.x,y-camera.y)<.001){camera.x=x;camera.y=y;return;}
+ if(computerCameraTick===null)computerCameraTick=requestCombatAnimationTick(()=>{computerCameraTick=null;if(currentScreen==='combat'&&game&&!game.over)draw();});
+}
+
 function centerCameraOn(entity){
   if(!entity) return;
+  if(entity===activeUnit()&&computerCameraEligible(entity)){hoverHex=null;return;}
   camera.x=entity.x;
   camera.y=entity.y;
   hoverHex=null;
@@ -6771,8 +5558,15 @@ async function frameRangedAction(attacker,target,duration=700){
  const offset=battlefieldProjectVector({x:(width/2-anchor.x)/destinationZoom,y:(height/2+HEX_W*.65-anchor.y)/destinationZoom},true);
  const cy=((a.y+b.y)/2-offset.y)/HEX_ROW;
  const cx=((a.x+b.x)/2-offset.x)/HEX_W-cy/2;
+ // A second shot often requests exactly the view already on screen. Do not
+ // spend 700 ms animating a stationary camera. Use projected pixels so the
+ // tolerance is stable across battlefield rotation and zoom.
+ const current=worldPointForHex(camera.x,camera.y),destination=worldPointForHex(cx,cy);
+ const drift=battlefieldProjectVector({x:destination.x-current.x,y:destination.y-current.y});
+ if(Math.hypot(drift.x,drift.y)*destinationZoom<.5&&Math.abs(destinationZoom-battlefieldZoom)<.0001)return;
  const from={x:camera.x,y:camera.y,zoom:battlefieldZoom},started=performance.now();
  hoverHex=null;
+ computerCameraFraming=true;try{
  while(game===combat&&generation===rangedCameraGeneration){
   const t=Math.min(1,(performance.now()-started)/duration),ease=t*t*t*(t*(t*6-15)+10);
   camera.x=from.x+(cx-from.x)*ease;camera.y=from.y+(cy-from.y)*ease;
@@ -6780,6 +5574,7 @@ async function frameRangedAction(attacker,target,duration=700){
   if(t>=1)break;
   await new Promise(resolve=>window.requestCombatAnimationTick(resolve));
  }
+ }finally{computerCameraFraming=false;}
 }
 async function focusRangedAttacker(attacker,settleMs=180,target=null){
  if(attacker&&target)faceEntityToward(attacker,target);
@@ -9747,6 +8542,7 @@ function hasTransientUnitFx(now=performance.now()){
     (game && allUnits().some(u=>u?.alive&&!u.fled&&u.inventory?.some(item=>globalThis.AdventurePartyItemLighting?.profile(item)?.flicker))) ||
     castingGlowFx.length>0 ||
     fireDamageFx.length>0 ||
+    (game && Object.values(game.groundHeat||{}).some(h=>game.round<h.untilRound && (now<h.steamUntil || globalThis.adventurePartySnow?.intensity>0))) ||
     (game?.burnSmoke?.some(fx=>now<fx.started+fx.duration)) ||
     enlargeTransitionFx.length>0
   );
@@ -9764,6 +8560,7 @@ function transientUnitFxTick(){
     return;
   }
 
+  updateGroundSteam();
   draw();
   transientUnitFxFrame=requestCombatAnimationTick(transientUnitFxTick);
 }
@@ -11059,6 +9856,7 @@ function addAreaEffect(effect){
 }
 
 function onUnitDamaged(unit,damage){
+  if(typeof candidateCombatBeatPresentationEnabled!=="function"||!candidateCombatBeatPresentationEnabled())showUnitReaction(unit,damage);
   if(!unit || damage<=0) return;
 
   if(getUnitEffect(unit,"sleep")){
@@ -12184,7 +10982,7 @@ function renderSpellBook(level=spellbookActiveLevel){
           `${spell.materialComponent ? `<span>Material</span><span>${spell.materialComponent}</span>` : ""}`+
         `</div>`+
         `<div class="spell-description">${spell.description || ""}</div>`+
-        `<div class="spell-source">Source: ${spell.source.book}, printed page ${spell.source.printedPage}.</div>`+
+        `<div class="spell-source">Source: ${spell.source?.book || "Not recorded"}${spell.source?.printedPage ? ", printed page "+spell.source.printedPage+"." : ""}</div>`+
       `</div>`+
     `</article>`
   ).join("");
@@ -15372,8 +14170,9 @@ function rangedAiCanAttackFrom(unit,source,target){
 function bestRangedAiTargetFrom(unit,source=unit){
   const sourceEntity=rangedAiSourceEntity(unit,source);
 
-  return rangedAiOpponents(unit)
-    .filter(target=>rangedAiCanAttackFrom(unit,source,target))
+  const targets=rangedAiOpponents(unit).filter(target=>rangedAiCanAttackFrom(unit,source,target));
+  if(isElvenBowTactician(unit))return bestElvenArcherTarget(unit,sourceEntity,targets);
+  return targets
     .sort((a,b)=>
       workshopTargetPriority(unit,a,b) ||
       unitDistance(sourceEntity,a)-unitDistance(sourceEntity,b) ||
@@ -15608,6 +14407,8 @@ async function mobMissileAttack(mob,target){
     const rate=mob.missileRateOfFire||1;
     const shots=rate<1?(game.round%Math.round(1/rate)===1?1:0):Math.floor(rate);
     for(let shot=0;shot<shots;shot++){
+      if(isElvenBowTactician(mob))target=bestRangedAiTargetFrom(mob);
+      if(!target)break;
       if(game.over||!mob.alive||!target.alive||!rangedAiCanAttackFrom(mob,mob,target))break;
       if(mob.missileCatalogId==="sling")await slingAttack(mob,target);
       else await longbowAttack(mob,target);
@@ -16084,6 +14885,7 @@ async function runQuickCommandPlayerTurn(token=quickCommandGeneration){
       }
 
       await selectCombatAiWeapon(p);
+      if(await repositionElvenArcher(p))break;
       const shotTarget=unitHasRangedWeaponInHand(p)&&p.missileAmmoQuantity>0?bestRangedAiTargetFrom(p,p):null;
       if(shotTarget){
         r226PreparePlayerAttackRate(p);
@@ -16378,7 +15180,7 @@ function rotateWallOfFogAimOrientation(step){
   pendingAimAction.wallOfFogOrientationIndex=next;
 
   setCombatMessage(
-    `Wall of Fog orientation: ${wallOfFogOrientationLabel(next)} — mouse wheel rotates; click to cast.`,
+    `Wall of Fog orientation: ${wallOfFogOrientationLabel(next)} — Shift + mouse wheel rotates; click to cast.`,
     500
   );
   updateUi();
@@ -16575,7 +15377,7 @@ async function showAreaEffectUnitResolution({
 
 function testSpellTargetPrompt(spell){
   if(spell?.id==="wall-of-fog"){
-    return "AIM at the desired battlefield hex; use the mouse wheel to rotate the wall";
+    return "AIM at the desired battlefield hex; use the Shift + mouse wheel to rotate the wall";
   }
 
   switch(spell.targetMode){
@@ -16624,7 +15426,7 @@ function beginMageCombatSpell(spellId){
   if(spell.id==="wall-of-fog"){
     const autoOrientation=wallOfFogAutoOrientationIndex(caster,aimCursor);
     setCombatMessage(
-      `${spell.name}: AIM the center, then use the mouse wheel to rotate (${wallOfFogOrientationLabel(autoOrientation)}). Click to cast.`
+      `${spell.name}: AIM the center, then use the Shift + mouse wheel to rotate (${wallOfFogOrientationLabel(autoOrientation)}). Click to cast.`
     );
   }else{
     setCombatMessage(`${spell.name}: ${testSpellTargetPrompt(spell)}.`);
@@ -16682,7 +15484,7 @@ function beginCombatTestSpell(spellId){
   if(spell.id==="wall-of-fog"){
     const autoOrientation=wallOfFogAutoOrientationIndex(caster,aimCursor);
     setCombatMessage(
-      `${spell.name}: AIM the center, then use the mouse wheel to rotate (${wallOfFogOrientationLabel(autoOrientation)}). Click to cast.`
+      `${spell.name}: AIM the center, then use the Shift + mouse wheel to rotate (${wallOfFogOrientationLabel(autoOrientation)}). Click to cast.`
     );
   }else{
     setCombatMessage(`${spell.name}: ${testSpellTargetPrompt(spell)}.`);
@@ -19067,7 +17869,7 @@ function updateUi(){
         ? "Hit Escape to cancel Quick for all friendly units"
         : spellTargeting
           ? "Escape to abort spell casting"
-          : (aimOnly ? "Escape to abort Aim" : studioTest ? (new URLSearchParams(window.location.search).has("testMob")?"Escape to return to MOB sheet":"Escape to return to 3d studio") : "Escape to return to launcher")
+          : (aimOnly ? "Escape to abort Aim" : studioTest ? (new URLSearchParams(window.location.search).has("testMob")?"Escape to return to Game Mechanics":"Escape to return to Game Mechanics") : "Escape to return to launcher")
     );
   }
 
@@ -19283,12 +18085,18 @@ function hoverHighlightCells(){
     .filter(cell=>inside(cell.x,cell.y));
 }
 
-function visibleHexes(){
+function visibleHexes(padding=0){
+  const visibleHexesCache=visibleHexes.cache??=new Map();
+  const bounds=battlefieldViewportBounds(),anchor=battlefieldZoomAnchor();
+  const stamp=[camera.x,camera.y,battlefieldRotation,battlefieldZoom,anchor.x,anchor.y,bounds.left,bounds.right,bounds.top,bounds.bottom,BATTLEFIELD_LOGICAL_WIDTH,BATTLEFIELD_LOGICAL_HEIGHT,MAP_MIN_X,MAP_MAX_X,MAP_MIN_Y,MAP_MAX_Y,HEX_W,HEX_H,HEX_ROW];
+  const prior=visibleHexesCache.get(padding);
+  if(prior&&stamp.every((v,i)=>v===prior.stamp[i])){globalThis.adventurePartyCombatPerformance?.count('viewportHexCacheHits');return prior.tiles;}
   const tiles=[];
   const baseX=Math.floor(camera.x);
   const baseY=Math.floor(camera.y);
 
-  const viewport=battlefieldViewportBounds(),world=battlefieldWorldViewport();
+  const viewport={left:bounds.left-padding,right:bounds.right+padding,top:bounds.top-padding,bottom:bounds.bottom+padding};
+  const world=padding?{corners:[[viewport.left,viewport.top],[viewport.right,viewport.top],[viewport.right,viewport.bottom],[viewport.left,viewport.bottom]].map(([x,y])=>battlefieldWorldAtScreen({x,y}))}:battlefieldWorldViewport();
   const corners=world.corners.map(p=>({x:p.x/HEX_W-p.y/(2*HEX_ROW),y:p.y/HEX_ROW}));
   const minX=Math.floor(Math.min(...corners.map(p=>p.x)))-2,maxX=Math.ceil(Math.max(...corners.map(p=>p.x)))+2,minY=Math.floor(Math.min(...corners.map(p=>p.y)))-2,maxY=Math.ceil(Math.max(...corners.map(p=>p.y)))+2;
   for(let x=minX;x<=maxX;x++){
@@ -19318,6 +18126,7 @@ function visibleHexes(){
   }
 
   tiles.sort((a,b)=>a.sortY-b.sortY || a.sortX-b.sortX);
+  if(visibleHexesCache.size>=8)visibleHexesCache.clear();visibleHexesCache.set(padding,{stamp,tiles});
   return tiles;
 }
 
@@ -19337,6 +18146,13 @@ function drawHpBar(entity,color){
   }
 
   const c=unitFootprintScreenCenter(entity);
+  // Match the model's walking position while retaining the footprint-center offset.
+  const motion=entity.walkPresentation;
+  if(motion){
+    const t=Math.max(0,Math.min(1,motion.t)),from=hexCenter(motion.from.x,motion.from.y),to=hexCenter(motion.to.x,motion.to.y),anchor=hexCenter(entity.x,entity.y);
+    c.x+=from.x+(to.x-from.x)*t-anchor.x;
+    c.y+=from.y+(to.y-from.y)*t-anchor.y;
+  }
   const large=unitFootprintCellCount(entity)>1;
   const width=Math.max(34,Number(entity.hpBarWidth)||(large ? 64 : 34));
   const ratio=Math.max(0,Math.min(1,entity.hp/entity.maxHp));
@@ -22066,7 +20882,7 @@ function ensurePersistentStatusFxLoop(){
   return true;
 }
 
-function drawFireDamageFx(){drawBurnSmoke();}
+function drawFireDamageFx(){drawBurnSmoke();drawGroundSteam();}
 
 function drawAreaDamageFx(){
   if(!areaDamageFx || !game) return;
@@ -22096,27 +20912,44 @@ function drawAreaDamageFx(){
 
 
 
-function showUnitBarks(units,text,durationMs=3000){
-  const until=performance.now()+durationMs;
-
-  for(const unit of units || []){
-    if(!unit?.alive || unit.fled) continue;
-
-    unit.barkText=text;
-    unit.barkUntil=until;
-  }
-
-  if(unitBarkClearTimer){
-    clearTimeout(unitBarkClearTimer);
-  }
-
-  unitBarkClearTimer=setTimeout(()=>{
-    unitBarkClearTimer=null;
-    draw();
-  },durationMs+30);
-
-  draw();
+const unitReactionDeaths=new WeakMap();
+const UNIT_REACTION_LINES=Object.freeze({
+ light:['Ow!','Ouch!','Ah!','Oof!','Ugh!','Ngh!','Ack!'],
+ heavy:['Aaah!','Argh!','Gah!','Aagh!','Urgh!','Gaaah!','Hrrgh!'],
+ death:['Aaargh...','Urrgh...','Ahh...','AAAAAaaaaaaa!']
+});
+function unitReactionKind(unit,damage,event='injury'){
+ if(event==='death')return 'death';
+ if(!(Number(damage)>0))return null;
+ if(unit?.alive===false||unit?.hp<=0)return 'death';
+ return Number(damage)>=Math.max(1,Number(unit?.maxHp)||1)*.2?'heavy':'light';
 }
+function showUnitReaction(unit,damage=0,event='injury'){
+ if(!game||!unit||unit.fled)return;
+ const kind=unitReactionKind(unit,damage,event);if(!kind)return;
+ if(kind==='death'&&unitReactionDeaths.get(unit)===game)return;
+ if(kind==='death')unitReactionDeaths.set(unit,game);else unitReactionDeaths.delete(unit);
+ const pool=UNIT_REACTION_LINES[kind].filter(line=>line!==unit.lastReactionText);
+ const text=pool[Math.min(pool.length-1,Math.floor(Math.random()*pool.length))];
+ unit.lastReactionText=text;
+ showUnitBarks([unit],text,kind==='death'?2200:kind==='heavy'?1500:1200,{kind});
+}
+function scheduleUnitBarkExpiry(){
+ if(unitBarkClearTimer)clearTimeout(unitBarkClearTimer);
+ const now=performance.now(),session=game;
+ const expiry=allUnits().filter(u=>u?.barkText&&u.barkUntil>now).map(u=>u.barkUntil);
+ unitBarkClearTimer=expiry.length?setTimeout(()=>{unitBarkClearTimer=null;if(game!==session)return;draw();scheduleUnitBarkExpiry();},Math.max(1,Math.min(...expiry)-now+16)):null;
+}
+function showUnitBarks(units,text,durationMs=3000,{kind='speech'}={}){
+ const until=performance.now()+durationMs;
+ for(const unit of units||[]){
+  if(!unit||unit.fled||(!unit.alive&&kind!=='death'))continue;
+  unit.barkText=String(text);unit.barkUntil=until;unit.barkKind=kind;
+ }
+ scheduleUnitBarkExpiry();draw();
+}
+
+
 
 function drawWhiteBattlefieldText(textValue,x,y,{fontSize=14,maxWidth=null}={}){
   if(!textValue) return;
@@ -22192,9 +21025,12 @@ function flashAttack(attacker,defender,hit){
    ============================================================ */
 
 function handleLauncherKey(event){
+  if(event.target===soundToggle && (event.key==="Enter"||event.key===" "))return;
+  if(event.key==="Escape"&&launcherMenu==="game-mechanics"){event.preventDefault();setLauncherMenu("main",{focus:true});return;}
   if(event.key==="ArrowDown"){
     launcherSelection=(launcherSelection+1)%launcherButtons.length;
     updateLauncherSelection();
+    launcherButtons[launcherSelection]?.focus();
     event.preventDefault();
     return;
   }
@@ -22202,6 +21038,7 @@ function handleLauncherKey(event){
   if(event.key==="ArrowUp"){
     launcherSelection=(launcherSelection-1+launcherButtons.length)%launcherButtons.length;
     updateLauncherSelection();
+    launcherButtons[launcherSelection]?.focus();
     event.preventDefault();
     return;
   }
@@ -22522,24 +21359,6 @@ function handleClassBookKey(event){
   }
 }
 
-function handlePixelKey(event){
-  if(event.key==="Escape"){
-    event.preventDefault();
-    showLauncher();
-    return;
-  }
-
-  const keyLower=event.key.toLowerCase();
-
-  if(keyLower==="p"){
-    event.preventDefault();
-    setPixelEditorTool("pencil");
-  }else if(keyLower==="e"){
-    event.preventDefault();
-    setPixelEditorTool("eraser");
-  }
-}
-
 document.addEventListener("keyup",event=>releaseKeyboardCombatMove(event.code||event.key));
 window.addEventListener("blur",()=>releaseKeyboardCombatMove());
 document.addEventListener("keydown",(event)=>{
@@ -22551,8 +21370,7 @@ document.addEventListener("keydown",(event)=>{
     handleCombatConditionsKey(event);
   }else if(currentScreen==="xp-loot"){
     handleXpLootKey(event);
-  }else if(currentScreen==="pixel"){
-    handlePixelKey(event);
+
   }else if(currentScreen==="spellbook"){
     handleSpellBookKey(event);
   }else if(currentScreen==="classbook"){
@@ -22592,19 +21410,18 @@ canvas.addEventListener("mouseleave",()=>{
 });
 
 canvas.addEventListener("wheel",(event)=>{
-  if(
-    currentScreen==="combat" &&
-    aimMode &&
-    pendingAimAction?.spellId==="wall-of-fog"
-  ){
-    event.preventDefault();
-    rotateWallOfFogAimOrientation(event.deltaY>0 ? 1 : -1);
+  if(currentScreen!=="combat"||!event.deltaY)return;
+  event.preventDefault();
+  if(event.shiftKey&&aimMode&&pendingAimAction?.spellId==="wall-of-fog"){
+    rotateWallOfFogAimOrientation(event.deltaY>0?1:-1);return;
   }
+  changeBattlefieldZoom(event.deltaY<0?1:-1);
 },{passive:false});
 
 canvas.addEventListener("click",(event)=>{
   if(currentScreen!=="combat" || game?.over) return;
 
+  if(game.godTreeTool){const p=canvasEventPoint(event),h=hexAtCanvasPoint(p.x,p.y);if(h){const tree=game.testTrees?.find(t=>t.x===h.x&&t.y===h.y);if(tree)fellGodTree(tree);else setGodTreeStatus('Click a tree’s base hex.');}return;}
   if(game?.round===0){
     return;
   }
@@ -22846,13 +21663,11 @@ window.addEventListener("unhandledrejection",(event)=>{
 
 fitBattleCanvas();
 
-/* Try to start title music. Browser policy may leave it suspended;
-   the first keyboard or pointer input then unlocks the SAME context. */
+/* Prepare the shared effects context; the first input unlocks it. */
 ensureAudioContext();
 
 if(audioCtx && audioCtx.state==="running"){
   audioReady=true;
-  startTitleMusic();
 }
 
 updateAudioIndicators();
@@ -22874,7 +21689,7 @@ window.AdventurePartyStatusFx={
 window.adventurePartyGameStartup?.ready.then(()=>{
  const query=new URLSearchParams(location.search),id=query.get('testMob');if(!id)return;
  const mob=window.adventurePartyRepositoryMobs.get(id);if(!mob){alert('This MOB was deleted or is unavailable.');return;}
- const back=document.createElement('a');back.href='./mob-creator.html?mob='+encodeURIComponent(id);back.textContent='Return to MOB sheet';back.className='command';document.getElementById('returnButton')?.after(back);
+ const back=document.createElement('a');back.href='./mob-catalog.html';back.textContent='Return to MOB Catalog';back.className='command';document.getElementById('returnButton')?.after(back);
  if(query.get('testRole')==='hostile'){
    if(!window.adventurePartyRepositoryMobs.choices().some(([key])=>key==='mob:'+id)){alert('Enable and save this MOB before adding it as an opponent.');return;}
    combatMobRoster.push({rowId:++combatMobRowSequence,type:'mob:'+id,count:1,faction:'hostile'});
@@ -22904,4 +21719,24 @@ addEventListener('adventure-party:tree-aa-change',()=>{if(game)draw();});
 
 
 globalThis.adventurePartyUiAudio?.configure({getContext:()=>ensureAudioContext(),getDestination:()=>sfxGain,isEnabled:()=>audioEnabled});
+
+
+
+
+
+
+
+const treeFallAudioSources=new Set();
+let oakFallAudioSource=null,oakFallAudioBuffer=null;
+const oakFallAudioBytes=fetch('assets/audio/oak-fall-matt-beer.mp3').then(r=>{if(!r.ok)throw Error('Oak fall audio '+r.status);return r.arrayBuffer();}).catch(error=>{console.warn(error);return null;});
+function stopOakFallSound(){for(const source of treeFallAudioSources){try{source.stop();}catch{}}treeFallAudioSources.clear();oakFallAudioSource=null;}
+async function playOakFallSound(state){
+ if(!audioEnabled||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const context=ensureAudioContext();if(!context)return;
+ try{const bytes=await oakFallAudioBytes;if(!bytes)return;oakFallAudioBuffer??=await context.decodeAudioData(bytes.slice(0));if(!treeFallEntries().some(entry=>entry.state===state)||!audioEnabled)return;
+ const source=context.createBufferSource();source.buffer=oakFallAudioBuffer;source.connect(sfxGain);const elapsed=(performance.now()-state.startedAt)/1000;const offset=Math.max(0,elapsed+1.1);if(offset>=source.buffer.duration)return;source.start(context.currentTime,offset);oakFallAudioSource=source;treeFallAudioSources.add(source);source.onended=()=>{treeFallAudioSources.delete(source);source.disconnect();if(oakFallAudioSource===source)oakFallAudioSource=null;};
+ }catch(error){console.warn('Oak fall audio unavailable',error);}
+}
+
+window.addEventListener('keydown',event=>{if(event.key==='Escape'&&game?.godTreeTool){window.toggleGodTreeTool();event.preventDefault();}});
 

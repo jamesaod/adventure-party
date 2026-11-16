@@ -1,0 +1,99 @@
+{
+  "files": [
+    {
+      "file": "grass-1.ogg",
+      "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "license": "CC0-1.0",
+      "original": "Fantozzi-SandL1.ogg",
+      "sha256": "fe6ec00cbe8790be0f37540cb8db8d245ca062337b121003685b6a96700cd0ae"
+    },
+    {
+      "file": "grass-2.ogg",
+      "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "license": "CC0-1.0",
+      "original": "Fantozzi-SandL2.ogg",
+      "sha256": "68ba66063efa32b3a83979194582b1420f808cd217ccb5839c382d0e08522e18"
+    },
+    {
+      "file": "grass-3.ogg",
+      "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "license": "CC0-1.0",
+      "original": "Fantozzi-SandL3.ogg",
+      "sha256": "0a526053424687c18735bca107b7234e48aceeb6bf12eec1f182d89aaf792b71"
+    },
+    {
+      "file": "grass-4.ogg",
+      "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "license": "CC0-1.0",
+      "original": "Fantozzi-SandR1.ogg",
+      "sha256": "439ffe4d6fdf38194caf87e103897354756d69607bd4e48cef923e1ade68ee70"
+    },
+    {
+      "file": "grass-5.ogg",
+      "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "license": "CC0-1.0",
+      "original": "Fantozzi-SandR2.ogg",
+      "sha256": "5eec48117da8fa433963ba06a93f67705f0bbd86ac3f473ab7b3bd120bf55fce"
+    },
+    {
+      "file": "grass-6.ogg",
+      "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "license": "CC0-1.0",
+      "original": "Fantozzi-SandR3.ogg",
+      "sha256": "7498c4e50282acc4e7e0442a9f2e551fae685898f8261152dbc627f04901ddbe"
+    },
+    {
+      "file": "dirt-1.wav",
+      "source": "https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud",
+      "author": "TinyWorlds",
+      "license": "CC0-1.0",
+      "original": "tinyworlds-gravel.wav",
+      "sha256": "6cfb59d4b627f0f72ab3136e84ed00d28f2c1d3a5635956026b23d053ec09c56"
+    },
+    {
+      "file": "mud-1.wav",
+      "source": "https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud",
+      "author": "TinyWorlds",
+      "license": "CC0-1.0",
+      "original": "tinyworlds-mud02.wav",
+      "sha256": "9d895fa6fa76392fac71e0984448fd9cf9415554bebfb43ad632c18b0a962364"
+    },
+    {
+      "file": "water-1.wav",
+      "source": "https://opengameart.org/content/water-splash-and-sand-footsteps",
+      "author": "Peludo",
+      "license": "CC0-1.0",
+      "download": "https://opengameart.org/sites/default/files/splash1_0.wav",
+      "sourceSha256": "e45d466f7e63e5d566f8a822a7a1a3f7d5131319d17ca0436dcc615b251e9277",
+      "trimSeconds": [
+        0.6050113378684807,
+        1.2550113378684806
+      ],
+      "gain": 1,
+      "edgeFadeSeconds": 0.006,
+      "sha256": "c43bd09454920d3f4f0ccc85147ad9290ccb5948b80200bb75134ab274696e3a"
+    },
+    {
+      "file": "water-2.wav",
+      "source": "https://opengameart.org/content/water-splash-and-sand-footsteps",
+      "author": "Peludo",
+      "license": "CC0-1.0",
+      "download": "https://opengameart.org/sites/default/files/splash2_0.wav",
+      "sourceSha256": "ad9472b711666de2d43c3b102d155a5d1118b1fcd0ecd29cb63177256ab63f31",
+      "trimSeconds": [
+        0.7450113378684807,
+        1.3950113378684807
+      ],
+      "gain": 0.8956474901115864,
+      "edgeFadeSeconds": 0.006,
+      "sha256": "11df61676a079aa039b8e57748149b388c10e2a241fe087631aac550a8d3524e"
+    }
+  ],
+  "note": "Grass/sand recordings used for grass; gravel footfall for dry dirt; mud footfall for saturated soil; trimmed splash recordings for water. Snow audio unchanged."
+}

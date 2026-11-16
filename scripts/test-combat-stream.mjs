@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {createStreamField,traceStream} from '../js/combat-stream-field.mjs';
+import {CombatWetBasins} from '../js/combat-wet-basins.mjs';
+import {CombatPuddleEffects} from '../js/combat-puddle-effects.mjs';
+const points=[{x:0,y:-15},{x:0,y:15}],field=createStreamField({size:256,span:64});field.configure(points);
+const center=field.sample(0,0),bank=field.sample(1.5,0),outside=field.sample(4,0);assert(center.water>.3);assert(center.depth>bank.depth);assert.equal(outside.water,0);assert.equal(outside.depth,0);assert(field.sample(0,-10).height>field.sample(0,10).height,'Surface slopes downstream');
+const rain=new CombatWetBasins();for(let i=0;i<200;i++)rain.step(.25,{type:'rain',intensity:1});assert.deepEqual(field.sample(0,0),center,'Rain cannot change permanent stream depth');rain.reset();assert.deepEqual(field.sample(0,0),center);
+const rev=field.revision;for(let i=0;i<100;i++)field.sample(i/100,0);assert.equal(field.revision,rev,'Queries do not rebuild');
+const unit=128/3,squash=.568329,puddle=new CombatPuddleEffects({elevation:()=>0,water:()=>0,permanent:()=>true,waterAt:(x,y)=>field.sample(x/unit,y/unit/squash)}),face={grass:true,snowEligible:1,points:[{x:-100,y:-100},{x:100,y:-100},{x:100,y:100},{x:-100,y:100}]};puddle.collect([face]);puddle.plant({alive:true},0,0);assert.equal(puddle.footHits,1);assert(puddle.rings.length>0);assert(puddle.particles.length>0);assert.equal(puddle.sample(90,0),null);
+field.configure(points,{enabled:false});assert.equal(field.sample(0,0).water,0);assert.equal(field.data.some(x=>x!==0),false);assert.throws(()=>field.configure(points,{width:Infinity}));assert.throws(()=>traceStream([{x:0,y:0}]));assert.throws(()=>traceStream([{x:NaN,y:0},{x:1,y:2}]));
+const path=traceStream([{x:-3,y:-12},{x:3,y:0},{x:-3,y:12}]);assert(path.every((p,i)=>!i||p.distance>=path[i-1].distance));
+console.log('PASS stream bed/banks, downstream slope, rain independence, cached queries, clear-weather foot splashes, disable and validation');

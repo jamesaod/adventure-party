@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import * as T from '../assets/vendor/three/three.module.min.js';
-import {unitSnowGroundMatrix,installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs';
+import {unitSnowGroundMatrix,installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
 const camera=new T.OrthographicCamera(-1,1,1,-1,.1,100);camera.position.set(0,4,4);camera.lookAt(0,0,0);camera.updateMatrixWorld();
 for(let rotation=0;rotation<6;rotation++)for(const scale of [.5,1,2]){
  const angle=rotation*Math.PI/3,a=Math.cos(angle),b=Math.sin(angle)*.65,c=-Math.sin(angle),d=Math.cos(angle)*.65,det=a*d-b*c;

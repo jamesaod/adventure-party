@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {sampleSnowFootfalls,setFootprintCells,snowFootprints,clearSnowFootprints,meltFootprints,createFootprintLayer} from '../js/combat-snow-footprints.mjs';
-import {SNOW_LAYER_METRES,SNOW_MAX_METRES,snowDepthMetres} from '../js/combat-snow-depth.mjs';
+import {sampleSnowFootfalls,setFootprintCells,snowFootprints,clearSnowFootprints,meltFootprints,createFootprintLayer} from '../js/combat-snow-footprints.mjs?v=shore-snow1';
+import {SNOW_LAYER_METRES,SNOW_MAX_METRES,snowDepthMetres} from '../js/combat-snow-depth.mjs?v=shore-snow1';
 import {surfaceVertexCount,updateSurfaceBuffers} from '../js/combat-render-cache.mjs';
 for(const [coats,inches] of [[[0,0,0],0],[[.34,0,0],6],[[.34,.34,0],12],[[.34,.34,1],18]])assert(Math.abs(snowDepthMetres(coats)-inches*.0254)<1e-10);
 const group=new THREE.Group(),foot=new THREE.Bone(),other=new THREE.Bone(),toe=new THREE.Bone();foot.name='mixamorigLeftFoot';other.name='mixamorigRightFoot';toe.position.x=.2;foot.add(toe);group.add(foot,other);other.position.y=.1;
@@ -22,7 +22,7 @@ let target=null,drawn=0;const renderer={getRenderTarget:()=>target,setRenderTarg
 const layer=createFootprintLayer(renderer,new THREE.Vector4(-1000,-1000,2000,2000));layer.update(0);assert(layer.hasHex('a'));assert(drawn>0);const cut=snowFootprints[0].depth;layer.update(.1);assert(snowFootprints[0].depth<cut,'Snowfall refills depressions');layer.update(3);assert(!layer.hasHex('a'));layer.dispose();
 const face={points:[{x:0,y:0},{x:64,y:0},{x:0,y:42}],snowEligible:1,snowTrackDetail:16};assert.equal(surfaceVertexCount([face],4),3*16);const geom=new THREE.BufferGeometry();updateSurfaceBuffers(geom,[face],THREE,()=>{},false,4);assert.equal(geom.attributes.position.count,3*16);face.snowTrackDetail=0;updateSurfaceBuffers(geom,[face],THREE,()=>{},false,4);assert.equal(geom.attributes.position.count,3*16);geom.dispose();
 entity.alive=false;const end=snowFootprints.length;sample(.2,.1);assert.equal(snowFootprints.length,end);clearSnowFootprints();assert.equal(snowFootprints.length,0);
-console.log('PASS 6/12/18-inch depths, planted/dragging/lifted feet, no teleport rails, duplicates, melt/refill, bounded track mesh and death exclusion');
+console.log('PASS 6/12/18-inch capped depths, planted/dragging/lifted feet, no teleport rails, duplicates, melt/refill, bounded track mesh and death exclusion');
 
 // Stationary animation and pivots use the presentation clock, not walk time.
 clearSnowFootprints();entity.alive=true;solo.rotation.y=0;foot.position.y=.1;solo.updateMatrixWorld(true);
@@ -44,3 +44,4 @@ const contactSample=(t,y)=>{foot.position.y=y;solo.updateMatrixWorld(true);sampl
 contactSample(3,.1);assert.equal(sounds.length,0);contactSample(3.03,.3);contactSample(3.06,.1);assert.deepEqual(sounds,[1]);contactSample(3.09,.1);assert.equal(sounds.length,1);
 depth=SNOW_LAYER_METRES;contactSample(3.12,.3);contactSample(3.15,.1);assert(Math.abs(sounds[1]-1/3)<1e-8);
 depth=0;contactSample(3.18,.3);contactSample(3.21,.1);assert.equal(sounds.length,2);delete globalThis.adventurePartySnowStep;clearSnowFootprints();console.log('PASS snow-only sole-plant audio, idle suppression and contact-depth scaling');
+

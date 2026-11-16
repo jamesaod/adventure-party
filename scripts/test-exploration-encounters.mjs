@@ -33,7 +33,7 @@ import vm from 'node:vm';
 const hook=readFileSync(new URL('../js/exploration-combat-hooks.js',import.meta.url),'utf8');
 const sandbox={location:{search:''},URLSearchParams,structuredClone,Image:class{},window:{},explorationEncounter:{event:{mobId:'orc',count:1,spawnX:1,spawnZ:0},position:{x:0,z:0}},explorationTerrain:{project:(x,y)=>({x:x*64,y:y*32})},HEX_W:64,MAP_MIN_X:0,MAP_MAX_X:2,MAP_MIN_Y:0,MAP_MAX_Y:0,
 makeFighter:()=>({id:'player',hp:30,alive:true}),makeLibraryMob:()=>({hp:8,alive:true}),isWall:()=>false,key:(x,y)=>`${x},${y}`,inside:(x,y)=>x>=0&&x<=2&&y===0,worldPointForHex:(x,y)=>({x:x*64,y:y*32}),occupiedHexesAt:(u,x,y)=>[{x,y}],occupiedHexes:u=>[{x:u.x,y:u.y}],architecturalWallBlocksStep:()=>false};
-const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const facingStart=engine.indexOf('function hexDirectionIndexToward('),facingEnd=engine.indexOf('\n}',facingStart)+2;
 sandbox.HEX_DIRS=[{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:0},{x:-1,y:1},{x:0,y:1}];sandbox.hexDistance=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.x+a.y-b.x-b.y));
 vm.createContext(installCombatImageTestServices(sandbox));vm.runInContext(engine.slice(facingStart,facingEnd),sandbox);vm.runInContext(hook,sandbox);
