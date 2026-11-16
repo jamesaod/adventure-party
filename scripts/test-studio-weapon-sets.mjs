@@ -68,32 +68,6 @@ assert.deepEqual(normalizeOffHandEquipment(legacyMount).rotation,legacyMount.rot
 console.log(`PASS off-hand alignment: ${offWeapons.length} weapons, ${handReference.clips.length} uploaded clips, 70 sampled poses and six facings; calibrated axes and palm pivots`);
 primary.dispose();off.dispose();
 
-const studio=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
-const manager=(normalize,initial)=>{let settings=normalize(initial);return {snapshot:()=>({settings:structuredClone(settings)}),select:async value=>{settings=normalize(value);return true;}};};
-const context=vm.createContext({
- state:{modelReady:true,modelLoading:false,disposed:false,model:{}},
- studioWeapon,normalizeEquipment,normalizeOffHandEquipment,normalizeShield,
- equipment:manager(normalizeEquipment,{rightHand:'medieval-sword'}),
- offHandEquipment:manager(normalizeOffHandEquipment,{}),
- shieldEquipment:manager(normalizeShield,{leftHandShield:'round-wooden-shield'}),
- poseCapture:{invalidateCaptures(){throw Error('Equipment edits must preserve captured pose snapshots');},saveWorkspace(){}},
- updateEquipmentControls(){},resetPreviewReferenceToReady(){}
-});
-vm.runInContext(studio.slice(studio.indexOf('async function changeEquipment('),studio.indexOf('function setModelReady(')),context);
-await vm.runInContext("changeOffHand({rightHand:'dagger'})",context);
-assert.equal(context.shieldEquipment.snapshot().settings.leftHandShield,'none');
-assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'dagger');
-await vm.runInContext("changeShield({leftHandShield:'round-wooden-shield'})",context);
-assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'none');
-await vm.runInContext("changeOffHand({rightHand:'dagger'})",context);
-await vm.runInContext("changeEquipment({rightHand:'spear'},{resetPose:false})",context);
-assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'dagger');
-await vm.runInContext("changeEquipment({rightHand:'medieval-two-handed-sword'},{resetPose:false})",context);
-assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'none');
-assert.equal(context.shieldEquipment.snapshot().settings.leftHandShield,'none');
-await vm.runInContext("changeOffHand({rightHand:'dagger'})",context);
-assert.equal(context.offHandEquipment.snapshot().settings.rightHand,'none');
-
 const render={equipment:normalizeEquipment({rightHand:'medieval-sword'}),offHandEquipment:adjusted};
 const dual={actionProfileId:'dual-wield',poses:{ready:{clip:'Standing Idle',clipSourceId:'uploaded:standing-idle:0',time:3,render}}};
 const stab={actionProfileId:'one-handed-thrust',poses:{ready:{clip:'Stabbing',clipSourceId:'uploaded:stabbing:0',time:1,render:{equipment:normalizeEquipment({rightHand:'short-sword'})}}}};

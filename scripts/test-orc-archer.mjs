@@ -17,13 +17,13 @@ for(const [roll,level,cls] of [[0,1,null],[.75,3,'fighter'],[.95,4,'fighter']]){
 }
 assert.throws(()=>createRepositoryMobRegistry([template,template],catalog),/Duplicate/);
 const frame=repositoryRestFrame([-1,0,-.2],[1,2,.2],.8);assert.deepEqual(frame.center,[0,1,0]);assert.ok(frame.frameHeight>2&&frame.frameHeight<5);
-const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const missiles=readFileSync(new URL('../js/combat-missile-actions.js',import.meta.url),'utf8');
-function fn(name){const source=name==='resolveLongbowHit'?missiles:readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');const start=source.indexOf(`function ${name}(`);assert.ok(start>=0);const end=source.indexOf('\n}',start);return source.slice(source.slice(start-6,start)==='async '?start-6:start,end+2);}
+function fn(name){const source=['resolveLongbowHit','bowAttackRollInputs'].includes(name)?missiles:readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');const start=source.indexOf(`function ${name}(`);assert.ok(start>=0);const end=source.indexOf('\n}',start);return source.slice(source.slice(start-6,start)==='async '?start-6:start,end+2);}
 function decl(name){const start=source.indexOf('const '+name+'=');return source.slice(start,source.indexOf('\n};',start)+3);}
 const ctx={game:{over:false,round:1},projectilePathBlocked:()=>false,unitDistance:()=>3,attackPositionData:()=>({label:'front'}),focusRangedAttacker:async()=>{},setUnitActionBanner:()=>{},updateFacingForStep:()=>{},prepareUnitAttackWindup:async()=>{},triggerUnitAttackPose:()=>{},updateUi:()=>{},breakInvisibility:()=>{},d:()=>2,dexterityAdjustments:()=>({missile:0}),attackEffectModifier:()=>0,effectiveArmorClassForAttack:()=>10,resolveMissileAttackD20:()=>({hit:false}),playNaturalAttackRollSound:()=>{},setLastRoll:()=>{},formatSignedAdjustment:()=>'',animateArrowProjectile:async()=>{},focusRangedMissTarget:async()=>{},playMissSound:()=>{},log:()=>{},flashAttack:()=>{},setCombatMessage:()=>{}};
 ctx.usesSelectedBowAudio=()=>true;ctx.playBowImpactSound=()=>{};
-vm.createContext(ctx);vm.runInContext([decl('MISSILE_WEAPON_CATALOG'),decl('WEAPON_CATALOG'),...['getMissileCatalogEntry','getWeaponCatalogEntry','syncRepositoryMissileEquipment','consumeMissileAmmo','longbowRangeBand','resolveLongbowHit'].map(fn)].join('\n'),ctx);
+vm.createContext(ctx);vm.runInContext([decl('MISSILE_WEAPON_CATALOG'),decl('WEAPON_CATALOG'),...['getMissileCatalogEntry','getWeaponCatalogEntry','syncRepositoryMissileEquipment','consumeMissileAmmo','longbowRangeBand','bowAttackRollInputs','resolveLongbowHit'].map(fn)].join('\n'),ctx);
 const unit=api.apply({alive:true},()=>0),target={alive:true};ctx.syncRepositoryMissileEquipment(unit);
 assert.equal(unit.missileAmmoQuantity,10);assert.equal(unit.missileAmmoCatalogId,'arrows');assert.equal(unit.missileRangeIncrementHexes,5);
 for(let i=9;i>=0;i--){await ctx.resolveLongbowHit(unit,target);assert.equal(unit.missileAmmoQuantity,i);assert.equal(unit.inventory.at(-1).qty,i);ctx.syncRepositoryMissileEquipment(unit);assert.equal(unit.missileAmmoQuantity,i,'sync never refills spent ammunition');}

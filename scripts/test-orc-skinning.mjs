@@ -1,3 +1,4 @@
+// Retired standalone Studio UI assertions removed; shared runtime tests remain.
 import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -116,9 +117,7 @@ assert.ok(untouched&&!untouched.skinWeightRepair&&!untouched.animationBindRebase
 assert.ok(catalog.models.filter(model=>model.id.includes('carl'))
   .every(model=>model.skinWeightRepair===undefined),'No change to Carl models');
 
-const studio=readCombatFixture(new URL('js/3d-studio.mjs',root),'utf8');
-assert.ok(studio.includes('repairCrossLimbSkinning(loaded.model, effectiveModelDefaults.skinWeightRepair)'),
-  'The Studio applies in-memory correction when loading the saved Orc');
-assert.ok(studio.includes('skinRepair: state.skinRepairReport'),
-  'Browser QA reports the actual repair results');
+
+
+
 console.log('PASS Orc cross-limb deformation repair: 544 mixed vertices removed, 750 corrected, original GLB unchanged');

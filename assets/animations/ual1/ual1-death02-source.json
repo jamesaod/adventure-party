@@ -1,0 +1,10 @@
+{
+  "sourceArchive": "Universal Animation Library [Source].zip",
+  "sourceFile": "Unreal-Godot/UAL1.glb",
+  "sourceClip": "Death02",
+  "recoveryClip": "Crawl_Exit",
+  "assetSha256": "d1cb4537efa4c06a953ca951e5935062f88c2580ac68e45045592d587bddb43d",
+  "license": "CC0-1.0",
+  "rootMotion": "disabled; the archive README identifies UAL1.glb as the non-root-motion export",
+  "scope": "local animated-knockback experiment only"
+}

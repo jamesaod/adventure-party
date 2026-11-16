@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Grass scrolling GPU regression</title>
+<style>body{background:#202427;color:#ddd;font:14px system-ui}canvas{border:1px solid #666;margin:8px}pre{white-space:pre-wrap}</style>
+<body><h1>Grass scrolling GPU regression</h1><p id="result" role="status">Rendering subpixel camera steps…</p><div id="views"></div><pre id="details"></pre>
+<script type="module">
+import * as T from '../../assets/vendor/three/three.module.min.js';
+import {createGroundCover} from '../../js/combat-ground-cover.mjs?v=R238C390';
+const result=document.getElementById('result'),details=document.getElementById('details');
+const check=(condition,message)=>{if(!condition)throw Error(message);};
+try{
+ const size=192,renderer=new T.WebGLRenderer({antialias:false});renderer.setPixelRatio(2);renderer.setSize(size,size);renderer.setClearColor(0,0);renderer.autoClear=false;
+ renderer.debug.onShaderError=(g,p,v,f)=>{throw Error(g.getShaderInfoLog(v)+'\n'+g.getShaderInfoLog(f));};
+ const tex=data=>{const t=new T.DataTexture(new Uint8Array(data),1,1);t.needsUpdate=true;return t;};
+ const coats=tex([0,0,0,0]),tracks=tex([0,0,0,0]),white=tex([255,255,255,255]),black=tex([0,0,0,255]);
+ const snow={texture:coats,footprintTexture:tracks,bounds:new T.Vector4(0,0,size,size)},scene=new T.Scene(),camera=new T.OrthographicCamera(0,size,0,size,-1,1);
+ const observed=new Map();
+ const make=edgeAntialiasing=>createGroundCover({snow,texture:t=>t,tuning:{edgeAntialiasing,wind:0,rocks:false,sticks:false},flush(){},markBackdrop(){},paint(mesh){scene.add(mesh);renderer.render(scene,camera);scene.remove(mesh);observed.set(mesh.material.uniforms.edgeAntialiasing.value,mesh.material.uniforms.coverViewport.value.toArray());}});
+ const current=make(true),before=make(false),targets=[1,2,8].map(scale=>new T.WebGLRenderTarget(size*scale,size*scale));
+ const face={grass:true,grassUnit:128/3,grassSquash:.568329,snowEligible:1,points:[{x:30,y:42},{x:162,y:42},{x:162,y:156},{x:30,y:156}]};
+ function frame(cover,target,shift,zoom=1,angle=0,light=255,burial=[0,0,0,0],cut=0,movers=[]){
+  white.image.data.set([light,light,light,255]);white.needsUpdate=true;coats.image.data.set(burial);coats.needsUpdate=true;tracks.image.data[0]=cut;tracks.needsUpdate=true;
+  const c=Math.cos(angle),s=Math.sin(angle);
+  cover.begin({width:size,height:size,matrix:[c,s,-s,c,size*.5*(1-c+s)+shift,size*.5*(1-s-c)+shift*.37],anchor:{x:size/2,y:size/2},zoom});
+  cover.collect([face],{lightMap:{layers:[white,black],left:0,top:0,spanWidth:size,spanHeight:size}});cover.prepare(movers);
+  renderer.setRenderTarget(target);renderer.clear();cover.drawUntil(size/2);cover.drawUntil(Infinity);const stats=cover.diagnostics();cover.drawUntil(Infinity);check(stats.triangles===cover.diagnostics().triangles,'Repeated interval must not duplicate grass');
+  const width=target?.width??renderer.domElement.width,height=target?.height??renderer.domElement.height;
+  check(observed.get(cover===current)[0]===width&&observed.get(cover===current)[1]===height,'Coverage must use physical viewport dimensions');
+  const pixels=new Uint8Array(width*height*4);if(target)renderer.readRenderTargetPixels(target,0,0,width,height,pixels);
+  return {pixels,stats};
+ }
+ function downsample(pixels,scale){const width=size*scale,out=new Float32Array(size*size);for(let y=0;y<size;y++)for(let x=0;x<size;x++){let sum=0;for(let j=0;j<scale;j++)for(let i=0;i<scale;i++)sum+=pixels[((y*scale+j)*width+x*scale+i)*4+1];out[y*size+x]=sum/(scale*scale);}return out;}
+ function error(a,b){let e=0;for(let i=0;i<a.length;i++)e+=(a[i]-b[i])**2;return e/a.length;}
+ function delta(a,b){return a.map((v,i)=>v-b[i]);}
+ const sumAlpha=p=>{let n=0;for(let i=3;i<p.length;i+=4)n+=p[i];return n;};
+ const rows=[];
+ for(const [zoom,angle,dpr,light] of [[.65,0,1,255],[1.2,Math.PI/3,1,255],[1,Math.PI/6,2,255],[1,0,1,40]]){
+  let oldError=0,newError=0,oldTemporal=0,newTemporal=0,previous=null;
+  for(let step=0;step<12;step++){
+   const shift=step/12,old=frame(before,targets[dpr===2?1:0],shift,zoom,angle,light),now=frame(current,targets[dpr===2?1:0],shift,zoom,angle,light),reference=frame(current,targets[2],shift,zoom,angle,light);
+   check(old.stats.instances===now.stats.instances&&old.stats.triangles===now.stats.triangles&&old.stats.draws===now.stats.draws,'Antialiasing must retain placement, LOD and ordered draw budgets');
+   const a=downsample(old.pixels,dpr),b=downsample(now.pixels,dpr),r=downsample(reference.pixels,8);
+   oldError+=error(a,r);newError+=error(b,r);
+   if(previous){const rd=delta(r,previous.r);oldTemporal+=error(delta(a,previous.a),rd);newTemporal+=error(delta(b,previous.b),rd);}
+   previous={a,b,r};
+  }
+  rows.push({zoom,rotation:angle,dpr,light,spatialRatio:newError/oldError,scrollingRatio:newTemporal/oldTemporal});
+  details.textContent=JSON.stringify(rows,null,2);await new Promise(requestAnimationFrame);
+ }
+ // Existing cover behavior must remain intact with the expanded edge geometry.
+ const dry=frame(current,targets[0],0),dim=frame(current,targets[0],0,1,0,40),shallow=frame(current,targets[0],0,1,0,255,[255,0,0,0]),deep=frame(current,targets[0],0,1,0,255,[255,255,255,255]),cut=frame(current,targets[0],0,1,0,255,[255,255,255,255],255),low=frame(current,targets[0],0,.65),near=frame(current,targets[0],0,1.2),bent=frame(current,targets[0],0,1,0,255,[0,0,0,0],0,[[96,96,2,.8]]);
+ check(sumAlpha(dry.pixels)>1000,'Grass must be visible');check(sumAlpha(shallow.pixels)<sumAlpha(dry.pixels)&&sumAlpha(deep.pixels)<sumAlpha(shallow.pixels),'Snow burial coverage');check(sumAlpha(cut.pixels)>sumAlpha(dry.pixels)*.95,'Footprints expose buried grass');check(low.stats.triangles<near.stats.triangles,'Grass zoom LOD');check(error(downsample(dry.pixels,1),downsample(dim.pixels,1))>1,'Local night lighting');check(error(downsample(dry.pixels,1),downsample(bent.pixels,1))>1,'Actor bending');
+ frame(current,targets[0],0);frame(current,targets[0],0);check(current.diagnostics().layoutReused,'Stable layout should remain cached');
+ frame(current,null,0); // Default framebuffer at DPR 2, as well as render targets.
+ for(const [cover,label] of [[before,'Previous edge fade'],[current,'Pixel coverage']]){
+  const {pixels}=frame(cover,targets[0],0),figure=document.createElement('figure'),caption=document.createElement('figcaption'),canvas=document.createElement('canvas');caption.textContent=label;canvas.width=canvas.height=size;const ctx=canvas.getContext('2d'),im=ctx.createImageData(size,size);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){const a=((size-1-y)*size+x)*4,b=(y*size+x)*4;im.data[b]=pixels[a];im.data[b+1]=pixels[a+1];im.data[b+2]=pixels[a+2];im.data[b+3]=255;}ctx.putImageData(im,0,0);figure.append(caption,canvas);document.getElementById('views').append(figure);
+ }
+ check(rows.every(r=>r.spatialRatio<.85&&r.scrollingRatio<.9),'Expected reduced image/scrolling error against 8× reference: '+JSON.stringify(rows));
+ result.textContent='PASS — grass edge coverage reduces subpixel scrolling error at near/far zoom, rotated views, DPR 1/2 and night lighting. Snow, bending, LOD, cached layout and draw budgets preserved.';
+ document.body.dataset.result=JSON.stringify({passed:true,rows});
+ current.dispose();before.dispose();renderer.dispose();for(const t of [...targets,coats,tracks,white,black])t.dispose();
+}catch(error){result.textContent='FAIL — '+error.message;document.body.dataset.result='failed';console.error(error);}
+</script></body></html>

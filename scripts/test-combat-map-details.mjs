@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';
+import {createMap,center,exportMap,parseMap} from '../js/combat-map-document.mjs';
+import {surfaceAt,GRASS_TEXTURES,shadowVector,hull} from '../js/combat-map-detail-rules.mjs';
+import {solarState} from '../js/solar-clock.mjs';
+const map=createMap(4,4),p=center(1,1);assert(GRASS_TEXTURES.has(surfaceAt(map,p.x,p.y)));map.terrain.shapes=[{boundary:'hard',texture:'stone',points:[{x:p.x-10,y:p.y-10},{x:p.x+10,y:p.y-10},{x:p.x,y:p.y+10}]}];assert.equal(surfaceAt(map,p.x,p.y),'stone');assert.equal(surfaceAt(map,-999,-999),null);map.terrain.boundary='hard';assert.deepEqual(parseMap(exportMap(map)),map);map.terrain.boundary='invalid';assert.throws(()=>exportMap(map));assert.equal(shadowVector(solarState(0)),null);assert(shadowVector(solarState(9)).x<0);assert(shadowVector(solarState(15)).x>0);assert(hull([{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10},{x:5,y:5}]).length===4);console.log('PASS grass eligibility, drawn-surface override, hard-boundary persistence, invalid boundary rejection and morning/evening/night shadow direction');

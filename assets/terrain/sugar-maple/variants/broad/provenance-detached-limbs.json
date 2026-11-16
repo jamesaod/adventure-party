@@ -1,0 +1,78 @@
+{
+  "source": "SugarMaple_Broad_Winter.spm / SugarMaple_Broad_Winter_LOD1.obj",
+  "method": "Eight original connected major limbs; smaller connected branches assigned to nearest major limb. Bark geometry/UVs retained; mesh pivots centered for tumbling. Bare wood prototype; no new SpeedTree source authored.",
+  "pieces": [
+    {
+      "name": "Maple_detached_limb_1",
+      "triangles": 1350,
+      "origin": [
+        -10.469194674631861,
+        664.3817716701435,
+        19.351858469690136
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_2",
+      "triangles": 1302,
+      "origin": [
+        -223.18198270787366,
+        313.0709433383426,
+        -83.85877652417007
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_3",
+      "triangles": 1212,
+      "origin": [
+        147.34235721245986,
+        518.9737108233718,
+        -25.43959852325428
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_4",
+      "triangles": 1512,
+      "origin": [
+        21.67492323906987,
+        229.72155755740226,
+        52.84191342385057
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_5",
+      "triangles": 1752,
+      "origin": [
+        195.03791851991275,
+        294.7346121553042,
+        9.443470895249405
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_6",
+      "triangles": 1260,
+      "origin": [
+        78.4507303371045,
+        400.3741818856208,
+        222.01507004616843
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_7",
+      "triangles": 2028,
+      "origin": [
+        -102.57910328451537,
+        435.0455113699711,
+        -230.4575273859084
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_8",
+      "triangles": 414,
+      "origin": [
+        -208.56242498785053,
+        496.36808643930397,
+        56.567972203650456
+      ]
+    }
+  ]
+}

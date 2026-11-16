@@ -125,3 +125,18 @@ Four dry snow steps by Iwan (qubodup) Gabovitch, CC0-1.0.
 Source: https://opengameart.org/content/4-dry-snow-steps
 License: https://creativecommons.org/publicdomain/zero/1.0/
 Runtime: assets/audio/sfx/snow/step-1.wav through step-4.wav. Original FLACs and author note are retained alongside them. Trimmed silence, normalized peaks to 0.7 and converted to mono 16-bit PCM WAV. SOURCE.json records exact sample rates, trim bounds, gains and original/output SHA-256 hashes.
+
+
+## Rapier physics — local ragdoll lab
+
+`assets/vendor/rapier/rapier.mjs` is the unmodified ES/WASM bundle from official `@dimforge/rapier3d-compat` version 0.21.0, by Dimforge, Apache-2.0. Original license: `assets/vendor/rapier/LICENSE`. Registry source and verified SHA-512 package integrity: `assets/vendor/rapier/source.json`. Source: https://github.com/dimforge/rapier.js . Used only by the isolated ragdoll test page.
+
+
+## UAL1 GroundSit Exit — local ragdoll lab
+
+`assets/animations/ual1/ual1-standard-source.glb` derives unchanged from Quaternius’s Universal Animation Library 1 Standard archive supplied by the project owner. It is CC0 1.0; original license is already preserved at `assets/animations/ual1/LICENSE.txt`. The selected source take is `Sitting_Exit`, requested as GroundSit_Exit; `ground-sit-exit-source.json` records archive/source checksums and scope. The ragdoll lab retargets it only at local page startup.
+
+
+## UAL1 Death02 — local animated knockback lab
+
+`assets/animations/ual1/ual1-death02-source.glb` derives unchanged from Quaternius’s Universal Animation Library Source archive supplied by the project owner. It is CC0 1.0; original license is already preserved at `assets/animations/ual1/LICENSE.txt`. The selected source take is `Death02`; `ual1-death02-source.json` records archive/source checksum, disabled-root-motion source variant and local-only scope.

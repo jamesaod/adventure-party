@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import vm from 'node:vm';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {sampleDirectPose,MODEL_ANIMATION_FPS} from '../js/combat-direct-units.mjs';
+import {sampleDirectPose,MODEL_ANIMATION_FPS,modelPoseSeconds} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
 const source=fs.readFileSync('js/combat-environment-state.js','utf8');
 const ctx={performance:{now:()=>0},worldPointForHex:()=>({x:0,y:0}),architecturalHexCoreVertices:()=>Array.from({length:6},(_,i)=>({x:10*Math.cos(i*Math.PI/3),y:10*Math.sin(i*Math.PI/3)})),environmentRayHit:()=>null,combatSceneTerrain:null};
 vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function corpseMotionProgress'),source.indexOf('function startArrowBlood')),ctx);
@@ -13,5 +13,7 @@ const asset={group:new THREE.Group(),camera:new THREE.PerspectiveCamera()},frame
 assert.equal(sampleDirectPose(frame,entity,undefined,0).yaw,.4);
 assert.equal(sampleDirectPose(frame,entity,undefined,1000).yaw,1.4);
 assert.equal(sampleDirectPose(frame,entity,undefined,2000).yaw,2.4);
-assert.equal(MODEL_ANIMATION_FPS,30);
-console.log('PASS half-radius corpse bounds, gradual displacement/rotation, stable final pose and 30 FPS');
+assert.equal(MODEL_ANIMATION_FPS,0);
+console.log('PASS half-radius corpse bounds, gradual displacement/rotation, stable final pose and uncapped sampling');
+
+assert.equal(modelPoseSeconds(.017),.017,"Model poses preserve sub-30-Hz elapsed time");

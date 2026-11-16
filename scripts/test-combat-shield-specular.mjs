@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {restoreDirectMaterials,isShieldSurface,captureDirectUnit} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+const root=new T.Group(),shield=new T.Group();shield.userData.studioShield=true;root.add(shield);
+const body=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial()),face=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial());root.add(body);shield.add(face);
+assert(isShieldSurface(face));assert(!isShieldSurface(body));restoreDirectMaterials(root);
+const shader=()=>({uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <metalnessmap_fragment>\n#include <lights_fragment_end>'});
+const a=shader(),b=shader();face.material.onBeforeCompile(a);body.material.onBeforeCompile(b);assert(a.fragmentShader.includes('reflectedLight.directSpecular*=mix(1.,apMaterial.z,shieldNoSpecular)'));assert(!b.fragmentShader.includes('uniform float shieldNoSpecular'));
+assert.equal(a.uniforms.shieldNoSpecular.value,1);globalThis.adventurePartyShieldSpecularTest=false;assert.equal(a.uniforms.shieldNoSpecular.value,0);delete globalThis.adventurePartyShieldSpecularTest;
+const captured=captureDirectUnit(root,new T.OrthographicCamera(-2,2,2,-2,.1,10));assert(captured.group.children.some(m=>m.userData.combatShieldSurface&&m.material.userData.combatShieldSurface));
+console.log('PASS shield-only specular test, body exclusion, A/B control and captured corpse metadata');

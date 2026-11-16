@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {configureTreeAntialiasing,setTreeAntialiasing,treeAntialiasing} from '../js/combat-tree-antialiasing.mjs';
+configureTreeAntialiasing([4,2],[4,2]);
+assert.equal(treeAntialiasing().samples,2,'Default enables supported 2x tree AA');
+configureTreeAntialiasing([4],[4]);
+setTreeAntialiasing(2);
+assert.equal(treeAntialiasing().samples,0,'Do not silently upgrade to a more expensive sample count');
+configureTreeAntialiasing([8,4,2],[4,2]);setTreeAntialiasing(8);
+assert.equal(treeAntialiasing().samples,4,'Color and depth must both support the selected mode');
+setTreeAntialiasing(0);assert.equal(treeAntialiasing().samples,0);
+setTreeAntialiasing(4);configureTreeAntialiasing([],[]);assert.equal(treeAntialiasing().samples,0);
+console.log('PASS tree AA defaults, hardware fallback, shared color/depth support and explicit off');

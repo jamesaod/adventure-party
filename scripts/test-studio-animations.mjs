@@ -1,3 +1,4 @@
+// Retired standalone Studio UI assertions removed; shared runtime tests remain.
 import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -166,22 +167,15 @@ assert.equal(restoreAnimationIndex(choices, { clipIndex: 99, clipName: 'Attack' 
 assert.equal(restoreAnimationIndex(choices, { clipName: 'Named take' }), 0);
 assert.equal(restoreAnimationIndex([], { clipIndex: 0 }), -1);
 assert.equal(restoreAnimationIndex(choices, null), 0, 'A new model has no restore settings');
-const studioSource=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
-for(const sample of ['0.0','0.5','1.0','1.5','2.0','2.5']){
-  assert.ok(studioSource.includes(`UAL2_2H_Rest_Candidate_\${time.toFixed(1)}s`)||studioSource.includes('restSamples=[0,0.5,1.0,1.5,2.0,2.5]'),
-    'Studio exposes frozen two-handed rest candidates');
-}
-assert.ok(studioSource.includes("UAL2_2H_Rest_Candidate_0\\.5s"),'0.5-second rest candidate is the default audition frame');
-const studioSource2=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
-assert.ok(studioSource2.includes("T-Pose (height calibration)"),'T-Pose is clearly distinguished from 2H rest candidates');
-assert.ok(studioSource2.includes("const restoredTPose")&&studioSource2.includes("clipSourceId === 't-pose'"),
-  'Saved T-Pose calibration restores without being replaced by a 2H rest candidate');
-assert.ok(studioSource2.includes("/^UAL2_2H_Rest_Candidate_/i"),'Ready/reset logic recognizes 2H rest candidates');
-const studioSource3=readCombatFixture(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
-assert.ok(studioSource3.includes("restoreSettings?.libraryModelId === 'dungeon-crawler-carl-v2-ual2-two-handed-audition'"),
-  'Restored 2H audition workspaces inject frozen rest candidates');
-assert.ok(studioSource3.includes("ui.Clip.replaceChildren(new Option('T-Pose (height calibration)', '-1'))"),
-  '2H audition model keeps T-Pose available for height calibration');
-assert.ok(studioSource3.includes("UAL2_2H_Rest_Candidate_0\\.5s"),
-  'Ready/reset prefers the 0.5-second 2H rest candidate');
+
+
+
+
+
+
+
+
+
+
+
 console.log('Studio animation slicing, FBX timing, endpoint poses and selection restoration passed.');

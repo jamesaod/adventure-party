@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 
 const source=fs.readFileSync('js/combat-movement.js','utf8');
 const u={id:'player',x:0,y:0,alive:true,move:4,turnMoves:0,facingHex:0};let blocked=new Set(),wall=false,moves=0,halt=false;
 const c={isQuickCommandUnit:()=>false,quickCommandRunning:false,game:{active:'player',round:1,over:false},hoverHex:{x:1,y:0},aimMode:false,pendingAimAction:null,
- activePlayerControlledUnit:()=>u,isCombatActionPauseActive:()=>false,allUnits:()=>[u],architecturalWalls:[],
+ treeFallEntries:()=>[],activePlayerControlledUnit:()=>u,isCombatActionPauseActive:()=>false,allUnits:()=>[u],architecturalWalls:[],
  key:(x,y)=>x+','+y,HEX_DIRS:[{x:1,y:0},{x:0,y:1},{x:-1,y:1},{x:-1,y:0},{x:0,y:-1},{x:1,y:-1}],
  facingDirectionIndex:()=>0,unitFootprintDefinition:()=>({rotates:false}),footprintOffsetsForFacing:()=>[{x:0,y:0}],
  inside:(x,y)=>Math.abs(x)<=5&&Math.abs(y)<=5,isWall:(x,y)=>blocked.has(x+','+y),isFirBlockedHex:()=>false,occupiedByAnyUnit:()=>false,

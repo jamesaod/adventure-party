@@ -56,15 +56,15 @@ function drawTreeGroundShadow(decoration){
   const tileSet=activeCombatTerrainTileSet();
   // Fir contact overlays are batched before the directional shadows.
   if(directFirRendering()){
-    const shadow=liveFirTreeRender(tileSet,decoration,{host:combatGpu,ground:true}).shadow;if(!shadow)return;
-    const center=hexCenter(decoration.x,decoration.y),scale=tileSet.treeDrawHeight/210,left=center.x+shadow.left*scale,top=center.y+shadow.top*scale,width=shadow.width*scale,height=shadow.height*scale;
+    const shadow=liveFirTreeRender(tileSet,decoration,{host:combatGpu,ground:true})?.shadow;if(!shadow)return;
+    const center=hexCenter(decoration.x,decoration.y),scale=tileSet.treeDrawHeight*treeSizeScale(decoration)/210,left=center.x+shadow.left*scale,top=center.y+shadow.top*scale,width=shadow.width*scale,height=shadow.height*scale;
     const faces=treeShadowFloorCandidates(left,top,width,height).map(fragment=>({points:fragment.polygon,uv:fragment.polygon.map(point=>{const p=screenPointForWorld(point);return[(p.x-left)/width,1-(p.y-top)/height];})}));
     combatGpu.surface(faces,shadow.texture,{category:'Ground shadows',opacity:shadow.opacity,sunShadow:true});return;
   }
   const live=liveFirTreeRender(tileSet,decoration);
   if(live){
     if(live.shadow){
-      const c=hexCenter(decoration.x,decoration.y),shadow=live.shadow,scale=tileSet.treeDrawHeight/210;
+      const c=hexCenter(decoration.x,decoration.y),shadow=live.shadow,scale=tileSet.treeDrawHeight*treeSizeScale(decoration)/210;
       ctx.save();ctx.globalAlpha=shadow.opacity;ctx.imageSmoothingEnabled=true;
       ctx.drawImage(shadow.image,c.x+shadow.left*scale,c.y+shadow.top*scale,shadow.width*scale,shadow.height*scale);
       ctx.restore();
@@ -74,7 +74,7 @@ function drawTreeGroundShadow(decoration){
   const image=TERRAIN_TREE_SHADOW_IMAGES.get(tileSet.id);
   if(!image?.complete || !image.naturalWidth)return;
   const c=hexCenter(decoration.x,decoration.y);
-  const size=tileSet.treeDrawHeight;
+  const size=tileSet.treeDrawHeight*treeSizeScale(decoration);
   ctx.save();
   ctx.imageSmoothingEnabled=true;
   ctx.drawImage(image,treeRotationFrame(tileSet,decoration)*512,decoration.tileIndex*512,512,512,
@@ -85,11 +85,13 @@ function drawTreeGroundShadow(decoration){
 function drawTreeDecoration(decoration){
   const tileSet=activeCombatTerrainTileSet();
   if(directFirRendering()){
-    const center=hexCenter(decoration.x,decoration.y),height=tileSet.treeDrawHeight||240;
+    const center=hexCenter(decoration.x,decoration.y),height=(tileSet.treeDrawHeight||240)*treeSizeScale(decoration);
     liveFirTreeRender(tileSet,decoration,{host:combatGpu,center,scale:height/210});
+    if(adventurePartyTreeEnvironment.isBroadleaf(decoration)&&treeFallFor(decoration)){decoration.outlineFrame=null;return;}
     const burnt=game.firFireStates?.[key(decoration.x,decoration.y)]?.state==='burnt';
-    const image=burnt?combatFirTrees.silhouette(decoration.tileIndex,treeRotationFrame(tileSet,decoration),true):TERRAIN_TREE_IMAGES.get(tileSet.id);
-    decoration.outlineFrame={image,sx:burnt?0:treeRotationFrame(tileSet,decoration)*384,sy:burnt?0:decoration.tileIndex*512,sourceTileWidth:384,sourceTileHeight:512,drawX:center.x-height*.375,drawY:center.y-height*.875,drawW:height*.75,drawH:height};return;
+    const ownSilhouette=burnt||adventurePartyTreeEnvironment.isBroadleaf(decoration);
+    const image=ownSilhouette?combatFirTrees.silhouette(decoration.tileIndex,treeRotationFrame(tileSet,decoration),burnt):TERRAIN_TREE_IMAGES.get(tileSet.id);
+    decoration.outlineFrame={image,sx:ownSilhouette?0:treeRotationFrame(tileSet,decoration)*384,sy:ownSilhouette?0:decoration.tileIndex*512,sourceTileWidth:384,sourceTileHeight:512,drawX:center.x-height*.375,drawY:center.y-height*.875,drawW:height*.75,drawH:height};return;
   }
   const live=liveFirTreeRender(tileSet,decoration);
   const image=live?.body || TERRAIN_TREE_IMAGES.get(tileSet.id);
@@ -102,7 +104,7 @@ function drawTreeDecoration(decoration){
   }
 
   const c=hexCenter(decoration.x,decoration.y);
-  const drawH=tileSet.treeDrawHeight || 86;
+  const drawH=(tileSet.treeDrawHeight || 86)*treeSizeScale(decoration);
   const drawW=Math.max(
     1,
     Math.round(
@@ -1054,7 +1056,7 @@ function drawHexFill(x,y){
 }
 
 function drawHexGridLine(x,y){
-  if(!combatTacticalGridVisible())return;
+  if(!combatGridHexInRange(x,y))return;
   const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(explorationTerrain){polygonPath(hexScreenVertices(x,y));ctx.strokeStyle="rgba(35,29,22,0.28)";ctx.lineWidth=1;ctx.stroke();return;}
   const top=hexScreenVertices(x,y);
@@ -1134,7 +1136,7 @@ function drawFloor(){
 
   if(typeof drawEnvironmentGroundArrows==='function')drawEnvironmentGroundArrows();
 
-  for(const cell of (combatTacticalGridVisible()?hoverHighlightCells():[])){
+  for(const cell of (combatTacticalGridVisible()?hoverHighlightCells():[]).filter(cell=>combatGridHexInRange(cell.x,cell.y))){
     const top=hexScreenVertices(cell.x,cell.y);
 
     polygonPath(top);
@@ -1193,53 +1195,6 @@ function drawActiveHex(entity,color){
   }
 }
 
-// Rebuild small per-hex stamps only when droplets settle, never each animation frame.
-function bloodSnowCover(hex){return Math.min(1,Math.max(0,combatGpu?.snowAmount?.(hex.x,hex.y)||0))*.5;}
-function bloodSnowImage(group){
- const amount=bloodSnowCover(group.hex)>0?1:0;if(!amount)return group.image;
- if(group.snowImage&&group.snowAmount===amount)return group.snowImage;
- const image=group.snowImage||(group.snowImage=document.createElement('canvas'));image.width=group.image.width;image.height=group.image.height;
- const brush=image.getContext('2d');brush.drawImage(group.image,0,0);const pixels=brush.getImageData(0,0,image.width,image.height);for(let i=3;i<pixels.data.length;i+=4)if(pixels.data[i]){pixels.data[i-3]=220;pixels.data[i-2]=20;pixels.data[i-1]=30;pixels.data[i]=255;}brush.putImageData(pixels,0,0);group.snowAmount=amount;return image;
-}
-function drawCombatBloodStains(){
-  drawCombatDeathPools();
-  const state=game?.bloodState;if(!state?.stains.length)return;
-  if(!state.cache||state.cache.revision!==state.revision){
-    const groups=new Map();
-    for(const stain of state.stains){const id=stain.hex.x+':'+stain.hex.y;let group=groups.get(id);
-      if(!group){const center=worldPointForHex(stain.hex.x,stain.hex.y),image=document.createElement('canvas');image.width=128;image.height=128;
-        group={image,hex:stain.hex,left:center.x-HEX_W/2,top:center.y-HEX_ROW};groups.set(id,group);}
-      const c=group.image.getContext('2d'),sx=128/HEX_W,sy=128/(HEX_ROW*2),x=(stain.point.x-group.left)*sx,y=(stain.point.y-group.top)*sy;
-      c.fillStyle=stain.seed<.5?'rgba(83,13,17,.82)':'rgba(111,22,24,.78)';
-      const flecks=stain.ground==='grass'?4:2;
-      for(let i=0;i<flecks;i++){const angle=stain.seed*37+i*2.4,r=i?stain.size:0;c.beginPath();c.ellipse(x+Math.cos(angle)*r*sx,y+Math.sin(angle)*r*sy,stain.size*sx*(i?.35:.8),stain.size*sy*(i?.65:.5),angle,0,Math.PI*2);c.fill();}
-    }state.cache={revision:state.revision,groups:[...groups.values()]};
-  }
-  ctx.save();
-  // Continuous party LOS also clips partial hexes alongside walls.
-  if(typeof friendlyVisibilityObservers==='function'&&typeof observerVisibilityContext==='function'){
-    const polygons=friendlyVisibilityObservers().map(observer=>observerVisibilityContext(observer)?.polygon).filter(Boolean);
-    if(polygons.length){ctx.beginPath();for(const polygon of polygons){const points=polygon.map(p=>screenPointForWorld(p));ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();}ctx.clip();}
-  }
-  for(const group of state.cache.groups){if(!isHexVisibleToFriendlyParty(group.hex.x,group.hex.y))continue;
-    const origin=screenPointForWorld({x:group.left,y:group.top}),u=battlefieldProjectVector({x:HEX_W,y:0}),v=battlefieldProjectVector({x:0,y:HEX_ROW*2});
-    ctx.save();ctx.filter='brightness('+Math.max(.08,Math.min(1,combatSpriteBrightness({...group.hex,alive:true})))+')';
-    ctx.transform(u.x/128,u.y/128,v.x/128,v.y/128,origin.x,origin.y);ctx.drawImage(bloodSnowImage(group),0,0);ctx.restore();
-  }ctx.restore();
-}
-
-function drawCombatDeathPools(){
- const now=performance.now();
- for(const pool of game?.bloodState?.pools||[]){
-  if(now<pool.started||!isHexVisibleToFriendlyParty(pool.hex.x,pool.hex.y))continue;
-  const growth=Math.sqrt(Math.min(1,(now-pool.started)/3000));
-  const points=pool.contour.map(p=>screenPointForWorld({x:pool.origin.x+(p.x-pool.origin.x)*growth,y:pool.origin.y+(p.y-pool.origin.y)*growth}));
-  ctx.save();ctx.filter='brightness('+Math.max(.08,Math.min(1,combatSpriteBrightness({...pool.hex,alive:true})))+')';
-  if(typeof tracePolygonOnContext==='function'&&tracePolygonOnContext(ctx,points)){ctx.fillStyle=bloodSnowCover(pool.hex)>0?'rgb(220,20,30)':'rgba(83,8,13,.85)';ctx.fill();}
-  ctx.restore();
- }
-}
-
 // Low fir boughs occlude the ground beneath them independently of solar direction.
 function drawFirContactShadow(tree,tileSet,batch=null){
   if(!tileSet.treeSheetSrc?.includes('/treeit-firs/'))return;
@@ -1251,7 +1206,7 @@ function drawFirContactShadow(tree,tileSet,batch=null){
     gradient.addColorStop(.6,'rgba(0,0,0,.14)');gradient.addColorStop(1,'rgba(0,0,0,0)');
     brush.fillStyle=gradient;brush.fillRect(0,0,128,128);drawFirContactShadow.image=image;
   }
-  const center=worldPointForHex(tree.x,tree.y),rx=HEX_W*.75,ry=rx*HEX_ROW/(HEX_W*Math.sqrt(3)/2);
+  const center=worldPointForHex(tree.x,tree.y),rx=HEX_W*.75*treeSizeScale(tree),ry=rx*HEX_ROW/(HEX_W*Math.sqrt(3)/2);
   const left=center.x-rx,top=center.y-ry;
   if(combatGpu&&combatSceneTerrain){
     let cache=drawFirContactShadow.cache;
@@ -1262,7 +1217,7 @@ function drawFirContactShadow(tree,tileSet,batch=null){
       faces=fragments.map(fragment=>clipFirContactPolygon(fragment.polygon,left,top,left+rx*2,top+ry*2)).filter(points=>points.length>=3).map(points=>({points,uv:points.map(p=>[Math.max(0,Math.min(1,(p.x-left)/(rx*2))),Math.max(0,Math.min(1,1-(p.y-top)/(ry*2)))])}));
       cache.faces.set(id,faces);
     }
-    if(batch)batch.push(...faces);else combatGpu.surface(faces,image,{category:'Fir contact',sunShadow:(globalThis.adventurePartySolar?.state()?.daylight||0)>.1});return;
+    if(batch)batch.push(...faces);else combatGpu.surface(faces,image,{category:'Fir contact',contactScale:combatShadowScale()});return;
   }
   const origin=screenPointForWorld({x:left,y:top}),u=battlefieldProjectVector({x:rx*2,y:0}),v=battlefieldProjectVector({x:0,y:ry*2});
   ctx.save();ctx.transform(u.x/128,u.y/128,v.x/128,v.y/128,origin.x,origin.y);ctx.drawImage(image,0,0);ctx.restore();
@@ -1279,3 +1234,4 @@ function clipFirContactPolygon(points,left,top,right,bottom){
     }points=result;
   }return points.map(p=>({x:Math.max(left,Math.min(right,p.x)),y:Math.max(top,Math.min(bottom,p.y))}));
 }
+

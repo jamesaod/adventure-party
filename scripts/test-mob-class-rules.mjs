@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import * as rules from '../js/mob-class-rules.mjs';
 import {PRIEST_SPELLS} from '../js/priest-spells.mjs';
 import {normalizeMobDefinition} from '../js/mob-definition.mjs';
-const engine=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const engine=readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 // Extract the production declarations, not a second set of expected tables.
 const constants=['FIGHTER_CLASS','MAGE_CLASS','CLERIC_CLASS','THIEF_CLASS','FIGHTER_LEVELS','MAGE_SPELL_SLOT_ROWS','CLERIC_SPELL_SLOT_ROWS','MAGE_SAVING_THROW_BANDS','PRIEST_SAVING_THROW_BANDS','ROGUE_SAVING_THROW_BANDS','WARRIOR_SAVING_THROW_BANDS','MAGE_INTELLIGENCE_TABLE','SPELL_CATALOG'];
 const context=vm.createContext({PRIEST_SPELLS,TACTICAL_FEET_PER_HEX:10,Infinity});

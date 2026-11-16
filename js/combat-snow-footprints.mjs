@@ -1,7 +1,7 @@
 // Animated foot contacts carve a persistent, world-space snow height field.
-import {kickSnow} from './combat-snow-kickup.mjs';
+import {kickSnow,kickSnowImpact} from './combat-snow-kickup.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {SNOW_MAX_METRES,SNOW_LAYER_METRES} from './combat-snow-depth.mjs';
+import {SNOW_MAX_METRES,SNOW_LAYER_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 let contacts=new WeakMap(),revision=0,cells=new Map(),sampleDepth=()=>0;
 let cellIndex=null,indexSize=-1;
 const feet=new WeakMap(),point=new THREE.Vector3(),toePoint=new THREE.Vector3();
@@ -21,9 +21,18 @@ export function pressCorpseIntoSnow(group,entity,groundMatrix){
    const cell=cellAt((a.x+b.x+c.x)/3,(a.y+b.y+c.y)/3);if(cell)keys.add(cell.key);
   }
  });
+ if(!corpseDepressions.has(entity)&&positions.length){
+  const samples=[],stride=Math.max(3,Math.floor(positions.length/3/32)*3);
+  for(let i=0;i<positions.length;i+=stride){const x=positions[i],y=positions[i+1];if(cellAt(x,y))samples.push({x,y,depth:sampleDepth(x,y)});}
+  const e=groundMatrix.elements;const scale=[Math.hypot(e[0],e[8]),Math.hypot(e[1],e[9])];
+  kickSnowImpact(samples,scale);
+ }
  corpseDepressions.set(entity,{group,positions,keys});corpseRevision++;revision++;
 }
 export const snowFootprintRevision=()=>revision;
+// Reuse final-pose ground triangles for cover ordering, independently of snow.
+export const corpseGroundFootprintRevision=()=>corpseRevision;
+export function corpseGroundFootprints(){return Array.from(corpseDepressions,([entity,body])=>({entity,positions:body.positions})).filter(body=>!body.entity.alive);}
 export function setFootprintCells(value,depth){cells=value;cellIndex=null;if(depth)sampleDepth=depth;}
 export function clearSnowFootprints(){snowFootprints.length=0;contacts=new WeakMap();revision++;}
 export function meltFootprints(keys,amount){const set=new Set(keys),remaining=1-Math.max(0,Math.min(1,amount));for(const f of snowFootprints)if(set.has(f.key)){f.depth*=remaining;revision++;}}
@@ -52,12 +61,13 @@ export function sampleSnowFootfalls(group,entity,options,view,camera){
   group.traverse(n=>{if(!n.isMesh||!n.visible)return;const a=n.geometry?.attributes.position;if(!a)return;for(let i=0;i<a.count;i++){n.getVertexPosition(i,point).applyMatrix4(n.matrixWorld).applyMatrix4(inverse);vertices.push(point.clone());box.expandByPoint(point);}});
   if(vertices.length){const height=box.max.y-box.min.y,mid=(box.min.x+box.max.x)/2;
    for(const side of [-1,1]){const sole=new THREE.Vector3();let count=0;for(const v of vertices)if(v.y<=box.min.y+height*.035&&(v.x<mid?-1:1)===side){sole.add(v);count++;}
-    if(count){sole.divideScalar(count);const b=new THREE.Bone(),toe=new THREE.Bone();b.name=side<0?'leftFoot':'rightFoot';b.position.copy(sole);toe.position.z=height*.1;b.add(toe);group.add(b);bones.push(b);}
+    if(count){sole.divideScalar(count);const b=new THREE.Bone(),toe=new THREE.Bone();b.userData.groundFootfallFallback=true;b.name=side<0?'leftFoot':'rightFoot';b.position.copy(sole);toe.position.z=height*.1;b.add(toe);group.add(b);bones.push(b);}
    }group.updateMatrixWorld(true);
   }
  }
  feet.set(group,bones);}
  if(!bones.length)return;
+ const groundWalking=Number.isFinite(options.walkSeconds)&&bones.some(b=>!b.userData.groundFootfallFallback);if(groundWalking)options.onGroundRig?.();
  let state=contacts.get(entity);if(!state||state.group!==group){state={group,feet:new Map(),sole:Infinity};contacts.set(entity,state);}
  // A foot joint sits above its sole. Calibrate to the lowest observed planted
  // foot, then test clearance in physical metres rather than animation phase.
@@ -70,7 +80,7 @@ export function sampleSnowFootfalls(group,entity,options,view,camera){
   const current={...p,t,contact,clearance,raised:!!old?.raised||clearance>.05};state.feet.set(bone.name,current);
   // Trigger at sole planting, not at entering the snow surface: deep snow
   // can surround a foot for the whole stride. No clock-based step cadence.
-  if(old&&t>old.t&&t-old.t<=.2&&current.raised&&clearance<=.025){current.raised=false;if(height>.003&&options.outdoor!==false)globalThis.adventurePartySnowStep?.(Math.min(1,height/(SNOW_LAYER_METRES*3)));}
+  if(old&&t>old.t&&t-old.t<=.2&&current.raised&&clearance<=.025){current.raised=false;if(groundWalking&&height<=.003&&options.outdoor!==false)options.onGroundFootfall?.(p.x,p.y);if(height>.003&&options.outdoor!==false)globalThis.adventurePartySnowStep?.(Math.min(1,height/(SNOW_LAYER_METRES*3)));}
   if(!contact)continue;
   let angle=old?.angle||0;const toe=bone.children.find(n=>n.isBone);
   if(toe){toe.getWorldPosition(toePoint);const tip=groundPoint(toePoint,options,view,camera);angle=Math.atan2((tip.y-p.y)/scale[1],(tip.x-p.x)/scale[0]);}
@@ -137,3 +147,4 @@ export function createFootprintLayer(renderer,bounds){
   renderer.setRenderTarget(old);renderer.setClearColor(color,alpha);
  },dispose(){bankTarget.dispose();bankGeometry.dispose();bankMaterial.dispose();target.dispose();geometry.dispose();material.dispose();corpseGeometry.dispose();corpseMaterial.dispose();}};
 }
+

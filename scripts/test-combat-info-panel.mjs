@@ -3,7 +3,7 @@ import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const section=(from,to)=>source.slice(source.indexOf(from),source.indexOf(to,source.indexOf(from)));
 const node=()=>({textContent:'',innerHTML:'',hidden:false,children:[],classes:new Set(),classList:{toggle(name,on){if(on)this.owner.classes.add(name);else this.owner.classes.delete(name);}},replaceChildren(...children){this.children=children;}});
 const ui=Object.fromEntries(['unitInfoName','unitInfoMode','unitInfoRows','unitInfoEffects','unitInfoAbilities'].map(key=>{const el=node();el.classList.owner=el;return [key,el];}));

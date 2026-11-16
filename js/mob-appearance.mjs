@@ -1,3 +1,4 @@
+import {isSharedWorkshopTemplate} from './immutable-workshop-template.mjs';
 import {ITEM_CATALOG} from './item-catalog.mjs?v=R238C204';
 import { studioWeapon } from './studio-equipment.mjs?v=R238C204';
 import { studioShield } from './studio-shield.mjs?v=R238C204';
@@ -155,7 +156,7 @@ export function appearanceRecipeForMob(unit, { modelId, modelHash, modelUrl = nu
     shield: shieldVisual ? { itemName: equippedShield.name, appearanceId: equippedShield.appearanceId, ...shieldVisual } : null,
     animation: { ...animationState, spriteFamilySignature },
     poseProfile: profile || null,
-    renderSettings: structuredClone(renderSettings)
+    renderSettings: isSharedWorkshopTemplate(renderSettings.workshopUnit)?{...structuredClone({...renderSettings,workshopUnit:undefined}),workshopUnit:renderSettings.workshopUnit}:structuredClone(renderSettings)
   };
 }
 
@@ -165,12 +166,18 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 
+const sharedWorkshopKeys=new WeakMap();
+function compactWorkshopSettings(settings){
+ const unit=settings?.workshopUnit;if(!isSharedWorkshopTemplate(unit))return settings;
+ let key=sharedWorkshopKeys.get(unit);if(!key){const text=canonical(unit);let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}key='runtime-workshop-v1-'+text.length+'-'+(h>>>0).toString(16);sharedWorkshopKeys.set(unit,key);}
+ return {...settings,workshopUnit:{contentKey:key}};
+}
 export function appearanceCacheKey(recipe) {
   // Deterministic non-cryptographic key suitable for an in-memory/browser cache namespace.
   // Names and instance IDs do not affect pixels. Identical roster members
   // should share preparation, while model/height/equipment/poses still differ.
   const {id,name,...visualMob}=recipe.mob||{};
-  const text = canonical({...recipe,mob:visualMob,standingFootContactVersion:1});
+  const text = canonical({...recipe,renderSettings:compactWorkshopSettings(recipe.renderSettings),mob:visualMob,standingFootContactVersion:1});
   let hash = 2166136261;
   for (let i = 0; i < text.length; i++) {
     hash ^= text.charCodeAt(i);

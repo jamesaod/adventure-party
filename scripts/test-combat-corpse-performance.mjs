@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {captureDirectUnit,sampleDirectPose,settledCorpseImage,corpseSnowAmount} from '../js/combat-direct-units.mjs';
+import {captureDirectUnit,sampleDirectPose,settledCorpseImage,corpseSnowAmount} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
 import {shadowGeometryFor,registerShadowGeometry} from '../js/combat-shadow-geometry.mjs';
 import {snapshotGpuCaster} from '../js/combat-gpu-casters.mjs';
 import {createUnitImageCache} from '../js/combat-unit-image-cache.mjs';
-import {advanceCorpseSnow,resetCorpseSnow,meltCorpseSnow} from '../js/combat-corpse-snow.mjs';
+import {advanceCorpseSnow,resetCorpseSnow,meltCorpseSnow} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
 import {extractCombatFunction} from './combat-test-source.mjs';
 // A lethal result precedes the queued death beat: neither cache nor timestamp exists.
 for(const pending of [undefined,null,{alive:true},{alive:false},{alive:false,deathPresentationStartedAt:0}])assert.equal(corpseSnowAmount(pending),0,'Uncached or pending death must not abort model rendering');
@@ -42,14 +42,14 @@ const options={entity,x:100,y:200,width:100,height:150,anchor:{x:.5,y:.8},solar:
 assert.equal(settledCorpseImage(frame,options),null);const frozen=sampleDirectPose(frame,entity);assert.equal(frozen.asset.group.children[0].geometry.attributes.corpseSnowExposure,undefined,"Bare corpses defer snow-exposure baking");const first=settledCorpseImage(frame,options);assert(first);
 for(let i=0;i<100;i++)sampleDirectPose(frame,entity);assert.equal(samples,1);
 for(const change of [{x:101},{pixelsPerMetre:40},{width:200},{rotation:1},{opacity:.5},{saturation:.5},{outdoor:false},{ambientPercent:50},{solar:{...options.solar,daylight:.2}},{localLights:[{position:[1,2,3],color:[1,0,0],range:4,intensity:2}]},{snowGroundLight:[.8,.9,1]}])assert.notEqual(settledCorpseImage(frame,{...options,...change}).key,first.key);
-advanceCorpseSnow(new Set(['1,2']),.3);assert.equal(corpseSnowAmount(entity),.3);assert.notEqual(settledCorpseImage(frame,options).key,first.key);
+advanceCorpseSnow(new Set(['1,2']),9);assert.equal(corpseSnowAmount(entity),.3);assert.notEqual(settledCorpseImage(frame,options).key,first.key);
 meltCorpseSnow(['1,2'],1);assert.equal(corpseSnowAmount(entity),0);assert.equal(settledCorpseImage(frame,options).key,first.key);
 entity.alive=true;assert.equal(settledCorpseImage(frame,options),null);assert.equal(corpseSnowAmount(entity),0);entity.alive=false;entity.deathPresentationStartedAt=2;assert.equal(settledCorpseImage(frame,options),null);resetCorpseSnow(true);
 console.log('PASS settled image invalidation for camera, lighting, snow/melt, resurrection and replacement death');
 
 let snow=0,exposures=0;const context={globalThis:{adventurePartyDirectUnits:{corpseSnowAmount:()=>snow,draw:()=>true}},combatSceneTerrain:{},combatGpu:{},explorationGpuLighting:{},combatSceneContext:{openDoors:[]},battlefieldRotation:0,COMBAT_UNIT_AMBIENT_MULTIPLIER:1.5,
 combatShadowScale:()=>[1,1,1],worldPointForHex:()=>({x:0,y:0}),prepareCombatProjectedShadows:{sources:[]},explorationGpuPoint:()=>[0,0,0],explorationVisualLights:()=>[],explorationSurfaceExposure:()=>{exposures++;return {multiply:[1,1,1],boost:[0,0,0]};},explorationVisibilityAtHex:()=>1,getUnitEffect:()=>null,requestDirectMotionFrame(){},isIndoorWorldPoint:()=>false,combatRenderAmbientAtHex:()=>100};
-vm.createContext(context);vm.runInContext(extractCombatFunction(readFileSync('js/combat-lighting-services.js','utf8'),'drawDirectCombatUnit'),context);
+vm.createContext(context);vm.runInContext(extractCombatFunction(readFileSync('js/combat-lighting-services.js','utf8'),'combatUnitStreamPresentation'),context);vm.runInContext(extractCombatFunction(readFileSync('js/combat-lighting-services.js','utf8'),'drawDirectCombatUnit'),context);
 for(let i=0;i<50;i++)context.drawDirectCombatUnit({},entity,{x:0,y:0},100,100,{x:.5,y:1},1);
 assert.equal(exposures,0,'Bare corpses must not calculate terrain snow lighting');snow=.1;context.drawDirectCombatUnit({},entity,{x:0,y:0},100,100,{x:.5,y:1},1);assert.equal(exposures,1,'Snow-covered corpses still track current light');
 console.log('PASS no snow-lighting work for bare corpses; covered bodies retain dynamic lighting');

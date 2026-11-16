@@ -1,0 +1,26 @@
+# Whole-map canopy grass and snow pressure
+
+Open `terrain-lab.html?grassCanopy=1&v=canopy-default1`. Canopy grass replaces the original tufts on all eligible ground, with the normal indoor, water and wear exclusions. Ground textures remain unchanged. Existing view culling still limits drawing to visible grass; no new zoom LOD is applied.
+
+Use **Original grass / Canopy grass** to compare grass rendering. Under **Grass & ground cover**, **Snow presses grass** toggles flattening without rebuilding roots or geometry. Use **Grass height** for taller blades, then the snow controls (**+3 inches**, **Full cover**, **Clear snow**) to compare. The performance overlay remains available.
+
+Accumulated snow sampled at each root progressively compresses and bends the experimental grass from about 0.8 cm to 16 cm of physical snow depth. Roots remain fixed, tips lay sideways and wind dies down. The full-load height is approximately 6 mm. Existing snow/footprint sampling still controls burial. Footprints expose flattened blades without removing the load; melting/clearing accumulation restores them. No lasting post-melt memory, per-blade CPU simulation, geometry rebuild, additional render pass or animation loop is added. The root sample adds five filtered texture reads per vertex while the option is enabled, plus shelter sampling and deformation arithmetic.
+
+Only the experimental grass responds to snow pressure; ordinary grass and debris preserve their existing behavior. The checkbox and canopy selection round-trip through terrain presets. Old presets default to snow pressure enabled.
+
+Inspired by https://outerra.blogspot.com/2012/05/procedural-grass-rendering.html. Four three-segment blades per 6.5 cm cell use a deterministic world-space coverage field. This is an original instanced WebGL implementation, not a port of Outerra's geometry shader.
+
+Local hidden-Chrome sample (1440 × 1000, normal view): 385,056 experimental blades submitted, 1,950,936 ground-cover triangles. Original ground-cover GPU pass: 1.82 ms. Canopy dry, pressure off/on: 2.37 / 3.00 ms. Full snow at height setting 1, pressure off/on: 3.62 / 3.58 ms. These short samples are device-specific, not guaranteed frame-rate changes. Pressure leaves the triangle count unchanged; the existing overlay allows on-device comparisons.
+
+Checks: deterministic placement beyond the old patch, face-split consistency, water and indoor exclusion, preset round-trip, baseline ground cover, and real GPU tests for burial, footprints retaining deformation, reversible pressure/melt, wind suppression, tall grass, layout reuse and draw order. No ground texture modifications are included.
+
+Snow excludes stream water and filled puddles during snowfall, Full cover, and manual depth changes. Rising water clears existing accumulation; receding water exposes bare ground. Dry banks and damp soil remain eligible. A cached shoreline index updates only crossed water levels; the GPU exclusion pass runs on mask changes or Full cover, not every frame. The ground shader also blocks filtered snow at water edges. Verified by test-combat-snow-water.mjs and probe-snow-water.cjs, including actual GPU texels and live lab samples.
+
+Verification note: the separate test-exploration-rendering.mjs fixture currently stops at its missing updateComputerCameraFollow mock, before terrain rendering. Ground-cover/render-cache regressions and the live hidden-browser terrain checks pass (701 water samples clear; 20,300 dry snow samples).
+
+Canopy grass is now the gameplay default. The approved look is defined in js/grass-presets.mjs: tint #ebfeff, brightness 1.05, dry mix .82, height .55, width 1.4, spread 1.2, bend 2, tufts 2, wind 3. Ground textures are unchanged. ORIGINAL_GRASS_DEFAULTS retains the original tuft renderer and previous appearance for future biome use; the lab Original grass button restores that preset, and Canopy grass restores the approved canopy preset. Snow pressure remains enabled.
+
+Scrolling optimization (2026-11-15): grass root buffers now remain resident across camera translation/zoom within the collected terrain guard band. The vertex shader rejects offscreen roots before snow/wind evaluation; binary depth-range selection preserves unit/corpse ordering. Rotation, new visible faces, visibility, geometry, shelter and corpse changes invalidate correctly. Loaded blade counts include the guard band; density and visible pixels are unchanged. Snow uses 50 ms accumulation batches instead of 250 ms, retains the original 32,768-grain backlog capacity, and uploads only populated ranges. Coverage gates and total earned snowfall are unchanged.
+
+Matched hidden-Chrome scrolling sample (1440 x 1000, 70 frames each): active-snow CPU submission 81.59 -> 47.62 ms; ground cover 41.40 -> 10.53 ms; dry CPU submission 66.25 -> 33.67 ms. GPU ground cover 4.79 -> 3.56 ms. These are local measurements, not an FPS guarantee; terrain preparation and CPU coat accounting remain costs. Exact GPU pixel parity passed for pan, zoom, rotation, snow and visibility; population/cache invalidation, water exclusion, footprint/melt and layer-gate regressions passed. Profile with scripts/profile-snow-pan.cjs; use PLAYWRIGHT_MODULE and BROWSER_EXECUTABLE for the hidden browser.
+

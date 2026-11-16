@@ -3,7 +3,7 @@ import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source=readCombatFixture(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const section=(from,to)=>{
  const a=source.indexOf(from),b=source.indexOf(to,a);
  assert.ok(a>=0 && b>a,`Missing production section: ${from}`);

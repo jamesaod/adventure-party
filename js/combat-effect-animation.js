@@ -300,7 +300,10 @@ async function animateFireballExplosion(targetHex,radiusHexes,blastCells=null){
   const cells=(blastCells?.length ? blastCells : fireballBlastCells(targetHex))
     .map(cell=>({...cell}));
 
+  if(globalThis.adventurePartyTreeMotion){const treeBlast=worldPointForHex(targetHex.x,targetHex.y);globalThis.adventurePartyTreeMotion?.blast({x:treeBlast.x,z:treeBlast.y/.568329,radius:(radius+3)*HEX_W,strength:1.4,started:started/1000});if(typeof ensureGroundCoverAnimation==='function')ensureGroundCoverAnimation();}
+  warmCombatGround(cells);
   addTerrainScorch(cells);
+  if(typeof combatGpu!=="undefined")combatGpu?.featherSnow?.(cells,HEX_W*.85,HEX_ROW/(HEX_W*Math.sqrt(3)/2));
   igniteFirTrees(cells);
   const ownedFx=fireballExplosionFx={
     x:targetHex.x,

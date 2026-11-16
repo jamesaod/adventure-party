@@ -4,9 +4,9 @@ import {gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {expandPreparedChunks} from '../js/combat-prepared-chunks.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs';
+import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
 import {setModelShadow,getModelShadow} from '../js/combat-model-shadow.mjs';
-import {serializePreparedAsset,hydratePreparedAsset,validatePreparedAsset} from '../js/combat-prepared-assets.mjs';
+import {serializePreparedAsset,hydratePreparedAsset,validatePreparedAsset} from '../js/combat-prepared-assets.mjs?v=tree-snow-grains1';
 globalThis.Image=class {set src(value){this.source=value;queueMicrotask(()=>this.onload());}};
 const root=new THREE.Group();root.add(new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshStandardMaterial({color:0x997744})));
 const camera=new THREE.OrthographicCamera(-2,2,3,-1,.1,100);camera.position.set(0,3,8);camera.lookAt(0,1,0);// Deliberately leave matrices stale, as happens immediately after lookAt.
@@ -45,3 +45,16 @@ for(const key of index.keys){
   }
 }
 console.log(`PASS ${index.keys.length} published packs and ${checked.size} content-addressed geometry/image chunks`);
+
+// Unversioned cached animation helpers can load a second model registry and
+// replace the global renderer with one that cannot see newly loaded units.
+{
+ const {readFileSync}=await import('node:fs');
+ const names=['combat-direct-units','combat-mob-renderer','combat-walk-test','combat-action-runtime','combat-workshop-unit','combat-prepared-assets'];
+ for(const name of names){
+  const text=readFileSync(new URL('../js/'+name+'.mjs',import.meta.url),'utf8');
+  for(const dependency of names){
+   assert(!text.includes("'./"+dependency+".mjs'"),name+' must version shared model dependency '+dependency);
+  }
+ }
+}

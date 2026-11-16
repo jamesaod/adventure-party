@@ -1,54 +1,91 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {canopySnowSurface} from './combat-canopy-snow-surface.mjs';
-// One-time, alpha-aware multilayer canopy sampling. No snow particle collisions.
-export function createFirSnowCaps(model){
- const started=performance.now();model.updateMatrixWorld(true);
- const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),foliage=[];
- model.traverse(m=>{if(m.isMesh&&m.material.alphaTest>0)foliage.push(m);});
- const pixels=new Map();
- function opaque(hit){const map=hit.object.material.map;if(!map||!hit.uv)return true;
-  if(!pixels.has(map)){const im=map.image,c=document.createElement('canvas');c.width=im.width;c.height=im.height;const ctx=c.getContext('2d');ctx.drawImage(im,0,0);pixels.set(map,{data:ctx.getImageData(0,0,c.width,c.height).data,w:c.width,h:c.height});}
-  const p=pixels.get(map),uv=hit.uv.clone();map.transformUv(uv);const x=Math.min(p.w-1,Math.max(0,Math.floor(uv.x*p.w))),y=Math.min(p.h-1,Math.max(0,Math.floor(uv.y*p.h)));return p.data[(y*p.w+x)*4+3]>32;
+import {createCorpseSnowMap} from './combat-corpse-snow-map.mjs?v=tree-snow-grains1';
+import {SNOW_MAX_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
+
+// Match terrain: thin coat is translucent; the completed powder coat is opaque.
+export function firSnowOpacity(progress){const p=Math.max(0,Number(progress)||0),thin=.62*Math.min(1,p),powder=Math.min(1,Math.max(0,p-1));return thin+(1.-thin)*powder;}
+
+// SpeedTree export normalization, before the existing runtime 0.18 scale.
+const MODEL_UNITS_PER_METRE=724.35152/16.69423121213913;
+// A single midpoint split supplies displacement vertices without changing the tree.
+export function branchSnowGeometry(source,{minimumHeight=-Infinity,transform=null}={}){
+ const positions=[],uvs=[],normals=[],p=source.attributes.position,u=source.attributes.uv,idx=source.index;
+ if(!u)return new THREE.BufferGeometry();
+ const vertex=i=>({p:new THREE.Vector3().fromBufferAttribute(p,i),u:new THREE.Vector2().fromBufferAttribute(u,i)});
+ const mid=(a,b)=>({p:a.p.clone().add(b.p).multiplyScalar(.5),u:a.u.clone().add(b.u).multiplyScalar(.5)});
+ const count=idx?idx.count:p.count;
+ for(let i=0;i<count;i+=3){
+  const [a,b,c]=[0,1,2].map(k=>vertex(idx?idx.getX(i+k):i+k));
+  if([a,b,c].some(v=>(transform?v.p.clone().applyMatrix4(transform).y:v.p.y)<minimumHeight))continue;
+  const normal=b.p.clone().sub(a.p).cross(c.p.clone().sub(a.p)).normalize();
+  if(Math.abs(normal.y)<.15)continue; // Near-vertical cards cannot hold a shelf.
+  if(normal.y<0)normal.negate();
+  const ab=mid(a,b),bc=mid(b,c),ca=mid(c,a);
+  for(const face of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])for(const v of face){positions.push(...v.p);uvs.push(...v.u);normals.push(...normal);}
  }
- const resolution=48,step=Math.max(size.x,size.z)/(resolution-1),columns=[],ray=new THREE.Raycaster();
- for(let x=0;x<resolution;x++)for(let z=0;z<resolution;z++){
-  ray.set(new THREE.Vector3(box.min.x+x*step,box.max.y+1,box.min.z+z*step),new THREE.Vector3(0,-1,0));
-  const samples=[];
-  for(const hit of ray.intersectObjects(foliage,false)){
-   if(hit.point.y<box.min.y+size.y*.08||!opaque(hit))continue;
-   if(samples.some(p=>Math.abs(p.y-hit.point.y)<step*1.1))continue;
-   samples.push({x:hit.point.x,y:hit.point.y,z:hit.point.z});
-   if(samples.length>=8)break;
-  }columns.push(samples);
- }
- const surface=canopySnowSurface(columns,resolution,step),positions=[],heights=[],shades=[];
- function vertex(id,skirt=false){const p=surface.vertices[id],point=model.worldToLocal(new THREE.Vector3(p.x,p.y,p.z));// Keep the blanket above crossing foliage cards, not buried in their triangles.
-  point.y+=step*1.25/model.scale.y;positions.push(point.x,point.y,point.z);
-  heights.push((skirt?0:surface.boundary.has(id)?.38:.7)*step/model.scale.y);shades.push(skirt?.8:surface.boundary.has(id)?.95:1);
- }
- for(const f of surface.faces)for(const id of f)vertex(id);
- for(const [a,b] of surface.edges){vertex(a);vertex(b,true);vertex(b);vertex(a);vertex(a,true);vertex(b,true);}
- const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('snowLift',new THREE.Float32BufferAttribute(heights,1));geometry.setAttribute('snowShade',new THREE.Float32BufferAttribute(shades,1));for(let i=0;i<heights.length;i++)geometry.attributes.position.setY(i,geometry.attributes.position.getY(i)+heights[i]);geometry.computeVertexNormals();
- const amount={value:0},sun={value:new THREE.Vector3(0,1,0)},day={value:1};
- const material=new THREE.MeshStandardMaterial({color:0xeaf0f5,roughness:1,metalness:0,side:THREE.DoubleSide});
- material.onBeforeCompile=shader=>{
-  Object.assign(shader.uniforms,{snowAmount:amount,snowSun:sun,snowDay:day});
-  shader.vertexShader='attribute float snowLift; attribute float snowShade; varying float vSnowShade; uniform float snowAmount; varying vec3 vSnowNormal; varying vec3 vSnowPosition;\n'+shader.vertexShader;
-  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed.y-=snowLift*(1.0-snowAmount);vSnowShade=snowShade;vSnowPosition=position;').replace('#include <defaultnormal_vertex>','#include <defaultnormal_vertex>\nvSnowNormal=inverseTransformDirection(transformedNormal,viewMatrix);');
-  shader.fragmentShader='varying float vSnowShade; varying vec3 vSnowNormal; uniform vec3 snowSun; uniform float snowDay; uniform float snowAmount; varying vec3 vSnowPosition;\n'+shader.fragmentShader;
-  // Filled foliage shadow cards are deliberately broad. Attenuate their shadow
-  // strength on snow, as on needles, so exposed snow isn't uniformly blackened.
-  shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',THREE.ShaderChunk.lights_fragment_begin.replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity * 0.25,'));
-  shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',`#include <colorspace_fragment>
-   float reveal=.5+.25*sin(vSnowPosition.x*.08)+.25*cos(vSnowPosition.z*.09+vSnowPosition.y*.05);
-   if(snowAmount<reveal*.52)discard;
-   float facing=smoothstep(-.15,.85,dot(normalize(vSnowNormal),normalize(snowSun)));
-   vec3 tint=mix(vec3(.58,.73,.92),vec3(1.,.98,.94),facing*vSnowShade);
-   gl_FragColor.rgb*=mix(vec3(vSnowShade),tint*vSnowShade,snowDay);
-  `);
- };
- material.customProgramCacheKey=()=> 'fir-canopy-snow-soft-shelves-v2';
- const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;mesh.receiveShadow=true;mesh.castShadow=false;mesh.visible=false;model.add(mesh);
- mesh.userData.snowPreparation={milliseconds:performance.now()-started,triangles:positions.length/9,samples:surface.vertices.length};
- return {mesh,light(direction,daylight){sun.value.copy(direction);day.value=Math.max(0,Math.min(1,daylight));},set(value){amount.value=Math.max(0,Math.min(1,value));mesh.visible=amount.value>.01;}};
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ return geometry;
 }
+
+export function createFirSnowCaps(model){
+ const started=performance.now(),foliage=[];
+ model.traverse(o=>{if(o.isMesh&&o.material.alphaTest>0)foliage.push(o);});
+ const mesh=new THREE.Group();mesh.name='fir-branch-surface-snow';mesh.visible=false;model.add(mesh);
+ const records=[],opacityLimit={value:0},groundLight={value:new THREE.Vector3(1,1,1)},snowTint={value:new THREE.Vector3(.754,.775,.796)};let triangles=0,previous=-1;
+ model.updateMatrixWorld(true);const inverse=model.matrixWorld.clone().invert();
+ for(const leaf of foliage){
+  const map=leaf.material.map;if(!map?.image)continue;
+  const size=32,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const ctx=canvas.getContext('2d');ctx.drawImage(map.image,0,0,size,size);
+  const pixels=ctx.getImageData(0,0,size,size).data,top=new Float32Array(size*size).fill(-Infinity);
+  for(let i=0;i<top.length;i++)if(pixels[i*4+3]>8)top[i]=0;
+  const deposit=createCorpseSnowMap(top,size);
+  // Data texture uses the same exported UV row convention as the glTF artwork.
+  deposit.texture.flipY=map.flipY;
+  const geometry=branchSnowGeometry(leaf.geometry,model.userData.broadleaf?{minimumHeight:MODEL_UNITS_PER_METRE*.5,transform:inverse.clone().multiply(leaf.matrixWorld)}:{});triangles+=geometry.attributes.position.count/3;
+  const material=new THREE.MeshStandardMaterial({color:0xf4f8ff,map,roughness:1,metalness:0,side:THREE.DoubleSide,alphaTest:.08,alphaToCoverage:true,premultipliedAlpha:true});
+  material.onBeforeCompile=shader=>{
+   shader.uniforms.branchSnowMap={value:deposit.texture};shader.uniforms.branchSnowOpacity=opacityLimit;shader.uniforms.firGroundLight=groundLight;shader.uniforms.firSnowTint=snowTint;
+   shader.vertexShader='uniform sampler2D branchSnowMap;varying vec2 branchSnowUv;varying float branchSnowSlope;\n'+shader.vertexShader;
+   shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+    branchSnowUv=uv;branchSnowSlope=smoothstep(.15,.7,abs(normal.y));
+    vec4 coats=smoothstep(vec4(.015),vec4(.34),texture2D(branchSnowMap,uv));
+    // Coverage coats stay thin. Only coats three/four raise the snow shell.
+    float depth=(coats.b+coats.a)*.5;
+    transformed.y+=(.0127+depth*${SNOW_MAX_METRES-.0127})*${MODEL_UNITS_PER_METRE}*branchSnowSlope;
+   `);
+   shader.fragmentShader='uniform vec3 firGroundLight,firSnowTint;uniform float branchSnowOpacity;uniform sampler2D branchSnowMap;varying vec2 branchSnowUv;varying float branchSnowSlope;\n'+shader.fragmentShader;
+   // Preserve only the needle silhouette, never multiply white snow by green RGB.
+   shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
+    diffuseColor.a*=texture2D(map,vMapUv).a;
+    #endif
+    vec4 coats=smoothstep(vec4(.015),vec4(.34),texture2D(branchSnowMap,branchSnowUv));
+    float thin=.62*coats.r;
+    float coverage=thin+(1.-thin)*coats.g;
+    float branchCoverage=min(coverage,branchSnowOpacity);
+   `);
+   shader.fragmentShader=shader.fragmentShader.replace('#include <alphatest_fragment>','#include <alphatest_fragment>\n diffuseColor.a*=sqrt(branchCoverage);');
+   shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',THREE.ShaderChunk.lights_fragment_begin.replace('directionalLightShadow.shadowIntensity,','directionalLightShadow.shadowIntensity * .25,'));
+  };
+   const prior=material.onBeforeCompile;
+   material.onBeforeCompile=shader=>{prior(shader);
+    shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','outgoingLight=clamp(firSnowTint*firGroundLight,0.,1.);\n#include <opaque_fragment>').replace('#include <tonemapping_fragment>','').replace('#include <colorspace_fragment>','');
+   };
+  material.customProgramCacheKey=()=> 'fir-branch-texture-snow-display-447';
+  const shell=new THREE.Mesh(geometry,material);shell.matrix.copy(inverse.clone().multiply(leaf.matrixWorld));shell.matrixAutoUpdate=false;shell.frustumCulled=false;shell.receiveShadow=true;shell.castShadow=false;mesh.add(shell);
+  records.push(deposit);
+ }
+ mesh.userData.snowPreparation={milliseconds:performance.now()-started,triangles,maps:records.length};
+ return {mesh,light(direction,daylight,display){if(display)groundLight.value.fromArray(display);},set(value){
+  const amount=Math.floor(Math.max(0,Math.min(1,Number(value)||0))*400)/400;
+  const powder=Math.min(1,Math.max(0,amount*4-1));snowTint.value.set(.754+(.902-.754)*powder,.775+(.916-.775)*powder,.796+(.930-.796)*powder);opacityLimit.value=firSnowOpacity(amount*4);mesh.visible=amount>0;if(amount===previous||amount===0){previous=amount;return;}
+  // Upload only on accumulated-depth changes, never camera movement.
+  for(const map of records)map.update(amount*4);previous=amount;
+ },dispose(){for(const map of records)map.dispose();mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});mesh.removeFromParent();}};
+}
+
+
+

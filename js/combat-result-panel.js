@@ -45,7 +45,7 @@ function combatResultLines(beat){
  }
  const panel=document.querySelector('.unit-info-panel');
  const result=document.createElement('div');result.id='combatResult';result.hidden=true;
- result.setAttribute('role','log');result.setAttribute('aria-label','Combat results');result.setAttribute('aria-live','polite');result.setAttribute('aria-relevant','additions');panel.insertBefore(result,document.getElementById('combatCompass'));
+ result.setAttribute('role','log');result.setAttribute('aria-label','Combat results');result.setAttribute('aria-live','polite');result.setAttribute('aria-relevant','additions');panel.append(result);
  function clear(){
   shownGame=null;turnGame=null;turnKey=null;shownAction=null;result.hidden=true;result.replaceChildren();
  }
@@ -78,12 +78,17 @@ function combatResultLines(beat){
  const baseQueue=AdventurePartyCombatServices.current('candidateQueueCombatBeat');
  AdventurePartyCombatServices.register('candidateQueueCombatBeat','combat-result-panel.js:79:candidateQueueCombatBeat',function(unit,spec={}){
   const source=sources.get(unit),action=actionFor(unit);
-  return baseQueue(unit,{...spec,sound:spec.sound||(['buff','debuff','condition'].includes(spec.category)?(effectSound||(typeof playMagicEffectSound==='function'?()=>playMagicEffectSound(spec.category):null)):null),meta:{...spec.meta,actionId:action?.id,action,targetName:unit?.name,attackerName:source?.name||candidateDamageBeatContext?.source||activeUnit()?.name||'An effect'}});
+  const result=baseQueue(unit,{...spec,sound:spec.sound||(['buff','debuff','condition'].includes(spec.category)?(effectSound||(typeof playMagicEffectSound==='function'?()=>playMagicEffectSound(spec.category):null)):null),meta:{...spec.meta,actionId:action?.id,action,targetName:unit?.name,attackerName:source?.name||candidateDamageBeatContext?.source||activeUnit()?.name||'An effect'}});
+  if(unit?.alive===true&&unit?.hp>0&&['direct-damage','secondary-damage'].includes(spec.category))baseQueue(unit,{category:'speech',text:'Reaction',show:()=>{if(unit?.alive!==false&&unit?.hp>0)showUnitReaction(unit,spec.meta?.amount);},meta:{actionId:result?.meta?.actionId}});
+  return result;
  });
  const baseRun=AdventurePartyCombatServices.current('candidateRunCombatBeat');
  AdventurePartyCombatServices.register('candidateRunCombatBeat','combat-result-panel.js:84:candidateRunCombatBeat',function(beat){
   if(beat?.gameRef===game&&candidateCombatBeatPresentationEnabled()){
-   show(beat);
+   if(beat.category!=='speech')show(beat);
+   if(['direct-damage','secondary-damage'].includes(beat.category)&&beat.unit?.alive!==false&&beat.unit?.hp>0){
+    baseAgony(beat.unit);
+   }
    if(beat.category==='direct-damage'){
     const action=beat.meta?.action;
     if(action?.physicalBlood){action.physicalBlood();action.physicalBlood=null;}

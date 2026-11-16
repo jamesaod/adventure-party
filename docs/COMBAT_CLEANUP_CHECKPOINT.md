@@ -1,3 +1,31 @@
+## Local R238C445 — Text injury/death reactions
+
+Replaces sampled and synthetic injury/death voices with nonrepeating onomatopoeia in the shared unit bark path. Damage result beats select light below 20% max HP and heavy at/above; death takes priority and uses the existing deferred death presentation. All unit types participate, zero damage is silent, death speech survives alive=false. Friendly blue/enemy red speech uses fixed 16 logical screen pixels independent of zoom, dark text stroke, head/trunk anchoring and overlap stacking. Shared speech now colors incantations too. Removes voice sample preload/playback but retains unrelated combat/footstep audio and archived source assets. Local only; no combat rules changed.
+
+## Local R238C438 — Ambient fir contact and feathered snow shelter
+
+Existing circular contact draw now removes only the ambient share, normalized against solar and local contributions using the established projected-shadow receiver/light model. Ambient contact remains at low sun and gets a subtle blue tint only where snow survives canopy shelter; directional shadows keep their separate behavior. Existing shared shelter texture is reprofiled once on configuration: roughly inner 40% of canopy radius protected, smoothly feathering to full snow beyond the canopy. CPU snow deposits/height and GPU snow presentation keep the same texture identity and revision. No additional draw pass or per-frame field rebuild. Local only; user visual QA pending. See workspace work/fir-contact for staging and rollback.
+
+## Local R238C437 — Branch texture snow experiment
+
+Replaced interpolated canopy shelves with an independent snow shell following actual foliage triangles and needle alpha. Reuses createCorpseSnowMap persistent grain deposition, four gated coats, map updates only when quantized tree accumulation changes. First two coats establish coverage; later coats raise the shell with a 12-inch maximum total lift, including the thin surface offset. One midpoint subdivision (at most four snow triangles per source triangle), near-vertical cards excluded. Original green geometry, accepted daylight albedo and premultiplied alpha stay intact. No additional frame loop or per-frame raycasts. Branch snow uses existing tree snowAmount, not new particle collisions or an independent weather clock. Local experiment; visual/performance acceptance pending. Reproduction and prior canopy module in workspace work/fir-snow.
+
+## Local R238C436 — Fir daylight brightness
+
+User supplied 08:10 as the desired noon foliage appearance. Needle material uses neutral 0.5 linear albedo multiplier; bark, snow, sun direction/intensity and world lighting remain unchanged. Retains premultiplied alpha correction and original unstretched geometry. Five-variant weather-adjusted probe at ambient 250: previous 08:10 mean foliage luminance 126.3, previous noon 146.8; calibration 0.45 at noon 122.7 and 0.65 at noon 137.4. Chosen 0.5 targets the supplied morning reference. This is a material adjustment, not a clock or shadow override. Body/top/shadow atlases rebuilt. Local only; user visual acceptance pending.
+
+## Local R238C435 — Restore fir proportions and correct needle alpha
+
+User rejected widened foliage as distorted. Restored original five SPM/FBX shapes, retaining 1024px color/normal exports and fine-needle cutoff. Original triangle counts unchanged. Foliage now premultiplies fractional alpha before MSAA resolve, matching the existing tree compositor. Before correction the production direct-render probe found 544 edge pixels with recovered linear green above 1.05 (maximum 2.19); after correction zero (maximum 0.733), with the same 15,085 edge pixels. No extra pass or geometry. Rebuilt all atlases; updated versioned cache chain. Source/reproduction scripts and backups: workspace work/fir-correction. Visual QA remains with user, local only.
+
+## Local R238C434 — Fuller fir foliage
+
+Wider native SpeedTree sprays on all five trees, 1024px exports and fine-needle alpha retention. Unchanged triangle counts and draw primitives; refreshed body/shadow/top atlases and versioned assets. See SPEEDTREE_FIRS.md. Local only; visual/performance acceptance pending.
+
+## Local R238C433 — SpeedTree fir replacement
+
+Five low-poly user-authored SpeedTree firs, 2,950–4,268 triangles; removed duplicated foliage, rebuilt fallback/editor atlases, preserved fire/snow/placement contracts. See [SPEEDTREE_FIRS.md](SPEEDTREE_FIRS.md). Local only; user visual QA pending.
+
 # Combat cleanup checkpoint — 2026-11-04
 
 User approved incremental cleanup while preserving existing combat behavior. Keep this work local for browser QA until asked to push.
@@ -213,7 +241,7 @@ Local R238C320: reproduced Orc disappearance in a full browser draw using the im
 Local R238C321: snow first/powder colors have 65% less authored blue bias at similar luminance. Per user follow-up, original cool undertone returns gradually with third-layer depth on terrain and corpses. HDR inverse-ACES conversion now compresses negative out-of-gamut channels toward neutral instead of clipping them independently; preserves HDR brightness and avoids amplified cyan. Color tests cover HDR/fallback and layer tint boundaries. Visual QA remains with user.
 
 
-### Local R238C322 � display submission optimization (2026-11-12)
+### Local R238C322 � display submission optimization (2026-11-12)
 CPU sampling identified repeated Canvas clip construction and exhaustive indoor-space queries as major recurring costs. clipExplorationFloor now retains one Path2D keyed by spaces identity/length and the exact camera projection. Architectural space queries retain up to 8,192 exact point results, including misses; encounter geometry replacement or length changes discard them. The terrain/session owners replace architecturalSpaces rather than editing its polygons in place. Future in-place geometry editors must explicitly clear architecturalSpaceAtWorldPoint.cache and clipExplorationFloor.cache (or replace the spaces array). Original polygon predicate and reverse overlap priority remain authoritative. Canvas adapter method wrappers are also retained rather than allocated on every method access; flush/backdrop semantics are unchanged.
 
 Seeded Chrome 1600x1000, same terrain/camera/12 models plus player, 100 measured frames after 35 warmup frames: living submission 14.288 -> 8.719 ms (39.0% lower); corpse submission 13.926 -> 8.480 ms (39.1% lower). Terrain CPU 5.075 -> 2.489 ms. Floor triangles remained 2,628 and corpse-scene composite draws remained 39. Retained corpse targets remain 9,551,520 bytes, with 12 cache hits/frame. Both builds remained at the existing 30 FPS cap. This is scene-specific CPU headroom, not a universal FPS claim. Baseline/after reports: .local/display-r322-baseline.json and .local/display-r322-after.json.
@@ -240,7 +268,7 @@ Local R238C327: added FULL SNOW ACCUMULATION (fills all three outdoor ground cha
 Validation: 83/83 combat regressions passed; additional fill/clear/indoor-corpse timing checks passed. Actual browser controls test verified removed controls, hide/show, paused full accumulation, unchanged snowfall intensity, and corpse/ground clearing. GPU full-fill probe verified 9-inch depth, trail carving and refill. scripts/probe-combat-controls.cjs retains the UI regression. Local only; user visual QA pending.
 
 
-## Animated snow contacts and fir shelter � R238C328 (local)
+## Animated snow contacts and fir shelter � R238C328 (local)
 
 Foot contacts now sample the shared 30 FPS presentation clock for turning and all rendered animations, rather than requiring walkSeconds. Actual foot bones sweep short contact segments and intermediate boot angles; stationary redraws and raised soles do not stamp. Baked standing meshes recover cached sole contacts once from their lowest geometry band. Existing MAX cuts, blue groove shading, snowfall refill, teleport limits and bounded record storage remain.
 
@@ -275,3 +303,309 @@ R238C339 (2026-11-12): Replaced Full Snow with side-by-side minus/plus one-inch 
 R238C340 (2026-11-12): Contextual tactical grid appears during aiming or battlefield hover on the controlled unit's idle turn. Green reachable destinations share a bounded full-footprint BFS with click movement. Clicking follows the whole route, preserving costs, opportunity attacks, guards, and area-spell checkpoints. Shared player/AI presentation rounds intermediate corners and sweeps body clearance against blocked hexes, units, firs, and movement wall segments; narrow corridors and rotating large footprints retain conservative turns. Reactive AI providers carry small validated off-center offsets. Existing walkPresentation drives sprites, lighting, shadows, and snow contacts together. No new frame loop. Validation: 89/89 regression tests and live three-hex destination/contextual-grid probe. User performs visual QA; local only. Snow controls remain +/-3 inches, maximum 36 inches.
 
 R238C341 (2026-11-12): Fixed snow deforming baked corpse body/equipment vertices. Body stays fixed; powder/depth uses an independent closed top-surface snow mesh, registered with existing resource cleanup and burial binding. Thin translucent coat remains on the body. Ground snow uses matching eight-way subdivisions instead of 4/16 neighbours, eliminating displaced T-junctions; terrain and body burial share a one-texel physical-height bevel across melt masks. Coat coverage thresholds unchanged. Validation: 89/89 combat regressions, GPU static/skinned burial and independent cap test, first-coat/powder opacity probe, production 12-corpse display/cache probe with all eight invalidation checks and no browser errors. User handles visual QA. Local only.
+
+R238C343 local follow-up after candidate publication c7d527d / PR 388: removed ground blood stain and death-pool generation/rendering, including old encounter residue/cache cleanup. Airborne hit and fourfold staggered death bursts retain their timing, wall clipping and visibility behavior. Drops disappear on landing and no pool prolongs the effects loop. This follow-up has not been pushed.
+
+R238C344 local: Corpse snow now has four independent half-inch grain layers (RGBA), each fully covering the eligible top surface before the next starts. Each covered layer adds 25% alpha and 0.0127 metres to the independent cap; the original corpse geometry and shading remain fixed. Natural accumulation takes 30 seconds of active snowfall per layer (120 seconds total), independent of ground mass/intensity, pausing when snowfall stops or is paused. Hard cap four layers/two inches, including manual snow controls; melt and clear supported. Retained map changes run at existing deposition cadence and no new loop is added. Validation: 89/89 regressions, GPU alpha 64/127/191/255, deep burial, manual controls, eight production display/cache checks and no browser errors. Local only; pending alongside blood-particles-only follow-up.
+
+R238C346 local: Corpse snow now uses the same soft 5/7-texel grain brushes and .015/.34 blend ramp as terrain, with linear filtering and four independently gated channels. Retains half-inch stages, 25% opacity increments, 120 active seconds and two-inch cap. Corrected perceived opacity by blending snow and corpse in display space and skipping repeat tone mapping in the retained composite. A nearest-cap depth pass prevents alpha stacking from closed/overlapping cap faces. Corpse snow receives actual point-light diffuse illumination (sword, fire, torches) on top of ambient/sun baseline; CPU baseline excludes duplicate local lights. Snowfall slider now emits 0–3500 flakes/sec, five times the prior maximum, with 20480 bounded flake slots plus 256 kick-up slots; ground/corpse accumulation rates unchanged. Validation: 90/90 regressions; production-path GPU body blending at 25/50/75% and full opacity, local warm light response, burial, and all eight display/cache checks without errors. No preview generated; local only.
+
+R238C347 local: Broader collision-checked movement curves bypass intermediate hex centers. Walking uses an arc-length lookup for even physical speed and duration proportional to route length. Per-frame heading follows the curve tangent with a bounded shortest-angle turn, shared with direct models/shadows/feet; logical six-way facing and per-hex costs/reactions remain authoritative. Final visual heading persists into idle, avoiding an end-of-route snap. Player and AI use the same presentation helper; rotating large footprints retain conservative route geometry. Validation: existing 90 regressions plus new curved-heading/model-yaw/speed test, and live three-hex destination probe all pass. Local only.
+
+
+R238C348 local: Fireball cells retain heat for three combat rounds; burning firs refresh heat in their own and six neighboring hexes. Heat clears all four snow channels after deposition, including manual deep snow. Pale steam shares the existing smoke shader and FX scheduler, respects visibility, and fades without melting snow. Quick-controlled archers now use the shared Elf range policy. Validation: 92/92 combat regressions, actual 36-inch GPU melt (RGBA 255 to 0), friendly Workshop archer equipment/range-plan check. Track investigation found the existing 4,096-stamp FIFO cap; no track storage change. Not published.
+
+R238C349 local experiment: corpse whitening now follows the local hex first-coat material coverage minus 25 percentage points, clamped to 0-75%. Supersedes the independent two-minute corpse clock during gameplay. Uses retained soft coat maps and display-space lighting; averages real ground texels per occupied corpse hex, cached by surface revision. Local melt/clear and manual snow adjustments update bodies too.
+
+R238C350 local: Tactical hex grid and hover outlines now filter by reachable remaining movement or the active missile/spell range. Canvas CSS uses smooth scaling instead of pixelated scaling, retaining native antialiased strokes. Mouse wheel zooms combat; Shift-wheel retains Wall of Fog orientation. Updated aim prompts. Validation: 94/94 regressions and live Chrome wheel zoom/smooth-style check passed. Not published.
+
+R238C351/352 local: Fireball melts adjacent snow with per-texel distance falloff through all four depth channels; steam color is pure white. Fixed R350 active-highlight regression: grid range predicate had incorrectly referenced undefined x/y inside drawActiveHex, aborting frames after Space. Restored contextual visibility gate. Added active-highlight regression and live Space-start grid probe.
+
+R238C353/354 local: Elf bow AI ranks legal targets by evaluated d20 hit chance (same AC, Dexterity, range and effect inputs as bow attacks), then proximity, HP and stable ID. Shared by friendly/hostile/Quick AI; hostile volleys reevaluate per arrow. Warm ground no longer erases deposition in the same frame: continuous heat permits brief settling, with 350ms grain phase then 850ms pure-white puff. Bounded 512 grain/puff slots share the existing snow point pass and frame scheduler. Validation: 96/96 regressions; live hot-snow probe confirmed grains and steam calls with no shader errors. No publication.
+
+R238C355 local correction: separate body albedo whitening from settled snow. Snow cap follows local coverage through all four coats to 100% opacity; underlying body material whitens by settled coverage minus 25 percentage points, capped at 75%, under normal lighting. GPU probe verifies full alpha 255 and independently whitening body, with local light response intact. Threshold regression passed.
+
+R238C356 local regression fix: newly fallen corpses again accumulate over 120 snowfall-active seconds, not inherited full ground coverage. Body whitening remains independently 25 points behind its own settled snow, maximum 75%; cap can reach 100%. Hot deposits use bounded temporary grain/puff presentation and never rebuild persistent coverage; disable global missing-texel redirection while heat exists to prevent concentration into melted holes. Validated 96/96 regressions, active snowfall/melt/fresh corpse browser probe, and 36-inch GPU melt plus feather readback (all RGBA channels zero).
+
+R238C357 focused audit complete. Removed abandoned corpse sync and unused coverage reader; replaced stale tests with active timed lifecycle regression; restored original newlines; added browser regression runner. 96/96 unit checks and six real-browser checks passed. Scope and remaining maintenance risks recorded in COMBAT_ARCHITECTURE.md. Local only.
+
+R238C358 targeted cleanup complete: shared read-only bow roll inputs, event/round-driven heat updates and separate steam ticking, equivalent squared-distance gradient optimization. 96/96 unit regressions, 6/6 browser checks, reference gradient equivalence and heat event tests passed. 2048 texture CPU gradient median 628.9ms -> 171.6ms, GPU upload not included. Local only.
+
+R238C359 local: one-time snow impact burst when a fallen body's final ground silhouette is registered. Samples local snow depth across the body, scales count/spread/lift with depth, emits nothing on dry ground. Shares existing 256-particle kickup pool and scheduler; cached draws/rebuilt corpse meshes do not repeat the burst. 97/97 regressions passed plus actual contact-hook repeat suppression checks. No publication.
+
+## Local R238C360 — meadow ground cover (2026-11-12)
+
+User authorized replacing the rejected sparse scatter with a substantially richer local combat pass. `combat-ground-cover.mjs` owns deterministic clustered curved blades, irregular embedded stone groups and tapered branching sticks. These are original procedural meshes/materials; no external assets were imported. Root positions survive floor fragmentation, movement and camera rotation. Sparse tree-base grass and preferential woodland branches use the existing canopy field. Two grass geometry levels reduce triangles when zoomed out; shader edge coverage softens thin silhouettes. Broad ground-color variation complements the geometry.
+
+The renderer collects eligible outdoor grass fragments while drawing floors, then submits ordered instance intervals between existing actor draws. This preserves the hybrid painter pipeline instead of pretending unit images share a terrain depth buffer. It is root-order occlusion, not per-pixel 3D depth; tall vegetation and complex wall crossings remain a future depth-integration concern. Plants use ground exposure textures (including local light in the default CPU lighting path), shared physical snow height, canopy shelter, and track cuts. Snow buries cover without raising its roots. Up to 32 visible unit/corpse contacts bend/flatten nearby grass; no gameplay collision or persistent grass-track state was added.
+
+Wind runs on the existing combat scheduler, stops outside active combat, and respects reduced-motion preference. GPU instance textures and geometry are reused, placement caches are bounded and cleared at scene changes, and resources are disposed with the renderer. CPU/GPU charts now expose Ground cover. `adventurePartyGroundCover=false` is a developer A/B switch; no new player controls. Keep local for user visual QA; no push/deployment.
+
+Validation: 98/98 combat checks; six existing browser regression checks; new `probe-combat-ground-cover.cjs` verifies actual GPU pixels for dry grass, reduced light, progressive burial, complete 36-inch burial, track re-exposure, ordered draw intervals and lower zoom geometry. `test-combat-ground-cover.mjs` checks stable split-fragment placement, bounded density, all three classes and indoor exclusions. User visual approval remains pending.
+
+R238C360 measured follow-up: same seeded 1600x1000 Chrome battle, 15 warmup + 60 sampled frames per mode, cover disabled/enabled in one session: median CPU submission 5.4 / 6.9 ms, p95 6.1 / 7.6 ms. Enabled scene: 2,059 cover instances, 243,360 submitted cover triangles, 85 cover draws (total draws 128 -> 213). This is a measured cost, not a speedup or universal performance guarantee. The GPU chart reports cover separately; its rolling history spanned both A/B modes, so that snapshot is not an isolated enabled-only GPU benchmark. All six rotations at three zooms (18 cases) rendered without exceptions. Existing CRLF line endings preserved; diff check passes with cr-at-eol.
+
+## Local R238C366 — Poly Haven grass trial (2026-11-12)
+
+Grass now uses Poly Haven Grass Medium 01 by Rico Cilliers (modeling) and Rob Tuytel (photography), CC0: https://polyhaven.com/a/grass_medium_01 . Local geometry, unchanged 1K diffuse/alpha/OpenGL normal textures, original download metadata and SHA-256 hashes are in `assets/models/ground-cover/polyhaven-grass-medium-01/source.json`. Source downloads were verified against the API's MD5 values. Selected `grass_medium_01_small_a_LOD0`, rooted and normalized uniformly to 0.72m before the existing half-size instance setting. High detail retains all 833 source triangles; low detail retains 15 of 30 connected blade/card components (430 triangles), without changing their original UVs. Showcase layout/node offsets are omitted. Current triple tuft placement density is preserved; authored plant blades replace the procedural 56-blade template. Stones and sticks remain unchanged.
+
+`createGroundCover.ready` exposes asynchronous asset readiness; diagnostics report loading/polyhaven/fallback. Failed loads keep the prior procedural geometry and log the failure. Disposal during loading disposes completed resources; textures/meshes are renderer-owned. Cutout alpha uses derivative-smoothed coverage rather than treating the source diffuse JPEG as opaque. Original UV orientation is retained with flipY=false. Diffuse, normal detail, root shading, local ground exposure, wind, actor bending, snow burial and trail cuts share the existing shader pipeline. No remote runtime requests; all assets are vendored locally.
+
+Validation: 98/98 combat regression checks; real GPU probe explicitly awaits Poly Haven readiness and verifies visible pixels, lower exposure, shallow/deep snow, trail cuts, interval ordering and lower-detail geometry. Seeded 1600x1000 Chrome battle: 5,899 ground-cover instances; 85 cover draws, 4,826,400 submitted triangles including debris; median total CPU submission 7.7 ms, p95 9.0 ms; sampled Ground cover GPU time about 2.93 ms. These are scene/device-specific measurements, not directly comparable to earlier lower-density passes. Local user visual QA pending; no publication.
+
+## Local R238C369 — authored dense grass clumps (2026-11-12)
+
+Supersedes the sparse small-mesh trial. Inspection of the original Blender scene and a standard-material comparison identified large_a/large_c as the requested bushy clumps. Runtime now uses complete large_a authored LOD1 (2,301 triangles) and LOD2 (1,011 triangles), original UVs/normals, uniform normalization and the existing half-size setting. No blade removal or vertical compression. Low LOD is used below zoom 1.5. The source manifest records Blender provenance, transformations and hashes.
+
+Imported plant elevation now respects the ground projection's metre scale and camera squash; snow burial uses the same converted elevation. Alpha cutout rejects near-black texels before bounded derivative smoothing, preventing dark atlas-background fringes. Added the author's roughness texture and an approximate leaf-transmission contribution. This remains the game's custom lighting shader, not a full reproduction of Blender's material. Placement density, stones, sticks and gameplay remain unchanged.
+
+Validation: 98/98 combat regressions, deterministic placement test and GPU coverage/light/snow/LOD probe passed. Internal actual-game inspection confirms leafy clumps replace sparse twig silhouettes; user visual QA remains authoritative. Seeded 1600x1000 Chrome sample: 5,899 cover instances, 85 cover draws, 5,851,680 cover triangles, median CPU submission 8.6 ms / p95 10.2 ms; Ground cover GPU approximately 3.37 ms. Higher geometry cost than the sparse trial; scene/device-specific measurements. Local only, no push.
+
+## Local R238C370 — revert rejected Poly Haven grass trial
+
+User rejected the visual result. Restored the exact pre-Poly-Haven procedural ground-cover renderer, retaining the latest half-size grass, triple tufts, stones, sticks, lighting, snow and ordering behavior. Removed imported-material/mesh runtime loading and restored the GPU probe to procedural LOD checks. Cache chain advanced to R238C370. Downloaded source assets and provenance remain unused for historical reference. No other game changes reverted; no push.
+
+## Local R238C371 — tutorial-inspired procedural grass
+
+Applied the blade-shaping and foliage-lighting principles from the user's Timothy Dries tutorial to the restored procedural grass. Neighboring tufts now use independent deterministic seeds; blades retain tapered widths with varied twist and curled tips. Root shading is gentler, a subtle central fold is shaded analytically, and leaf lighting includes both-face diffuse response plus transmission. No texture atlas is used, so texture dilation/baking instructions do not apply. Poly Haven runtime remains reverted. Existing size settings, placement counts, blade/triangle budgets, debris, snow and gameplay are preserved.
+
+Validation: deterministic placement test and real GPU probe passed (local exposure, shallow/deep burial, trail re-exposure, ordered intervals, zoom LOD). Fixture high/low triangle totals remain 53,232 / 16,752. Diff whitespace check passed. User visual QA pending; local only.
+
+## Local grass/scatter tuning lab (2026-11-13)
+
+Added grass-scatter-test.html and js/grass-scatter-lab.mjs, using createGroundCover directly with optional per-instance tuning. Sliders: blade height/width/bend, clump spread, tuft count, wind, brightness, dry color, light and zoom; toggles: rocks/sticks/wind animation. Reset and versioned JSON export allow user-selected settings to be sent back. Game defaults unchanged; no global tuning persistence. Ground backdrop is a plain swatch, not the full battlefield floor/actor pipeline. Geometry is rebuilt after debounced changes and disposed; page skips hidden-tab rendering. Existing triangle/instance counters shown.
+
+Validation: browser smoke tested slider edits, reset, JSON download and absence of page errors. Default placement and GPU light/snow/LOD probes passed. Local only.
+
+## Local R238C372 — lab scale reference, capacity and measurements (2026-11-13)
+
+Removed the sorted 8,192-instance truncation that erased lower rows. Instance textures now pack 128 instances per row and grow geometrically when needed; shader texel addressing matches the packed layout. Growth disposes the previous GPU allocation and forces upload. Dense browser case rendered 68,692 instances / 8,837,152 scatter triangles; default GPU light/snow/LOD probe passed. High density still increases work and memory.
+
+Lab now includes the published Orc Warrior GLB normalized to its authored 1.8288 m height, at patch center, with a visibility toggle. It is a static model scale reference (bind pose), not a full combat actor/equipment/animation simulation. Ground uses actual grass-short-v1 color/normal textures, matching three-metre repeat, squash, zoom and light level.
+
+Added rolling FPS, CPU submission milliseconds and asynchronous EXT_disjoint_timer_query_webgl2 GPU timing, with unsupported/warmup reporting and disjoint query invalidation. No GPU waits; at most four outstanding queries. Total triangle/draw counters include ground and Orc; CPU timing covers lab submission only, not system CPU utilization. Pausing wind suspends continuous drawing and labels the panel paused. Browser verified controls/reset/export without errors; sample timer readings populated. Local only, no push.
+
+## Local R238C373 — selected grass preset and efficiency pass (2026-11-13)
+
+Applied user screenshot settings through shared GROUND_COVER_DEFAULTS: height 2.15, width 2.7, spread .95, bend 1.6, two tufts/cell, wind 1.5, brightness 1.2, dry mix .8. Stones/sticks stay enabled. Lab reset shares these defaults; screenshot zoom/light remain preview controls, not combat camera/solar overrides.
+
+Efficiency: omit the collapsed second triangle at each blade tip (no covered area); reuse instance arrays and cached placement objects; cache canopy exposure with snowShelterRevision invalidation; replace per-frame joined identity strings and temporary upload arrays with packed numeric comparisons; compute reduced-motion time once and avoid mover slices. GPU upload occurs only when records change. Preserve painter intervals, scene-cache invalidation, live visibility, snow burial and growable capacity.
+
+Seeded 1600x1000 battle before/after optimization, same selected preset: 3,980 instances / 85 cover draws both; cover triangles 1,749,088 -> 1,533,992 (12.3% fewer). Median total CPU submission 9.5 -> 8.5 ms; p95 11.0 -> 11.3 ms. GPU cover sample 1.81 -> 2.15 ms, so this run does not establish a GPU-time improvement; retain the concrete geometry/allocation reduction without claiming universal FPS gains. User machine and scene determine actual cost.
+
+Validation: 98/98 combat regressions, deterministic placement, GPU exposure/snow burial/re-exposure/ordering/LOD probe, lab reset/export/browser checks, and whitespace check. Local only; user visual QA pending.
+
+R238C374: user changed shared grass blade-height multiplier from 2.15 to 0.5. All other selected settings unchanged; game and lab cache versions advanced.
+
+R238C375: shared grass blade-height multiplier changed to 0.75 at user request. Other settings unchanged; game and lab cache versions advanced.
+
+R238C376: corpse snowfall clock now scales linearly with the 0–1 snowfall slider. Full four-layer/two-inch coverage takes 120 seconds at 100%, 240 at 50%, 480 at 25%; zero stops accumulation. Pause/hidden-tab guards and one-second elapsed cap preserved. Timing and corpse exposure/melt/reset tests passed. Corpse draw ordering unchanged.
+
+Local grass lab wear experiment: added patch coverage, size, softness, wear amount and soil bump sliders. A cached 512-square world-space mask drives dirt-path-v1 blending and optional placement-time grassCoverage filtering; game defaults do not supply that hook. Bilinear CPU sampling matches GPU mask sampling. Texture-derived soil microrelief is shading only, not authored displacement. Mask rebuild is debounced with control changes; no per-frame mask generation. Existing JSON export/reset includes controls. Browser tested shader compilation, thinning (2353 -> 531 instances in test), reset and download; placement test passed. Combat terrain unchanged.
+
+Grass lab: soil bump strength now ranges from -3 to +3. Negative values invert texture-derived relief shading; no geometric displacement. Default stays +1.
+
+## Local R238C377 — battlefield worn grass patches
+
+Applied user-approved coverage .25, size 3.4m, softness .4, wear 1 and bump -1.8. combat-ground-wear.mjs bakes a 1024-square, 128m world-space wear mask once per renderer; bilinear CPU sampling removes grass with the same field used by the ground shader. Terrain scale/squash comes from each grass face. Soil uses existing dirt-path-v1 color and signed luminance-derived microrelief, blended before snow/scorch/lighting. No geometric depression. Mask uses clamped bounds outside its 128m region; larger exploration maps will need tiled/chunked masks. Lab defaults updated; its existing mask sampling resolution/bounds differ from battlefield, so exact patch edges may differ slightly.
+
+No additional terrain draw pass. Soil detail adds texture samples; reduced tuft count offsets some workload. Seeded game sample: 3330 cover instances, 85 cover draws, 1,279,192 triangles; median total CPU submission 7.5ms, p95 8.2ms, floor GPU .15ms and ground cover GPU 1.50ms (device/scene-specific). Actual game loaded and rendered without page errors. Assets remain local; user visual QA pending.
+
+## Local R238C378 — retained arrows, corpse stacking, muted bow leather
+
+Ground impacts now submit a reusable arrow artwork quad through the ground-surface GPU pipeline at bare-ground height. Per-fragment snow height (including canopy and footprint cuts) clips submerged arrow pixels; arrows no longer float over the snowy floor. Wall and flying arrows retain existing paths. Surface ordering applies on ordinary battlefields as well as exploration.
+
+Overlapping settled corpses constrain later deathPresentationStartedAt units above them during falling and after settling, while preserving existing wall constraints and nonoverlapping painter order. Added regression for both death phases; living crossing tests remain green.
+
+Composite longbow and automatic/explicit quiver attachment paths apply an isolated reddish-pixel material treatment toward muted brown. Original GLBs/textures/checksums unchanged; neutral metal/string/feather pixels remain unaffected. Treatment is idempotent and preserves prior shader hooks.
+
+Validation: 98/98 combat regressions, equipment suite, expanded corpse crossing and lodged-arrow tests; actual game ground-arrow GPU shader smoke with bare/full snow; isolated material hook test. User visual QA pending. Local only.
+
+## Local R238C379 — noon sky calibration and matte units
+
+User confirmed direction: adjust battlefield toward grass/scatter tester. Removed weatherSolarState's extra 35% daytime sky multiplier; clear noon now has sky=1, matching the tester's unit light level. Retained weather attenuation, solar direction/daylight and night sky. This calibrates ambient sky, not an exact pixel match: battlefield shadows, local lights and terrain shading remain active.
+
+Combat direct/prepared model materials now use roughness >= .92 and metalness <= .1. Shader limits run after texture modulation so roughness/metalness maps cannot restore glossy metallic highlights. Covers captured and restored geometry, living units and corpses; local light intensity/color and emissive effects retained. Versioned shared direct-model imports and fixture imports stay aligned to avoid split frame registries.
+
+Validation: 99/99 combat regression checks; explicit clear-noon/weather/night and post-texture matte tests; prepared geometry/material/shadow round trip and 54 published packs; actual battlefield browser render. User visual QA pending. Local only.
+
+## Local R238C380 — correct lighting calibration direction
+
+User clarified that the tester must follow the battlefield. Restored weatherSolarState's original 35% daytime sky boost exactly; R238C379's matte combat material change remains. Tester now reads shared clear-noon solar/weather state for sky gain, sun direction and daylight, includes battlefield ground color modulation, and uses combat hemisphere/sun colors and intensities with ACES exposure 1.15 for its Orc reference. Tester still lacks full battlefield shadow/visibility/local-light context, so this is a clear-noon reference rather than pixel-identical scene output.
+
+Validation: 99/99 combat regressions, explicit restored-noon/weather/night/matte checks, browser tester controls/reset/export. Game lighting restored; no push.
+
+R238C381: computer-controlled active units now use frame-rate-independent camera following of walkPresentation interpolation (including curved paths). Includes NPCs, hostile/friendly MOBs and Quick-controlled players. Existing visibility guards suppress unseen-hostile tracking. AI centerCameraOn no longer snaps to committed hexes; turn changes ease toward the new subject through the existing scheduler. Explicit ranged framing temporarily owns the camera; manual players retain existing behavior. Tests: 99/99 existing combat regressions plus new controller/interpolation/visibility camera test and actual game smoke. Local only.
+
+R238C382: bow drawback sound starts 300 ms earlier, clamped to windup start. Recording pitch, duration, volume and release/impact timing unchanged.
+
+## Local R238C383 — shield specular-off diagnostic
+
+Enabled a shield-only test that zeros direct/indirect specular after the lighting accumulation stage. Diffuse light, colors, sword light strength and other model surfaces are unchanged. Shield identity is detected from the attachment ancestry and retained through captured geometry/material userData for corpse recapture. globalThis.adventurePartyShieldSpecularTest=false restores the previous matte specular response for A/B comparison; default is enabled. This tests whether the remaining pale shield patch is reflection versus diffuse-light saturation; no diffuse compression applied yet.
+
+Validation: shield/body exclusion, runtime A/B uniform and corpse metadata test; actual game render; combat suite 100/101 initially, with the only failure a stale expected bow-draw timestamp from the earlier requested 300ms lead. Updated that expectation and the bow audio suite passed. User visual comparison remains pending. Local only.
+
+R238C384: camera follow now requires an active walkPresentation AND adventurePartyWalkBusy, so idle turns, attacks, ranged framing and retained poses during reactions cannot pull the view back. Outside movement the original explicit centerCameraOn behavior is restored. Added attack/framing/retained-pose guards to the camera regression. User also changed shared grass leaf brightness from 1.2 to 1.0; lab and game cache versions advanced.
+
+## Local R238C385 — render efficiency pass
+
+Profiled the seeded 1600x1000 battlefield. Ground cover rebuilt/projected/sorted/upload-compared every instance each animated frame even when its layout was static. Added a reusable numeric snapshot of camera matrix/viewport/zoom/anchor, face geometry/visibility/scale and shelter revision. Unchanged layouts retain the ordered instance lists and bypass projection, sorting and packed-record comparisons. Per-frame wind, movers, light textures, scorch and snow bindings continue updating. Scene changes explicitly invalidate; mutable geometry/visibility are checked by value. No density, LOD or draw-order changes.
+
+Baseline CPU median/p95 8.1/9.7ms; first optimized 7.1/9.1ms; repeat 5.5/6.4ms demonstrates timing variability, not a guaranteed speedup. All runs 3330 instances, 85 cover draws, 1,279,192 cover triangles and 213 total draws. A 36.5ms model GPU outlier in the first optimized sample did not reproduce (repeat .038ms). GPU work was not reduced; no GPU-speedup claim. Repeat trees 1.81ms, ground cover 1.20ms, floor .22ms on this device.
+
+Validation: 101/101 combat regressions; extended real GPU grass probe verifies stable layout reuse and invalidation on visibility edits, in-place geometry edits and scene changes, plus existing snow/light/trail/LOD/order checks. Local only.
+
+
+### R238C386 - VFX efficiency
+
+Fireball targets use 64-pixel-aligned effect bounds with 50px blur padding.
+Body/sparks retain full resolution; glow targets use half resolution with the
+original world-pixel blur radius. Only active shape vertices are uploaded.
+Offscreen/transparent smoke skips rendering and the preceding batch flush.
+Tree snow coverage invalidates its own entry, not the entire tree image cache.
+Corpse cache dependencies and empty-outline rejection were audited and retained.
+Local RTX 3070 Chrome isolated 1600x1000 blast: median GPU 0.73ms -> 0.076ms,
+CPU ~0.10ms unchanged. Center, edge, offscreen and zoom pixel comparisons differ
+by at most 2/255 per channel. This is not a whole-frame FPS claim.
+Combat regression suite: 101/101 passed before added cache regression.
+
+### R238C387 - Grass beneath corpses
+Reuse final-pose ground triangles from the corpse depression owner for grass ordering, even without snow. A 16px spatial index rebuilds only on corpse footprint revisions. During cached grass-layout rebuilds, roots inside a corpse footprint sort before that corpse; outside/foreground roots retain their original ordering. No new render pass or shader samples. Living/revived and absent corpses do not constrain ordering. Existing stone/stick behavior is unchanged. Tests: 103/103 combat regressions, GPU grass drawing/burial/LOD probe, and live battlefield smoke test passed. User performs final visual QA.
+
+
+## Local R238C388 — ranged continuation and outdoor lighting lab (2026-11-13)
+
+Ranged framing skips its 700 ms interpolation when the requested view is already within half a projected pixel and zoom agrees. Different targets, manual camera movement and zoom changes retain framing; draw/release, projectile, result and death timing remain unchanged. Six-rotation regression covers first framing, repeated shot, manual pan and retargeting.
+
+Corrected model point-light colors: byte/sRGB colors now decode to linear before light accumulation, removing excess green/blue energy in warm lights. Shared combat-lighting-profile.mjs applies a soft knee to intense diffuse reflection while preserving channel ratios, low-light response and emissive effects. This is an artistic highlight-control calibration, not a global exposure or source-strength change. Shield specular remains disabled by default. Corpse snow uses 80% local diffuse reflectance and applies its highlight knee after display conversion, since the terrain-matched baseline is inverse-encoded display color. Compressing that encoded baseline in linear space was rejected during lab inspection because it shifted snow blue. Existing snow opacity/deposition, body whitening, scene sky calibration and physical light powers remain unchanged.
+
+Corpse shader program keys retain the underlying shield/body key so snow cannot merge distinct material programs. Prepared material userData vectors are reconstructed after JSON hydration. Corpse image-cache keys include lab lighting settings and the shield A/B flag. Production defaults reuse one frozen profile and add no render pass or animation loop.
+
+lighting-lab.html loads the published Orc Workshop package with the production loader, samples its authored death pose, and draws the living Orc, snow-covered corpse and original wooden-shield GLB through createCombatRenderer and the shared direct-unit/snow code. Day/night/snowy presets, lamp position/strength, material controls, snow amount, rotation, zoom, previous/current lighting comparison and settings export stay isolated from game preferences. It is an outdoor material fixture, not an encounter replay: battlefield architecture, visibility and cast shadows are deliberately absent. The Before comparison restores pre-correction highlight, color conversion and snow-reflectance behavior for the same current controls; it does not revert gameplay or prior fixes.
+
+Validation: 104/104 combat regressions, separate six-view ranged framing test, startup loader and 54 prepared packs/234 chunks passed. Local browser rendered real assets and corpse snow, and clear-noon/current/before controls were inspected without shader or script errors. User is evaluating the open lab; further scene-specific visual QA remains with them. Local only; no push or deployment.
+
+
+## Local R238C389 — material shader startup regression
+
+R238C388's new diffuse hook assumed Standard's local totalDiffuse variable existed in every restored material. Other lit shader families and unlit helpers do not declare that variable, so startup could fail while compiling a real model/equipment rig. The hook now uses shared ReflectedLight components for Standard/Physical, Lambert, Phong and Toon materials, and skips unlit Basic material correction. Authored helper colors and the prior lighting/camera corrections are preserved. Direct-unit frame-registry imports stay aligned at R238C389.
+
+Node regression covers all six material families. scripts/fixtures/combat-material-lighting.html compiles/renders 24 real GPU variants (six families, shield/body, bare/snow), with shader diagnostics promoted to failures; scripts/probe-combat-material-lighting.cjs runs it through the existing combat browser runner. All 24 GPU variants and 104/104 combat regressions pass. The previous lab-only visual check did not cover the full combat roster; full-game startup must be checked for this class of change. Local only.
+
+R238C389 full-game verification: selected Dungeon Crawler Carl, added Orc Warrior and Wood Elf Archer through Combat Setup, loaded the battlefield and began Round 1. No shader or JavaScript errors were recorded. The user must reload the game page to replace already-loaded ES modules; Retry alone may reuse the failed old shader hook.
+
+
+
+## Local R238C390 — grass edge antialiasing (2026-11-13)
+
+Grass previously faded only inside its triangles. Thin blades could miss pixel centers altogether, causing scrolling shimmer and lost coverage. Static template attributes now carry each blade's cross-section and tangent. The vertex shader follows yaw, wind and actor bending, projects the true half-width and expands each side by half a physical framebuffer pixel; fragment alpha integrates approximate ribbon coverage, including blades narrower than a pixel. Point tips retain their authored geometry. Actual getCurrentViewport dimensions keep the filter correct for DPR and render targets. Stones and branches retain their existing fragment shading.
+
+No new target, pass, animation loop, geometry rebuild or per-frame vector allocation. Existing placements, two-tuft preset, snow/footprint burial, actor/corpse sorting, layout caching and high/low triangle counts remain unchanged. Wider raster support and additional vertex math do add some work; this is not a whole-frame FPS claim. Antialiased grass retains more of the authored thin-blade coverage than the old fade, so patches can look fuller. The per-renderer tuning.edgeAntialiasing=false diagnostic retains the old fade for regression comparison; production defaults on. Main game and grass-scatter lab cache chains updated.
+
+scripts/fixtures/combat-grass-antialiasing.html renders the production renderer through 12 subpixel camera offsets per case and compares image/temporal differences against an 8x-resolution reference. Tested far/near zoom, rotated views, physical DPR 1/2, low local light, default framebuffer plus targets, snow burial/cut exposure, actor bending, layout reuse and equal draw/instance/triangle budgets. Temporal mean-square error ratios (new/old) were .355, .251, .198 and .366 in local browser GPU checks (63–80% less error in these fixtures, not a guarantee of eliminating all scene shimmer). Added its probe to the existing browser regression runner. 104/104 combat regressions and scoped whitespace checks pass. Live grassy combat with Carl and Wood Elf Archer reached Round 1 and rendered at changed zoom without shader/script errors; only the pre-existing FBX extra-skin-weight warning was logged. Full scrolling feel remains user visual QA. Local only, no push/deploy. Reload the game page to replace its loaded modules.
+
+
+## Local R238C391 — retain snow ambient color, bound local reflections (2026-11-13)
+
+The R238C388 snow highlight knee compressed ambient snow together with point-light reflection. Bright terrain snow could remain white while corpse caps became gray/blue. Replaced the inverse-ACES ambient round trip and total-color knee: snowAmbientDisplay now carries the terrain's already-tinted, clamped display RGB directly into the cap. Body lighting and display-space alpha blending remain separate. Existing powder/depth tint and accumulation/occlusion are preserved.
+
+apSnowDisplay/composeSnowDisplay retain that ambient baseline and add only a bounded local-light increment. At full correction, lamp display RGB is scaled by .35/(.35+peak) and per-channel remaining range (1-ambient). A lamp cannot darken snow or add more than 35% of the remaining range; bright ambient snow is not capped below its surroundings. This is an artistic highlight response, not a scene exposure or light-power change. The old inverse encoding helper and its tests were replaced with direct display-color contracts. No new render target, pass, shader sample or frame loop. Corpse uniform is explicitly named corpseSnowGroundDisplay. Direct-frame registry imports align at R238C391.
+
+The lighting lab has an optional ambient snow background swatch matching ground powder/depth color, with its ambient-only scope labeled. The comparison now says Highlight limits off and toggles only compression, retaining current light colors and reflectance; it no longer claims to reproduce every historical R238C387 setting. The existing user lab tab was left untouched. Reload game/lab to update loaded modules.
+
+Validation: 104/104 combat regressions. New production GPU fixture scripts/fixtures/combat-snow-ambient.html compares actual ground-snow surface shader output with a fully coated cap through the real unit compositor. Sample RGB matched exactly: night 18/26/39, twilight 67/82/103, overcast 157/174/191, bright powder 224/235/245, clipped noon 255/255/255. A warm point source from .01 to 1,000,000 power remained monotonic, above ambient and bounded (maximum sampled cap 101/86/72). Partial cap opacity and RGBA8/HDR target agreement pass. Probe added to the browser regression runner. All 24 material-family/body/shield/snow GPU variants pass. Actual Orc/corpse/shield lab assets render at noon and warm-light night without script/shader errors. Scene-specific visual QA remains with the user. Local only, no push/deploy.
+
+
+## Local R238C392 — explosion ragdoll test page (2026-11-13)
+
+Added `ragdoll-test.html` using the published Orc rig, equipment and materials through existing Workshop loading and skeleton-safe cloning. Thirteen simple Rapier bodies per unit run at 60 Hz under the shared 30 FPS presentation scheduler. Real ground/wall collision, optional unit collision, 1/4/8 units, pause/step, frozen corpses, manual/automatic survivor recovery and device measurements are isolated from combat. Settled actors lose their physics bodies/joints; corpses use the existing one-time static-pose capture. The scene scheduler stops when idle. Arena controls and expanding camera framing support the narrow browser panel. Reset releases cloned skeleton textures and baked corpse resources.
+
+The Orc package has no get-up animation. Recovery is explicitly labeled a prototype: landed-pose blend, reversed authored forward fall, blend to ready at the landing position. Dedicated get-up clips and terrain/hex integration remain future production work. Only existing production-code change is exporting its established rig clone; lighting, snow, grass and combat timing stay on their current chain. Direct-unit registry imports remain R238C391; lab entry R238C392.
+
+Validation: 105/105 automatic combat regressions including actual Rapier settlement, joint removal, idle steps, reset and wall collision. Browser: real Orc manual recovery with physics stopped, complete 1/4/8 survivor run and four static corpses. Eight Orcs measured 0.45 ms mean / 1.30 ms peak physics steps in one local run; maximum single corpse bake 4.30 ms in the separate four-corpse run. These exclude rendering and are device/fixture measurements. Idle corpse run retained exactly 284 solver steps and 289 presentation frames across observations. See `docs/RAGDOLL_LAB.md` for controls, scope, dependency provenance and limitations. Local only, no commit/push/deployment.
+
+
+## Local R238C392A — authored GroundSit Exit recovery (2026-11-13)
+
+The local ragdoll lab now puts Orcs in an even ring around the blast marker and sets their root facing outward. That root direction persists through physics and recovery, so the recovered Orc faces its blast travel. The user supplied Quaternius Universal Animation Library 1 Standard; its requested GroundSit_Exit is the `Sitting_Exit` take inside the supplied source GLB. The lab loads it locally, retargets it once to the published Orc using the same semantic world-bind-delta path as the existing UAL1 Orc clips, then samples the actual result. Recovery blends ragdoll → GroundSit Exit opening → authored forward stand-up → existing UAL1 Idle. No game package assignments or combat animation behavior changed. Asset checksum/provenance is at `assets/animations/ual1/ground-sit-exit-source.json`; CC0 license already preserved.
+
+
+## Local R238C392B — airborne blast heading (2026-11-13)
+
+Blast orientation now derives at launch from the actual outgoing velocity, not merely the spawn slot. Units retain their outward root turn for recovery; during their first 0.9 airborne seconds a capped yaw-only torque on hips/spine corrects toward that heading. Random initial tumble keeps pitch/roll but drops yaw spin, so the character reads as traveling outward without a permanently constrained ragdoll. The correction ends before landing and settled bodies still leave the solver entirely. Focused Rapier coverage verifies a backward hip receives a positive turn toward the outgoing vector.
+
+
+## Local R238C392C — directional impact lean (2026-11-13)
+
+Supersedes R392B’s continuous airborne yaw steering, which was too chaotic. Orc root heading still remains outward through recovery. A one-time, yaw-free launch bias now affects only hips/spine and is calculated relative to the Orc pre-blast facing: force from behind pitches the torso forward, while force from the front pitches it backward. Arms and legs remain free to react through the joints. Focused Rapier coverage verifies the forward hip/spine bias and zero yaw; live diagnostics record each selected lean vector.
+
+
+## Local R238C392D — published Orc forward axis (2026-11-13)
+
+Corrected the local lab root-facing transform after verification against the existing combat renderer: the published Orc is authored +Z-forward, not -Z-forward. The prior transform inverted the ring, so Orcs faced back toward the blast and the impact-lead direction was visually misleading. The lab now maps +Z to the outgoing vector before physics and preserves that root direction through GroundSit Exit and Idle recovery. The page module cache token was advanced to R238C392C so a normal reload fetches this correction.
+
+
+## Local R238C392D — published Orc forward axis and visible impact lead (2026-11-13)
+
+Corrected the local lab root-facing transform after verification against the existing combat renderer: the published Orc is authored +Z-forward, not -Z-forward. The prior transform inverted the ring, so Orcs faced back toward the blast and the impact-lead direction was visually misleading. The lab now maps +Z to the outgoing vector before physics and preserves that root direction through GroundSit Exit and Idle recovery. A one-time torso velocity split now makes the pitch read visibly: for a rear blast spine leads forward and hips lag, with a small matching pitch velocity; the front case is the inverse. No yaw controller is present. Main, rig and physics module cache tokens advanced to R238C392D so a normal reload fetches all corrections.
+
+
+## Local R238C392E — random setup, outward launch (2026-11-13)
+
+The lab now randomizes only the Orcs’ pre-blast presentation facings. At detonation it turns each real +Z-forward root outward from the blast, then creates the physics bodies from that outward pose. The finite yaw-free torso lead is therefore always outward: spine leads and hips lag slightly, with a small matching forward pitch; arms and legs remain unconstrained. This makes the flight and the recovered Idle orientation agree without any in-air yaw controller.
+
+
+## Local R238C392F — dropped weapon and shield (2026-11-13)
+
+The isolated ragdoll lab now detaches the actual published Orc attachment sockets 0.12 seconds into flight: `StudioRightHandEquipment` and `StudioLeftHandShield`. Each reparented visual retains its real mesh/materials, gets one local Rapier cuboid body at its measured world-space bounds, inherits the hips velocity plus a small outward/lateral impulse and rolls without a yaw controller. Gear settles independently, then its body is deleted while the visual remains on terrain; survivors recover unequipped. Reset removes the holders and rigid bodies. This is local presentation physics only: no inventory, combat or published model asset changes.
+
+
+## Local R238C392G — readable dropped-equipment separation (2026-11-13)
+
+The dropped-gear impulse was tuned after live inspection so the actual weapon and shield visibly separate from the Orc in flight rather than remaining visually overlapped: the weapon has a slightly larger forward/lateral throw than the shield, while both retain the Orc hips velocity and independent collision/settling. Main, rig and physics local module tokens advanced to R238C392G for normal reloads.
+
+
+## Local R238C392H — clean equipment clearance (2026-11-13)
+
+Dropped equipment now collides only with the fixed local arena, not the originating ragdoll or other dynamic units. This prevents the weapon/shield’s measured collider from snagging during the first detachment frames, while preserving gravity, ground/wall collision, independent settling and rigid-body removal. Main, rig and physics local module tokens advanced to R238C392H.
+
+
+## Local R238C392I — flat dropped-equipment rest (2026-11-13)
+
+At independent equipment settlement, the local holder now rotates the real attachment visual onto its thinnest measured face and lowers its actual bounds to 4 mm above the arena. This replaces unstable edge rest or a suspended visual with a deterministic flat final pose, after normal airborne physics has finished. The final-placement callback is covered by the focused equipment fixture. Main, rig and physics local module tokens advanced to R238C392I.
+
+
+## Local R238C392J — frame dropped equipment (2026-11-13)
+
+The local automatic camera framing now includes each dropped equipment holder as well as live/recovered Orc bones. Fast-thrown weapon and shield final poses stay inspectable instead of leaving the narrow test-panel viewport. Main, rig and physics local module tokens advanced to R238C392J.
+
+
+## Local R238C392K — independent dropped-equipment animation (2026-11-13)
+
+Fixed an animation ownership leak: the lab’s recovery pose list included the original equipment sockets, so a dropped item could still receive position/quaternion samples after reparenting. Detached socket subtrees now carry a local detached marker; pose application and blending skip them entirely. Weapons/shields remain independent physics/settled scene objects throughout recovery. Focused coverage verifies both pose and blend ignore a detached node. Main, rig and physics local module tokens advanced to R238C392K.
+
+
+## Local R238C392L — per-Orc launch variation (2026-11-13)
+
+Added a local 0–100% Launch variation slider, defaulting to 50%. At detonation it independently samples each Orc’s outward speed, upward speed and tumble within plus/minus the selected percentage of its configured value. Thus 0% remains deterministic and 100% spans 0–200%; impact lean and outward-facing orientation remain unchanged. Live diagnostics record the actual three sampled values per launch. This stays isolated to the local lab. Main, rig and physics local module tokens advanced to R238C392L.
+
+
+## Local R238C392M — authored Death02 knockback prototype (2026-11-13)
+
+Supersedes the local lab’s solver-driven blast path with an animation-only comparison. The project-owner-supplied Universal Animation Library Source archive provides the actual `Death02` take in its non-root-motion `UAL1.glb`; the local page retargets and samples that take onto the published Orc. At a blast, the root turns +Z-forward toward outgoing travel, follows a short deterministic outward/upward arc while Death02 plays, and ends prone facing outward. Survivors smoothly blend from the final Death02 pose into the already-proven GroundSit Exit then Idle. No Rapier import/world, rigid body, joint, dropped-equipment solver, collider or corpse bake is created by the page; equipment stays in the authored pose. The existing 0–100% slider now varies only outward/upward launch, because Death02 supplies its own authored tumble. Source asset checksum/provenance is `assets/animations/ual1/ual1-death02-source.json`; CC0 license was already preserved. Local only, no combat integration.
+
+
+## Local R238C392N — Crawl Exit recovery (2026-11-13)
+
+The animation-only Death02 prototype now recovers using the actual `Crawl_Exit` take in the same supplied UAL1 Source `UAL1.glb`, rather than GroundSit Exit from the separate Standard archive. The lab samples Death02 → Crawl Exit → existing Idle while retaining the outward root heading and zero rigid bodies. `ual1-death02-source.json` records both selected clips; focused coverage confirms both names exist in the checksum-verified source asset. Main and rig module cache tokens advanced to R238C392N.
+
+
+## Local R238C392O — clamp authored recovery endpoints (2026-11-13)
+
+Fixed the animation-only lab’s endpoint sampling: Death02 and Crawl Exit were sampled at their exact durations while their actions retained the default repeat loop, wrapping the terminal pose back to frame zero. That made an Orc stand at the end of Death02, then fall into Crawl Exit, and eventually blend from Crawl’s opening pose. Both samplers now use one-shot, clamped actions, so Death02 stays face-down at its real final frame and Crawl Exit finishes standing before the Idle blend. Main and rig module cache tokens advanced to R238C392O.
+
+
+R238C445 validation: 131/131 combat regressions passed, including threshold, nonrepeat, each-hit timing, death override/visibility, zoom-independent font, overlap handling, expiration and audio removal. Spell-target results regression passed after declaring the new presentation dependency in its shared fixture. Required workflow totals 128/131 after that rerun; only the existing loader URL, Rev267 label and exploration camera mock failures remain. Live browser captured blue and red speech at zoom .5/1/2, always 16px, including a fallen unit's death cry; no voice sample requests and no script/shader errors. Footstep entry point retained. Live harness now waits for full script-loader readiness before starting combat.
+
+
+Local 2026-11-15: environmental architecture pass and rejected branch-cap rollback. See COMBAT_ARCHITECTURE.md, Environmental ownership audit. Preserve collision metadata/loader ownership and active wind-service activation. Keep local; user visual QA pending.

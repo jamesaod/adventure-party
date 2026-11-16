@@ -2691,14 +2691,12 @@ async function showSpellPreviewer(){
 
   currentScreen="spell-preview";
 
-  stopTitleMusic();
   stopWeatherAudio();
 
   launcherScreen.classList.remove("active");
   combatConditionsScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
   combatScreen.classList.remove("active");
-  pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
   spellPreviewUi.screen?.classList.add("active");

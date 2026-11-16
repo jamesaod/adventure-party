@@ -39,6 +39,6 @@ const a=env.explorationDaylight();assert.equal(env.explorationDaylight(),a);asse
 env.explorationEncounter.map={...map,ambientLight:dim.ambientLight};assert.notEqual(env.explorationDaylight(),b);assert.equal(builds,3);
 console.log('PASS production daylight field cache invalidation for doors and ambient paint');
 
-const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8'),start=engine.indexOf('function illuminationAtHex('),end=engine.indexOf('\n}',start)+2;
+const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8'),start=engine.indexOf('function illuminationAtHex('),end=engine.indexOf('\n}',start)+2;
 let darkness=false;const tactical={explorationTerrain:{},explorationAmbientIlluminationAtHex:()=>.9,ambientIlluminationLevel:()=>.42,dynamicIlluminationAtHex:()=>0,hasEffectiveDarknessAtHex:()=>darkness};vm.createContext(tactical);vm.runInContext(engine.slice(start,end),tactical);assert.equal(tactical.illuminationAtHex(0,0),.9,'Tactical illumination sees the same natural daylight');darkness=true;assert.equal(tactical.illuminationAtHex(0,0),0,'Natural daylight does not cancel magical Darkness');
 console.log('PASS shared tactical daylight level with authoritative magical Darkness');

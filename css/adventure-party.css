@@ -59,69 +59,9 @@ button, input, select, textarea {
 }
 
 
-/* ==================== PIXEL EDITOR ==================== */
+/* Shared action/return button styling used by retained screens. */
 
-#pixelScreen {
-  padding:10px 12px 12px;
-}
 
-.pixel-app {
-  width:100%;
-  height:100%;
-  min-height:0;
-  display:grid;
-  grid-template-rows:78px minmax(0,1fr);
-  gap:8px;
-}
-
-.pixel-header {
-  padding:10px 16px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-}
-
-.pixel-header h1 {
-  margin:0;
-  color:var(--gold);
-  font-size:30px;
-}
-
-.pixel-header .small {
-  color:var(--cyan);
-  font-size:14px;
-  letter-spacing:1.2px;
-  text-transform:uppercase;
-}
-
-.pixel-main {
-  min-height:0;
-  display:grid;
-  grid-template-columns:230px minmax(0,1fr) 260px;
-  gap:8px;
-}
-
-.pixel-panel {
-  min-height:0;
-  padding:10px;
-  overflow:auto;
-}
-
-.pixel-panel h2 {
-  margin:0 0 8px;
-  color:var(--gold);
-  font-size:20px;
-}
-
-.pixel-asset-list {
-  display:grid;
-  gap:5px;
-  margin-bottom:12px;
-}
-
-.pixel-asset-button,
-.pixel-tool-button,
 .pixel-action-button,
 .pixel-return-button {
   border-radius:0;
@@ -135,402 +75,23 @@ button, input, select, textarea {
   text-align:left;
 }
 
-.pixel-asset-button.active,
-.pixel-tool-button.active {
-  color:#fff19a;
-  border-color:#aaa15d;
-  background:#3b3420;
-}
 
 .pixel-return-button {
   text-align:center;
   color:var(--cyan);
 }
 
-.pixel-controls {
-  display:grid;
-  gap:8px;
-}
-
-.pixel-control-row {
-  display:grid;
-  gap:4px;
-}
-
-.pixel-control-row label {
-  color:var(--muted);
-  font-size:14px;
-}
-
-.pixel-control-row select {
-  width:100%;
-  min-height:32px;
-  background:#15141d;
-  color:var(--text);
-  border:1px solid var(--divider);
-}
-
-.pixel-selected-color {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:6px;
-  min-height:36px;
-  background:#0f0f15;
-  border:1px solid var(--divider);
-}
-
-.pixel-selected-color-swatch {
-  width:28px;
-  height:28px;
-  flex:0 0 28px;
-  border:1px solid #efe8c9;
-  box-shadow:0 0 0 1px #050507;
-  background:#ffcc33;
-}
-
-.pixel-selected-color-label {
-  font-size:12px;
-  color:#efe8c9;
-  word-break:break-word;
-}
-
-.pixel-scale-row {
-  display:grid;
-  gap:6px;
-}
-
-.pixel-scale-row input[type="range"] {
-  width:100%;
-}
-
-.pixel-scale-readout {
-  font-size:12px;
-  color:#8fd9e8;
-}
-
-.pixel-mini-actions {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:6px;
-}
-
-.pixel-properties-panel {
-  margin-top:14px;
-  padding-top:12px;
-  border-top:1px solid var(--divider);
-  display:grid;
-  gap:8px;
-}
-
-.pixel-properties-panel h2 {
-  margin:0;
-}
-
-.pixel-properties-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:7px;
-}
-
-.pixel-properties-grid label {
-  display:grid;
-  gap:4px;
-  color:#c6c3d0;
-  font-size:11px;
-}
-
-.pixel-properties-grid input,
-.pixel-properties-grid select {
-  width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  background:#0c0c11;
-  color:#eee9d5;
-  border:1px solid #555263;
-  padding:5px;
-  font:11px "Lucida Console", monospace;
-}
-
-.pixel-properties-grid input[readonly] {
-  color:#8fd9e8;
-  background:#111119;
-}
-
-.pixel-properties-wide {
-  grid-column:1 / -1;
-}
-
-.pixel-property-check {
-  display:flex !important;
-  grid-column:1 / -1;
-  align-items:center;
-  gap:6px !important;
-}
-
-.pixel-properties-note {
-  color:#8fd9e8;
-  font-size:11px;
-  line-height:1.35;
-}
-
-.pixel-palette {
-  display:grid;
-  grid-template-columns:repeat(16,minmax(0,1fr));
-  gap:2px;
-  padding:6px;
-  max-height:214px;
-  overflow:auto;
-  background:#0b0b10;
-  border:1px solid var(--divider);
-}
-
-.pixel-palette-button {
-  width:100%;
-  aspect-ratio:1/1;
-  border:1px solid rgba(255,255,255,0.1);
-  padding:0;
-  cursor:pointer;
-  box-shadow:none;
-}
-
-.pixel-palette-button.active {
-  outline:2px solid #fff19a;
-  outline-offset:1px;
-  border-color:#fff19a;
-}
-
-.pixel-tools {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:5px;
-}
-
-.pixel-workspace {
-  min-height:0;
-  display:grid;
-  grid-template-rows:auto minmax(0,1fr);
-  padding:10px;
-}
-
-.pixel-workspace-bar {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  color:var(--cyan);
-  margin-bottom:6px;
-  font-size:15px;
-}
-
-.pixel-canvas-shell {
-  min-height:0;
-  overflow:auto;
-  display:grid;
-  place-items:center;
-  background:
-    linear-gradient(45deg,#1c1c22 25%,transparent 25%) 0 0/18px 18px,
-    linear-gradient(45deg,transparent 75%,#1c1c22 75%) 0 0/18px 18px,
-    linear-gradient(45deg,transparent 75%,#1c1c22 75%) 9px -9px/18px 18px,
-    linear-gradient(45deg,#1c1c22 25%,#111116 25%) 9px 9px/18px 18px;
-  border:1px solid var(--divider);
-  padding:14px;
-}
-
-#pixelCanvas {
-  display:block;
-  image-rendering:pixelated;
-  image-rendering:crisp-edges;
-  cursor:crosshair;
-  box-shadow:0 0 0 2px #050507, 0 0 0 3px #777487;
-}
-
-.pixel-preview-box {
-  display:grid;
-  place-items:center;
-  background:#111116;
-  border:1px solid var(--divider);
-  padding:8px;
-  margin-bottom:10px;
-}
-
-#pixelPreview {
-  width:220px;
-  height:220px;
-  max-width:100%;
-  image-rendering:pixelated;
-  image-rendering:crisp-edges;
-}
-
-.pixel-status {
-  min-height:42px;
-  color:var(--cyan);
-  font-size:14px;
-  margin:8px 0;
-}
-
-.pixel-actions {
-  display:grid;
-  gap:6px;
-}
-
-.pixel-submit-panel {
-  margin-top:14px;
-  padding-top:12px;
-  border-top:1px solid var(--divider);
-  display:grid;
-  gap:8px;
-}
-
-.pixel-submit-panel h2 {
-  margin:0;
-}
-
-.pixel-submit-grid {
-  display:grid;
-  gap:7px;
-}
-
-.pixel-submit-grid label {
-  display:grid;
-  gap:4px;
-  font-size:12px;
-  color:#c6c3d0;
-}
-
-.pixel-submit-grid input,
-.pixel-submit-grid select,
-.pixel-submit-grid textarea {
-  width:100%;
-  box-sizing:border-box;
-  background:#0c0c11;
-  color:#eee9d5;
-  border:1px solid #555263;
-  padding:6px;
-  font:11px "Lucida Console", monospace;
-}
-
-.pixel-submit-grid textarea {
-  min-height:58px;
-  resize:vertical;
-}
-
-.pixel-submit-help {
-  color:#8fd9e8;
-  font-size:11px;
-  line-height:1.35;
-}
-
-.pixel-submit-result {
-  min-height:30px;
-  color:#c6c3d0;
-  font-size:11px;
-  line-height:1.35;
-  overflow-wrap:anywhere;
-}
-
-.pixel-submit-result.success { color:#8ef0a4; }
-.pixel-submit-result.error { color:#ff8c96; }
-.pixel-submit-result.pending { color:#fff19a; }
 
 .pixel-action-button {
   text-align:center;
 }
 
+
 .pixel-action-button.primary {
   color:#fff19a;
   border-color:#aaa15d;
 }
-
-
-.kobold-scale-test-button {
-  width:100%;
-  text-align:center;
-  color:#fff19a;
-  margin-bottom:12px;
-}
-
-.kobold-scale-overlay {
-  position:fixed;
-  inset:0;
-  z-index:5000;
-  display:none;
-  place-items:center;
-  background:rgba(4,4,8,0.92);
-  padding:18px;
-}
-
-.kobold-scale-overlay.show {
-  display:grid;
-}
-
-.kobold-scale-dialog {
-  width:min(1220px,96vw);
-  max-height:94vh;
-  overflow:auto;
-  padding:12px;
-}
-
-.kobold-scale-dialog-bar {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:8px;
-}
-
-.kobold-scale-dialog h2 {
-  margin:0;
-  color:var(--gold);
-  font-size:24px;
-}
-
-.kobold-scale-dialog .small-note {
-  color:var(--cyan);
-  font-size:14px;
-  margin:4px 0 10px;
-}
-
-.kobold-scale-canvas-shell {
-  overflow:auto;
-  border:1px solid var(--divider);
-  background:#111116;
-  padding:8px;
-}
-
-#koboldScaleTestCanvas {
-  display:block;
-  width:1180px;
-  height:430px;
-  max-width:none;
-  image-rendering:pixelated;
-  image-rendering:crisp-edges;
-}
-
-@media(max-width:900px) {
-  .pixel-main {
-    grid-template-columns:190px minmax(0,1fr) 220px;
-  }
-}
-
-@media(max-width:680px) {
-  #pixelScreen {
-    position:relative;
-    min-height:100vh;
-  }
-  .pixel-app {
-    height:auto;
-    min-height:100vh;
-  }
-  .pixel-main {
-    grid-template-columns:1fr;
-  }
-  .pixel-canvas-shell {
-    min-height:520px;
-  }
-}
-
-
+.launcher-menu[hidden]{display:none;}
 /* ==================== LAUNCHER ==================== */
 
 #launcherScreen {
@@ -795,8 +356,8 @@ button, input, select, textarea {
   max-width:100%;
   max-height:100%;
   aspect-ratio:1080 / 600;
-  image-rendering:pixelated;
-  image-rendering:crisp-edges;
+  image-rendering:auto;
+
   background:var(--ground);
   border:2px solid #aaa7b4;
   box-shadow:
@@ -1474,7 +1035,7 @@ button, input, select, textarea {
     position:relative;
     min-height:100vh;
   }
-  .launcher-app, .combat-app, .pixel-app {
+  .launcher-app, .combat-app {
     height:auto;
     min-height:100vh;
   }
@@ -2511,3 +2072,99 @@ button, input, select, textarea {
 /* Local environmental-action test controls. */
 #combatEnvironmentControls{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;align-items:center;margin-top:.6rem;font-size:.7em;}
 #combatEnvironmentControls label{display:flex;align-items:center;gap:.3rem;}
+
+/* Title typography and explicit build provenance. */
+#launcherScreen{font-family:"Press Start 2P","Courier New",monospace;font-weight:400;font-synthesis:none;}
+#launcherScreen button{font-family:inherit;font-weight:400;}
+#launcherScreen .launcher-app{grid-template-rows:144px minmax(0,1fr);}
+#launcherScreen .launcher-brand h1{font-size:24px;line-height:1.5;}
+#launcherScreen .eyebrow,#launcherScreen .working-title{font-size:10px;line-height:1.5;}
+#launcherScreen .launcher-header{gap:24px;}
+#launcherScreen .launcher-build-stack{gap:6px;flex-shrink:0;}
+#launcherScreen .build-label{font-size:10px;line-height:1.9;text-transform:none;}
+#launcherScreen .build-label div{white-space:nowrap;}
+#launcherScreen .launcher-build-stack a{font-size:9px;line-height:1.5;}
+#launcherScreen .launcher-menu-title{font-size:16px;line-height:1.5;}
+#launcherScreen .launcher-menu button{font-size:14px;line-height:1.6;}
+#launcherScreen .launcher-help,#launcherScreen .launcher-audio-status,#launcherScreen .sound-toggle{font-size:10px;line-height:1.6;}
+#launcherScreen .font-status{font-size:8px;line-height:1.6;}
+#launcherScreen .launcher-stage{overflow:auto;}
+/* The preparation box keeps its dimensions as messages arrive. Small screens scroll. */
+.combat-preparation-overlay{position:fixed;inset:0;z-index:200000;background:#08080df5;display:flex;overflow:auto;padding:24px;color:var(--cyan);}
+.combat-preparation-box{flex:0 0 900px;width:900px;height:560px;margin:auto;padding:28px;display:grid;grid-template-rows:42px 52px 52px minmax(0,1fr) 36px 32px;gap:10px;font:12px/1.7 "Press Start 2P","Courier New",monospace;font-synthesis:none;}
+.combat-preparation-box h2{margin:0;color:var(--gold);font-size:18px;line-height:1.6;text-align:center;}
+.preparation-task,.preparation-reason,.preparation-prompt{margin:0;text-align:center;overflow:auto;}
+.preparation-task{font-size:12px;}
+.preparation-reason{font-size:10px;color:var(--muted);}
+.preparation-history{margin:0;border:2px solid var(--edge);background:#101018;padding:14px 14px 14px 40px;overflow:auto;font-size:10px;line-height:1.8;overscroll-behavior:contain;}
+.preparation-history li{margin-bottom:14px;padding-left:4px;overflow-wrap:anywhere;}
+.preparation-history li p{margin:4px 0 0;color:var(--muted);font-size:9px;}
+.preparation-prompt{align-self:center;font-size:12px;color:var(--muted);}
+.preparation-prompt.ready{color:var(--green);}
+.preparation-actions{display:flex;justify-content:center;gap:16px;}
+.preparation-actions button{font:inherit;font-size:10px;border:2px solid var(--silver);background:#282638;color:var(--cyan);padding:4px 12px;}
+.preparation-history:focus-visible,.preparation-actions button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+@media(max-width:1000px){#launcherScreen .launcher-brand h1{font-size:18px;}#launcherScreen .build-label{font-size:8px;}#launcherScreen .launcher-menu button{font-size:12px;}}
+
+/* Title menu: fixed marker column and left-aligned green section names. */
+#launcherScreen .launcher-menu-box{width:620px;max-width:calc(100vw - 80px);padding:0;border:0;box-shadow:none;background:transparent;}
+#launcherScreen .launcher-menu{gap:10px;}
+#launcherScreen .launcher-menu button,
+#launcherScreen .launcher-menu button:hover,
+#launcherScreen .launcher-menu button:focus-visible{display:grid;grid-template-columns:1.5em minmax(0,1fr);align-items:center;column-gap:12px;min-height:48px;padding:10px 12px;border:0;outline:none;box-shadow:none;background:transparent;color:var(--green);text-align:left;text-transform:uppercase;font-family:"Press Start 2P","Courier New",monospace;font-weight:400;}
+#launcherScreen .launcher-menu button::before{content:"*";visibility:hidden;text-align:center;}
+#launcherScreen .launcher-menu button.selected{background:#193121;color:#b9ff9d;}
+#launcherScreen .launcher-menu button.selected::before{visibility:visible;}
+#launcherScreen .launcher-audio-status{position:absolute;right:28px;bottom:20px;left:auto;padding:0;border:0;box-shadow:none;background:transparent;color:var(--green);cursor:pointer;font-family:inherit;}
+#launcherScreen .launcher-audio-status:hover,#launcherScreen .launcher-audio-status:focus-visible{color:#b9ff9d;text-decoration:underline;outline:none;}
+#launcherScreen .launcher-audio-status.off{color:var(--muted);}
+
+/* Unified weather stays below the battlefield, inside its left frame. */
+.battle-wrap{grid-template-rows:minmax(0,1fr) auto;}
+#battlefield{grid-row:1;grid-column:1;}
+#combatWeather{grid-row:2;grid-column:1;align-self:end;width:100%;box-sizing:border-box;padding:8px 12px;border-top:1px solid var(--divider);color:var(--cyan);font:10px var(--ui-font);}
+#combatWeather h2{font-size:11px;margin:0 0 8px;}
+.weather-amounts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.weather-amounts label{display:block;margin:0!important;}
+.weather-amounts input{display:block;width:100%;accent-color:#91e78c;}
+.weather-amounts output{display:block;margin:5px 0;color:#91e78c;}
+#combatSnowTools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
+#combatSnowTools button,#combatSnowTools label{font-size:9px;}
+@media(max-width:900px){.weather-amounts{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+/* Separate environmental test panel; combat commands keep the bottom edge. */
+.combat-main > .side{grid-template-rows:minmax(120px,1fr) auto;gap:6px;}
+.battle-wrap{grid-template-rows:minmax(0,1fr);}
+#combatEnvironmentPanel{min-height:0;max-height:58vh;overflow:auto;padding:10px 12px;color:var(--cyan);font:10px/1.4 var(--ui-font);scrollbar-width:thin;overscroll-behavior:contain;}
+#combatEnvironmentPanel h2{font-size:11px;letter-spacing:1px;margin-bottom:8px;}
+#combatEnvironmentPanel button{font:inherit;font-size:9px;margin:0;padding:5px 7px;background:#211f2d;color:var(--cyan);border:1px solid #777387;cursor:pointer;min-height:25px;}
+#combatEnvironmentPanel input[type=range]{display:block;width:100%;height:16px;margin:3px 0;accent-color:#91e78c;}
+#combatEnvironmentPanel input[type=checkbox]{accent-color:#91e78c;}
+#combatDayNight{margin:0;color:#ddc17a;}
+.environment-time{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#combatTimeLabel{margin-left:8px;}
+#combatEnvironmentPanel #solarDayTest{display:inline-block;margin:0;color:#e6c875;}
+#combatCompass{margin:7px 0;padding:0;}
+#combatCompassRose{position:relative;overflow:hidden;width:100%;height:31px;margin:0;border-top:1px solid #aaa7b4;}
+#combatCompassRose [data-bearing]{position:absolute;transform:translateX(-50%);font:12px/1.2 var(--ui-font);top:13px;}
+#combatCompassRose [data-bearing][hidden]{display:none;}
+#combatCompassRose i[data-bearing]{top:0;height:5px;border-left:1px solid #777387;}
+#combatCompassRose .compass-center{position:absolute;left:50%;top:0;height:9px;border-left:2px solid var(--gold);}
+#combatCompassStatus{font-size:8px;color:var(--muted);}
+#combatEnvironmentPanel #combatWeather{padding:0;border:0;grid-row:auto;}
+#combatWeather h2{display:none;}
+#combatEnvironmentPanel .weather-amounts{display:grid;grid-template-columns:1fr;gap:3px;}
+#combatEnvironmentPanel .weather-amounts label{display:grid;grid-template-columns:1fr auto;font-size:9px;}
+#combatEnvironmentPanel .weather-amounts output{display:inline;margin:0;}
+#combatEnvironmentPanel .weather-amounts input{grid-column:1/-1;}
+#combatSnowTools{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px;}
+#combatSnowTools>label,#combatSnowTools>.snow-depth-controls{grid-column:1/-1;}
+.snow-depth-controls,.environment-rotation{display:flex;gap:5px;}.snow-depth-controls button,.environment-rotation button{flex:1;}
+#combatEnvironmentPanel .wall-shadow-toggle{margin:0;font-size:9px;}
+#environmentDiagnostics{margin:7px 0 5px;}#environmentDiagnostics button,#combatEnvironmentPanel #rangedFramingToggle{width:100%;}
+.environment-rotation{margin-top:5px;}
+@media(max-width:680px){.combat-main>.side{grid-template-columns:1fr;grid-template-rows:minmax(180px,auto) auto;}#combatEnvironmentPanel{max-height:none;}}
+
+.environment-season{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.environment-season select{font:inherit;color:inherit;background:#20222b;border:1px solid #686676;padding:3px;min-width:110px}
+
+#environmentGodTools{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:0 0 9px;}#environmentGodTools #godTreeTool{border-color:#e6c875;color:#e6c875;}#environmentGodTools #godTreeTool[aria-pressed=true]{background:#4b4125;color:#fff1b5;}#environmentGodTools #godTreeStatus{grid-column:1/-1;}

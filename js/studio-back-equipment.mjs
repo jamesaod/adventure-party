@@ -1,3 +1,4 @@
+import {muteBowLeather} from './muted-bow-leather.mjs';
 import {findHumanoidBone} from './humanoid-rig.mjs';
 import {savedFit} from './mob-workshop-fit-store.mjs?v=R238C306';
 import {normalizeQuiverArrows} from './quiver-arrow-settings.mjs?v=R238C312';
@@ -16,6 +17,7 @@ export function normalizeBackEquipment(value={}){
  return {item,sizePercent,position:[...position],rotation:[...rotation],arrows:normalizeQuiverArrows(value.arrows)};
 }
 export function createBackAttachment(THREE,rig,model,settings){
+ muteBowLeather(model);
  const value=normalizeBackEquipment(settings),item=backItem(value.item);
  if(!item)throw Error('Choose a Back item first.');
  const torso=findHumanoidBone(rig,'upperChest')||findHumanoidBone(rig,'chest')||findHumanoidBone(rig,'spine');

@@ -1,0 +1,8 @@
+{
+  "source": "SugarMaple_Winter.spm / SugarMaple_Winter_LOD1.obj",
+  "triangles": 13162,
+  "modelUnitsPerMetre": 43.38933076913966,
+  "groundPlaneSourceMetres": 0,
+  "rootPlacement": "Native ground at authored Z=0; underground geometry clipped on GPU.",
+  "sourceHeightMetres": 19.5024
+}

@@ -1,5 +1,7 @@
 # Adventure Party R238
 
+Tree asset authoring and integration: [Tree production workflow](docs/TREE_PRODUCTION_WORKFLOW.md), with preserved SpeedTree sources and conversion references.
+
 R238 is the stable milestone promoted from Candidate Rev 48. It includes the six-direction 3d studio, animated pose capture and sprite-set import, expanded creature artwork, and the accumulated spell preview, effects and audio work. See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 Run through a local HTTP server (recommended):

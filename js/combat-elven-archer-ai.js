@@ -36,3 +36,16 @@ async function repositionElvenArcher(unit){
  if(!unit.alive||areaEffectActionLostThisTurn(unit)||(unit.turnMoves||0)>(unit.halfMove||0)){endTurn();return true;}
  return false;
 }
+
+// Evaluate the same d20 thresholds as bow resolution, without rolling or changing state.
+function elvenArcherHitChance(attacker,target){
+ const range=longbowRangeBand(attacker,target);if(range.penalty===null)return 0;
+ const {totalAttackBonus:bonus,targetNumber:threshold}=bowAttackRollInputs(attacker,target,range);
+ let hits=0;for(let roll=1;roll<=20;roll++)if(resolveMissileAttackD20(roll,threshold,bonus).hit)hits++;
+ return hits/20;
+}
+function bestElvenArcherTarget(unit,source,targets){
+ const scored=targets.map(target=>({target,chance:elvenArcherHitChance(source,target),distance:unitDistance(source,target)}));
+ scored.sort((a,b)=>b.chance-a.chance||a.distance-b.distance||a.target.hp-b.target.hp||a.target.id.localeCompare(b.target.id));
+ return scored[0]?.target||null;
+}

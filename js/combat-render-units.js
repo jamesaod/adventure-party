@@ -34,7 +34,7 @@ function drawHiddenUnitOutlines(ordered){
   const buckets=new Map(),cellSize=256;
   for(let index=0;index<ordered.length;index++){
     const actor=ordered[index];let polygons=null,bounds;
-    if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;bounds={left:center.x-h/2,right:center.x+h/2,top:center.y-h,bottom:center.y};}
+    if(actor.tree){if(treeFallFor(actor.tree))continue;const center=hexCenter(actor.tree.x,actor.tree.y),h=(activeCombatTerrainTileSet().treeDrawHeight||240)*treeSizeScale(actor.tree);bounds={left:center.x-h/2,right:center.x+h/2,top:center.y-h,bottom:center.y};}
     else if(actor.wall||actor.outlineSolids){const solids=actor.outlineSolids||(typeof explorationWallGroundSolids==='function'?explorationWallGroundSolids(actor.wall):[]);polygons=solids.flatMap(s=>(s.faces||[]).map(f=>f.points.map(p=>screenPointForWorld(p,p.elevation))));const points=polygons.flat();if(!points.length)continue;bounds={left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};}
     else continue;
     const entry={actor,index,polygons,bounds};for(let x=Math.floor(bounds.left/cellSize);x<=Math.floor(bounds.right/cellSize);x++)for(let y=Math.floor(bounds.top/cellSize);y<=Math.floor(bounds.bottom/cellSize);y++){const key=x+','+y;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(entry);}
@@ -52,20 +52,31 @@ function drawHiddenUnitOutlines(ordered){
     const gpuOutline=typeof combatGpu!=='undefined'&&combatGpu?.unitOutline&&globalThis.adventurePartyDirectUnits?.gpuOutline;
       const liveMask=!gpuOutline&&globalThis.adventurePartyDirectUnits?.liveOutline(unit.image,unit.entity,unit.width,unit.height);
     const pad=Math.ceil(2.6/battlefieldZoom)+2;let frame=gpuOutline?{pad,ring:{width:Math.ceil(unit.width)+pad*2,height:Math.ceil(unit.height)+pad*2}}:hiddenUnitOutlineFrame(liveMask||unit.image,unit.width,unit.height,liveMask?false:unit.flip,color);const left=unit.x-frame.pad,top=unit.y-frame.pad;
-    let mask=hiddenOutlineMaskCache.get(unit.entity);if(!mask){mask=document.createElement('canvas');hiddenOutlineMaskCache.set(unit.entity,mask);}if(mask.width!==frame.ring.width||mask.height!==frame.ring.height){mask.width=frame.ring.width;mask.height=frame.ring.height;}const m=mask.getContext('2d',{willReadFrequently:true});m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,mask.width,mask.height);m.translate(-left,-top);
+    const signature=[frame.ring.width,frame.ring.height,unit.waterClip==null?null:unit.waterClip-top];
+    for(const {actor,polygons} of candidates){if(actor.tree){const f=actor.tree.outlineFrame;signature.push(actor.tree.x,actor.tree.y,actor.tree.tileIndex,f?null:combatLightingFrame,f?.image,f?.sx,f?.sy,f?.sourceTileWidth,f?.sourceTileHeight,f?.drawX-left,f?.drawY-top,f?.drawW,f?.drawH);}else {signature.push(polygons.length);for(const polygon of polygons){signature.push(polygon.length);for(const p of polygon)signature.push(p.x-left,p.y-top);}}}
+    let cached=hiddenOutlineMaskCache.get(unit.entity);
+    const reusable=cached&&signature.length===cached.signature.length&&signature.every((v,i)=>Object.is(v,cached.signature[i]));
+    if(!reusable){
+    const mask=cached?.mask||document.createElement('canvas');if(mask.width!==frame.ring.width||mask.height!==frame.ring.height){mask.width=frame.ring.width;mask.height=frame.ring.height;}const m=mask.getContext('2d',{willReadFrequently:true});
+m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,mask.width,mask.height);m.translate(-left,-top);
     for(const {actor,polygons,bounds} of candidates){
-      if(bounds.right<left||bounds.left>left+mask.width||bounds.bottom<top||bounds.top>top+mask.height)continue;if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=activeCombatTerrainTileSet().treeDrawHeight||240;
+      if(bounds.right<left||bounds.left>left+mask.width||bounds.bottom<top||bounds.top>top+mask.height)continue;if(actor.tree){const center=hexCenter(actor.tree.x,actor.tree.y),h=(activeCombatTerrainTileSet().treeDrawHeight||240)*treeSizeScale(actor.tree);
         if(center.x+h/2<left||center.x-h/2>left+mask.width||center.y<top||center.y-h>top+mask.height)continue;
         const frame=actor.tree.outlineFrame;if(frame)m.drawImage(frame.image,frame.sx,frame.sy,frame.sourceTileWidth,frame.sourceTileHeight,frame.drawX,frame.drawY,frame.drawW,frame.drawH);
-        else{const old=ctx;try{ctx=m;drawTreeDecoration(actor.tree);}finally{ctx=old;}}
+        else if(!directFirRendering()){const old=ctx;try{ctx=m;drawTreeDecoration(actor.tree);}finally{ctx=old;}}
       }else if(actor.wall||actor.outlineSolids){
         m.fillStyle='#fff';for(const polygon of polygons)if(tracePolygonOnContext(m,polygon))m.fill();
       }
     }
     // Tree atlas rectangles include transparent margins. Reject empty coverage
     // before a second rig render and the outline's texture sampling pass.
+    if(unit.waterClip!=null)m.clearRect(left,unit.waterClip,mask.width,mask.height);
     const alpha=m.getImageData(0,0,mask.width,mask.height).data;
     let covered=false;for(let i=3;i<alpha.length;i+=4)if(alpha[i]){covered=true;break;}
+    mask._combatOutlineRevision=(mask._combatOutlineRevision||0)+1;cached={mask,signature,covered};hiddenOutlineMaskCache.set(unit.entity,cached);
+    globalThis.adventurePartyCombatPerformance?.count('outlineMaskBuilds');
+    }else globalThis.adventurePartyCombatPerformance?.count('outlineMaskHits');
+    const {mask,covered}=cached;
     if(!covered)continue;
     const daylight=Math.max(0,Math.min(1,globalThis.adventurePartySolar?.state?.().daylight??1)),active=(game.active?.id||game.active)===unit.entity.id;
     if(gpuOutline){
@@ -127,13 +138,17 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
       anchorY:Math.round(visualDrawH*spriteAnchor.y)/visualDrawH,flip:shouldFlip,pose:activeUnitPoseName(entity)});
     ctx.restore();return;
   }
+  const stream=typeof combatUnitStreamPresentation==='function'?combatUnitStreamPresentation(entity):{drop:0,water:0};
+  c={x:c.x,y:c.y+stream.drop};
   if(typeof hiddenOutlineCapture!=='undefined'&&hiddenOutlineCapture&&entity&&!getUnitEffect(entity,'invisibility'))hiddenOutlineUnits.push({entity,image:renderSource,
+    waterClip:stream.water>0?c.y-stream.water*combatShadowScale()[1]:null,
     width:visualDrawW,height:visualDrawH,flip:shouldFlip,index:hiddenOutlineCapture.index,
     x:c.x-Math.round(visualDrawW*spriteAnchor.x),y:c.y-Math.round(visualDrawH*spriteAnchor.y)});
   const gpuSprite=typeof explorationGpuLighting!=='undefined'&&!!explorationGpuLighting;
-  const brightness=!gpuSprite&&typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity):1;
+  const brightness=!gpuSprite&&typeof combatSpriteBrightness==='function'?combatSpriteBrightness(entity)*(stream.wetShade??1):1;
   const spriteFilter=brightness<.999?`${ctx.filter&&ctx.filter!=='none'?ctx.filter+' ':''}brightness(${brightness})`:ctx.filter;
   ctx.translate(c.x,c.y);
+  if(stream.water>0){ctx.beginPath();ctx.rect(-visualDrawW*3,-visualDrawH*3,visualDrawW*6,visualDrawH*3-stream.water*combatShadowScale()[1]);ctx.clip();}
 
   if(shouldFlip){
     ctx.scale(-1,1);
@@ -308,42 +323,44 @@ function drawKobold(k){
 // Death feedback is the animated model and corpse, without a skull overlay.
 function drawDeathFx(){}
 
-function drawUnitBarks(){
-  if(!game) return;
-
-  const now=performance.now();
-
-  for(const unit of allUnits()){
-    if(
-      !unit?.alive ||
-      unit.fled ||
-      !unit.barkText ||
-      !Number.isFinite(unit.barkUntil) ||
-      now>=unit.barkUntil
-    ){
-      continue;
-    }
-
-    if(game?.condition==="wall" && !isHexVisibleToWallTestObserver(unit.x,unit.y)){
-      continue;
-    }
-
-    const c=hexCenter(unit.x,unit.y);
-    const textValue=unit.barkText;
-    const fontSize=14;
-    const yOffset=isKoboldUnit(unit) ? 47 : 58;
-
-    const y=Math.round(c.y-yOffset);
-
-    /*
-      R125: all white battlefield speech is rendered through the shared
-      foreground text helper so it always has a solid black outline.
-    */
-    drawWhiteBattlefieldText(
-      textValue,
-      c.x,
-      y,
-      {fontSize}
-    );
-  }
+// Screen-space font, world-space clearance: three feet above authored height.
+function combatUnitTextAnchor(unit){
+ const move=unit.walkPresentation,t=move?Math.max(0,Math.min(1,move.t)):0;
+ const c=move?hexCenter(move.from.x+(move.to.x-move.from.x)*t,move.from.y+(move.to.y-move.from.y)*t):unitFootprintScreenCenter(unit);
+ const scale=typeof combatShadowScale==='function'?combatShadowScale()[1]:10;
+ const height=(Number(unit.heightInches)||72)*.0254*(typeof enlargeVisualScale==='function'?enlargeVisualScale(unit):1);
+ const drop=typeof combatUnitStreamPresentation==='function'?combatUnitStreamPresentation(unit).drop:0;
+ const zoom=battlefieldZoom,anchor=battlefieldZoomAnchor();
+ return {x:anchor.x+(c.x-anchor.x)*zoom,y:anchor.y+(c.y+drop-(height+.9144)*scale-anchor.y)*zoom};
 }
+
+function drawUnitBarks(){
+ if(!game)return;
+ const now=performance.now(),zoom=battlefieldZoom,anchor=battlefieldZoomAnchor(),placed=[];
+ ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
+ ctx.font='400 14px "Press Start 2P", "Courier New", monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.lineWidth=3;ctx.lineJoin='round';ctx.strokeStyle='#07100a';
+ for(const unit of allUnits()){
+  if(!unit||unit.fled||(!unit.alive&&unit.barkKind!=='death')||!unit.barkText||!Number.isFinite(unit.barkUntil)||now>=unit.barkUntil)continue;
+  if(!shouldRenderUnitUnderPartyVisibility(unit))continue;
+  if(typeof r236FloatingCombatText!=='undefined'&&r236FloatingCombatText.some(e=>e.unitId===unit.id&&e.kind.includes('damage')&&now>=e.started&&now<e.started+e.duration))continue;
+  const move=unit.walkPresentation,t=move?Math.max(0,Math.min(1,move.t)):0;
+  const c=move?hexCenter(move.from.x+(move.to.x-move.from.x)*t,move.from.y+(move.to.y-move.from.y)*t):hexCenter(unit.x,unit.y);
+  const sx=anchor.x+(c.x-anchor.x)*zoom,sy=anchor.y+(c.y-anchor.y)*zoom;
+  if(sx<0||sx>BATTLEFIELD_LOGICAL_WIDTH||sy<0||sy>BATTLEFIELD_LOGICAL_HEIGHT)continue;
+  const width=Math.min(BATTLEFIELD_LOGICAL_WIDTH-12,ctx.measureText(unit.barkText).width+8);
+  const x=Math.max(width/2+4,Math.min(BATTLEFIELD_LOGICAL_WIDTH-width/2-4,sx));
+  let y=Math.max(14,combatUnitTextAnchor(unit).y);
+  for(let n=0;n<=placed.length;n++){
+   if(!placed.some(p=>Math.abs(x-p.x)<(width+p.width)/2&&Math.abs(y-p.y)<22))break;
+   y-=24;
+  }
+  if(y<12){y=14;while(placed.some(p=>Math.abs(x-p.x)<(width+p.width)/2&&Math.abs(y-p.y)<22))y+=24;}
+  placed.push({x,y,width});
+  ctx.fillStyle=isPlayerControlledUnit(unit)||unit.faction==='player'?'#59aaff':'#ff5757';
+  ctx.strokeText(unit.barkText,x,y,BATTLEFIELD_LOGICAL_WIDTH-20);ctx.fillText(unit.barkText,x,y,BATTLEFIELD_LOGICAL_WIDTH-20);
+ }
+ ctx.restore();
+}
+
+

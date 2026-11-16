@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {createAssetCache} from '../js/combat-asset-cache.mjs';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createCombatTestMap} from '../js/combat-test-map.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {floorFragmentIndex,polygonArea} from '../js/combat-surface-lighting.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi').replace("import('./combat-fir-trees.mjs?v=R238C329')",'Promise.resolve({createCombatFirTrees:async()=>({})})');
+const source=read('js/combat-runtime.js').replace(/await import\('[^']+'\)/g,'sceneApi').replace(/import\('\.\/combat-fir-trees\.mjs(?:\?v=[^']+)?'\)/,'Promise.resolve({createCombatFirTrees:async()=>({})})');
 function fixture(){
  const events=[],images=Array.from({length:10},()=>({src:'',decode:async()=>{events.push('image');}}));
- const c={document:new EventTarget(),sceneApi:{...sceneApi,createCombatTestMap},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],explorationCityWallImages:{"red-brick":images[5],"beige-stone":images[6]},explorationCityWoodFloorImage:images[7],explorationCityFloorImages:{wood:images[7],'gray-stone':images[8],'gray-flagstone':images[9]},game:null,isKoboldUnit:()=>false,
+ const c={addEventListener(){},combatSceneContext:null,combatGpu:{setStreamScene:()=>events.push('stream'),streamState:()=>({enabled:true})},syncWeatherAnimation:()=>events.push('weather'),document:new EventTarget(),sceneApi:{...sceneApi,createCombatTestMap,createAssetCache},ensureCombatRenderer:async()=>events.push('renderer'),studioSpriteLoading:{state:'ready'},explorationEncounterApi:null,explorationFloorImage:images[0],explorationWallImage:images[1],explorationDoorImage:images[2],explorationGrassImage:images[3],explorationWoodWallImage:images[4],explorationCityWallImages:{"red-brick":images[5],"beige-stone":images[6]},explorationCityWoodFloorImage:images[7],explorationCityFloorImages:{wood:images[7],'gray-stone':images[8],'gray-flagstone':images[9]},game:null,isKoboldUnit:()=>false,
   initializeFirMovementObstacles:()=>events.push('fir-obstacles'),newGame:(condition,scenario)=>{events.push('new');c.game=c.createCombatGame(condition,scenario.roster,scenario);},allUnits:()=>[c.game.player,...c.game.allies,...c.game.enemies],fitBattleCanvas:()=>events.push('fit'),waitForCombatUnitRenders:async()=>events.push('sprites'),presentCombatFrame:async()=>events.push('frame'),startRound:()=>{events.push('round');c.game.round++;},canvas:{dataset:{}},setTimeout,clearTimeout,HEX_W:64,HEX_ROW:31.5,MAP_MIN_X:-8,MAP_MAX_X:8,MAP_MIN_Y:-8,MAP_MAX_Y:8,WALL_TEST_ROOM:{left:-64,right:128,top:-63,bottom:63},worldPointForHex:(x,y)=>({x:(x+y/2)*64,y:y*31.5})};
  vm.createContext(c);vm.runInContext(source,c);return {c,events};
 }
@@ -19,7 +20,7 @@ for(const entry of ['combat-test','exploration','spell-preview']){
  assert.equal(result,c.game);assert.equal(result.session.source,entry);assert.equal(result.enemies[0],target);assert.equal(result.order.length,0);assert.equal(result.areaEffects.length,0);
  assert(events.indexOf('renderer')<events.indexOf('new'));assert(events.indexOf('sprites')<events.indexOf('frame'));
  if(scenario.autoStart)assert(events.indexOf('sprites')<events.indexOf('round')&&events.indexOf('round')<events.indexOf('frame'));
- assert.equal(c.canvas.dataset.combatPipeline,'shared');
+ assert.equal(c.canvas.dataset.combatPipeline,'shared');assert(events.indexOf('stream')<events.indexOf('fir-obstacles'));
  const resets=await c.startCombatSession(scenario);assert.notEqual(resets,result);assert.equal(events.filter(x=>x==='image').length,10,'Every entry uses the same cached material dependency gate');
 }
 const cancelled=fixture();let release;
@@ -79,3 +80,4 @@ console.log('PASS shared startup/material/sprite/frame gate, battle state and re
  const rejected=assert.rejects(stalled,/stopped making progress/);[...timers.values()][0]();await rejected;
  assert.equal(timers.size,0,'Timer cleaned after failure');
 }
+

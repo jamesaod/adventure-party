@@ -1,0 +1,8 @@
+{
+  "source": "WhiteOak_Fall.spm / WhiteOak_Fall.obj",
+  "triangles": 13894,
+  "modelUnitsPerMetre": 43.38933076913966,
+  "groundPlaneSourceMetres": 0.2,
+  "rootPlacement": "Ground 0.20 m above authored trunk origin; underground geometry clipped on GPU.",
+  "sourceHeightMetres": 25.293300000000002
+}

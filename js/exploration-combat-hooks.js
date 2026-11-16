@@ -42,18 +42,18 @@ function drawExplorationBlackoutFloor(){
 function drawExplorationGpuFloor(tiles){
  const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
- const api=explorationEncounterApi,groups=new Map(),curbs=new Map(),t=explorationTerrain,map=explorationEncounter.map;
+ const api=explorationEncounterApi,t=explorationTerrain,map=explorationEncounter.map;let groups=new Map(),curbs=new Map();
  combatGpu.snowScene?.(map,[(-explorationEncounter.origin.x-.5)*t.cellW,(-explorationEncounter.origin.z-.5)*t.cellH,map.width*t.cellW,map.height*t.cellH]);
  if(drawExplorationGpuFloor.snowTerrain!==t){
   const index=api.floorFragmentIndex(t.spaces,HEX_W,HEX_ROW),ground=[];
   for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))for(const f of index({x,y})){
-   const p=worldPointForHex(f.point.x,f.point.y);if(!isIndoorWorldPoint(p))ground.push({snowEligible:1,snowHex:x+','+y,points:f.polygon});
+   const p=worldPointForHex(f.point.x,f.point.y);if(!isIndoorWorldPoint(p)){const kind=explorationEncounter.synthetic?'grass':api.surfaceAt(map,{x:explorationEncounter.origin.x+p.x/t.cellW,z:explorationEncounter.origin.z+p.y/t.cellH}).ground;ground.push({grass:kind==='grass',snowEligible:1,snowHex:x+','+y,points:f.polygon});}
   }
   drawExplorationGpuFloor.snowTerrain=t;drawExplorationGpuFloor.snowGround=ground;
  }
  combatGpu.snowGround?.(drawExplorationGpuFloor.snowGround);
- combatGpu.firLitter?.(game?.firBlockedHexes||t,[...(game?.firBlockedHexes||[])].map(id=>{const [x,y]=id.split(',').map(Number),decoration=game.firDecorations?.get(id),modelRadius=typeof combatFirTrees!=='undefined'?combatFirTrees?.canopyRadius?.(decoration?.tileIndex):0;return {...worldPointForHex(x,y),radius:modelRadius?modelRadius*(activeCombatTerrainTileSet().treeDrawHeight||240)/210:HEX_W*.85};}),[(-explorationEncounter.origin.x-.5)*t.cellW,(-explorationEncounter.origin.z-.5)*t.cellH,map.width*t.cellW,map.height*t.cellH],HEX_W*.85,HEX_ROW/(HEX_W*Math.sqrt(3)/2));
- const heat=[];
+ combatGpu.firLitter?.(game?.firBlockedHexes||t,[...(game?.firBlockedHexes||[])].filter(id=>!treeFallEntries().some(({tree,state})=>performance.now()-state.startedAt>=2600&&id===key(tree.x,tree.y))).map(id=>{const [x,y]=id.split(',').map(Number),decoration=game.firDecorations?.get(id),modelRadius=typeof combatFirTrees!=='undefined'?combatFirTrees?.canopyRadius?.(decoration?.tileIndex):0;const sizeScale=treeSizeScale(decoration||{x,y}),broadleaf=adventurePartyTreeEnvironment.isBroadleaf(decoration);return {...worldPointForHex(x,y),radius:(modelRadius?modelRadius*(activeCombatTerrainTileSet().treeDrawHeight||240)/210:HEX_W*.85)*sizeScale*(broadleaf?1.15:1),sizeScale,snowShelter:!(broadleaf&&globalThis.adventurePartySeasons?.getSeason()==='winter')&&game.firFireStates?.[id]?.state!=='burnt',irregular:broadleaf,core:broadleaf?.26:.12};}),[(-explorationEncounter.origin.x-.5)*t.cellW,(-explorationEncounter.origin.z-.5)*t.cellH,map.width*t.cellW,map.height*t.cellH],HEX_W*.85,HEX_ROW/(HEX_W*Math.sqrt(3)/2));
+ const warm=combatGroundHeat(),heat=warm.length?[{keys:warm.map(cell=>key(cell.x,cell.y)),rate:3}]:[];
  // Persistent spell heat follows the live footprint; expiry removes it automatically.
  for(const sphere of flamingSphereEffects())heat.push({keys:(sphere.cells||[]).map(c=>c.x+","+c.y),rate:1.5});
  for(const fire of Object.values(game?.firFireStates||{}))if(fire.state==='burning'){
@@ -62,7 +62,19 @@ function drawExplorationGpuFloor(tiles){
  }
  if(typeof r226LightningFx!=='undefined'&&r226LightningFx?.points)heat.push({keys:r226LightningFx.points.map(p=>p.x+','+p.y),rate:12});
  combatGpu.snowHeat?.(heat);
- for(const fragment of explorationFloorFragments(tiles)){
+ const fragments=explorationFloorFragments(tiles);
+ // Map row contents catch in-place terrain painting; terrain/fragment identity
+ // catches structural rebuilds. Live lighting and visibility stay outside.
+ const staticKey=JSON.stringify([map.grid,map.ground,map.environment,explorationEncounter.origin,explorationEncounter.synthetic,t.cellW,t.cellH,explorationGpuLighting?.world,api.SCENE_STYLE?.materials]);
+ const artwork=[window.adventurePartyGrass?.image,explorationGrassImage,explorationFloorImage,...Object.values(explorationCityFloorImages)];
+
+ let descriptions=drawExplorationGpuFloor.descriptions;
+ if(!descriptions||descriptions.terrain!==t||descriptions.map!==map||descriptions.key!==staticKey||artwork.some((v,i)=>v!==descriptions.artwork[i]))descriptions=drawExplorationGpuFloor.descriptions={terrain:t,map,key:staticKey,artwork,entries:new Map()};
+ function describe(fragment){
+  const id=fragment.polygon;let entry=descriptions.entries.get(id);
+  if(entry){descriptions.entries.delete(id);descriptions.entries.set(id,entry);return entry;}
+  const groups=new Map(),curbs=new Map();
+
   const world=worldPointForHex(fragment.point.x,fragment.point.y),surface=api.surfaceAt(map,{x:explorationEncounter.origin.x+world.x/t.cellW,z:explorationEncounter.origin.z+world.y/t.cellH}),cell=surface.cell,kind=explorationEncounter.synthetic?(isIndoorWorldPoint(worldPointForHex(fragment.point.x,fragment.point.y))?'stone':'grass'):surface.ground;
   const image=(kind==='road'||kind==='road2'||kind==='sidewalk')?(explorationRoadBank||(explorationRoadBank=api.createRoadTileBank({base:explorationGroundBank}))).get(map,cell.x,cell.z):explorationCityFloorImages[kind]?explorationCityFloorImages[kind]:kind==='grass'?(window.adventurePartyGrass?.image||explorationGrassImage):kind==='dirt'?explorationGroundBank.get(api.grassNeighborMask(map,cell.x,cell.z)):explorationFloorImage;
   if((kind==='road'||kind==='road2'||kind==='sidewalk'))explorationRoadBank.normal(map,cell.x,cell.z);
@@ -77,16 +89,30 @@ function drawExplorationGpuFloor(tiles){
     const next=api.surfaceAt(map,{x:explorationEncounter.origin.x+(mx+nx*.02)/t.cellW,z:explorationEncounter.origin.z+(my+ny*.02)/t.cellH});
     if(next.ground==='sidewalk')continue;
     if(!curbs.has(image))curbs.set(image,[]);
-    curbs.get(image).push({points:[a,b,{...b,elevation:rise},{...a,elevation:rise}],uv:[[0,0],[length/t.cellW,0],[length/t.cellW,.05],[0,.05]],tint:[.65,.60,.53],lightNormal:[nx,0,ny],visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1});
+    curbs.get(image).push({_visibilityPoint:fragment.point,_visibilityHex:fragment.hex,points:[a,b,{...b,elevation:rise},{...a,elevation:rise}],uv:[[0,0],[length/t.cellW,0],[length/t.cellW,.05],[0,.05]],tint:[.65,.60,.53],lightNormal:[nx,0,ny],visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1});
    }
   }
-  groups.get(image).push({grass:kind==='grass',grassUnit:t.cellW/3,grassSquash:t.cellH/t.cellW,snowHex:`${fragment.hex.x},${fragment.hex.y}`,snowEligible:isIndoorWorldPoint(world)?0:1,points:kind==='sidewalk'?fragment.polygon.map(p=>({...p,elevation:.15/3*t.cellW})):fragment.polygon,visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1,uv:fragment.polygon.map(p=>(kind==='road'||kind==='road2'||kind==='sidewalk')?[(p.x/t.cellW+explorationEncounter.origin.x-cell.x+.5),1-(p.y/t.cellH+explorationEncounter.origin.z-cell.z+.5)]:explorationCityFloorImages[kind]?[(p.x/t.cellW+explorationEncounter.origin.x+.5)/2,(.5-p.y/t.cellH-explorationEncounter.origin.z)/2]:[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
+  groups.get(image).push({_visibilityPoint:fragment.point,_visibilityHex:fragment.hex,groundKind:kind,grass:kind==='grass',grassUnit:t.cellW/3,grassSquash:t.cellH/t.cellW,snowHex:`${fragment.hex.x},${fragment.hex.y}`,snowEligible:isIndoorWorldPoint(world)?0:1,points:kind==='sidewalk'?fragment.polygon.map(p=>({...p,elevation:.15/3*t.cellW})):fragment.polygon,visibility:explorationGpuLighting?explorationVisibilityAtHex(fragment.point,[],fragment.hex):1,uv:fragment.polygon.map(p=>(kind==='road'||kind==='road2'||kind==='sidewalk')?[(p.x/t.cellW+explorationEncounter.origin.x-cell.x+.5),1-(p.y/t.cellH+explorationEncounter.origin.z-cell.z+.5)]:explorationCityFloorImages[kind]?[(p.x/t.cellW+explorationEncounter.origin.x+.5)/2,(.5-p.y/t.cellH-explorationEncounter.origin.z)/2]:[(p.x+t.cellW/2)/m.floorWidth,1-(p.y+t.cellH/2)/m.floorHeight])});
+  for(const group of [...groups.values(),...curbs.values()])for(const face of group){face._groundKey=face.grassUnit+':'+face.grassSquash+':'+face.points.map(p=>p.x+','+p.y).join(';');face.lightPoints=explorationGpuLighting?face.points.map(explorationGpuPoint):null;}
+  entry={groups,curbs};if(descriptions.entries.size>=4096)descriptions.entries.delete(descriptions.entries.keys().next().value);descriptions.entries.set(id,entry);return entry;
  }
+ drawExplorationGpuFloor.prepareFragment=describe;
+ const oldFloor=drawExplorationGpuFloor.staticFloor;
+ if(oldFloor&&oldFloor.terrain===t&&oldFloor.map===map&&oldFloor.fragments===fragments&&oldFloor.key===staticKey&&artwork.length===oldFloor.artwork.length&&artwork.every((v,i)=>v===oldFloor.artwork[i])){
+  groups=oldFloor.groups;curbs=oldFloor.curbs;globalThis.adventurePartyCombatPerformance?.count('floorDescriptionReuses');
+ }else{
+ for(const fragment of fragments){const entry=describe(fragment);for(const [image,faces]of entry.groups){if(!groups.has(image))groups.set(image,[]);groups.get(image).push(...faces);}for(const [image,faces]of entry.curbs){if(!curbs.has(image))curbs.set(image,[]);curbs.get(image).push(...faces);}}
+
+ for(const group of [...groups.values(),...curbs.values()]){
+  group._surfaceRevision=0;
+ }
+ drawExplorationGpuFloor.staticFloor={terrain:t,map,fragments,key:staticKey,artwork,groups,curbs};globalThis.adventurePartyCombatPerformance?.count('floorDescriptionBuilds');
+ }
+ for(const group of [...groups.values(),...curbs.values()])for(const face of group){const next=explorationGpuLighting?explorationVisibilityAtHex(face._visibilityPoint,[],face._visibilityHex):1;if(face.visibility!==next){face.visibility=next;group._surfaceRevision++;}}
  const lightMap=drawExplorationIlluminationLayer(true),dynamicLighting=!!explorationGpuLighting;
  const groundScorch=dynamicLighting&&typeof drawTerrainScorch==='function'?drawTerrainScorch(true):null;
- for(const [image,group] of curbs){for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;combatGpu.surface(group,image,{lightMap,dynamicLighting,category:'Walls / curbs'});}
+ for(const [image,group] of curbs){combatGpu.surface(group,image,{lightMap,dynamicLighting,category:'Walls / curbs'});}
  for(const [image,group] of groups){
-  for(const face of group)face.lightPoints=dynamicLighting?face.points.map(explorationGpuPoint):null;
   combatGpu.surface(group,image,{category:'Floor',grassMaterial:group.some(face=>face.grass),lightMap,dynamicLighting,groundScorch,needleLitter:true,normalMap:image.roadNormal||null});
  }
 }
@@ -253,7 +279,7 @@ function explorationFloorFragments(tiles){
  const explorationEncounter=typeof combatSceneContext==='undefined'?globalThis.explorationEncounter:combatSceneContext||globalThis.explorationEncounter;
  const api=explorationEncounterApi;
  if(!api?.floorFragmentIndex||!explorationTerrain?.spaces)return tiles.map(tile=>({point:tile,hex:tile,screen:hexScreenVertices(tile.x,tile.y)}));
- if(explorationFloorFragments.terrain!==explorationTerrain){explorationFloorFragments.terrain=explorationTerrain;explorationFloorFragments.index=api.floorFragmentIndex(explorationTerrain.spaces,HEX_W,HEX_ROW);}
+ if(explorationFloorFragments.terrain!==explorationTerrain){explorationFloorFragments.terrain=explorationTerrain;explorationFloorFragments.tiles=null;explorationFloorFragments.index=api.floorFragmentIndex(explorationTerrain.spaces,HEX_W,HEX_ROW);}
  if(explorationFloorFragments.tiles===tiles)return explorationFloorFragments.projected;
  explorationFloorFragments.tiles=tiles;return explorationFloorFragments.projected=tiles.flatMap(tile=>explorationFloorFragments.index(tile).map(f=>({...f,screen:f.polygon.map(p=>screenPointForWorld(p))})));
 }
@@ -847,3 +873,38 @@ function tryExplorationToggleDoor(){
  refreshTurnBanner();updateUi();draw();
 }
 
+
+
+// Incremental world-space preparation. No rendering and no independent timer.
+function prepareCombatTerrainAhead(){
+ const cover=combatGpu?.groundCover,describe=drawExplorationGpuFloor.prepareFragment,owner=drawExplorationGpuFloor.descriptions,index=explorationFloorFragments.index,perf=globalThis.adventurePartyCombatPerformance;
+ if(!cover?.prepareAhead||!describe||!owner||!index||document.hidden)return;
+ const remaining=Math.min(.75,12-(perf?.elapsedMs??12));if(remaining<=0)return;
+ const now=performance.now(),cx=Math.round(camera.x/2)*2,cy=Math.round(camera.y/2)*2;
+ let state=prepareCombatTerrainAhead.state;
+ const zoomBucket=Math.floor(battlefieldZoom*8);
+ if(!state||state.owner!==owner||state.cx!==cx||state.cy!==cy||state.zoomBucket!==zoomBucket||state.preparationRevision!==cover.preparationRevision){
+  const old=state,world=battlefieldWorldViewport(),center=worldPointForHex(cx,cy),squash=HEX_ROW/(HEX_W*Math.sqrt(3)/2);
+  // A circular region covers rotation at every angle and a modest zoom-out.
+  const radius=Math.max(...world.corners.map(p=>Math.hypot(p.x-center.x,(p.y-center.y)/squash)))*1.25+HEX_W*2;
+  const dx=old&&old.owner===owner?Math.sign(cx-old.cx):0,dy=old&&old.owner===owner?Math.sign(cy-old.cy):0;
+  const x0=cx+dx*2,y0=cy+dy*2,r=Math.ceil(radius/Math.min(HEX_W,HEX_ROW));
+  function* cell(x,y){
+   const tile={x:x0+x,y:y0+y};if(!inside(tile.x,tile.y)){yield null;return;}
+   const p=worldPointForHex(tile.x,tile.y);if(Math.hypot(p.x-center.x,(p.y-center.y)/squash)>radius){yield null;return;}
+   const fragments=index(tile);if(!fragments.length)yield null;else yield* fragments;
+  }
+  function* candidates(){
+   yield* cell(0,0);
+   // Visit only each shell's perimeter; even empty cells yield to the budget.
+   for(let ring=1;ring<=r;ring++){
+    for(let x=-ring;x<=ring;x++){yield* cell(x,-ring);yield* cell(x,ring);}
+    for(let y=1-ring;y<ring;y++){yield* cell(-ring,y);yield* cell(ring,y);}
+   }
+  }
+  state=prepareCombatTerrainAhead.state={owner,cx,cy,zoomBucket,preparationRevision:cover.preparationRevision,iterator:candidates(),done:false};
+ }
+ let processed=0;
+ while(!state.done&&!cover.preparationFull&&processed<16&&performance.now()-now<remaining){const next=state.iterator.next();state.done=next.done;if(state.done)break;if(!next.value){processed++;continue;}const entry=describe(next.value);for(const group of entry.groups.values())for(const face of group)cover.prepareAhead(face);processed++;}
+ perf?.count('terrainAheadCandidates',processed);
+}

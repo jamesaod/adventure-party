@@ -1,67 +1,43 @@
-import {installUnitSnowOcclusion} from './combat-unit-snow-occlusion.mjs';
+import {LIGHTING_GLSL,bindLightingProfile} from './combat-lighting-profile.mjs';
+import {installUnitSnowOcclusion} from './combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
 import {SNOW_COVERAGE_GLSL} from './combat-snow-coverage.mjs';
-import {createCorpseSnowMap} from './combat-corpse-snow-map.mjs';
-import {SNOW_DEPTH_GLSL} from './combat-snow-depth.mjs';
-import {SNOW_LAYER_METRES} from './combat-snow-depth.mjs';
+import {CORPSE_SNOW_LAYER_SECONDS,createCorpseSnowMap} from './combat-corpse-snow-map.mjs?v=tree-snow-grains1';
+import {SNOW_DEPTH_GLSL} from './combat-snow-depth.mjs?v=shore-snow1';
+import {SNOW_LAYER_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 // Final-pose coverage is cached once. No animation sampling or particle collision.
-// Undo the model composite's ACES/exposure and sRGB conversion so the snow
-// arrives on screen with exactly the terrain's display-space lighting.
-const acesInputInverse=new THREE.Matrix3().set(.59719,.35458,.04823,.076,.90834,.01566,.0284,.13383,.83777).invert();
-const acesOutputInverse=new THREE.Matrix3().set(1.60475,-.53108,-.07367,-.10208,1.10813,-.00605,-.00327,-.07276,1.07602).invert();
-function inverseSnowDisplay(rgb){
- const v=new THREE.Vector3(...rgb.map(c=>{c=Math.min(.99,Math.max(0,c));return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})).applyMatrix3(acesOutputInverse);
- for(const key of ['x','y','z']){const y=Math.max(0,v[key]),a=1-.983729*y,b=.0245786-.432951*y,c=-.000090537-.238081*y;v[key]=(-b+Math.sqrt(Math.max(0,b*b-4*a*c)))/(2*a);}
- return v.applyMatrix3(acesInputInverse).multiplyScalar(.6/1.15);
-}
-// The fallback target is RGBA8; HDR targets still cannot represent negative light.
-// Negative/HDR channels clip before
-// ACES runs. Compress out-of-gamut colors toward neutral at the same luminance
-// instead of allowing independent channel clipping to turn daylight snow cyan.
-export function snowDisplayToLinear(rgb,hdr=false){
- const display=rgb.map(c=>Math.min(.99,Math.max(0,Number.isFinite(c)?c:0)));
- const color=inverseSnowDisplay(display);
- const ceiling=hdr?Infinity:1;
- if(color.toArray().every(c=>Number.isFinite(c)&&c>=0&&c<=ceiling))return color;
- const luminance=display[0]*.2126+display[1]*.7152+display[2]*.0722;
- const neutral=Math.min(ceiling,Math.max(0,inverseSnowDisplay([luminance,luminance,luminance]).y));
- let blend=1;
- for(const c of color.toArray()){
-  if(!Number.isFinite(c)){blend=0;break;}
-  if(c>ceiling)blend=Math.min(blend,(ceiling-neutral)/(c-neutral));
-  else if(c<0)blend=Math.min(blend,neutral/(neutral-c));
- }
- return color.multiplyScalar(blend).addScalar(neutral*(1-blend)).clampScalar(0,ceiling);
+// Match the terrain's final display RGB directly, including fully bright snow.
+// Inverse ACES encoding and a second highlight knee changed this baseline.
+export function snowAmbientDisplay(rgb){
+ return new THREE.Vector3(...rgb.map(c=>Math.min(1,Math.max(0,Number.isFinite(c)?c:0))));
 }
 // Cool undertone returns gradually only as the third (depth) layer builds.
 export function corpseSnowTint(amount){
- const d=Math.max(0,Math.min(1,amount-2)),t=d*d*(3-2*d);
+ const d=Math.max(0,Math.min(1,amount-3)),t=d*d*(3-2*d);
  return [.902,.916,.930].map((c,i)=>c+([.88,.92,.96][i]-c)*t);
 }
-// Ground blends in display color; bodies pass through ACES later. Blend in
-// that same display space, then encode back to the retained linear target.
-const corpseSnowBlendGLSL=`
+// Blend corpse snow in the same display space the user sees. Blending bright
+// HDR snow into a dark body before ACES made a 25% alpha look almost white.
+const corpseDisplayGLSL=`
 vec3 corpseDisplay(vec3 c){
  c=mat3(.59719,.076,.0284,.35458,.90834,.13383,.04823,.01566,.83777)*(c*(1.15/.6));
  c=(c*(c+.0245786)-.000090537)/(c*(.983729*c+.432951)+.238081);
  c=max(vec3(0.),mat3(1.60475,-.10208,-.00327,-.53108,1.10813,-.07276,-.07367,-.00605,1.07602)*c);
  return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));
+}`;
+function displaySpaceCorpseShader(shader,snow=false){
+ shader.fragmentShader=corpseDisplayGLSL+'\n'+shader.fragmentShader.replace('#include <opaque_fragment>',(snow?'':'outgoingLight=corpseDisplay(outgoingLight);\n')+'#include <opaque_fragment>').replace('#include <tonemapping_fragment>','').replace('#include <colorspace_fragment>','');
 }
-vec3 corpseLinear(vec3 c){
- c=clamp(c,0.,.99);c=mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));
- c=mat3(${acesOutputInverse.elements.join(',')})*c;
- vec3 a=1.-.983729*c,b=.0245786-.432951*c,d=-.000090537-.238081*c;
- c=(-b+sqrt(max(vec3(0.),b*b-4.*a*d)))/(2.*a);
- return max(vec3(0.),mat3(${acesInputInverse.elements.join(',')})*c*(.6/1.15));
-}
-`;
 const records=new Set();
 const maps=new WeakMap();
+export function corpseWhitening(coverage){return Math.max(0,Math.min(.75,(Number(coverage)||0)-.25));}
 export function updateCorpseSnowMap(amount){maps.get(amount)?.update(amount.value);}
-export function adjustCorpseSnow(hexes,delta){for(const r of records)if(!r.entity.alive&&hexes.has(`${r.entity.x},${r.entity.y}`))r.amount.value=Math.max(0,Math.min(6,r.amount.value+delta));}
-export function fillCorpseSnow(hexes){for(const r of records)if(!r.entity.alive&&hexes.has(`${r.entity.x},${r.entity.y}`))r.amount.value=3;}
+export function setCorpseSnowWater(amount,water){if(!amount)return;amount.waterBlocked=Number(water)>.002;if(amount.waterBlocked)amount.value=0;}
+export function adjustCorpseSnow(hexes,delta){for(const r of records)if(!r.entity.alive&&!r.amount.waterBlocked&&hexes.has(`${r.entity.x},${r.entity.y}`))r.amount.value=Math.max(0,Math.min(4,r.amount.value+delta*12));}
+export function fillCorpseSnow(hexes){for(const r of records)if(!r.entity.alive&&!r.amount.waterBlocked&&hexes.has(`${r.entity.x},${r.entity.y}`))r.amount.value=4;}
 export function resetCorpseSnow(drop=false){for(const r of records)r.amount.value=0;if(drop){for(const r of records){maps.get(r.amount)?.dispose();maps.delete(r.amount);}records.clear();}}
-export function advanceCorpseSnow(hexes,delta){for(const r of records){const e=r.entity;if(e.alive){maps.get(r.amount)?.dispose();maps.delete(r.amount);records.delete(r);continue;}if(hexes.has(`${e.x},${e.y}`)&&r.amount.value<3)r.amount.value=Math.min(3,r.amount.value+delta);}}
+export function corpseSnowElapsed(elapsed,intensity){return Math.min(1,Math.max(0,Number(elapsed)||0))*Math.min(1,Math.max(0,Number(intensity)||0));}
+export function advanceCorpseSnow(hexes,delta){for(const r of records){const e=r.entity;if(e.alive){maps.get(r.amount)?.dispose();maps.delete(r.amount);records.delete(r);continue;}if(r.amount.waterBlocked){r.amount.value=0;continue;}if(hexes.has(`${e.x},${e.y}`)&&r.amount.value<4)r.amount.value=Math.min(4,r.amount.value+Math.max(0,delta)/CORPSE_SNOW_LAYER_SECONDS);}}
 export function meltCorpseSnow(keys,fraction){const cells=new Set(keys);for(const r of records)if(cells.has(`${r.entity.x},${r.entity.y}`))r.amount.value*=1-Math.min(1,Math.max(0,fraction));}
 export function registerCorpseSnow(entity){const amount={value:0};records.add({entity,amount});return amount;}
 export function prepareCorpseSnow(group,entity,amount=registerCorpseSnow(entity)){
@@ -83,7 +59,7 @@ export function prepareCorpseSnow(group,entity,amount=registerCorpseSnow(entity)
  for(const m of meshes){const p=m.geometry.attributes.position,n=m.geometry.attributes.normal,mask=new Float32Array(p.count);
  for(let i=0;i<p.count;i++){const h=top[Math.round(gz(p.getZ(i)))*res+Math.round(gx(p.getX(i)))];mask[i]=p.getY(i)>=h-Math.max(size.y*.035,.002)?Math.max(0,n.getY(i)):0;}
  m.geometry.setAttribute('corpseSnowExposure',new THREE.BufferAttribute(mask,1));
- for(const mat of [m.material].flat()){mat.userData.corpseSnowGroundLight={value:new THREE.Vector3()};mat.userData.corpseSnowMetres={value:1};const prior=mat.onBeforeCompile;mat.onBeforeCompile=shader=>{prior(shader);shader.uniforms.corpseSnowAmount=amount;shader.uniforms.corpseSnowMap={value:snowMap.texture};shader.uniforms.corpseSnowMapBounds={value:mapBounds};shader.uniforms.corpseSnowMetres=mat.userData.corpseSnowMetres;shader.uniforms.corpseSnowGroundLight=mat.userData.corpseSnowGroundLight;
+ for(const mat of [m.material].flat()){mat.userData.corpseSnowGroundDisplay={value:new THREE.Vector3()};mat.userData.corpseSnowMetres={value:1};const prior=mat.onBeforeCompile,priorKey=mat.customProgramCacheKey();mat.onBeforeCompile=shader=>{prior(shader);shader.uniforms.corpseSnowAmount=amount;shader.uniforms.corpseSnowMap={value:snowMap.texture};shader.uniforms.corpseSnowMapBounds={value:mapBounds};shader.uniforms.corpseSnowMetres=mat.userData.corpseSnowMetres;shader.uniforms.corpseSnowGroundDisplay=mat.userData.corpseSnowGroundDisplay;
  shader.vertexShader='uniform sampler2D corpseSnowMap;uniform vec4 corpseSnowMapBounds;uniform float corpseSnowMetres; attribute float corpseSnowExposure; varying float snowExposure; varying vec3 snowPosition;\n'+SNOW_DEPTH_GLSL+'\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
  snowExposure=corpseSnowExposure;snowPosition=position;
  vec2 corpseUv=(position.xz-corpseSnowMapBounds.xy)/corpseSnowMapBounds.zw;
@@ -91,21 +67,10 @@ export function prepareCorpseSnow(group,entity,amount=registerCorpseSnow(entity)
  // Burial tests the original baked body, not the raised snow shell. Testing
  // displaced vertices lets accumulated snow lift buried surfaces back out.
  shader.vertexShader=shader.vertexShader.replace('snowWorld.y);','(modelMatrix*vec4(position,1.)).y);');
- shader.fragmentShader=corpseSnowBlendGLSL+'uniform sampler2D corpseSnowMap;uniform vec4 corpseSnowMapBounds;\n'+'uniform vec3 corpseSnowGroundLight; uniform float corpseSnowAmount; varying float snowExposure; varying vec3 snowPosition;\n'+shader.fragmentShader;
- shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
- vec3 coats=texture2D(corpseSnowMap,(snowPosition.xz-corpseSnowMapBounds.xy)/corpseSnowMapBounds.zw).rgb;
- float first=smoothstep(.015,.34,coats.r);
- float second=smoothstep(.015,.34,coats.g+coats.b)*step(.99999,first);
- float exposure=smoothstep(.12,.65,snowExposure);
- float thin=first*.62*exposure;float powder=second*exposure;`);
- // Snow receives terrain lighting; the uncovered body retains model lighting.
- shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`if(thin>0.||powder>0.){
- vec3 display=corpseDisplay(outgoingLight),snowDisplay=corpseDisplay(corpseSnowGroundLight);
- display=mix(display,snowDisplay*vec3(.754/.902,.775/.916,.796/.930),thin);
- outgoingLight=corpseLinear(mix(display,snowDisplay,powder));
- }
- #include <opaque_fragment>`);
- };mat.customProgramCacheKey=()=>'corpse-snow-fixed-body-3';mat.needsUpdate=true;}
+ shader.uniforms.corpseBodyWhitening={get value(){return corpseWhitening(amount.value/4);}};
+ shader.fragmentShader='uniform float corpseBodyWhitening;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.),corpseBodyWhitening);');
+ displaySpaceCorpseShader(shader);
+ };mat.customProgramCacheKey=()=>priorKey+'|corpse-snow-display-body-391';mat.needsUpdate=true;}
  }
  // Build one independent, closed top-surface snow shell. Its lower edge is
  // attached to the original top surface; only the white snow can rise.
@@ -125,20 +90,46 @@ export function prepareCorpseSnow(group,entity,amount=registerCorpseSnow(entity)
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('snowLift',new THREE.Float32BufferAttribute(lift,1));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();
  const source=[meshes[0]?.material].flat()[0];
  if(source&&indices.length){
- const material=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,side:THREE.DoubleSide});
- material.userData.baseColor=material.color.clone();material.userData.baseOpacity=1;material.userData.saturation={value:1};
- material.userData.corpseSnowGroundLight=source.userData.corpseSnowGroundLight;material.userData.corpseSnowMetres=source.userData.corpseSnowMetres;
+ const material=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,side:THREE.DoubleSide,transparent:true,depthWrite:false});
+ bindLightingProfile(material);
+ material.forceSinglePass=true;material.userData.corpseSnowShell=true;material.userData.baseColor=material.color.clone();material.userData.baseOpacity=1;material.userData.saturation={value:1};
+ material.userData.corpseSnowGroundDisplay=source.userData.corpseSnowGroundDisplay;material.userData.corpseSnowMetres=source.userData.corpseSnowMetres;
  material.onBeforeCompile=shader=>{
-  shader.uniforms.corpseSnowMap={value:snowMap.texture};shader.uniforms.corpseSnowMetres=material.userData.corpseSnowMetres;shader.uniforms.corpseSnowGroundLight=material.userData.corpseSnowGroundLight;
+  shader.uniforms.apMaterial=material.userData.apMaterial;shader.uniforms.apLight=material.userData.apLight;
+  shader.uniforms.corpseSnowMap={value:snowMap.texture};shader.uniforms.corpseSnowMetres=material.userData.corpseSnowMetres;shader.uniforms.corpseSnowGroundDisplay=material.userData.corpseSnowGroundDisplay;
   shader.vertexShader='uniform sampler2D corpseSnowMap;uniform float corpseSnowMetres;attribute float snowLift;varying vec2 capUv;\n'+SNOW_DEPTH_GLSL+'\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
-   capUv=uv;transformed.y+=snowPhysicalDepth(texture2D(corpseSnowMap,uv))*corpseSnowMetres*snowLift;`);
-  shader.fragmentShader='uniform sampler2D corpseSnowMap;uniform vec3 corpseSnowGroundLight;varying vec2 capUv;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
-   vec3 coats=texture2D(corpseSnowMap,capUv).rgb;
-   // Thin dust remains on the fixed body; powder forms the separate snow cap.
-   if(coats.g<.015)discard;`).replace('#include <opaque_fragment>','outgoingLight=corpseSnowGroundLight;\n#include <opaque_fragment>');
+   capUv=uv;transformed.y+=dot(smoothstep(vec4(.015),vec4(.34),texture2D(corpseSnowMap,uv)),vec4(.0127))*corpseSnowMetres*snowLift;`);
+  shader.fragmentShader=LIGHTING_GLSL+'uniform sampler2D corpseSnowMap;uniform vec3 corpseSnowGroundDisplay;varying vec2 capUv;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
+   float coverage=dot(smoothstep(vec4(.015),vec4(.34),texture2D(corpseSnowMap,capUv)),vec4(.25));
+   if(coverage<=0.)discard;diffuseColor.a*=coverage;`).replace('#include <opaque_fragment>',`vec3 corpsePointRadiance=vec3(0.);
+   #if NUM_POINT_LIGHTS > 0
+   IncidentLight corpsePoint;
+   for(int i=0;i<NUM_POINT_LIGHTS;i++){
+    getPointLightInfo(pointLights[i],geometryPosition,corpsePoint);
+    corpsePointRadiance+=corpsePoint.color*max(0.,dot(geometryNormal,corpsePoint.direction))*RECIPROCAL_PI;
+   }
+   #endif
+   outgoingLight=apSnowDisplay(corpseSnowGroundDisplay*apLight.x,corpsePointRadiance*apLight.y*apLight.x);
+   #include <opaque_fragment>`);
+  displaySpaceCorpseShader(shader,true);
  };
- material.customProgramCacheKey=()=>'corpse-snow-independent-cap-1';installUnitSnowOcclusion(material);
+ material.customProgramCacheKey=()=>'corpse-snow-display-cap-391';installUnitSnowOcclusion(material);
  const shell=new THREE.Mesh(geometry,material);shell.name='corpse-snow-cap';shell.userData.corpseSnowShell=true;shell.frustumCulled=false;group.add(shell);
  }else geometry.dispose();
  return amount;
+}
+
+export function renderCorpseSnowLayers(renderer,scene,camera,group,amount){
+      const shell=group.children.find(o=>o.userData.corpseSnowShell),cap=shell?.material;
+      if(cap&&amount>0){
+        // Seed the nearest cap depth, then blend that surface exactly once.
+        // Closed sides and overlapping top triangles must not stack alpha.
+        const hidden=[],autoClear=renderer.autoClear;cap.colorWrite=false;cap.depthWrite=true;
+        try{
+          renderer.render(scene,camera);
+          group.traverse(o=>{if(o.isMesh&&o!==shell&&o.visible){hidden.push(o);o.visible=false;}});
+          cap.colorWrite=true;cap.depthWrite=false;cap.depthFunc=THREE.EqualDepth;renderer.autoClear=false;
+          renderer.render(scene,camera);
+        }finally{for(const o of hidden)o.visible=true;cap.colorWrite=true;cap.depthWrite=false;cap.depthFunc=THREE.LessEqualDepth;renderer.autoClear=autoClear;}
+      }else renderer.render(scene,camera);
 }

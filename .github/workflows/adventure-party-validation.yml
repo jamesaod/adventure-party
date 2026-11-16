@@ -52,9 +52,8 @@ jobs:
           node scripts/test-battlefield-font.mjs
           node scripts/test-quick-command.mjs
 
-      - name: Validate 3D studio projection and VGA rendering
+      - name: Validate shared model projection and VGA rendering
         run: |
-          node --check js/3d-studio.mjs
           node --check js/warrior-recolor.mjs
           node --check js/studio-core.mjs
           node --check js/studio-geometry.mjs
@@ -77,6 +76,10 @@ jobs:
           node --check js/weapon-pose-profile-export.mjs
           node --check js/studio-weapon-pose-panel.mjs
           node scripts/test-3d-studio.mjs
+          node scripts/test-studio-grip-sliders.mjs
+          node scripts/test-studio-ui-cleanup.mjs
+          node scripts/test-studio-grip-sliders.mjs
+          node scripts/test-studio-ui-cleanup.mjs
           node scripts/test-studio-geometry.mjs
           node scripts/test-studio-animations.mjs
           node scripts/test-fbx-animations.mjs
@@ -90,9 +93,7 @@ jobs:
           node scripts/test-studio-weapon-sets.mjs
           node scripts/test-studio-casting-captures.mjs
           node scripts/test-studio-sprite-regressions.mjs
-          node scripts/test-studio-grip-sliders.mjs
           node scripts/test-orc-sword-profile.mjs
-          node scripts/test-studio-ui-cleanup.mjs
           node scripts/test-mixamo-retarget.mjs
           node scripts/test-orc-retarget-comparison.mjs
           node scripts/test-orc-anatomical-aim.mjs
@@ -134,7 +135,7 @@ jobs:
       - name: Validate multi-hex studio footprints and MOB assignments
         run: node scripts/test-studio-footprints.mjs
 
-      - name: Validate direct studio return after combat tests
+      - name: Validate safe return after legacy combat tests
         run: node scripts/test-studio-combat-exit.mjs
 
       - name: Validate embedded equipment texture colors
@@ -153,7 +154,6 @@ jobs:
 
       - name: Validate reusable pose libraries and MOB authoring
         run: |
-          node --check js/mob-creator.mjs
           node --check js/studio-pose-library.mjs
           node scripts/test-mob-authoring.mjs
           node scripts/test-mob-generation.mjs

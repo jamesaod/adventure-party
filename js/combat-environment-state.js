@@ -1,3 +1,33 @@
+// Heat is encounter state, measured in combat rounds rather than effect duration.
+function warmCombatGround(cells){
+ if(!game)return;game.groundHeat??={};
+ for(const cell of cells){if(!inside(cell.x,cell.y))continue;const id=key(cell.x,cell.y);
+  const old=game.groundHeat[id],wet=typeof combatGpu!=='undefined'&&(combatGpu?.snowAmount?.(cell.x,cell.y)||0)>0;
+  game.groundHeat[id]={x:cell.x,y:cell.y,untilRound:(game.round||0)+3,steamUntil:wet?performance.now()+8000:old?.steamUntil||0};
+ }
+ ensureTransientUnitFxLoop();
+}
+function warmFirGround(fire){
+ const cells=[];for(let x=fire.x-2;x<=fire.x+2;x++)for(let y=fire.y-2;y<=fire.y+2;y++)if(hexDistance(fire,{x,y})<=1)cells.push({x,y});
+ warmCombatGround(cells);
+}
+function expireCombatGroundHeat(){
+ for(const [id,heat] of Object.entries(game?.groundHeat||{}))if((game.round||0)>=heat.untilRound)delete game.groundHeat[id];
+}
+function combatGroundHeat(){return Object.values(game?.groundHeat||{}).filter(heat=>(game.round||0)<heat.untilRound);}
+function updateGroundSteam(now=performance.now()){
+ for(const heat of combatGroundHeat())if((combatGpu?.snowAmount?.(heat.x,heat.y)||0)>0)heat.steamUntil=now+8000;
+}
+function drawGroundSteam(){
+ const now=performance.now();for(const heat of combatGroundHeat()){
+
+
+  if(now>=heat.steamUntil||!isHexVisibleToFriendlyParty(heat.x,heat.y))continue;
+  const p=hexCenter(heat.x,heat.y);
+  combatGpu?.burnSmoke?.({x:p.x,y:p.y,width:HEX_W*.85,height:HEX_W*.7,age:now/1000,fade:Math.min(.45,(heat.steamUntil-now)/8000),seed:heat.x*7+heat.y*13,steam:true});
+ }
+}
+
 /* Combat owner: combat-environment-state.js. Classic-script boundary; shared engine state and
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
@@ -8,6 +38,23 @@ function initializeFirMovementObstacles(){
   const tiles=[];
   for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y))tiles.push({x,y});
   game.firDecorations=new Map(visibleTreeDecorations(tiles).map(tree=>[key(tree.x,tree.y),tree]));
+  // Replace one existing dry, unoccupied tree near the party; keep its obstacle.
+  const anchor=allUnits()[0]||{x:0,y:0};
+  const candidates=[...game.firDecorations.values()].filter(t=>hexDistance(t,anchor)>=4);
+  candidates.sort((a,b)=>hexDistance(a,anchor)-hexDistance(b,anchor)||a.x-b.x||a.y-b.y);
+  game.treeFalls=new Map();game.treeFallRevision=0;game.godTreeTool=false;canvas.style.cursor='';const godButton=document.getElementById('godTreeTool');if(godButton){godButton.textContent='GOD TOOL';godButton.setAttribute('aria-pressed','false');}const godStatus=document.getElementById('godTreeStatus');if(godStatus)godStatus.textContent='';
+  const oak=candidates[0];const mapleSites=oak?tiles.filter(t=>hexDistance(t,oak)>=4&&hexDistance(t,oak)<=6&&allUnits().every(u=>hexDistance(t,u)>=3)&&(!combatSceneTerrain?.walkableHex||combatSceneTerrain.walkableHex(t.x,t.y))&&(!combatSceneTerrain?.isRenderableHex||combatSceneTerrain.isRenderableHex(t.x,t.y))&&(()=>{const p=worldPointForHex(t.x,t.y);return !combatGpu?.streamSample||combatGpu.streamSample(p.x,p.y).depth<.025;})()).sort((a,b)=>hexDistance(a,oak)-hexDistance(b,oak)||hexDistance(a,anchor)-hexDistance(b,anchor)||a.y-b.y||a.x-b.x):[];const maple=mapleSites[0];
+  game.testTrees=[];if(oak){Object.assign(oak,{species:'white-oak',tileIndex:5});game.testTrees.push(oak);}if(maple){Object.assign(maple,{species:'sugar-maple',tileIndex:11});game.testTrees.push(maple);}
+  // All catalog specimens coexist for side-by-side appearance and performance tests.
+  for(const [catalogVariant,tileIndex] of [['tall',17],['broad',23],['beech',29],['birch',35]]){
+   const sites=tiles.filter(t=>game.testTrees.every(other=>hexDistance(t,other)>=4)&&allUnits().every(u=>hexDistance(t,u)>=3)&&(!combatSceneTerrain?.walkableHex||combatSceneTerrain.walkableHex(t.x,t.y))&&(!combatSceneTerrain?.isRenderableHex||combatSceneTerrain.isRenderableHex(t.x,t.y))&&(()=>{const p=worldPointForHex(t.x,t.y);return !combatGpu?.streamSample||combatGpu.streamSample(p.x,p.y).depth<.025;})()).sort((a,b)=>hexDistance(a,anchor)-hexDistance(b,anchor)||hexDistance(a,oak)-hexDistance(b,oak)||a.y-b.y||a.x-b.x);
+   if(sites[0])game.testTrees.push({...sites[0],species:catalogVariant==='birch'?'sweet-birch':catalogVariant==='beech'?'american-beech':'sugar-maple',catalogVariant,tileIndex});
+  }
+  const loaded=combatFirTrees?.loadedFamilyIds;
+  if(loaded)game.testTrees=game.testTrees.filter(t=>loaded.includes(t.catalogVariant==='tall'?'sugar-maple-tall':t.catalogVariant==='broad'?'sugar-maple-broad':t.species));
+  game.oakTestTree=game.testTrees.find(t=>t.species==='white-oak');game.mapleTestTree=game.testTrees.find(t=>t.tileIndex===11);game.oakFallTest=null;
+  // Test-scene placement only: fir models and procedural placement remain preserved.
+  game.firDecorations=new Map(game.testTrees.map(t=>[key(t.x,t.y),t]));
   game.firBlockedHexes=new Set(game.firDecorations.keys());
 }
 
@@ -29,12 +76,13 @@ function igniteFirTrees(cells){
   if(!game?.firBlockedHexes)return;
   game.firFireStates??={};
   for(const cell of cells){const id=key(cell.x,cell.y);if(!game.firBlockedHexes.has(id)||game.firFireStates[id])continue;
-    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+2};addTerrainScorch([cell],.85);}
+    game.firFireStates[id]={x:cell.x,y:cell.y,state:'burning',burnUntilRound:game.round+2};warmFirGround(game.firFireStates[id]);addTerrainScorch([cell],.85);}
   ensureTransientUnitFxLoop();
 }
 
 function advanceFirFires(){
-  for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'){addTerrainScorch([fire],.95);if(game.round>=fire.burnUntilRound)fire.state='burnt';}
+  for(const fire of Object.values(game.firFireStates||{}))if(fire.state==='burning'){warmFirGround(fire);addTerrainScorch([fire],.95);if(game.round>=fire.burnUntilRound)fire.state='burnt';}
+  expireCombatGroundHeat();
 }
 
 function firFireLightSources(){
@@ -50,7 +98,7 @@ function firFireLightSources(){
   });
 }
 
-function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y));}
+function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y))||treeFallEntries().some(({state})=>(oakDebrisSettled(state)?state.blockedHexes:state.reservedHexes)?.has(key(x,y)));}
 
 function wallOpeningCenterT(wall,opening){
   if(!wall || !opening) return 0.5;
@@ -333,18 +381,17 @@ function igniteWebAtUnit(unit,sourceName="fire"){
   return burnWebCells(occupiedHexes(unit),sourceName);
 }
 
-// Encounter-local arrow blood. Particle trajectories are fixed at impact; settled marks are bounded.
+// Encounter-local arrow blood. Particle trajectories are fixed at impact; drops disappear on landing.
 function combatBloodState(){return game.bloodState||(game.bloodState={bursts:[],stains:[],pools:[],revision:0,cache:null});}
 function settleCombatBlood(now=performance.now()){
   if(!game?.bloodState)return false;const state=game.bloodState;
+  // Clear ground marks from older live encounter state as well as new drops.
+  state.stains.length=0;state.pools??=[];state.pools.length=0;state.cache=null;
   for(const burst of state.bursts)for(const drop of burst.drops){
-    if(drop.settled||now<burst.started+((drop.delay||0)+drop.duration)*1000)continue;
-    drop.settled=true;if(!drop.lands)continue;
-    state.stains.push({point:drop.end,hex:drop.hex,size:drop.size,seed:drop.seed,ground:drop.ground});state.revision++;
+    if(now>=burst.started+((drop.delay||0)+drop.duration)*1000)drop.settled=true;
   }
-  if(state.stains.length>768)state.stains.splice(0,state.stains.length-768);
   state.bursts=state.bursts.filter(burst=>burst.drops.some(drop=>!drop.settled));
-  return state.bursts.length>0||(state.pools||[]).some(pool=>now<pool.started+3000);
+  return state.bursts.length>0;
 }
 function sampleArrowBloodOffset(){
   const direction=Math.random()*Math.PI*2;
@@ -392,10 +439,6 @@ function startArrowBlood(attacker,target,damage,{death=false}={}){
     drops.push({end,hex,lands,duration,delay:death?3*duration*i/(count-1):0,up,height,gravity,size:.65+Math.random()*.8,seed:Math.random(),ground,settled:false});
   }
   const started=performance.now();state.bursts.push({origin,hex:{x:target.x,y:target.y},started,drops});
-  if(death){const contour=[];
-    for(let i=0;i<24;i++){const angle=i*Math.PI/12,r=HEX_W*(.19+Math.random()*.07),end={x:origin.x+Math.cos(angle)*r,y:origin.y+Math.sin(angle)*r*squash},hit=environmentRayHit(origin,end),t=hit?Math.max(0,hit.t-.02):1;contour.push({x:origin.x+(end.x-origin.x)*t,y:origin.y+(end.y-origin.y)*t});}
-    (state.pools??=[]).push({origin,hex:{x:target.x,y:target.y},started:started+1000,contour});
-  }
   ensureTransientUnitFxLoop();draw();
 }
 
@@ -414,5 +457,50 @@ function drawBurnSmoke(){
  if(!unit&&!isHexVisibleToFriendlyParty(fx.x,fx.y))continue;
  const p=unit?unitFootprintScreenCenter(unit):hexCenter(fx.x,fx.y);
  combatGpu?.burnSmoke?.({x:p.x,y:p.y,width:unit?48:HEX_W,height:unit?85:HEX_W*1.2,age:(now-fx.started)/1000,fade:Math.min(1,t*5,(1-t)*3),seed:fx.seed});
+ }
+}
+
+// Movement-only debris geometry. No changes to visual LOS or cover.
+function oakPointSegmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/Math.max(1e-9,dx*dx+dy*dy)));return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
+function oakWorldPoint(cell){const p=worldPointForHex(cell.x,cell.y);return {x:p.x,y:p.y/.568329};}
+function oakCapsuleHitsCell(capsules,cell){const p=oakWorldPoint(cell);return capsules.some(c=>oakPointSegmentDistance(p,c.a,c.b)<=c.radius+HEX_W*.28);}
+function oakBlockedCells(capsules){const out=new Set();for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y)&&oakCapsuleHitsCell(capsules,{x,y}))out.add(key(x,y));return out;}
+function prepareOakFallNavigation(oak=game.oakTestTree){
+ if(allUnits().some(u=>u.walkPresentation))return null;
+ const tileSet=activeCombatTerrainTileSet(),scale=(tileSet.treeDrawHeight||240)/210,origin=oakWorldPoint(oak),sourceYaw=(terrainHash(oak.x+7901,oak.y-5107)%(tileSet.treeRotationFrames||1))*Math.PI/6;
+ const occupied=allUnits().filter(u=>u.alive&&!u.fled).flatMap(occupiedHexes),order=[0,1,2,3,4,5];for(let i=5;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+ for(const direction of order){const d=HEX_DIRS[direction],point=oakWorldPoint({x:oak.x+d.x,y:oak.y+d.y}),fallYaw=Math.atan2(point.x-origin.x,point.y-origin.y),delta=sourceYaw-fallYaw,c=Math.cos(fallYaw),s=Math.sin(fallYaw);
+ const project=(x,z)=>({x:origin.x+(c*x+s*z)*scale,y:origin.y+(-s*x+c*z)*scale});
+ const capsules=combatTreeCollision(oak.tileIndex,globalThis.adventurePartySeasons?.getSeason()||'summer',delta).capsules.map(p=>({piece:p.piece,a:project(p.ax,p.az),b:project(p.bx,p.bz),radius:p.radius*scale}));
+ const extent=Math.max(...capsules.flatMap(p=>[Math.hypot(p.a.x-origin.x,p.a.y-origin.y),Math.hypot(p.b.x-origin.x,p.b.y-origin.y)]));
+ const reservation=capsules.concat({piece:'fall-sweep',a:origin,b:project(0,extent/scale),radius:combatTreeCollision(oak.tileIndex,globalThis.adventurePartySeasons?.getSeason()||'summer',delta).canopyRadius*scale*.65});
+ if(occupied.some(cell=>oakCapsuleHitsCell(reservation,cell)))continue;
+ return {direction,fallYaw,localFallYaw:delta,obstacleCapsules:capsules,reservationCapsules:reservation,blockedHexes:oakBlockedCells(capsules),reservedHexes:oakBlockedCells(reservation)};
+ }return null;
+}
+function oakDebrisBlocksStep(from,to){
+ const capsules=treeFallEntries().flatMap(({state})=>(oakDebrisSettled(state)?state.obstacleCapsules:state.reservationCapsules)||[]);if(!capsules.length)return false;
+ const a=oakWorldPoint(from),b=oakWorldPoint(to);
+ function cross(p,q,r){return (q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);}
+ return capsules.some(c=>{const u=cross(a,b,c.a),v=cross(a,b,c.b),w=cross(c.a,c.b,a),z=cross(c.a,c.b,b);const intersects=u*v<0&&w*z<0;
+ const distance=intersects?0:Math.min(oakPointSegmentDistance(a,c.a,c.b),oakPointSegmentDistance(b,c.a,c.b),oakPointSegmentDistance(c.a,a,b),oakPointSegmentDistance(c.b,a,b));return distance<=c.radius+HEX_W*.23;});
+}
+
+function oakDebrisSettled(state){return !!state&&performance.now()-state.startedAt>=6000;}
+
+function treeFallEntries(){if(game?.treeFalls)return [...game.treeFalls.values()];return game?.oakFallTest?[{tree:game.oakTestTree,state:game.oakFallTest}]:[];}
+function treeFallFor(tree){return game?.treeFalls?.get(key(tree.x,tree.y))?.state||(game?.oakTestTree?.x===tree.x&&game?.oakTestTree?.y===tree.y?game.oakFallTest:null);}
+function treeWoodPressure(){const entries=treeFallEntries().filter(({state})=>performance.now()-state.startedAt>=2600),signature=entries.map(({tree})=>key(tree.x,tree.y)).join('|');if(game.treeWoodSignature!==signature){game.treeWoodSignature=signature;game.treeWoodCapsules=entries.flatMap(({tree,state})=>state.obstacleCapsules.map(c=>({...c,fallGroup:key(tree.x,tree.y)})));}return {capsules:game.treeWoodCapsules||null,strength:entries.length?Math.max(...entries.map(({state})=>Math.min(1,(performance.now()-state.startedAt-2600)/1400))):0};}
+
+// State updates run before presentation, including for offscreen trees.
+function updateTreeEnvironment(now=performance.now()){
+ for(const {tree,state} of treeFallEntries()){
+  state.renderNow=now;state.settled=now-state.startedAt>=6000;
+  state.leafWind??=Math.max(0,Math.min(1,globalThis.getWeatherSnapshot?.()?.amounts?.wind??0));
+  const variant=combatFirTrees?.seasonalVariant(tree.tileIndex);
+  if(variant!==undefined&&state.preparedVariant!==variant){
+   state.leafDeposits=combatFirTrees.prepareFallState(tree.tileIndex,state);
+   state.preparedVariant=variant;
+  }
  }
 }

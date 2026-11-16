@@ -12,6 +12,17 @@ function requestDirectMotionFrame(){
   requestCombatAnimationTick(()=>{directMotionFramePending=false;if(game===session&&currentScreen==='combat')draw();});
 }
 
+function combatUnitStreamPresentation(entity){
+ if(!entity||typeof combatGpu==='undefined'||!combatGpu?.streamSample)return {depth:0,water:0,drop:0};
+ const motion=entity.walkPresentation,t=motion?Math.max(0,Math.min(1,motion.t)):0;
+ const world=motion?worldPointForHex(motion.from.x+(motion.to.x-motion.from.x)*t,motion.from.y+(motion.to.y-motion.from.y)*t):worldPointForHex(entity.x,entity.y);
+ if(!entity.alive&&entity.deathWorldOffset){const offset=corpsePresentationOffset(entity);world.x+=offset.x;world.y+=offset.y;}
+ if(isIndoorWorldPoint(world))return {depth:0,water:0,drop:0};
+ const sample=!entity.alive&&combatGpu.unitGroundSample?combatGpu.unitGroundSample(world.x,world.y):combatGpu.streamSample(world.x,world.y),smooth=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);};
+ const wear=Math.max(smooth(sample.depth/.14),smooth(sample.water/.02)),depth=sample.bedDepth??sample.depth*wear;
+ return {depth,water:sample.water,drop:depth*combatShadowScale()[1],wetShade:!entity.alive?1-.35*smooth(sample.water/.06):1};
+}
+
 function drawDirectCombatUnit(image,entity,center,width,height,anchor,opacity){
   const direct=globalThis.adventurePartyDirectUnits;
   if(!direct||!entity||!combatSceneTerrain||!combatGpu)return false;
@@ -28,12 +39,12 @@ function drawDirectCombatUnit(image,entity,center,width,height,anchor,opacity){
     .sort((a,b)=>b.intensity/(1+b.position.reduce((n,v)=>n+v*v,0))-a.intensity/(1+a.position.reduce((n,v)=>n+v*v,0))).slice(0,4);
   let snowGroundLight=null;
   if(!entity.alive&&explorationGpuLighting&&direct.corpseSnowAmount?.(entity)>0){
-    const point=explorationGpuPoint(world),exposure=explorationSurfaceExposure({x:point[0],y:0,z:point[2]},{x:0,y:1,z:0},explorationVisualLights(),new Set(combatSceneContext.openDoors));
+    const point=explorationGpuPoint(world),exposure=explorationSurfaceExposure({x:point[0],y:0,z:point[2]},{x:0,y:1,z:0},[],new Set(combatSceneContext.openDoors));
     const visibility=explorationVisibilityAtHex(entity,[]);
     snowGroundLight=exposure.multiply.map((v,i)=>Math.max(.01**(1/2.2),v/Math.max(.0001,255-exposure.boost[i]))*visibility);
   }
   return direct.draw(combatGpu,image,{x:center.x,y:center.y,width,height,anchor,opacity,
-    entity,equipmentEffects:!getUnitEffect(entity,'invisibility'),snowGroundLight,requestMotionFrame:requestDirectMotionFrame,walkSeconds:entity.walkPresentation?.seconds,rotation:battlefieldRotation*Math.PI/3,pixelsPerMetre:scale[1],groundMetresScale:[scale[0],scale[2]],localLights,
+    entity,stream:combatUnitStreamPresentation(entity),equipmentEffects:!getUnitEffect(entity,'invisibility'),snowGroundLight,requestMotionFrame:requestDirectMotionFrame,walkSeconds:entity.walkPresentation?.seconds,rotation:battlefieldRotation*Math.PI/3,pixelsPerMetre:scale[1],groundMetresScale:[scale[0],scale[2]],localLights,
     solar:globalThis.adventurePartySolar?.state?.(),outdoor:!isIndoorWorldPoint(world),
     ambientPercent:combatRenderAmbientAtHex(entity)*COMBAT_UNIT_AMBIENT_MULTIPLIER,saturation:1});
 }
@@ -41,7 +52,7 @@ function drawDirectCombatUnit(image,entity,center,width,height,anchor,opacity){
 function firTreeLocalLights(tree){
   const terrain=combatSceneTerrain,encounter=combatSceneContext,api=explorationEncounterApi;
   const origin=worldPointForHex(tree.x,tree.y),angle=battlefieldRotation*Math.PI/3,c=Math.cos(angle),s=Math.sin(angle);
-  const units=210/(activeCombatTerrainTileSet().treeDrawHeight||240),cell=api.SCENE_STYLE.cellMetres;
+  const units=210/((activeCombatTerrainTileSet().treeDrawHeight||240)*treeSizeScale(tree)),cell=api.SCENE_STYLE.cellMetres;
   const metresToUnits=terrain.cellW/cell*units;
   const treePoint={x:(encounter.origin.x+origin.x/terrain.cellW)*cell,z:(encounter.origin.z+origin.y/terrain.cellH)*cell};
   const physical=explorationVisualLights().map(light=>{
@@ -351,17 +362,19 @@ function combatShadowWorld(screen,height=0){
 }
 function prepareCombatProjectedShadows(tiles){
  if(!combatGpu?.projectedShadows||!combatSceneTerrain)return;
- const scale=combatShadowScale(),bounds=battlefieldWorldViewport(),observers=friendlyVisibilityObservers();
- const signature=[typeof denseFogGeometry==='function'?denseFogGeometry()?.key:'',bounds.left.toFixed(1),bounds.top.toFixed(1),bounds.right.toFixed(1),bounds.bottom.toFixed(1),...observers.map(u=>u.id+':'+u.x+':'+u.y)].join('|');
+ const scale=combatShadowScale(),viewport=battlefieldWorldViewport(),observers=friendlyVisibilityObservers();
+ const signature=[typeof denseFogGeometry==='function'?denseFogGeometry()?.key:'',...observers.map(u=>u.id+':'+u.x+':'+u.y)].join('|');
  let cache=prepareCombatProjectedShadows.cache;
- if(!cache||cache.game!==game||cache.terrain!==combatSceneTerrain||cache.walls!==architecturalWalls||cache.signature!==signature){
-  const image=document.createElement('canvas');image.width=image.height=512;const m=image.getContext('2d');
+ if(!cache||cache.game!==game||cache.terrain!==combatSceneTerrain||cache.walls!==architecturalWalls||cache.signature!==signature||!cache.region||viewport.left<cache.region.left||viewport.top<cache.region.top||viewport.right>cache.region.right||viewport.bottom>cache.region.bottom){
+  const bounds={left:viewport.left-64,top:viewport.top-64,right:viewport.right+64,bottom:viewport.bottom+64};
+  const image=document.createElement('canvas');image.width=Math.ceil(512*(bounds.right-bounds.left)/Math.max(1,viewport.right-viewport.left));image.height=Math.ceil(512*(bounds.bottom-bounds.top)/Math.max(1,viewport.bottom-viewport.top));const m=image.getContext('2d');
   const width=Math.max(1,bounds.right-bounds.left),height=Math.max(1,bounds.bottom-bounds.top);
-  const path=polygon=>{if(!polygon?.length)return;const convert=p=>({x:(p.x-bounds.left)/width*512,y:(p.y-bounds.top)/height*512});const first=convert(polygon[0]);m.moveTo(first.x,first.y);for(const p of polygon.slice(1)){const q=convert(p);m.lineTo(q.x,q.y);}m.closePath();};
+  const path=polygon=>{if(!polygon?.length)return;const convert=p=>({x:(p.x-bounds.left)/width*image.width,y:(p.y-bounds.top)/height*image.height});const first=convert(polygon[0]);m.moveTo(first.x,first.y);for(const p of polygon.slice(1)){const q=convert(p);m.lineTo(q.x,q.y);}m.closePath();};
   const polygons=observers.map(u=>observerVisibilityContext(u)?.polygon).filter(Boolean);
   if(polygons.length){m.beginPath();polygons.forEach(path);m.clip();}
   m.fillStyle='#fff';
-  const allowed=tiles.filter(h=>isHexVisibleToFriendlyParty(h.x,h.y)&&(!combatSceneTerrain.isRenderableHex||combatSceneTerrain.isRenderableHex(h.x,h.y)));
+  const padded=[];const r0=Math.floor(bounds.top/HEX_ROW)-1,r1=Math.ceil(bounds.bottom/HEX_ROW)+1;for(let y=r0;y<=r1;y++){const q0=Math.floor(bounds.left/HEX_W-y/2)-1,q1=Math.ceil(bounds.right/HEX_W-y/2)+1;for(let x=q0;x<=q1;x++)if(inside(x,y))padded.push({x,y});}
+  const allowed=padded.filter(h=>isHexVisibleToFriendlyParty(h.x,h.y)&&(!combatSceneTerrain.isRenderableHex||combatSceneTerrain.isRenderableHex(h.x,h.y)));
   for(const fragment of explorationFloorFragments(allowed)){
     const hex=fragment.hex||fragment.point,center=worldPointForHex(hex.x,hex.y);
     const polygon=fragment.polygon||[[0,-HEX_H/2],[HEX_W/2,-HEX_H/4],[HEX_W/2,HEX_H/4],[0,HEX_H/2],[-HEX_W/2,HEX_H/4],[-HEX_W/2,-HEX_H/4]].map(([x,y])=>({x:center.x+x,y:center.y+y}));
@@ -369,7 +382,7 @@ function prepareCombatProjectedShadows(tiles){
     const ambient=explorationEncounterApi.ambientLightAt?.(c.map,Math.floor(c.origin.x+center.x/t.cellW),Math.floor(c.origin.z+center.y/t.cellH))??(indoor?0:100);
     m.fillStyle='rgb('+(indoor?0:255)+','+Math.round(Math.min(1000,ambient)/1000*255)+',0)';m.beginPath();path(polygon);m.fill();
   }
-  cache=prepareCombatProjectedShadows.cache={game,terrain:combatSceneTerrain,walls:architecturalWalls,signature,image,
+  cache=prepareCombatProjectedShadows.cache={game,terrain:combatSceneTerrain,walls:architecturalWalls,signature,image,region:bounds,
    bounds:[bounds.left/scale[0],bounds.top/scale[2],width/scale[0],height/scale[2]]};
  }
  combatGpu.projectedShadows.receiver(cache);
@@ -490,4 +503,5 @@ function fitCombatShadowFeet(image,options,yaw,height){
  const feet=world.map(p=>{const dx=p[0]-origin[0],dz=p[2]-origin[2];return [(dx*c-dz*s)/scale,(dx*s+dz*c)/scale];}).sort((a,b)=>a[0]-b[0]);
  return {origin,feet,world};
 }
+
 

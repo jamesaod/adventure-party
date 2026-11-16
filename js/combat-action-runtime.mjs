@@ -1,8 +1,8 @@
 import {loadCombatModel} from './combat-model-source.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {readActionLibrary,validateActionLibrary,bindActionEntry,chooseDeath,actionSample} from './combat-action-clips.mjs';
-import {buildSceneGraph,normalizedFrame,configureCamera,mountCombatEquipment} from './combat-mob-renderer.mjs';
-import {restoreDirectMaterials,directUnitFrame} from './combat-direct-units.mjs';
+import {buildSceneGraph,normalizedFrame,configureCamera,mountCombatEquipment} from './combat-mob-renderer.mjs?v=tree-snow-grains1';
+import {restoreDirectMaterials,directUnitFrame} from './combat-direct-units.mjs?v=tree-snow-grains1';
 import {applyWarriorRecolor,isWarriorRecolorModel} from './warrior-recolor.mjs?v=R238C127';
 
 export async function attachCombatActions(recipe,set){

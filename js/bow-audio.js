@@ -61,9 +61,9 @@ function playBowSample(role,{delay=0,duration=Infinity}={}){
 }
 function playBowDrawSound(unit,windupMs,drawDelayMs=0){
   if(!usesSelectedBowAudio(unit)||(Number.isFinite(unit.missileAmmoQuantity)&&unit.missileAmmoQuantity<=0))return null;
-  // Keep the recording's pitch; the draw finishes at the authored release time.
+  // Keep pitch/duration; start 300 ms earlier, bounded by the windup start.
   const duration=Math.min(1.7,Math.max(0,windupMs-(Number(drawDelayMs)||0))/1000);
-  return duration>0?playBowSample('draw',{delay:Math.max(0,windupMs/1000-duration),duration}):null;
+  return duration>0?playBowSample('draw',{delay:Math.max(0,windupMs/1000-duration-.3),duration}):null;
 }
 function playBowReleaseSound(unit){
   if(!usesSelectedBowAudio(unit))return null;

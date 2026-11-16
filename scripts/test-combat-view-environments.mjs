@@ -17,7 +17,7 @@ const point={x:0,y:0,z:0},normal={x:0,y:1,z:0};
 const indoor=surfaceLight(point,normal,[],()=>true,ambientForCell(map,2,3)),outdoor=surfaceLight(point,normal,[],()=>true,ambientForCell(map,3,3));assert(outdoor.every((n,i)=>n>indoor[i]));
 assert.equal(SCENE_STYLE.door.depth,SCENE_STYLE.wallDepthMetres);
 assert.equal(explorationDoor().hinge.children[0].geometry.parameters.depth,SCENE_STYLE.wallDepthMetres);
-const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 function extract(name){const start=source.indexOf(`function ${name}(`),end=source.indexOf('\n}',start)+2;return source.slice(start,end);}
 let rotationNow=0,queuedRotation=null;
 const state={battlefieldRotationTween:null,battlefieldRotationFrame:null,performance:{now:()=>rotationNow},requestAnimationFrame:fn=>{queuedRotation=fn;return 1;},cancelAnimationFrame(){queuedRotation=null;},HEX_W:64,HEX_H:42,HEX_ROW:31.5,camera:{x:0,y:0},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_LOGICAL_WIDTH:1050,BATTLEFIELD_LOGICAL_HEIGHT:600,canvas:{getBoundingClientRect:()=>({left:0,top:0,width:1050,height:600})},hoverHex:null,document:{getElementById:()=>null},draw(){}};
@@ -45,9 +45,12 @@ spellEnv.commitSpellCast({...caster,alive:false},{},null,1800,{x:1,y:0});assert.
 console.log('PASS environment paint/export/resize/legacy defaults, local ambient, full-wall door thickness, 18 rotated input transforms, rotation wrapping and committed spell facing');
 
 let viewportCalls=0;
-Object.assign(state,{camera:{x:0,y:0},VIEW_RADIUS:20,HEX_W:64,HEX_H:42,HEX_ROW:31.5,inside:()=>true,hexCenter:(x,y)=>({x:493.5+x*64+y*32,y:342+y*31.5})});
+Object.assign(state,{camera:{x:0,y:0},MAP_MIN_X:-100,MAP_MAX_X:100,MAP_MIN_Y:-100,MAP_MAX_Y:100,VIEW_RADIUS:20,HEX_W:64,HEX_H:42,HEX_ROW:31.5,inside:()=>true,hexCenter:(x,y)=>({x:493.5+x*64+y*32,y:342+y*31.5})});
 const viewport=state.battlefieldWorldViewport;state.battlefieldWorldViewport=()=>{viewportCalls++;return viewport();};
 vm.runInContext(extract('visibleHexes'),state);assert(state.visibleHexes().length>0);assert.equal(viewportCalls,1,'Compute viewport once per terrain scan, not once per hex');
+const heldViewport=state.visibleHexes();assert.equal(viewportCalls,1,'Held viewport skips rescan');assert.equal(state.visibleHexes(),heldViewport);
+state.camera.x+=.25;assert.notEqual(state.visibleHexes(),heldViewport,'Pan invalidates viewport');const pannedViewport=state.visibleHexes();state.MAP_MAX_X--;assert.notEqual(state.visibleHexes(),pannedViewport,'Map bounds invalidate viewport');
+
 
 const geometry={...await import('../js/exploration-combat-geometry.mjs'),...await import('../js/combat-surface-lighting.mjs'),...await import('../js/wall-light-bands.mjs')};
 const terrain={cellW:128,cellH:128*31.5/64/(Math.sqrt(3)/2)},style=SCENE_STYLE;

@@ -1,0 +1,13 @@
+{
+  "asset": "ual1-standard-source.glb",
+  "assetSha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+  "sourceArchive": "Universal Animation Library[Standard].zip",
+  "sourceArchiveSha256": "cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724",
+  "sourceLocation": "Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb",
+  "sourceClip": "Sitting_Exit",
+  "requestedName": "UAL1_Source/GroundSit_Exit",
+  "sourceAnimationIndex": 29,
+  "license": "CC0-1.0",
+  "author": "Quaternius",
+  "usage": "Local Blast & recovery ragdoll lab only; retargeted at load time to the published Orc Warrior rig."
+}

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const page=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const game=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const css=readFileSync(new URL('../css/adventure-party.css',import.meta.url),'utf8');
 assert.ok(page.includes('id="combatMobRows"')&&page.includes('id="addCombatMobButton"'));
 assert.ok(!page.includes('data-mob-encounter="studio-kobold"'));
 assert.ok(!page.includes('6-facing Kobold'));
 assert.ok(!page.includes('data-mob-encounter="kobolds"'));
-assert.ok(game.includes('const combatMobRoster=[]'),'MOB roster must be empty at startup');
+assert.ok(game.includes('type:"mob:orc-warrior",count:12,faction:"hostile"'));
+assert.ok(game.includes('type:"mob:wood-elf-archer",count:6,faction:"friendly"'));
 assert.ok(game.includes('combatMobRoster.push({rowId:'),'add button should append rows');
 assert.ok(game.includes('const count=document.createElement("input")'));
 assert.ok(game.includes('const faction=document.createElement("select")'));

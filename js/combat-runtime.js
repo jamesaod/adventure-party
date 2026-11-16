@@ -4,11 +4,15 @@ let combatSceneAssets=null;
 let combatTestMapFactory=null;
 let combatFirTrees=null;
 let combatFirTreesLoading=null;
+let combatTreeAssets=null;
+function releaseCombatTreeAssets(){combatTreeAssets?.dispose();combatTreeAssets=null;combatFirTrees=null;combatFirTreesLoading=null;}
+addEventListener('pagehide',event=>{if(!event.persisted)releaseCombatTreeAssets();});
+let combatTreeCollision=null;
 async function prepareCombatSession(){
  await ensureCombatRenderer();
  if(!combatSceneAssets)combatSceneAssets=(async()=>{
   explorationEncounterApi=await import('./exploration-encounters.mjs?v=R238C277');
-  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C280')).createCombatTestMap;
+  combatTestMapFactory=(await import('./combat-test-map.mjs?v=R238C455')).createCombatTestMap;
   // Combat floor detail is deliberately modest; preserve full-resolution source art.
   explorationFloorImage.combatTextureLimit=256;explorationGrassImage.combatTextureLimit=256;
   const sources=[[explorationFloorImage,'assets/textures/exploration/floor.png?v=R238C206'],[explorationWallImage,'assets/textures/exploration/wall.png?v=R238C206'],[explorationDoorImage,'assets/textures/exploration/door.png?v=R238C206'],[explorationGrassImage,explorationEncounterApi.GRASS_TEXTURES.short+'?v=R238C246'],[explorationWoodWallImage,explorationEncounterApi.WOOD_TEXTURES.wall+'?v=R238C274']];
@@ -22,14 +26,16 @@ async function prepareCombatSession(){
 async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  const generation=++combatSessionGeneration;
  await prepareCombatSession();
+ combatTreeCollision??=(await import('./tree-collision.mjs')).treeCollision;
  if(scenario.source==='combat-test' && scenario.condition==='grass'){
-  if(!combatFirTreesLoading)combatFirTreesLoading=import('./combat-fir-trees.mjs?v=R238C329')
-   .then(module=>module.createCombatFirTrees()).then(trees=>combatFirTrees=trees)
-   .catch(error=>{combatFirTreesLoading=null;throw error;});
-  await combatFirTreesLoading;
+  const familyIds=scenario.treeFamilyIds||['white-oak','sugar-maple','sugar-maple-tall','sugar-maple-broad','american-beech','sweet-birch'];const assetKey=familyIds?[...new Set(familyIds)].sort().join('|'):'all';
+  combatTreeAssets??=(await import('./combat-asset-cache.mjs')).createAssetCache();
+  combatFirTreesLoading=combatTreeAssets.select(assetKey,()=>import('./combat-fir-trees.mjs?v=tree-snow-grains1').then(module=>module.createCombatFirTrees({familyIds,includeFirs:false})));
+  const trees=await combatFirTreesLoading;if(!trees||generation!==combatSessionGeneration||!isCurrent())return false;combatFirTrees=trees;trees.activate?.();
  }
  if(generation!==combatSessionGeneration||!isCurrent())return false;
  newGame(scenario.condition||'grass',scenario);
+ combatGpu?.setStreamScene?.(combatSceneContext?.map);
  initializeFirMovementObstacles();
  const combat=game;
  fitBattleCanvas();
@@ -99,3 +105,5 @@ function createCombatGame(condition,{player,allies,enemies},scenario={}){
       : null
   };
 }
+
+

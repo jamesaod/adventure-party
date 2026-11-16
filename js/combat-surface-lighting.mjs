@@ -66,7 +66,7 @@ export function orderSurfaceActors(actors,project,unitPoint,unitScreenPoint=u=>p
  // constraints authoritative; distant bodies retain ordinary painter order.
  for(let i=0;i<base.length;i++)if(base[i].groundCorpse){
   const p=unitScreenPoint(base[i].entity),r=base[i].groundRadius;
-  for(let x=Math.floor((p.x-r.x)/size);x<=Math.floor((p.x+r.x)/size);x++)for(let y=Math.floor((p.y-r.y)/size);y<=Math.floor((p.y+r.y)/size);y++)for(const {j,p:q} of buckets.get(x+','+y)||[])if(base[j].entity?.alive){
+  for(let x=Math.floor((p.x-r.x)/size);x<=Math.floor((p.x+r.x)/size);x++)for(let y=Math.floor((p.y-r.y)/size);y<=Math.floor((p.y+r.y)/size);y++)for(const {j,p:q} of buckets.get(x+','+y)||[])if(j!==i&&(base[j].entity?.alive||Number.isFinite(base[j].entity?.deathPresentationStartedAt)&&base[j].entity.deathPresentationStartedAt>base[i].entity.deathPresentationStartedAt)){
    if(((p.x-q.x)/r.x)**2+((p.y-q.y)/r.y)**2>1)continue;
    if(base.some((a,k)=>a.wall&&((edges[j].has(k)&&edges[k].has(i))||(edges[i].has(k)&&edges[k].has(j)))))continue;
    add(i,j);

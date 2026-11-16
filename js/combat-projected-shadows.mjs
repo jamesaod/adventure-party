@@ -143,6 +143,7 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
  const solidMask=new THREE.DataTexture(new Uint8Array([255,255,255,255]),1,1);solidMask.needsUpdate=true;
  const palettes=new Map(),identityBones=new Float32Array(new THREE.Matrix4().elements);let paletteFrame=0;
  const scene=new THREE.Scene(),records=[],batches=new Map(),ids=new WeakMap();let lighting={solar:null,sources:[]};let sequence=0,slot=0,receiver=null,stats={batches:0,triangles:0};
+ let retainedMaskKey=null,retainedTriangles=0;
  const maskTarget=new THREE.WebGLRenderTarget(1,1,{depthBuffer:false,stencilBuffer:false});
  const maskQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{snowMask:{value:null},snowBounds:{value:new THREE.Vector4()},inverseView:{value:new THREE.Matrix3()},viewport:{value:new THREE.Vector2()},viewAnchor:{value:new THREE.Vector2()},viewZoom:{value:1},snowGround:{value:false},mask:{value:maskTarget.texture},texel:{value:new THREE.Vector2(1,1)},localShadow:{value:false}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
@@ -151,8 +152,10 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
  function id(image){if(!ids.has(image))ids.set(image,++sequence);return ids.get(image);}
  function release(record){record.geometry.dispose();record.material.dispose();}
  return {
+  invalidate(){retainedMaskKey=null;},
   begin(){paletteFrame++;batches.clear();slot=0;stats={batches:0,triangles:0};},
   receiver(value){receiver=value;},
+  contactLighting(){return {receiver,lighting};},
   lighting(value){lighting=value;},
   modelGeometry(geometry){return {...geometry,image:solidMask};},
   queueModel({capture,transform,light,scale,opacity}){
@@ -185,7 +188,19 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
    const size=renderer.getDrawingBufferSize(new THREE.Vector2()),factor=Math.min(1,1024/Math.max(size.x,size.y));
    const width=Math.max(1,Math.round(size.x*factor)),height=Math.max(1,Math.round(size.y*factor));
    if(maskTarget.width!==width||maskTarget.height!==height)maskTarget.setSize(width,height);maskQuad.material.uniforms.texel.value.set(1/width,1/height);
+   // Only a single directional-light mask with immutable captured GPU poses
+   // can be retained. Local lights and canvas casters always use the live path.
+   let key=null;
+   if(groups.size===1&&lighting.sources.length===0&&[...batches.values()].every(b=>b.gpu&&b.light.vector[3]<.5)){
+    const receiverTexture=texture(receiver.image);
+    key=[width,height,receiver.image,receiverTexture.version,...receiver.bounds,...view.matrix,view.width,view.height,view.zoom,view.anchor.x,view.anchor.y,lighting.solar?.daylight,lighting.solar?.sky];
+    for(const b of batches.values())key.push(b.capture,b.part,...b.transform,...b.scale,...b.plane,...b.light.vector,b.light.power,b.light.range,b.opacity);
+   }
+   const reuse=key&&retainedMaskKey&&key.length===retainedMaskKey.length&&key.every((v,i)=>Object.is(v,retainedMaskKey[i]));
+   retainedMaskKey=null;
+   if(reuse){slot=records.length;for(const p of palettes.values())p.frame=paletteFrame;stats.triangles=retainedTriangles;stats.batches=batches.size;perf.count('shadowMaskReuses');}
    try{for(const group of groups.values()){
+    if(!reuse){
     renderer.setRenderTarget(maskTarget);renderer.setClearColor(0,0);renderer.clear(true,false,false);
     for(const batch of group){
     let record=records[slot++];
@@ -230,10 +245,11 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
     if(batch.gpu){const range=batch.part.geometry.drawRange;record.geometry.clearGroups();for(const g of batch.part.groups){const start=Math.max(g.start,range.start),end=Math.min(g.start+g.count,range.start+range.count);record.geometry.addGroup(start,Math.max(0,end-start),0);stats.triangles+=Math.max(0,end-start)/3;}record.geometry.setDrawRange(range.start,range.count);record.mesh.material=[record.material];perf.count('gpuModelShadowDraws');}
     else stats.triangles+=batch.positions.length/9;
     stats.batches++;
-    }renderer.render(scene,camera);scene.clear();perf.count('shadowSceneSubmissions');const su=maskQuad.material.uniforms,snow=getSnow();su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
+    }renderer.render(scene,camera);scene.clear();perf.count('shadowSceneSubmissions');}
+    const su=maskQuad.material.uniforms,snow=getSnow();su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
  maskQuad.material.uniforms.localShadow.value=group[0].light.vector[3]>.5;renderer.setRenderTarget(target);scene.add(maskQuad);renderer.render(scene,camera);scene.remove(maskQuad);
    }}finally{scene.clear();renderer.setRenderTarget(target);renderer.setClearColor(oldColor,oldAlpha);}
-   batches.clear();onPaint();
+   retainedMaskKey=key;retainedTriangles=stats.triangles;batches.clear();onPaint();
   },
   end(){while(records.length>slot)release(records.pop());for(const [key,p] of palettes)if(p.frame!==paletteFrame){p.texture.dispose();palettes.delete(key);}},
   uses(image){return records.slice(0,slot).some(r=>r.material.uniforms.artwork.value?.image===image||r.material.uniforms.receiverMask.value?.image===image);},

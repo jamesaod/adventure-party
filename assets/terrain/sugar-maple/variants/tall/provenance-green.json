@@ -1,0 +1,8 @@
+{
+  "source": "SugarMaple_Tall_Green.spm / SugarMaple_Tall_Green_LOD1.obj",
+  "triangles": 40472,
+  "modelUnitsPerMetre": 43.38933076913966,
+  "groundPlaneSourceMetres": 0,
+  "rootPlacement": "Native ground at authored Z=0; underground geometry clipped on GPU.",
+  "sourceHeightMetres": 21.6154
+}

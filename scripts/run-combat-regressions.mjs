@@ -2,7 +2,7 @@ import {readdirSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 const root=new URL('../',import.meta.url);
-export function combatRegressionFiles(){return readdirSync(new URL('scripts/',root)).filter(n=>/^test-(?:combat-|workshop-|bow-|arrow-|flaming-sword|animation-timeline|window-targeting|lodged-arrow|racial-traits|quiver-arrows|opportunity-attacks).*\.mjs$/.test(n)).sort().map(n=>'scripts/'+n);}
+export function combatRegressionFiles(){return readdirSync(new URL('scripts/',root)).filter(n=>/^test-(?:combat-|workshop-|bow-|arrow-|flaming-sword|animation-timeline|window-targeting|lodged-arrow|racial-traits|quiver-arrows|opportunity-attacks|torn-tree-|fallen-tree-|outline-mask-|hidden-unit-outline-|american-beech|sweet-birch|sugar-maple|maple-catalog|debris-grass-|canopy-snow-).*\.mjs$/.test(n)).sort().map(n=>'scripts/'+n);}
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
  const files=combatRegressionFiles();
  if(process.argv.includes('--list'))console.log(files.join('\n'));

@@ -1,10 +1,11 @@
+import {sealWorkshopTemplate} from './immutable-workshop-template.mjs';
 import {validateWorkshopUnit} from './workshop-unit-package.mjs?v=R238C313';
 import {instantiateWorkshopCombat,workshopCombatFits} from './workshop-combat-contract.mjs?v=R238C313';
 import {ITEM_CATALOG} from './item-catalog.mjs';
 import {normalizeOffHandEquipment} from './studio-equipment.mjs?v=R238C312';
 
 export function createWorkshopRepositoryMob(value){
- const template=validateWorkshopUnit(value),draft=template.draft;
+ const template=sealWorkshopTemplate(validateWorkshopUnit(value)),draft=template.draft;
  const model={modelId:template.id,modelUrl:'../'+template.model.file,modelHash:template.model.sha256};
  return {template,
   apply(unit,random=Math.random){

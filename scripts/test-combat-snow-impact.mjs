@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {clearSnowKickup,kickSnowImpact,updateSnowKickup} from '../js/combat-snow-kickup.mjs';
+const sample=depth=>[{x:1,y:2,depth}];
+clearSnowKickup();kickSnowImpact(sample(0),[30,20]);assert.equal(updateSnowKickup(0).length,0);
+kickSnowImpact(sample(.0254),[30,20]);const shallow=updateSnowKickup(0).length;clearSnowKickup();kickSnowImpact(sample(.9144),[30,20]);const deep=updateSnowKickup(0).length;assert(deep>shallow);assert.equal(deep,96);
+for(let i=0;i<10;i++)kickSnowImpact(sample(.9144),[30,20]);assert.equal(updateSnowKickup(0).length,256);assert.equal(updateSnowKickup(2).length,0);clearSnowKickup();
+console.log('PASS dry ground exclusion, depth-scaled impact count, shared cap and expiry');
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {pressCorpseIntoSnow,clearCorpseDepressions,setFootprintCells} from '../js/combat-snow-footprints.mjs?v=shore-snow1';
+const a={x:-10,y:-10},b={x:10,y:-10},c={x:10,y:10},d={x:-10,y:10};setFootprintCells(new Map([['0,0',{key:'0,0',triangles:[{a,b,c},{a,c,b:d}]}]]),()=>.3);
+const group=new T.Group();group.add(new T.Mesh(new T.BoxGeometry(1,.3,2),new T.MeshBasicMaterial()));const matrix=new T.Matrix4().set(1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1),entity={alive:false};
+clearCorpseDepressions();clearSnowKickup();pressCorpseIntoSnow(group,entity,matrix);const first=updateSnowKickup(0).length;assert(first>0);pressCorpseIntoSnow(group,entity,matrix);assert.equal(updateSnowKickup(0).length,first,'Cached corpse draws do not repeat burst');pressCorpseIntoSnow(group.clone(),entity,matrix);assert.equal(updateSnowKickup(0).length,first,'Rebuilt corpse geometry does not repeat burst');clearCorpseDepressions();clearSnowKickup();
+console.log('PASS actual corpse contact emits once, including geometry rebuilds');

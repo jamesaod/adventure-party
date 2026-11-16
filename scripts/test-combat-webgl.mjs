@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {createHash} from 'node:crypto';
-import {combatProjection,triangulateSurfaces,createCombatRenderer} from '../js/combat-webgl.mjs';
+import {combatProjection,triangulateSurfaces,createCombatRenderer} from '../js/combat-webgl.mjs?v=tree-snow-grains1';
 import {solidPrism} from '../js/exploration-combat-geometry.mjs';
 import {faceLightFragments} from '../js/combat-surface-lighting.mjs';
 import * as sceneApi from '../js/exploration-encounters.mjs';
-const engine=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 // A single non-CORS external bitmap permanently taints the shared raster
 // canvas, preventing all later WebGL uploads, even on a different test map.
 const stoneUrl=engine.match(/const STONE_FLOOR_TEXTURE_SRC=\s*'([^']+)'/)[1];

@@ -41,12 +41,6 @@ const fn=source.slice(source.indexOf('  function capture(pose) {'),source.indexO
 const order=[],capture={width:1,height:1,raw:new Uint8Array(24),time:.25};
 const sandbox={busy:false,modelReady:true,selectedProfileId:'bow',groupPoses:()=>['ready'],captures:{},readPose:()=>capture,getStyle:()=>({}),frameEdgeDirections:()=>[],quantizeCapture(){},onCapture:(group,pose,value)=>{assert.equal(group,'bow');assert.equal(pose,'ready');assert.equal(value,capture);order.push('reference');},refresh(){},queueSave(){order.push('workspace');},freshCount:()=>6,poseLabel:()=> 'Ready',ui:{SheetStatus:{}},onStatus(){},onError:error=>{throw error;},document:{dispatchEvent(){}},CustomEvent:class{}};
 vm.runInNewContext(fn,sandbox);sandbox.capture('ready');assert.deepEqual(order,['reference','workspace']);assert.equal(sandbox.captures.ready,capture);
-const html=readFileSync(new URL('../3d-studio.html',import.meta.url),'utf8'),studio=readFileSync(new URL('../js/3d-studio.mjs',import.meta.url),'utf8');
-assert.match(studio,/onCapture:\(profile,pose\)=>.*poseLibraryPanel.recordCapture\(profile,pose\)/);
-const panelHtml=html.slice(html.indexOf('<section class="studio-animation'),html.indexOf('<aside class="studio-preview-column'));
-for(const id of ['studioPoseLibraryMount','studioActionProfile','studioActionPose','studioCaptureSelectedPoseButton','studioWorkspaceStatus','studioExportPackageButton'])assert.ok(panelHtml.includes('id="'+id+'"'),id+' belongs to the one capture panel');
-for(const id of ['studioCaptureReadyButton','studioRecordRecipe','studioSeedPoseLibrary','studioExportPoseLibrary'])assert.ok(!html.includes('id="'+id+'"'));
 assert.ok(source.includes("entries.push(['pose-library.json'"),'The one ZIP includes reusable frame references');
 console.log('PASS unified capture: one panel, capture-to-library-to-workspace wiring, exact frames, shared poses, autosave/reload, failure retention, read-only previews and combined ZIP');
 
-assert.ok(studio.includes("initialLibrary:query.get('preview')==='1'?(linkedLibrary||state.poseLibrary):(state.poseLibrary||linkedLibrary)"),'Editable workspace retains new frames while embedded previews honor the pinned MOB library');

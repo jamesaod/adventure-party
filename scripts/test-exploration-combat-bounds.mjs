@@ -14,7 +14,7 @@ for(const [x,z] of [[0,0],[15,0],[15,15],[0,15],[6,7]]){
  const p=terrain.project(x,z),r=Math.round(p.y/terrain.hexRow),q=Math.round(p.x/terrain.hexWidth-r/2),b=terrain.hexBounds;
  assert(q>=b.minX&&q<=b.maxX&&r>=b.minY&&r<=b.maxY,'Axial bounds must cover every square-map corner and authored edge');
 }
-const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const names=['worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','architecturalWallWorldVertices','wallPolygonSegments','worldLineBlockedByOtherArchitecturalWalls','isArchitecturalWallVisibleToFriendlyParty'];
 const functions=names.map(name=>{const start=source.indexOf(`function ${name}(`),end=source.indexOf('\nfunction ',start+1);return source.slice(start,end);}).join('\n');
 const env={game:{condition:'wall'},HEX_W:64,HEX_H:42,HEX_ROW:31.5,ARCHITECTURAL_HEX_CORE_SCALE:.9,MAP_MIN_X:terrain.hexBounds.minX,MAP_MAX_X:terrain.hexBounds.maxX,MAP_MIN_Y:terrain.hexBounds.minY,MAP_MAX_Y:terrain.hexBounds.maxY,architecturalWalls:terrain.walls,architecturalBlockedHexes:new Set(),key:(x,y)=>`${x},${y}`,friendlyVisibilityObservers:()=>[{x:12,y:-12}]};

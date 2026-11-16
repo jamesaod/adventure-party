@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {configureSnowShelter,snowExposureAt,snowShelterRevision} from '../js/combat-snow-shelter.mjs';
+import {configureSnowShelter,snowExposureAt,snowShelterRevision} from '../js/combat-snow-shelter.mjs?v=tree-snow-grains1';
 const bounds=[-100,-100,200,200];configureSnowShelter([{x:0,y:0}],bounds,40);
 assert.equal(snowExposureAt(0,0),0);assert.equal(snowExposureAt(3,0),0);
 const samples=[0,5,10,20,30,40,60].map(x=>snowExposureAt(x,0));

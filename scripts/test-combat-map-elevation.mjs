@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {levelAt,setLevel,HEIGHT_PER_LEVEL,FEET_PER_LEVEL} from '../js/combat-map-elevation.mjs';
+import {createMap,parseMap,exportMap,resizeMap,cornerWeights} from '../js/combat-map-document.mjs';
+const map=createMap(4,4);assert.equal(levelAt(map,2,2),0);assert(!parseMap(exportMap(map)).terrain.elevations);
+for(let i=0;i<=6;i++){setLevel(map,1,1,i);assert.equal(levelAt(parseMap(exportMap(map)),1,1),i);}assert.equal(FEET_PER_LEVEL*6,15);assert.equal(HEIGHT_PER_LEVEL,Math.sqrt(3)*8);
+for(const bad of [-1,7,1.5,NaN,Infinity,'3'])assert.throws(()=>setLevel(map,1,1,bad));
+map.terrain.cells[1][1]='stone';assert.deepEqual(cornerWeights(map,1,1,0),{stone:1},'Do not blend across a cliff');
+const big=resizeMap(map,6,6);assert.equal(levelAt(big,1,1),6);assert.equal(levelAt(big,5,5),0);assert.equal(map.grid.width,4);const small=resizeMap(map,1,1);assert.deepEqual(small.terrain.elevations,[[0]]);
+for(const rows of [[],[[0]],Array.from({length:4},()=>Array(4).fill(7)),Array.from({length:4},()=>Array(4).fill(.5)),null])assert.throws(()=>parseMap(JSON.stringify({...map,terrain:{...map.terrain,elevations:rows}})));
+console.log('PASS legacy zero height, levels 0–6, 2.5-foot scale, export round trip, resize, cliff blending and invalid elevation rejection');

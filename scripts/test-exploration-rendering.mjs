@@ -4,12 +4,12 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
-const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const draw=extractCombatFunction(source,'draw');
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};
   const record=name=>()=>calls.push(name);
-  const context={deathPresentationActive:()=>false,syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
+  const context={updateTreeEnvironment(){},updateComputerCameraFollow(){},deathPresentationActive:()=>false,syncBurningTreeAudio:()=>{},directFirRendering:()=>false,currentScreen:"combat",combatGpu:null,combatLightingFrame:0,game:{player:{alive:true},enemies:[{alive:true,species:'orc'}],allies:[],areaEffects:[]},explorationTerrain:exploration,explorationEncounterApi:sceneApi,screenPointForWorld:p=>p,worldPointForHex:(x,y)=>({x,y}),adventurePartySun:sun,
     ctx:new Proxy({},{get:()=>()=>{},set:()=>true}),canvas:{width:100,height:100,dataset:{}},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_RENDER_DENSITY:1,BATTLEFIELD_LOGICAL_HEIGHT:100,architecturalWalls:[],
     prepareCombatProjectedShadows:record('shadow receiver'),queueFlyingArrowGpuShadow:record('flying arrow shadow'),queueExplorationDoors:()=>{},visibleHexes:()=>[],battlefieldZoomAnchor:()=>({x:0,y:0}),visibleTreeDecorations:()=>[],activeCombatTerrainTileSet:()=>({}),unitDepthSortPoint:()=>({x:0,y:0}),
     shouldRenderUnitUnderPartyVisibility:()=>true,unitPoseDefinition:()=>({spriteLayout:{}}),performance:{now:()=>0},

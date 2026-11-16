@@ -15,6 +15,7 @@ function cancelPendingCombatStart({preserveDraft=false}={}){
   if(!pendingCombatStart) return;
   const request=pendingCombatStart;
   request.cancelled=true;
+  request.rendering?.finish();
   pendingCombatStart=null;
   if(request.button){
     request.button.disabled=false;
@@ -63,15 +64,14 @@ async function showCombat(condition=selectedCombatCondition){
   if(request.cancelled || currentScreen!==request.screen) return false;
   pendingCombatStart=request;
   const rendering=combatRenderingPanel();
+  request.rendering=rendering;
   selectedCombatCondition=condition || "grass";
   globalThis.adventurePartyUiAudio?.transition(currentScreen,'combat','open');
   currentScreen="combat";
 
-  stopTitleMusic();
   launcherScreen.classList.remove("active");
   combatConditionsScreen?.classList.remove("active");
   xpLootScreen?.classList.remove("active");
-  pixelScreen.classList.remove("active");
   spellbookScreen.classList.remove("active");
   classbookScreen.classList.remove("active");
   spellPreviewScreen?.classList.remove("active");
@@ -82,8 +82,12 @@ async function showCombat(condition=selectedCombatCondition){
   try{
     const started=await startCombatSession({condition:selectedCombatCondition,source:explorationEncounter?'exploration':'combat-test'},{isCurrent:()=>!request.cancelled&&currentScreen==='combat'});
     if(!started){rendering.finish();return false;}
+    if(new URLSearchParams(location.search).get("terrainLab")==="1"){rendering.finish();combatAwaitingStart=true;return true;}
+    const continued=await rendering.ready();
+    if(!continued||request.cancelled||currentScreen!=="combat"){rendering.finish();return false;}
     rendering.finish();
     syncWeatherAudio();
+    await beginCombatFromPrompt();
   }catch(error){
     rendering.fail(error);
     console.error("Combat initialization failed:",error);
@@ -273,7 +277,7 @@ function newGame(condition=selectedCombatCondition,scenario={}){
   deathFx=null;
   projectileFx=null;
   areaDamageFx=null;
-  fireballExplosionFx=null;
+  fireballExplosionFx=null;globalThis.adventurePartyTreeMotion?.reset();
   dragonBreathFx=null;
   colorSprayFx=null;
   magicEffectFx=[];
@@ -475,7 +479,7 @@ function finishCombat(title,text,confirmed=false){
       prompt.textContent=`${title} — Press Space to end`;
       prompt.style.cssText='display:block;width:100%;margin:16px 0;padding:14px;white-space:normal;line-height:1.8';
       prompt.onclick=()=>{if(game===combat&&game.pendingBattleResult)finishCombat(title,text,true);};
-      document.querySelector('.unit-info-panel').insertBefore(prompt,document.getElementById('combatCompass'));
+      document.querySelector('.unit-info-panel').append(prompt);
     }
     ui.turnBanner.textContent=`${title.toUpperCase()} — PRESS SPACE TO END`;
     return;

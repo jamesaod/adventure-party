@@ -305,6 +305,15 @@ function r236DrawFloatingCombatText(){
       continue;
     }
 
+    if(entry.kind.includes('damage')&&unit){
+      const anchor=combatUnitTextAnchor(unit),style=r236FloatingTextStyle(entry.kind,1);
+      ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
+      ctx.font='400 14px "Press Start 2P", "Courier New", monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=3;ctx.globalAlpha=1;
+      ctx.strokeStyle=style.stroke;ctx.fillStyle=style.fill;
+      const width=ctx.measureText(entry.text).width,x=Math.max(width/2+4,Math.min(BATTLEFIELD_LOGICAL_WIDTH-width/2-4,anchor.x)),y=Math.max(14,anchor.y);
+      ctx.strokeText(entry.text,x,y);ctx.fillText(entry.text,x,y);ctx.restore();continue;
+    }
+
     const t=
       Math.max(
         0,

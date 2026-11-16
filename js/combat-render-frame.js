@@ -2,13 +2,21 @@
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
 
+let groundCoverAnimation=null;
+function hasEnvironmentAnimation(){return combatGpu?.puddleEffectsActive?.()||(!!game?.testTrees?.length&&globalThis.adventurePartyTreeMotion?.active())||treeFallEntries().some(({state})=>!oakDebrisSettled(state))||combatGpu?.groundCover?.active||(globalThis.adventurePartySeasons?.getSeason()==='fall'&&game?.testTrees?.length&&combatFirTrees?.fallingLeafCount>0);}
+function ensureGroundCoverAnimation(){
+ if(groundCoverAnimation!==null||!hasEnvironmentAnimation()||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ groundCoverAnimation=requestCombatAnimationTick(()=>{groundCoverAnimation=null;if(currentScreen==='combat'&&game&&!game.over&&hasEnvironmentAnimation()){draw();ensureGroundCoverAnimation();}});
+}
 function deathPresentationActive(unit){return !!unit&&!unit.alive&&Number.isFinite(unit.deathPresentationStartedAt);}
 
 function draw(){
   const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(typeof combatFrames!=="undefined"&&combatFrames&&!combatFrames.rendering){combatFrames.request();return;}
   combatLightingFrame++;
-  if(!game) return;
+  if(!game) return;game.treeMotionTime=performance.now()/1000;
+  updateTreeEnvironment(performance.now());
+  updateComputerCameraFollow();
 
   ensureFogAnimationLoop();
   syncBurningTreeAudio();
@@ -63,7 +71,7 @@ function draw(){
   const treeDecorations=visibleTreeDecorations(tiles);
   const firContacts=[];
   for(const tree of treeDecorations)drawFirContactShadow(tree,activeCombatTerrainTileSet(),firContacts);
-  if(combatGpu&&firContacts.length)combatGpu.surface(firContacts,drawFirContactShadow.image,{category:'Fir contact',sunShadow:(globalThis.adventurePartySolar?.state()?.daylight||0)>.1});
+  if(combatGpu&&firContacts.length)combatGpu.surface(firContacts,drawFirContactShadow.image,{category:'Fir contact',contactScale:combatShadowScale()});
   for(const tree of treeDecorations)drawTreeGroundShadow(tree);
   const tileSet=activeCombatTerrainTileSet();
 
@@ -197,23 +205,46 @@ function draw(){
   }
 
   queueFlyingArrowGpuShadow();
-  combatGpu?.projectedShadows?.flush();
+  if(combatGpu?.flushProjectedShadows)combatGpu.flushProjectedShadows();else combatGpu?.projectedShadows?.flush();
 
   actors.sort(
-    (a,b)=>a.sortY-b.sortY || a.sortX-b.sortX
+    (a,b)=>{
+      // Same-row foliage must not exchange painter order due to tiny
+      // camera-projection rounding differences between adjacent roots.
+      const depth=a.sortY-b.sortY;
+      return Math.abs(depth)>1e-6?depth:a.sortX-b.sortX;
+    }
   );
 
   const hasWeb=game.areaEffects?.some(effect=>effect.type==="web");
   if(!hasWeb&&typeof clearRaisedWeb==="function")clearRaisedWeb();
-  const outlineActors=explorationTerrain?explorationEncounterApi.orderSurfaceActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y),unitDepthSortPoint):actors;
+  const orderActors=explorationTerrain?explorationEncounterApi.orderSurfaceActors:combatGpu?.orderSurfaceActors;
+  const outlineActors=orderActors?orderActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y),unitDepthSortPoint):actors;
+  const cover=combatGpu?.groundCover,puddleMovers=[];
+  if(cover){
+    const origin=screenPointForWorld({x:0,y:0});
+    const movers=outlineActors.filter(a=>a.unit&&a.entity).map(a=>{const p=unitDepthSortPoint(a.entity),w=battlefieldProjectVector({x:p.x-origin.x,y:p.y-origin.y},true);if(!a.groundCorpse){const direction=HEX_DIRS[facingDirectionIndex(a.entity)],forward=worldPointForHex(direction.x,direction.y);puddleMovers.push({entity:a.entity,x:w.x,y:w.y,heading:Math.atan2(forward.y/.568329,forward.x)});}return [w.x,w.y,a.groundCorpse?.85:.40,a.groundCorpse?.94:.62];});
+    const spreadingCrowns=outlineActors.filter(a=>adventurePartyTreeEnvironment.isBroadleaf(a.tree)).map(a=>{
+      const center=hexCenter(a.tree.x,a.tree.y),radius=combatTreeCollision(a.tree.tileIndex,globalThis.adventurePartySeasons?.getSeason()||'summer').canopyRadius*(tileSet.treeDrawHeight||240)*treeSizeScale(a.tree)/210;
+      return {x:center.x,y:center.y,sortY:a.sortY,rx:radius,ry:radius*.568329};
+    });
+    const treeExclusions=[];
+    for(const tree of game.firDecorations?.values()||[]){const profile=adventurePartyTreeEnvironment.treeExclusionProfile(tree);if(profile.radius>0)treeExclusions.push({...worldPointForHex(tree.x,tree.y),width:HEX_W,row:HEX_ROW,species:tree.species,...profile});}
+    const fallenLeaves=oakGroundLeafDeposits(tileSet);
+    timed('groundCover',()=>cover.prepare(movers,outlineActors.filter(a=>a.groundCorpse&&a.entity),spreadingCrowns,treeExclusions,fallenLeaves,treeWoodPressure().capsules,treeWoodPressure().strength));ensureGroundCoverAnimation();
+  }
+  combatGpu?.drawPuddles?.(puddleMovers);ensureGroundCoverAnimation();
+  let leafSortCursor=-1e9;
   hiddenOutlineUnits=[];
   for(let actorIndex=0;actorIndex<outlineActors.length;actorIndex++){
-    const actor=outlineActors[actorIndex];hiddenOutlineCapture=actor.unit?{index:actorIndex}:null;
+    const actor=outlineActors[actorIndex];drawOakAirborneLeaves(tileSet,leafSortCursor,actor.sortY);leafSortCursor=actor.sortY;if(cover)timed('groundCover',()=>cover.drawUntil(actor.sortY));hiddenOutlineCapture=actor.unit?{index:actorIndex}:null;
     if(combatGpu&&!actor.gpuScenery)combatGpu.prepareOverlay();
     if(actor.wrapWeb&&hasWeb)drawMobWithWeb(actor.entity,actor.fn);
     else actor.fn();
   }
 
+  drawOakAirborneLeaves(tileSet,leafSortCursor,1e9);
+  if(cover)timed('groundCover',()=>cover.drawUntil(Infinity));
   hiddenOutlineCapture=null;
   if(combatGpu)combatGpu.prepareOverlay();
   drawPersistentLightSpellFx();
@@ -246,7 +277,7 @@ function draw(){
   */
   if(explorationTerrain)drawExplorationDarknessVolumes();
   else drawVisibleArchitecturalWallsOverLOS();
-  drawHiddenUnitOutlines(outlineActors);
+  timed('hiddenOutlines',()=>drawHiddenUnitOutlines(outlineActors));
 
   /* R170 weather is battlefield-only; UI text remains above it. */
   drawWeatherVfx(performance.now());
@@ -275,10 +306,40 @@ function draw(){
   ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
   const measured=typeof combatFrames!=='undefined'?combatFrames?.diagnostics().recentFps:0;
   ctx.font='12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';
-  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(7,BATTLEFIELD_LOGICAL_HEIGHT-29,205,23);
-  ctx.fillStyle='#d5f5dd';ctx.fillText('FPS '+(measured?measured.toFixed(1):'—')+' | Models 30 FPS',12,BATTLEFIELD_LOGICAL_HEIGHT-10);
-  globalThis.drawCombatPerformanceChart?.(ctx,BATTLEFIELD_LOGICAL_WIDTH);
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(7,BATTLEFIELD_LOGICAL_HEIGHT-29,globalThis.adventurePartyPerformanceMode==='fps'?90:205,23);
+  ctx.fillStyle='#d5f5dd';ctx.fillText('FPS '+(measured?measured.toFixed(1):'—')+(globalThis.adventurePartyPerformanceMode==='fps'?'':' | Models uncapped'),12,BATTLEFIELD_LOGICAL_HEIGHT-10);
+  if(globalThis.adventurePartyPerformanceMode!=='fps')globalThis.drawCombatPerformanceChart?.(ctx,BATTLEFIELD_LOGICAL_WIDTH);
   ctx.restore();
   }
+  if(typeof prepareCombatTerrainAhead==='function')timed('terrainAhead',()=>prepareCombatTerrainAhead());
   if(combatGpu)combatGpu.end();
 }
+
+// The landed pool is stable world data; birth/landing visibility remains on GPU.
+function treeGroundLeafDeposits(tileSet,state,oak){
+ if(!state?.leafDeposits||!oak)return null;
+ if(state.worldLeafSource!==state.leafDeposits){const center=worldPointForHex(oak.x,oak.y),yaw=state.fallYaw??(terrainHash(oak.x+7901,oak.y-5107)%(tileSet.treeRotationFrames||1))*Math.PI/6,c=Math.cos(yaw),s=Math.sin(yaw),scale=(tileSet.treeDrawHeight||240)/210;
+
+ state.worldLeafSource=state.leafDeposits;state.worldLeafDeposits=[];
+ if(state.leafDeposits.length){
+ const points=state.leafDeposits.map(p=>({x:center.x+(c*p.x+s*p.z)*scale,y:center.y+(-s*p.x+c*p.z)*scale*.568329}));
+ const xs=points.map(p=>p.x),ys=points.map(p=>p.y),left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys),cx=(left+right)/2,cy=(top+bottom)/2,rx=(right-left)/2,ry=(bottom-top)/2,step=(128/3)*.18;
+ const hash=(x,y,salt)=>{const v=Math.sin(x*127.1+y*311.7+salt*74.7)*43758.5453123;return v-Math.floor(v);};
+ for(let gx=Math.floor(left/step);gx<=Math.ceil(right/step);gx++)for(let gy=Math.floor(top/(step*.568329));gy<=Math.ceil(bottom/(step*.568329));gy++){
+ const x=(gx+hash(gx,gy,1))*step,y=(gy+hash(gx,gy,2))*step*.568329,dx=(x-cx)/Math.max(1,rx),dy=(y-cy)/Math.max(1,ry),angle=Math.atan2(dy,dx),edge=1+.10*Math.sin(angle*5)+.06*Math.sin(angle*9+1.7),d=Math.hypot(dx,dy)/edge;
+ const density=.84*Math.max(0,Math.min(1,(1-d)/.32));if(hash(gx,gy,3)>density)continue;
+ state.worldLeafDeposits.push({x,y,seed:hash(gx,gy,4),type:oak.species==='sweet-birch'?7:oak.species==='american-beech'?6:oak.species==='sugar-maple'?5:4,field:state.startedAt/1000+2.8+hash(gx,gy,5)*2.9,key:'fallen-patch:'+oak.x+','+oak.y+':'+gx+','+gy});
+ }
+ }
+ }
+ return state.worldLeafDeposits;
+}
+function drawTreeAirborneLeaves(tileSet,low,high,state,oak){
+ if(!state||!oak||state.settled||globalThis.adventurePartySeasons?.getSeason()==='winter'||!directFirRendering())return;
+ const tree={...oak},center=hexCenter(oak.x,oak.y),scale=(tileSet.treeDrawHeight||240)/210;
+ liveFirTreeRender(tileSet,tree,{host:combatGpu,center,scale,particlesOnly:true,low,high});
+}
+
+function oakGroundLeafDeposits(tileSet){const sources=treeFallEntries().map(({tree,state})=>treeGroundLeafDeposits(tileSet,state,tree)).filter(Boolean);if(!game.allLeafSources||sources.length!==game.allLeafSources.length||sources.some((s,i)=>s!==game.allLeafSources[i])){game.allLeafSources=sources;game.allTreeLeafDeposits=sources.flat();}return game.allTreeLeafDeposits;}
+function drawOakAirborneLeaves(tileSet,low,high){for(const {tree,state} of treeFallEntries())drawTreeAirborneLeaves(tileSet,low,high,state,tree);}
+

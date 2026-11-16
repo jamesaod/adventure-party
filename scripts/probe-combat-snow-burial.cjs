@@ -25,7 +25,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   coats.image.data.set([255,255,255,0]);coats.needsUpdate=true;tracks.image.data[0]=0;tracks.needsUpdate=true;
   scene.add(root);renderer.setRenderTarget(target);renderer.render(scene,camera);const corpsePixels=new Uint8Array(64*64*4);renderer.readRenderTargetPixels(target,0,0,64,64,corpsePixels);
   if(corpsePixels.some((v,i)=>i%4===3&&v>0))throw Error('Body rose above the snow');
-  cap.visible=true;bindUnitSnowOcclusion(cap.material,surface,matrix,1,true);renderer.render(scene,camera);renderer.readRenderTargetPixels(target,0,0,64,64,corpsePixels);if(!corpsePixels.some((v,i)=>i%4===3&&v>0))throw Error('Independent snow cap missing');
+  cap.visible=true;bindUnitSnowOcclusion(cap.material,surface,matrix,1,true);renderer.render(scene,camera);renderer.readRenderTargetPixels(target,0,0,64,64,corpsePixels);if(corpsePixels.some((v,i)=>i%4===3&&v>0))throw Error('Two-inch cap must remain buried beneath deep ground snow');tracks.image.data[0]=255;tracks.needsUpdate=true;renderer.render(scene,camera);renderer.readRenderTargetPixels(target,0,0,64,64,corpsePixels);if(!corpsePixels.some((v,i)=>i%4===3&&v>0))throw Error('Cap missing inside corpse depression');
   scene.remove(root);body.geometry.dispose();body.material.dispose();
   renderer.dispose();coats.dispose();tracks.dispose();target.dispose();return results;
  });if(errors.length)throw Error(errors.join('\n'));console.log(JSON.stringify(result));console.log('PASS real GPU static/skinned burial at 6/12/18 inches, lifted feet, trail openings and disabled/indoor path');

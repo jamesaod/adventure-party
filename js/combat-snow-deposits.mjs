@@ -1,11 +1,11 @@
 // A bounded batch of real deposited grains. No spatial noise/coverage pattern.
 export const SNOW_GRAIN_MASS=.18;
 export const SNOW_GRAIN_INTEGRAL=2.3;
-export function createSnowDepositBatch(limit=32768){
+export function createSnowDepositBatch(limit=32768,{grainScale=1}={}){
  const positions=new Float32Array(limit*3),coats=new Float32Array(limit*2);let credit=0;
  return {positions,coats,
   clear(){credit=0;},
-  add(amount,area,texelArea){credit+=Math.max(0,amount)*Math.max(0,area)/Math.max(1e-8,texelArea)/SNOW_GRAIN_INTEGRAL;},
+  add(amount,area,texelArea){credit+=Math.max(0,amount)*Math.max(0,area)/Math.max(1e-8,texelArea)/SNOW_GRAIN_INTEGRAL*grainScale;},
   take(spawn,landed=[],random=Math.random,deposit=null){
    const wanted=Math.min(limit,Math.floor(credit));let count=0;
    for(;count<wanted;count++){

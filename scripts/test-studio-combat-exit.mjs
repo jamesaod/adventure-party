@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const source = readCombatFixture(new URL('../js/adventure-party.js', import.meta.url), 'utf8');
+const source = readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url), 'utf8');
 function productionFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function ${name}`);
@@ -19,7 +19,7 @@ const functions = [
   'isStudioTestCombat', 'studioReturnUrl', 'returnToStudioFromCombat', 'exitCombat', 'scheduleCombatFinish',
   'finishCombat', 'checkCombatVictory', 'checkPartyDefeat', 'handleCombatKey', 'handleCombatConditionsKey'
 ];
-const restoreUrl = './3d-studio.html?studioRestore=1';
+const restoreUrl = './index.html?menu=game-mechanics';
 function harness(studioTest, spriteSetId = 'studio-kobold') {
   const calls = { navigation: [], loot: [], xp: [], timers: [], cleared: [], launcher: 0, charms: 0, updates: 0 };
   const sandbox = {...combatPresentationTestServices(),
@@ -135,7 +135,7 @@ console.log('Studio combat exit: built-in/imported victory, defeat, manual exits
 const scoped=harness(true);
 scoped.sandbox.window.location.search='?studioSprite=draft&model=orc-leader-male-uniformed&poseLibrary=humanoid-medium';
 scoped.sandbox.exitCombat();
-assert.equal(scoped.calls.navigation[0],'./3d-studio.html?studioRestore=1&model=orc-leader-male-uniformed&poseLibrary=humanoid-medium','Combat returns to the exact scoped model workspace');
+assert.equal(scoped.calls.navigation[0],'./index.html?menu=game-mechanics','Combat returns to the exact scoped model workspace');
 
 // Execute restoration with multiple weapon/shared groups, an empty selected
 // group, and newer editable work. Returning must never collapse this to the

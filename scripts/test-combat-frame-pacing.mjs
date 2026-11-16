@@ -3,9 +3,9 @@ import {combatPresentationTestServices} from './combat-presentation-test-context
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import vm from 'node:vm';
 import {createCombatFrameScheduler} from '../js/combat-frame-scheduler.mjs';
-function harness(){
+function harness(options={}){
  let time=0,visible=true,active=true,id=0;const pending=new Map(),events=[];
- const scheduler=createCombatFrameScheduler({render:()=>events.push(['render',time]),requestFrame:fn=>{const n=++id;pending.set(n,fn);return n;},cancelFrame:n=>pending.delete(n),now:()=>time,visible:()=>visible,enabled:()=>active,onError:error=>{throw error;}});
+ const scheduler=createCombatFrameScheduler({...options,render:()=>events.push(['render',time]),requestFrame:fn=>{const n=++id;pending.set(n,fn);return n;},cancelFrame:n=>pending.delete(n),now:()=>time,visible:()=>visible,enabled:()=>active,onError:error=>{throw error;}});
  return {scheduler,pending,events,setVisible:v=>{visible=v;},setActive:v=>{active=v;},step(t){time=t;const work=[...pending.values()];pending.clear();for(const fn of work)fn(time);}};
 }
 for(const displayHz of [54,60,144]){
@@ -30,10 +30,10 @@ for(const displayHz of [54,60,144]){
  h.setActive(false);assert.equal(await s.nextFrame(),false);s.dispose();assert.equal(await s.nextFrame(),false);
 }
 // Exercise actual finite production animations with a simulated display clock.
-const source=readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
 const extract=(name,prefix='function ')=>{const a=source.indexOf(prefix+name+'(');assert(a>=0,name);return source.slice(a,source.indexOf('\n}',a)+2);};
 let now=0;const samples=[];
-const context={...combatPresentationTestServices(),addTerrainScorch(){},igniteFirTrees(){},performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,
+const context={...combatPresentationTestServices(),warmCombatGround(){},addTerrainScorch(){},igniteFirTrees(){},performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,
  presentCombatFrame:async()=>{samples.push({now,projectile:context.projectileFx&&{...context.projectileFx},explosion:context.fireballExplosionFx&&{...context.fireballExplosionFx}});now+=1000/30;}};
 vm.createContext(context);vm.runInContext([extract('combatEffectDuration'),extract('animateArrowProjectile','async function '),extract('animateFireballExplosion','async function ')].join('\n'),context);
 assert.equal(context.combatEffectDuration(280),560);
@@ -68,3 +68,32 @@ assert(!readFileSync(new URL("../js/r223-los-cloud-aim-effects.js",import.meta.u
  vm.runInNewContext(preview.slice(a,z)+"\nspellPreviewRenderTick();",idle);assert.equal(idle.spellPreviewRenderFrame,null);
 }
 
+
+// Smooth camera presentation must not speed up animation ticks or frame awaits.
+for(const hz of [60,144]){
+ let following=true,updates=0;
+ const h=harness({presentationActive:()=>following}),s=h.scheduler;
+ const tick=()=>{updates++;s.request();s.requestTick(tick);};s.requestTick(tick);
+ for(let i=0;i<=hz;i++)h.step(i*1000/hz);
+ assert.equal(h.events.length,hz+1,'Camera presents at display refresh');
+ assert(updates>=30&&updates<=31,'Animation producers retain 30 Hz cadence');
+ let resolved=false;const p=s.nextFrame().then(()=>{resolved=true;});
+ h.step(1000+1000/hz);await Promise.resolve();assert.equal(resolved,false,'Intermediate render cannot finish an animation frame waiter');
+ h.step(1040);await p;assert(resolved);
+ following=false;s.dispose();assert.equal(h.pending.size,0);
+}
+{
+ const h=harness({presentationActive:()=>true});h.scheduler.request();h.step(0);
+ h.setActive(false);h.step(17);assert.equal(h.pending.size,0,'Disabled camera presentation stops scheduling');
+ h.scheduler.dispose();
+}
+
+for(const hz of [60,144]){
+ const h=harness({fps:0}),s=h.scheduler;let updates=0;
+ const tick=()=>{updates++;s.request();s.requestTick(tick);};s.requestTick(tick);
+ for(let i=0;i<=hz;i++)h.step(i*1000/hz);
+ assert.equal(updates,hz+1,'Uncapped producers update every display frame');
+ assert.equal(h.events.length,hz+1,'Uncapped rendering follows display refresh');
+ assert(Math.abs(s.diagnostics().recentFps-hz)<.01,'Uncapped FPS diagnostics remain valid');
+ s.dispose();
+}

@@ -507,7 +507,7 @@ function r231CompletionTargetPrompt(
       );
 
     return (
-      `${spell.name} is ready: AIM the center, then use the mouse wheel `+
+      `${spell.name} is ready: AIM the center, then use Shift + mouse wheel `+
       `to rotate (${wallOfFogOrientationLabel(autoOrientation)}).`
     );
   }

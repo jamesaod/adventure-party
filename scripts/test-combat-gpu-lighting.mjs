@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 import {MAX_COMBAT_LIGHTS,packCombatLights,linearLightColor,combatLightGLSL} from '../js/combat-light-shader.mjs';
-import {triangulateSurfaces} from '../js/combat-webgl.mjs';
+import {triangulateSurfaces} from '../js/combat-webgl.mjs?v=tree-snow-grains1';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const light={x:2,y:3,z:4,color:0xffa64d,intensity:8,range:10,decay:1.5,bounds:[-4,-5,8,10]};
 const spell={kind:'spell',x:.25,y:2,color:[255,100,0],intensity:2,range:5,bounds:[0,0,64,32]};

@@ -8,7 +8,7 @@ import { SPRITE_LAYOUTS, spriteLayout, spriteMob } from "../js/sprite-layouts.mj
 
 // Exercise the production pose resolver and draw path without booting audio,
 // terrain, or the DOM. Images and the clock are the only inputs replaced here.
-const source = readCombatFixture(new URL("../js/adventure-party.js", import.meta.url), "utf8").replace(/\r\n/g, "\n");
+const source = readCombatFixture(new URL("../js/adventure-party.js?v=tree-snow-grains1", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 function productionFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function: ${name}`);
@@ -86,10 +86,10 @@ const names = [
   "unitPoseDefinition", "unitPoseSupportsPose", "directionalUnitPoseFrame",
   "shouldUseKoboldPronePose", "activeUnitPoseName", "unitPoseSprite",
   "setTemporaryUnitPose", "triggerUnitAttackPose", "pixelAssetIdForUnitPose", "drawSpriteFacing",
-  "runtimeAnchorForAsset", "trimmedRuntimeCanvasForAsset", "unitPoseNativeFacing",
+  "runtimeAnchorForAsset", "unitPoseNativeFacing",
   "getSpriteAssetSpec", "spriteRenderDimensions", "registerStudioSpriteSet", "inspectStudioSpritePose",
   "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet", "studioSpriteTestUnits", "selectStudioSpriteSet",
-  "clampNumber", "updatePixelPropertiesUi", "readPixelPropertiesFromUi"
+
 ];
 vm.createContext(sandbox);
 vm.runInContext(names.map(productionFunction).join("\n"), sandbox);
@@ -161,12 +161,6 @@ sandbox.drawSpriteFacing(legacyReady, { x: 0, y: 0 }, 27, 28, "left", "right", l
 assert.deepEqual(scales, [[-1, 1]]);
 assert.equal(sandbox.unitPoseSprite({ type: "unknown" }, legacyReady), legacyReady);
 
-// Pixel Editor Apply must keep the same complete source frame and calibrated
-// ground anchor, so changing one facing cannot change its scale or baseline.
-const framedRuntime = sandbox.trimmedRuntimeCanvasForAsset(framedAsset);
-assert.equal(framedRuntime.canvas, framedAsset.editCanvas);
-assert.equal(framedRuntime.anchor.x, 0.5);
-assert.equal(framedRuntime.anchor.y, 0.75);
 assert.equal(sandbox.runtimeAnchorForAsset("full-frame").y, 0.75);
 assert.equal(sandbox.runtimeAnchorForAsset("legacy").y, 1);
 
@@ -325,60 +319,6 @@ assert.deepEqual(JSON.parse(JSON.stringify(sandbox.registeredStudioSpriteSets.ge
 }, "Combat registry retains Pixel Studio unit calibration");
 const scaledAsset = registeredAssets.find(asset => asset.id === "sprite-set-scaled-package-prone-e");
 assert.equal(sandbox.spriteRenderDimensions(scaledAsset.id, scaledAsset.gameImage).width, 50.4);
-Object.assign(sandbox, {
-  pixelEditorAsset: scaledAsset, PIXEL_EDITOR_GRID_SIZE: 64, updatePixelSourceScaleUi() {},
-  pixelSourceWidth: {}, pixelSourceHeight: {}, pixelWorkspaceWidth: {}, pixelWorkspaceHeight: {},
-  pixelRenderWidth: {}, pixelRenderHeight: {}, pixelAnchorX: {}, pixelAnchorY: {},
-  pixelScaleMode: {}, pixelLockAspect: {}
-});
-sandbox.updatePixelPropertiesUi();
-assert.equal(sandbox.pixelRenderWidth.step, "any");
-assert.equal(sandbox.pixelRenderHeight.step, "any");
-sandbox.readPixelPropertiesFromUi();
-assert.equal(scaledAsset.spec.renderWidth, 50.4);
-assert.equal(scaledAsset.spec.renderHeight, 63);
-assert.equal(scaledAsset.spec.anchorY, 145);
-sandbox.pixelRenderWidth.value = "52.8";
-sandbox.readPixelPropertiesFromUi({ renderChanged: "width" });
-assert.equal(scaledAsset.spec.renderWidth, 52.8);
-assert.ok(Math.abs(scaledAsset.spec.renderHeight - 66) < 1e-10, "Aspect-locked resizing preserves fractional precision");
-sandbox.pixelRenderWidth.value = "not-a-number";
-sandbox.readPixelPropertiesFromUi();
-assert.equal(scaledAsset.spec.renderWidth, 52.8, "Invalid dimensions retain the last finite value");
-// A 2000% seven-hex studio model keeps a 480×400 source frame while rendering
-// at 2880×2400. Applying Pixel Editor properties must not shrink that metadata.
-const giantAsset = { spec: { ...scaledAsset.spec,
-  sourceWidth: 480, sourceHeight: 400, workspaceWidth: 480, workspaceHeight: 400,
-  renderWidth: 2880, renderHeight: 2400, anchorX: 240, anchorY: 300 } };
-sandbox.pixelEditorAsset = giantAsset;
-sandbox.updatePixelPropertiesUi();
-assert.equal(sandbox.pixelRenderWidth.max, "4096");
-assert.equal(sandbox.pixelRenderHeight.max, "4096");
-sandbox.readPixelPropertiesFromUi();
-assert.equal(giantAsset.spec.renderWidth, 2880);
-assert.equal(giantAsset.spec.renderHeight, 2400);
-assert.equal(giantAsset.spec.workspaceWidth, 480);
-assert.equal(giantAsset.spec.workspaceHeight, 400);
-assert.equal(giantAsset.spec.anchorX, 240);
-assert.equal(giantAsset.spec.anchorY, 300);
-sandbox.pixelRenderHeight.value = "5000";
-sandbox.readPixelPropertiesFromUi({ renderChanged: "height" });
-assert.equal(giantAsset.spec.renderWidth, 4096, "Aspect-locked resizing also caps the derived dimension");
-assert.ok(giantAsset.spec.renderHeight <= 4096);
-assert.ok(Math.abs(giantAsset.spec.renderWidth / giantAsset.spec.renderHeight - 1.2) < 1e-12);
-sandbox.pixelEditorAsset = { spec: { ...scaledAsset.spec, preserveFrame: false, renderWidth: 50.4, renderHeight: 63.6 } };
-sandbox.updatePixelPropertiesUi();
-assert.equal(sandbox.pixelRenderWidth.step, "1");
-assert.equal(sandbox.pixelRenderWidth.max, "512");
-assert.equal(sandbox.pixelRenderHeight.max, "512");
-sandbox.readPixelPropertiesFromUi();
-assert.equal(sandbox.pixelEditorAsset.spec.renderWidth, 50);
-assert.equal(sandbox.pixelEditorAsset.spec.renderHeight, 64, "Legacy sprite dimensions retain integer rounding");
-sandbox.pixelRenderWidth.value = sandbox.pixelRenderHeight.value = "600";
-sandbox.readPixelPropertiesFromUi();
-assert.equal(sandbox.pixelEditorAsset.spec.renderWidth, 512);
-assert.equal(sandbox.pixelEditorAsset.spec.renderHeight, 512, "Legacy assets retain their existing render-size limit");
-
 // Player-target packages bind the implemented character type. Loading order
 // cannot choose a different default; explicit selection wins for that type
 // even when the next selected test happens to be a monster.
@@ -519,7 +459,8 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
     allUnits:()=>[context.game.player,...context.game.allies,...context.game.enemies],
     canvas:{dataset:{}},explorationEncounter:null,
     ensureCombatRenderer:async()=>{if(waitForGraphics)await graphicsWait.promise;},
-    combatRenderingPanel:()=>({finish(){},fail(error){throw error;}}),
+    combatRenderingPanel:()=>({finish(){},ready:async()=>true,fail(error){throw error;}}),
+    beginCombatFromPrompt:async()=>true,
     classReportOpen: false, characterSheetOpen: false, spellCastOverlayOpen: false,
     quickCommandUnitIds: new Set(), quickCommandActive: false, quickCommandUnitId: null, quickCommandGeneration: 0, quickCommandRunning: false,
     aiTimer: null, combatOpeningSpeechDone: false, combatAwaitingStart: false, combatMessageClearTimer: null, combatMessageFlashTimer: null,
@@ -559,8 +500,8 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
       "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);
-  const sharedSource=readCombatFixture(new URL('../js/combat-runtime.js',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
-  vm.runInContext('let combatSessionGeneration=0,combatFirTreesLoading=Promise.resolve(); function initializeFirMovementObstacles(){}\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
+  const sharedSource=readCombatFixture(new URL('../js/combat-runtime.js?v=tree-snow-grains1',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
+  vm.runInContext('let combatSessionGeneration=0,combatFirTreesLoading=Promise.resolve(),combatTreeCollision={},combatTreeAssets={select:async()=>({})},combatFirTrees=null,combatGpu=null,combatSceneContext=null; function initializeFirMovementObstacles(){}\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
   context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
   context.api = {
     select: context.selectStudioSpriteSet,
