@@ -1,0 +1,60 @@
+<!doctype html><meta charset="utf-8"><title>Model-attached flaming sword</title>
+<style>body{background:#151b24;color:#dce5ed;font:15px system-ui;margin:22px;max-width:1050px}h1{font-size:24px}button,select{background:#283440;color:inherit;border:1px solid #7d929f;padding:8px;margin:5px}label{margin-right:14px}canvas{width:640px;max-width:100%;border:1px solid #435260}#status{color:#b8dbba}.layout{display:flex;gap:20px}.notes{max-width:330px}#time{width:260px}</style>
+<h1>Flaming sword — attached to the animated blade</h1><p id="status" role="status">Loading the actual Carl model and sword…</p>
+<div><label>Pose <select id="pose"><option value="ready">Idle</option><option value="walk" selected>Walk animation</option><option value="attack">Attack pose</option></select></label><label>View rotation <select id="rotation"><option value="0">0°</option><option value="1">60°</option><option value="2">120°</option><option value="3">180°</option><option value="4">240°</option><option value="5">300°</option></select></label><label><input id="flame" type="checkbox" checked> Flaming sword</label><button id="play">Pause animation</button></div>
+<label>Animation position <input id="time" type="range" min="0" max="2" step=".01" value="0"></label>
+<div class="layout"><canvas id="game" width="640" height="500"></canvas><div class="notes"><p>The flame uses the sword’s current silhouette, sampled after animation and view rotation.</p><p>The body and shield hide flames on the far side. The grip stays clear. Flame edges use the same effect as burning units.</p><p id="stats"></p></div></div>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three/three.module.min.js"}}</script>
+<script type="module">
+import * as THREE from '../../assets/vendor/three/three.module.min.js';
+import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=R238C299';
+import {hydratePreparedAsset} from '../../js/combat-prepared-assets.mjs?v=direct-assets-299';
+import {expandPreparedChunks} from '../../js/combat-prepared-chunks.mjs';
+import {attachWalkTest} from '../../js/combat-walk-test.mjs';
+import {directUnitFrame,sampleDirectPose} from '../../js/combat-direct-units.mjs';
+import {createWeaponFlameMask,markFlamingBlade} from '../../js/combat-weapon-flame.mjs?v=R238C299';
+const status=document.querySelector('#status');
+try{
+ const unpack=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Cannot load '+url);return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();};
+ const pack=await unpack('../../assets/prepared-combat/direct-v1-mob-appearance-v1-0d8d7b53.json.gz');
+ await expandPreparedChunks(pack,hash=>unpack('../../assets/prepared-combat/chunks/'+hash+'.json.gz'));
+ const loaded=await hydratePreparedAsset(pack);await attachWalkTest(pack.recipe,loaded);
+ const canvas=document.querySelector('#game'),raster=document.createElement('canvas'),gpu=createCombatRenderer(canvas,raster);
+ const entity={id:'flame-preview',alive:true,x:0,y:0,inventory:[{slot:'weapon',catalogItemId:'flaming-sword-5',equipped:true}]};
+ const view={width:640,height:500,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]},frame=loaded.manifest.frame;
+ const anchor={x:frame.anchorX/frame.width,y:frame.anchorY/frame.height};
+ let elapsed=0,playing=true,last=0,rotation=0;
+ globalThis.adventurePartyUnitViewYawOffset=()=>rotation*Math.PI/3;
+ const imageFor=pose=>loaded.images[Object.values(loaded.manifest.poses[pose].frames)[0]];
+ function draw(pose=document.querySelector('#pose').value,time=elapsed){
+  rotation=+document.querySelector('#rotation').value;entity.inventory[0].catalogItemId=document.querySelector('#flame').checked?'flaming-sword-5':'long-sword';
+  gpu.begin(view);const ctx=gpu.context;ctx.fillStyle='#232e39';ctx.fillRect(0,0,640,500);
+  const walk=pose==='walk'?time:undefined;entity.walkPresentation=walk===undefined?undefined:{seconds:walk};
+  if(!globalThis.adventurePartyDirectUnits.draw(gpu,imageFor(pose==='walk'?'ready':pose),{entity,x:320,y:430,width:frame.renderWidth*8,height:frame.renderHeight*8,anchor,walkSeconds:walk,rotation:rotation*Math.PI/3,pixelsPerMetre:128/3*8,opacity:1,saturation:1,solar:{daylight:1,sky:1,direction:{x:-.3,y:1,z:.8}},ambientPercent:100,outdoor:true,localLights:[]}))throw Error('Direct model did not draw');
+  gpu.end();const p=JSON.parse(canvas.dataset.combatProfile);document.querySelector('#stats').textContent='View '+rotation*60+'° · '+pose+' · '+time.toFixed(2)+' s';return p;
+ }
+ // Real rig: every pose/view draws a fresh blade mask from the current geometry.
+ let samples=0;
+ for(const pose of ['ready','walk','attack'])for(let facing=0;facing<6;facing++){
+  document.querySelector('#rotation').value=facing;const p=draw(pose,.37+facing*.07);
+  if(p.counters.weaponFlameMaskPasses!==1||p.counters.weaponFlameComposites!==1)throw Error('Missing model-attached flame for '+pose+'/'+facing);samples++;
+ }
+ document.querySelector('#flame').checked=false;if(draw().counters.weaponFlameMaskPasses)throw Error('Ordinary sword retained flames');document.querySelector('#flame').checked=true;
+ // Independent GPU depth check, sharing the production mask pass.
+ const checkRenderer=new THREE.WebGLRenderer({alpha:true,antialias:false}),target=new THREE.WebGLRenderTarget(128,128,{depthBuffer:true}),mask=createWeaponFlameMask(),root=new THREE.Group(),weapon=new THREE.Group();root.add(weapon);
+ const sword=new THREE.Mesh(new THREE.BoxGeometry(.12,1.4,.04),new THREE.MeshBasicMaterial());sword.position.y=.4;weapon.add(sword);markFlamingBlade(weapon,{base:[0,0,0],tip:[0,1.1,0]});
+ const body=new THREE.Mesh(new THREE.BoxGeometry(3,3,.1),new THREE.MeshBasicMaterial());root.add(body);
+ const camera=new THREE.OrthographicCamera(-1.5,1.5,1.5,-1.5,.1,20);camera.position.z=6;camera.updateMatrixWorld();const pixels=new Uint8Array(128*128*4);
+ function alphaCount(z){body.position.z=z;root.updateMatrixWorld(true);checkRenderer.setRenderTarget(target);checkRenderer.setClearColor(0,0);checkRenderer.clear();mask.draw(checkRenderer,root,camera);checkRenderer.readRenderTargetPixels(target,0,0,128,128,pixels);let count=0;for(let i=3;i<pixels.length;i+=4)count+=pixels[i]>0;return count;}
+ const hidden=alphaCount(1),visible=alphaCount(-1);if(hidden!==0||visible<50)throw Error('Body depth did not hide the rear blade: '+hidden+'/'+visible);
+ mask.dispose();target.dispose();checkRenderer.dispose();checkRenderer.forceContextLoss();sword.geometry.dispose();sword.material.dispose();body.geometry.dispose();body.material.dispose();
+ document.querySelector('#rotation').value='0';draw();
+ status.textContent='PASS — real model, live walk, attack pose, six view angles, body occlusion and unequip.';
+ document.body.dataset.results=JSON.stringify({samples,occludedPixels:hidden,visibleBladePixels:visible,ordinarySwordFlames:0});
+ document.querySelector('#play').onclick=()=>{playing=!playing;document.querySelector('#play').textContent=playing?'Pause animation':'Play animation';};
+ for(const id of ['pose','rotation','flame'])document.getElementById(id).onchange=()=>draw();
+ document.querySelector('#time').oninput=event=>{elapsed=+event.target.value;playing=false;document.querySelector('#play').textContent='Play animation';draw();};
+ function animate(now){requestAnimationFrame(animate);if(!last)last=now;if(now-last<1000/30)return;const dt=Math.min(.1,(now-last)/1000);last=now;if(playing){elapsed=(elapsed+dt)%2;document.querySelector('#time').value=elapsed;draw();}}
+ requestAnimationFrame(animate);
+}catch(error){status.textContent='FAIL — '+error.message;console.error(error);}
+</script>

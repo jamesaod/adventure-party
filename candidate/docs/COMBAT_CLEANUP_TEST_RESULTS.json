@@ -1,0 +1,508 @@
+{
+  "date": "2026-11-05",
+  "build": "R238C293",
+  "tests": [
+    {
+      "file": "test-3d-studio.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-action-profiles.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-armor-rules.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-banded-lighting.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-battlefield-font.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-blender-orc-turns.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-blond-scale-mail-model.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-carl-bow-loadout.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-carl-ual2-two-handed-audition.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-carl-ual2.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-cleric-phase-one.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-action-entry.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-capture-parity.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-casting-lifecycle.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-equipment-refresh.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-frame-pacing.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-gpu-lighting.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-info-panel.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-inventory-ui.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-missile-actions.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-mob-renderer.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-module-boundaries.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-outline.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-ownership.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-result-panel.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-roster-setup.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-runtime.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-spell-actions.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-surface-lighting.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-turn-flow.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-view-environments.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-visibility-performance.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-combat-webgl.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-directional-sprites.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-doorway-movement.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-doorway-navigation.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-editor-qa.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-encounter-areas.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-equipment-library.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-authoring.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-combat-bounds.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-discovery.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-edges.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-encounters.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-map.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-rendering.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-scene-style.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-sizes.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-startup.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration-wall-relief.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-exploration.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-fbx-animations.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-game-script-loader.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-ground-shadow-geometry.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-humanoid-animation-catalog.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-item-catalog.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-lodged-arrow-rendering.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-male-orc-model.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mixamo-retarget.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mob-appearance-runtime.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mob-appearance.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mob-authoring.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mob-class-rules.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mob-generation.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-mob-library.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-monster-baselines.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-new-tripo-assets.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-opportunity-attacks.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-anatomical-aim.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-archer.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-axe-basis.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-female-shaman-model.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-female-shaman-v2-model.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-full-anatomical-qa.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-leader-model.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-native-bind.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-retarget-comparison.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-skinning.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-sword-profile.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-orc-ual2.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-outdoor-grass.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-portal-daylight.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-pose-library-controls.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-priest-spells-phase-one.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-quarter-walls.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-quick-command.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-repository-mobs.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-sealed-interiors.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-shared-action-captures.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-shield-orc.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-spell-target-results.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-sprite-set-package.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-animations.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-batch176.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-capture-export.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-casting-captures.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-combat-exit.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-equipment.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-footprints.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-geometry.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-grip-sliders.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-qa-pack.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-sprite-regressions.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-ui-cleanup.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-unified-capture.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-weapon-sets.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-studio-workspace-codec.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-terrain-transitions.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-unit-package.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-unit-sun-shadow.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-visibility-solar-qa.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-wall-ground-shadows.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-wall-scorch.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-wall-surface-visibility.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-wall-surfaces.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-warrior-recolor.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-weapon-shaft-roll.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-weapons-196.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-window-targeting.mjs",
+      "status": 0
+    },
+    {
+      "file": "test-woman-warrior-assets.mjs",
+      "status": 0
+    }
+  ],
+  "passed": 120,
+  "total": 120,
+  "windowsNote": "Executed outside filesystem sandbox to exercise temporary-directory junction safety checks; no assertions skipped.",
+  "browser": {
+    "url": "http://127.0.0.1:8276/index.html?environmentTest=17",
+    "runtimeErrors": 0,
+    "checks": [
+      "startup",
+      "wall encounter",
+      "round and AI handoff",
+      "movement",
+      "empty-hex arrow",
+      "Shield scheduled completion",
+      "AI hit and miss",
+      "round progression",
+      "launcher exit",
+      "fresh grass encounter and trees",
+      "production Fireball Previewer with five target damage results",
+      "Previewer exit"
+    ],
+    "scope": "Smoke validation, not every map/spell combination"
+  }
+}

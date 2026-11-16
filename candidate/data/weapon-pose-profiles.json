@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "profiles": {
+    "one-handed-swing-v1": {
+      "name": "One-handed swinging weapon",
+      "compatibleVisualClasses": ["sword", "battle-axe"],
+      "poses": {
+        "ready": { "animation": "UAL2_Sword_Ready", "sourceId": "UAL2_Sword_Ready", "timeSeconds": 0.0 },
+        "attack": { "animation": "UAL2_Sword_Regular_A", "sourceId": "UAL2_Sword_Regular_A", "timeSeconds": 0.3 },
+        "prone": { "animation": "fall", "sourceId": "fall", "timeSeconds": 1.2 }
+      }
+    }
+  }
+}

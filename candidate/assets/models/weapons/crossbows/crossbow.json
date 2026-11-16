@@ -1,0 +1,97 @@
+{
+  "sourceFbxSha256": "9df0fe0254720f5dfb227f2a8c5f0ca8fec24a0fa966d06368feba086388b4b0",
+  "sourceArchiveSha256": "82433296c046f554dac864529740f2a18b1f1e567da584a3af55f6779bfe3838",
+  "sourceArchiveBytes": 48483986,
+  "sourceTriangles": 10792,
+  "triangles": 4678,
+  "meshes": [
+    {
+      "name": "Crossbow",
+      "sourceTriangles": 8904,
+      "triangles": 4006,
+      "ratio": 0.45
+    },
+    {
+      "name": "rope",
+      "sourceTriangles": 1620,
+      "triangles": 404,
+      "ratio": 0.25
+    },
+    {
+      "name": "Object001",
+      "sourceTriangles": 116,
+      "triangles": 116,
+      "ratio": 1
+    },
+    {
+      "name": "Rope-Metal",
+      "sourceTriangles": 152,
+      "triangles": 152,
+      "ratio": 1
+    }
+  ],
+  "textureResolution": 512,
+  "bytes": 1030700,
+  "sha256": "505c542372cee565a1a267476ec44d63b5ada0dd956d4b393c03c16fa847c6c8",
+  "sourceForwardMinimum": -0.5114805102348328,
+  "sourceLength": 0.8192055523395538,
+  "primaryAxis": [
+    0,
+    0,
+    1
+  ],
+  "textureReference": {
+    "albedo": {
+      "sourceSha256": "e3862b1ec5ab97ffac4a6997cf6535a631f51f9ed259ecc38ed16908c94dd954",
+      "sourceMean": [
+        124.6567754149437,
+        105.25590467453003,
+        96.33012801408768
+      ],
+      "resizedMean": [
+        124.65670776367188,
+        105.25470733642578,
+        96.32856750488281
+      ]
+    },
+    "normal": {
+      "sourceSha256": "a3a50d937a3a5acf3e37488d13098eab6f6ae50e028db95cc29bb3b8ed3d2ce3",
+      "sourceMean": [
+        127.17268615961075,
+        127.37831032276154,
+        246.3267468214035
+      ],
+      "resizedMean": [
+        127.17176055908203,
+        127.37683868408203,
+        246.28277969360352
+      ]
+    },
+    "roughness": {
+      "sourceSha256": "ff96fa2901a24fc29b325e22c971ac56a35172aa3609e5db3c1dd37b1688692a",
+      "sourceMean": [
+        150.84600007534027,
+        150.84600007534027,
+        150.84600007534027
+      ],
+      "resizedMean": [
+        150.46039199829102,
+        150.46039199829102,
+        150.46039199829102
+      ]
+    },
+    "metallic": {
+      "sourceSha256": "726d160343332017d79710427bc06ce11eae6d79a6e1994291015f5d7d1bfc22",
+      "sourceMean": [
+        38.346827924251556,
+        38.346827924251556,
+        38.346827924251556
+      ],
+      "resizedMean": [
+        38.3381233215332,
+        38.3381233215332,
+        38.3381233215332
+      ]
+    }
+  }
+}

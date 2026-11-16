@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {newDraft,validateDraft,readiness} from '../js/mob-workshop-core.mjs';
+import {ensureCreature,creatureIssues,creatureDefinition,instantiateCreature,equipmentSummary,rollDice} from '../js/mob-workshop-creature.mjs';
+const d=newDraft();validateDraft(d);const c=ensureCreature(d);
+assert.equal(c.body.size,'medium');assert.equal(creatureIssues(d).errors.length,0);
+c.combat.hpMode='roll';c.combat.hitDice='2d8+2';assert.equal(instantiateCreature(d,{id:'a',random:()=>0}).hp,4);assert.equal(instantiateCreature(d,{id:'b',random:()=>.999}).hp,18);
+c.combat.hpMode='average';assert.equal(instantiateCreature(d,{id:'c'}).hp,11);assert.throws(()=>rollDice('2d0'));assert.throws(()=>rollDice('999d8'));
+d.equipment.armor='chain-mail';d.inventoryItems=[{id:'shield-orc',quantity:1,location:'off-hand'}];assert.equal(equipmentSummary(d).finalAC,4);
+c.combat.acModifier=-2;assert.equal(equipmentSummary(d).finalAC,2);c.combat.acMode='manual';d.stats.ac=7;assert.equal(equipmentSummary(d).finalAC,7);
+const a=instantiateCreature(d,{id:'a'}),b=instantiateCreature(d,{id:'b'});a.inventory[0].quantity=8;assert.equal(b.inventory[0].quantity,1);assert.equal(d.inventoryItems[0].quantity,1);
+c.attacks.push({name:'Bite',count:1,damageSM:'1d6',damageL:'1d4',type:'P',target:'same',animation:'bite'});assert.ok(creatureIssues(d).warnings.some(x=>x.includes('Bite')));assert.equal(creatureIssues(d).errors.length,0);
+c.attacks[0].damageSM='garbage';assert.ok(creatureIssues(d).errors.length);assert.throws(()=>creatureDefinition(d));c.attacks[0].damageSM='1d6';
+d.inventoryItems.push({id:'shield-orc',quantity:1,location:'off-hand'});assert.ok(creatureIssues(d).errors.some(x=>x.includes('Multiple items')));d.inventoryItems.pop();
+d.stats.int=0;assert.equal(readiness(d).find(c=>c.label==='Statistics valid').ok,true);
+const exported=JSON.parse(JSON.stringify(d));validateDraft(exported);assert.deepEqual(exported.creature,c);assert.equal(creatureDefinition(d).deployment.ready,false);
+assert.throws(()=>validateDraft({...d,creature:{attacks:'bad'}}));
+console.log('Creature authoring: legacy migration, HP generation, equipment AC, independent instances, validation and round-trip passed.');

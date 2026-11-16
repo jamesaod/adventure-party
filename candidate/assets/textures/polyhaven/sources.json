@@ -1,0 +1,72 @@
+[
+  {
+    "id": "forest_leaves_02",
+    "source": "https://polyhaven.com/a/forest_leaves_02",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_diffuse_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "13e9bfac07cb72ca143e153cc2f589a8",
+    "bytes": 437891
+  },
+  {
+    "id": "grass_ground",
+    "source": "https://polyhaven.com/a/grass_ground",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_diff_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "299047258586c762735b7284d3c662c3",
+    "bytes": 876584
+  },
+  {
+    "id": "forest_ground_06",
+    "source": "https://polyhaven.com/a/forest_ground_06",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_ground_06/forest_ground_06_diff_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "a91ecaf924f680905dd8be50b32bf3cb",
+    "bytes": 851532
+  },
+  {
+    "id": "rocky_terrain_02",
+    "source": "https://polyhaven.com/a/rocky_terrain_02",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "cf604d3868398a6a996cb5ba330dd3ab",
+    "bytes": 843188
+  },
+  {
+    "id": "forrest_ground_01",
+    "source": "https://polyhaven.com/a/forrest_ground_01",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forrest_ground_01/forrest_ground_01_diff_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "236e7d928f5e357a194fd92de189cbe4",
+    "bytes": 833711
+  },
+  {
+    "id": "mud_cracked_dry_riverbed_002",
+    "source": "https://polyhaven.com/a/mud_cracked_dry_riverbed_002",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_diff_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "a7b38524333f22970dd2481115ddd50b",
+    "bytes": 740567
+  },
+  {
+    "id": "dry_river_pebbles",
+    "source": "https://polyhaven.com/a/dry_river_pebbles",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dry_river_pebbles/dry_river_pebbles_diff_1k.jpg",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "map": "diffuse",
+    "md5": "970ed34655bdf437d6016b130742668f",
+    "bytes": 876327
+  }
+]

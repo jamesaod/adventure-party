@@ -1,0 +1,8 @@
+{
+  "source": "WhiteOak_FullCrown.spm / Oak_FullCrown_LOD5.obj",
+  "triangles": 10726,
+  "modelUnitsPerMetre": 43.38933076913966,
+  "groundPlaneSourceMetres": 0.2,
+  "rootPlacement": "Ground 0.20 m above authored trunk origin; underground geometry clipped on GPU.",
+  "sourceHeightMetres": 27.1283
+}

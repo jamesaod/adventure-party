@@ -1,0 +1,36 @@
+Adventure Party — Bow sound audition library
+Verified 2026-11-11
+
+Medieval sound effects - Weapon Textures
+Author: Ben Jaszczak & Brian Nelson / Still North Media
+Page: https://opengameart.org/content/medieval-sound-effects-weapon-textures
+License: CC0-1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+Origin: Recorded
+Original longbow, Scythian recurve and arrow recordings; excerpts from repeated takes.
+
+Arrow Impact
+Author: SFXMint
+Page: https://sfxmint.com/sounds/arrow-impact
+License: CC0-1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+Origin: AI-generated
+The source labels these impacts as AI-generated. Three MP3 files obtained within the free download allowance.
+
+Impact
+Author: Iwan 'qubodup' Gabovitch
+Page: https://opengameart.org/content/impact
+License: CC0-1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+Origin: Foley alternative
+General material impact effects offered as arrow-hit candidates; not recordings of actual arrow strikes.
+
+Different steps on wood, stone, leaves, gravel and mud
+Author: TinyWorlds / edited pdsounds.org recordings
+Page: https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud
+License: CC0-1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+Origin: Foley alternative
+Ground and leaf footstep recordings offered as texture layers for missed arrows; not actual arrow strikes.
+
+Processing
+Recorded handling/draw excerpts and up to six separated takes per fast event recording. Original 192 kHz rate retained for Still North Media. Other sources retain complete takes and original rates; all audition clips are PCM16 WAV with 4 ms edge fades. Any MP3 over-range peaks receive only the attenuation recorded in gainDb. Exact original files, offsets and hashes retained.
+
+The 3 SFXMint downloads are AI-generated. The qubodup impacts are general material effects. TinyWorlds clips are footstep Foley candidates, not arrow recordings. No sounds have been assigned to live gameplay.
+The original recordings remain in originals/. All source and clip checksums and timestamps are in catalog.json and selected JSON exports.

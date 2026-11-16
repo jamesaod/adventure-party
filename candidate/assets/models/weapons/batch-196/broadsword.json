@@ -1,0 +1,39 @@
+{
+  "id": "broadsword",
+  "sourceTriangles": 174,
+  "triangles": 174,
+  "bytes": 98580,
+  "sha256": "7f2590c7b80a2506c93ea22f7299b2206adea1e3a942f7fec48afa46919a8f17",
+  "textureResolution": 256,
+  "sourceAxis": [
+    0.0028846957665517037,
+    -0.9999958373151635,
+    -6.231114596611195e-05
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "ps1-italian-broadsword.zip",
+  "sourceArchiveSha256": "f88f62d04beea64e77a283d527e5af2f6298b63f9db1bc04b4c63f4caa2ae779",
+  "sourceSha256": "bdbaae90bdeb25b80425add997a2838157152bb5cd36c51db81601bb6bdbc866",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        81.84002685546875,
+        78.22921752929688,
+        76.05337524414062
+      ],
+      "sourceSize": [
+        256,
+        256
+      ],
+      "outputMean": [
+        81.84002685546875,
+        78.22921752929688,
+        76.05337524414062
+      ]
+    }
+  }
+}

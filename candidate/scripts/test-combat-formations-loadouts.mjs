@@ -1,0 +1,22 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import {extractCombatFunction as fn} from './combat-test-source.mjs';
+const dist=(a,b)=>(Math.abs(a.x-b.x)+Math.abs(a.y-b.y)+Math.abs(a.x+a.y-b.x-b.y))/2;
+const dirs=[{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:0},{x:-1,y:1},{x:0,y:1}];
+const c=vm.createContext({HEX_DIRS:dirs,hexDistance:dist,key:(x,y)=>`${x},${y}`,inside:(x,y)=>dist({x,y},{x:0,y:0})<=17,isWall:()=>false,occupiedHexes:m=>[{x:m.x,y:m.y}],occupiedHexesAt:(m,x,y)=>[{x,y}],hexDirectionIndexToward:()=>0,axialDisk:(a,r)=>{let out=[];for(let x=-r;x<=r;x++)for(let y=-r;y<=r;y++)if(dist({x,y},{x:0,y:0})<=r)out.push({x:x+a.x,y:y+a.y});return out;},readCombatMobRoster:()=>[{type:'orc',count:15,faction:'hostile'},{type:'orc',count:10,faction:'friendly'}],makeStudioTestMob:()=>({repositoryMobModel:{modelId:'male-orc'}}),lastMobDeployment:null});
+vm.runInContext(fn(fs.readFileSync('js/combat-session-state.js','utf8'),'deployConfiguredCombatMobs'),c);
+const player={x:0,y:0},groups=c.deployConfiguredCombatMobs('grass',player),friends=[player,...groups.allies];
+assert.equal(groups.enemies.length,15);assert.equal(groups.allies.length,10);assert.equal(new Set([...friends,...groups.enemies].map(u=>`${u.x},${u.y}`)).size,26);
+assert(Math.min(...friends.flatMap(a=>groups.enemies.map(b=>dist(a,b))))>=10);assert(groups.allies.every(u=>!u.combatModelVariant&&u.repositoryMobModel.modelId==='male-orc'));assert(groups.enemies.every(u=>!u.combatModelVariant));
+const source=fs.readFileSync('js/adventure-party.js','utf8');Object.assign(c,{getWeaponCatalogEntry:id=>({sword:{damageSM:'1d8'},dagger:{damageSM:'1d4'},arrows:{damageSM:'1d6'}}[id]),getMissileCatalogEntry:id=>id==='bow-short'?{ammoId:'arrows'}:null,isMageCharacter:()=>false,hostileCombatantsFor:()=>[],canMeleeReach:()=>false,syncFighterEquipment:()=>{},markMobAppearanceDirty:async()=>{}});
+vm.runInContext(fn(source,'bestCombatWeapon')+'\n'+fn(source,'selectCombatAiWeapon'),c);
+const sword={slot:'weapon',catalogWeaponId:'sword'},dagger={slot:'weapon',catalogWeaponId:'dagger'},bow={slot:'weapon',weaponPoseProfileId:'bow'},ammo={type:'Ammo',catalogWeaponId:'arrows',qty:1};const unit={inventory:[dagger,sword,bow,ammo]};
+assert.equal(c.bestCombatWeapon(unit,false),sword);assert.equal(c.bestCombatWeapon(unit,true),bow);ammo.qty=0;assert.equal(c.bestCombatWeapon(unit,true),sword);unit.inventory=[bow,ammo];assert.equal(c.bestCombatWeapon(unit,true),null);await c.selectCombatAiWeapon(unit);assert(!bow.equipped);
+console.log('PASS opposing formations, 10-hex gap, faction-independent models, weapon ranking and empty-ammo/unarmed fallback');
+
+const reactions=fs.readFileSync('js/combat-reactions.js','utf8');
+const threat={x:0,y:0,alive:true,faction:'enemy'};const mover={x:1,y:0,alive:true,faction:'player'};
+Object.assign(c,{allUnits:()=>[threat],unitHasRangedWeaponInHand:()=>false,getUnitEffect:()=>null,unitDistance:dist,canMeleeReach:(a,b)=>dist(a,b)<=1,unitFootprintDefinition:()=>({rotates:false}),r220MobCanSeeUnit:()=>true,r220MobHazardCostAt:()=>0});
+vm.runInContext(fn(reactions,'unitCanMakeLeavingHexFreeAttack')+'\n'+fn(reactions,'movementLeavesMeleeReach')+'\n'+fn(fs.readFileSync('js/r220-mob-hazard-awareness.js','utf8'),'r220MobStepCost'),c);
+assert.equal(c.r220MobStepCost(mover,{x:1,y:-1},mover),1);
+assert.equal(c.r220MobStepCost(mover,{x:2,y:0},mover),1001);
+c.r220MobCanSeeUnit=()=>false;assert.equal(c.r220MobStepCost(mover,{x:2,y:0},mover),1);
+console.log('PASS shared opportunity rules: safe adjacent movement, costly disengagement, no hidden-enemy knowledge');

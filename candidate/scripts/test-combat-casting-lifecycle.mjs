@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readdirSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
+const source=readFileSync('js/combat-casting-lifecycle.js','utf8');let consumed=0,ended=0,aimed=0,began=0,fx=0;const caster={id:'player',name:'Carl',alive:true,controller:'player'},enemy={id:'enemy',alive:true};
+const game={round:1,turnIndex:0,active:'player',over:false,order:['player','enemy'],r230InitiativeByUnit:{player:{roll:3},enemy:{roll:6}}};
+const spell={id:'fireball',name:'Fireball',castingTime:3,targetMode:'area'};
+const c=vm.createContext({game,performance:{now:()=>0},spellCastInProgress:false,pendingAimAction:null,getUnitById:id=>id==='player'?caster:enemy,getSpellEntry:()=>spell,isPlayerControlledUnit:()=>true,isQuickCommandUnit:()=>false,mageConsumeMemorizedSpell:()=>{consumed++;return true;},closeSpellCastOverlay(){},closeCharacterSheet(){},exitAimMode(){},setUnitActionBanner(){},setCombatMessage(){},log(){},updateUi(){},draw(){},setTimeout(){},queueMicrotask:f=>f(),endTurn:()=>{ended++;},beginTurn(){},sleep:async()=>{},centerCameraOn(){},refreshTurnBanner(){},enterAimMode:()=>{aimed++;},testSpellTargetPrompt:()=>'',r236ShowBeginsCastingText:()=>{began++;},mobPositionVisibleToFriendlyParty:()=>true,spellCasterForAction:()=>caster,dispatchPreparedSpellEffect:async()=>{fx++;return false;},COMBAT_MESSAGE_MIN_HOLD_MS:1000,COMBAT_MESSAGE_DISPLAY_MS:1000});vm.runInContext(source,c);
+const action={type:'memorized-spell',spellId:'fireball',sourceUnitId:'player'};
+assert(c.r231BeginCastingWithoutTarget(caster,spell,action));assert.equal(consumed,1);assert.equal(began,1);
+let record=c.r230CastingRecordForUnit(caster);assert.equal(record.completeInitiative,6);assert.deepEqual(game.order,['player','enemy',record.token],'Equal-initiative actor remains before completion');assert.equal(record.targetHex,null);assert(action.r231DeferredTarget);
+assert(!c.r231BeginCastingWithoutTarget(caster,spell,{...action}));assert.equal(consumed,1,'Already casting never consumes twice');
+assert(c.r230DisruptCasting(caster,'damage'));assert(!c.r230UnitIsCasting(caster));assert.equal(consumed,1);assert.deepEqual(game.order,['player','enemy']);assert(!c.r230DisruptCasting(caster));
+const multi=c.r230ScheduleSpellCast(caster,{...spell,castingTime:'2 rounds'},{spellId:'fireball'},{targetHex:{x:9,y:9}});assert.equal(multi.completeRound,2);assert(!game.order.includes(multi.token));assert.equal(multi.targetHex,null);c.r230CancelCastingRecord(multi);
+record=c.r230ScheduleSpellCast(caster,spell,{spellId:'fireball'},{targetHex:{x:9,y:9}});game.turnIndex=game.order.indexOf(record.token);await c.r230ResolveCastingCompletion(record);assert.equal(aimed,1);assert(record.awaitingTarget);assert(record.resolving);assert(c.pendingAimAction.r231CompletionTargeting);assert.equal(consumed,1);assert.equal(fx,0,'Player gets AIM before any effect');
+const activeIndex=game.turnIndex;const pending=c.pendingAimAction;c.cancelCompletionAim(()=>{c.pendingAimAction=null;},true,true);assert(!c.r230CastingStore()[record.token]);assert.equal(game.turnIndex,activeIndex);assert(game.order.includes(record.token),'AIM cancellation leaves active slot for normal endTurn advancement');assert.equal(ended,1);assert.equal(consumed,1);
+// Automated completion reacquires a legal target; missing target advances without refund.
+c.isPlayerControlledUnit=()=>false;c.r231ChooseAutomatedCompletionTarget=()=>null;game.order=['player','enemy'];game.turnIndex=0;game.active='player';record=c.r230ScheduleSpellCast(caster,spell,{spellId:'fireball'},{targetHex:null});await c.r230ResolveCastingCompletion(record);assert.equal(ended,2);assert(!c.r230CastingStore()[record.token]);assert.equal(fx,0);
+// Self-only direct completion clears record even when its effect rejects.
+record=c.r230ScheduleSpellCast(caster,{...spell,targetMode:'self'},{spellId:'fireball'},{targetHex:null});game.active='player';await c.completeSpellCastingEffect(record);assert.equal(fx,1);assert.equal(ended,3);assert(!c.r230CastingStore()[record.token]);assert.equal(c.spellCastInProgress,false);
+let fallback=0;const completed={r230Completing:true};assert.equal(c.beginScheduledSpellCast(()=>++fallback,caster,spell,completed),1);assert.equal(fallback,1);assert.equal(consumed,1);
+for(const file of readdirSync('js').filter(n=>/\.(js|mjs)$/.test(n)))assert(!/\br230(?:ScheduleSpellCast|ResolveCastingCompletion)\s*=/.test(readFileSync('js/'+file,'utf8')),file+' replaces lifecycle owner');
+console.log('PASS numeric/tied/multiround timing, one-time resource use, interruption, player completion AIM/cancel, AI no-target completion, rejected effect and explicit presentation');

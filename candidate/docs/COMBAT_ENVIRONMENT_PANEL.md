@@ -1,0 +1,3 @@
+# Environmental control panel
+
+Local interface cleanup: environmental controls now live in their own lower-right panel. The unit/results panel remains above it. Battlefield fitting no longer reserves a bottom weather strip. Time slider preserves the debounced solar updates and shared day-test scheduler. Compass ribbon shows the world bearing toward the top of the map and follows rotation. Stats cycle full → FPS only → none. Snow and weather controls retain their existing state owners. Ranged framing and rotation remain; the stray-arrow test checkbox is retired. The original astrolabe module and styles are preserved under docs/archive/solar-clock for future reuse, not loaded at runtime.

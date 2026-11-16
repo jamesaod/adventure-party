@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "status": "experimental-visual-qa-pending",
+  "modelId": "new-orc-blender-corrected-turns-qa",
+  "originalOrc": {
+    "path": "assets/models/orcs/new-orc/new-orc.glb",
+    "sha256": "50f2c69c60c8f72a0c2d60941d4cae853e023babaa75e969573aabc581a0b909"
+  },
+  "donorCarl": {
+    "path": "assets/models/dungeon-crawler-carl/new-carl/mixamo-sword-shield-full-17/new-carl-mixamo-sword-shield-full-17.glb",
+    "sha256": "65aec8f790b9de9dda10f2efa8561075fc144518b93b15b376f47c5c7e411f08"
+  },
+  "qaModel": {
+    "path": "assets/models/orcs/new-orc/blender-turn-qa/new-orc-turn-corrected-blender-qa.glb",
+    "sizeBytes": 1369064,
+    "sha256": "670434096914dbab807695b784856deb051272898915a0cc1cad315131eabe11",
+    "boneCount": 66,
+    "clipCount": 2,
+    "clipNames": [
+      "Orc_Corrected_sword_and_shield_turn",
+      "Orc_Corrected_sword_and_shield_turn_2"
+    ]
+  },
+  "blenderProject": {
+    "path": "assets/models/orcs/new-orc/blender-turn-qa/new-orc-turn-correction.blend",
+    "sizeBytes": 1608132,
+    "sha256": "b489b712792ce9656b0eb914684d975f33f2d2605bfd6c5949980a52e2db8f55"
+  },
+  "qaReport": "assets/models/orcs/new-orc/blender-turn-qa/qa-report.json",
+  "scripts": [
+    "scripts/blender/retarget-yaw-neutral-turns.py",
+    "scripts/blender/combine-turns.py",
+    "scripts/blender/blender-cleanup-turns.py"
+  ],
+  "algorithm": "yaw-neutral anatomical aim, coherent pelvis yaw, scaled vertical hip motion, limited 39-vertex Blender skin-weight cleanup",
+  "measuredImprovement": {
+    "clip": "Orc_Corrected_sword_and_shield_turn",
+    "fraction": 0.5,
+    "originalAnatomicalEdgesOver2x": 128,
+    "yawNeutralBeforeWeightCleanup": 55,
+    "afterWeightCleanup": 56
+  },
+  "limitations": "Turn-only proof. Fifteen other motions are not included. Residual stretching remains; weight cleanup is not demonstrated to reduce severely overstretched edge count. Do not apply globally or promote to main before complete visual QA."
+}

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';import {readFileSync} from 'node:fs';
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {prepareCorpseSnow,advanceCorpseSnow,resetCorpseSnow} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {extractCombatFunction} from './combat-test-source.mjs';
+const group=new T.Group();group.add(new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial()));
+const amount=prepareCorpseSnow(group,{alive:false,x:0,y:0});const cells=new Set(['0,0']);
+for(const value of [.9,1,1.9,2,2.9,3,3.9,4]){advanceCorpseSnow(cells,(value-amount.value)*30);assert.equal(amount.value,value);}advanceCorpseSnow(cells,5);assert.equal(amount.value,4);
+const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <color_fragment>\n#include <opaque_fragment>'};group.children[0].material.onBeforeCompile(shader);
+assert.doesNotMatch(shader.vertexShader,/transformed\.y\s*\+=/,'Body is never lifted by snow');
+const shell=group.children.find(m=>m.userData.corpseSnowShell);assert(shell,'Separate snow surface exists');
+const capShader={uniforms:{},vertexShader:'#include <begin_vertex>\\n#include <project_vertex>',fragmentShader:'#include <clipping_planes_fragment>\\n#include <opaque_fragment>'};shell.material.onBeforeCompile(capShader);
+assert.match(capShader.vertexShader,/transformed\.y\+=dot/,'Only the snow cap grows');assert.match(capShader.fragmentShader,/vec4\(\.25\)/);resetCorpseSnow(true);assert.equal(amount.value,0);
+console.log('PASS corpse coat boundaries, fixed body, independent snow cap and reset');

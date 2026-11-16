@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {normalizeGeneration,sampleGeneration,primaryItems,offHandItems,needsBothHands} from '../js/mob-generation.mjs';
+import {createMobDefinition,normalizeMobDefinition} from '../js/mob-definition.mjs';
+import {createPoseLibrary} from '../js/pose-library.mjs';
+import {createAuthoringStore} from '../js/authoring-store.mjs';
+const g={version:1,kind:'template',classLevels:[{classId:'fighter',level:1,weight:75},{classId:'fighter',level:2,weight:20},{classId:'fighter',level:3,weight:5}],primary:[{itemId:'none',weight:100}],offHand:[{itemId:'none',weight:100}],alwaysItems:[]};
+for(const [roll,level] of [[0,1],[.74999,1],[.75,2],[.94999,2],[.95,3],[.99999,3]])assert.equal(sampleGeneration(g,()=>roll).level,level);
+const counts=[0,0,0];for(let i=0;i<100;i++)counts[sampleGeneration(g,()=>i/100).level-1]++;assert.deepEqual(counts,[75,20,5]);
+for(const weight of [101,-1,NaN,Infinity])assert.throws(()=>normalizeGeneration({...g,primary:[{itemId:'none',weight}]}),/probabilit/);
+const draft={...g,primary:[{itemId:'none',weight:50}]};assert.equal(normalizeGeneration(draft).primary[0].weight,50);assert.throws(()=>sampleGeneration(draft),/total 100/);
+assert.throws(()=>normalizeGeneration({...g,primary:[{itemId:'none',weight:50},{itemId:'none',weight:50}]}),/Duplicate/);
+assert.throws(()=>sampleGeneration(g,()=>1),/Random/);
+const two=primaryItems().find(i=>needsBothHands(i.id)),one=primaryItems().find(i=>!needsBothHands(i.id)),shield=offHandItems().find(i=>i.category==='shield');
+const armed={...g,primary:[{itemId:two.id,weight:100}],offHand:[{itemId:shield.id,weight:100}],alwaysItems:[{itemId:one.id,quantity:2}]};
+let rolls=0;const sample=sampleGeneration(armed,()=>{rolls++;return 0;});assert.equal(rolls,2);assert.deepEqual(sample.equipment,[{itemId:two.id,slot:'primary'},{itemId:one.id,quantity:2,slot:'inventory'}]);
+assert.equal(sampleGeneration({...armed,primary:[{itemId:one.id,weight:100}]},()=>0).equipment[1].slot,'shield');
+assert.throws(()=>normalizeGeneration({...sample.generation,fixed:{...sample.generation.fixed,offHand:shield.id}}),/Two-handed/);
+assert.deepEqual(sampleGeneration(sample.generation,()=>{throw Error('Unique must not roll');}).equipment,sample.equipment);
+const noClass=sampleGeneration({...g,classLevels:[{classId:'none',level:1,weight:100}]},()=>0);assert.equal(noClass.classId,null);assert.deepEqual(noClass.equipment,[]);
+const library=createPoseLibrary({id:'test-library',name:'Test'});
+for(const generation of [undefined,g,draft,sample.generation]){const mob=createMobDefinition({id:'test-mob',name:'Test',modelId:'test-model',library,generation});assert.deepEqual(normalizeMobDefinition(JSON.parse(JSON.stringify(mob))),mob);}
+const memory=new Map(),store=createAuthoringStore({getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)},'test');
+console.log('MOB generation: probabilities, equipment, round trips and library defaults passed.');
+
+assert.equal(store.library('orc-shaman-supplied-r2'),null,'No unsolicited preset');
+assert.equal(store.library('humanoid-medium').name,'Shared Pose Library');

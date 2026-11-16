@@ -1,0 +1,54 @@
+{
+  "title": "4 dry snow steps",
+  "author": "Iwan \"qubodup\" Gabovitch",
+  "source": "https://opengameart.org/content/4-dry-snow-steps",
+  "download": "https://opengameart.org/sites/default/files/qubodup-snow_steps_dry_0.7z",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "files": [
+    {
+      "file": "step-1.wav",
+      "original": "originals/qubodup-snow_steps_dry/snow_step_dry-01.flac",
+      "sha256": "2e963923f20b74651cf83a1fd0eb72f671fff0e7cc5ce4a2607e76fa48790321",
+      "sourceSha256": "9a9d7f3ae42f4eeaf075a505c36f299ae4759cb3f9ba4792d6bc08e4b0a9c0e4",
+      "sampleRate": 48000,
+      "duration": 0.4258125,
+      "trimStart": 0,
+      "trimEnd": 0.4258125,
+      "normalizationGain": 5.361134908601128
+    },
+    {
+      "file": "step-2.wav",
+      "original": "originals/qubodup-snow_steps_dry/snow_step_dry-02.flac",
+      "sha256": "f16f08fbe6c65d21601bbc302657af93447165771ea6eb71feaf7e4fbefdc457",
+      "sourceSha256": "2a012570082182fdf2b6564df948a5055a449fe0a9a5ab6ecc034cbebc6d4421",
+      "sampleRate": 48000,
+      "duration": 0.6416458333333334,
+      "trimStart": 0.0015833333333333333,
+      "trimEnd": 0.6432291666666666,
+      "normalizationGain": 4.910072440394451
+    },
+    {
+      "file": "step-3.wav",
+      "original": "originals/qubodup-snow_steps_dry/snow_step_dry-03.flac",
+      "sha256": "9e3b3961190251569834c7967039c71db2dab5db321f4f379be93d5d8b6d2192",
+      "sourceSha256": "411173d7a0a4a6a3ac357a4fefb54566cfbefc19e1e15e00b6d0d975dcc20f7e",
+      "sampleRate": 48000,
+      "duration": 0.5087291666666667,
+      "trimStart": 0,
+      "trimEnd": 0.5087291666666667,
+      "normalizationGain": 5.638698375724414
+    },
+    {
+      "file": "step-4.wav",
+      "original": "originals/qubodup-snow_steps_dry/snow_step_dry-04.flac",
+      "sha256": "342fe7b244797ba5d0e8f55184bbe53cf21b51ae596814f894892b7ae2b299a9",
+      "sourceSha256": "d023bf389904b3063251441e327d0bb5b5f8292ecd8361b3297734b80256a236",
+      "sampleRate": 48000,
+      "duration": 0.4873958333333333,
+      "trimStart": 0,
+      "trimEnd": 0.4873958333333333,
+      "normalizationGain": 7.721135802132293
+    }
+  ]
+}

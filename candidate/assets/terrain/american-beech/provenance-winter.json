@@ -1,0 +1,8 @@
+{
+  "source": "AmericanBeech_Winter.spm / AmericanBeech_Winter_LOD1.obj",
+  "triangles": 12188,
+  "modelUnitsPerMetre": 43.38933076913966,
+  "groundPlaneSourceMetres": 0,
+  "rootPlacement": "Native ground at authored Z=0; underground geometry clipped on GPU.",
+  "sourceHeightMetres": 17.6671
+}

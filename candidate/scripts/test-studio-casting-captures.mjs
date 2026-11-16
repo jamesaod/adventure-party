@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import {SPRITE_POSES,SPRITE_DIRECTIONS,LEGACY_SPRITE_POSES,FOUR_SPRITE_POSES,FIVE_SPRITE_POSES,createSpriteSetManifest,validateSpriteSetManifest,assembleSpriteSheet} from '../js/sprite-set-core.mjs';
+import {buildStudioUnitExport} from '../js/studio-unit-export.mjs';
+import {defineActionProfile,resolveActionPose} from '../js/action-profile-catalog.mjs';
+globalThis.location={href:'https://example.test/candidate/3d-studio.html'};
+const {validateStudioWorkspace,studioDraftImageNames}=await import('../js/sprite-set-store.mjs');
+const frame={width:2,height:2,renderWidth:2,renderHeight:2,anchorX:1,anchorY:1};
+const captures={attack:{clip:'Stabbing',time:0.8},'casting-windup':{clip:'Standing 2h Cast Spell 01',time:0.4},cast:{clip:'Standing 2h Magic Attack 04',time:1.2}};
+const manifest=createSpriteSetManifest({id:'casting-test',label:'Casting test',frame,captures,partialPoses:true,actionProfileId:'one-handed-thrust',battlefield:frame});
+assert.deepEqual(manifest.sheet.poses,['ready','windup','attack','falling','prone','casting-windup','cast']);
+assert.equal(manifest.sheet.rows,7);
+assert.equal(manifest.poses.attack.time,0.8);
+assert.equal(manifest.poses['casting-windup'].time,0.4);
+assert.equal(manifest.poses.cast.time,1.2);
+assert.equal(studioDraftImageNames(manifest,false).length,36,'Three independent poses with six source and six native frames each');
+for(const bad of ['missing-facing','bad-time','unknown-pose']){
+ const copy=structuredClone(manifest);
+ if(bad==='missing-facing')delete copy.poses.cast.frames.SW;
+ if(bad==='bad-time')copy.poses['casting-windup'].time=-1;
+ if(bad==='unknown-pose')copy.poses.invalid=copy.poses.cast;
+ assert.throws(()=>validateSpriteSetManifest(copy),undefined,bad);
+}
+for(const oldPoses of [LEGACY_SPRITE_POSES,FOUR_SPRITE_POSES,FIVE_SPRITE_POSES]){
+ const old=createSpriteSetManifest({id:'old',label:'Old',frame,captures:Object.fromEntries(oldPoses.map(pose=>[pose,{clip:pose,time:1}]))});
+ assert.deepEqual(old.sheet.poses,oldPoses);
+ const serialized=JSON.stringify(old);
+ validateSpriteSetManifest(old);
+ assert.equal(JSON.stringify(old),serialized,'Old manifest metadata is never rewritten');
+}
+const pixels=Object.fromEntries(SPRITE_POSES.map((pose,i)=>[pose,Object.fromEntries(SPRITE_DIRECTIONS.map(face=>[face,new Uint8ClampedArray([i,1,2,255])]))]));
+const sheet=assembleSpriteSheet(pixels,1,1);
+assert.equal(sheet.height,7);
+for(const [row,pose] of SPRITE_POSES.entries())for(let face=0;face<6;face++)assert.equal(sheet.data[(row*6+face)*4],row,`${pose}/${face} keeps its own row`);
+const group=Object.fromEntries(Object.entries(captures).map(([pose,value])=>[pose,{...frame,...value,raw:new Uint8Array(96)}]));
+const workspace={version:1,name:'Carl',style:{brightness:1,contrast:1,hue:0,saturation:1,outline:0},settings:{},captures:group,actionProfiles:{'one-handed-thrust':group,'spell-casting':{cast:{...group.cast,time:2.5}}}};
+validateStudioWorkspace(workspace);
+const restored=structuredClone(workspace);validateStudioWorkspace(restored);
+assert.equal(restored.actionProfiles['spell-casting'].cast.time,2.5);
+assert.equal(restored.actionProfiles['one-handed-thrust'].cast.time,1.2);
+manifest.poses.cast.clipSourceId='uploaded:standing-2h-magic-attack-04:0';
+manifest.poses.cast.render={equipment:{rightHand:'short-sword'},offHandEquipment:{rightHand:'dagger',rotation:[73,0,-90]}};
+const unit=buildStudioUnitExport({name:'Carl',settings:{libraryModelId:'dungeon-crawler-carl-v3'},profiles:[{id:'one-handed-thrust',manifest},{id:'spell-casting',manifest:{poses:{cast:{clip:'Magic',time:2.5}}}}]});
+assert.equal(unit.references.spriteSets['one-handed-thrust'].poses.cast.clipSourceId,manifest.poses.cast.clipSourceId);
+assert.equal(unit.references.spriteSets['spell-casting'].poses.cast.time,2.5);
+manifest.poses.cast.render.offHandEquipment.rotation[0]=0;
+assert.equal(unit.references.spriteSets['one-handed-thrust'].poses.cast.render.offHandEquipment.rotation[0],73);
+const profile=defineActionProfile({id:'test',label:'Test',poses:{attack:{animation:'Stabbing',timeSeconds:0.8},'casting-windup':{animation:'Spell',timeSeconds:0.4},cast:{animation:'Magic',timeSeconds:1.2}}});
+assert.equal(resolveActionPose(profile,'cast').pose.animation,'Magic');
+assert.equal(resolveActionPose(profile,'attack').pose.animation,'Stabbing');
+assert.equal(resolveActionPose(profile,'windup').source,'fallback-sprite');
+console.log('PASS casting captures: independent melee/casting frames, seven-row/six-facing sheets, old 3/4/5-row packages, saved weapon groups and Unit Package loadouts');

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {blankMap,resizeMap,seedPack,parsePack,paintCell} from '../js/exploration-authoring.mjs';
+import {validateMap,createExplorationState,act} from '../js/exploration-core.mjs';
+import {restoreDiscovery,revealDiscovery} from '../js/exploration-discovery.mjs';
+import {explorationMapMarkup} from '../js/exploration-map.mjs';
+const map=blankMap('resize-test','Resize test');map.party=[];paintCell(map,4,4,'door-x');
+const before=structuredClone(map);resizeMap(map,128,96);assert.equal(map.grid.length,96);assert.equal(map.grid[95].length,128);assert.equal(map.grid[4][4],'D');assert.equal(map.grid[15][8],'#','Old boundary remains as editable internal wall');assert.equal(map.grid[50][50],'.');
+assert.deepEqual(map.start,before.start);assert.deepEqual(map.doors,before.doors);validateMap(map);
+paintCell(map,126,94,'wall');paintCell(map,126,94,'floor');map.start={x:125,z:94,facing:1};const state=createExplorationState(map);assert.equal(act(map,state,'forward').moved,true);assert.equal(act(map,state,'forward').changed,false);
+const discovery=restoreDiscovery(map,null);revealDiscovery(map,state,discovery);assert.ok(discovery.discovered.has('126,94'));const svg=explorationMapMarkup(map,state,discovery);assert.match(svg,/128 by 96 map/);assert.match(svg,/viewBox="0 0 2080 1572"/);
+assert.deepEqual(parsePack(JSON.stringify(seedPack(map))).maps[0].grid,map.grid);
+const intact=JSON.stringify(map);assert.throws(()=>resizeMap(map,16,16),/Move or remove/);assert.equal(JSON.stringify(map),intact);assert.throws(()=>resizeMap(map,129,128));assert.throws(()=>resizeMap(map,16.5,16));
+map.start={x:3,z:3,facing:0};resizeMap(map,16,16);assert.equal(map.grid.length,16);assert.equal(map.grid[4][4],'D');validateMap(map);
+resizeMap(map,128,128);assert.equal(map.grid.length,128);assert.equal(map.grid[127],'#'.repeat(128));
+console.log('PASS map resizing through 128x128, rectangular maps, movement, metadata, shrink protection, export and discovery');

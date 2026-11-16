@@ -1,0 +1,52 @@
+<!doctype html><meta charset="utf-8"><title>Adventure Party snow system preview</title>
+<style>body{background:#151a22;color:#dce7ef;font:15px system-ui;margin:20px;max-width:1020px}h1{font-size:24px}h2{font-size:16px;margin:8px 0}.stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}canvas{width:100%;border:1px solid #455365}#status{color:#b6ddbc}label{display:block;margin:16px 0 8px}input{width:100%}.live{max-width:650px}button,select{padding:8px;background:#273340;color:#eaf4ff;border:1px solid #8fa4b5;margin:4px}small{color:#b8c5cf}@media(max-width:760px){.stages{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
+<h1>Particle snow — 90% / 20% layer rules</h1><p>The second coat starts after 90% base coverage. The base is complete by 20% second-coat coverage.</p><p id="status" role="status">Checking production renderer…</p>
+<label for="surface">Ground material</label><select id="surface"><option value="grass">Grass</option><option value="stone">Stone</option></select>
+<div class="stages"></div><div class="live"><label for="amount">Snowfall elapsed: <output id="value">5 seconds</output></label><input id="amount" type="range" min="0" max="90" value="5"><button id="play">Play accumulation</button><button id="clear">Clear snow</button><canvas id="live" width="600" height="330"></canvas></div><p id="stats"></p><small>Each deposited grain adds mass to a persistent map. Coverage comes from overlapping deposits. Maximum surface lift is about 3.5 cm at the game's scale.</small>
+<script type="module">
+import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=R238C298';
+import {verifySnowCoatMap} from './snow-coat-map-check.mjs?v=R238C298';
+const status=document.querySelector('#status'),w=600,h=330;
+try{
+const grass=new Image(),normal=new Image(),stone=new Image();grass.src='../../assets/textures/exploration/grass-short-v1.png';normal.src='../../assets/textures/exploration/grass-short-v1-normal.png';normal.combatRepeat=true;stone.src='../../assets/terrain/stone-floor-pamnawi.png';await Promise.all([grass.decode(),normal.decode(),stone.decode()]);
+const surface=document.createElement('canvas'),raster=document.createElement('canvas');surface.width=raster.width=w;surface.height=raster.height=h;
+const backend=createCombatRenderer(surface,raster),gl=surface.getContext('webgl2');
+let clock=performance.now(),serial=0,current=0,deposited=0,playing=false,lastAnimation=0;Object.defineProperty(performance,'now',{configurable:true,value:()=>clock});
+const state=globalThis.adventurePartySnow={intensity:0,paused:true,showFlakes:false,revision:0};
+const gpuCheck=verifySnowCoatMap(()=>{clock+=250;});
+const floor={snowHex:'0,0',snowEligible:1,grass:true,grassUnit:128/3,grassSquash:.568329,points:[{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}],uv:[[0,1],[w/128,1],[w/128,1-h/72.746],[0,1-h/72.746]]};
+const view={width:w,height:h,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]};
+const isGrass=()=>document.querySelector('#surface').value==='grass';
+function frame(){backend.begin(view);backend.surface([floor],isGrass()?grass:stone,{category:'Floor',grassMaterial:isGrass(),normalMap:isGrass()?normal:null});backend.end();deposited+=JSON.parse(surface.dataset.combatProfile).counters.snowDepositedGrains||0;const c=backend.snowCoatCoverage();if(c.second>0&&c.first<.9)throw Error('Second coat before 90%');if(c.second>=.2&&c.first!==1)throw Error('Incomplete first coat at 20% second');}
+function read(){const data=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,data);if(gl.getError()!==gl.NO_ERROR)throw Error('WebGL error');return data;}
+function paint(target,pixels){const flipped=new Uint8ClampedArray(pixels.length);for(let y=0;y<h;y++)flipped.set(pixels.subarray(y*w*4,(y+1)*w*4),(h-1-y)*w*4);target.getContext('2d').putImageData(new ImageData(flipped,w,h),0,0);}
+function reset(){backend.snowScene(++serial,[0,0,w,h]);backend.snowGround([floor]);state.paused=true;clock+=250;frame();current=0;deposited=0;}
+function render(seconds){if(seconds<current)reset();while(current<seconds-1e-6){const advance=Math.min(3,seconds-current);state.intensity=advance*4;state.paused=false;clock+=250;frame();current+=advance;}state.paused=true;clock+=250;frame();return read();}
+const lum=p=>{let sum=0;for(let i=0;i<p.length;i+=4)sum+=.2126*p[i]+.7152*p[i+1]+.0722*p[i+2];return sum/(w*h);};
+function gallery(){
+ document.querySelector('.stages').replaceChildren();reset();const outputs=[],coverage=[];
+ for(const [seconds,title] of [[0,'Bare ground'],[5,'First deposits'],[15,'Thin coat joining'],[-1,'Second coat begins'],[-2,'First coat complete'],[72,'Shallow settled cover']]){
+  let pixels,elapsed=seconds;if(seconds<0){const target=seconds===-1?1e-9:.2;do{elapsed=current+.05;pixels=render(elapsed);}while(backend.snowCoatCoverage().second<target&&current<90);}else pixels=render(seconds);
+  const section=document.createElement('section'),heading=document.createElement('h2'),canvas=document.createElement('canvas');heading.textContent=title+' · '+elapsed.toFixed(1)+'s';canvas.width=w;canvas.height=h;section.append(heading,canvas);document.querySelector('.stages').append(section);outputs.push(pixels);paint(canvas,pixels);const c=backend.snowCoatCoverage();coverage.push(c);const caption=document.createElement('small');caption.textContent='First: '+(c.first*100).toFixed(2)+'% · Second: '+(c.second*100).toFixed(2)+'%';section.append(caption);
+ }
+ const means=outputs.map(lum);if(!means.every((v,i)=>i===0||v>means[i-1]+1))throw Error('Snow stages must grow brighter: '+means);
+ let untouched=0,changed=0;for(let i=0;i<outputs[1].length;i+=4){const difference=Math.max(...[0,1,2].map(k=>Math.abs(outputs[1][i+k]-outputs[0][i+k])));if(difference<2)untouched++;if(difference>6)changed++;}
+ if(untouched<w*h*.25||changed<w*h*.02)throw Error('Early snow must consist of separate deposits, not a global whitening');
+ const held=render(72);
+ // The shallow vertex lift exposes a one-pixel framebuffer edge. Compare
+ // retained snow inside the floor, where coverage should be bit-identical.
+ for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++)for(let c=0;c<3;c++){const i=(y*w+x)*4+c;if(held[i]!==outputs[5][i])throw Error('Paused interior deposits changed');}
+
+ backend.meltSnow([{x:0,y:0}],1);clock+=250;frame();clock+=250;frame();if(Math.abs(lum(read())-means[0])>1)throw Error('Melt must restore ground');
+ const grains=deposited;const indoor={...floor,snowEligible:0};backend.snowScene(++serial,[0,0,w,h]);backend.snowGround([indoor]);state.paused=false;state.intensity=12;clock+=250;backend.begin(view);backend.surface([indoor],grass,{category:'Floor'});backend.end();if(backend.snowAmount(0,0)!==0)throw Error('Indoor snow');state.paused=true;
+ reset();paint(document.querySelector('#live'),render(5));document.querySelector('#amount').value='5';document.querySelector('#value').textContent='5 seconds';
+ const profile=JSON.parse(surface.dataset.combatProfile);if(profile.counters['draws:Floor']!==1)throw Error('Extra terrain draw');
+ status.textContent='PASS — 90% / 20% rules, matching GPU coverage, pause, melting and indoor exclusion.';
+ document.body.dataset.results=JSON.stringify({gpuCheck,coverage,means,earlyUntouched:untouched/(w*h),earlyChanged:changed/(w*h),grains,floorDraws:profile.counters['draws:Floor']});
+}
+const show=()=>{const seconds=+document.querySelector('#amount').value;paint(document.querySelector('#live'),render(seconds));document.querySelector('#value').textContent=seconds+' seconds';document.querySelector('#stats').textContent='First coat: '+(backend.snowCoatCoverage().first*100).toFixed(1)+'% · Second coat: '+(backend.snowCoatCoverage().second*100).toFixed(1)+'%';};
+gallery();document.querySelector('#surface').onchange=gallery;document.querySelector('#amount').oninput=show;document.querySelector('#clear').onclick=()=>{playing=false;document.querySelector('#play').textContent='Play accumulation';document.querySelector('#amount').value='0';reset();show();};document.querySelector('#play').onclick=()=>{playing=!playing;lastAnimation=0;document.querySelector('#play').textContent=playing?'Pause accumulation':'Play accumulation';};
+function animate(time){requestAnimationFrame(animate);if(!playing)return;if(!lastAnimation)lastAnimation=time;if(time-lastAnimation<250)return;lastAnimation=time;const slider=document.querySelector('#amount');slider.value=Math.min(90,+slider.value+1);show();if(+slider.value>=90){playing=false;document.querySelector('#play').textContent='Play accumulation';}}
+requestAnimationFrame(animate);
+}catch(error){status.textContent='FAIL — '+error.message;console.error(error);}
+</script>

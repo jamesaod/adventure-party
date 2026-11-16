@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createTreeFireParticles} from '../js/combat-tree-fire-particles.mjs';
+const pool=createTreeFireParticles(),g=pool.mesh.geometry,m=pool.mesh.material;
+const samples=[{x:0,y:20,z:0},{x:4,y:30,z:2},{x:-4,y:40,z:-2}];
+pool.update({samples,phase:.32,time:1,count:192});
+assert.equal(g.instanceCount,192);assert.equal(g.index.count,6);assert.equal(m.depthWrite,false);assert.equal(pool.mesh.castShadow,false);
+assert.ok([...g.attributes.seed.array].every(n=>n>=0&&n<1));assert.equal(g.attributes.ember.getX(0),0,'Low particle budgets still show flames');
+const anchors=g.attributes.anchor.array;pool.update({samples,phase:.32,time:5,count:64});assert.equal(g.attributes.anchor.array,anchors,'Animation time does not reallocate/resample anchors');assert.equal(g.instanceCount,64);assert.equal(m.uniforms.time.value,5);
+pool.update({samples,phase:.7,time:6});assert.notEqual(g.attributes.anchor.array,anchors);pool.update({samples,phase:.32,time:7});assert.equal(g.attributes.anchor.array,anchors,'Reuse cached tree instance anchors');
+pool.update({samples:[],count:192});assert.equal(g.instanceCount,0);pool.update({samples,count:10000});assert.equal(g.instanceCount,192);pool.update({samples,count:-1});assert.equal(g.instanceCount,0);
+pool.dispose();console.log('PASS bounded instanced GPU flame/ember pool, deterministic positive seeds, stable cached anchors, low budgets and disposal');

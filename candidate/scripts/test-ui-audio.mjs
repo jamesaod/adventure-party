@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import {createUiAudio} from '../js/ui-audio.mjs';
+let decoded=0,started=0,stopped=0,fetches=0;const tasks=[],values=new Map();const gain={gain:{value:0},connect(){},disconnect(){}};const context={state:'running',destination:{},resume:async()=>{},createGain:()=>gain,decodeAudioData:async()=>{decoded++;return {};},createBufferSource:()=>({connect(){},disconnect(){},start(){started++;},stop(){stopped++;}})};
+const service=createUiAudio({files:{open:'01',back:'02'},fetchAudio:async()=>{fetches++;return new ArrayBuffer(4);},createContext:()=>context,storage:{getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)},defer:f=>tasks.push(f)});
+const flush=async()=>{while(tasks.length)tasks.shift()();await new Promise(r=>setTimeout(r,0));};
+assert.equal(service.transition('inventory','inventory'),false);service.play('back');service.play('open');await flush();assert.equal(started,1,'One compound action plays only its final transition');assert.equal(decoded,1);
+service.play('open');await flush();assert.equal(decoded,1,'Repeated opens reuse decoded audio');assert.equal(stopped,1);service.play('back');await flush();assert.equal(fetches,2);assert.equal(decoded,2);
+service.setVolume(.2);assert.equal(gain.gain.value,.2);service.setEnabled(false);assert.equal(service.play('open'),false);assert.equal(values.get('adventure-party-audio-muted'),'true');
+service.setEnabled(true);service.prepareNavigation('back');assert(service.consumeNavigation());await flush();assert.equal(values.has('adventure-party-ui-pending'),false);assert.equal(started,4);assert.equal(service.consumeNavigation(),false);
+service.play('open');service.stop();await flush();assert.equal(started,4,'Cancellation discards pending transition');
+console.log('PASS semantic state transitions, compound-action dedupe, decode caching, mute, UI volume, navigation handoff and cancellation');

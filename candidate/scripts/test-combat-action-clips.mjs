@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {createActionEntry,bindActionEntry,validateActionLibrary,chooseDeath,actionSample} from '../js/combat-action-clips.mjs';
+const model=new THREE.Group(),bone=new THREE.Bone();bone.name='Hips';model.add(bone);
+const source=new THREE.AnimationClip('Fall',2,[new THREE.VectorKeyframeTrack(bone.uuid+'.position',[0,1,2],[0,2,0,0,1,0,0,0,0])]);
+const e=createActionEntry(model,source,{name:'Fall A',kind:'death',start:.5,end:1.5,speed:.5,id:'a'});
+assert.equal(e.clip.duration,1);assert.equal(e.clip.tracks[0].name,'Hips.position');
+const second=new THREE.Group(),other=new THREE.Bone();other.name='Hips';second.add(other);
+const bound=bindActionEntry(second,e);assert.equal(bound.tracks[0].name,other.uuid+'.position');
+const mixer=new THREE.AnimationMixer(second),action=mixer.clipAction(bound);action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();mixer.setTime(actionSample(e,99));assert.equal(other.position.y,.5);
+assert.equal(actionSample(e,.5),.25);assert.equal(actionSample(e,99),1);
+const b={...e,id:'b',name:'Fall B'};assert.equal(chooseDeath([e,b],()=>0).id,'a');assert.equal(chooseDeath([e,b],()=>.99).id,'b');
+assert.equal(chooseDeath([{...e,kind:'attack'}]),null);
+validateActionLibrary({version:1,modelId:'orc',entries:[e,b]},'orc');
+assert.throws(()=>validateActionLibrary({version:1,modelId:'orc',entries:[e]},'carl'));
+assert.throws(()=>createActionEntry(model,source,{name:'Bad',kind:'death',start:1,end:.5}));
+assert.throws(()=>bindActionEntry(new THREE.Group(),e));
+console.log('PASS trimmed portable tracks, fresh rig rebinding, playback speed, final pose hold, death selection, model isolation and invalid ranges');

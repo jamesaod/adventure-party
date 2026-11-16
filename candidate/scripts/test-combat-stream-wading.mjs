@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {createStreamField,COMBAT_STREAM_PATH} from '../js/combat-stream-field.mjs';
+import {installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
+const field=createStreamField({size:1024,fit:true});field.configure(COMBAT_STREAM_PATH);
+assert(field.bounds[2]/field.size<.03,'Fitted mask resolves narrow shores');
+assert(field.bounds[3]/field.size<.1,'Longitudinal resolution improves on old 25cm grid');
+assert.equal(field.sample(field.bounds[0]-.1,0).depth,0);
+const revision=field.revision;
+const source=readFileSync('js/combat-lighting-services.js','utf8'),body=source.slice(source.indexOf('function combatUnitStreamPresentation'),source.indexOf('function drawDirectCombatUnit'));
+const ctx={combatGpu:{streamSample:(x,y)=>field.sample(x,y)},worldPointForHex:(x,y)=>({x,y}),combatShadowScale:()=>[1,10,1],isIndoorWorldPoint:()=>false};vm.createContext(ctx);vm.runInContext(body,ctx);
+const unit={alive:true,x:0,y:0,walkPresentation:{from:{x:0,y:-3},to:{x:8,y:-3},t:0}},before=JSON.stringify(unit);let previous=0,maxWater=0;
+for(let i=0;i<=800;i++){unit.walkPresentation.t=i/800;const p=ctx.combatUnitStreamPresentation(unit);assert(Number.isFinite(p.drop));assert(Math.abs(p.drop-previous)<.3,'No height pop while entering/leaving stream');previous=p.drop;maxWater=Math.max(maxWater,p.water);assert.equal(p.drop,p.depth*10);}
+assert(maxWater>.4);assert.equal(previous,0);unit.walkPresentation.t=0;assert.equal(JSON.stringify(unit),before,'Presentation leaves gameplay coordinates unchanged');assert.equal(field.revision,revision,'Movement queries do not rebuild channel');
+field.configure(COMBAT_STREAM_PATH,{enabled:false});assert.equal(ctx.combatUnitStreamPresentation(unit).drop,0);
+const material=new THREE.MeshStandardMaterial(),u=installUnitSnowOcclusion(material),matrix=new THREE.Matrix4();
+bindUnitSnowOcclusion(material,null,matrix,2,true,.49);assert.equal(u.water.value,.49);assert.equal(u.metres.value,2);assert.equal(u.enabled.value,false,'Wading works without snow');
+const shader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:'#include <clipping_planes_fragment>'};material.onBeforeCompile(shader);assert(shader.fragmentShader.includes('unitSnowPoint.z/max(.00001,unitSnowMetres)<unitWaterDepth'));assert.equal(shader.uniforms.unitWaterDepth,u.water);
+bindUnitSnowOcclusion(material,null,matrix,1,true,0);assert.equal(u.water.value,0,'Shared materials reset for dry units');material.dispose();
+console.log('PASS fitted shoreline resolution, continuous wading, unchanged gameplay, cached queries, no-snow clipping and shared-material reset');

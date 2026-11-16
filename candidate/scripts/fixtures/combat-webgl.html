@@ -1,0 +1,104 @@
+<!doctype html><meta charset="utf-8"><title>Combat WebGL 2 validation</title>
+<style>body{background:#15151c;color:#cff;font:18px monospace}canvas{width:256px;height:256px;image-rendering:pixelated}button{padding:12px}</style>
+<h1>Combat WebGL 2 validation</h1><p id="result" role="status">Running…</p>
+<canvas id="output" width="64" height="64"></canvas>
+<button id="loss" disabled>Test graphics context recovery</button>
+<pre id="details"></pre>
+<script type="module">
+import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=R238C250';
+import {surfaceLight,displayExposure} from '../../js/exploration-scene-style.mjs';
+import {spriteSurfaceBrightness} from '../../js/sprite-surface-lighting.mjs';
+const canvas=document.querySelector('canvas'),raster=document.createElement('canvas'),result=document.querySelector('#result'),details=document.querySelector('#details');
+raster.width=raster.height=64;
+let backend,lossCount=0,restores=0,lossExtension;
+const stone=new Image();stone.crossOrigin='anonymous';stone.src='../../assets/terrain/stone-floor-pamnawi.png?v=R238C248';
+const check=(test,message)=>{if(!test)throw Error(message);};
+const fail=error=>{result.textContent='FAIL: '+error.message;console.error(error);};
+function image(color){const c=document.createElement('canvas');c.width=c.height=1;c.getContext('2d').fillStyle=color;c.getContext('2d').fillRect(0,0,1,1);return c;}
+const red=image('#800000'),green=image('#008000'),multiply=image('#808080'),boost=image('#000000');
+const view={width:64,height:64,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]};
+const face=(left=0,right=64)=>[{points:[{x:left,y:0},{x:right,y:0},{x:right,y:64},{x:left,y:64}],uv:[[0,1],[1,1],[1,0],[0,0]]}];
+const pixel=(x,y)=>{const value=new Uint8Array(4);canvas.getContext('webgl2').readPixels(x,63-y,1,1,canvas.getContext('webgl2').RGBA,canvas.getContext('webgl2').UNSIGNED_BYTE,value);return [...value];};
+function run(){
+ // Reproduce standalone Wall Test -> exploration mesh -> standalone grass.
+ // Use the production stone PNG, not a synthetic origin-clean substitute.
+ backend.begin(view);backend.context.drawImage(stone,0,0,64,64);backend.end();
+ check(pixel(32,32).slice(0,3).some(v=>v>10),'Standalone stone frame must upload to WebGL');
+ backend.begin(view);backend.surface(face(),green);backend.end();
+ backend.begin(view);backend.context.fillStyle='#008000';backend.context.fillRect(0,0,64,64);backend.end();
+ check(Math.abs(pixel(32,32)[1]-128)<=2,'A prior stone map must not poison later raster-only maps');
+ backend.begin(view);backend.surface(face(),red,{lightMap:{left:0,top:0,spanWidth:64,spanHeight:64,layers:[multiply,boost]}});backend.end();
+ check(Math.abs(pixel(32,32)[0]-64)<=2,'GPU light-map exposure must multiply display RGB once');
+ backend.begin(view);backend.surface(face(),red);
+ const ctx=backend.context;ctx.fillStyle='rgba(0,0,255,.5)';ctx.fillRect(0,0,64,64);
+ backend.surface(face(0,32),green);backend.end();
+ let p=pixel(48,32);check(Math.abs(p[0]-64)<=2&&Math.abs(p[2]-128)<=2,'Transparent sprite/VFX adapter must composite above preceding geometry');
+ p=pixel(16,32);check(p[0]===0&&Math.abs(p[1]-128)<=2&&p[2]===0,'Later wall geometry must occlude the overlay');
+ backend.begin(view);backend.surface(face(),red);backend.prepareOverlay();
+ ctx.save();ctx.beginPath();ctx.rect(0,0,32,64);ctx.clip();ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(0,0,255,.5)';ctx.fillRect(0,0,64,64);ctx.restore();backend.end();
+ p=pixel(16,32);check(Math.abs(p[0]-128)<=2&&Math.abs(p[2]-128)<=2,'Additive spell light must retain the destination GPU surface');
+ p=pixel(48,32);check(Math.abs(p[0]-128)<=2&&p[2]===0,'Local VFX clipping must preserve the rest of the GPU scene');
+ // Real shader readbacks against the established CPU physical-light formula.
+ const white=image('#ffffff'),mask=document.createElement('canvas');mask.width=2048;mask.height=1024;
+ const mc=mask.getContext('2d');mc.fillStyle='#fff';mc.fillRect(0,0,256,256);
+ const source={x:2,y:2,z:2,color:0xffa64d,intensity:8,range:10,decay:1.5,bounds:[0,0,64,64]};
+ const ambient={sky:0,ground:0,intensity:0},base=displayExposure([.02,.03,.04]);
+ const litFace=()=>face().map(f=>({...f,lightPoints:f.points.map(p=>[p.x/16,0,p.y/16]),multiply:base.multiply.map(v=>v/255),boost:base.boost.map(v=>v/255)}));
+ function litFrame(extra={}){backend.begin(view);backend.setLighting({lights:[source],mask,maskRevision:extra.revision||0,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true,...extra});backend.end();}
+ litFrame();
+ for(const [x,y] of [[12,12],[32,32],[48,50]]){
+  const point={x:(x+.5)/16,y:0,z:(y+.5)/16},decoded=base.multiply.map((v,i)=>(v/255/(1-base.boost[i]/255))**2.2);
+  const direct=surfaceLight(point,{x:0,y:1,z:0},[source],()=>true,ambient);
+  const expected=direct.map((v,i)=>Math.round(255*Math.min(1,(v+decoded[i])**(1/2.2))));
+  const actual=pixel(x,y);check(expected.every((v,i)=>Math.abs(v-actual[i])<=2),'Physical shader color/falloff differs from CPU reference: '+JSON.stringify({expected,actual}));
+ }
+ // A closed-door silhouette splits a surface, not just its owning hex.
+ mc.clearRect(128,0,128,256);litFrame({revision:1});
+ check(pixel(48,32)[0]<pixel(16,32)[0]-20,'Blocked half-surface received direct light');
+ // Bright spell light remains display-RGB additive, independent of ambient.
+ const spell={kind:'spell',x:.25,y:1,color:[255,40,0],intensity:2,range:5,bounds:[0,0,64,64]};
+ backend.begin(view);backend.setLighting({lights:[spell],mask,maskRevision:1,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true});backend.end();
+ const spellPixel=pixel(16,32);check(spellPixel[0]>120&&spellPixel[1]<100,'Colored spell radiance missing or gamma transformed');
+ // Scorch is terrain albedo, not a dark overlay painted AFTER illumination.
+ const groundScorch={image:image('rgba(17,18,11,.8)'),left:0,top:0,spanX:64,spanY:64};
+ backend.begin(view);backend.setLighting({lights:[],mask,maskRevision:1,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true,groundScorch});backend.end();const unlitScorch=pixel(16,32);
+ backend.begin(view);backend.setLighting({lights:[spell],mask,maskRevision:1,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true,groundScorch});backend.end();const litScorch=pixel(16,32);
+ check(litScorch[0]>unlitScorch[0]+50,'Scorched ground must receive fire/spell radiance');
+ backend.begin(view);backend.surface(face(),white);backend.end();check(pixel(16,32)[0]>250,'Ground scorch must not leak into later surfaces');
+ // Sprite brightness is neutral luminance at its feet, capped at source art.
+ mc.fillRect(0,0,256,256);litFrame({spriteLighting:true,revision:2});
+ const sp=pixel(16,32);check(Math.max(...sp.slice(0,3))-Math.min(...sp.slice(0,3))<=1,'Sprite shader changed baked artwork hue');
+ // Local spell/sword light must visibly illuminate dark sprite artwork.
+ const spriteInk=image('rgb(160,80,40)');
+ backend.begin(view);backend.setLighting({lights:[],mask,maskRevision:2,world:[1/16,1/16,0,0]});backend.surface(litFace(),spriteInk,{dynamicLighting:true,spriteLighting:true});backend.end();const darkSprite=pixel(16,32);
+ const sword={...spell,color:[255,153,45],height:1.1,intensity:3.3,range:3};
+ backend.begin(view);backend.setLighting({lights:[sword],mask,maskRevision:2,world:[1/16,1/16,0,0]});backend.surface(litFace(),spriteInk,{dynamicLighting:true,spriteLighting:true});backend.end();const brightSprite=pixel(16,32);
+ check(brightSprite[0]>darkSprite[0]+35,'Sword light fails to illuminate nearby unit artwork');
+ check(brightSprite[0]<=161&&Math.abs(brightSprite[0]/brightSprite[1]-2)<.1,'Local light must preserve baked sprite hue and brightness cap');
+ // Exercise the last slot of the minimum-budget uniform/atlas layout.
+ mc.clearRect(0,0,2048,1024);mc.fillRect(7*256,3*256,256,256);
+ const full=Array.from({length:32},(_,i)=>({...source,intensity:i===31?8:0}));
+ backend.begin(view);backend.setLighting({lights:full,mask,maskRevision:3,world:[1/16,1/16,0,0]});backend.surface(litFace(),white,{dynamicLighting:true});backend.end();
+ check(pixel(32,32)[0]>170,'Last atlas/uniform light slot was dropped or misaddressed');
+ backend.setLighting(null);
+ // Corpse ink retains 50% color saturation; living sprites stay untouched.
+ backend.begin(view);backend.surface(face(),red,{spriteLighting:true,saturation:.5});backend.end();
+ const deadInk=pixel(32,32),gray=128*.2126;
+ check(Math.abs(deadInk[0]-(128*.5+gray*.5))<=2&&Math.abs(deadInk[1]-gray*.5)<=2,'Corpse saturation must blend 50% toward luminance');
+ backend.begin(view);backend.surface(face(),red,{spriteLighting:true});backend.end();
+ check(Math.abs(pixel(32,32)[0]-128)<=2&&pixel(32,32)[1]<=2,'Corpse saturation must not leak into living sprites');
+ // Draw a much smaller next scene repeatedly: buffer and exposure resources
+ // must remain bounded rather than accumulating after door/viewport changes.
+ for(let i=0;i<30;i++){backend.begin(view);backend.surface(i%2?[...face(0,32),...face(32,64)]:face(),red);backend.end();}
+ const metrics=backend.diagnostics();check(metrics.geometries<=3&&metrics.textures<=4,'GPU resources grew across scene replacement');
+ result.textContent=`PASS: shader lighting, alpha/order, resource reuse${restores?', context restored without losing renderer':''}`;
+ details.textContent=JSON.stringify({...metrics,lossCount,restores},null,2);
+ document.querySelector('#loss').disabled=false;
+}
+try{
+ await stone.decode();
+ backend=createCombatRenderer(canvas,raster,{onLost(){lossCount++;result.textContent='Context lost; recovering…';setTimeout(()=>lossExtension?.restoreContext(),150);},onRestored(){restores++;try{run();}catch(e){fail(e);}}});
+ run();
+ document.querySelector('#loss').onclick=()=>{const extension=canvas.getContext('webgl2').getExtension('WEBGL_lose_context');if(!extension){result.textContent='SKIP: context-loss test extension unavailable';return;}lossExtension=extension;extension.loseContext();};
+}catch(error){fail(error);}
+</script>

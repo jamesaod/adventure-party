@@ -1,0 +1,96 @@
+{
+  "id": "short-sword",
+  "sourceArchive": "splendid-short-sword.zip",
+  "sourceArchiveSha256": "48ddde0410503f3b216bef7c676a07b253a704bc4f4259a79893e2c1dc388cca",
+  "sourceArchiveBytes": 21153007,
+  "sourceFile": "source/LowPoly.fbx",
+  "sourceSha256": "6b39abf138611c8e78e3005b6d8fad2bc0e5fc3ec6a1d5e2cfda084e6d5308e1",
+  "sourceTriangles": 500,
+  "triangles": 500,
+  "decimateRatio": 1,
+  "bytes": 751792,
+  "sha256": "0ee9dc416fe68ad516dc2ef99aa5b3c5b574a91718474171fcb19fb919f31261",
+  "textureResolution": 512,
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "credits": null,
+  "textureReference": {
+    "albedo": {
+      "sourceSha256": "c8f0a0f78794ad452575aa8ad3bcdcb9da4eb4cd2a79edc09b19e4818a47d9f1",
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "sourceMean": [
+        142.48840194940567,
+        136.10868120193481,
+        130.47515988349915
+      ],
+      "resizedMean": [
+        142.48929595947266,
+        136.1100311279297,
+        130.4768180847168
+      ]
+    },
+    "normal": {
+      "sourceSha256": "5b8d67003d5f2b13749751406fcd1624eb4601cb1c4dd23cdeda83c499475466",
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "sourceMean": [
+        122.70150244235992,
+        126.0116577744484,
+        245.74848753213882
+      ],
+      "resizedMean": [
+        122.70578002929688,
+        126.00704956054688,
+        245.63553619384766
+      ]
+    },
+    "roughness": {
+      "sourceSha256": "ed8dedabbfbb82b28db190916e2aed9387f53b0b393b968882d9df334199a71d",
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "sourceMean": [
+        79.2469197511673,
+        79.2469197511673,
+        79.2469197511673
+      ],
+      "resizedMean": [
+        79.24427795410156,
+        79.24427795410156,
+        79.24427795410156
+      ]
+    },
+    "metallic": {
+      "sourceSha256": "7f0a36d4a47f9d95515ebf870c6a4d59d7cc6308ff3a6cc4b259cf1e2d870d46",
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "sourceMean": [
+        184.48752760887146,
+        184.48752760887146,
+        184.48752760887146
+      ],
+      "resizedMean": [
+        184.33440017700195,
+        184.33440017700195,
+        184.33440017700195
+      ]
+    }
+  },
+  "sourceDependencies": {},
+  "materialAdjustment": {
+    "revision": 145,
+    "metallicFactor": 0.25,
+    "reason": "Improve blade visibility under Studio and combat lighting; retain source textures and all geometry."
+  }
+}

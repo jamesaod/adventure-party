@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const source=readFileSync('js/combat-environment-actions.js','utf8');
+const start=source.indexOf('function missileMeleeTarget('),end=source.indexOf('function environmentArrowScreen(',start);
+const attacker={id:'a',faction:'blue',x:0,y:0,environmentMissileRoll:{}},target={id:'t',faction:'red',x:2,y:0};
+let units=[];
+const c=vm.createContext({Math:Object.assign(Object.create(Math),{random:()=>.5}),worldPointForHex:(x,y)=>({x,y}),environmentSquash:()=>1,HEX_W:1,environmentRayHit:()=>null,environmentHex:p=>p,document:{getElementById:()=>({checked:true})},allUnits:()=>units,hexDistance:(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y),projectilePathBlockedBetweenHexes:()=>false});
+vm.runInContext(source.slice(start,end),c);
+assert.equal(c.missileMeleeTarget(attacker,target),target);
+const ally={id:'friend',faction:'blue',alive:true,x:3,y:0};
+units=[ally];assert.equal(c.resolveEnvironmentArrow(attacker,target).strayTargetId,undefined);
+const enemy={...ally,id:'enemy',faction:'red'};
+units=[ally,enemy];assert.equal(c.resolveEnvironmentArrow(attacker,target).strayTargetId,'enemy');
+units=[{...enemy,x:3.2}];assert.equal(c.resolveEnvironmentArrow(attacker,target).strayTargetId,undefined);
+console.log('PASS arrows retain intended target, exclude allies, and allow adjacent enemies only');

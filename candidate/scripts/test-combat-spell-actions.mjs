@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {combatPresentationTestServices} from './combat-presentation-test-context.mjs';
+import vm from 'node:vm';
+import {readdirSync} from 'node:fs';
+import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
+const source=readFileSync('js/combat-spell-actions.js','utf8'),trace=[],caster={alive:true,id:'caster'},target={id:'target'},hex={x:2,y:3},original={prior:true};let answer=true,throws=false;
+const c=vm.createContext({...combatPresentationTestServices(),candidateRev10ResolvingSpellId:'prior-sound',r230CastContext:original,spellCasterForAction:()=>caster,r233IsCombatSpellAction:()=>true,r233FocusCaster:async()=>{assert.equal(c.candidateRev10ResolvingSpellId,'fireball');assert.equal(c.r230CastContext,original);trace.push('focus');},r231CleanupCompletionRecord:(token,unit)=>{assert.equal(token,'token');assert.equal(unit,caster);assert.equal(c.r230CastContext,original);assert.equal(c.candidateRev10ResolvingSpellId,'fireball');trace.push('cleanup');},getSpellEntry:id=>id==='unknown'?null:{id},castFireballFromScroll:async(action,point)=>{trace.push('effect');assert.equal(c.candidateRev10ResolvingSpellId,'fireball');assert.deepEqual({...action.castTargetHex},hex);assert.equal(point,hex);if(!action.r230Completing){assert.equal(c.r230CastContext.action.spellId,'fireball');assert.equal(c.r230CastContext.targetUnitId,'target');}else assert.equal(c.r230CastContext,original);if(throws)throw Error('interrupted');return answer;},r226CastHaste:async()=>{trace.push('haste');return true;},castPriestCombatSpell:async()=>{trace.push('priest');return true;}});
+vm.runInContext(source,c);
+const action={spellId:'fireball',r231CompletionTargeting:true,r231CastingToken:'token'};
+assert.equal(await c.resolvePreparedSpellAction(action,hex,target),true);assert.deepEqual(trace,['focus','effect','cleanup']);assert.equal(c.candidateRev10ResolvingSpellId,'prior-sound');assert.equal(c.r230CastContext,original);
+trace.length=0;answer=false;assert.equal(await c.resolvePreparedSpellAction(action,hex,target),false);assert.deepEqual(trace,['focus','effect'],'Rejected completion retains targeting token');
+trace.length=0;throws=true;await assert.rejects(c.resolvePreparedSpellAction(action,hex,target),/interrupted/);assert.deepEqual(trace,['focus','effect']);assert.equal(c.r230CastContext,original);assert.equal(c.candidateRev10ResolvingSpellId,'prior-sound');throws=false;answer=true;
+trace.length=0;await c.resolvePreparedSpellAction({...action,r230Completing:true},hex,target);assert.deepEqual(trace,['focus','effect','cleanup'],'Interactive completion keeps outer presentation but bypasses casting-context setup');
+trace.length=0;await c.dispatchPreparedSpellEffect({spellId:'haste',r230Completing:true},hex,target);assert.deepEqual(trace,['haste'],'Scheduled direct completion does not restart focus/context/target cleanup');
+trace.length=0;await c.resolvePreparedSpellAction({spellId:'haste',r233SkipCasterFocus:true},hex,target);assert.deepEqual(trace,['haste']);assert.equal(c.r230CastContext,original);
+trace.length=0;await c.resolvePreparedSpellAction({spellId:'priest-prayer',type:'priest-spell',r233SkipCasterFocus:true},hex,target);assert.deepEqual(trace,['priest']);
+trace.length=0;assert.equal(await c.resolvePreparedSpellAction({spellId:'unknown',r233SkipCasterFocus:true},hex,target),false);assert.deepEqual(trace,[]);
+// Nested resolutions restore the parent's contexts, not just a global default.
+c.castFireballFromScroll=async()=>{const parent=c.r230CastContext;await c.resolvePreparedSpellAction({spellId:'haste',r233SkipCasterFocus:true},hex,target);assert.equal(c.r230CastContext,parent);assert.equal(c.candidateRev10ResolvingSpellId,'fireball');return true;};await c.resolvePreparedSpellAction(action,hex,target);assert.equal(c.r230CastContext,original);assert.equal(c.candidateRev10ResolvingSpellId,'prior-sound');
+for(const file of readdirSync('js').filter(n=>/\.(js|mjs)$/.test(n)))assert(!/\bresolvePreparedSpellAction\s*=/.test(readFileSync('js/'+file,'utf8')),file+' must not replace prepared-spell owner');
+const timing=readFileSync('js/combat-casting-lifecycle.js','utf8');assert.match(timing,/resolved=await dispatchPreparedSpellEffect\(/);assert(!timing.includes('r230BaseCastPreparedCombatSpell'));
+console.log('PASS explicit spell pipeline order, successful/rejected completions, interruptions, nested contexts, scheduled bypass, extended/core/priest dispatch and stable ownership');

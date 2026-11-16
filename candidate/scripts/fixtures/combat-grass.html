@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Combat grass regression</title>
+<style>body{margin:20px;background:#15151c;color:#cee;font:16px system-ui}.panels{display:flex;gap:16px;flex-wrap:wrap}canvas{width:640px;max-width:100%;border:1px solid #777}h2{font-size:18px}</style>
+<h1>Combat grass — production renderer</h1><p id="result" role="status">Checking…</p><div class="panels"><section><h2>Original flat grass</h2><canvas id="before" width="640" height="400"></canvas></section><section><h2>Grass relief, tufts and stones</h2><canvas id="after" width="640" height="400"></canvas></section></div><pre id="details"></pre>
+<script type="module">
+import {createCombatRenderer} from '../../js/combat-webgl.mjs?v=grass2';
+const result=document.querySelector('#result'),details=document.querySelector('#details');
+try{
+const image=new Image(),normal=new Image();image.src='../../assets/textures/exploration/grass-short-v1.png';normal.src='../../assets/textures/exploration/grass-short-v1-normal.png';normal.combatRepeat=true;await Promise.all([image.decode(),normal.decode()]);
+const pixels=[];let floorDraws=0;
+for(const [id,enhanced] of [['before',false],['after',true]]){
+ const canvas=document.getElementById(id),raster=document.createElement('canvas');raster.width=640;raster.height=400;
+ const backend=createCombatRenderer(canvas,raster),face={grass:true,grassUnit:128/3,grassSquash:.568329,snowEligible:1,points:[{x:0,y:0},{x:640,y:0},{x:640,y:400},{x:0,y:400}],uv:[[0,1],[5,1],[5,1-400/72.746],[0,1-400/72.746]]};
+ backend.begin({width:640,height:400,zoom:1,anchor:{x:0,y:0},matrix:[1,0,0,1,0,0]});backend.surface([face],image,{category:'Floor',grassMaterial:enhanced,normalMap:enhanced?normal:null});backend.end();
+ const profile=JSON.parse(canvas.dataset.combatProfile);if(enhanced){floorDraws=profile.counters['draws:Floor'];details.textContent=JSON.stringify(profile.counters,null,2);if(!(profile.counters.grassScatterFaces>0))throw Error('No grass submitted');}
+ const gl=canvas.getContext('webgl2'),data=new Uint8Array(640*400*4);gl.readPixels(0,0,640,400,gl.RGBA,gl.UNSIGNED_BYTE,data);pixels.push(data);
+ if(gl.getError()!==gl.NO_ERROR)throw Error('WebGL error');
+}
+let changed=0,strong=0;for(let i=0;i<pixels[0].length;i+=4){const difference=Math.max(...[0,1,2].map(c=>Math.abs(pixels[0][i+c]-pixels[1][i+c])));if(difference>2)changed++;if(difference>30)strong++;}
+if(changed<20000||strong<1000)throw Error('Grass treatment is not visibly rendered: '+changed+'/'+strong);
+if(floorDraws!==1)throw Error('Grass introduced extra floor passes');
+result.textContent='PASS — '+changed+' changed pixels; '+strong+' distinct scatter pixels; one floor draw call.';
+}catch(error){result.textContent='FAIL — '+error.message;console.error(error);}
+</script>

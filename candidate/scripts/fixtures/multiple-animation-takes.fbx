@@ -1,0 +1,226 @@
+; Authored Adventure Party FBX animation discovery regression fixture.
+; No third-party geometry, animation or textures.
+FBXHeaderExtension:  {
+	FBXHeaderVersion: 1003
+	FBXVersion: 7400
+}
+Objects:  {
+	Model: 1, "Model::Root", "Null" {
+		Version: 232
+		Properties70:  {
+			P: "Lcl Translation", "Lcl Translation", "", "A",0,0,0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",0,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",1,1,1
+		}
+	}
+	Model: 2, "Model::Triangle", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "Lcl Translation", "Lcl Translation", "", "A",0,0,0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",0,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",1,1,1
+		}
+	}
+	Geometry: 3, "Geometry::Triangle", "Mesh" {
+		Vertices: *9 {
+			a: -0.5,0,0,0.5,0,0,0,1,0
+		}
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		}
+	}
+	AnimationStack: 100, "AnimStack::Walk", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",92372316000
+			P: "LocalStop", "KTime", "Time", "",184744632000
+		}
+	}
+	AnimationStack: 200, "AnimStack::Attack", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",0
+			P: "LocalStop", "KTime", "Time", "",46186158000
+		}
+	}
+	AnimationStack: 300, "AnimStack::Attack", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",0
+			P: "LocalStop", "KTime", "Time", "",92372316000
+		}
+	}
+	AnimationStack: 400, "AnimStack::Empty first", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",0
+			P: "LocalStop", "KTime", "Time", "",46186158000
+		}
+	}
+	AnimationStack: 500, "AnimStack::Layered", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",0
+			P: "LocalStop", "KTime", "Time", "",46186158000
+		}
+	}
+	AnimationStack: 600, "AnimStack::Fallback", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",184744632000
+			P: "LocalStop", "KTime", "Time", "",46186158000
+		}
+	}
+	AnimationStack: 700, "AnimStack::Empty", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",0
+			P: "LocalStop", "KTime", "Time", "",46186158000
+		}
+	}
+	AnimationStack: 800, "AnimStack::No layer", "" {
+		Properties70:  {
+			P: "LocalStart", "KTime", "Time", "",0
+			P: "LocalStop", "KTime", "Time", "",46186158000
+		}
+	}
+	AnimationLayer: 101, "AnimLayer::Layer101", "" {
+	}
+	AnimationLayer: 201, "AnimLayer::Layer201", "" {
+	}
+	AnimationLayer: 301, "AnimLayer::Layer301", "" {
+	}
+	AnimationLayer: 401, "AnimLayer::Layer401", "" {
+	}
+	AnimationLayer: 402, "AnimLayer::Layer402", "" {
+	}
+	AnimationLayer: 501, "AnimLayer::Layer501", "" {
+	}
+	AnimationLayer: 502, "AnimLayer::Layer502", "" {
+	}
+	AnimationLayer: 601, "AnimLayer::Layer601", "" {
+	}
+	AnimationLayer: 701, "AnimLayer::Layer701", "" {
+	}
+	AnimationCurveNode: 110, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 111, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *4 {
+			a: 0,92372316000,184744632000,277116948000
+		}
+		KeyValueFloat: *4 {
+			a: 0,2,4,6
+		}
+	}
+	AnimationCurveNode: 210, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 211, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *2 {
+			a: 0,46186158000
+		}
+		KeyValueFloat: *2 {
+			a: 0,10
+		}
+	}
+	AnimationCurveNode: 310, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 311, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *2 {
+			a: 0,92372316000
+		}
+		KeyValueFloat: *2 {
+			a: 0,-10
+		}
+	}
+	AnimationCurveNode: 410, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 411, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *2 {
+			a: 0,46186158000
+		}
+		KeyValueFloat: *2 {
+			a: 5,6
+		}
+	}
+	AnimationCurveNode: 510, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 511, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *2 {
+			a: 0,46186158000
+		}
+		KeyValueFloat: *2 {
+			a: 0,1
+		}
+	}
+	AnimationCurveNode: 520, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 521, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *2 {
+			a: 0,46186158000
+		}
+		KeyValueFloat: *2 {
+			a: 100,200
+		}
+	}
+	AnimationCurveNode: 610, "AnimCurveNode::T", "" {
+	}
+	AnimationCurve: 611, "AnimCurve::X", "" {
+		Default: 0
+		KeyTime: *4 {
+			a: 0,46186158000,138558474000,184744632000
+		}
+		KeyValueFloat: *4 {
+			a: 0,10,30,40
+		}
+	}
+}
+Connections:  {
+	C: "OO",1,0
+	C: "OO",2,1
+	C: "OO",3,2
+	C: "OO",1,400
+	C: "OO",101,100
+	C: "OO",201,200
+	C: "OO",301,300
+	C: "OO",401,400
+	C: "OO",402,400
+	C: "OO",501,500
+	C: "OO",502,500
+	C: "OO",601,600
+	C: "OO",701,700
+	C: "OO",110,101
+	C: "OP",110,1,"Lcl Translation"
+	C: "OP",111,110,"d|X"
+	C: "OO",210,201
+	C: "OP",210,1,"Lcl Translation"
+	C: "OP",211,210,"d|X"
+	C: "OO",310,301
+	C: "OP",310,1,"Lcl Translation"
+	C: "OP",311,310,"d|X"
+	C: "OO",410,402
+	C: "OP",410,1,"Lcl Translation"
+	C: "OP",411,410,"d|X"
+	C: "OO",510,501
+	C: "OP",510,1,"Lcl Translation"
+	C: "OP",511,510,"d|X"
+	C: "OO",520,502
+	C: "OP",520,1,"Lcl Translation"
+	C: "OP",521,520,"d|X"
+	C: "OO",610,601
+	C: "OP",610,1,"Lcl Translation"
+	C: "OP",611,610,"d|X"
+}
+Takes:  {
+	Current: "Walk"
+	Take: "Walk" {
+		FileName: "Walk.tak"
+		LocalTime: 0,277116948000
+	}
+	Take: "Unused" {
+		FileName: "Unused.tak"
+		LocalTime: 0,46186158000
+	}
+	Take: "Fallback" {
+		FileName: "Fallback.tak"
+		LocalTime: 46186158000,138558474000
+	}
+}

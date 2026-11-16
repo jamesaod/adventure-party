@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createHexSnow} from '../js/combat-snow-state.mjs';
+import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+const ground=createHexSnow();ground.update([{grass:true,snowEligible:1,snowHex:'0,0',points:[{x:0,y:0},{x:32,y:0},{x:32,y:16},{x:0,y:16}]}]);
+const coats=createSnowCoatCoverage();coats.configure([0,0,32,16],32,16,ground.hexes);
+const source={revision:1,level:.08,threshold:(x,y)=>x<8?-Infinity:x<16?.04:Infinity};
+assert(coats.restrictWater(source));assert.equal(coats.coverage.texels,16*16);
+coats.fill();assert.equal(coats.sample(3,4).first,0);assert.equal(coats.sample(12,4).first,0);assert.equal(coats.sample(22,4).first,255);
+assert.equal(coats.coverage.first,1,'Water must not hold the first-coat completion gate open');
+coats.adjustDepth(1);assert.deepEqual(coats.sampleDepthWorld(12,4),[0,0,0,0]);
+coats.clear();for(let i=0;i<200;i++)coats.deposit({x:15.8,y:7,landed:true},()=>0);
+assert.equal(coats.sample(15,7).first,0,'Grain brush must not spill onto water');assert(coats.sample(16,7).first>0,'Dry bank receives the same grain');
+assert.equal(coats.restrictWater(source),false,'Stable water level is a no-op');
+source.level=0;assert(coats.restrictWater(source));assert.equal(coats.coverage.texels,24*16);assert.equal(coats.sample(12,4).first,0,'Receding water must not resurrect old snow');
+coats.fill();source.level=.08;coats.restrictWater(source);assert.deepEqual(coats.sampleDepthWorld(12,4),[0,0,0,0],'New puddles remove existing coats and height');
+source.revision=2;source.threshold=()=>Infinity;coats.restrictWater(source);assert.equal(coats.coverage.texels,32*16);assert.equal(coats.sample(3,4).first,0,'Removed stream exposes bare ground');
+console.log('PASS snow exclusion for streams, puddles, grain edges, fill, depth controls, water changes and coverage gates');

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync(new URL('../js/combat-render-units.js',import.meta.url),'utf8');
+let fallen=true,checks=0;
+const context={hiddenOutlineUnits:[{entity:{alive:true,faction:'player'},index:0,x:0,y:0,width:10,height:20}],treeFallFor:()=>fallen?{}:null,hexCenter:()=>{checks++;throw Error('standing canopy considered');},getUnitEffect:()=>null,shouldRenderUnitUnderPartyVisibility:()=>true,isPlayerControlledUnit:()=>true,battlefieldZoom:1};
+vm.createContext(context);vm.runInContext(source,context);
+vm.runInContext('drawHiddenUnitOutlines([{tree:{x:0,y:0}}])',context);
+assert.equal(checks,0,'fallen tree rejected before bounds, masks or rig rendering');
+fallen=false;assert.throws(()=>vm.runInContext('drawHiddenUnitOutlines([{tree:{x:0,y:0}}])',context),/standing canopy considered/);
+assert.equal(checks,1,'standing tree still participates');
+assert.ok(source.includes('else if(!directFirRendering())'),'live GPU rendering must not be a canvas-mask fallback');
+console.log('PASS fallen canopy rejected early; standing canopy retained; GPU mask fallback excluded');

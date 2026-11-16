@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>GPU tree flame validation</title>
+<style>body{background:#11151a;color:#dce8f0;font:16px system-ui}canvas{max-width:100%;background:#11151a}</style>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three/three.module.min.js"}}</script>
+<h1>GPU tree flame validation</h1><p id="result">Loading…</p><canvas id="output" width="384" height="512"></canvas>
+<script type="module">
+import * as THREE from '../../assets/vendor/three/three.module.min.js';
+import {createTreeFireParticles} from '../../js/combat-tree-fire-particles.mjs';
+import {createCombatFirTrees} from '../../js/combat-fir-trees.mjs';
+import {solarState} from '../../js/solar-clock.mjs';
+const result=document.querySelector('#result');
+try{
+ const renderer=new THREE.WebGLRenderer({antialias:false}),scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(-35,35,65,-5,.1,500);camera.position.set(0,30,100);camera.lookAt(0,30,0);renderer.setSize(128,128);
+ renderer.debug.onShaderError=()=>{throw Error('Flame shader compilation failed');};
+ const pool=createTreeFireParticles();scene.add(pool.mesh);const samples=Array.from({length:60},(_,i)=>({x:Math.sin(i)*15,y:10+(i%5)*8,z:Math.cos(i)*6}));
+ const target=new THREE.WebGLRenderTarget(128,128),read=new Uint8Array(128*128*4);renderer.setRenderTarget(target);
+ pool.update({samples,time:1,phase:.31});renderer.render(scene,camera);renderer.readRenderTargetPixels(target,0,0,128,128,read);
+ if(!read.some((n,i)=>i%4===0&&n>30))throw Error('No visible flame pixels');const first=read.slice();
+ pool.update({samples,time:1.4,phase:.31});renderer.render(scene,camera);renderer.readRenderTargetPixels(target,0,0,128,128,read);if(!read.some((n,i)=>n!==first[i]))throw Error('Flames are not animating');
+ pool.dispose();target.dispose();renderer.dispose();
+ const trees=await createCombatFirTrees(),frame=trees.get(0,0,{burning:true,ambient:20,solar:solarState(0),firePhaseValue:.31});
+ const canvas=document.querySelector('#output');canvas.getContext('2d').drawImage(frame.body,0,0);
+ result.textContent='PASS: GPU flame shader compiles, emits animated pixels and renders on the production fir tree.';
+}catch(error){result.textContent='FAIL: '+error.message;console.error(error);}
+</script>

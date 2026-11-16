@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-11-02",
+  "mode": "built-in image_gen",
+  "purpose": "Original PNGs copied without pixel edits. Dirt is the base; grass-fringe preserves generated alpha. Runtime masks compose terrain edges once at map load.",
+  "assets": [
+    {
+      "file": "dirt-path-v1.png",
+      "prompt": "Generate a square seamless repeating diffuse/albedo terrain texture of compacted dirt for a top-down/isometric fantasy tactical game. Entire image is dirt, no grass and no path outline. Warm muted gray-brown loamy soil, subtle medium-scale worn patches, a few small embedded pebbles, tiny fine roots, readable natural surface detail without grainy speckling. Match a muted olive-green short grass terrain palette when adjacent. Perfect orthographic overhead, flat neutral diffuse illumination, no baked directional shadows, no perspective, no borders, text, watermark or objects. The edges must visually tile seamlessly. Game-ready material study, detailed but restrained.",
+      "bytes": 3185257,
+      "sha256": "29e7dcd09e8323f1ba38f6900234a3bba8904800d450b7361f5e56e4d08a1702",
+      "width": 1254,
+      "height": 1254,
+      "repeatMetres": 3
+    },
+    {
+      "file": "grass-fringe-v1.png",
+      "prompt": "A square transparent PNG terrain overlay for a top-down fantasy tactical game: many small separated clusters of short olive-green and slightly straw-yellow grass blades and tiny low clover leaves, seen perfectly straight down. Scatter small tufts evenly but naturally across the full image with generous transparent gaps between them. Each tuft is small relative to the square so this represents grass sprouting sparsely across a three-metre ground tile. Muted realistic game texture style matching dense yellow-olive short meadow grass. Actual transparent background, no soil, no ground plane, no opaque backing, no shadows, no labels, no border, no watermark. Uniform diffuse neutral lighting. These cutout tufts will be alpha-composited only along irregular dirt-path edges.",
+      "bytes": 1471071,
+      "sha256": "44509b1162837fb6d146df80d6cba03eed44aab416c8750c602547d74753bf4b",
+      "width": 1254,
+      "height": 1254,
+      "repeatMetres": 3
+    }
+  ]
+}

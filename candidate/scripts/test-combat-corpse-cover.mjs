@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createCorpseCoverIndex} from '../js/combat-corpse-cover.mjs';
+const body={alive:false},newer={alive:false};
+const index=createCorpseCoverIndex([{entity:body,positions:[0,0,0,20,0,0,0,20,0]},{entity:newer,positions:[0,20,0,20,0,0,0,0,0]}]);
+const order=new Map([[body,10],[newer,12]]);
+assert.equal(index.sortY(4,4,15,order),9.999,'Grass under either winding of corpse triangles draws behind the body');
+assert.equal(index.sortY(18,18,15,order),15,'Foreground outside silhouette is retained, even inside its bounding box');
+assert.equal(index.sortY(4,4,5,order),5,'Background stays behind');
+assert.equal(index.sortY(4,4,15,new Map()),15,'Absent corpse does not reorder grass');
+body.alive=true;newer.alive=true;assert.equal(index.sortY(4,4,15,order),15,'Revived units release cover');
+console.log('PASS corpse grass footprint ordering, foreground preservation and resurrection');

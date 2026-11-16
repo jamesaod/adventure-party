@@ -1,0 +1,78 @@
+{
+  "source": "AmericanBeech_Winter.spm / AmericanBeech_Winter_LOD1.obj",
+  "method": "Eight original connected major limbs; smaller connected branches assigned to nearest major limb. Bark geometry/UVs retained; mesh pivots centered for tumbling. Bare wood prototype; no new SpeedTree source authored.",
+  "pieces": [
+    {
+      "name": "Maple_detached_limb_1",
+      "triangles": 930,
+      "origin": [
+        -42.10066764529621,
+        614.1824854367873,
+        25.540261770638686
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_2",
+      "triangles": 792,
+      "origin": [
+        -168.91173590443378,
+        435.5010993430471,
+        -154.36570140539894
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_3",
+      "triangles": 2190,
+      "origin": [
+        -183.28453850037286,
+        366.2771101940001,
+        99.8718259911749
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_4",
+      "triangles": 1428,
+      "origin": [
+        -5.878386532603034,
+        269.4078258920497,
+        167.07964310737225
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_5",
+      "triangles": 336,
+      "origin": [
+        145.947954289532,
+        489.5518395221259,
+        -163.55905450342962
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_6",
+      "triangles": 2232,
+      "origin": [
+        -42.96368143429439,
+        248.4783313555936,
+        -92.9785630118817
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_7",
+      "triangles": 2172,
+      "origin": [
+        178.734516329267,
+        247.22047465659628,
+        -5.130788363450764
+      ]
+    },
+    {
+      "name": "Maple_detached_limb_8",
+      "triangles": 594,
+      "origin": [
+        29.284110176053893,
+        497.70577950691643,
+        47.23319158197774
+      ]
+    }
+  ]
+}

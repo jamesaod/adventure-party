@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "modelId": "male-orc-fighter",
+  "label": "Male Orc Fighter",
+  "repositoryFile": "assets/models/orcs/male-orc-fighter/male-orc-fighter.glb",
+  "originalFileName": "Male+Orc+Fighter+3D+Model.glb",
+  "source": {
+    "handoff": "user-supplied conversation upload",
+    "generator": "Tripo",
+    "license": "not recorded"
+  },
+  "integrity": {
+    "byteLength": 1413200,
+    "sha256": "a0b63e9ae67c47779baf9e254660918c073ab1684237f528c43bb9f7e9f9c688",
+    "gitBlobSha1": "fd647bba1f51feb8104eb68b89b39d7d5e75ca0c",
+    "preservation": "repository GLB is byte-for-byte identical to the uploaded source"
+  },
+  "gltf": {
+    "version": "2.0",
+    "scenes": 1,
+    "nodes": 67,
+    "meshes": 1,
+    "materials": 1,
+    "skins": 1,
+    "skinName": "Armature",
+    "joints": 65,
+    "animations": 0
+  },
+  "rig": {
+    "family": "mixamo",
+    "mappedCoreHumanoidRoles": 20,
+    "coreHumanoidRoleCount": 20,
+    "completeFingerChainsPerHand": 5,
+    "externalAnimationReady": true,
+    "rightHandEquipmentReady": true,
+    "leftHandShieldReady": true,
+    "twoHandedSolverReady": true
+  },
+  "studio": {
+    "upAxis": "Y",
+    "mobType": "orc",
+    "note": "No embedded clips. Use the Studio humanoid FBX animation importer or a future repository-backed generic animation library."
+  }
+}

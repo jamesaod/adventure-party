@@ -1,0 +1,15 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+(async()=>{const b=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE,headless:true});try{const p=await b.newPage();await p.goto('http://127.0.0.1:8276/js/combat-corpse-snow.mjs');console.log(await p.evaluate(async()=>{
+const T=await import('/assets/vendor/three/three.module.min.js'),s=await import('/js/combat-corpse-snow.mjs');const renderer=new T.WebGLRenderer({preserveDrawingBuffer:true});renderer.setSize(64,64);renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.debug.onShaderError=(g,p,v,f)=>{throw Error(g.getShaderInfoLog(v)+g.getShaderInfoLog(f));};const scene=new T.Scene(),group=new T.Group(),mat=new T.MeshStandardMaterial({color:0x331111}),mesh=new T.Mesh(new T.BoxGeometry(1,.2,1),mat),amount={value:0};group.add(mesh);scene.add(group,new T.AmbientLight(0xffffff,1));s.prepareCorpseSnow(group,{alive:false},amount);mat.userData.corpseSnowGroundDisplay.value.copy(s.snowAmbientDisplay([.902,.916,.930]));const camera=new T.OrthographicCamera(-1,1,1,-1,.1,10);camera.position.set(0,4,.001);camera.lookAt(0,0,0);
+mesh.visible=false;renderer.setClearColor(0,0);
+const sample=a=>{amount.value=a;s.updateCorpseSnowMap(amount);renderer.render(scene,camera);const out=new Uint8Array(4);renderer.getContext().readPixels(32,32,1,1,renderer.getContext().RGBA,renderer.getContext().UNSIGNED_BYTE,out);return [...out];};
+const stages=[0,1,2,3,4,20].map(sample);stages.forEach((v,i)=>{const expected=Math.min(i,4)*255/4;if(Math.abs(v[3]-expected)>2)throw Error('Cap opacity mismatch '+JSON.stringify(stages));});
+mesh.visible=true;
+const overBody=a=>{amount.value=a;s.updateCorpseSnowMap(amount);renderer.clear();s.renderCorpseSnowLayers(renderer,scene,camera,group,a);const out=new Uint8Array(4);renderer.getContext().readPixels(32,32,1,1,renderer.getContext().RGBA,renderer.getContext().UNSIGNED_BYTE,out);return [...out];};
+const body=overBody(0),opaque=overBody(4),blends=[1,2,3].map(overBody);
+const shell=group.children.find(o=>o.userData.corpseSnowShell);shell.visible=false;
+const bodies=[1,2,3,4].map(a=>{amount.value=a;renderer.clear();renderer.render(scene,camera);const out=new Uint8Array(4);renderer.getContext().readPixels(32,32,1,1,renderer.getContext().RGBA,renderer.getContext().UNSIGNED_BYTE,out);return [...out];});shell.visible=true;
+if(!(bodies[1][1]>bodies[0][1]&&bodies[3][1]>bodies[2][1]))throw Error('Body did not whiten independently');
+blends.forEach((v,i)=>v.slice(0,3).forEach((c,k)=>{const expected=bodies[i][k]*(1-(i+1)/4)+opaque[k]*(i+1)/4;if(Math.abs(c-expected)>3)throw Error('Visible body/snow blend mismatch '+JSON.stringify({body,opaque,blends}));}));
+const lamp=new T.PointLight(0xff6600,8,10,2);lamp.position.set(0,1,0);scene.add(lamp);const lit=overBody(4);if(lit[0]<=opaque[0]&&lit[1]<=opaque[1])throw Error('Local light did not illuminate snow');
+renderer.dispose();return {stages,body,opaque,blends,lit};}));}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

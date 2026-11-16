@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {buildBowSequence} from '../js/bow-animation-sequence.mjs';
+import {workshopAttackTiming} from '../js/workshop-animation-runtime.mjs';
+import {bowDrawnAt} from '../js/equipment-visual-states.mjs';
+const make=(name,end)=>new T.AnimationClip(name,2,[new T.VectorKeyframeTrack('hips.position',[0,2],[0,0,0,end,0,0]),new T.QuaternionKeyframeTrack('hips.quaternion',[0,2],[0,0,0,1,0,0,0,1])]);
+const recipe={notch:{start:.2,end:1.8,speed:2},shoot:{start:.1,end:1.5,speed:.5},blend:.1,draw:.4,release:.6};
+const {clip,bowTiming}=buildBowSequence(make('n',2),make('s',4),recipe);
+assert(Math.abs(clip.duration-3.5)<1e-6);assert(Math.abs(bowTiming.release-1.7)<1e-6);
+const a={clipId:'combined',start:0,end:clip.duration,speed:1,loop:false,bowTiming};
+assert(bowDrawnAt(a,1.69));assert(!bowDrawnAt(a,1.71));
+const timing=workshopAttackTiming({clips:[{id:'combined',duration:clip.duration}],assignments:{bow:[a]}},'bow');assert(Math.abs(timing.windupDurationMs-1700)<1e-6);assert(Math.abs(timing.actionDurationMs-1800)<1e-6);
+for(const track of clip.tracks)assert([...track.values].every(Number.isFinite));
+assert.throws(()=>buildBowSequence(make('n',2),make('s',4),{...recipe,blend:1}));
+assert.throws(()=>buildBowSequence(make('n',2),make('s',4),{...recipe,release:4}));
+const roundtrip=T.AnimationClip.parse(T.AnimationClip.toJSON(clip));assert.equal(roundtrip.tracks.length,2);
+console.log('Bow sequence: trim, speed, blend validation, release timing, string reset and clip serialization passed.');

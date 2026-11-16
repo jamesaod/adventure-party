@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import * as s from '../js/combat-snow-shelter.mjs?v=tree-snow-grains1';
+import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+import {snowDepthMetres} from '../js/combat-snow-depth.mjs?v=shore-snow1';
+const tree={x:0,y:0,radius:20},bounds=[-30,-30,60,60];
+const c=createSnowCoatCoverage(),triangles=[{a:{x:-30,y:-30},b:{x:30,y:-30},c:{x:30,y:30}},{a:{x:-30,y:-30},b:{x:30,y:30},c:{x:-30,y:30}}];c.configure(bounds,64,64,new Map([['0,0',{triangles}]]));
+s.configureSnowShelter([tree],bounds,20);s.finalizeSnowShelter();c.setExposureField(s.snowShelterRevision(),s.snowExposureAt);
+assert(s.snowExposureAt(0,0)<.01);for(let i=0;i<1000;i++)c.deposit({x:0,y:0,landed:true},()=>.2);assert.deepEqual(c.sampleWorld(0,0),[0,0,0],'Canopy prevents actual deposits, not just their display');
+// Explicit controls override interception and edit retained physical depth.
+c.adjustDepth(.5);assert(Math.abs(snowDepthMetres(c.sampleDepthWorld(0,0))/.0254-3)<.06);
+c.adjustDepth(-.5);assert.equal(snowDepthMetres(c.sampleDepthWorld(0,0)),0);
+s.configureSnowShelter([{...tree,snowShelter:false}],bounds,20);s.finalizeSnowShelter(true);c.setExposureField(s.snowShelterRevision(),s.snowExposureAt);
+assert.equal(s.snowExposureAt(0,0),1);assert.deepEqual(c.sampleWorld(0,0),[0,0,0],'Canopy loss reveals no hidden snow');
+assert.equal(s.advanceSnowShelter(120),false);assert.deepEqual(c.sampleWorld(0,0),[0,0,0],'Elapsed time does not fade an opacity mask');
+for(let i=0;i<8;i++)c.deposit({x:0,y:0,landed:true},()=>.2);
+assert(c.sampleWorld(0,0)[0]>0,'Newly exposed ground receives new grains');assert.deepEqual(c.sampleWorld(4,0),[0,0,0],'Accumulation is localized, not a uniform canopy fade');
+const stored=c.sampleWorld(0,0);s.configureSnowShelter([tree],bounds,20);s.finalizeSnowShelter(true);c.setExposureField(s.snowShelterRevision(),s.snowExposureAt);assert.deepEqual(c.sampleWorld(0,0),stored,'Returning leaves do not hide existing snow');
+const corpse=await import('../js/combat-corpse-snow.mjs?v=tree-snow-grains1'),entity={alive:false,x:0,y:0},amount=corpse.registerCorpseSnow(entity),hexes=new Map([['0,0',{}]]);
+corpse.fillCorpseSnow(hexes);corpse.setCorpseSnowWater(amount,.2);corpse.advanceCorpseSnow(hexes,100);corpse.adjustCorpseSnow(hexes,1);corpse.fillCorpseSnow(hexes);assert.equal(amount.value,0);corpse.setCorpseSnowWater(amount,0);corpse.advanceCorpseSnow(hexes,1);assert(amount.value>0&&amount.value<4);corpse.resetCorpseSnow(true);
+console.log('PASS actual canopy interception, localized new grains, no opacity fade or hidden accumulation, ±3-inch controls, retained snow on canopy return, wet corpses');

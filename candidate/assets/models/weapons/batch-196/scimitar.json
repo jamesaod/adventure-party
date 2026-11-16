@@ -1,0 +1,72 @@
+{
+  "id": "scimitar",
+  "sourceTriangles": 787,
+  "triangles": 787,
+  "bytes": 215340,
+  "sha256": "94ccd84a8a1c38fec5a68ce3a19c229dd44ecfbe1287d89d1aaa2017d7be1edc",
+  "textureResolution": 256,
+  "sourceAxis": [
+    0.9861016119979129,
+    4.779425744061427e-10,
+    0.16614334417940907
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "pirate-scimitar-sword.zip",
+  "sourceArchiveSha256": "ee08d9f78cba17259384bf32625b38b8150bb7ee2058291051add81ddfd32220",
+  "sourceSha256": "a80671d90ead5c3b2acb89ff073bc5948bba8c82bcec23ec933e1b92c3b9cf37",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        113.85876083374023,
+        115.36443424224854,
+        121.55946826934814
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "outputMean": [
+        113.83418273925781,
+        115.35650634765625,
+        121.56915283203125
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        127.94155311584473,
+        125.9751091003418,
+        254.75222301483154
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ]
+    },
+    "roughness": {
+      "sourceMean": [
+        77.30850505828857,
+        77.30850505828857,
+        77.30850505828857
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ]
+    },
+    "metallic": {
+      "sourceMean": [
+        179.74574184417725,
+        179.74574184417725,
+        179.74574184417725
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ]
+    }
+  }
+}

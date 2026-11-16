@@ -1,0 +1,72 @@
+{
+  "id": "lucerne-hammer",
+  "sourceTriangles": 4498,
+  "triangles": 4498,
+  "bytes": 466808,
+  "sha256": "c058d4d290cd93a3ba4314984824975820c6278eb6ed830109493a4bfe1aa55c",
+  "textureResolution": 256,
+  "sourceAxis": [
+    -0.6874984581454867,
+    -0.5123556790702809,
+    0.5146236762645202
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "medieval-war-hammer.zip",
+  "sourceArchiveSha256": "a90b5fb669aab55c3fc0c46a21815fc6a4fc573706eff1b49b144f6b32c107ca",
+  "sourceSha256": "cc2c8f42a710288846a58fa50fe17aad923de41586353380aa01c89141608119",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        101.68100780248642,
+        90.43836772441864,
+        85.70411252975464
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "outputMean": [
+        101.68231201171875,
+        90.46728515625,
+        85.85838317871094
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        121.8481342792511,
+        128.64271730184555,
+        240.04422384500504
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ]
+    },
+    "roughness": {
+      "sourceMean": [
+        162.28024792671204,
+        162.28024792671204,
+        162.28024792671204
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ]
+    },
+    "metallic": {
+      "sourceMean": [
+        81.74210667610168,
+        81.74210667610168,
+        81.74210667610168
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ]
+    }
+  }
+}

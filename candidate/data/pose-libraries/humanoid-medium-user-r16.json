@@ -1,0 +1,181 @@
+{
+  "schema": "adventure-party.pose-library",
+  "version": 2,
+  "id": "humanoid-medium",
+  "name": "Humanoid Medium",
+  "bodyFamily": "humanoid",
+  "size": "medium",
+  "revision": 16,
+  "profiles": {
+    "one-handed-swing": {
+      "ready": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.3349333333333333
+      },
+      "windup": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.38186666666666663
+      },
+      "attack": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.5802666666666667
+      }
+    },
+    "two-handed-swing": {
+      "ready": {
+        "animation": "Sword And Shield Slash",
+        "sourceId": "uploaded:sword-and-shield-slash:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Sword And Shield Slash",
+        "sourceId": "uploaded:sword-and-shield-slash:0",
+        "timeSeconds": 0
+      },
+      "attack": {
+        "animation": "Sword And Shield Slash",
+        "sourceId": "uploaded:sword-and-shield-slash:0",
+        "timeSeconds": 0.6765
+      }
+    },
+    "one-handed-thrust": {
+      "ready": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.22186666666666666
+      },
+      "attack": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.4096
+      }
+    },
+    "two-handed-thrust": {
+      "ready": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.3072
+      },
+      "attack": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.512
+      }
+    },
+    "dual-wield": {
+      "ready": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 0.8597333333333333
+      },
+      "attack": {
+        "animation": "Stabbing",
+        "sourceId": "uploaded:stabbing:0",
+        "timeSeconds": 1.0965333333333334
+      }
+    },
+    "unarmed": {
+      "ready": {
+        "animation": "Boxing",
+        "sourceId": "uploaded:boxing:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Boxing",
+        "sourceId": "uploaded:boxing:0",
+        "timeSeconds": 0.41173333333333334
+      },
+      "attack": {
+        "animation": "Boxing",
+        "sourceId": "uploaded:boxing:0",
+        "timeSeconds": 0.64
+      }
+    },
+    "spell-casting": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "bow": {
+      "ready": {
+        "animation": "Standing Idle",
+        "sourceId": "uploaded:standing-idle:0",
+        "timeSeconds": 0
+      },
+      "windup": {
+        "animation": "Standing Aim Recoil",
+        "sourceId": "uploaded:standing-aim-recoil:0",
+        "timeSeconds": 0
+      },
+      "attack": {
+        "animation": "Standing Aim Recoil",
+        "sourceId": "uploaded:standing-aim-recoil:0",
+        "timeSeconds": 0.3094
+      }
+    },
+    "direct-fire": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "sling": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "throw": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    },
+    "wizard-staff-grip": {
+      "ready": null,
+      "windup": null,
+      "attack": null
+    }
+  },
+  "sharedActionGroups": {
+    "magic": {
+      "casting-windup": {
+        "animation": "Standing 2h Magic Attack 04",
+        "sourceId": "uploaded:standing-2h-magic-attack-04:0",
+        "timeSeconds": 0.7266666666666667
+      },
+      "cast": {
+        "animation": "Standing 2h Magic Attack 04",
+        "sourceId": "uploaded:standing-2h-magic-attack-04:0",
+        "timeSeconds": 2.776666666666667
+      }
+    },
+    "death-prone": {
+      "falling": {
+        "animation": "Standing React Death Forward",
+        "sourceId": "uploaded:standing-react-death-forward:0",
+        "timeSeconds": 1.3419999999999999
+      },
+      "prone": {
+        "animation": "Standing React Death Forward",
+        "sourceId": "uploaded:standing-react-death-forward:0",
+        "timeSeconds": 3.6666666666666665
+      }
+    }
+  }
+}

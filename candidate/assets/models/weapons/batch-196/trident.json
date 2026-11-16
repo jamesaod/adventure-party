@@ -1,0 +1,72 @@
+{
+  "id": "trident",
+  "sourceTriangles": 1136,
+  "triangles": 1136,
+  "bytes": 359968,
+  "sha256": "d7d96c0fb57f5240cf14fb6613d637339e74e73439e997a1e4348320bb9249b5",
+  "textureResolution": 256,
+  "sourceAxis": [
+    2.174373492938586e-06,
+    3.2201999132785986e-06,
+    0.999999999992451
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "mossy-golden-trident.zip",
+  "sourceArchiveSha256": "77ef1e2ddc52bd85dbb88c6e3877cebc9148634e29ad3a156e7f3cec0af66aad",
+  "sourceSha256": "d099bf080ea73bb69a53a21c1ec162856e3a55ecd3c49ed456ae5e8c1d7d76d9",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        99.62164157629013,
+        84.59540784358978,
+        49.329789876937866
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ],
+      "outputMean": [
+        99.6239013671875,
+        84.60014343261719,
+        49.33152770996094
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        128.3898583650589,
+        126.51149272918701,
+        247.43531823158264
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ]
+    },
+    "roughness": {
+      "sourceMean": [
+        155.68255925178528,
+        155.68255925178528,
+        155.68255925178528
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ]
+    },
+    "metallic": {
+      "sourceMean": [
+        89.2725835442543,
+        89.2725835442543,
+        89.2725835442543
+      ],
+      "sourceSize": [
+        4096,
+        4096
+      ]
+    }
+  }
+}

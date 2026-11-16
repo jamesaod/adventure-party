@@ -1,0 +1,368 @@
+{
+  "source": {
+    "file": "UAL2_Standard.glb",
+    "archiveMember": "Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb",
+    "bytes": 8091444,
+    "sha256": "8cee20ab1bc55130092447e810e26df22dd2803eccc54f52137a7d54d7ab88a8",
+    "rootMotionVariant": "non-RM",
+    "reference": "bind T pose",
+    "axisAlignment": "identity; Y up and +Z forward"
+  },
+  "target": {
+    "file": "male-orc-fighter.glb",
+    "bytes": 1413200,
+    "sha256": "a0b63e9ae67c47779baf9e254660918c073ab1684237f528c43bb9f7e9f9c688",
+    "originalClips": [],
+    "nativeMeshBounds": {
+      "min": [
+        -0.2514341473579407,
+        -6.940723551451811e-09,
+        -0.1407776176929474
+      ],
+      "max": [
+        0.25143441557884216,
+        1.0000001192092896,
+        0.1407775580883026
+      ]
+    }
+  },
+  "referenceTarget": {
+    "file": "dungeon-crawler-carl-v2.glb",
+    "bytes": 11139980,
+    "sha256": "5284bd3cd0b9fe6665c5d94ec0fc7fae8ec4a5856f0628f3084ae1190b044693",
+    "policy": "Use reference bind rotations only; preserve target translations, scales, mesh, skin, materials and binary prefix."
+  },
+  "output": {
+    "file": "male-orc-fighter-ual2-one-handed.glb",
+    "bytes": 1532936,
+    "sha256": "2f88c4062f2fdba6b8738e0296a1e5764cff94f3e716153ea1e374475d7831d0",
+    "clips": [
+      {
+        "name": "UAL2_Sword_Ready",
+        "duration": 1,
+        "samples": 2,
+        "channels": 65
+      },
+      {
+        "name": "UAL2_Sword_Regular_A",
+        "duration": 1.399999976158142,
+        "samples": 85,
+        "channels": 65
+      }
+    ]
+  },
+  "retarget": {
+    "mappedJoints": 64,
+    "unmappedSource": [
+      "root"
+    ],
+    "unmappedTarget": [
+      "mixamorig:HeadTop_End"
+    ],
+    "hipDisplacementScale": 0.5901773340579259,
+    "rootMotionPolicy": "Include source root in world transforms; root remains fixed in selected non-RM clips; retain scaled pelvis displacement.",
+    "targetLocalTranslations": "Original bind values except hips",
+    "targetLocalScales": "Original bind values for all nodes",
+    "rotationRule": "inverse(targetParentAnimatedWorld) * (sourceAnimatedWorld * inverse(sourceBindWorld)) * referenceTargetBindWorld"
+  },
+  "sourceClips": [
+    {
+      "name": "Sword_Regular_A",
+      "duration": 0.4333333373069763,
+      "samples": 14
+    },
+    {
+      "name": "Sword_Regular_A_Rec",
+      "duration": 0.9666666388511658,
+      "samples": 30
+    }
+  ],
+  "groundClearance": {
+    "selectedFootVertices": 754,
+    "bindGroundY": 6.355383385010793e-08,
+    "clearanceMargin": 0.00025,
+    "maximumHipsLift": 0.06329337406082967,
+    "minimumSoleYBefore": -0.05979671182246197,
+    "minimumSoleYAfterInterframeChecks": 0.00025006436387628277,
+    "interframeProbeCount": 1009,
+    "policy": "Nonnegative hips-Y lift from original skinned feet; preserve rotations, bone offsets, scales, and hips X/Z; no foot locking or IK."
+  },
+  "checks": {
+    "allSourceAndOutputValuesFinite": true,
+    "originalBinaryPrefixPreserved": true,
+    "originalMeshImagesSkinBindNodesAndClipsPreserved": true,
+    "sourceBindInverseMaxError": 7.501074250055878e-07,
+    "targetBindInverseMaxError": 1.4061258417715164e-06,
+    "restWorldRotationMaxErrorDegrees": 0.0,
+    "restWorldPositionMaxError": 0.0,
+    "sourceRootBindMaxError": 0.0,
+    "bakedQuaternionNormMaxError": 4.021135469045589e-08,
+    "seamLocalRotationMaxDegrees": 0.1565881368962438,
+    "seamScaledHipsDistance": 0.0002259335685020792,
+    "attackStartEndLocalRotationMaxDegrees": 5.094331427130375,
+    "attackStartEndHipsDistance": 0.0024586722695117682
+  },
+  "limitations": [
+    "Held ready pose has no idle motion.",
+    "Floor clearance lifts hips only; no foot locking, IK, body/weapon collision correction, or weapon orientation correction.",
+    "Attack retains authored recovery endpoint; it is not forced into a seamless loop."
+  ],
+  "mapping": [
+    {
+      "source": "pelvis",
+      "target": "mixamorig:Hips"
+    },
+    {
+      "source": "spine_01",
+      "target": "mixamorig:Spine"
+    },
+    {
+      "source": "spine_02",
+      "target": "mixamorig:Spine1"
+    },
+    {
+      "source": "spine_03",
+      "target": "mixamorig:Spine2"
+    },
+    {
+      "source": "neck_01",
+      "target": "mixamorig:Neck"
+    },
+    {
+      "source": "Head",
+      "target": "mixamorig:Head"
+    },
+    {
+      "source": "clavicle_l",
+      "target": "mixamorig:LeftShoulder"
+    },
+    {
+      "source": "upperarm_l",
+      "target": "mixamorig:LeftArm"
+    },
+    {
+      "source": "lowerarm_l",
+      "target": "mixamorig:LeftForeArm"
+    },
+    {
+      "source": "hand_l",
+      "target": "mixamorig:LeftHand"
+    },
+    {
+      "source": "thigh_l",
+      "target": "mixamorig:LeftUpLeg"
+    },
+    {
+      "source": "calf_l",
+      "target": "mixamorig:LeftLeg"
+    },
+    {
+      "source": "foot_l",
+      "target": "mixamorig:LeftFoot"
+    },
+    {
+      "source": "ball_l",
+      "target": "mixamorig:LeftToeBase"
+    },
+    {
+      "source": "ball_leaf_l",
+      "target": "mixamorig:LeftToe_End"
+    },
+    {
+      "source": "index_01_l",
+      "target": "mixamorig:LeftHandIndex1"
+    },
+    {
+      "source": "index_02_l",
+      "target": "mixamorig:LeftHandIndex2"
+    },
+    {
+      "source": "index_03_l",
+      "target": "mixamorig:LeftHandIndex3"
+    },
+    {
+      "source": "index_04_leaf_l",
+      "target": "mixamorig:LeftHandIndex4"
+    },
+    {
+      "source": "middle_01_l",
+      "target": "mixamorig:LeftHandMiddle1"
+    },
+    {
+      "source": "middle_02_l",
+      "target": "mixamorig:LeftHandMiddle2"
+    },
+    {
+      "source": "middle_03_l",
+      "target": "mixamorig:LeftHandMiddle3"
+    },
+    {
+      "source": "middle_04_leaf_l",
+      "target": "mixamorig:LeftHandMiddle4"
+    },
+    {
+      "source": "ring_01_l",
+      "target": "mixamorig:LeftHandRing1"
+    },
+    {
+      "source": "ring_02_l",
+      "target": "mixamorig:LeftHandRing2"
+    },
+    {
+      "source": "ring_03_l",
+      "target": "mixamorig:LeftHandRing3"
+    },
+    {
+      "source": "ring_04_leaf_l",
+      "target": "mixamorig:LeftHandRing4"
+    },
+    {
+      "source": "pinky_01_l",
+      "target": "mixamorig:LeftHandPinky1"
+    },
+    {
+      "source": "pinky_02_l",
+      "target": "mixamorig:LeftHandPinky2"
+    },
+    {
+      "source": "pinky_03_l",
+      "target": "mixamorig:LeftHandPinky3"
+    },
+    {
+      "source": "pinky_04_leaf_l",
+      "target": "mixamorig:LeftHandPinky4"
+    },
+    {
+      "source": "thumb_01_l",
+      "target": "mixamorig:LeftHandThumb1"
+    },
+    {
+      "source": "thumb_02_l",
+      "target": "mixamorig:LeftHandThumb2"
+    },
+    {
+      "source": "thumb_03_l",
+      "target": "mixamorig:LeftHandThumb3"
+    },
+    {
+      "source": "thumb_04_leaf_l",
+      "target": "mixamorig:LeftHandThumb4"
+    },
+    {
+      "source": "clavicle_r",
+      "target": "mixamorig:RightShoulder"
+    },
+    {
+      "source": "upperarm_r",
+      "target": "mixamorig:RightArm"
+    },
+    {
+      "source": "lowerarm_r",
+      "target": "mixamorig:RightForeArm"
+    },
+    {
+      "source": "hand_r",
+      "target": "mixamorig:RightHand"
+    },
+    {
+      "source": "thigh_r",
+      "target": "mixamorig:RightUpLeg"
+    },
+    {
+      "source": "calf_r",
+      "target": "mixamorig:RightLeg"
+    },
+    {
+      "source": "foot_r",
+      "target": "mixamorig:RightFoot"
+    },
+    {
+      "source": "ball_r",
+      "target": "mixamorig:RightToeBase"
+    },
+    {
+      "source": "ball_leaf_r",
+      "target": "mixamorig:RightToe_End"
+    },
+    {
+      "source": "index_01_r",
+      "target": "mixamorig:RightHandIndex1"
+    },
+    {
+      "source": "index_02_r",
+      "target": "mixamorig:RightHandIndex2"
+    },
+    {
+      "source": "index_03_r",
+      "target": "mixamorig:RightHandIndex3"
+    },
+    {
+      "source": "index_04_leaf_r",
+      "target": "mixamorig:RightHandIndex4"
+    },
+    {
+      "source": "middle_01_r",
+      "target": "mixamorig:RightHandMiddle1"
+    },
+    {
+      "source": "middle_02_r",
+      "target": "mixamorig:RightHandMiddle2"
+    },
+    {
+      "source": "middle_03_r",
+      "target": "mixamorig:RightHandMiddle3"
+    },
+    {
+      "source": "middle_04_leaf_r",
+      "target": "mixamorig:RightHandMiddle4"
+    },
+    {
+      "source": "ring_01_r",
+      "target": "mixamorig:RightHandRing1"
+    },
+    {
+      "source": "ring_02_r",
+      "target": "mixamorig:RightHandRing2"
+    },
+    {
+      "source": "ring_03_r",
+      "target": "mixamorig:RightHandRing3"
+    },
+    {
+      "source": "ring_04_leaf_r",
+      "target": "mixamorig:RightHandRing4"
+    },
+    {
+      "source": "pinky_01_r",
+      "target": "mixamorig:RightHandPinky1"
+    },
+    {
+      "source": "pinky_02_r",
+      "target": "mixamorig:RightHandPinky2"
+    },
+    {
+      "source": "pinky_03_r",
+      "target": "mixamorig:RightHandPinky3"
+    },
+    {
+      "source": "pinky_04_leaf_r",
+      "target": "mixamorig:RightHandPinky4"
+    },
+    {
+      "source": "thumb_01_r",
+      "target": "mixamorig:RightHandThumb1"
+    },
+    {
+      "source": "thumb_02_r",
+      "target": "mixamorig:RightHandThumb2"
+    },
+    {
+      "source": "thumb_03_r",
+      "target": "mixamorig:RightHandThumb3"
+    },
+    {
+      "source": "thumb_04_leaf_r",
+      "target": "mixamorig:RightHandThumb4"
+    }
+  ]
+}

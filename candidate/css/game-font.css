@@ -1,0 +1,26 @@
+/* Battle typography only. Other screens retain their original stylesheet fonts. */
+@font-face{font-family:"Press Start 2P";src:url('../assets/fonts/press-start-2p.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+#combatScreen{--ui-font:"Press Start 2P","Courier New",monospace;font-family:var(--ui-font);font-synthesis:none;}
+#combatScreen button,#combatScreen input,#combatScreen select,#combatScreen textarea{font-family:var(--ui-font);}
+/* Pixel letters have a full-em advance. Keep the existing information density
+   while giving the action messages more space and a larger 16px face. */
+#combatScreen{font-size:calc(12px * var(--combat-font-scale,1));}
+.combat-brand .small,.round-box{font-size:calc(10px * var(--combat-font-scale,1));line-height:1.5;}
+.combat-brand h1{font-size:calc(22px * var(--combat-font-scale,1));line-height:1.3;}
+.turn-banner{font-size:calc(18px * var(--combat-font-scale,1));line-height:1.4;}
+.unit-info-name{font-size:calc(18px * var(--combat-font-scale,1));line-height:1.4;}
+.unit-info-panel .kv{font-size:calc(12px * var(--combat-font-scale,1));line-height:1.6;}
+.unit-info-mode,.unit-effects{font-size:calc(11px * var(--combat-font-scale,1));}
+.combat-action{font-size:calc(11px * var(--combat-font-scale,1));}
+#combatCompass button{font-size:10px;}
+#combatCompassStatus{font-size:10px;}
+#combatResult{font-family:var(--ui-font);font-size:calc(16px * var(--combat-font-scale,1));line-height:1.3;min-height:116px;flex-basis:150px;}
+.combat-log,.combat-log-panel{font-size:calc(11px * var(--combat-font-scale,1));line-height:1.5;}
+.combat-log-panel h2{font-size:calc(13px * var(--combat-font-scale,1));}
+.inventory-columns,.inventory-entry{font-family:var(--ui-font);font-size:calc(12px * var(--combat-font-scale,1));}
+@media(max-width:1000px){.combat-brand .small{font-size:8px;}.combat-brand h1{font-size:18px;}.unit-info-name{font-size:15px;}}
+
+/* Unit details and result beats share the name's size and uppercase treatment. */
+.unit-info-panel{--combat-panel-size:calc(18px * var(--combat-font-scale,1));text-transform:uppercase;}
+.unit-info-name,.unit-info-panel .kv,.unit-info-mode,.unit-effects,#combatResult{font-size:var(--combat-panel-size);line-height:1.4;}
+@media(max-width:1000px){.unit-info-panel{--combat-panel-size:calc(15px * var(--combat-font-scale,1));}}

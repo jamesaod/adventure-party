@@ -1,0 +1,286 @@
+{
+  "forest_leaves_02": {
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/forest_leaves_02-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_nor_dx_1k.png",
+      "md5": "14cf5d194f9907903941339ac4953610",
+      "bytes": 2701935
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/forest_leaves_02-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_nor_gl_1k.png",
+      "md5": "bc9d39e13ec80f8db325f15e73372626",
+      "bytes": 2702900
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/forest_leaves_02-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_arm_1k.png",
+      "md5": "cd3dc9015f6da2ccf6f76ab91fd6ad60",
+      "bytes": 1876126
+    },
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/forest_leaves_02-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_ao_1k.png",
+      "md5": "734e4f8b1c4d06df0368effe22e92d38",
+      "bytes": 1292908
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/forest_leaves_02-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_disp_1k.png",
+      "md5": "d4b3145378ecd80b76fafa3039237450",
+      "bytes": 1706571
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/forest_leaves_02-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_rough_1k.png",
+      "md5": "32c34fe9a004a39c9dde2110a8fcec31",
+      "bytes": 658041
+    }
+  },
+  "grass_ground": {
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/grass_ground-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_ao_1k.png",
+      "md5": "f0e39fc7ecf70ff308e43c89c00318bc",
+      "bytes": 2000077
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/grass_ground-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_arm_1k.png",
+      "md5": "a081f1a80097fbb3f29e0b2ad3dcff75",
+      "bytes": 4284843
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/grass_ground-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_disp_1k.png",
+      "md5": "c26729d66abbb9b402b605f200974a09",
+      "bytes": 1897975
+    },
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/grass_ground-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_nor_dx_1k.png",
+      "md5": "2e56d783a8fadf277ed330d7d8f893cd",
+      "bytes": 6072086
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/grass_ground-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_nor_gl_1k.png",
+      "md5": "2e799a8262487811e672cb8a847bd64c",
+      "bytes": 6072059
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/grass_ground-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grass_ground/grass_ground_rough_1k.png",
+      "md5": "7dc49108560aaf4cc506756875d61ac3",
+      "bytes": 1648048
+    }
+  },
+  "forest_ground_06": {
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/forest_ground_06-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_ground_06/forest_ground_06_ao_1k.png",
+      "md5": "351ea12c3c324781b59e4c544adcbc4b",
+      "bytes": 2019206
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/forest_ground_06-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_ground_06/forest_ground_06_arm_1k.png",
+      "md5": "924867625af8434a7251147da98988f7",
+      "bytes": 4629190
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/forest_ground_06-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_ground_06/forest_ground_06_disp_1k.png",
+      "md5": "bac28ed4d02487e3b8c5fe6bd8a09294",
+      "bytes": 1809556
+    },
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/forest_ground_06-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_ground_06/forest_ground_06_nor_dx_1k.png",
+      "md5": "679f871830f1f70588620edd40408758",
+      "bytes": 2648516
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/forest_ground_06-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_ground_06/forest_ground_06_nor_gl_1k.png",
+      "md5": "f16687a42b6b916b945dccfbdc2ad790",
+      "bytes": 6070210
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/forest_ground_06-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_ground_06/forest_ground_06_rough_1k.png",
+      "md5": "489b5ccf0c5c831e14c887d1ee252eed",
+      "bytes": 1856867
+    }
+  },
+  "rocky_terrain_02": {
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_nor_dx_1k.png",
+      "md5": "1746ce0037096bc1fda39c2b93c3701c",
+      "bytes": 6484745
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_nor_gl_1k.png",
+      "md5": "09fc8228d1a4ab3afb2e610a1851907a",
+      "bytes": 6484633
+    },
+    "Mask": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-Mask.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_mask_1k.png",
+      "md5": "d04782f4e3eb2ee202556061045d6cf1",
+      "bytes": 1954146
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_arm_1k.png",
+      "md5": "b821ff20c020a8ae2662b0f7435b2d6a",
+      "bytes": 3624932
+    },
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_ao_1k.png",
+      "md5": "6fc16ce24d3a0099049cb78af8740e40",
+      "bytes": 1289485
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_disp_1k.png",
+      "md5": "17622f46d863d95e8bb65fcd879251f6",
+      "bytes": 1572373
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_rough_1k.png",
+      "md5": "569ae5962c6de9c3d023a9bcd760292e",
+      "bytes": 1728412
+    },
+    "spec": {
+      "src": "assets/textures/polyhaven/effects/rocky_terrain_02-spec.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rocky_terrain_02/rocky_terrain_02_spec_1k.png",
+      "md5": "e1cd89d5a5679208ae8468825dbe79a6",
+      "bytes": 1873097
+    }
+  },
+  "forrest_ground_01": {
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_nor_dx_1k.png",
+      "md5": "409b8ede6c25d27c20f9a616319ee9aa",
+      "bytes": 6787698
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_nor_gl_1k.png",
+      "md5": "68875a9e81c29ba8f70e5dccdd66c476",
+      "bytes": 6787606
+    },
+    "rough_ao": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-rough_ao.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_rough_ao_1k.png",
+      "md5": "a4108f7b92cd483231720bab647e8443",
+      "bytes": 5560127
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_arm_1k.png",
+      "md5": "e6d08b420397de4144e872a10317c997",
+      "bytes": 4650954
+    },
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_ao_1k.png",
+      "md5": "c2ee3116261d86fe6c39988487161627",
+      "bytes": 2489801
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_disp_1k.png",
+      "md5": "99be1c0e8b6c6856f1c41e4731a24922",
+      "bytes": 2174639
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/forrest_ground_01-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_rough_1k.png",
+      "md5": "a43ba9777dca8de2cf5a4565468fe39f",
+      "bytes": 1822813
+    }
+  },
+  "mud_cracked_dry_riverbed_002": {
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/mud_cracked_dry_riverbed_002-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_nor_dx_1k.png",
+      "md5": "b9f075033e16f6b68ff2ec82530c9acd",
+      "bytes": 2574302
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/mud_cracked_dry_riverbed_002-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_nor_gl_1k.png",
+      "md5": "a5a305d1fe1d7f947957f6380c53914f",
+      "bytes": 6026563
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/mud_cracked_dry_riverbed_002-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_arm_1k.png",
+      "md5": "b29dbd570ebc7ebc2a524702a829d918",
+      "bytes": 4307690
+    },
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/mud_cracked_dry_riverbed_002-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_ao_1k.png",
+      "md5": "a27b0cefddbd3476629384c1f051221a",
+      "bytes": 1979715
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/mud_cracked_dry_riverbed_002-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_rough_1k.png",
+      "md5": "2b64e956a1a8153f7626325f4fada4a7",
+      "bytes": 2313215
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/mud_cracked_dry_riverbed_002-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_cracked_dry_riverbed_002/mud_cracked_dry_riverbed_002_disp_1k.png",
+      "md5": "58af928477ee62b67c070fcfc04a0328",
+      "bytes": 1742196
+    }
+  },
+  "dry_river_pebbles": {
+    "AO": {
+      "src": "assets/textures/polyhaven/effects/dry_river_pebbles-AO.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dry_river_pebbles/dry_river_pebbles_ao_1k.png",
+      "md5": "b911aa89949f9d41c7afb7b03f63f47e",
+      "bytes": 1598039
+    },
+    "arm": {
+      "src": "assets/textures/polyhaven/effects/dry_river_pebbles-arm.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dry_river_pebbles/dry_river_pebbles_arm_1k.png",
+      "md5": "66c0cc07c902d85d326772261c51e6f5",
+      "bytes": 4048061
+    },
+    "Displacement": {
+      "src": "assets/textures/polyhaven/effects/dry_river_pebbles-Displacement.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dry_river_pebbles/dry_river_pebbles_disp_1k.png",
+      "md5": "4ac0e5c29b7687b0ee4fa36954376964",
+      "bytes": 1656068
+    },
+    "nor_dx": {
+      "src": "assets/textures/polyhaven/effects/dry_river_pebbles-nor_dx.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dry_river_pebbles/dry_river_pebbles_nor_dx_1k.png",
+      "md5": "5722fada0b48a0a715732a85737063b4",
+      "bytes": 6661029
+    },
+    "nor_gl": {
+      "src": "assets/textures/polyhaven/effects/dry_river_pebbles-nor_gl.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dry_river_pebbles/dry_river_pebbles_nor_gl_1k.png",
+      "md5": "800352d160e0d9d715d777de08c46554",
+      "bytes": 6662770
+    },
+    "Rough": {
+      "src": "assets/textures/polyhaven/effects/dry_river_pebbles-Rough.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dry_river_pebbles/dry_river_pebbles_rough_1k.png",
+      "md5": "f5c8eef715df5b2d444074c89831471b",
+      "bytes": 1811544
+    }
+  }
+}

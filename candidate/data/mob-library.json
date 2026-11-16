@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "mobs": [
+    {
+      "id": "orc-male-uniformed",
+      "file": "data/mobs/orc-male-uniformed.unit-package.json",
+      "encounterType": "orc"
+    },
+    {
+      "id": "orc-archer",
+      "file": "data/mobs/orc-archer.unit-package.json",
+      "encounterType": "orc-archer"
+    },
+    {
+      "id": "orc-male-uniformed-blue",
+      "file": "data/mobs/orc-male-uniformed-blue.unit-package.json",
+      "encounterType": "orc-blue"
+    },
+    {
+      "id": "wood-elf-archer",
+      "file": "data/mobs/wood-elf-archer.workshop-unit.json",
+      "encounterType": "workshop-wood-elf-archer"
+    },
+    {
+      "id": "orc-warrior",
+      "file": "data/mobs/orc-warrior.workshop-unit.json",
+      "encounterType": "workshop-orc-warrior"
+    }
+  ]
+}

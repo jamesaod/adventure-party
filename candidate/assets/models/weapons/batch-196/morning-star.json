@@ -1,0 +1,72 @@
+{
+  "id": "morning-star",
+  "sourceTriangles": 12762,
+  "triangles": 4800,
+  "bytes": 334952,
+  "sha256": "e9adb44ff87d40b68bc08eee8f499d8b83294c7c7800d764f05507804d1e069d",
+  "textureResolution": 256,
+  "sourceAxis": [
+    -6.983694522289122e-09,
+    1.6373185929285938e-07,
+    0.9999999999999865
+  ],
+  "primaryAxis": [
+    0,
+    1,
+    0
+  ],
+  "sourceArchive": "medieval-mace.zip",
+  "sourceArchiveSha256": "424329caa4f72cf41c43e1c8796621147bbabfb1942245a91f6724d6c3651e52",
+  "sourceSha256": "984851baa2f51f0c1875a7e5e78afcd7ef8a31ea93284d007ebbe8c276647cb7",
+  "textureReference": {
+    "albedo": {
+      "sourceMean": [
+        69.25001239776611,
+        65.30991554260254,
+        64.90611267089844
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "outputMean": [
+        69.26449584960938,
+        65.31959533691406,
+        64.90821838378906
+      ]
+    },
+    "normal": {
+      "sourceMean": [
+        123.59303951263428,
+        124.75950241088867,
+        247.67608261108398
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ]
+    },
+    "roughness": {
+      "sourceMean": [
+        99.29932117462158,
+        99.29932117462158,
+        99.29932117462158
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ]
+    },
+    "metallic": {
+      "sourceMean": [
+        108.26703262329102,
+        108.26703262329102,
+        108.26703262329102
+      ],
+      "sourceSize": [
+        1024,
+        1024
+      ]
+    }
+  }
+}
