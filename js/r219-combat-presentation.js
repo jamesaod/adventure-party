@@ -272,10 +272,7 @@ AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presenta
       return false;
     }
 
-    const canLeave=await performLeavingHexFreeAttacks(
-      entity,
-      next
-    );
+    const canLeave=await performLeavingHexFreeAttacks(entity,next,()=>{if(unitTransitionBlocked(entity,entity,next))return false;updateFacingForStep(entity,next.x-entity.x,next.y-entity.y);return mobMovementPresentationMode(entity,next,senseContext)==='visible'?presentWalkTestStep(entity,prepareCombatReactiveWalkStep(entity,next,i<steps-1),true):true;});
 
     if(!canLeave){
       return false;
@@ -301,9 +298,7 @@ AdventurePartyCombatServices.register('animateEntitySteps','r219-combat-presenta
 
     // This service overrides the base movement owner; share its live walk
     // presentation before committing the integer gameplay coordinates.
-    if(mode==="visible" && !await presentWalkTestStep(entity,prepareCombatReactiveWalkStep(entity,next,i<steps-1),true)){
-      return false;
-    }
+
 
     entity.x=next.x;
     entity.y=next.y;
@@ -389,10 +384,7 @@ AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-present
       return false;
     }
 
-    const canLeave=await performLeavingHexFreeAttacks(
-      mob,
-      path[i]
-    );
+    const canLeave=await performLeavingHexFreeAttacks(mob,path[i],()=>{if(unitTransitionBlocked(mob,mob,path[i]))return false;updateFacingForStep(mob,path[i].x-mob.x,path[i].y-mob.y);return mobMovementPresentationMode(mob,path[i],senseContext)==='visible'?presentWalkTestStep(mob,path[i],true):true;});
 
     if(!canLeave){
       return false;
@@ -415,9 +407,7 @@ AdventurePartyCombatServices.register('animateMobAlongPath','r219-combat-present
       setUnitActionBanner(mob,"Moving");
     }
 
-    if(mode==="visible" && !await presentWalkTestStep(mob,path[i],true)){
-      return false;
-    }
+
 
     mob.x=path[i].x;
     mob.y=path[i].y;

@@ -1,6 +1,6 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {SNOW_DEPTH_GLSL,SNOW_MAX_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
-import {SNOW_SHELTER_GLSL,snowShelterUniforms} from './combat-snow-shelter.mjs?v=tree-snow-grains1';
+import {SNOW_SHELTER_GLSL,snowShelterUniforms} from './combat-snow-shelter.mjs?v=natural-ac1';
 export const LEAF_SNOW_DECODE=`float leafSnowHeight(vec4 saved){return dot(saved.rg,vec2(65280.,255.))/65535.*${SNOW_MAX_METRES};}`;
 // One texel per persistent leaf cluster. Capture at landing, then only lower
 // its resting height when snow melts/gets compressed. Never read back to CPU.

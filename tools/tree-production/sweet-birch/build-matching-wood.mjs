@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import path from 'node:path';
+const root=path.dirname(fileURLToPath(import.meta.url)),dest=path.join(root,'runtime');
+const repo='C:/Users/james/Documents/Codex/2026-10-26/continue-development-of-adventure-party-using/work/repo';
+const THREE=await import(pathToFileURL(path.join(repo,'assets/vendor/three/three.module.min.js')));
+const {continuousTrunk}=await import(pathToFileURL(path.join(repo,'js/oak-continuous-trunk.mjs')));
+const original=JSON.parse(fs.readFileSync(path.join(dest,'birch-winter.gltf'))),bytes=fs.readFileSync(path.join(dest,original.buffers[0].uri));
+const source=new THREE.Group();source.scale.setScalar(.18);
+for(const primitive of original.meshes[0].primitives){const geometry=new THREE.BufferGeometry();for(const [semantic,id] of Object.entries(primitive.attributes)){const a=original.accessors[id],v=original.bufferViews[a.bufferView],size=a.type==='VEC2'?2:3,out=[];for(let i=0;i<a.count;i++)for(let j=0;j<size;j++)out.push(bytes.readFloatLE(v.byteOffset+(a.byteOffset||0)+i*v.byteStride+j*4));geometry.setAttribute({POSITION:'position',NORMAL:'normal',TEXCOORD_0:'uv'}[semantic],new THREE.Float32BufferAttribute(out,size));}const material=new THREE.MeshStandardMaterial();material.name=original.materials[primitive.material].name;source.add(new THREE.Mesh(geometry,material));}
+const split=continuousTrunk(source);
+for(const [id,model] of [['stump',split.stump],['fallen',split.model]]){
+ const g={asset:{version:'2.0',generator:'Matching SweetBirch split at 1m using production continuousTrunk'},scene:0,scenes:[{nodes:[]}],nodes:[],meshes:[],materials:[original.materials[0],{name:'SweetBirch_Bark_cut',pbrMetallicRoughness:{baseColorFactor:[.19,.084,.035,1],metallicFactor:0,roughnessFactor:1},doubleSided:true}],textures:original.textures,images:original.images,samplers:original.samplers,buffers:[],bufferViews:[],accessors:[]},chunks=[];let offset=0;
+ // Export in authored model coordinates; runtime assigns its own transform.
+ model.traverse(mesh=>{if(!mesh.isMesh)return;const attributes={};for(const [name,a] of Object.entries(mesh.geometry.attributes)){const data=[];for(let i=0;i<a.count;i++)for(let j=0;j<a.itemSize;j++)data.push(a[['getX','getY','getZ','getW'][j]](i));const buf=Buffer.from(new Float32Array(data).buffer),view=g.bufferViews.length,accessor={bufferView:view,componentType:5126,count:a.count,type:'VEC'+a.itemSize};if(name==='position'){mesh.geometry.computeBoundingBox();accessor.min=mesh.geometry.boundingBox.min.toArray();accessor.max=mesh.geometry.boundingBox.max.toArray();}g.bufferViews.push({buffer:0,byteOffset:offset,byteLength:buf.length});chunks.push(buf);offset+=buf.length;attributes[{position:'POSITION',normal:'NORMAL',uv:'TEXCOORD_0'}[name]]=g.accessors.length;g.accessors.push(accessor);}const index=g.meshes.length;g.meshes.push({primitives:[{attributes,material:mesh.material.name.includes('Bark')?0:1}]});g.nodes.push({mesh:index,name:'SweetBirch_'+id+'_'+index});g.scenes[0].nodes.push(index);});
+ g.buffers=[{uri:'birch-'+id+'.bin',byteLength:offset}];fs.writeFileSync(path.join(dest,'birch-'+id+'.bin'),Buffer.concat(chunks));fs.writeFileSync(path.join(dest,'birch-'+id+'.gltf'),JSON.stringify(g));console.log(id,g.meshes.map(m=>g.accessors[m.primitives[0].attributes.POSITION].count/3));
+}

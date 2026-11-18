@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';import {snowDepthMetres} from '../js/combat-snow-depth.mjs?v=shore-snow1';
+import assert from 'node:assert/strict';import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=natural-ac1';import {snowDepthMetres} from '../js/combat-snow-depth.mjs?v=shore-snow1';
 const c=createSnowCoatCoverage();c.configure([0,0,2,1],2,1,new Map([['a',{triangles:[{a:{x:0,y:0},b:{x:1,y:0},c:{x:1,y:1}},{a:{x:0,y:0},b:{x:1,y:1},c:{x:0,y:1}}]}]]));
 const inches=()=>snowDepthMetres(c.sampleDepthWorld(.5,.5))/.0254;
 for(let n=1;n<=38;n++){c.adjustDepth(1/6);assert(Math.abs(inches()-Math.min(18,n))<.06);assert.equal(snowDepthMetres(c.sampleWorld(1.5,.5)),0);}

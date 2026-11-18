@@ -4,8 +4,8 @@ import {FBXLoader} from '../assets/vendor/three/addons/loaders/FBXLoader.js';
 import {retargetHumanoidClip} from './mixamo-retarget.mjs?v=R238C140';
 import {prepareStudioAnimations} from './studio-animations.mjs?v=R238C82';
 import {restoreAnimationSkinBindPose} from './repository-fbx-animations.mjs?v=R238C178';
-import {buildSceneGraph,normalizedFrame,configureCamera,mountCombatEquipment} from './combat-mob-renderer.mjs?v=tree-snow-grains1';
-import {restoreDirectMaterials,directUnitFrame} from './combat-direct-units.mjs?v=tree-snow-grains1';
+import {buildSceneGraph,normalizedFrame,configureCamera,mountCombatEquipment} from './combat-mob-renderer.mjs?v=natural-ac1';
+import {restoreDirectMaterials,directUnitFrame} from './combat-direct-units.mjs?v=outline-reuse2';
 import {applyWarriorRecolor,isWarriorRecolorModel} from './warrior-recolor.mjs?v=R238C127';
 import {createGroundedWalk} from './combat-walk-motion.mjs';
 

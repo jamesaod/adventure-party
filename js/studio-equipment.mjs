@@ -1,3 +1,4 @@
+import {EQUIPMENT_POSITION_LIMITS} from './equipment-position-limits.mjs';
 import {muteBowLeather} from './muted-bow-leather.mjs';
 import {createBowString} from './procedural-bow-string.mjs?v=R238C312';
 import {catalogWeaponPreset} from './low-poly-weapons.mjs';
@@ -91,7 +92,7 @@ const LEGACY_STUDIO_WEAPONS = Object.freeze([
       ...(appearance.secondaryGrip ? {secondaryGrip:appearance.secondaryGrip} : {}),
       nativeScale:appearance.nativeScale,position:appearance.position,
       rotation:appearance.rotationDegrees,defaultSizePercent:appearance.defaultSizePercent,
-      calibratedLengthInches:item.physical.calibratedLengthInches,presetRevision:1
+      calibratedLengthInches:item.physical.calibratedLengthInches,inchesPerLocalUnit:appearance.inchesPerLocalUnit,presetRevision:appearance.presetRevision||1
     });
   }),
   Object.freeze({
@@ -114,7 +115,7 @@ const upgradedPresets=new Map(upgraded.map(i=>[i.appearance.studioId,Object.free
 export const STUDIO_WEAPONS=Object.freeze([...LEGACY_STUDIO_WEAPONS.map(w=>upgradedPresets.get(w.id)||w),...Array.from(upgradedPresets.values()).filter(w=>!LEGACY_STUDIO_WEAPONS.some(old=>old.id===w.id))]);
 export const EQUIPMENT_LIMITS = Object.freeze({
   sizePercent: Object.freeze({ min: 25, max: 200, step: 5 }),
-  position: Object.freeze({ min: -1, max: 1, step: 0.005 }),
+  position: EQUIPMENT_POSITION_LIMITS,
   rotation: Object.freeze({ min: -180, max: 180, step: 1 }),
   secondaryGripOffsetInches: Object.freeze({ min: -5, max: 5, step: 0.25 })
 });
@@ -189,7 +190,7 @@ function rotateJointToward(THREE, joint, fromWorld, toWorld, maxDegrees, weight 
 function twoHandedTargetWorld(THREE, attachment) {
   attachment.model.updateWorldMatrix(true, true);
   const target = new THREE.Vector3(...attachment.weapon.secondaryGrip);
-  const inchesPerLocalUnit = Number(attachment.weapon.calibratedLengthInches) || 60.6;
+  const inchesPerLocalUnit = Number(attachment.weapon.inchesPerLocalUnit ?? attachment.weapon.calibratedLengthInches) || 60.6;
   const offset = attachment.secondaryGripOffsetInches || [0,0,0];
   target.x += offset[0] / inchesPerLocalUnit;
   target.y += offset[1] / inchesPerLocalUnit;
@@ -436,8 +437,8 @@ function applyTwoHandedFingerWrap(THREE, model, attachment) {
   return { bonesAdjusted, fingertips, wristOrientation };
 }
 
-function inferHandGripLocal(THREE, hand, model) {
-  const chains = humanoidFingerChains(model, 'left').filter(chain => chain.fingerName !== 'thumb');
+export function inferHandGripLocal(THREE, hand, model, side='left') {
+  const chains = humanoidFingerChains(model, side).filter(chain => chain.fingerName !== 'thumb');
   const fingerBases = chains.map(chain => chain.bones[0]).filter(Boolean);
   if (!hand || !fingerBases.length) return new THREE.Vector3();
   // Work in hand-local space even when a rig inserts palm/metacarpal helpers

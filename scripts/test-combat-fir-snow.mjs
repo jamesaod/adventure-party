@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {branchSnowGeometry} from '../js/combat-fir-snow.mjs?v=tree-snow-grains1';
+import {branchSnowGeometry} from '../js/combat-fir-snow.mjs?v=natural-ac1';
 const source=new T.BufferGeometry();
 // One horizontal support and one vertical card; UVs must survive refinement.
 source.setAttribute('position',new T.Float32BufferAttribute([0,0,0,2,0,0,0,0,2, 0,0,0,0,2,0,2,0,0],3));

@@ -8,7 +8,7 @@ assert.equal(readiness(d).every(c=>c.ok),false);
 d.model={file:'test.glb'};d.checks={ground:true,equipment:true};for(const slot of ['move','melee','hit'])assignClip(d,slot,a);
 assert.ok(readiness(d).every(c=>c.ok));assert.equal(validateDraft(d),d);
 d.capabilities.cast=true;assert.ok(readiness(d).every(c=>c.ok));
-for(const [slot] of ACTION_SLOTS){if(!['idle','move','hit','death'].includes(slot))assert.equal(resolveAssignment(d,slot).source,'one-handed-swing');}
+for(const [slot] of ACTION_SLOTS){if(!['idle','move','armed-idle','armed-move','hit','death'].includes(slot))assert.equal(resolveAssignment(d,slot).source,'one-handed-swing');}
 assignClip(d,'cast',{...a,start:.2});assignClip(d,'aim-fire-spell',{...a,start:.4});
 assert.equal(resolveAssignment(d,'cast').assignments[0].start,.2);
 assert.equal(resolveAssignment(d,'aim-fire-spell').assignments[0].start,.4);

@@ -2,7 +2,7 @@ import {loadMapMaterials,MATERIAL_GLSL} from './combat-map-materials.mjs';
 import {automaticShapes,boundaryAt} from './combat-map-boundaries.mjs';
 import {solarState} from './solar-clock.mjs';
 import {createMapShadows} from './combat-map-shadows.mjs';
-import {createMapCover} from './combat-map-cover.mjs?v=tree-snow-grains1';
+import {createMapCover} from './combat-map-cover.mjs?v=natural-ac1';
 import {levelAt,HEIGHT_PER_LEVEL,FEET_PER_LEVEL} from './combat-map-elevation.mjs';
 import {clipToHex} from './combat-map-shapes.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';

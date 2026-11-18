@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {restoreDirectMaterials} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+import {restoreDirectMaterials} from '../js/combat-direct-units.mjs?v=outline-reuse2';
 import {solarState,weatherSolarState} from '../js/solar-clock.mjs?v=R238C380';
 assert.equal(weatherSolarState(solarState(12),{type:'clear'}).sky,1.35);
 assert(weatherSolarState(solarState(12),{type:'snow',intensity:1}).sky<1.35);

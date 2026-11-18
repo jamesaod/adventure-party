@@ -1,5 +1,5 @@
-import {ensureCreature} from './mob-workshop-creature.mjs?v=R238C313';
-import {HIT_POINT_MODES,diceParts,hitPointSummary} from './workshop-hit-points.mjs?v=R238C313';
+import {ensureCreature} from './mob-workshop-creature.mjs?v=scored-ai1';
+import {HIT_POINT_MODES,diceParts,hitPointSummary} from './workshop-hit-points.mjs?v=R238C471';
 
 export function createHitPointPanel({host,getDraft,changed}){
  const doc=host.ownerDocument,groups={},controls={};

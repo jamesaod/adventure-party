@@ -1,3 +1,6 @@
+import {STREAM_SHADOW_GLSL,streamShadowUniforms,updateStreamShadowUniforms} from './combat-stream-shadows.mjs';
+import {createVolumetricFog} from './combat-volumetric-fog.mjs?v=1';
+import {createCorpseWaterlineMask} from './combat-corpse-waterline.mjs?v=1';
 import {solarState,solarPalette} from './solar-clock.mjs?v=R238C380';
 import {createTransientTarget} from './combat-transient-target.mjs';
 import {createGpuSurface,GPU_SURFACE_DECLARATIONS,GPU_SURFACE_SETUP} from './combat-gpu-surface.mjs';
@@ -5,31 +8,32 @@ import {createStreamShoreDistance} from './stream-shore-distance.mjs';
 import {createStreamSnowLimit} from './stream-snow-limit.mjs?v=shore-snow1';
 import {createStreamField,STREAM_DEFAULTS,streamBankWear,streamSettings} from './combat-stream-field.mjs?v=stream-banks2';
 import {CONTACT_GLSL,contactUniforms,updateContactUniforms,featherTrunkShelter} from './combat-fir-contact.mjs?v=R238C438';
-import {CombatPuddleEffects,PUDDLE_RING_LIMIT} from './combat-puddle-effects.mjs?v=snow-water1';
-import {createPuddleParticles} from './combat-puddle-particles.mjs?v=R238C450';
+import {WATER_CONTACT_LIMIT,collectWaterContacts} from './combat-water-contacts.mjs?v=no-corpse-fringe1';
+import {CombatPuddleEffects,PUDDLE_RING_LIMIT} from './combat-puddle-effects.mjs?v=club-mist1';
+import {createPuddleParticles} from './combat-puddle-particles.mjs?v=club-mist1';
 import {CombatWetBasins,BASIN_MAX_METRES} from './combat-wet-basins.mjs';
 import {modelPixelCrop} from './combat-model-crop.mjs';
 import {orderSurfaceActors} from './combat-surface-lighting.mjs';
-import {createGroundWear,WEAR_SETTINGS} from './combat-ground-wear.mjs?v=tree-snow-grains1';
-import {createGroundCover} from './combat-ground-cover.mjs?v=tree-snow-grains1';
-import {SNOW_SHELTER_GLSL,snowShelterUniforms,configureSnowShelter,finalizeSnowShelter} from './combat-snow-shelter.mjs?v=tree-snow-grains1';
+import {createGroundWear,WEAR_SETTINGS} from './combat-ground-wear.mjs?v=natural-ac1';
+import {createGroundCover} from './combat-ground-cover.mjs?v=scroll-pacing1';
+import {SNOW_SHELTER_GLSL,snowShelterUniforms,configureSnowShelter,finalizeSnowShelter} from './combat-snow-shelter.mjs?v=natural-ac1';
 import {SNOW_DEPTH_GLSL,SNOW_MAX_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 import {SCENE_STYLE} from './exploration-scene-style.mjs';
-import {SNOW_COAT_BLEND_START,SNOW_COAT_BLEND_END} from './combat-snow-coats.mjs?v=tree-snow-grains1';
+import {SNOW_COAT_BLEND_START,SNOW_COAT_BLEND_END} from './combat-snow-coats.mjs?v=natural-ac1';
 import {createWeaponFlameMask} from './combat-weapon-flame.mjs?v=R238C299';
 import {createFireballEffect} from './combat-fireball-effect.mjs?v=R238C386';
 import {createBurnSmoke} from './combat-burn-smoke.mjs?v=R238C386';
 import {createGpuPerformance} from './combat-gpu-performance.mjs';
 import {updateSurfaceBuffers,createTargetPool,surfaceVertexCount} from './combat-render-cache.mjs?v=R238C432';
-import {createGpuOutline} from './combat-gpu-outline.mjs?v=outline-cache1';
+import {createGpuOutline} from './combat-gpu-outline.mjs?v=outline-reuse2';
 import {createUnitImageCache} from './combat-unit-image-cache.mjs';
 import {combatPerformance as perf} from './combat-performance.mjs';
 import {createFirLitter} from './combat-fir-litter.mjs?v=rain-shadow1';
 import {configureUnitAntialiasing,unitAntialiasing} from './combat-unit-antialiasing.mjs?v=R238C403';
 import {createUnitBurnEffect} from './combat-unit-burn-effect.mjs?v=R238C299';
 import {configureTreeAntialiasing,treeAntialiasing} from './combat-tree-antialiasing.mjs?v=R238C449';
-import {createSnowAccumulation} from './combat-snow.mjs?v=tree-snow-grains1';
-import {createProjectedShadowPass} from './combat-projected-shadows.mjs?v=R238C438';
+import {createSnowAccumulation} from './combat-snow.mjs?v=natural-ac1';
+import {createProjectedShadowPass} from './combat-projected-shadows.mjs?v=stream-shadows1';
 import {combatLightGLSL,packCombatLights} from './combat-light-shader.mjs?v=R238C274';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 
@@ -57,7 +61,7 @@ ${SNOW_SHELTER_GLSL}
 float snowSurfaceHeight(vec2 uv){return snowDeformedHeight(snowSampleDepth(snowAccumulation,uv),texture2D(snowFootprints,uv).rg);}
 `;
 const vertexShader=`
- uniform vec3 streamMotion;uniform sampler2D streamMap;uniform vec4 streamBounds;uniform bool streamEnabled;uniform bool basinSurface;uniform sampler2D groundWearMap;uniform vec2 groundWearScale,basinWeather;
+ uniform sampler2D corpseWaterlineMask;uniform vec3 streamMotion;uniform sampler2D streamMap;uniform vec4 streamBounds;uniform bool streamEnabled;uniform bool basinSurface;uniform sampler2D groundWearMap;uniform vec2 groundWearScale,basinWeather;
  uniform bool snowPresent,snowDisplaced; uniform sampler2D snowAccumulation,snowFootprints; uniform vec4 snowBounds; uniform vec2 snowTexel;
  attribute float surfaceSnow; varying float vSnow;
  attribute vec3 lightPoint,lightNormal,surfaceTint; attribute vec2 lightSampleWorld; attribute float surfaceVisibility;
@@ -96,12 +100,13 @@ void main(){vec2 p=(combatView*vec3(position.xy,1.)).xy-vec2(0.,position.z);
 p=anchor+(p-anchor)*zoom;gl_Position=projectionMatrix*vec4(p,0.,1.);vUv=uv;vWorld=position.xy;}
 `;
 const shadowFragmentShader=`
+${STREAM_SHADOW_GLSL}
 ${CONTACT_GLSL}
 ${SNOW_SHELTER_GLSL}
 uniform sampler2D artwork,snowAccumulation;uniform vec4 snowBounds;
 uniform bool snowSunShadow,snowPresent;uniform float surfaceOpacity;
 varying vec2 vUv,vWorld;
-void main(){if(any(lessThan(vUv,vec2(0.)))||any(greaterThan(vUv,vec2(1.))))discard;float alpha=texture2D(artwork,vUv).a*surfaceOpacity;if(alpha<.001)discard;
+void main(){vec3 bed=bedShadowReceiver(vWorld);vec2 shadowUv=bedShadowUv(vWorld,vUv,bed.xy);if(any(lessThan(shadowUv,vec2(0.)))||any(greaterThan(shadowUv,vec2(1.))))discard;float alpha=texture2D(artwork,shadowUv).a*surfaceOpacity*bed.z;if(alpha<.001)discard;
 if(ambientContact)alpha*=firAmbientShare(vWorld);
 vec3 color=vec3(0.);if((snowSunShadow||ambientContact)&&snowPresent){vec2 uv=(vWorld-snowBounds.xy)/snowBounds.zw;
 float inside=step(0.,uv.x)*step(0.,uv.y)*step(uv.x,1.)*step(uv.y,1.);
@@ -113,7 +118,7 @@ gl_FragColor=vec4(color,alpha);}
 const fragmentShader=`
  uniform sampler2D streamShoreMap;
  uniform vec3 waterSun,waterSunColor,waterView;uniform vec2 waterLight;
- uniform vec3 streamMotion;uniform sampler2D streamMap;uniform vec4 streamBounds;uniform bool streamEnabled;uniform bool basinSurface;uniform vec2 basinWeather;uniform int puddleRingCount;uniform vec4 puddleRings[${PUDDLE_RING_LIMIT}];
+ uniform sampler2D corpseWaterlineMask;uniform vec3 streamMotion;uniform sampler2D streamMap;uniform vec4 streamBounds;uniform bool streamEnabled;uniform bool basinSurface;uniform vec2 basinWeather;uniform int waterContactCount;uniform vec4 waterContacts[${WATER_CONTACT_LIMIT}];uniform vec2 waterContactAxes[${WATER_CONTACT_LIMIT}];uniform int puddleRingCount;uniform vec4 puddleRings[${PUDDLE_RING_LIMIT}];
  ${combatLightGLSL}
  uniform vec2 snowTexel;
  uniform bool snowPresent; uniform bool snowSunShadow; uniform sampler2D snowAccumulation,snowFootprints; uniform vec4 snowBounds; varying float vSnow;
@@ -176,7 +181,13 @@ const fragmentShader=`
     // oscillations. Depth confines their intersections to the wet bank.
     // Stored water/bed geometry is unchanged; both sheets share this pass.
     float shoreDistance=texture2D(streamShoreMap,(waterWorld-streamBounds.xy)/streamBounds.zw).r;
-    float fringeTime=travel*2.;
+    float contactDistance=1000.;
+    vec2 corpseUv=waterWorld/128.+.5;
+    if(all(greaterThanEqual(corpseUv,vec2(0.)))&&all(lessThanEqual(corpseUv,vec2(1.)))){
+     float corpseDistance=texture2D(corpseWaterlineMask,corpseUv).r*.25;contactDistance=corpseDistance;
+     if(corpseDistance<.20)shoreDistance=min(shoreDistance,corpseDistance*2.);
+    }
+    float fringeTime=streamMotion.x*max(.35,streamMotion.y)*2.;
     vec2 fringePoint=waterWorld;
     float fringeA=dot(fringePoint,vec2(.94,.34));
     float fringeB=dot(fringePoint,vec2(.57,-.82));
@@ -191,7 +202,7 @@ const fragmentShader=`
     float fringeBreakB=smoothstep(.25,.76,abs(sin(fringePhaseB)*.65+sin(fringeB*2.7)*.35));
     float fringeFilterA=1./(1.+pow(fwidth(fringePhaseA),2.));
     float fringeFilterB=1./(1.+pow(fwidth(fringePhaseB),2.));
-    float fringeMask=step(.001,channel.g)*pool*(1.-smoothstep(.20,.28,shoreDistance));
+    float fringeMask=max(step(.001,channel.g),1.-step(.3,contactDistance))*pool*(1.-smoothstep(.20,.28,shoreDistance));
     float fringe=clamp(fringeBandA*fringeBreakA*fringeFilterA+fringeBandB*fringeBreakB*fringeFilterB,0.,1.)*fringeMask*min(1.,streamMotion.z*2.);
     // Foam receives ordinary scene lighting, never an emissive white outline.
     soil=mix(soil,vec3(.48,.53,.50),fringe*.30);
@@ -406,7 +417,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  const unitSnowSurface={texture:snow.texture,tracks:snow.footprintTexture,bounds:snow.bounds};
  let litter=null,litterId=null;
  const records=[],textures=new Map();let slot=0,lost=false,disposed=false,view;
- let dirty=false,frameOpen=false,needsBackdrop=false,lighting=null;
+ let dirty=false,frameOpen=false,needsBackdrop=false,lighting=null,lastProfileExport=-Infinity;
  let pendingUnits=[];
  const maskTexture=new THREE.CanvasTexture(raster);maskTexture.colorSpace=THREE.NoColorSpace;maskTexture.generateMipmaps=false;maskTexture.minFilter=maskTexture.magFilter=THREE.NearestFilter;maskTexture.flipY=true;
  const raw=raster.getContext('2d');
@@ -415,7 +426,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  const canvasMethods=new Map();
  const context=new Proxy(raw,{get(target,key){const value=Reflect.get(target,key,target);if(typeof value!=='function')return value;if(canvasMethods.has(key))return canvasMethods.get(key);const method=(...args)=>{if(drawing.has(key)){flushUnits();if(raw.globalCompositeOperation!=='source-over')prepareBackdrop();dirty=true;}return value.apply(target,args);};canvasMethods.set(key,method);return method;},set(target,key,value){Reflect.set(target,key,value,target);return true;}});
  function clearRaster(){raw.save();raw.setTransform(1,0,0,1,0,0);raw.clearRect(0,0,raster.width,raster.height);raw.restore();dirty=false;}
- function paint(mesh,category='Other surfaces'){scene.add(mesh);const label=mesh===quad||mesh===treeComposite?'Composite':category;perf.count('draws:'+label);perf.measure(label==='Composite'?'composite':'surfaceDraw',()=>gpuPerf.measure(label,()=>renderer.render(scene,camera)));scene.remove(mesh);}
+ function paint(mesh,category='Other surfaces'){scene.add(mesh);const label=mesh===quad||mesh===treeComposite?'Composite':category;perf.count('draws:'+label);perf.measure(label==='Composite'?'composite':'surfaceDraw',()=>gpuPerf.measure(category==='Ground cover'?(mesh.userData.coverKind===0||mesh.userData.coverKind===3?'Cover: grass':mesh.userData.coverKind>=4?'Cover: leaves':'Cover: debris'):label,()=>renderer.render(scene,camera)));scene.remove(mesh);}
  function prepareOverlay(){ /* Source-over overlays need no GPU readback. */ }
  function prepareBackdrop(){
   if(!needsBackdrop||lost||disposed)return;
@@ -453,7 +464,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  }
  function flush(){flushUnits();if(!dirty||lost||disposed)return;perf.count('canvasUploads');rasterTexture.needsUpdate=true;paint(quad);clearRaster();needsBackdrop=true;}
  function release(record){record.gpuSurface?.dispose();record.mesh.geometry.dispose();record.mesh.material.dispose();}
- const projectedShadows=createProjectedShadowPass({renderer,camera,texture,flush,getView:()=>view,getSnow:()=>snow,onPaint:()=>{needsBackdrop=true;}});
+ const projectedShadows=createProjectedShadowPass({renderer,camera,texture,flush,getView:()=>view,getSnow:()=>snow,getStream:()=>({map:streamMap,bounds:stream.bounds,enabled:stream.settings.enabled}),onPaint:()=>{needsBackdrop=true;}});
  const outlines=createGpuOutline(renderer,flush,()=>view,()=>{needsBackdrop=true;});
  const lostListener=event=>{event.preventDefault();lost=true;corpseImages.clear();onLost();};
  const restoredListener=()=>{lost=false;projectedShadows.invalidate();for(const t of textures.values())t.needsUpdate=true;rasterTexture.needsUpdate=true;maskTexture.needsUpdate=true;onRestored();};
@@ -470,11 +481,15 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
  const groundCoverage=(x,y,unit,squash)=>{const channel=streamAt(x,y,unit,squash);return Math.min(groundWear.coverage(x,y,unit,squash),1-streamBankWear(channel.depth,channel.water));};
  const waterAt=(x,y,unit,squash)=>{const channel=streamAt(x,y,unit,squash);return channel.depth>.001?channel:null;};
  snow.setWaterSource(()=>({revision:stream.revision,level:wetBasins.water,snowLimit:(x,y)=>streamSnowLimit.fraction(x/(128/3),y/((128/3)*.568329)),threshold:(x,y)=>{const channel=streamAt(x,y);if(channel.depth>.001)return channel.water>0?-Infinity:Infinity;return .1524+groundWear.elevation(x,y);}}));
- const puddles=new CombatPuddleEffects({step:(x,y,entity,f)=>{const unit=f.grassUnit||128/3,squash=f.grassSquash||.568329,wear=1-groundWear.coverage(x,y,unit,squash),depth=f.grass?-groundWear.elevation(x,y,unit,squash):0;const kind=globalThis.combatFootstepSurface?.({kind:f.groundKind||'grass',wear,wetness:wetBasins.wet,water:waterAt(x,y,unit,squash)?.water??Math.max(0,wetBasins.water-.1524+depth)});if(kind)globalThis.adventurePartyTerrainStep?.(kind);},waterAt,permanent:()=>stream.settings.enabled,elevation:groundWear.elevation,water:()=>wetBasins.water,visible:f=>{const h=f.snowHex?.split(',').map(Number);return !h||globalThis.isHexVisibleToFriendlyParty?.(...h)!==false;}}),puddleParticles=createPuddleParticles(),puddleRings=new Float32Array(PUDDLE_RING_LIMIT*4);
+ const corpseWaterlineMask=createCorpseWaterlineMask();
+ const waterContacts=new Float32Array(WATER_CONTACT_LIMIT*4),waterContactAxes=new Float32Array(WATER_CONTACT_LIMIT*2);let waterContactCount=0;
+ const puddles=new CombatPuddleEffects({step:(x,y,entity,f)=>{const unit=f.grassUnit||128/3,squash=f.grassSquash||.568329,wear=1-groundWear.coverage(x,y,unit,squash),depth=f.grass?-groundWear.elevation(x,y,unit,squash):0;const kind=globalThis.combatFootstepSurface?.({kind:f.groundKind||'grass',wear,wetness:wetBasins.wet,water:waterAt(x,y,unit,squash)?.water??Math.max(0,wetBasins.water-.1524+depth)});if(kind)globalThis.adventurePartyTerrainStep?.(kind,entity);},waterAt,permanent:()=>stream.settings.enabled,elevation:groundWear.elevation,water:()=>wetBasins.water,visible:f=>{const h=f.snowHex?.split(',').map(Number);return !h||globalThis.isHexVisibleToFriendlyParty?.(...h)!==false;}}),puddleParticles=createPuddleParticles(),puddleRings=new Float32Array(PUDDLE_RING_LIMIT*4);
  let firOutlineWidth=.75,defaultTreeOutlineOpacity=.83;const defaultTreeOutlineColor=[.025,.055,.015];
  const groundCover=createGroundCover({renderer,tuning:{grassCoverage:groundCoverage,groundElevation,groundWater:(x,y,unit,squash)=>streamAt(x,y,unit,squash).water},snow,texture,paint,flush,markBackdrop:()=>{needsBackdrop=true;}});
+ const volumetricFog=createVolumetricFog();
  const api={
   groundCover,
+  fogVolume(options){if(lost||disposed||!frameOpen)return;flush();if(volumetricFog.configure(options,view)){perf.measure('volumetricFog',()=>paint(volumetricFog.mesh,'Volumetric fog'));needsBackdrop=true;}},
   setStreamScene(id){if(streamScene!==id){streamScene=id;streamPath=null;streamOptions={...STREAM_DEFAULTS,...id?.streamSettings};configureStream();groundCover.invalidate();}},
   configureStream(options){const revision=stream.revision;configureStream(options);if(stream.revision!==revision)groundCover.invalidate();},
   streamState:()=>({...stream.settings,speed:streamOptions.speed,ripple:streamOptions.ripple,rockCount:0,revision:stream.revision,path:stream.path}),
@@ -490,8 +505,10 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   puddleEffectsActive:()=>puddles.active,
   trackGroundFootfalls:entity=>puddles.trackRig(entity),
   groundFootfall:(entity,x,y)=>puddles.plant(entity,x,y),
+  waterClubImpact:(x,y)=>puddles.impact(x,y),
   puddleEffectsState:()=>puddles.snapshot(),
-  drawPuddles(movers){puddles.walk(movers);if(puddleParticles.update(puddles,view,canvas.width/view.width)){flush();paint(puddleParticles.mesh,'Puddle splashes');needsBackdrop=true;}},
+  corpseWaterSample:(x,y)=>{const channel=waterAt(x,y,128/3,.568329);if(channel)return channel;const depth=-groundWear.elevation(x,y,128/3,.568329);return {depth,water:Math.max(0,wetBasins.water-.1524+depth)};},
+  drawPuddles(movers){corpseWaterlineMask.update(movers);const contacts=collectWaterContacts(movers,(x,y)=>puddles.sample(x,y),(x,y)=>waterAt(x,y,128/3,.568329)?.water??null);waterContactCount=contacts.length;for(let i=0;i<contacts.length;i++){const c=contacts[i];waterContacts.set([c.x,c.y,c.rx,c.ry],i*4);waterContactAxes.set([Math.cos(c.heading),Math.sin(c.heading)],i*2);}puddles.walk(movers);if(puddleParticles.update(puddles,view,canvas.width/view.width)){flush();paint(puddleParticles.mesh,'Puddle splashes');needsBackdrop=true;}},
   wetGroundState:()=>wetBasins.snapshot(),
   snowScene:(id,extent)=>{if(streamScene!==id){streamScene=id;streamPath=null;streamOptions={...STREAM_DEFAULTS,...id?.streamSettings};configureStream();}wetBasins.scene(id);puddles.scene(id);groundCover.scene(id);if(id!==corpseSceneId){corpseImages.clear();corpseSceneId=id;}return snow.scene(id,extent);},
   firLitter(id,trees,bounds,radius,squash=1){const shelterKey=JSON.stringify([bounds,radius,squash,trees]);if(snowShelterUniforms.snowShelter.value.userData.shelterKey!==shelterKey){configureSnowShelter(trees,bounds,radius,squash);featherTrunkShelter(snowShelterUniforms.snowShelter.value.image.data);finalizeSnowShelter(snow.hasCoverage);snowShelterUniforms.snowShelter.value.userData.shelterKey=shelterKey;}if(shelterKey!==litterId){if(litter){const old=textures.get(litter.image);old?.dispose();textures.delete(litter.image);}litterId=shelterKey;litter=createFirLitter(trees,bounds,radius,squash);}},
@@ -576,12 +593,12 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    if(lost||disposed)return false;
    wetBasins.update(performance.now(),globalThis.getWeatherSnapshot?.(),globalThis.document?.visibilityState==='hidden');
    puddles.begin(performance.now(),globalThis.getWeatherSnapshot?.(),{hidden:globalThis.document?.visibilityState==='hidden',snow:snow.hasCoverage});puddleRings.fill(0);for(let i=0;i<puddles.rings.length;i++){const p=puddles.rings[i];puddleRings.set([p.x,p.y,.02+p.reach*p.age/p.life,(1-p.age/p.life)*(p.strength??.75)],i*4);}
-   gpuPerf.begin();perf.begin();view=nextView;groundCover.begin(view);snow.begin();projectedShadows.begin();lighting=null;slot=0;frameOpen=true;needsBackdrop=false;clearRaster();renderer.info.reset();
+   gpuPerf.begin();if(!nextView.profileStarted)perf.begin();const finishGpuSetup=perf.start('gpuSetup');view=nextView;groundCover.begin(view);snow.begin();projectedShadows.begin();lighting=null;slot=0;frameOpen=true;needsBackdrop=false;clearRaster();renderer.info.reset();
    const width=canvas.width,height=canvas.height;
    if(width>renderer.capabilities.maxTextureSize||height>renderer.capabilities.maxTextureSize)throw Error('Combat resolution exceeds this device’s graphics limits.');
    if(raster.width!==width||raster.height!==height){rasterTexture.dispose();raster.width=width;raster.height=height;}
    renderer.setViewport(0,0,width,height);renderer.clear(true,false,false);
-   camera.right=view.width;camera.bottom=view.height;camera.updateProjectionMatrix();return true;
+   camera.right=view.width;camera.bottom=view.height;camera.updateProjectionMatrix();finishGpuSetup();return true;
   },
   surface(surfaces,image,{groundArrow=false,grassMaterial=false,lightMap=null,dynamicLighting=false,spriteLighting=false,spriteSnowHeight=null,spriteWaterDepth=0,spriteWetShade=1,saturation=1,screenSpace=false,opacity=1,scorch=[],scorchSquash=1,groundScorch=null,normalMap=null,sunShadow=false,needleLitter=false,contactScale=[1,1,1],category='Other surfaces'}={}){
    if(lost||!frameOpen||!surfaces.length||!image)return;
@@ -598,7 +615,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    if(!record){
     const gpuSurface=useGpuSurface?createGpuSurface():null;
     const geometry=new THREE.BufferGeometry(),material=new THREE.ShaderMaterial({defines:useGpuSurface?{GPU_SURFACE:1}:{},vertexShader:shadowOnly?shadowVertexShader:vertexShader,fragmentShader:shadowOnly?shadowFragmentShader:fragmentShader,
-     uniforms:{streamShoreMap:{value:streamShoreMap},waterSun:{value:new THREE.Vector3()},waterSunColor:{value:new THREE.Vector3(1,1,1)},waterView:{value:new THREE.Vector3(0,.568329,.8228)},waterLight:{value:new THREE.Vector2(1,1)},surfaceSource:{value:gpuSurface?.texture||null},streamMotion:{value:new THREE.Vector3()},streamMap:{value:streamMap},streamBounds:{value:new THREE.Vector4()},streamEnabled:{value:false},...contactUniforms(),puddleRingCount:{value:0},puddleRings:{value:puddleRings},basinSurface:{value:false},basinWeather:{value:new THREE.Vector2()},groundArrow:{value:false},groundWearMap:{value:groundWear.mask},groundWearSoil:{value:groundWear.soil},groundWearScale:{value:new THREE.Vector2(128/3,128/3*.568329)},groundWearRelief:{value:WEAR_SETTINGS.soilRelief},...snowShelterUniforms,snowDisplaced:{value:false},snowTexel:{value:snow.texelSize},grassMaterial:{value:false},snowPresent:{value:false},useFirLitter:{value:false},firLitter:{value:null},firLitterBounds:{value:new THREE.Vector4()},snowSunShadow:{value:false},snowFootprints:{value:snow.footprintTexture},snowAccumulation:{value:snow.texture},snowBounds:{value:snow.bounds},useRoadNormal:{value:false},roadNormal:{value:null},useGroundScorch:{value:false},groundScorchImage:{value:null},groundScorchBounds:{value:new THREE.Vector4()},scorchCount:{value:0},scorchEnds:{value:new Float32Array(16)},scorchMarks:{value:new Float32Array(32)},scorchSquash:{value:1},dynamicLighting:{value:false},spriteLighting:{value:false},spriteSaturation:{value:1},spriteWetShade:{value:1},spriteWaterDepth:{value:0},spriteSnowHeight:{value:new THREE.Vector2()},spriteSnowOcclusion:{value:false},screenSpace:{value:false},surfaceOpacity:{value:1},emitterCount:{value:0},emitterPosition:{value:new Float32Array(128)},emitterColor:{value:new Float32Array(128)},emitterShape:{value:new Float32Array(128)},emitterBounds:{value:new Float32Array(128)},emitterMask:{value:maskTexture},lightWorld:{value:new THREE.Vector4(1,1,0,0)},artwork:{value:null},lightMultiply:{value:null},lightBoost:{value:null},useLightMap:{value:false},lightBounds:{value:new THREE.Vector4()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1}},
+     uniforms:{...streamShadowUniforms(THREE),corpseWaterlineMask:{value:corpseWaterlineMask.texture},streamShoreMap:{value:streamShoreMap},waterSun:{value:new THREE.Vector3()},waterSunColor:{value:new THREE.Vector3(1,1,1)},waterView:{value:new THREE.Vector3(0,.568329,.8228)},waterLight:{value:new THREE.Vector2(1,1)},surfaceSource:{value:gpuSurface?.texture||null},streamMotion:{value:new THREE.Vector3()},streamMap:{value:streamMap},streamBounds:{value:new THREE.Vector4()},streamEnabled:{value:false},...contactUniforms(),waterContactCount:{value:0},waterContacts:{value:waterContacts},waterContactAxes:{value:waterContactAxes},puddleRingCount:{value:0},puddleRings:{value:puddleRings},basinSurface:{value:false},basinWeather:{value:new THREE.Vector2()},groundArrow:{value:false},groundWearMap:{value:groundWear.mask},groundWearSoil:{value:groundWear.soil},groundWearScale:{value:new THREE.Vector2(128/3,128/3*.568329)},groundWearRelief:{value:WEAR_SETTINGS.soilRelief},...snowShelterUniforms,snowDisplaced:{value:false},snowTexel:{value:snow.texelSize},grassMaterial:{value:false},snowPresent:{value:false},useFirLitter:{value:false},firLitter:{value:null},firLitterBounds:{value:new THREE.Vector4()},snowSunShadow:{value:false},snowFootprints:{value:snow.footprintTexture},snowAccumulation:{value:snow.texture},snowBounds:{value:snow.bounds},useRoadNormal:{value:false},roadNormal:{value:null},useGroundScorch:{value:false},groundScorchImage:{value:null},groundScorchBounds:{value:new THREE.Vector4()},scorchCount:{value:0},scorchEnds:{value:new Float32Array(16)},scorchMarks:{value:new Float32Array(32)},scorchSquash:{value:1},dynamicLighting:{value:false},spriteLighting:{value:false},spriteSaturation:{value:1},spriteWetShade:{value:1},spriteWaterDepth:{value:0},spriteSnowHeight:{value:new THREE.Vector2()},spriteSnowOcclusion:{value:false},screenSpace:{value:false},surfaceOpacity:{value:1},emitterCount:{value:0},emitterPosition:{value:new Float32Array(128)},emitterColor:{value:new Float32Array(128)},emitterShape:{value:new Float32Array(128)},emitterBounds:{value:new Float32Array(128)},emitterMask:{value:maskTexture},lightWorld:{value:new THREE.Vector4(1,1,0,0)},artwork:{value:null},lightMultiply:{value:null},lightBoost:{value:null},useLightMap:{value:false},lightBounds:{value:new THREE.Vector4()},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1}},
      depthTest:false,depthWrite:false,side:THREE.DoubleSide,transparent:true,toneMapped:false});
     const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;records[recordSlot]=record={mesh,shadowOnly,gpuSurface};
    }
@@ -621,7 +638,8 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    const waterSolar=globalThis.adventurePartySolar?.state?.()||solarState(12),waterPalette=solarPalette(waterSolar);
    u.waterSun.value.set(waterSolar.direction.x,waterSolar.direction.y,waterSolar.direction.z).normalize();u.waterSunColor.value.set(...waterPalette.sun);u.waterLight.value.set(waterSolar.sky,waterSolar.altitude>0?waterSolar.daylight:0);
    const viewGround=Math.hypot(b,d*.568329)||1;u.waterView.value.set(b/viewGround*.8228,.568329,d*.568329/viewGround*.8228).normalize();
-   u.streamMotion.value.set(performance.now()/1000,streamOptions.speed,streamOptions.ripple);u.streamBounds.value.fromArray(stream.bounds);u.streamEnabled.value=stream.settings.enabled;u.puddleRingCount.value=puddles.rings.length;u.basinSurface.value=basinSurface;u.basinWeather.value.set(wetBasins.wet,wetBasins.water);u.groundArrow.value=groundArrow;u.grassMaterial.value=grassMaterial;const grassFace=surfaces.find(f=>f.grass);if(grassFace)u.groundWearScale.value.set(grassFace.grassUnit||128/3,(grassFace.grassUnit||128/3)*(grassFace.grassSquash||.568329));
+   u.streamMotion.value.set(performance.now()/1000,streamOptions.speed,streamOptions.ripple);u.streamBounds.value.fromArray(stream.bounds);u.streamEnabled.value=stream.settings.enabled;u.waterContactCount.value=waterContactCount;u.puddleRingCount.value=puddles.rings.length;u.basinSurface.value=basinSurface;u.basinWeather.value.set(wetBasins.wet,wetBasins.water);u.groundArrow.value=groundArrow;u.grassMaterial.value=grassMaterial;const grassFace=surfaces.find(f=>f.grass);if(grassFace)u.groundWearScale.value.set(grassFace.grassUnit||128/3,(grassFace.grassUnit||128/3)*(grassFace.grassSquash||.568329));
+   if(shadowOnly){const sun=globalThis.adventurePartySolar?.state?.()?.direction;updateStreamShadowUniforms(u,{map:streamMap,bounds:stream.bounds,enabled:stream.settings.enabled&&category==='Ground shadows'},view,sun?[sun.x,sun.y,sun.z,0]:[0,1,0,0]);}
    u.ambientContact.value=false;if(category==='Fir contact')updateContactUniforms(u,api.projectedShadows.contactLighting(),contactScale,texture);
    u.snowDisplaced.value=snow.hasCoverage;u.snowPresent.value=snow.hasCoverage;u.snowSunShadow.value=sunShadow;
    u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;
@@ -642,7 +660,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
    paint(record.mesh,category);needsBackdrop=true;
   },
   flushProjectedShadows(){return perf.measure('shadowDraw',()=>gpuPerf.measure('Shadows',()=>projectedShadows.flush()));},
-  end(){if(!frameOpen)return;perf.measure('shadowDraw',()=>gpuPerf.measure('Shadows',()=>{projectedShadows.flush();projectedShadows.end();}));flush();perf.measure('snow',()=>gpuPerf.measure('Snow',()=>snow.end(view)));gpuPerf.end();perf.end();if(perf.enabled)canvas.dataset.combatProfile=JSON.stringify(perf.snapshot());frameOpen=false;
+  end(){if(!frameOpen)return;perf.measure('shadowDraw',()=>gpuPerf.measure('Shadows',()=>{projectedShadows.flush();projectedShadows.end();}));flush();perf.measure('snow',()=>gpuPerf.measure('Snow',()=>snow.end(view)));gpuPerf.end();if(perf.enabled&&performance.now()-lastProfileExport>=250)perf.measure('diagnostics',()=>{lastProfileExport=performance.now();canvas.dataset.combatProfile=JSON.stringify(perf.snapshot());});perf.end();frameOpen=false;
    // A larger previous scene must not retain one GPU buffer per old wall.
    while(records.length>slot)release(records.pop());
    // Exposure maps are replaced after movement/door changes; release old maps.
@@ -654,7 +672,7 @@ export function createCombatRenderer(canvas,raster,{onLost=()=>{},onRestored=()=
   orderSurfaceActors,
   diagnostics(){return {backend:'three-webgl2',targetPool:unitTargets.stats(),particleTarget:particleTargets.stats(),woodTarget:woodTargets.stats(),corpseImageCache:corpseImages.stats(),groundCover:groundCover.diagnostics(),contextLost:lost,drawCalls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};},
   dispose(){if(disposed)return;disposed=true;canvas.removeEventListener('webglcontextlost',lostListener);canvas.removeEventListener('webglcontextrestored',restoredListener);
-   streamShoreMap.dispose();streamMap.dispose();puddleParticles.dispose();groundWear.dispose();groundCover.dispose();weaponFlameMask.dispose();weaponFlameTargets.dispose();fireballEffect.dispose();burnSmoke.dispose();burnEffect.dispose();gpuPerf.dispose();pendingUnits=[];outlines.dispose();snow.dispose();projectedShadows.dispose();records.forEach(release);textures.forEach(t=>t.dispose());treeTarget.dispose();woodTargets.dispose();particleTargets.dispose();unitTargets.dispose();corpseScratch.dispose();corpseImages.clear();treeCompositeMaterial.dispose();quadGeometry.dispose();quadMaterial.dispose();rasterTexture.dispose();maskTexture.dispose();renderer.dispose();}
+   volumetricFog.dispose();corpseWaterlineMask.dispose();streamShoreMap.dispose();streamMap.dispose();puddleParticles.dispose();groundWear.dispose();groundCover.dispose();weaponFlameMask.dispose();weaponFlameTargets.dispose();fireballEffect.dispose();burnSmoke.dispose();burnEffect.dispose();gpuPerf.dispose();pendingUnits=[];outlines.dispose();snow.dispose();projectedShadows.dispose();records.forEach(release);textures.forEach(t=>t.dispose());treeTarget.dispose();woodTargets.dispose();particleTargets.dispose();unitTargets.dispose();corpseScratch.dispose();corpseImages.clear();treeCompositeMaterial.dispose();quadGeometry.dispose();quadMaterial.dispose();rasterTexture.dispose();maskTexture.dispose();renderer.dispose();}
  };
  return api;
 }

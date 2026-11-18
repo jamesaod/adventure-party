@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {createGroundCover,coverPlacements,GROUND_COVER_DEFAULTS} from '../js/combat-ground-cover.mjs?v=tree-snow-grains1';
+import {createGroundCover,coverPlacements,GROUND_COVER_DEFAULTS} from '../js/combat-ground-cover.mjs?v=cover-profile1';
 globalThis.matchMedia=()=>({matches:true});
 // This is a CPU layout test; image loading is exercised by the browser probe.
 THREE.TextureLoader.prototype.load=()=>new THREE.Texture();

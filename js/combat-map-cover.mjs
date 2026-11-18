@@ -1,6 +1,6 @@
 // Adapter for production cover: same templates, placements, materials and tuning; editor projection only.
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {createGroundCover,GROUND_COVER_DEFAULTS} from './combat-ground-cover.mjs?v=tree-snow-grains1';
+import {createGroundCover,GROUND_COVER_DEFAULTS} from './combat-ground-cover.mjs?v=cover-profile1';
 import {GRASS_TEXTURES,surfaceAt,hexPoints,refreshAutomaticSurfaces} from './combat-map-detail-rules.mjs';
 import {levelAt,HEIGHT_PER_LEVEL} from './combat-map-elevation.mjs';
 export function createMapCover(renderer,camera,shadows){

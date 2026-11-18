@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {cacheCorpseWaterline,corpseWaterline} from '../js/combat-corpse-waterline.mjs';
+const root=new THREE.Group(),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([-1,0,0,1,0,0,0,2,1],3));root.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial()));
+const entity={alive:false,x:0,y:0,deathPresentationStartedAt:1},matrix=new THREE.Matrix4();let calls=0;
+const sample=()=>{calls++;return {depth:0,water:1};};
+assert.equal(cacheCorpseWaterline(root,entity,matrix,1,0,sample,1),true);
+assert.deepEqual(corpseWaterline(entity).segments,[[-.5,0,.5,0]].map(a=>[a[2],a[3],a[0],a[1]]));
+const before=calls;assert.equal(cacheCorpseWaterline(root,entity,matrix,1,0,sample,1),false);assert.equal(calls,before);
+cacheCorpseWaterline(root,entity,matrix,1,0,()=>({depth:0,water:3}),2);assert.equal(corpseWaterline(entity).segments.length,0,'Submerged body has no boundary');
+cacheCorpseWaterline(root,entity,matrix,1,0,()=>({depth:0,water:0}),3);assert.equal(corpseWaterline(entity).segments.length,0,'Dry body has no boundary');
+console.log('PASS exact mesh waterline, cached sampling, changed water level, dry and fully submerged exclusion');

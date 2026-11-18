@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHexSnow} from '../js/combat-snow-state.mjs';
-import {createSnowCoatCoverage,SNOW_BRUSH_SIZE,SNOW_BRUSHES,SNOW_GRAIN_RATE_SCALE,snowBrushAtlas} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+import {createSnowCoatCoverage,SNOW_BRUSH_SIZE,SNOW_BRUSHES,SNOW_GRAIN_RATE_SCALE,snowBrushAtlas} from '../js/combat-snow-coats.mjs?v=natural-ac1';
 import {createSnowDepositBatch} from '../js/combat-snow-deposits.mjs';
 const N=128,ground=createHexSnow();ground.update([{snowHex:'0,0',snowEligible:1,points:[{x:0,y:0},{x:N,y:0},{x:N,y:N},{x:0,y:N}]}]);
 const coats=createSnowCoatCoverage();coats.configure([0,0,N,N],N,N,ground.hexes);

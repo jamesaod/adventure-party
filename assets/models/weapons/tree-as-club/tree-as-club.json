@@ -1,0 +1,16 @@
+{
+  "sourceLengthMetres": 12.091227769851685,
+  "testScale": 0.75,
+  "testLengthMetres": 9.068420827388763,
+  "grip": [
+    0,
+    0,
+    0
+  ],
+  "secondaryGrip": [
+    0,
+    0.5,
+    0
+  ],
+  "triangles": 670
+}

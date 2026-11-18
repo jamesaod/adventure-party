@@ -14,7 +14,7 @@ assert.deepEqual(migrated.start,legacy.start);assert.deepEqual(migrated.encounte
 assert(migrated.grid.every((row,z)=>row===legacy.grid[z].replaceAll('D','.')));
 assert.deepEqual(parsePack(JSON.stringify(seedPack(migrated))).maps[0].edges,migrated.edges);
 assert.equal(edgeKey(edgeAtSide(3,3,'e')),edgeKey(edgeAtSide(4,3,'w')),'Shared edges have a single identity');
-const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const names=['worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','isArchitecturalBlockedHex','architecturalWallBlocksWorldLine','architecturalWallBlocksStep'];
 const functions=names.map(name=>{const start=source.indexOf(`function ${name}(`),end=source.indexOf('\nfunction ',start+1);return source.slice(start,end);}).join('\n');
 function geometry(map,opened){

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import {createSnowCoatCoverage,createSnowDepositionClock} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+import {createSnowCoatCoverage,createSnowDepositionClock} from '../js/combat-snow-coats.mjs?v=natural-ac1';
 import {createHexSnow} from '../js/combat-snow-state.mjs';
-import {corpseSnowElapsed,registerCorpseSnow,advanceCorpseSnow,resetCorpseSnow,fillCorpseSnow} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {corpseSnowElapsed,registerCorpseSnow,advanceCorpseSnow,resetCorpseSnow,fillCorpseSnow} from '../js/combat-corpse-snow.mjs?v=natural-ac1';
 const state=createHexSnow();state.update([{snowHex:'0,0',snowEligible:1,points:[{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}]}]);
 const coats=createSnowCoatCoverage();coats.configure([0,0,1,1],1,1,state.hexes);const clock=createSnowDepositionClock();
 const corpse=registerCorpseSnow({alive:false,x:0,y:0}),indoor=registerCorpseSnow({alive:false,x:9,y:9});

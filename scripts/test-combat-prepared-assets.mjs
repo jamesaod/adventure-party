@@ -4,9 +4,9 @@ import {gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {expandPreparedChunks} from '../js/combat-prepared-chunks.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+import {captureDirectUnit,setDirectUnit,directUnitFrame} from '../js/combat-direct-units.mjs?v=outline-reuse2';
 import {setModelShadow,getModelShadow} from '../js/combat-model-shadow.mjs';
-import {serializePreparedAsset,hydratePreparedAsset,validatePreparedAsset} from '../js/combat-prepared-assets.mjs?v=tree-snow-grains1';
+import {serializePreparedAsset,hydratePreparedAsset,validatePreparedAsset} from '../js/combat-prepared-assets.mjs?v=natural-ac1';
 globalThis.Image=class {set src(value){this.source=value;queueMicrotask(()=>this.onload());}};
 const root=new THREE.Group();root.add(new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshStandardMaterial({color:0x997744})));
 const camera=new THREE.OrthographicCamera(-2,2,3,-1,.1,100);camera.position.set(0,3,8);camera.lookAt(0,1,0);// Deliberately leave matrices stale, as happens immediately after lookAt.

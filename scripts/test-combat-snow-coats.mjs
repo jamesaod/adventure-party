@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {createSnowCoatCoverage,SNOW_COAT_VISIBLE,SNOW_COAT_BLEND_START,SNOW_COAT_BLEND_END} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+import {createSnowCoatCoverage,SNOW_COAT_VISIBLE,SNOW_COAT_BLEND_START,SNOW_COAT_BLEND_END} from '../js/combat-snow-coats.mjs?v=natural-ac1';
 import {createHexSnow} from '../js/combat-snow-state.mjs';
 const face=(key,x,y,w,h,snowEligible=1)=>({snowHex:key,snowEligible,points:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}]});
 // Reproduce the reported visual failure: one grain touches a whole small

@@ -93,3 +93,11 @@ This Mixamo-named skeleton has an authored starting stance, no neutral bind-pose
 ## Candidate Rev 178 — Axe Stance correction
 
 Rev 177 Staff Pose direction retargeting is superseded by the with-skin neutral-bind source and time-aligned FBX axis curves. Preserve the stable source ID and all earlier animation recipes. Reproduction, model import, independent Blender validation and capture recovery: [Orc Shaman V2 and Axe Stance](ORC_FEMALE_SHAMAN_V2_MODEL.md).
+
+## Great Sword Walk and duplicate idle — 16 November 2026
+
+User-supplied Great Sword Walk.fbx was absent and is appended as great-sword-walk / Great Sword Walk, preserving all previous indices and assignments. Original bytes: 369872; SHA-256 e6619d06982068e1bf31760f89bc3bde7728f0436645c43d6d7bbf926382f8de. Duration 1.366667 seconds, 53 source tracks. Tags: two-handed-swing and move. Shared catalog now contains 29 entries (24 FBX, five GLB); available through MOB Workshop's shared animations and the existing Studio loader.
+
+Great Sword Idle (2).fbx has a different file checksum but identical decoded track names, times and values to existing great-sword-idle: two seconds, 53 tracks, canonical track SHA-256 effcf1f294f3e7828970e792dafdbd308e6a7ecc63d0146a7e5577051f803e3e. No duplicate entry or replacement was made.
+
+The independent reference generator now supports --source-id and skips non-FBX catalog entries. Five walk reference poses were appended to each of the six existing reference rigs, preserving older fixture poses. test-fbx-animations.mjs passed all six rigs with 115 reference poses each and the unchanged one-degree tolerance. Hill Giant and Blue Orc retain their separate rig validation paths. Combat/Workshop regressions: 169/169 passed. Source integrity/retargeting verified; user retains visual approval.

@@ -77,7 +77,7 @@ assert.equal(spriteSurfaceBrightness({multiply:[255,255,255],boost:[250,250,250]
 console.log('PASS sprite surface brightness matches exposure/distance, responds to spell light and preserves bright artwork');
 
 const {readCombatFixture:readFileSync}=await import('./combat-test-source.mjs'),vm=await import('node:vm');
-const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8'),drawStart=engine.indexOf('function drawSpriteFacing('),drawEnd=engine.indexOf('\nfunction clearCombatMessage(',drawStart),draws=[],stack=[];
+const engine=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8'),drawStart=engine.indexOf('function drawSpriteFacing('),drawEnd=engine.indexOf('\nfunction clearCombatMessage(',drawStart),draws=[],stack=[];
 const context={filter:'none',globalAlpha:1,save(){stack.push({filter:this.filter,globalAlpha:this.globalAlpha});},restore(){Object.assign(this,stack.pop());},translate(){},scale(){},drawImage(image){draws.push({image,filter:this.filter,alpha:this.globalAlpha});}};
 const sprite={complete:true,naturalWidth:40,naturalHeight:50},unit={x:2,y:3};
 const sandbox = {drawFlamingSword:()=>{},ctx:context,unitPoseDefinition:()=>null,activeUnitPoseName:()=> 'stand',enlargeVisualScale:()=>1,combatSpriteBrightness:()=>.35,getUnitEffect:(u,id)=>id==='mirror-image'?{data:{images:1}}:null,visualMirrorOffsets:()=>[{x:3,y:0}],activeEnlargeTransitionFx:()=>null,activeCastingGlowFx:()=>({}),drawCastingGlowSilhouette:()=>assert.equal(context.filter,'none','Casting glow stays emissive'),adventurePartySun:{drawingGround:false,draw(){assert.equal(context.filter,'none','Ground shadow is not sprite-filtered');}},console};

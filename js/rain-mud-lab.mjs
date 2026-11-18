@@ -1,11 +1,11 @@
-import {createRainFieldCover,fieldWear} from './rain-field-cover.mjs?v=tree-snow-grains1';
+import {createRainFieldCover,fieldWear} from './rain-field-cover.mjs?v=natural-ac1';
 import * as T from '../assets/vendor/three/three.module.min.js';
 import {OrbitControls} from '../assets/vendor/three/addons/controls/OrbitControls.js';
 import {WetGround,N,SIZE,STEP,sheltered,materialAt} from './rain-mud-sim.mjs?v=2';
-import {loadWorkshopCombatUnit} from './combat-workshop-unit.mjs?v=tree-snow-grains1';
+import {loadWorkshopCombatUnit} from './combat-workshop-unit.mjs?v=spell-poses1';
 import {createWorkshopRepositoryMob} from './workshop-repository-mob.mjs';
 import {appearanceRecipeForMob} from './mob-appearance.mjs?v=R238C204';
-import {directUnitFrame} from './combat-direct-units.mjs?v=tree-snow-grains1';
+import {directUnitFrame} from './combat-direct-units.mjs?v=outline-reuse2';
 const $=s=>document.querySelector(s),values={rain:0,drying:.25,softness:.8,wind:.6},sim=new WetGround({allGrass:true});
 for(const [key,title,max] of [['rain','Rainfall',1],['drying','Drying rate',2],['softness','Soil softness',1],['wind','Wind',2]]){
  const label=document.createElement('label');label.textContent=title;const out=document.createElement('output'),input=document.createElement('input');input.type='range';input.min=0;input.max=max;input.step=.05;input.value=values[key];out.textContent=input.value;input.oninput=()=>{values[key]=+input.value;out.textContent=input.value;};label.append(out,input);$('#controls').append(label);

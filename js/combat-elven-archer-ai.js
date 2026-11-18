@@ -41,7 +41,7 @@ async function repositionElvenArcher(unit){
 function elvenArcherHitChance(attacker,target){
  const range=longbowRangeBand(attacker,target);if(range.penalty===null)return 0;
  const {totalAttackBonus:bonus,targetNumber:threshold}=bowAttackRollInputs(attacker,target,range);
- let hits=0;for(let roll=1;roll<=20;roll++)if(resolveMissileAttackD20(roll,threshold,bonus).hit)hits++;
+ let hits=0;for(let roll=1;roll<=20;roll++)if(resolveMissileAttackD20(roll,threshold,bonus,target).hit)hits++;
  return hits/20;
 }
 function bestElvenArcherTarget(unit,source,targets){

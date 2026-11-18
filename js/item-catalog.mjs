@@ -1,3 +1,4 @@
+import {TREE_TRUNK_CLUB,INDIVIDUAL_TREE_CLUBS} from './tree-trunk-club.mjs';
 import {installLowPolyWeapons} from './low-poly-weapons.mjs';
 import {ITEM_LIGHT_PROFILES} from './item-lighting.mjs';
 import {ARMOR_ITEMS} from './armor-rules.mjs?v=R238C204';
@@ -12,6 +13,8 @@ function freezeRecord(value){
 }
 
 export const ITEM_CATALOG=freezeRecord(installLowPolyWeapons({
+  [TREE_TRUNK_CLUB.id]:TREE_TRUNK_CLUB,
+  ...Object.fromEntries(INDIVIDUAL_TREE_CLUBS.map(c=>[c.id,c])),
   'shield-orc':{
   "id": "shield-orc",
   "name": "Shield, Orc",

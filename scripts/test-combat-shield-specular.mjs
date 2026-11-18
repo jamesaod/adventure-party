@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {restoreDirectMaterials,isShieldSurface,captureDirectUnit} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+import {restoreDirectMaterials,isShieldSurface,captureDirectUnit} from '../js/combat-direct-units.mjs?v=outline-reuse2';
 const root=new T.Group(),shield=new T.Group();shield.userData.studioShield=true;root.add(shield);
 const body=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial()),face=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial());root.add(body);shield.add(face);
 assert(isShieldSurface(face));assert(!isShieldSurface(body));restoreDirectMaterials(root);

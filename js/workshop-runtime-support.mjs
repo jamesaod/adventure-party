@@ -1,9 +1,11 @@
-import {workshopCombatConnections} from './workshop-combat-contract.mjs?v=R238C313';
+import {workshopSpellIssues} from './workshop-spells.mjs';
+import {workshopCombatConnections} from './workshop-combat-contract.mjs?v=scored-ai1';
 import {ITEM_CATALOG} from './item-catalog.mjs';
-import {STUDIO_OFF_HAND_WEAPONS} from './studio-equipment.mjs?v=R238C312';
+import {STUDIO_OFF_HAND_WEAPONS} from './studio-equipment.mjs?v=hand-range20';
 // Advertise only consumers implemented in the actual combat runtime.
 export function workshopRuntimeSupport(draft){
- const report=workshopCombatConnections(draft,{publication:true,directModels:true,animations:true,stats:true,equipmentFits:true,handPose:true,behavior:true,racialTraits:true});
+ const report=workshopCombatConnections(draft,{publication:true,directModels:true,animations:true,stats:true,equipmentFits:true,handPose:true,behavior:true,racialTraits:true,spells:true});
+ report.reasons.push(...workshopSpellIssues(draft));
  const b=draft.creature.behavior;
  for(const row of draft.inventoryItems||[]){
   const item=ITEM_CATALOG[row.id];

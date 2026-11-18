@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {createTreeWoodMask} from '../js/tree-wood-mask.mjs';
+const scene=new T.Scene(),original=new T.MeshBasicMaterial();original.name='Bark';
+const mesh=new T.Mesh(new T.BoxGeometry(),original);mesh.visible=false;scene.add(mesh);
+const mask=createTreeWoodMask();let resolve,prepared,draws=0;
+const renderer={shadowMap:{enabled:true},compileAsync(s){assert.equal(s,scene);assert.equal(this.shadowMap.enabled,false);assert.notEqual(mesh.material,original);prepared=mesh.material;return new Promise(r=>resolve=r);},render(){draws++;assert.equal(mesh.material,prepared);}};
+const pending=mask.prepare(renderer,scene,new T.Camera());
+assert.equal(mesh.material,original,'Restore materials immediately, before compilation completes');assert.equal(renderer.shadowMap.enabled,true);assert.equal(mesh.visible,false);assert.equal(draws,0,'Preparation must not issue a draw');
+resolve();await pending;mask.draw(renderer,scene,new T.Camera());assert.equal(draws,1);assert.equal(mesh.material,original);assert.equal(renderer.shadowMap.enabled,true);
+mask.dispose();mesh.geometry.dispose();original.dispose();console.log('PASS hidden landing mask preparation, cached material reuse and synchronous renderer restoration');

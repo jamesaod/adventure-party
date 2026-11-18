@@ -11,17 +11,24 @@ export function createWorkshopAnimationSelector(draft,{random=Math.random}={}){
   }else if(slot==='death'&&entity?.alive){
    // Sleep/unconsciousness has its own clock; stale walking/attack time must not win.
    elapsed=Math.max(0,(now-(entity.fallingPoseStartedAt??now))/1000);
-  }else if(Number.isFinite(walkSeconds)){slot='move';elapsed=Math.max(0,walkSeconds);}
-  else if(slot==='idle')elapsed=Math.max(0,now/1000);
+  }else if(slot==='cast'&&entity?.r230CastingToken){elapsed=Math.max(0,(now-(entity.castingPoseStartedAt??now))/1000);}
+  else if(Number.isFinite(walkSeconds)){slot='move';elapsed=Math.max(0,walkSeconds);}
+  else if(slot==='idle'||slot==='armed-idle')elapsed=0;
   else elapsed=Math.max(0,(now-(entity?.poseStartedAt??now))/1000);
+  // Optional weapon-in-hand locomotion; a tree hauler is unarmed until pickup.
+  const armed=entity?.treeHauler?!!entity.carriedTreeLog:!!entity?.carriedTreeLog||!!entity?.inventory?.some(i=>i.equipped&&['weapon','backup-weapon'].includes(i.slot));
+  if(armed&&(slot==='idle'||slot==='move'))slot=slot==='idle'?'armed-idle':'armed-move';
   const choices=resolveAssignment(draft,slot).assignments;
   let index=0;
   if(slot==='death'&&entity){let record=deaths.get(entity);if(!record||record.at!==(entity.alive?entity.fallingPoseStartedAt:entity.deathPresentationStartedAt)){record={at:entity.alive?entity.fallingPoseStartedAt:entity.deathPresentationStartedAt,index:Math.min(choices.length-1,Math.floor(random()*choices.length))};deaths.set(entity,record);}index=record.index;}
   const assignment=choices[index];if(!assignment)return {slot,time:0,animating:false,key:'t-pose'};
   if(slot==='death'&&entity&&!entity.alive)entity.deathAnimationDurationMs=(assignment.end-assignment.start)/assignment.speed*1000;
-  const length=assignment.end-assignment.start,loop=slot==='move'||(assignment.loop&&slot!=='death');
+  if(slot==='death'&&entity?.alive===false&&entity.giantClubProneDeath&&Number.isFinite(entity.deathPresentationStartedAt)){entity.deathAnimationDurationMs=0;return {slot,assignment,time:assignment.end,animating:false,key:slot+':'+assignment.clipId+':'+assignment.end};}
+  const length=assignment.end-assignment.start,loop=['move','armed-move'].includes(slot)||(assignment.loop&&!['death','aim-fire-spell'].includes(slot));
   const local=elapsed*assignment.speed;
-  const frozen=slot==='idle'||assignment.mode==='pose';
+  // Combat holds idle at its authored start pose so body/shadow/outline caches stay stable.
+  // Workshop retains the authored animation choice for preview and future use.
+  const frozen=['idle','armed-idle'].includes(slot)||assignment.mode==='pose';
   const time=frozen?assignment.start:assignment.start+(loop&&length>0?local%length:Math.min(length,local));
   return {slot,assignment,time,animating:!frozen&&(loop||local<length),key:slot+':'+assignment.clipId+':'+time};
  };

@@ -24,7 +24,7 @@ for(const service of ['animateEntitySteps','animateMobAlongPath']){
    const ctx={prepareCombatReactiveWalkStep:(u,p)=>p,prepareCombatWalkPath:(u,p)=>p,game:{over:false},
     AdventurePartyCombatServices:{register(name,owner,fn){if(name===service)this.fn=fn;}},
     createHiddenMobMovementSenseContext:()=>({}),mobMovementPresentationMode:()=>mode,
-    unitTransitionBlocked:()=>false,performLeavingHexFreeAttacks:async()=>true,
+    unitTransitionBlocked:()=>false,performLeavingHexFreeAttacks:async(unit,to,present)=>present?present():true,
     updateFacingForStep:noop,setUnitActionBanner:noop,getUnitEffect:()=>null,
     presentWalkTestStep:async(mover,to)=>{walkCalls++;assert.equal(mover.x,2);assert.equal(to.x,3);return !cancelled;},
     clearActivityDetectedFxForUnit:noop,maybeRecenterCamera:noop,centerCameraOn:noop,

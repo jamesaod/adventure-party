@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
 const page=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const css=readFileSync(new URL('../css/adventure-party.css',import.meta.url),'utf8');
 assert.ok(page.includes('id="combatMobRows"')&&page.includes('id="addCombatMobButton"'));
 assert.ok(!page.includes('data-mob-encounter="studio-kobold"'));

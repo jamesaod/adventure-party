@@ -1,7 +1,7 @@
 import {LIGHTING_GLSL,bindLightingProfile} from './combat-lighting-profile.mjs';
-import {installUnitSnowOcclusion} from './combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
+import {installUnitSnowOcclusion} from './combat-unit-snow-occlusion.mjs?v=natural-ac1';
 import {SNOW_COVERAGE_GLSL} from './combat-snow-coverage.mjs';
-import {CORPSE_SNOW_LAYER_SECONDS,createCorpseSnowMap} from './combat-corpse-snow-map.mjs?v=tree-snow-grains1';
+import {CORPSE_SNOW_LAYER_SECONDS,createCorpseSnowMap} from './combat-corpse-snow-map.mjs?v=natural-ac1';
 import {SNOW_DEPTH_GLSL} from './combat-snow-depth.mjs?v=shore-snow1';
 import {SNOW_LAYER_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 import * as THREE from '../assets/vendor/three/three.module.min.js';

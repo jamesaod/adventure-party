@@ -1,3 +1,4 @@
+import {EQUIPMENT_POSITION_LIMITS} from './equipment-position-limits.mjs';
 // Edit the existing socket, preserving catalog shaft roll and shield mounting offsets.
 export function captureFit(THREE,socket,settings,shield=false){
  const base=new THREE.Quaternion().setFromEuler(new THREE.Euler(...settings.rotation.map(THREE.MathUtils.degToRad),'XYZ'));
@@ -8,7 +9,7 @@ export function readFit(THREE,socket,start){
  const q=start.shield?start.extra.clone().invert().multiply(socket.quaternion):socket.quaternion.clone().multiply(start.extra.clone().invert());
  const e=new THREE.Euler().setFromQuaternion(q,'XYZ'),settings=structuredClone(start.settings);
  settings.rotation=[e.x,e.y,e.z].map(THREE.MathUtils.radToDeg);
- settings.position=settings.position.map((v,i)=>Math.max(-1,Math.min(1,v+socket.position.getComponent(i)-start.position.getComponent(i))));
+ settings.position=settings.position.map((v,i)=>Math.max(EQUIPMENT_POSITION_LIMITS.min,Math.min(EQUIPMENT_POSITION_LIMITS.max,v+socket.position.getComponent(i)-start.position.getComponent(i))));
  return settings;
 }
 

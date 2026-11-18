@@ -1,7 +1,7 @@
 // Lab adapter: production grass geometry, placement, materials and wind.
 // Only projection changes from the battlefield canvas to the lab's 3D camera.
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {createGroundCover,GROUND_COVER_DEFAULTS,coverField} from './combat-ground-cover.mjs?v=tree-snow-grains1';
+import {createGroundCover,GROUND_COVER_DEFAULTS,coverField} from './combat-ground-cover.mjs?v=cover-profile1';
 export function fieldWear(x,z){const n=.8*coverField(x/3.4*4,z/3.4*4)+.2*coverField(x/3.4*19+80,z/3.4*19-30),v=Math.max(0,Math.min(1,(n-(.85-.25*.7))/.4+.5));return v*v*(3-2*v);}
 export function createRainFieldCover(renderer,camera,{surfaceMap,values}){
  const scene=new T.Scene(),unit=128/3,squash=.568329;

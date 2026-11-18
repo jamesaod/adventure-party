@@ -9,7 +9,7 @@ function harness(){
   const preparation=deferred(),acknowledgement=deferred(),calls={ready:0,finish:0,begin:0,failed:0};
   const button={textContent:'Begin Battle',disabled:false,setAttribute(){},removeAttribute(){}};
   const screen=()=>({classList:{add(){},remove(){}}});
-  const context={URLSearchParams,location:{search:''},combatAwaitingStart:false,currentScreen:'combat-conditions',selectedCombatCondition:'grass',studioDraftAutoSelect:true,pendingCombatStart:null,studioSpriteLoading:{state:'ready'},explorationEncounter:null,
+  const context={game:{session:{autonomous:false}},ui:{turnBanner:{}},setCombatMessage(){},updateUi(){},draw(){},URLSearchParams,location:{search:''},combatAwaitingStart:false,currentScreen:'combat-conditions',selectedCombatCondition:'grass',studioDraftAutoSelect:true,pendingCombatStart:null,studioSpriteLoading:{state:'ready'},explorationEncounter:null,
     document:{getElementById:id=>id==='beginBattleButton'?button:null},console:{error(){}},updateAudioIndicators(){},syncWeatherAudio(){},
     launcherScreen:screen(),combatConditionsScreen:screen(),xpLootScreen:screen(),spellbookScreen:screen(),classbookScreen:screen(),spellPreviewScreen:screen(),combatScreen:screen(),
     // Deliberately no retired title-music or Pixel Editor globals.
@@ -40,3 +40,7 @@ console.log('PASS preparation readiness gate, exactly-once entry, duplicate laun
 
 {const h=harness();h.context.location.search='?terrainLab=1';const run=h.context.showCombat();h.preparation.resolve({});await run;assert.equal(h.calls.begin,0);assert.equal(h.calls.ready,0);assert.equal(h.calls.finish,1);assert.equal(h.context.combatAwaitingStart,true);assert.equal(h.context.pendingCombatStart,null);}
 
+
+{const h=harness();h.context.game.session.autonomous=true;const run=h.context.showCombat();h.preparation.resolve({});await flush();h.acknowledgement.resolve(true);await run;assert.equal(h.calls.failed,0);assert.equal(h.calls.begin,0,'Acknowledging preparation does not start autonomous combat');assert.equal(h.context.combatAwaitingStart,true);assert.equal(h.context.ui.turnBanner.textContent,'<Press Space to Begin>');}
+
+{const main=fs.readFileSync(new URL('../js/adventure-party.js',import.meta.url),'utf8');const ui=extractCombatFunction(main,'updateUi');assert(!/\bevent\./.test(ui),'UI rendering must work without a keyboard event');assert(main.includes('(event.code==="Space" || event.key===" ") &&\n      !event.repeat && combatOpeningSpeechDone &&'),'Repeat guard belongs to the Space input handler');}

@@ -1,0 +1,14 @@
+const {chromium}=require('C:/Users/james/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async()=>{const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
+ const watchdog=setTimeout(()=>browser.close(),90000);watchdog.unref();const page=await browser.newPage({viewport:{width:1600,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('404'))errors.push(m.text());});
+ await page.goto('http://127.0.0.1:8276',{waitUntil:'domcontentloaded'});console.log('Page loaded');await page.waitForFunction(()=>typeof showCombat==='function',{},{timeout:60000});console.log('Scripts ready');await page.waitForTimeout(500);await page.evaluate(()=>{showCombat('grass').catch(e=>console.error(e));});console.log('Starting combat');
+ await page.waitForFunction(()=>typeof game!=='undefined'&&game?.oakTestTree&&combatFirTrees,{},{timeout:60000});
+ console.log('Oak selected');const result=await page.evaluate(async()=>{await presentCombatFrame();const trees=visibleTreeDecorations(visibleHexes()),oaks=trees.filter(t=>t.species==='sugar-maple');if(oaks.length!==1)throw Error('Expected one visible oak, got '+oaks.length);
+ const oak=oaks[0];if(trees.some(t=>t!==oak&&hexDistance(t,oak)<=2))throw Error('Tree inside oak exclusion');if([...game.firDecorations.values()].some(t=>t.species!=='sugar-maple'&&hexDistance(t,oak)<=2))throw Error('Hidden obstacle inside exclusion');for(let view=0;view<6;view++){battlefieldRotation=view;await presentCombatFrame();}
+ const image=combatFirTrees.get(5,0,{snowAmount:.5}).body;if(!image.width)throw Error('Oak fallback failed');
+ return {oak:game.oakTestTree,variant:oak.tileIndex,scale:treeSizeScale(oak),blocked:game.firBlockedHexes.has(key(oak.x,oak.y)),canopyRadius:combatFirTrees.canopyRadius(5),sixViewsRendered:true,snowRendered:true};});
+ console.log(JSON.stringify({result,errors},null,2));if(errors.length)throw Error(errors.join('\n'));
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+
+
+

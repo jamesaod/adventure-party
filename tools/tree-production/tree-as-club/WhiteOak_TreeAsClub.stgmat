@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated using SpeedTree tools -->
+<Materials Count="2" Packer="_Unity">
+	<Material ID="5" Name="Bark_Base_Mat" TwoSided="0" UserData="" VertexOpacity="1" FlipNormalsOnBackside="0">
+		<Map Index="0" File="Bark_Base_Color.png" />
+		<Map Index="1" File="Bark_Base_Normal.png" />
+		<Map Index="2" File="Bark_Base_Extra.png" />
+		<Map Index="3" File="Bark_Base_Subsurface.png" />
+	</Material>
+	<Material ID="23456" Name="WhiteOak_TreeAsClub_Mat" TwoSided="1" UserData="" VertexOpacity="1" FlipNormalsOnBackside="0">
+		<Map Index="0" File="WhiteOak_TreeAsClub_Color.png" />
+		<Map Index="1" File="WhiteOak_TreeAsClub_Normal.png" />
+		<Map Index="2" File="WhiteOak_TreeAsClub_Extra.png" />
+		<Map Index="3" File="WhiteOak_TreeAsClub_Subsurface.png" />
+	</Material>
+</Materials>

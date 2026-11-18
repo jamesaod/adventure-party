@@ -142,8 +142,8 @@ for(const id of ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','
 }
 records['combat-workspace']=matching;
 
-const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
-const renderer=readFileSync(new URL('../js/combat-mob-renderer.mjs?v=tree-snow-grains1',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
+const renderer=readFileSync(new URL('../js/combat-mob-renderer.mjs?v=natural-ac1',import.meta.url),'utf8');
 assert.ok(game.includes('if(scenario.prepareAppearance!==false&&!player.studioSpriteTest && typeof markMobAppearanceDirty'),
   'Entering Studio combat must display its original captured frames without an automatic re-render');
 assert.ok(game.includes('fromCombat=!!unit.studioSpriteTest'), 'Gear swaps must use the paired Studio capture');

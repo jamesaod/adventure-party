@@ -1,5 +1,5 @@
-import {validateWorkshopUnit} from './workshop-unit-package.mjs?v=R238C313';
-import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C313';
+import {validateWorkshopUnit} from './workshop-unit-package.mjs?v=scored-ai1';
+import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C471';
 
 const DEFAULT_ROOT=new URL('../',import.meta.url);
 function entryPath(entry){

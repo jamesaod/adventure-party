@@ -1,0 +1,24 @@
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+// Local 3D density integration, sharing a single noise texture and material.
+export function createVolumetricFog(){
+ const size=32,data=new Uint8Array(size**3);let seed=9137;
+ for(let i=0;i<data.length;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;data[i]=seed>>>24;}
+ const noise=new THREE.Data3DTexture(data,size,size,size);noise.format=THREE.RedFormat;noise.minFilter=noise.magFilter=THREE.LinearFilter;noise.wrapS=noise.wrapT=noise.wrapR=THREE.RepeatWrapping;noise.unpackAlignment=1;noise.needsUpdate=true;
+ const uniforms={noiseMap:{value:noise},rect:{value:new THREE.Vector4()},viewport:{value:new THREE.Vector2()},anchor:{value:new THREE.Vector2()},zoom:{value:1},inverseView:{value:new THREE.Vector4()},translation:{value:new THREE.Vector2()},ray:{value:new THREE.Vector2()},volume:{value:new THREE.Vector4()},height:{value:2.2},density:{value:.4},time:{value:0},sky:{value:1},sun:{value:1},sunDirection:{value:new THREE.Vector3()},lampPosition:{value:Array.from({length:4},()=>new THREE.Vector3())},lampColor:{value:Array.from({length:4},()=>new THREE.Vector3())}};
+ const material=new THREE.ShaderMaterial({glslVersion:THREE.GLSL3,uniforms,side:THREE.DoubleSide,transparent:true,depthTest:false,depthWrite:false,
+ vertexShader:`uniform vec4 rect;uniform vec2 viewport;out vec2 pixel;void main(){pixel=rect.xy+(position.xy*.5+.5)*rect.zw;gl_Position=vec4(pixel.x/viewport.x*2.-1.,1.-pixel.y/viewport.y*2.,0.,1.);}`,
+ fragmentShader:`precision highp sampler3D;uniform sampler3D noiseMap;uniform vec4 inverseView,volume;uniform vec2 translation,anchor,ray;uniform float zoom,height,density,time,sky,sun;uniform vec3 sunDirection,lampPosition[4],lampColor[4];in vec2 pixel;out vec4 fogColor;
+ float field(vec3 p){vec2 q=(p.xy-volume.xy)/volume.zw;float edge=1.-smoothstep(.55,1.,dot(q,q));float vertical=smoothstep(0.,.16,p.z)*(1.-smoothstep(height*.25,height,p.z));vec3 drift=vec3(time*.004,time*.002,0.);float n=texture(noiseMap,p*.019+drift).r*.7+texture(noiseMap,p*.046-drift*.71).r*.3;return edge*vertical*smoothstep(.20,.78,n)*density;}
+ void main(){vec2 screen=(pixel-anchor)/zoom+anchor-translation;vec2 ground=vec2(dot(inverseView.xy,screen),dot(inverseView.zw,screen))/vec2(128./3.,128./3.*.568329);float stepZ=height/32.,stepLength=stepZ*sqrt(1.+dot(ray,ray)),trans=1.;vec3 light=vec3(0.);float phase=.35+.65*pow(max(0.,dot(normalize(vec3(ray,1.)),sunDirection)),4.);
+ for(int i=0;i<32;i++){float z=height-(float(i)+.5)*stepZ;vec3 p=vec3(ground+ray*z,z);float d=field(p);if(d<.0001)continue;float shadow=0.;for(int j=1;j<=3;j++)shadow+=field(p+sunDirection*float(j)*.7)*.7;vec3 illumination=vec3(.54,.62,.72)*(.07+.62*sky)+vec3(1.,.94,.82)*sun*phase*exp(-shadow);for(int j=0;j<4;j++){float dist=length(p-lampPosition[j]);illumination+=lampColor[j]/(1.+dist*dist);}
+ float a=1.-exp(-d*stepLength);light+=trans*a*illumination;trans*=1.-a;if(trans<.025)break;}
+ float alpha=1.-trans;if(alpha<.002)discard;fogColor=vec4(light/max(alpha,.001),alpha);}`});
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),material);mesh.frustumCulled=false;
+ return {mesh,configure(p,view){const [a,b,c,d,tx,ty]=view.matrix,det=a*d-b*c,unit=128/3,squash=.568329,up=unit*.8228;
+ uniforms.inverseView.value.set(d/det,-c/det,-b/det,a/det);uniforms.translation.value.set(tx,ty);uniforms.anchor.value.set(view.anchor.x,view.anchor.y);uniforms.zoom.value=view.zoom;uniforms.viewport.value.set(view.width,view.height);
+ uniforms.ray.value.set(-c/det*up/unit,a/det*up/(unit*squash));uniforms.volume.value.set(p.x/unit,p.y/(unit*squash),p.radius,p.radius);uniforms.height.value=p.height;uniforms.density.value=p.density;uniforms.time.value=p.time;uniforms.sky.value=Math.max(.02,p.solar?.sky??1);uniforms.sun.value=Math.max(0,p.solar?.daylight??1);const sd=p.solar?.direction||{x:0,y:1,z:0};uniforms.sunDirection.value.set(sd.x,sd.z,sd.y).normalize();
+ for(let i=0;i<4;i++){const l=p.lights?.[i];uniforms.lampPosition.value[i].set(l?.x||0,l?.y||0,l?.z||0);uniforms.lampColor.value[i].set(...(l?.color||[0,0,0]));}
+ let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;for(const dx of [-1,1])for(const dy of [-1,1])for(const z of [0,p.height]){const x=p.x+dx*p.radius*unit,y=p.y+dy*p.radius*unit*squash,sx=a*x+c*y+tx,sy=b*x+d*y+ty-z*up;const px=view.anchor.x+(sx-view.anchor.x)*view.zoom,py=view.anchor.y+(sy-view.anchor.y)*view.zoom;left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py);}
+ left=Math.max(0,left);top=Math.max(0,top);right=Math.min(view.width,right);bottom=Math.min(view.height,bottom);uniforms.rect.value.set(left,top,Math.max(0,right-left),Math.max(0,bottom-top));return right>left&&bottom>top;
+ },dispose(){mesh.geometry.dispose();material.dispose();noise.dispose();}};
+}

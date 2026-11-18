@@ -1,0 +1,44 @@
+{
+  "title": "Heavy Walking Footsteps",
+  "author": "Universfield",
+  "url": "https://pixabay.com/sound-effects/film-special-effects-heavy-walking-footsteps-352771/",
+  "license": "Pixabay Content License",
+  "licenseUrl": "https://pixabay.com/service/license-summary/",
+  "downloaded": "2026-11-16",
+  "processing": "Five individual footfalls; mono 48kHz PCM16, 2ms attack/25ms tail fades; original pitch.",
+  "cuts": [
+    {
+      "file": "step-1.wav",
+      "start": 0.105,
+      "end": 0.955
+    },
+    {
+      "file": "step-2.wav",
+      "start": 1.0950000000000002,
+      "end": 1.9450000000000003
+    },
+    {
+      "file": "step-3.wav",
+      "start": 2.095,
+      "end": 2.9450000000000003
+    },
+    {
+      "file": "step-4.wav",
+      "start": 3.095,
+      "end": 3.9450000000000003
+    },
+    {
+      "file": "step-5.wav",
+      "start": 4.095,
+      "end": 4.944999999999999
+    }
+  ],
+  "sha256": {
+    "step-1.wav": "144a03608e0e2354c4ccbcb42520ec93886a97aedbdeb7e31ef94d294e3e1bc3",
+    "step-2.wav": "d5788e881a775299496c767c9ce7fe295cb3c8bbc4c01572d907af95bcd5c5e9",
+    "step-3.wav": "6b7fa2c02b50992a7e85b3d8af6c46e071cabe20a2db6ff7d0fdc9f87f1f99bf",
+    "step-4.wav": "74c38568d75a48c6c0fdcb57930153d822e8039fe6753dab087c34143a43931c",
+    "step-5.wav": "ca95f6fa706e5ffaa64728c81f16518d47e5f288b4a6e1b7fd5258f10d13c42b",
+    "universfield-heavy-walking-footsteps-352771.mp3": "8cc37d615c330686bc8e1b1c1c25212a2d721aebe62d62661d55a5748f899e06"
+  }
+}

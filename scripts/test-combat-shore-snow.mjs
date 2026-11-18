@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createStreamSnowLimit,shoreSnowFraction,SHORE_SNOW_FEATHER_METRES} from '../js/stream-snow-limit.mjs?v=shore-snow1';
-import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=natural-ac1';
 import {snowDepthMetres,SNOW_MAX_METRES} from '../js/combat-snow-depth.mjs?v=shore-snow1';
 import {createHexSnow} from '../js/combat-snow-state.mjs';
 assert.equal(SHORE_SNOW_FEATHER_METRES,.9144000000000001);

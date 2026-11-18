@@ -1,0 +1,143 @@
+{
+  "SweetBirch_Fall.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 23997,
+      "SweetBirch_Fall_Mat": 21312
+    },
+    "min": [
+      -5.2595,
+      -5.19336,
+      -0.360957
+    ],
+    "max": [
+      5.15705,
+      6.06338,
+      12.1715
+    ]
+  },
+  "SweetBirch_Fall_LOD1.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 7958,
+      "SweetBirch_Fall_Mat": 11718
+    },
+    "min": [
+      -5.41886,
+      -5.30527,
+      -0.35922
+    ],
+    "max": [
+      5.29798,
+      6.19221,
+      12.3644
+    ]
+  },
+  "SweetBirch_Fall_LOD2.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 1439,
+      "SweetBirch_Fall_Mat": 4960
+    },
+    "min": [
+      -5.57823,
+      -5.46289,
+      -0.35922
+    ],
+    "max": [
+      5.46323,
+      6.3762,
+      12.5573
+    ]
+  },
+  "SweetBirch_Green.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 23997,
+      "SweetBirch_Green_Mat": 21312
+    },
+    "min": [
+      -5.2595,
+      -5.19336,
+      -0.360957
+    ],
+    "max": [
+      5.15705,
+      6.06338,
+      12.1715
+    ]
+  },
+  "SweetBirch_Green_LOD1.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 7958,
+      "SweetBirch_Green_Mat": 11718
+    },
+    "min": [
+      -5.41886,
+      -5.30527,
+      -0.35922
+    ],
+    "max": [
+      5.29798,
+      6.19221,
+      12.3644
+    ]
+  },
+  "SweetBirch_Green_LOD2.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 1439,
+      "SweetBirch_Green_Mat": 4960
+    },
+    "min": [
+      -5.57823,
+      -5.46289,
+      -0.35922
+    ],
+    "max": [
+      5.46323,
+      6.3762,
+      12.5573
+    ]
+  },
+  "SweetBirch_Winter.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 23997
+    },
+    "min": [
+      -4.6411,
+      -4.53695,
+      -0.360957
+    ],
+    "max": [
+      4.47897,
+      5.36801,
+      11.5796
+    ]
+  },
+  "SweetBirch_Winter_LOD1.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 7940
+    },
+    "min": [
+      -4.6411,
+      -4.51578,
+      -0.35922
+    ],
+    "max": [
+      4.47897,
+      5.36801,
+      11.2451
+    ]
+  },
+  "SweetBirch_Winter_LOD2.obj": {
+    "triangles": {
+      "Maple_Bark_1_Mat": 1439
+    },
+    "min": [
+      -4.4984,
+      -4.51482,
+      -0.35922
+    ],
+    "max": [
+      4.28766,
+      5.08826,
+      10.3733
+    ]
+  }
+}

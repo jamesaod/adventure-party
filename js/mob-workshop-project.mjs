@@ -1,6 +1,6 @@
 import {normalizeQuiverArrows} from './quiver-arrow-settings.mjs?v=R238C312';
 import {normalizeBackEquipment} from './studio-back-equipment.mjs?v=R238C312';
-import {validateDraft} from './mob-workshop-core.mjs?v=R238C313';
+import {validateDraft} from './mob-workshop-core.mjs?v=scored-ai1';
 import {migrateFits,savedFit} from './mob-workshop-fit-store.mjs';
 
 // Validate portable dependencies before replacing the currently open project.

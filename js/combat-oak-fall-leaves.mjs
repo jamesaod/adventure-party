@@ -6,11 +6,11 @@ export async function createOakFallLeaves(models,family=ACTIVE_BROADLEAF){
  const asset=await new GLTFLoader().loadAsync(broadleafAsset(family.particle+'.gltf',family));let card;asset.scene.traverse(m=>{if(m.isMesh)card=m;});
  // Precompute seasonal canopy samples once. Each particle begins on an
  // actual leaf triangle, transformed by the same topple as the standing tree.
- const count=6560,seeds=[],bursts=[],seasonOrigins=[],motion=[];
+ const count=3280,seeds=[],bursts=[],seasonOrigins=[],motion=[];
  const random=(i,salt)=>{let x=Math.imul(i+1,747796405)^Math.imul(salt,2891336453);x=Math.imul(x^(x>>>16),2246822519);x=Math.imul(x^(x>>>13),3266489917);return ((x^(x>>>16))>>>0)/4294967296;};
  for(let i=0;i<count;i++)for(let salt=1;salt<=4;salt++)motion.push(random(i,salt));
  const motionAttribute=new THREE.InstancedBufferAttribute(new Float32Array(motion),4);
- for(let i=0;i<count;i++){seeds.push((i*.61803398875+.137)%1);bursts.push(i<160?0:1);}
+ for(let i=0;i<count;i++){seeds.push((i*.61803398875+.137)%1);bursts.push(i<80?0:1);}
  for(const source of models){
   const triangles=[];source.updateMatrixWorld(true);
   source.traverse(m=>{if(!m.isMesh||!m.material.name.includes('Leaf'))return;const p=m.geometry.attributes.position,idx=m.geometry.index,n=idx?idx.count:p.count;

@@ -134,7 +134,12 @@ function combatResultLines(beat){
  const baseDeath=AdventurePartyCombatServices.current('triggerDeathFx');
  AdventurePartyCombatServices.register('triggerDeathFx','combat-result-panel.js:129:triggerDeathFx',function(unit){
   if(unit&&deaths.get(unit)!==game&&candidateCombatBeatPresentationEnabled()){
-   deaths.set(unit,game);candidateQueueCombatBeat(unit,{category:'death',text:'Goes down and is dying',show:()=>{baseDeathSound(unit);baseDeath(unit);}});
+   deaths.set(unit,game);
+   // A lethal giant club impact settles small/medium victims immediately.
+   // Keep the result feed ordered without restarting presentation when it catches up.
+   const impactProne=unit.alive===false&&unit.giantClubProneDeath;
+   if(impactProne)baseDeath(unit);
+   candidateQueueCombatBeat(unit,{category:'death',text:'Goes down and is dying',show:()=>{baseDeathSound(unit);if(!impactProne)baseDeath(unit);}});
    return;
   }
   if(unit&&deaths.get(unit)===game&&candidateCombatBeatPresentationEnabled())return;

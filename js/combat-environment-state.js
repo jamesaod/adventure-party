@@ -44,14 +44,28 @@ function initializeFirMovementObstacles(){
   candidates.sort((a,b)=>hexDistance(a,anchor)-hexDistance(b,anchor)||a.x-b.x||a.y-b.y);
   game.treeFalls=new Map();game.treeFallRevision=0;game.godTreeTool=false;canvas.style.cursor='';const godButton=document.getElementById('godTreeTool');if(godButton){godButton.textContent='GOD TOOL';godButton.setAttribute('aria-pressed','false');}const godStatus=document.getElementById('godTreeStatus');if(godStatus)godStatus.textContent='';
   const oak=candidates[0];const mapleSites=oak?tiles.filter(t=>hexDistance(t,oak)>=4&&hexDistance(t,oak)<=6&&allUnits().every(u=>hexDistance(t,u)>=3)&&(!combatSceneTerrain?.walkableHex||combatSceneTerrain.walkableHex(t.x,t.y))&&(!combatSceneTerrain?.isRenderableHex||combatSceneTerrain.isRenderableHex(t.x,t.y))&&(()=>{const p=worldPointForHex(t.x,t.y);return !combatGpu?.streamSample||combatGpu.streamSample(p.x,p.y).depth<.025;})()).sort((a,b)=>hexDistance(a,oak)-hexDistance(b,oak)||hexDistance(a,anchor)-hexDistance(b,anchor)||a.y-b.y||a.x-b.x):[];const maple=mapleSites[0];
-  game.testTrees=[];if(oak){Object.assign(oak,{species:'white-oak',tileIndex:5});game.testTrees.push(oak);}if(maple){Object.assign(maple,{species:'sugar-maple',tileIndex:11});game.testTrees.push(maple);}
+  game.testTrees=[];if(oak){Object.assign(oak,{species:'white-oak',tileIndex:5,clubId:'tree-05-club'});game.testTrees.push(oak);}if(maple){Object.assign(maple,{species:'sugar-maple',tileIndex:11,clubId:'tree-11-club'});game.testTrees.push(maple);}
   // All catalog specimens coexist for side-by-side appearance and performance tests.
   for(const [catalogVariant,tileIndex] of [['tall',17],['broad',23],['beech',29],['birch',35]]){
    const sites=tiles.filter(t=>game.testTrees.every(other=>hexDistance(t,other)>=4)&&allUnits().every(u=>hexDistance(t,u)>=3)&&(!combatSceneTerrain?.walkableHex||combatSceneTerrain.walkableHex(t.x,t.y))&&(!combatSceneTerrain?.isRenderableHex||combatSceneTerrain.isRenderableHex(t.x,t.y))&&(()=>{const p=worldPointForHex(t.x,t.y);return !combatGpu?.streamSample||combatGpu.streamSample(p.x,p.y).depth<.025;})()).sort((a,b)=>hexDistance(a,anchor)-hexDistance(b,anchor)||hexDistance(a,oak)-hexDistance(b,oak)||a.y-b.y||a.x-b.x);
-   if(sites[0])game.testTrees.push({...sites[0],species:catalogVariant==='birch'?'sweet-birch':catalogVariant==='beech'?'american-beech':'sugar-maple',catalogVariant,tileIndex});
+   if(sites[0])game.testTrees.push({...sites[0],species:catalogVariant==='birch'?'sweet-birch':catalogVariant==='beech'?'american-beech':'sugar-maple',catalogVariant,tileIndex,clubId:`tree-${String(tileIndex).padStart(2,'0')}-club`});
   }
   const loaded=combatFirTrees?.loadedFamilyIds;
   if(loaded)game.testTrees=game.testTrees.filter(t=>loaded.includes(t.catalogVariant==='tall'?'sugar-maple-tall':t.catalogVariant==='broad'?'sugar-maple-broad':t.species));
+  // Reuse authored specimens for a fresh forest at combat-test initialization.
+  // Each copy retains its source club and physical scale.
+  const forestCatalog=game.testTrees.map(({species,catalogVariant,tileIndex,clubId})=>({species,catalogVariant,tileIndex,clubId}));
+  const forestSites=tiles.filter(t=>allUnits().every(u=>hexDistance(t,u)>=3)&&
+    (!combatSceneTerrain?.walkableHex||combatSceneTerrain.walkableHex(t.x,t.y))&&
+    (!combatSceneTerrain?.isRenderableHex||combatSceneTerrain.isRenderableHex(t.x,t.y))&&
+    (()=>{const p=worldPointForHex(t.x,t.y);return !combatGpu?.streamSample||combatGpu.streamSample(p.x,p.y).depth<.025;})());
+  for(let i=forestSites.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[forestSites[i],forestSites[j]]=[forestSites[j],forestSites[i]];}
+  for(const site of forestSites){
+    if(game.testTrees.length>=40||!forestCatalog.length)break;
+    if(game.testTrees.some(t=>hexDistance(t,site)<3))continue;
+    const specimen=forestCatalog[Math.floor(Math.random()*forestCatalog.length)];
+    game.testTrees.push({...site,...specimen});
+  }
   game.oakTestTree=game.testTrees.find(t=>t.species==='white-oak');game.mapleTestTree=game.testTrees.find(t=>t.tileIndex===11);game.oakFallTest=null;
   // Test-scene placement only: fir models and procedural placement remain preserved.
   game.firDecorations=new Map(game.testTrees.map(t=>[key(t.x,t.y),t]));
@@ -98,7 +112,8 @@ function firFireLightSources(){
   });
 }
 
-function isFirBlockedHex(x,y){return !!game?.firBlockedHexes?.has(key(x,y))||treeFallEntries().some(({state})=>(oakDebrisSettled(state)?state.blockedHexes:state.reservedHexes)?.has(key(x,y)));}
+function treeDebrisCapsulesForMover(state,unit=null){const settled=oakDebrisSettled(state),capsules=(settled?state.obstacleCapsules:state.reservationCapsules)||[];return settled&&unit?.treeHauler?capsules.filter(c=>!c.piece.includes('detached_limb')):capsules;}
+function isFirBlockedHex(x,y,unit=null){return !!game?.firBlockedHexes?.has(key(x,y))||treeFallEntries().some(({state})=>unit?.treeHauler?oakCapsuleHitsCell(treeDebrisCapsulesForMover(state,unit),{x,y}):(oakDebrisSettled(state)?state.blockedHexes:state.reservedHexes)?.has(key(x,y)));}
 
 function wallOpeningCenterT(wall,opening){
   if(!wall || !opening) return 0.5;
@@ -401,7 +416,8 @@ function sampleArrowBloodOffset(){
 }
 function corpseMotionProgress(unit,now=performance.now()){
   if(!Number.isFinite(unit?.deathPresentationStartedAt))return 0;
-  const t=Math.max(0,Math.min(1,(now-unit.deathPresentationStartedAt)/(unit.deathAnimationDurationMs||1000)));
+  if(unit.giantClubProneDeath&&!unit.corpsePlacementDurationMs)return 1;
+  const t=Math.max(0,Math.min(1,(now-unit.deathPresentationStartedAt)/(unit.corpsePlacementDurationMs||unit.deathAnimationDurationMs||1000)));
   return t*t*(3-2*t);
 }
 function corpsePresentationOffset(unit){
@@ -409,18 +425,59 @@ function corpsePresentationOffset(unit){
   return {x:offset.x*t,y:offset.y*t};
 }
 globalThis.adventurePartyCorpseProgress=corpseMotionProgress;
-function sampleCorpseOffset(unit){
-  const center=worldPointForHex(unit.x,unit.y),vertices=architecturalHexCoreVertices(unit.x,unit.y,1);
-  for(let attempt=0;attempt<12;attempt++){
-    const side=Math.floor(Math.random()*6),a=vertices[side],b=vertices[(side+1)%6],radius=.5*Math.sqrt(Math.random()),mix=Math.random();
-    const offset={x:radius*((1-mix)*(a.x-center.x)+mix*(b.x-center.x)),y:radius*((1-mix)*(a.y-center.y)+mix*(b.y-center.y))};
-    const end={x:center.x+offset.x,y:center.y+offset.y},hit=environmentRayHit(center,end),t=hit?Math.max(0,hit.t-.03):1;
-    const point={x:center.x+offset.x*t,y:center.y+offset.y*t};
-    if(combatSceneTerrain?.isRenderablePoint&&!combatSceneTerrain.isRenderablePoint(point))continue;
-    return {x:offset.x*t,y:offset.y*t};
-  }
-  return {x:0,y:0};
+function corpseRestingRadius(unit){
+ const size=Math.max(.35,(Number(unit.heightInches)||72)/72)*(typeof enlargeVisualScale==='function'?enlargeVisualScale(unit):1);
+ return 24*size;
 }
+function isGiantCorpse(unit){
+ const size=String(unit?.sizeCategory||'').toLowerCase();
+ const height=(Number(unit?.heightInches)||0)*(typeof enlargeVisualScale==='function'?enlargeVisualScale(unit):1);
+ return ['giant','huge','gargantuan'].includes(size)||height>=144;
+}
+function sampleCorpseOffset(unit){
+ if(isGiantCorpse(unit))return {x:0,y:0};
+ const center=worldPointForHex(unit.x,unit.y),vertices=architecturalHexCoreVertices(unit.x,unit.y,1);
+ const squash=typeof environmentSquash==='function'?environmentSquash():.568329;
+ const others=typeof allUnits==='function'?allUnits().filter(u=>u!==unit&&!u.alive&&!u.fled).map(u=>{const p=worldPointForHex(u.x,u.y),o=u.deathWorldOffset||{x:0,y:0};return {x:p.x+o.x,y:p.y+o.y,r:corpseRestingRadius(u)};}):[];
+ const radius=corpseRestingRadius(unit);
+ const valid=offset=>{
+  const end={x:center.x+offset.x,y:center.y+offset.y};
+  if(typeof environmentHex==='function'&&typeof inside==='function'){const h=environmentHex(end);if(!inside(h.x,h.y)||typeof isFirBlockedHex==='function'&&isFirBlockedHex(h.x,h.y))return false;}
+  if(combatSceneTerrain?.isRenderablePoint&&!combatSceneTerrain.isRenderablePoint(end))return false;
+  if(environmentRayHit(center,end))return false;
+  return others.every(o=>Math.hypot(end.x-o.x,(end.y-o.y)/squash)>=radius+o.r+3);
+ };
+ let preferred={x:0,y:0};
+ for(let attempt=0;attempt<12;attempt++){
+  const side=Math.floor(Math.random()*6),a=vertices[side],b=vertices[(side+1)%6],r=.5*Math.sqrt(Math.random()),mix=Math.random();
+  const offset={x:r*((1-mix)*(a.x-center.x)+mix*(b.x-center.x)),y:r*((1-mix)*(a.y-center.y)+mix*(b.y-center.y))};
+  if(attempt===0)preferred=offset;if(valid(offset))return offset;
+ }
+ // Reserve final positions immediately, including bodies still falling.
+ const phase=Math.atan2(preferred.y/squash,preferred.x);
+ for(let ring=1;ring<=12;ring++)for(let i=0;i<24;i++){
+  const angle=phase+i*Math.PI/12,r=ring*12,offset={x:Math.cos(angle)*r,y:Math.sin(angle)*r*squash};
+  if(valid(offset)){if(unit.giantClubProneDeath)unit.corpsePlacementDurationMs=600;return offset;}
+ }
+ // Confined spaces can have no free resting spot; never move through a wall.
+ return {x:0,y:0};
+}
+function corpseGroundSlope(unit){
+ if(!unit||unit.alive||typeof combatGpu==='undefined'||!combatGpu?.unitGroundSample)return null;
+ const p=worldPointForHex(unit.x,unit.y),o=unit.deathWorldOffset||{x:0,y:0};p.x+=o.x;p.y+=o.y;
+ if(typeof isIndoorWorldPoint==='function'&&isIndoorWorldPoint(p))return null;
+ const revision=combatGpu.unitWaterSurface?.revision,cache=unit.corpseGroundPlane;
+ if(cache&&cache.x===p.x&&cache.y===p.y&&cache.revision===revision)return cache;
+ const squash=typeof environmentSquash==='function'?environmentSquash():.568329,span=Math.max(12,corpseRestingRadius(unit)*.8);
+ const depth=(x,y)=>{const v=combatGpu.unitGroundSample(x,y);return Number(v.bedDepth??v.depth)||0;};
+ const dx=(depth(p.x+span,p.y)-depth(p.x-span,p.y))/(2*span),dy=(depth(p.x,p.y+span*squash)-depth(p.x,p.y-span*squash))/(2*span*squash);
+ return unit.corpseGroundPlane={x:p.x,y:p.y,revision,dx,dy};
+}
+globalThis.adventurePartyCorpseSlope=(unit,sx,sy)=>{
+ const plane=corpseGroundSlope(unit);if(!plane)return 0;
+ const v=battlefieldProjectVector({x:sx,y:sy},true);
+ return (plane.dx*v.x+plane.dy*v.y)*combatShadowScale()[1];
+};
 function startArrowBlood(attacker,target,damage,{death=false}={}){
   if(!game||!(damage>0)||!attacker||!target||target.fireDeath)return;
   const state=combatBloodState(),origin=worldPointForHex(target.x,target.y),squash=environmentSquash();
@@ -465,10 +522,10 @@ function oakPointSegmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0
 function oakWorldPoint(cell){const p=worldPointForHex(cell.x,cell.y);return {x:p.x,y:p.y/.568329};}
 function oakCapsuleHitsCell(capsules,cell){const p=oakWorldPoint(cell);return capsules.some(c=>oakPointSegmentDistance(p,c.a,c.b)<=c.radius+HEX_W*.28);}
 function oakBlockedCells(capsules){const out=new Set();for(let x=MAP_MIN_X;x<=MAP_MAX_X;x++)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y++)if(inside(x,y)&&oakCapsuleHitsCell(capsules,{x,y}))out.add(key(x,y));return out;}
-function prepareOakFallNavigation(oak=game.oakTestTree){
+function prepareOakFallNavigation(oak=game.oakTestTree,{direction:requiredDirection=null,ignoreUnit=null}={}){
  if(allUnits().some(u=>u.walkPresentation))return null;
- const tileSet=activeCombatTerrainTileSet(),scale=(tileSet.treeDrawHeight||240)/210,origin=oakWorldPoint(oak),sourceYaw=(terrainHash(oak.x+7901,oak.y-5107)%(tileSet.treeRotationFrames||1))*Math.PI/6;
- const occupied=allUnits().filter(u=>u.alive&&!u.fled).flatMap(occupiedHexes),order=[0,1,2,3,4,5];for(let i=5;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+ const tileSet=activeCombatTerrainTileSet(),scale=(tileSet.treeDrawHeight||240)/210,origin=oakWorldPoint(oak),sourceYaw=treeYawDegrees(oak)*Math.PI/180;
+ const occupied=allUnits().filter(u=>u!==ignoreUnit&&u.alive&&!u.fled).flatMap(occupiedHexes),order=requiredDirection===null?[0,1,2,3,4,5]:requiredDirection>=0?[requiredDirection]:[];for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
  for(const direction of order){const d=HEX_DIRS[direction],point=oakWorldPoint({x:oak.x+d.x,y:oak.y+d.y}),fallYaw=Math.atan2(point.x-origin.x,point.y-origin.y),delta=sourceYaw-fallYaw,c=Math.cos(fallYaw),s=Math.sin(fallYaw);
  const project=(x,z)=>({x:origin.x+(c*x+s*z)*scale,y:origin.y+(-s*x+c*z)*scale});
  const capsules=combatTreeCollision(oak.tileIndex,globalThis.adventurePartySeasons?.getSeason()||'summer',delta).capsules.map(p=>({piece:p.piece,a:project(p.ax,p.az),b:project(p.bx,p.bz),radius:p.radius*scale}));
@@ -478,8 +535,8 @@ function prepareOakFallNavigation(oak=game.oakTestTree){
  return {direction,fallYaw,localFallYaw:delta,obstacleCapsules:capsules,reservationCapsules:reservation,blockedHexes:oakBlockedCells(capsules),reservedHexes:oakBlockedCells(reservation)};
  }return null;
 }
-function oakDebrisBlocksStep(from,to){
- const capsules=treeFallEntries().flatMap(({state})=>(oakDebrisSettled(state)?state.obstacleCapsules:state.reservationCapsules)||[]);if(!capsules.length)return false;
+function oakDebrisBlocksStep(from,to,unit=null){
+ const capsules=treeFallEntries().flatMap(({state})=>treeDebrisCapsulesForMover(state,unit));if(!capsules.length)return false;
  const a=oakWorldPoint(from),b=oakWorldPoint(to);
  function cross(p,q,r){return (q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);}
  return capsules.some(c=>{const u=cross(a,b,c.a),v=cross(a,b,c.b),w=cross(c.a,c.b,a),z=cross(c.a,c.b,b);const intersects=u*v<0&&w*z<0;

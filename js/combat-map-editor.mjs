@@ -4,7 +4,7 @@ import {levelAt,setLevel,FEET_PER_LEVEL} from './combat-map-elevation.mjs';
 import {validateShape,insideShape} from './combat-map-shapes.mjs';
 import {TEXTURES,TREES} from './combat-map-palette.mjs?v=R238C436';
 import {createMap,parseMap,exportMap,resizeMap,dimensions,atPoint,contains,brush,hexLine} from './combat-map-document.mjs';
-import {createMapRenderer} from './combat-map-renderer.mjs?v=tree-snow-grains1';
+import {createMapRenderer} from './combat-map-renderer.mjs?v=natural-ac1';
 const $=id=>document.getElementById(id),KEY='adventure-party:combat-map-editor:v1';
 let map=createMap(),renderer,tool={type:'texture',id:'grass'},undo=[],redo=[],stroke=null,pan=null,saveTimer,unsaved=false;
 let draft=[],removeShape=false;

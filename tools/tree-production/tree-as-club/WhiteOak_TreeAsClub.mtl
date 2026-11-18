@@ -1,0 +1,15 @@
+# Wavefront Object Material File
+# Generated using SpeedTree tools
+
+newmtl Bark_Base_Mat
+map_Kd Bark_Base_Color.png
+map_bump Bark_Base_Normal.png
+bump Bark_Base_Normal.png -bm 1
+
+
+newmtl WhiteOak_TreeAsClub_Mat
+map_Kd WhiteOak_TreeAsClub_Color.png
+map_bump WhiteOak_TreeAsClub_Normal.png
+bump WhiteOak_TreeAsClub_Normal.png -bm 1
+
+

@@ -1,0 +1,127 @@
+[
+  {
+    "file": "AmericanBeech_Cluster_Fall.png",
+    "bytes": 1313181,
+    "sha256": "99ef5c9f96fb605b647aeffb71ef985e1fa5fdc82cd77e23ba4c4ee1109b41ad"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall.spm",
+    "bytes": 89190,
+    "sha256": "a47295951d1964eccab9999aba3effd902da88adc4d553e1eaf7a050a547b316"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall_AO.png",
+    "bytes": 215090,
+    "sha256": "7ade4a3b4c34ca8b971f926031a0b607995361a989df25a2ad1e998b39a2ba39"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall_Gloss.png",
+    "bytes": 195856,
+    "sha256": "126e580aaf7e9190ede53357356154a6c0d88c312328ecaf112189957b89bf6e"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall_Normal.png",
+    "bytes": 507249,
+    "sha256": "cab877b9de4af74e58de2e17aeacdc4a97e913839b65326de078cba4d67be9b1"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall_Opacity.png",
+    "bytes": 76121,
+    "sha256": "92a12421ad0cb3f878e1c84a7a114bd1cbc23d1ec4b93c698c1e23aa59c80004"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall_Subsurface.png",
+    "bytes": 72131,
+    "sha256": "c677617a19879521d18e04f28b9c87a13f9e19cfed245a28b080c5624e62b277"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Fall_SubsurfaceAmount.png",
+    "bytes": 12332,
+    "sha256": "766ed13d904fbae3073b78eb5acc7f332e174b1ffc207daf1b4ba6b22385c3fd"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green.png",
+    "bytes": 1310614,
+    "sha256": "743690e6aa69ff3107ffa2e33f32148b14f613505f3055cc2a3b5ecb074da096"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green.spm",
+    "bytes": 86173,
+    "sha256": "c26ff419d148988ae99e89ed8784821117b21a81d1c65edf568931d3e18a41fd"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green_AO.png",
+    "bytes": 215090,
+    "sha256": "7ade4a3b4c34ca8b971f926031a0b607995361a989df25a2ad1e998b39a2ba39"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green_Gloss.png",
+    "bytes": 195856,
+    "sha256": "126e580aaf7e9190ede53357356154a6c0d88c312328ecaf112189957b89bf6e"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green_Normal.png",
+    "bytes": 507249,
+    "sha256": "cab877b9de4af74e58de2e17aeacdc4a97e913839b65326de078cba4d67be9b1"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green_Opacity.png",
+    "bytes": 76121,
+    "sha256": "92a12421ad0cb3f878e1c84a7a114bd1cbc23d1ec4b93c698c1e23aa59c80004"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green_Subsurface.png",
+    "bytes": 72131,
+    "sha256": "c677617a19879521d18e04f28b9c87a13f9e19cfed245a28b080c5624e62b277"
+  },
+  {
+    "file": "AmericanBeech_Cluster_Green_SubsurfaceAmount.png",
+    "bytes": 12332,
+    "sha256": "766ed13d904fbae3073b78eb5acc7f332e174b1ffc207daf1b4ba6b22385c3fd"
+  },
+  {
+    "file": "AmericanBeech_Fall.spm",
+    "bytes": 122480,
+    "sha256": "d88d96b7d19cb3a235c810c0413b0d8b37fe857ac446db6724d4739606751605"
+  },
+  {
+    "file": "AmericanBeech_Green.spm",
+    "bytes": 121237,
+    "sha256": "d329705f664e9a98fc09336f349ba8510d1b7b2bd94a33c166ac04a6820ca2f5"
+  },
+  {
+    "file": "AmericanBeech_Winter.spm",
+    "bytes": 103921,
+    "sha256": "797d6a324604b3e8b6d0852ed62ac877268f2823c42ab5b0b1f551e3be004b24"
+  },
+  {
+    "file": "Beech_Bark_Color.png",
+    "bytes": 3470674,
+    "sha256": "b075f403bbfd3ebbdab5d240139ea9ad1b9de4d224b0fbf7633d47ab31dd57e7"
+  },
+  {
+    "file": "Beech_Leaf_Fall.png",
+    "bytes": 1820325,
+    "sha256": "12738acb353fef3744a7c4a179e0aa609567d58e64a2373c301899a0eb80a283"
+  },
+  {
+    "file": "Beech_Leaf_Green.png",
+    "bytes": 1845013,
+    "sha256": "e9538e2d9cfd8b73e24962a556b1e4343697427b663adc8e91b961c18373521b"
+  },
+  {
+    "file": "build-matching-wood.mjs",
+    "bytes": 3362,
+    "sha256": "6ffab85e7d4ece6039e4c57c32addd68c9930252158090d52a4549634d006bad"
+  },
+  {
+    "file": "package-beech.cjs",
+    "bytes": 2105,
+    "sha256": "db91096e269f9dbe5ed7b788af11ff9ebb2aed45ae8413316bc59e4c0c91a8bf"
+  },
+  {
+    "file": "RESEARCH_AND_AUTHORING.txt",
+    "bytes": 3220,
+    "sha256": "2d974e65c1f1e650ca10644fe7629da24604ad394dd9fb8dcb9b2fd7547b6075"
+  }
+]

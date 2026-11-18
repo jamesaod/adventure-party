@@ -2,6 +2,64 @@
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
 
+/* GIANT TREE-CLUB ATTACK POLICY
+ * Owns: weapon eligibility / 2d6 base, miss deflection, Earth1 timing,
+ * screen shake, wet-impact splash, result timing and size-limited prone death.
+ * Strength bonuses remain in the shared damage pipeline (applied once).
+ * Tree seeking/pushing/pickup remain in combat-tree-hauler.js.
+ */
+function hillGiantWieldsTreeClub(unit){
+ return (unit?.repositoryMobId==='hill-giant'||unit?.type==='mob:hill-giant')&&!!unit.inventory?.some(i=>i.equipped&&i.slot==='weapon'&&(i.treeLog||/^(tree-trunk-club|tree-\d+-club)$/.test(i.catalogItemId||'')));
+}
+function giantClubSkipsDeathFall(attacker,defender){
+ return hillGiantWieldsTreeClub(attacker)&&['small','medium'].includes(String(defender?.sizeCategory||'').toLowerCase());
+}
+async function waitForGiantAttackImpact(attacker,defender){
+ if((attacker.repositoryMobId!=='hill-giant'&&attacker.type!=='mob:hill-giant')||!Number.isFinite(attacker.poseStartedAt))return true;
+ const session=game;
+ // Small/Medium tree-club victims settle on the 2.40s thump; other results retain 2.45s.
+ await sleep(Math.max(0,attacker.poseStartedAt+(giantClubSkipsDeathFall(attacker,defender)?2400:2450)-performance.now()));
+ return game===session&&!game.over&&attacker.alive&&defender.alive;
+}
+
+function turnGiantMissAside(attacker){
+ if(attacker?.repositoryMobId!=='hill-giant'&&attacker?.type!=='mob:hill-giant')return;
+ const original=attacker.aimYawOffset||0,offset=original+(Math.random()<.5?-1:1)*Math.PI/15;
+ attacker.aimYawOffset=offset;
+ const missToken={};attacker.missTurnToken=missToken;attacker.missTurnAngle=offset-original;
+ setTimeout(()=>{if(attacker.missTurnToken===missToken){attacker.aimYawOffset=(attacker.aimYawOffset||0)-(offset-original);delete attacker.missTurnToken;delete attacker.missTurnAngle;if(game)draw();}},Math.max(0,(attacker.poseUntil||performance.now())-performance.now()));
+}
+
+let giantGroundShake=null;
+function shakeGiantGroundImpact(attacker){
+ if(currentScreen!=='combat'||matchMedia('(prefers-reduced-motion: reduce)').matches||!canvas?.animate||!shouldRenderUnitUnderPartyVisibility(attacker))return;
+ const c=unitFootprintScreenCenter(attacker),a=battlefieldZoomAnchor(),x=a.x+(c.x-a.x)*battlefieldZoom,y=a.y+(c.y-a.y)*battlefieldZoom;
+ if(x<0||x>BATTLEFIELD_LOGICAL_WIDTH||y<0||y>BATTLEFIELD_LOGICAL_HEIGHT)return;
+ giantGroundShake?.cancel();
+ giantGroundShake=canvas.animate([{translate:'0px 0px'},{translate:'1px 3px'},{translate:'-2px -2px'},{translate:'1px 1.5px'},{translate:'-.5px -1px'},{translate:'.3px .4px'},{translate:'0px 0px'}],{duration:350,easing:'ease-out'});
+}
+
+function playMeleeHitSound(attacker,defender=null,miss=false){
+ const giant=attacker?.repositoryMobId==='hill-giant'||attacker?.type==='mob:hill-giant';
+ if(!giant){playAttackSound();return;}
+ const started=attacker?.poseStartedAt;
+ const session=game,generation=selectedCombatAudioGeneration;
+ // Earth1's thump is 0.70s into the recording: start at 1.70s for a 2.40s strike.
+ const delay=Number.isFinite(started)?Math.max(0,started+1700-performance.now()):0;
+ const play=()=>{if(game===session&&currentScreen==='combat'&&attacker.alive&&attacker.poseStartedAt===started&&generation===selectedCombatAudioGeneration)playSelectedCombatAudio('impact-hill-giant',1.3);};
+ const waterImpact=defender&&hillGiantWieldsTreeClub(attacker)?worldPointForHex(defender.x,defender.y):null;
+ if(waterImpact&&miss){
+  const origin=worldPointForHex(attacker.x,attacker.y),dx=waterImpact.x-origin.x,dy=(waterImpact.y-origin.y)/.568329;
+  const angle=-(attacker.missTurnAngle||0);
+  waterImpact.x=origin.x+dx*Math.cos(angle)-dy*Math.sin(angle);waterImpact.y=origin.y+(dx*Math.sin(angle)+dy*Math.cos(angle))*.568329;
+ }
+ const impactDelay=Number.isFinite(started)?Math.max(0,started+2400-performance.now()):700;
+ setTimeout(()=>{if(game===session&&currentScreen==='combat'&&attacker.alive&&attacker.poseStartedAt===started){shakeGiantGroundImpact(attacker);if(waterImpact&&shouldRenderUnitUnderPartyVisibility(defender)&&combatGpu?.waterClubImpact?.(waterImpact.x,waterImpact.y)){draw();ensureGroundCoverAnimation();}}},impactDelay);
+ if(!delay){play();return;}
+ setTimeout(play,delay);
+}
+
+/* END GIANT TREE-CLUB POLICY — shared melee rules below. */
 function fighterHasSweepSlashingWeapon(fighter){
   if(!fighter?.weaponCatalogId){
     return false;
@@ -81,7 +139,10 @@ function resolveChillTouchOnHit(attacker,defender){
   return extra;
 }
 
+
+
 function meleeDamageExpression(attacker,defender){
+  if(hillGiantWieldsTreeClub(attacker))return '2d6';
   const catalogEntry=getWeaponCatalogEntry(attacker?.weaponCatalogId);
   if(catalogEntry) return damageExpressionForSize(catalogEntry,defender);
 
@@ -113,11 +174,11 @@ async function resolveMeleeHit(attacker,defender,options={}){
   // Awaiting here also prevents turn advancement and follow-up attacks from
   // observing damage that has not yet happened.
   const beforeWindupGame=game;
-  await prepareUnitAttackWindup(attacker);
+  if(!options.preparedReaction)await prepareUnitAttackWindup(attacker);
   if(game!==beforeWindupGame || game?.over || !attacker.alive || !defender.alive){
     return {hit:false,killed:false,damage:0,interrupted:true};
   }
-  triggerUnitAttackPose(attacker);
+  if(!options.preparedReaction)triggerUnitAttackPose(attacker);
   breakInvisibility(attacker,"making a melee attack");
 
   setUnitActionBanner(
@@ -156,10 +217,9 @@ async function resolveMeleeHit(attacker,defender,options={}){
   const resolution=resolveMeleeAttackD20(
     rawRoll,
     targetNumber,
-    totalAttackBonus
-  );
+    totalAttackBonus,defender);
 
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
 
   const hit=resolution.hit;
 
@@ -180,7 +240,9 @@ async function resolveMeleeHit(attacker,defender,options={}){
   );
 
   if(!hit){
-    playMissSound();
+    turnGiantMissAside(attacker);
+    if(attacker.repositoryMobId==='hill-giant'||attacker.type==='mob:hill-giant')playMeleeHitSound(attacker,defender,true);
+    else playMissSound();
     if(rawRoll===1){
       setCriticalRollNotification(
         attacker,
@@ -212,8 +274,9 @@ async function resolveMeleeHit(attacker,defender,options={}){
     return {hit:false,killed:false,damage:0,mirrorImage:true,attackSector:position.label,attackPosition:position};
   }
 
-  /* Confirmed melee hit: retain the existing successful-hit sound. */
-  playAttackSound();
+  /* Confirmed melee hit: align the giant sound with the visible club strike. */
+  playMeleeHitSound(attacker,defender);
+  if(!await waitForGiantAttackImpact(attacker,defender))return {hit:false,killed:false,damage:0,interrupted:true};
 
   const baseExpression=meleeDamageExpression(attacker,defender);
   const baseRoll=rollDiceExpression(baseExpression);
@@ -326,6 +389,11 @@ async function resolveMeleeHit(attacker,defender,options={}){
 
   if(defender.hp<=0){
     defender.alive=false;
+    defender.giantClubProneDeath=giantClubSkipsDeathFall(attacker,defender);
+    if(defender.giantClubProneDeath){
+      defender.deathAnimationDurationMs=0;
+    }
+    if(hillGiantWieldsTreeClub(attacker))defender.deathImpactOccluder={unitId:attacker.id,poseStartedAt:attacker.poseStartedAt};
 
     if(rawRoll===20){
       setCriticalRollNotification(
@@ -668,5 +736,6 @@ function resolveMeleeSound(
 }
 
 async function attack(attacker,defender,options={}){
+  if(attacker?.treeHauler&&attacker.treeHauler.stage!=='armed')return {hit:false,blockedByObjective:true};
   return window.AdventurePartyCombatResults.physical(resolveMeleeSound,attacker,defender,options);
 }

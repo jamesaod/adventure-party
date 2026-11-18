@@ -40,7 +40,7 @@ function makeControls() {
   setStatus.style.cssText = 'margin:8px 12px;overflow-wrap:anywhere;';
   panel.append(row, setStatus);
   if(new URLSearchParams(location.search).has('testMob')){label.hidden=true;setSelect.hidden=true;setStatus.hidden=true;studioLink.textContent='Return to MOB sheet';}
-  document.querySelector('.combat-condition-actions').before(panel);
+  // Legacy controls remain detached for sprite import compatibility.
   setSelect.addEventListener('change', () => api.select(setSelect.value));
 
   inspector = document.createElement('section');
@@ -83,7 +83,7 @@ function makeControls() {
 
 function refreshControls() {
   combatStudioReturn.href=api.returnUrl();
-  document.getElementById('combatSetupStudioReturnLink').href=api.returnUrl();
+
   const snapshot = api.snapshot();
   const options = snapshot.sets.map(set => new Option(set.mobType
     ? `${set.label} — ${spriteMob(set.mobType).label} · ${set.footprintCells} hex${set.footprintCells === 1 ? '' : 'es'}`

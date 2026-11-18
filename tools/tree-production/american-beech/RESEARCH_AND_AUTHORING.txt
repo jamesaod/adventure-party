@@ -1,0 +1,27 @@
+AMERICAN BEECH — research and authoring brief (2026-11-15)
+Species: Fagus grandifolia. One new catalog specimen; preserve existing oak and three maples. No selector replacing simultaneous comparison trees.
+
+Botanical references reviewed:
+https://landscapeplants.oregonstate.edu/plants/fagus-grandifolia
+Typical 50–70 ft; spreading crown, smooth blue-gray bark. Alternate pointed leaves 5–13 cm long, 9–14 lateral vein pairs terminating at teeth. Distinguish from European beech.
+https://www.pubs.ext.vt.edu/content/pubs_ext_vt_edu/en/HORT/HORT-6/HORT-6.html
+Approximately 60 ft tall, oval/rounded crown, lime spring growth and gold-brown fall foliage. Tan winter leaf retention especially juvenile trees; do not give a mature tree a fully leafy winter crown automatically.
+https://www.forestry.alabama.gov/Pages/Management/Forms/Forest_Trees_Alabama.pdf
+Search excerpt: forest-grown form has taller clear trunk and compact crown; open-grown form has spreading limbs and slender somewhat drooping branches. Full PDF still to review.
+
+SpeedTree sources reviewed:
+https://docs.unity3d.com/speedtree-modeler/manual/branch-generator-properties.html
+Branch gravity positive down / negative up. Use start angle and restrained gravity for spreading limbs and fine branch tips; preserve continuous trunk taper.
+https://docs.unity3d.com/speedtree-modeler/manual/leaf-mesh-generator-properties.html
+Actual size preserves authored mesh dimensions. Size scales unit meshes; weld anchors leaves onto parent skin. Sky influence, fold, align and face control orientation; interval/phyllotaxy support side-consistent orientation. Keep physical leaf size independent of crown density.
+https://docs.unity3d.com/speedtree-modeler/manual/seasons.html
+Season appearance combines viewport season, generator and material curves. Exports capture a single seasonal state, not continuous season animation; keep our matching seasonal siblings.
+
+Tutorial leads found, not claimed watched:
+Andrew Krivulya, SpeedTree Cinema 8: Collisions and Clusters, Anchor Points:
+https://artofcharly.artstation.com/blog/MM3B/speedtree-cinema-8-collisions-and-clusters-anchor-points
+Michael Gerard, Into the Forest — Beech Forest (Nanite Workflow), paid course listing. Not purchased or reviewed; Nanite output is not appropriate to assume for our WebGL game.
+No verified free American-Beech-specific step-by-step tutorial yet. Older docs.speedtree.com endpoints blocked; current Unity-hosted manual accessible.
+
+Proposed specimen: mature woodland-edge beech around 60–65 ft tall; broad rounded crown with alternating branches, some horizontal layering; smooth subtly mottled gray bark, strong tapered base with shallow surface roots. New pointed toothed beech leaf artwork around 9–10 cm blade length. Green, gold/copper fall, predominantly bare winter. Use established GPU wind/blast, matching stump/limbs, litter/particles, snow, navigation and grass workflow when integrating.
+Status: authored with user-approved computer use in SpeedTree; green, copper fall and bare winter exported at all three LODs. Integrated as fifth Grassy Battlefield specimen. See repository docs/AMERICAN_BEECH_PRODUCTION.md for measured counts, provenance and checks.

@@ -1,5 +1,7 @@
 // Selected recordings share the existing context, SFX gain and mute lifecycle.
 const selectedCombatAudioPools={
+  "impact-hill-giant": ["assets/audio/sfx/hill-giant/earth1-club.wav"],
+  "step-hill-giant": [1,2,3,4,5].map(n=>"assets/audio/sfx/hill-giant/step-"+n+".wav"),
   "step-grass": ["assets/audio/sfx/terrain-steps/approved/grass-trexlasso-01.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-02.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-03.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-04.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-05.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-06.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-07.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-08.wav"],
   "step-dirt": [
     "assets/audio/sfx/terrain-steps/dirt-1.wav"
@@ -46,7 +48,13 @@ function playSelectedCombatAudio(poolKey,volume){
  };
  if(clip.buffer)start(clip.buffer);else{preloadSelectedCombatAudio(context);clip.loading.then(start);}return true;
 }
-globalThis.adventurePartyTerrainStep=kind=>playSelectedCombatAudio('step-'+kind,kind==='water'?.30:kind==='mud'?.15:kind==='grass'?.48:.24);
+globalThis.adventurePartyTerrainStep=(kind,entity)=>{
+ const pool=combatTerrainStepPool(kind,entity),giant=pool==='step-hill-giant';
+ const waterGain=kind==='water'?combatWaterStepVolumeScale(entity):1;
+ const played=playSelectedCombatAudio(pool,giant?.6384:kind==='water'?.30*waterGain:kind==='mud'?.15:kind==='grass'?.48:.24);
+ if(giant&&(kind==='water'||kind==='mud'))playSelectedCombatAudio('step-'+kind,kind==='water'?.22*waterGain:.12);
+ return played;
+};
 globalThis.adventurePartyPreloadSelectedAudio=preloadSelectedCombatAudio;
 globalThis.adventurePartyStopSelectedAudio=stopSelectedCombatAudio;
 globalThis.adventurePartySelectedAudioDiagnostics=()=>({loaded:[...selectedCombatAudioClips.values()].filter(c=>c.buffer).length,total:selectedCombatAudioClips.size,active:selectedCombatAudioVoices.size,last:Object.fromEntries(selectedCombatAudioLast)});

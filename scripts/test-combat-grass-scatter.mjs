@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {grassScatter} from '../js/combat-grass-scatter.mjs';
-import {triangulateSurfaces,combatProjection} from '../js/combat-webgl.mjs?v=tree-snow-grains1';
+import {triangulateSurfaces,combatProjection} from '../js/combat-webgl.mjs?v=cover-profile1';
 const face=(left=0,right=128)=>({grass:true,grassUnit:128/3,grassSquash:.568329,snowEligible:1,visibility:.1,multiply:[.2,.3,.4],points:[{x:left,y:0},{x:right,y:0},{x:right,y:72.746},{x:left,y:72.746}],uv:[[left/128,1],[right/128,1],[right/128,0],[left/128,0]],lightPoints:[[0,0,0],[3,0,0],[3,0,3],[0,0,3]]});
 const full=grassScatter([face()]),split=grassScatter([face(0,64),face(64,128)]);
 assert(full.length>0);

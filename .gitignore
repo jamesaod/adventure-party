@@ -32,3 +32,13 @@ work/
 __pycache__/
 assets/combat-units/
 
+
+# Proprietary, user-supplied local workshop assets
+/assets/characters/synty-starter/
+
+# Local native tree authoring assets and scratch backups
+/tools/tree-production/**/*.spm
+/tools/tree-production/**/*.stmat
+/tools/tree-production/**/*.fbx
+/tools/tree-production/**/*.png
+/js/combat-webgl.water-reflections-backup.txt

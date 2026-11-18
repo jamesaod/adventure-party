@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {sampleDirectPose} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+import {sampleDirectPose} from '../js/combat-direct-units.mjs?v=outline-reuse2';
 const source=fs.readFileSync('js/combat-movement.js','utf8').split('/* Combat owner:')[0];
 let now=0;const samples=[],u={alive:true,x:0,y:0,facingHex:3};
 const c={location:{search:''},URLSearchParams,performance:{now:()=>now},game:{over:false},unitFootprintDefinition:()=>({rotates:false}),facingDirectionIndex:u=>u.facingHex,

@@ -25,6 +25,16 @@
       "id": "orc-warrior",
       "file": "data/mobs/orc-warrior.workshop-unit.json",
       "encounterType": "workshop-orc-warrior"
+    },
+    {
+      "id": "hill-giant",
+      "file": "data/mobs/hill-giant.workshop-unit.json",
+      "encounterType": "workshop-hill-giant"
+    },
+    {
+      "id": "wood-elf-mage",
+      "file": "data/mobs/wood-elf-mage.workshop-unit.json",
+      "encounterType": "workshop-wood-elf-mage"
     }
   ]
 }

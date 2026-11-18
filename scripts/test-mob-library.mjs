@@ -25,13 +25,13 @@ console.log('PASS unified MOB records, no duplicates, local overrides, availabil
 
 // Execute actual encounter-choice and generic character-sheet branches.
 const vm=await import('node:vm');
-const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const fn=name=>{const start=game.indexOf('function '+name+'(');return game.slice(start,game.indexOf('\n}',start)+2);};
-const context={window:{adventurePartyRepositoryMobs:{choices:()=>library.available().map(m=>['mob:'+m.id,m.name]),managedTypes:['orc-archer']}},COMBAT_MOB_CHOICES:[['orc-archer','Old archer'],['kobold','Kobold']]};
+const context={window:{adventurePartyRepositoryMobs:{choices:()=>library.available().map(m=>['mob:test-'+m.id,m.name]),managedTypes:['orc-archer']}},COMBAT_MOB_CHOICES:[['orc-archer','Old archer'],['kobold','Kobold']]};
 vm.runInNewContext(fn('availableCombatMobChoices'),context);
-assert.equal(context.availableCombatMobChoices().length,2);
+assert.equal(context.availableCombatMobChoices().length,1,'Retired built-in kobold is excluded');
 let disabled=library.get(edit.id);disabled.mob.encounterEnabled=false;library.save(disabled);
-assert.equal(context.availableCombatMobChoices().length,1,'OFF removes the authored MOB from actual encounter choices');
+assert.equal(context.availableCombatMobChoices().length,0,'OFF removes the authored MOB from actual encounter choices');
 const blocks=new Map();const sheet={fighter:unit,formatMobHeight:n=>String(n),document:{getElementById:id=>{if(!blocks.has(id))blocks.set(id,{});return blocks.get(id);}}};
 const start=game.indexOf('  if(fighter.repositoryMobId){',game.indexOf('function renderCharacterSheet('));
 const body=game.slice(start,game.indexOf('\n  syncFighterEquipment(fighter);',start));

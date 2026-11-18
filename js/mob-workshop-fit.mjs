@@ -1,6 +1,6 @@
 import {TransformControls} from '../assets/vendor/three/addons/controls/TransformControls.js';
 
-import {captureFit,readFit} from './mob-workshop-fit-core.mjs';
+import {captureFit,readFit} from './mob-workshop-fit-core.mjs?v=hand-range20';
 export function createWorkshopFit({THREE,scene,camera,renderer,controls,managers,$,getSlot,isActive,pause,changed,status}){
  const gizmo=new TransformControls(camera,renderer.domElement);scene.add(gizmo.getHelper());gizmo.setSize(.75);
  let start=null,applying=false;

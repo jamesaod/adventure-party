@@ -17,7 +17,7 @@ const point={x:0,y:0,z:0},normal={x:0,y:1,z:0};
 const indoor=surfaceLight(point,normal,[],()=>true,ambientForCell(map,2,3)),outdoor=surfaceLight(point,normal,[],()=>true,ambientForCell(map,3,3));assert(outdoor.every((n,i)=>n>indoor[i]));
 assert.equal(SCENE_STYLE.door.depth,SCENE_STYLE.wallDepthMetres);
 assert.equal(explorationDoor().hinge.children[0].geometry.parameters.depth,SCENE_STYLE.wallDepthMetres);
-const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 function extract(name){const start=source.indexOf(`function ${name}(`),end=source.indexOf('\n}',start)+2;return source.slice(start,end);}
 let rotationNow=0,queuedRotation=null;
 const state={battlefieldRotationTween:null,battlefieldRotationFrame:null,performance:{now:()=>rotationNow},requestAnimationFrame:fn=>{queuedRotation=fn;return 1;},cancelAnimationFrame(){queuedRotation=null;},HEX_W:64,HEX_H:42,HEX_ROW:31.5,camera:{x:0,y:0},battlefieldZoom:1,battlefieldRotation:0,BATTLEFIELD_LOGICAL_WIDTH:1050,BATTLEFIELD_LOGICAL_HEIGHT:600,canvas:{getBoundingClientRect:()=>({left:0,top:0,width:1050,height:600})},hoverHex:null,document:{getElementById:()=>null},draw(){}};
@@ -38,7 +38,7 @@ rotationNow=400;queuedRotation(rotationNow);assert.equal(state.battlefieldRotati
 for(let i=0;i<6;i++)state.rotateBattlefield(1);rotationNow+=400;queuedRotation(rotationNow);assert.equal(state.battlefieldRotation,5,'Queued rotations wrap after the transition');
 state.rotateBattlefield(1);state.rotateBattlefield(0);assert.equal(queuedRotation,null,'Cancelling rotation removes the pending callback');
 const facing=[];const caster={alive:true,x:0,y:0};
-const spellEnv={faceEntityToward:(c,t)=>facing.push(t),speakSpellIncantation(){},getUnitEffect:()=>null,spellBreaksInvisibility:()=>false};vm.createContext(spellEnv);vm.runInContext(extract('commitSpellCast'),spellEnv);
+const spellEnv={setTemporaryUnitPose(){},faceEntityToward:(c,t)=>facing.push(t),speakSpellIncantation(){},getUnitEffect:()=>null,spellBreaksInvisibility:()=>false};vm.createContext(spellEnv);vm.runInContext(extract('commitSpellCast'),spellEnv);
 assert(spellEnv.commitSpellCast(caster,{},null,1800,{x:2,y:-1}));assert.equal(facing.length,1);
 spellEnv.commitSpellCast(caster,{},null,1800,{x:0,y:0});assert.equal(facing.length,1,'Self cast preserves facing');
 spellEnv.commitSpellCast({...caster,alive:false},{},null,1800,{x:1,y:0});assert.equal(facing.length,1,'Rejected cast does not turn');

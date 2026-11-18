@@ -1,7 +1,7 @@
 import {markFlamingBlade} from './combat-weapon-flame.mjs?v=R238C299';
 import {loadCombatModel} from './combat-model-source.mjs';
 import {plantStandingFeet} from './standing-foot-contact.mjs';
-import {captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs?v=tree-snow-grains1';
+import {captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs?v=outline-reuse2';
 import {createBandedLighting} from './banded-lighting.mjs?v=R238C205';
 import {repositoryRestFrame,calibratedMobScale} from './repository-mob-frame.mjs?v=R238C202';
 import {captureModelShadow,setModelShadow,prepareModelShadow} from './combat-model-shadow.mjs';
@@ -19,7 +19,7 @@ import { applyWarriorRecolor, isWarriorRecolorModel } from './warrior-recolor.mj
 import { studioLightPosition } from './studio-geometry.mjs?v=R238C202';
 import { appearanceCacheKey } from './mob-appearance.mjs?v=R238C204';
 import { poseProfileForHumanoid } from './humanoid-animation-catalog.mjs?v=R238C196';
-import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=R238C312';
+import { studioWeapon, weaponAssetUrl, findWeaponHand, createWeaponAttachment, normalizeOffHandEquipment } from './studio-equipment.mjs?v=hand-range20';
 import { studioShield, findLeftHand, createShieldAttachment } from './studio-shield.mjs?v=R238C204';
 
 const DEFAULT_FIGHTER_MODEL_URL='../assets/models/dungeon-crawler-carl/v2-ual2-sword-test/dungeon-crawler-carl-v2-ual2-sword-test.glb';

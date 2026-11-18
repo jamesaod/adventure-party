@@ -26,11 +26,11 @@ async function prepareCombatSession(){
 async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  const generation=++combatSessionGeneration;
  await prepareCombatSession();
- combatTreeCollision??=(await import('./tree-collision.mjs')).treeCollision;
+ combatTreeCollision??=(await import('./tree-collision.mjs?v=continuous1')).treeCollision;
  if(scenario.source==='combat-test' && scenario.condition==='grass'){
   const familyIds=scenario.treeFamilyIds||['white-oak','sugar-maple','sugar-maple-tall','sugar-maple-broad','american-beech','sweet-birch'];const assetKey=familyIds?[...new Set(familyIds)].sort().join('|'):'all';
   combatTreeAssets??=(await import('./combat-asset-cache.mjs')).createAssetCache();
-  combatFirTreesLoading=combatTreeAssets.select(assetKey,()=>import('./combat-fir-trees.mjs?v=tree-snow-grains1').then(module=>module.createCombatFirTrees({familyIds,includeFirs:false})));
+  combatFirTreesLoading=combatTreeAssets.select(assetKey,()=>import('./combat-fir-trees.mjs?v=tree-angles1').then(module=>module.createCombatFirTrees({familyIds,includeFirs:false})));
   const trees=await combatFirTreesLoading;if(!trees||generation!==combatSessionGeneration||!isCurrent())return false;combatFirTrees=trees;trees.activate?.();
  }
  if(generation!==combatSessionGeneration||!isCurrent())return false;
@@ -72,7 +72,7 @@ function createCombatGame(condition,{player,allies,enemies},scenario={}){
     over:false,
     // Capture the encounter's route now; later setup selections cannot change it.
     studioSpriteTest:!!scenario.studioSpriteTest,
-    session:{source:scenario.source||"combat-test",controlledActorId:scenario.controlledActorId||null,pauseAfterAction:!!scenario.pauseAfterAction,holdResults:!!scenario.holdResults},
+    session:{autonomous:!!scenario.autonomous,source:scenario.source||"combat-test",controlledActorId:scenario.controlledActorId||null,pauseAfterAction:!!scenario.pauseAfterAction,holdResults:!!scenario.holdResults},
     condition,
     player,
     partyStart:{x:player.x,y:player.y},

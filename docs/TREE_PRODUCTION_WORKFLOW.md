@@ -1,6 +1,25 @@
 # Tree asset production and game integration
 
-Current runbook — 15 November 2026. This is the maintained procedure; the [development history](history/TREE_PRODUCTION_WORKFLOW_2026-11-15.md) preserves earlier experiments and superseded fixes. Keep work local until publication is requested. Visual approval belongs to the user.
+Current runbook — updated 16 November 2026. This is the maintained procedure; the [development history](history/TREE_PRODUCTION_WORKFLOW_2026-11-15.md) preserves earlier experiments and superseded fixes. Keep work local until publication is requested. Visual approval belongs to the user.
+
+## Repeatable workflow for all tree work
+
+1. Identify the exact specimen, species, source SPM, seed, seasonal siblings, ground datum, dimensions and runtime registry entry. Research botanical references for new species; distinguish targets from measured geometry.
+2. Save a separate SpeedTree source beside its material dependencies. Preserve the originals. Honor existing computer-control authorization; otherwise follow the permission rule below.
+3. Keep the same trunk and major branches across green, autumn, bare, stump and fallen assets. Check clearance explicitly: the oak's requested ten-foot clearance is not proof that all species meet it.
+4. Export each specimen to its own directory: Games OBJ, metres, Z-up, scale 1, no axis flips. Keep OBJ, MTL and matching maps together; identical material filenames must never overwrite another specimen's bark.
+5. Convert reproducibly, preserving coordinates, ground datum, UVs and material ownership. Record source/output hashes, dimensions, trim heights, transforms and triangle counts. Adapt historical converters; do not replay their old integration patches.
+6. Register seasons, wind, shadows, snow and shelter, litter, falling leaves, fall/stump/debris, navigation, grass pressure, sound and reset behavior as applicable. Keep shared caches and frame scheduling. Harvestable specimens also need their own explicit clubId.
+7. Check source-to-game dimensions and Workshop-to-combat proportions independently. Run relevant geometry/gameplay regressions for code changes; respect a user-requested no-test edit and record it. The user performs visual approval; do not deliver unsolicited previews.
+8. Save the native sources, dependency locations, converter, measurements, test results and remaining limitations in the linked records. Keep local until publication is requested.
+
+### Feature records
+
+- [Individual tree clubs](TREE_AS_CLUB.md): one distinct SpeedTree asset per individual tree, including same-species specimens; true physical size in Workshop and combat; one-hand carry and two-hand attack.
+- [Source archive](../tools/tree-production/README.md): native sources and historical conversion references. Full export dependencies remain in the authoring workspace.
+- [Tree environment profiles](TREE_ENVIRONMENT_PROFILES.md), [wind](TREE_WIND_RESPONSE.md), [branch snow](TREE_SNOW_DEPOSITION.md), [snow exposure history](SNOW_EXPOSURE_HISTORY.md), and [shore snow](STREAM_SHORE_SNOW.md).
+- [White oak](WHITE_OAK_TEST.md), [sugar maple](SUGAR_MAPLE_PRODUCTION.md), [maple specimens](MAPLE_CATALOG.md), [beech](AMERICAN_BEECH_PRODUCTION.md), [sweet birch](SWEET_BIRCH_PRODUCTION.md), and [firs](SPEEDTREE_FIRS.md).
+- [Tree-breaking AI history](TREEBREAKER_ORC.md): the special orc is retired; Hill Giants now use this behavior. Tree pickup is implemented, not future work.
 
 ## Start here
 
@@ -166,7 +185,7 @@ Acceptance checklist:
 
 For each new tree, record: species/id; source SPM/export filenames and hashes; authoring settings/seed; texture/license provenance; units/axes/ground datum; measured height/clearance; seasonal and LOD triangle counts; material names; scale; spacing/grass/shelter profile; leaf crop and tint; break height/pivots; runtime registration/cache keys; sound; validation commands/results; performance baseline; user visual approval; unresolved tradeoffs. Save sources before edits and keep conversion inputs reproducible.
 
-Still future: forest-scale LOD policy (especially 35k winter), gradual seasonal transitions, general persistent leaf accumulation, damage/knockback, tree pickup as a weapon, cover/LOS changes, and a generic importer for all broadleaf species. Existing falling animation, seasonal swaps, ground handoff, stump/log integration, navigation and grass pressure are implemented; older notes saying otherwise are superseded.
+Still future: forest-scale LOD policy (especially 35k winter), gradual seasonal transitions, general persistent leaf accumulation, damage/knockback, cover/LOS changes, and a generic importer for all broadleaf species. Existing falling animation, seasonal swaps, ground handoff, stump/log integration, navigation and grass pressure are implemented; older notes saying otherwise are superseded.
 
 Immediate-break validation (2026-11-15): nine combinations of green/fall/fine-winter and three local fall yaws passed. Stump present from frame zero and unchanged through six seconds; no below-cut bark travels with the crown; moving cap present; impact cap position continuous within 0.001 model units. Source hashes and runbook links verified.
 
@@ -224,3 +243,11 @@ Regression checks: scripts/test-outline-mask-cache.mjs, scripts/test-fallen-tree
 ## Sweet Birch catalog addition
 
 [Sweet Birch production](SWEET_BIRCH_PRODUCTION.md) records Betula lenta, editable seasonal sources, 12,918-triangle leafy / 7,958-triangle bare runtime, matching wood and debris, litter type 7 and registry base 35. Grassy Battlefield now displays six specimens. Final appearance remains user QA.
+
+Landing performance: prepare hidden landing/mask shaders before impact, retain cached debris masks and benchmark pixel parity when optimizing them. See the 16 November tree-landing entry in ENVIRONMENT_PERFORMANCE_AUDIT_2026-11-15.md.
+
+Tree-impact snow rule (16 November): canopy removal must publish localized finalized shelter changes, including trunk feathering and bilinear neighbors. Never resample/recount the whole coat map for a local tree fall when the prior revision is available. Preserve retained snow and coverage accounting; use full rebuild only for first load, changed bounds or skipped revisions.
+
+### Giant presentation adjustments — 16 November 2026
+
+Giant footsteps use gain 0.6384 (+33%). The pushing turn retains the camera through the six-second fall and one extra second before advancing. Successful giant melee hit audio is scheduled at 2.4 seconds from the continuous attack pose start, guarded against changed sessions/actions; damage rules are unchanged. Missed giant swings temporarily add a random ±12 degrees to visual aim, restored after the attack pose; tactical hex facing stays unchanged. Giant Workshop models and saved grips are untouched.

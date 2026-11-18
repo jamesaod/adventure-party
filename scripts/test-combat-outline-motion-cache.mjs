@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../assets/vendor/three/three.module.min.js';
+import {createGpuOutline} from '../js/combat-gpu-outline.mjs?v=outline-reuse2';
+import {createCameraMotionBudget} from '../js/combat-camera-motion-budget.mjs';
+const view={matrix:[1,0,0,1,0,0],zoom:1,anchor:{x:0,y:0},width:800,height:600};
+const budget=createCameraMotionBudget();assert.equal(budget.update(view,0),false);view.matrix[4]=10;assert.equal(budget.update(view,10),true);assert.equal(budget.update(view,189),true);assert.equal(budget.update(view,190),false);view.zoom=2;assert.equal(budget.update(view,200),true);budget.reset();assert.equal(budget.update(view,210),false);
+let target=null,builds=0,composites=0;const renderer={getRenderTarget:()=>target,setRenderTarget:t=>target=t,getClearColor:c=>c.set(0),getClearAlpha:()=>0,setClearColor(){},clear(){},render(){composites++;}};
+const outline=createGpuOutline(renderer,()=>{},()=>view,()=>{}),mask={width:32,height:48,_combatOutlineRevision:1},owner={};
+const options={mask,left:0,top:0,color:'#ffffff',active:false,daylight:1,shapeCache:{owner,key:'idle:0'}};
+const draw=()=>outline.draw(()=>builds++,options);
+draw();draw();assert.equal(builds,1);assert.equal(composites,2);
+options.left=60;mask._combatOutlineRevision++;draw();assert.equal(builds,1,'Pan/occlusion changes reuse the silhouette');
+options.shapeCache.key='idle:1';draw();assert.equal(builds,2,'New view direction rebuilds the silhouette');
+options.shapeCache=null;draw();draw();assert.equal(builds,4,'Animated poses remain live');
+options.shapeCache={owner,key:'idle:1'};draw();assert.equal(builds,5);mask.width=64;draw();assert.equal(builds,6,'Resized target invalidates retained shape');outline.dispose();
+console.log('PASS static silhouette reuse, pan/occlusion independence, pose/size invalidation and camera-quality restoration');

@@ -13,7 +13,7 @@ export async function createOakFall(assets,family){
  const leaves=await createOakFallLeaves([assets.green,assets.fall],family);
  const group=new THREE.Group();group.userData.broadleaf=true;group.name='Oak fall prototype';
  const sets={};
- function prepare(breakType){if(!sets[breakType]){sets[breakType]=[assets.green,assets.fall,assets.winter].map(source=>continuousTrunk(source,{breakType,seed:family.base}));group.add(...sets[breakType].flatMap(t=>[t.moving,t.model,t.stump]));}return sets[breakType];}
+ function prepare(breakType,variant){const set=sets[breakType]??=[],index=variant-5;if(!set[index]){const t=set[index]=continuousTrunk(assets[['green','fall','winter'][index]],{breakType,seed:family.base});group.add(t.moving,t.model,t.stump);}return set;}
  let trunks,standing;
  const stump=assets.stump,log=assets.fallen,limbs=assets.limbs;
  log.updateMatrixWorld(true);log.position.y-=new THREE.Box3().setFromObject(log).min.y;
@@ -26,17 +26,17 @@ export async function createOakFall(assets,family){
  });
  group.add(limbs);
  const particleGroup=new THREE.Group();particleGroup.name="Oak airborne leaves";particleGroup.userData.broadleaf=true;particleGroup.add(leaves.mesh);
- let lastState=null,lastSeason=-1,lastT=-1,lastBreak=null;
+ let lastState=null,lastSeason=-1,lastT=-1,lastBreak=null,lastTaken=false;
  const bounds=new THREE.Box3(new THREE.Vector3(-320,-5,-320),new THREE.Vector3(320,280,360));
- const api={group,particleGroup,resources:leaves.resources,prepareState(state,variant){const selected=prepare(state.breakType==='cut'?'cut':'torn')[variant-5];return variant===7?[]:leaves.landings(variant,state.leafWind||0,selected.cutHeight,selected.separation,state.localFallYaw||0);},setLeafRange:leaves.setRange,bounds,count:pieces.length,update(state,variant,now=performance.now(),ground=false,lighting=1){
-   const breakType=state.breakType==='cut'?'cut':'torn';trunks=prepare(breakType);standing=trunks.map(t=>t.moving);for(const [type,set] of Object.entries(sets))if(type!==breakType)for(const t of set){t.moving.visible=false;t.model.visible=false;t.stump.visible=false;}
+ const api={cloneLog(state,variant){const trunk=prepare(state.breakType==='cut'?'cut':'torn',variant)[variant-5];return trunk.model.clone(true);},group,particleGroup,resources:leaves.resources,prepareState(state,variant){const selected=prepare(state.breakType==='cut'?'cut':'torn',variant)[variant-5];return variant===7?[]:leaves.landings(variant,state.leafWind||0,selected.cutHeight,selected.separation,state.localFallYaw||0);},setLeafRange:leaves.setRange,bounds,count:pieces.length,update(state,variant,now=performance.now(),ground=false,lighting=1){
+   const breakType=state.breakType==='cut'?'cut':'torn';trunks=prepare(breakType,variant);standing=trunks.map(t=>t.moving);for(const [type,set] of Object.entries(sets))if(type!==breakType)for(const t of set){if(!t)continue;t.moving.visible=false;t.model.visible=false;t.stump.visible=false;}
    const phase=oakFallPhase(state,now),t=Math.min(OAK_FALL_SECONDS,phase.t);
    const delta=state.localFallYaw||0,turn=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),delta);
    if(!state.preview)leaves.update(t,variant,ground,state.leafWind,trunks[variant-5].cutHeight,lighting,trunks[variant-5].separation,delta);
-   if(lastState===state&&lastT===t&&lastSeason===variant&&lastBreak===breakType)return phase;
-   lastState=state;lastT=t;lastSeason=variant;lastBreak=breakType;
+   if(lastState===state&&lastT===t&&lastSeason===variant&&lastBreak===breakType&&lastTaken===!!state.logTaken)return phase;
+   lastState=state;lastT=t;lastSeason=variant;lastBreak=breakType;lastTaken=!!state.logTaken;
    standing.forEach((m,i)=>{m.visible=!phase.impact&&i===variant-5;m.quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),phase.angle).multiply(turn);m.position.set(0,trunks[i].cutHeight*(1-Math.cos(phase.angle)),-trunks[i].cutHeight*Math.sin(phase.angle)+trunks[i].separation*(1-Math.cos(phase.angle)));});
-   trunks.forEach((trunk,i)=>{trunk.model.quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2).multiply(turn);trunk.stump.quaternion.copy(turn);trunk.model.visible=phase.impact&&i===variant-5;trunk.stump.visible=i===variant-5;});
+   trunks.forEach((trunk,i)=>{trunk.model.quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2).multiply(turn);trunk.stump.quaternion.copy(turn);trunk.model.visible=phase.impact&&!state.logTaken&&i===variant-5;trunk.stump.visible=i===variant-5;});
    stump.visible=false;limbs.visible=phase.impact;
    if(phase.impact){const u=Math.min(1,(t-2.6)/(OAK_FALL_SECONDS-2.6)),ease=1-(1-u)**3;
      pieces.forEach(({mesh,center,rest},i)=>{

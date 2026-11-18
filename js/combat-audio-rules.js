@@ -13,3 +13,15 @@ function combatFootstepSurface({kind='grass',wear=0,wetness=0,water=0,indoor=fal
  if(kind==='dirt'||wear>=.5)return wetness>=.6?'mud':'dirt';
  return 'grass';
 }
+
+function combatWaterStepVolumeScale(unit){
+ const giant=unit?.repositoryMobId==='hill-giant'||unit?.type==='mob:hill-giant';
+ const size=String(unit?.sizeCategory||'').toLowerCase();
+ const height=(Number(unit?.heightInches)||0)*(typeof enlargeVisualScale==='function'?enlargeVisualScale(unit):1);
+ return giant||['huge','gargantuan','giant'].includes(size)||height>=144?3:1;
+}
+
+function combatTerrainStepPool(kind,unit){
+ const giant=unit?.repositoryMobId==='hill-giant'||unit?.type==='mob:hill-giant';
+ return giant?'step-hill-giant':'step-'+kind;
+}

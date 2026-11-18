@@ -1,6 +1,6 @@
 import {createBareBranchSnowState,installBareBranchSnow} from './bare-branch-snow.mjs';
 import {createResourceOwner} from './combat-resource-owner.mjs';
-import {treeCollision} from './tree-collision.mjs';
+import {treeCollision} from './tree-collision.mjs?v=continuous1';
 import {combatPerformance as perf} from './combat-performance.mjs';
 import {createTreeMotion,TREE_MOTION_GLSL} from './tree-motion.mjs?v=environment-architecture2';
 import {BROADLEAF_FAMILIES,broadleafForVariant,broadleafAsset,broadleafNamedAssets,requestedTreeFamilies} from './broadleaf-family.mjs?v=sweet-birch1';
@@ -10,7 +10,7 @@ import {installFirDisplay} from './combat-fir-snow-display.mjs?v=R238C447';
 import {createFallingLeaves} from './combat-falling-leaves.mjs?v=two-tree1';
 import {getSeason} from './combat-seasons.mjs';
 import {treeScreenBounds} from './combat-tree-bounds.mjs';
-import {createFirSnowCaps} from './combat-fir-snow.mjs?v=tree-snow-grains1';
+import {createFirSnowCaps} from './combat-fir-snow.mjs?v=natural-ac1';
 import {createTreeFireParticles} from './combat-tree-fire-particles.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
@@ -163,7 +163,11 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
   });
   const directGroundCache=new Map(),directSelfCache=new Map(),silhouetteCache=new Map();let directSunKey='';
   const shadowTemplate=sun.shadow;
-  function clearDirectShadows(){
+  function clearDirectShadows(base=null){
+    if(Number.isFinite(base)){const family=broadleafForVariant(base),low=family?.base??base,high=family?low+5:low;const matches=key=>{const variant=Number(String(key).split(':')[0].replace('fallen-',''));return variant>=low&&variant<=high;};
+      for(const [key,entry]of directGroundCache)if(matches(key))entry.poseStamp=Symbol('tree changed');
+      for(const [key,entry]of directSelfCache)if(matches(key)){entry.needsUpdate=true;entry.oakSettled=false;}return;
+    }
     for(const entry of directGroundCache.values()){entry.target.dispose();}directGroundCache.clear();
     for(const entry of directSelfCache.values()){entry.map?.dispose();entry.mapPass?.dispose();}directSelfCache.clear();
   }
@@ -188,8 +192,8 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
     });}finally{for(const [mesh,material,castShadow]of originals){mesh.material=material;mesh.castShadow=castShadow;}}
     const result={poseStamp,target,texture:target.texture,left:bounds.min.x,top:-bounds.max.y,width:bounds.max.x-bounds.min.x,height:bounds.max.y-bounds.min.y,opacity:.32*solar.daylight};directGroundCache.set(key,result);return result;
   }
-  const cache=new Map();let stateKey='',lost=false;
-  const onContextLost=event=>{event.preventDefault();lost=true;clearDirectShadows();cache.clear();shadowCache.clear();};renderer.domElement.addEventListener('webglcontextlost',onContextLost);
+  const cache=new Map();let fallWarmups=new WeakMap();let stateKey='',lost=false;
+  const onContextLost=event=>{event.preventDefault();lost=true;fallWarmups=new WeakMap();clearDirectShadows();cache.clear();shadowCache.clear();};renderer.domElement.addEventListener('webglcontextlost',onContextLost);
   const onContextRestored=()=>{lost=false;clearDirectShadows();cache.clear();shadowCache.clear();window.dispatchEvent(new Event('adventure-party:solar-change'));};renderer.domElement.addEventListener('webglcontextrestored',onContextRestored);
   function get(variant,rotation,{solar=solarState(12),ambient=100,viewRotation=0,instanceKey="",snowAmount=0,snowGroundLight=null,burnt=false,burning=false,fireParticles=192,firePhaseValue=0,direct=null,fallState=null,motionSource=null,motionTime=undefined,lights=[]}={}){
     variant=resolveVariant(variant);
@@ -246,7 +250,7 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
       fireParticlesGpu.update({samples:anchors[variant],yaw:model.rotation.y,phase:firePhaseValue,time:performance.now()/1000,count:fireParticles});scene.add(flames);
     }
     if(direct){
-      const turning=Math.abs(rotation-Math.round(rotation))>1e-8;
+      const turning=Math.abs(viewRotation-Math.round(viewRotation))>1e-8;
       const key=[variant,turning?'turning':rotation,burnt,falling].join(':');let self=directSelfCache.get(key);
       if(!self){self=shadowTemplate.clone();self.autoUpdate=false;self.needsUpdate=true;directSelfCache.set(key,self);}sun.shadow=self;if(self.treeMotionStamp!==motionStamp){self.needsUpdate=true;self.treeMotionStamp=motionStamp;}if(turning)self.needsUpdate=true;if(falling){if(!phase.settled||!self.oakSettled)self.needsUpdate=true;self.oakSettled=phase.settled;}
       const boundsKey=[variant,rotation,burnt,burning,falling].join(':');
@@ -257,8 +261,11 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
       try{direct.host.treeScene((gpu,view)=>{
         const scale=direct.scale*view.zoom,cx=view.anchor.x+(direct.center.x-view.anchor.x)*view.zoom,cy=view.anchor.y+(direct.center.y-view.anchor.y)*view.zoom;
         camera.left=((view.crop?.x||0)-cx)/scale;camera.right=camera.left+(view.crop?.width||view.width)/scale;camera.top=(cy-(view.crop?.y||0))/scale;camera.bottom=camera.top-(view.crop?.height||view.height)/scale;camera.updateProjectionMatrix();
+        // Start compiling hidden landing meshes and their wood masks during the fall,
+        // before their first visible frame at impact. compileAsync visits hidden meshes.
+        if(falling&&!particlePass){let warmed=fallWarmups.get(gpu);if(!warmed){warmed=new Set();fallWarmups.set(gpu,warmed);}const warmKey=variant+':'+(fallState.breakType||'torn');if(!warmed.has(warmKey)){warmed.add(warmKey);Promise.all([gpu.compileAsync(scene,camera)]).catch(error=>{warmed.delete(warmKey);console.warn('Tree landing shader preparation failed',error);});}}
         const casts=sun.castShadow;if(particlePass)sun.castShadow=false;try{gpu.render(scene,camera);}finally{sun.castShadow=casts;}
-      },{particles:particlePass,bounds,woodMask:!particlePass?gpu=>woodMask.draw(gpu,scene,camera):null,firOutline:!particlePass&&(!falling||!phase.impact)&&!burnt&&!burning&&!(model.userData.broadleaf&&getSeason()==='winter'),outlineFade:model.userData.broadleaf&&getSeason()==='fall'?THREE.MathUtils.smoothstep(solar.daylight,0,.65):1,outlineColor:model.userData.broadleaf&&getSeason()==='fall'?family?.outline:null,displaySpace:firDisplaySpace.value,snowOutline:Math.min(1,capAmount*2)*Math.min(1,Math.max(...(snowGroundLight||[Math.pow(Math.max(0,ambient/100*solar.sky),1/2.2)])))});}finally{sun.shadow=shadowTemplate;scene.remove(flames);scene.remove(model);}
+      },{particles:particlePass,bounds,woodMask:null,firOutline:false,outlineFade:model.userData.broadleaf&&getSeason()==='fall'?THREE.MathUtils.smoothstep(solar.daylight,0,.65):1,outlineColor:model.userData.broadleaf&&getSeason()==='fall'?family?.outline:null,displaySpace:firDisplaySpace.value,snowOutline:Math.min(1,capAmount*2)*Math.min(1,Math.max(...(snowGroundLight||[Math.pow(Math.max(0,ambient/100*solar.sky),1/2.2)])))});}finally{sun.shadow=shadowTemplate;scene.remove(flames);scene.remove(model);}
       return {direct:true};
     }
     renderer.render(scene,camera);scene.remove(flames);
@@ -304,7 +311,7 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
   }
   function collectResources(){for(const model of models.filter(Boolean))resources.track(model);for(const f of familyFalls.values()){resources.track(f.group);resources.track(f.particleGroup);for(const r of f.resources)resources.own(r);}for(const f of familyLeaves.values())resources.track(f.mesh);resources.track(blurScene);resources.own(shadowMaterial);resources.own(shadowTarget);}
   function dispose(){if(disposed)return;disposed=true;for(const caps of snowCaps.filter(Boolean))caps.dispose();collectResources();clearDirectShadows();woodMask.dispose();fireParticlesGpu.dispose();resources.dispose();sun.shadow.dispose();renderer.domElement.removeEventListener('webglcontextlost',onContextLost);renderer.domElement.removeEventListener('webglcontextrestored',onContextRestored);renderer.dispose();treeMotion.reset();if(globalThis.adventurePartyTreeMotion===treeMotion)delete globalThis.adventurePartyTreeMotion;for(const c of [cache,shadowCache,silhouetteCache,projectedBounds])c.clear();}
-  return {activate(){if(disposed)throw Error('Tree assets disposed');globalThis.adventurePartyTreeMotion=treeMotion;},dispose,get disposed(){return disposed;},prepareFallState(base,state){const f=broadleafForVariant(base);return familyFalls.get(f.base).prepareState(state,5+resolveVariant(base)-f.base);},loadedFamilyIds:loadedFamilies.map(f=>Object.keys(BROADLEAF_FAMILIES).find(id=>BROADLEAF_FAMILIES[id]===f)),motionDiagnostics:()=>treeMotion.diagnostics(),bareSnowDiagnostics:()=>({tracked:bareSnowState.size,amount:bareBranchSnow.value}),debrisFootprints(delta,base=5){const family=broadleafForVariant(base);return treeCollision(base,getSeason(),delta).capsules;},fallingBranchCount:8,fallingLeafCount:[...familyLeaves.values()].reduce((n,f)=>n+f.count,0),seasonalVariant:(base=5)=>resolveVariant(base),canopyRadius(variant){const b=treeBounds[resolveVariant(variant)]?.healthy;return b?Math.max(b.max.x-b.min.x,b.max.z-b.min.z)/2:0;},get:(...args)=>perf.measure('treePipeline',()=>get(...args)),silhouette,clearDirectShadows,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
+  return {cloneFallenLog(base,state){const f=broadleafForVariant(base);return familyFalls.get(f.base).cloneLog(state,5+resolveVariant(base)-f.base);},activate(){if(disposed)throw Error('Tree assets disposed');globalThis.adventurePartyTreeMotion=treeMotion;},dispose,get disposed(){return disposed;},prepareFallState(base,state){const f=broadleafForVariant(base);return familyFalls.get(f.base).prepareState(state,5+resolveVariant(base)-f.base);},loadedFamilyIds:loadedFamilies.map(f=>Object.keys(BROADLEAF_FAMILIES).find(id=>BROADLEAF_FAMILIES[id]===f)),motionDiagnostics:()=>treeMotion.diagnostics(),bareSnowDiagnostics:()=>({tracked:bareSnowState.size,amount:bareBranchSnow.value}),debrisFootprints(delta,base=5){const family=broadleafForVariant(base);return treeCollision(base,getSeason(),delta).capsules;},fallingBranchCount:8,fallingLeafCount:[...familyLeaves.values()].reduce((n,f)=>n+f.count,0),seasonalVariant:(base=5)=>resolveVariant(base),canopyRadius(variant){const b=treeBounds[resolveVariant(variant)]?.healthy;return b?Math.max(b.max.x-b.min.x,b.max.z-b.min.z)/2:0;},get:(...args)=>perf.measure('treePipeline',()=>get(...args)),silhouette,clearDirectShadows,setLiveLighting(value){liveLighting=!!value;cache.clear();},get liveLighting(){return liveLighting;}};
 }
 
 function addCanopyExposure(geometry){

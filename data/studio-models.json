@@ -298,6 +298,13 @@
         "uniformed-orc-battle-axe-v1",
         "uniformed-orc-batch-196-one-hand"
       ]
+    },
+    {
+      "id": "hill-giant",
+      "label": "Hill Giant",
+      "file": "assets/models/giants/hill-giant/hill-giant.glb",
+      "upAxis": "Y",
+      "mobType": "fighter"
     }
   ],
   "weaponAttachmentProfiles": {
@@ -632,6 +639,7 @@
     "orc-leader-male-uniformed",
     "orc-female-shaman",
     "orc-female-shaman-v2",
-    "male-orc-blue"
+    "male-orc-blue",
+    "hill-giant"
   ]
 }

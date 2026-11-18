@@ -1,13 +1,13 @@
 import {SNOW_PARTICLE_LIMIT,SNOW_KICKUP_LIMIT,snowfallParticleRate} from './combat-snow-density.mjs';
 import {updateSnowKickup,clearSnowKickup} from './combat-snow-kickup.mjs';
-import {createFootprintLayer,clearCorpseDepressions,clearSnowFootprints,setFootprintCells,meltFootprints} from './combat-snow-footprints.mjs?v=shore-snow1';
+import {createFootprintLayer,clearCorpseDepressions,clearSnowFootprints,setFootprintCells,meltFootprints} from './combat-snow-footprints.mjs?v=giant-snow1';
 import {createSnowDepositBatch} from './combat-snow-deposits.mjs?v=fine-grains1';
-import {corpseSnowElapsed,resetCorpseSnow,advanceCorpseSnow,adjustCorpseSnow,meltCorpseSnow,fillCorpseSnow} from './combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {corpseSnowElapsed,resetCorpseSnow,advanceCorpseSnow,adjustCorpseSnow,meltCorpseSnow,fillCorpseSnow} from './combat-corpse-snow.mjs?v=natural-ac1';
 import {combatPerformance as perf} from './combat-performance.mjs';
 import {createHexSnow} from './combat-snow-state.mjs?v=water1';
-import {createSnowCoatCoverage,createSnowDepositionClock,snowBrushAtlas,SNOW_BRUSHES,SNOW_BRUSH_SIZE,SNOW_GRAIN_RATE_SCALE} from './combat-snow-coats.mjs?v=tree-snow-grains1';
-import {snowExposureAt,snowShelterRevision,SNOW_SHELTER_GLSL,snowShelterUniforms} from './combat-snow-shelter.mjs?v=tree-snow-grains1';
-import {snowFootprintRevision} from './combat-snow-footprints.mjs?v=shore-snow1';
+import {createSnowCoatCoverage,createSnowDepositionClock,snowBrushAtlas,SNOW_BRUSHES,SNOW_BRUSH_SIZE,SNOW_GRAIN_RATE_SCALE} from './combat-snow-coats.mjs?v=natural-ac1';
+import {snowExposureAt,snowShelterRevision,snowShelterChange,SNOW_SHELTER_GLSL,snowShelterUniforms} from './combat-snow-shelter.mjs?v=natural-ac1';
+import {snowFootprintRevision} from './combat-snow-footprints.mjs?v=giant-snow1';
 import {snowDepthMetres,SNOW_LAYER_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 // Persistent particle deposition. Hex means still drive footprints/canopy state.
@@ -20,7 +20,7 @@ export function createSnowAccumulation(renderer){
  const waterGeometry=new THREE.PlaneGeometry(2,2),waterMaterial=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,toneMapped:false,blending:THREE.CustomBlending,blendEquation:THREE.MinEquation,blendEquationAlpha:THREE.MinEquation,blendSrc:THREE.OneFactor,blendDst:THREE.OneFactor,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,uniforms:{mask:{value:waterMask}},vertexShader:'varying vec2 uvMask;void main(){uvMask=uv;gl_Position=vec4(position.xy,0.,1.);}',fragmentShader:'uniform sampler2D mask;varying vec2 uvMask;void main(){gl_FragColor=texture2D(mask,uvMask);}'}),waterScene=new THREE.Scene();waterScene.add(new THREE.Mesh(waterGeometry,waterMaterial));
  function maskWater(){if(!coatGroundReady)return;const old=renderer.getRenderTarget();renderer.setRenderTarget(target);renderer.render(waterScene,camera);renderer.setRenderTarget(old);}
  function syncWater(){if(!coatGroundReady)return;const changed=coats.restrictWater(waterSource?.());if(!changed&&!waterMaskDirty)return;waterMaskDirty=false;const field=coats.accumulationLimits;if(waterMask.image.width!==field.width||waterMask.image.height!==field.height)waterMask.dispose();waterMask.image=field;waterMask.needsUpdate=true;maskWater();surfaceRevision++;depositionClock.prime(coats.coverage.texels);}
- function syncExposure(){if(coatGroundReady&&coats.setExposureField(snowShelterRevision(),snowExposureAt))surfaceRevision++;}
+ function syncExposure(){if(coatGroundReady&&coats.setExposureField(snowShelterRevision(),snowExposureAt,snowShelterChange()))surfaceRevision++;}
  const atlas=new THREE.DataTexture(snowBrushAtlas(),SNOW_BRUSHES.length*SNOW_BRUSH_SIZE,SNOW_BRUSH_SIZE);atlas.minFilter=atlas.magFilter=THREE.NearestFilter;atlas.generateMipmaps=false;atlas.needsUpdate=true;
  const batch=createSnowDepositBatch(32768*SNOW_GRAIN_RATE_SCALE,{grainScale:SNOW_GRAIN_RATE_SCALE}),texelSize=new THREE.Vector2(1/1024,1/1024);
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(batch.positions,3).setUsage(THREE.DynamicDrawUsage));geometry.setDrawRange(0,0);geometry.setAttribute('coat',new THREE.BufferAttribute(batch.coats,2).setUsage(THREE.DynamicDrawUsage));

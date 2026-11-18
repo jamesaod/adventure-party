@@ -1,4 +1,4 @@
-import {SNOW_SHELTER_GLSL,snowShelterUniforms} from './combat-snow-shelter.mjs?v=tree-snow-grains1';
+import {SNOW_SHELTER_GLSL,snowShelterUniforms} from './combat-snow-shelter.mjs?v=natural-ac1';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {SNOW_DEPTH_GLSL,SNOW_MAX_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 

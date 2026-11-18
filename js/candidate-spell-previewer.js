@@ -1720,7 +1720,8 @@ const spellPreviewBaseResolveMeleeAttackD20=AdventurePartyCombatServices.current
 AdventurePartyCombatServices.register('resolveMeleeAttackD20','candidate-spell-previewer.js:1728:resolveMeleeAttackD20',function(
   rawRoll,
   targetNumber,
-  attackModifier=0
+  attackModifier=0,
+  defender=null
 ){
   if(
     spellPreviewActive &&
@@ -1737,7 +1738,8 @@ AdventurePartyCombatServices.register('resolveMeleeAttackD20','candidate-spell-p
   return spellPreviewBaseResolveMeleeAttackD20(
     rawRoll,
     targetNumber,
-    attackModifier
+    attackModifier,
+    defender
   );
 });
 
@@ -1747,7 +1749,8 @@ const spellPreviewBaseResolveMissileAttackD20=AdventurePartyCombatServices.curre
 AdventurePartyCombatServices.register('resolveMissileAttackD20','candidate-spell-previewer.js:1756:resolveMissileAttackD20',function(
   rawRoll,
   targetNumber,
-  attackModifier=0
+  attackModifier=0,
+  defender=null
 ){
   if(
     spellPreviewActive &&
@@ -1764,7 +1767,8 @@ AdventurePartyCombatServices.register('resolveMissileAttackD20','candidate-spell
   return spellPreviewBaseResolveMissileAttackD20(
     rawRoll,
     targetNumber,
-    attackModifier
+    attackModifier,
+    defender
   );
 });
 

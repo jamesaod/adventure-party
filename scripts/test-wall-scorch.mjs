@@ -24,7 +24,7 @@ assert.equal(context.combatWallScorch({a:{x:0,y:0},b:{x:256,y:0}},{side:'a'}).le
 console.log('PASS continuous coplanar scorch, outer-edge fade, real gaps, reversed walls and clean opposite/corner/cap faces');
 
 // Reproduce the overshoot: one affected hex beside long and split wall sections.
-const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const engine=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const extract=name=>{const start=engine.indexOf('function '+name+'(');return engine.slice(start,engine.indexOf('\nfunction ',start+1));};
 const ctx=vm.createContext({game:{environmentState:{wallScorch:{}}},combatSceneTerrain:{},HEX_W:64,HEX_H:42,environmentSquash:()=>1,architecturalWalls:[{id:'left',a:{x:-128,y:0},b:{x:0,y:0}},{id:'right',a:{x:0,y:0},b:{x:128,y:0}},{id:'remote',a:{x:192,y:0},b:{x:320,y:0}}],worldPointForHex:(x,y)=>({x:64*(x+y*.5),y:y*31.5}),environmentRayHit:()=>null});
 ctx.combatEnvironment=()=>ctx.game.environmentState;

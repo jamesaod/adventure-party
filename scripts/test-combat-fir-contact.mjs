@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {ambientContactShare,featherTrunkShelter} from '../js/combat-fir-contact.mjs';
-import {configureSnowShelter,snowExposureAt,snowShelterUniforms} from '../js/combat-snow-shelter.mjs?v=tree-snow-grains1';
+import {configureSnowShelter,snowExposureAt,snowShelterUniforms} from '../js/combat-snow-shelter.mjs?v=natural-ac1';
 assert.equal(ambientContactShare(0,12,3),0,'Contact cannot remove direct-only illumination');
 assert.equal(ambientContactShare(2,0),1,'Overcast/night ambient retains contact');
 assert(ambientContactShare(2,12)<ambientContactShare(2,0));

@@ -1,9 +1,34 @@
+// Ray-marched local fog volumes: shared 3D noise, bounded count, no LOS changes.
+let forestMistEnabled=false,forestMistState=null;
+function forestMistActive(){return forestMistEnabled&&game?.condition==='grass'&&game?.session?.source==='combat-test';}
+function queueForestMist(actors,tiles){
+ if(!forestMistActive()||!combatGpu)return;
+ const revision=[combatGpu.unitWaterSurface?.revision,game.testTrees?.length].join(':');
+ if(forestMistState?.game!==game||forestMistState.revision!==revision){
+  const patches=[];
+  for(let x=MAP_MIN_X;x<=MAP_MAX_X;x+=2)for(let y=MAP_MIN_Y;y<=MAP_MAX_Y;y+=2){
+   if(!inside(x,y))continue;const p=worldPointForHex(x,y),water=combatGpu.streamSample?.(p.x,p.y),river=water?.depth>.015;
+   const woodland=(game.testTrees||[]).some(t=>hexDistance(t,{x,y})<=3);
+   if(!river&&(!woodland||terrainRand(x,y,8301)>.24))continue;
+   patches.push({x,y,p,river,seed:terrainRand(x,y,8302),rank:terrainRand(x,y,8303)+(river?1:0)});
+  }
+  patches.sort((a,b)=>b.rank-a.rank);forestMistState={game,revision,patches:patches.filter((p,i,list)=>list.slice(0,i).every(q=>hexDistance(p,q)>=3)).slice(0,12)};
+ }
+ const now=performance.now()/1000,solar=globalThis.adventurePartySolar?.state?.();
+ const lights=(prepareCombatProjectedShadows.sources||[]).slice(0,4).map(l=>({x:l.vector[0],y:l.vector[2],z:l.vector[1],color:(l.source?.color||[255,190,110]).map(v=>v/255*Math.min(4,l.power||1))}));
+ for(const patch of forestMistState.patches){
+  if(!isHexOnBattlefieldScreen(patch.x,patch.y,HEX_W*4)||!isHexVisibleToFriendlyParty(patch.x,patch.y))continue;
+  const c=hexCenter(patch.x,patch.y);
+  actors.push({sortY:c.y+HEX_H*.5,sortX:c.x,gpuScenery:true,fn:()=>combatGpu.fogVolume({x:patch.p.x,y:patch.p.y,radius:3.2+patch.seed,height:patch.river?2.1:2.8,density:patch.river?.65:.4,time:now,solar,lights})});
+ }
+}
+
 /* Combat owner: combat-render-frame.js. Classic-script boundary; shared engine state and
  * service dependencies are documented in docs/COMBAT_ARCHITECTURE.md.
  * Extracted without changing rule or presentation bodies. */
 
 let groundCoverAnimation=null;
-function hasEnvironmentAnimation(){return combatGpu?.puddleEffectsActive?.()||(!!game?.testTrees?.length&&globalThis.adventurePartyTreeMotion?.active())||treeFallEntries().some(({state})=>!oakDebrisSettled(state))||combatGpu?.groundCover?.active||(globalThis.adventurePartySeasons?.getSeason()==='fall'&&game?.testTrees?.length&&combatFirTrees?.fallingLeafCount>0);}
+function hasEnvironmentAnimation(){return forestMistActive()||combatGpu?.puddleEffectsActive?.()||(!!game?.testTrees?.length&&globalThis.adventurePartyTreeMotion?.active())||treeFallEntries().some(({state})=>!oakDebrisSettled(state))||combatGpu?.groundCover?.active||(globalThis.adventurePartySeasons?.getSeason()==='fall'&&game?.testTrees?.length&&combatFirTrees?.fallingLeafCount>0);}
 function ensureGroundCoverAnimation(){
  if(groundCoverAnimation!==null||!hasEnvironmentAnimation()||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  groundCoverAnimation=requestCombatAnimationTick(()=>{groundCoverAnimation=null;if(currentScreen==='combat'&&game&&!game.over&&hasEnvironmentAnimation()){draw();ensureGroundCoverAnimation();}});
@@ -14,7 +39,11 @@ function draw(){
   const explorationTerrain=typeof combatSceneTerrain==='undefined'?globalThis.explorationTerrain:combatSceneTerrain||globalThis.explorationTerrain;
   if(typeof combatFrames!=="undefined"&&combatFrames&&!combatFrames.rendering){combatFrames.request();return;}
   combatLightingFrame++;
-  if(!game) return;game.treeMotionTime=performance.now()/1000;
+  if(!game) return;
+  const profile=globalThis.adventurePartyCombatPerformance;
+  const timed=(name,fn)=>profile?profile.measure(name,fn):fn();
+  profile?.begin();let finishSection=profile?.start('frameSetup')||(()=>{});
+  game.treeMotionTime=performance.now()/1000;
   updateTreeEnvironment(performance.now());
   updateComputerCameraFollow();
 
@@ -24,11 +53,12 @@ function draw(){
 
   const tiles=visibleHexes();
 
+  finishSection();
   if(combatGpu){
     if(!combatGpu.available)return;
     const p=screenPointForWorld({x:0,y:0}),u=battlefieldProjectVector({x:1,y:0}),v=battlefieldProjectVector({x:0,y:1});
-    if(!combatGpu.begin({width:BATTLEFIELD_LOGICAL_WIDTH,height:BATTLEFIELD_LOGICAL_HEIGHT,zoom:battlefieldZoom,anchor:battlefieldZoomAnchor(),matrix:[u.x,u.y,v.x,v.y,p.x,p.y]}))return;
-    if(typeof prepareExplorationGpuLighting==="function")prepareExplorationGpuLighting();
+    if(!combatGpu.begin({profileStarted:!!profile,width:BATTLEFIELD_LOGICAL_WIDTH,height:BATTLEFIELD_LOGICAL_HEIGHT,zoom:battlefieldZoom,anchor:battlefieldZoomAnchor(),matrix:[u.x,u.y,v.x,v.y,p.x,p.y]}))return;
+    if(typeof prepareExplorationGpuLighting==="function")timed('lightingSetup',()=>prepareExplorationGpuLighting());
   }
   // Clear in physical canvas coordinates before installing the view transform.
   ctx.save();
@@ -44,8 +74,6 @@ function draw(){
     density*anchor.y*(1-battlefieldZoom)
   );
   canvas.dataset.treeRenderer=directFirRendering()?'direct-mesh':'cached-images';
-  const profile=globalThis.adventurePartyCombatPerformance;
-  const timed=(name,fn)=>profile?profile.measure(name,fn):fn();
   timed('shadowSetup',()=>prepareCombatProjectedShadows(tiles));
   timed('terrain',()=>{drawFloor();drawWallTestFloorPlan();});
   if(explorationTerrain){ctx.save();clipExplorationFloor();}
@@ -56,17 +84,19 @@ function draw(){
     R197: outline the union silhouette once before wall bodies enter the shared
     depth queue. Units/fog can still correctly cover the outline afterward.
   */
+  finishSection=profile?.start('sceneQueue')||(()=>{});
   const sceneWalls=architecturalWalls;
   if(!explorationTerrain){drawArchitecturalWallShapeOutline(sceneWalls);drawArchitecturalWallTopOutline(sceneWalls);}
 
   drawSpellAreaEffects();
 
   const actors=[];
+  queueForestMist(actors,tiles);
   // Keep lethal targets visible while their queued death beat is pending;
   // only that beat changes their standing body to falling/prone scenery.
   for(const corpse of [game.player,...(game.allies||[]),...(game.enemies||[])])if(corpse&&deathPresentationActive(corpse)&&!corpse.fled&&shouldRenderUnitUnderPartyVisibility(corpse)){
     const p=unitDepthSortPoint(corpse);
-    actors.push({sortY:p.y-.5,sortX:p.x,unit:true,groundCorpse:globalThis.adventurePartyCorpseProgress?.(corpse)>=1,groundRadius:{x:HEX_W*.6,y:HEX_H*.6},entity:corpse,fn:()=>drawStudioSpriteMob(corpse)});
+    actors.push({sortY:p.y-.5,sortX:p.x,unit:true,groundCorpse:globalThis.adventurePartyCorpseProgress?.(corpse)>=1,groundRadius:{x:HEX_W*.6*(corpse.corpseDropInPlace?Math.max(1,(corpse.heightInches||144)/72):1),y:HEX_H*.6*(corpse.corpseDropInPlace?Math.max(1,(corpse.heightInches||144)/72):1)},entity:corpse,fn:()=>drawStudioSpriteMob(corpse)});
   }
   const treeDecorations=visibleTreeDecorations(tiles);
   const firContacts=[];
@@ -195,6 +225,7 @@ function draw(){
 
   if(explorationTerrain?.isRenderableHex)for(let i=actors.length-1;i>=0;i--)if(actors[i].unit&&actors[i].entity&&!explorationTerrain.isRenderableHex(actors[i].entity.x,actors[i].entity.y))actors.splice(i,1);
 
+  finishSection();finishSection=profile?.start('unitShadows')||(()=>{});
   // Project all visible unit shadows onto terrain before walls, trees, units
   // and fog. Long evening shadows must never paint over another character.
   if(globalThis.adventurePartySun){
@@ -207,6 +238,7 @@ function draw(){
   queueFlyingArrowGpuShadow();
   if(combatGpu?.flushProjectedShadows)combatGpu.flushProjectedShadows();else combatGpu?.projectedShadows?.flush();
 
+  finishSection();finishSection=profile?.start('actorOrdering')||(()=>{});
   actors.sort(
     (a,b)=>{
       // Same-row foliage must not exchange painter order due to tiny
@@ -220,10 +252,12 @@ function draw(){
   if(!hasWeb&&typeof clearRaisedWeb==="function")clearRaisedWeb();
   const orderActors=explorationTerrain?explorationEncounterApi.orderSurfaceActors:combatGpu?.orderSurfaceActors;
   const outlineActors=orderActors?orderActors(actors,screenPointForWorld,u=>worldPointForHex(u.x,u.y),unitDepthSortPoint):actors;
+  finishSection();
   const cover=combatGpu?.groundCover,puddleMovers=[];
   if(cover){
+    finishSection=profile?.start('coverInputs')||(()=>{});
     const origin=screenPointForWorld({x:0,y:0});
-    const movers=outlineActors.filter(a=>a.unit&&a.entity).map(a=>{const p=unitDepthSortPoint(a.entity),w=battlefieldProjectVector({x:p.x-origin.x,y:p.y-origin.y},true);if(!a.groundCorpse){const direction=HEX_DIRS[facingDirectionIndex(a.entity)],forward=worldPointForHex(direction.x,direction.y);puddleMovers.push({entity:a.entity,x:w.x,y:w.y,heading:Math.atan2(forward.y/.568329,forward.x)});}return [w.x,w.y,a.groundCorpse?.85:.40,a.groundCorpse?.94:.62];});
+    const movers=outlineActors.filter(a=>a.unit&&a.entity).map(a=>{const p=unitDepthSortPoint(a.entity),w=battlefieldProjectVector({x:p.x-origin.x,y:p.y-origin.y},true);{const direction=HEX_DIRS[facingDirectionIndex(a.entity)],forward=worldPointForHex(direction.x,direction.y);puddleMovers.push({entity:a.entity,corpse:!!a.groundCorpse,scale:enlargeVisualScale(a.entity),x:w.x,y:w.y,heading:Math.atan2(forward.y/.568329,forward.x)});}return [w.x,w.y,a.groundCorpse?.85:.40,a.groundCorpse?.94:.62];});
     const spreadingCrowns=outlineActors.filter(a=>adventurePartyTreeEnvironment.isBroadleaf(a.tree)).map(a=>{
       const center=hexCenter(a.tree.x,a.tree.y),radius=combatTreeCollision(a.tree.tileIndex,globalThis.adventurePartySeasons?.getSeason()||'summer').canopyRadius*(tileSet.treeDrawHeight||240)*treeSizeScale(a.tree)/210;
       return {x:center.x,y:center.y,sortY:a.sortY,rx:radius,ry:radius*.568329};
@@ -231,22 +265,23 @@ function draw(){
     const treeExclusions=[];
     for(const tree of game.firDecorations?.values()||[]){const profile=adventurePartyTreeEnvironment.treeExclusionProfile(tree);if(profile.radius>0)treeExclusions.push({...worldPointForHex(tree.x,tree.y),width:HEX_W,row:HEX_ROW,species:tree.species,...profile});}
     const fallenLeaves=oakGroundLeafDeposits(tileSet);
+    finishSection();
     timed('groundCover',()=>cover.prepare(movers,outlineActors.filter(a=>a.groundCorpse&&a.entity),spreadingCrowns,treeExclusions,fallenLeaves,treeWoodPressure().capsules,treeWoodPressure().strength));ensureGroundCoverAnimation();
   }
-  combatGpu?.drawPuddles?.(puddleMovers);ensureGroundCoverAnimation();
+  timed('waterEffects',()=>combatGpu?.drawPuddles?.(puddleMovers));ensureGroundCoverAnimation();
   let leafSortCursor=-1e9;
   hiddenOutlineUnits=[];
   for(let actorIndex=0;actorIndex<outlineActors.length;actorIndex++){
     const actor=outlineActors[actorIndex];drawOakAirborneLeaves(tileSet,leafSortCursor,actor.sortY);leafSortCursor=actor.sortY;if(cover)timed('groundCover',()=>cover.drawUntil(actor.sortY));hiddenOutlineCapture=actor.unit?{index:actorIndex}:null;
     if(combatGpu&&!actor.gpuScenery)combatGpu.prepareOverlay();
-    if(actor.wrapWeb&&hasWeb)drawMobWithWeb(actor.entity,actor.fn);
-    else actor.fn();
+    timed('actorDispatch',()=>{if(actor.wrapWeb&&hasWeb)drawMobWithWeb(actor.entity,actor.fn);else actor.fn();});
   }
 
   drawOakAirborneLeaves(tileSet,leafSortCursor,1e9);
   if(cover)timed('groundCover',()=>cover.drawUntil(Infinity));
   hiddenOutlineCapture=null;
   if(combatGpu)combatGpu.prepareOverlay();
+  finishSection=profile?.start('foregroundFx')||(()=>{});
   drawPersistentLightSpellFx();
   drawPersistentShieldSpellFx();
   drawPersistentSleepStatusFx();
@@ -262,6 +297,7 @@ function draw(){
   drawFireDamageFx();
 
   drawProjectileFx();
+  finishSection();finishSection=profile?.start('visibilityOverlays')||(()=>{});
 
   /*
     R215: blackout is binary by tactical hex. The center point determines LOS;
@@ -277,10 +313,12 @@ function draw(){
   */
   if(explorationTerrain)drawExplorationDarknessVolumes();
   else drawVisibleArchitecturalWallsOverLOS();
+  finishSection();
   timed('hiddenOutlines',()=>drawHiddenUnitOutlines(outlineActors));
 
   /* R170 weather is battlefield-only; UI text remains above it. */
-  drawWeatherVfx(performance.now());
+  timed('weatherVfx',()=>drawWeatherVfx(performance.now()));
+  finishSection=profile?.start('hudLabels')||(()=>{});
 
   /*
     R185: the one-second death marker is tactical foreground feedback rather
@@ -296,12 +334,14 @@ function draw(){
     Speech/incantations and friendly-fire warnings are therefore never
     painted beneath other battlefield labels or effects.
   */
+  for(const unit of allUnits())if(unit?.alive&&!unit.fled&&shouldRenderUnitUnderPartyVisibility(unit))drawHpBar(unit,unit.faction==="player"?"#94e084":"#df6b6b",true);
   drawUnitBarks();
   drawActivityDetectedFx();
   drawAimFriendlyFireWarning();
   if(currentScreen==="spell-preview"&&typeof spellPreviewDrawDevelopmentLabels==="function")spellPreviewDrawDevelopmentLabels();
   ctx.restore();
-  if(globalThis.adventurePartyShowPerformance!==false){
+  finishSection();finishSection=profile?.start('diagnostics')||(()=>{});
+  if(globalThis.adventurePartyShowPerformance===true){
   // Screen-space diagnostics: actual battlefield frames, not pose sample rate.
   ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
   const measured=typeof combatFrames!=='undefined'?combatFrames?.diagnostics().recentFps:0;
@@ -311,6 +351,7 @@ function draw(){
   if(globalThis.adventurePartyPerformanceMode!=='fps')globalThis.drawCombatPerformanceChart?.(ctx,BATTLEFIELD_LOGICAL_WIDTH);
   ctx.restore();
   }
+  finishSection();
   if(typeof prepareCombatTerrainAhead==='function')timed('terrainAhead',()=>prepareCombatTerrainAhead());
   if(combatGpu)combatGpu.end();
 }
@@ -343,3 +384,5 @@ function drawTreeAirborneLeaves(tileSet,low,high,state,oak){
 function oakGroundLeafDeposits(tileSet){const sources=treeFallEntries().map(({tree,state})=>treeGroundLeafDeposits(tileSet,state,tree)).filter(Boolean);if(!game.allLeafSources||sources.length!==game.allLeafSources.length||sources.some((s,i)=>s!==game.allLeafSources[i])){game.allLeafSources=sources;game.allTreeLeafDeposits=sources.flat();}return game.allTreeLeafDeposits;}
 function drawOakAirborneLeaves(tileSet,low,high){for(const {tree,state} of treeFallEntries())drawTreeAirborneLeaves(tileSet,low,high,state,tree);}
 
+
+document.getElementById('forestMistToggle')?.addEventListener('change',event=>{forestMistEnabled=event.target.checked;if(game){draw();ensureGroundCoverAnimation();}});

@@ -140,3 +140,11 @@ Runtime: assets/audio/sfx/snow/step-1.wav through step-4.wav. Original FLACs and
 ## UAL1 Death02 — local animated knockback lab
 
 `assets/animations/ual1/ual1-death02-source.glb` derives unchanged from Quaternius’s Universal Animation Library Source archive supplied by the project owner. It is CC0 1.0; original license is already preserved at `assets/animations/ual1/LICENSE.txt`. The selected source take is `Death02`; `ual1-death02-source.json` records archive/source checksum, disabled-root-motion source variant and local-only scope.
+
+
+## Modular Character Creator
+Quaternius Modular Character Outfits — Fantasy (free Standard), Universal Base Characters (free Standard), and Universal Animation Library: CC0. Sources, archive hashes, derivative heads and texture resizing are documented in docs/CHARACTER_CREATOR.md and assets/characters/quaternius/catalog.json. Three.js GLTFExporter and SkeletonUtils 0.180.0: MIT, existing vendor license.
+
+
+## Synty Starter Workshop
+Local-only experiment using user-supplied Synty SIDEKICK Starter v1.0.4. Proprietary Synty license; not CC0. Do not publicly redistribute source assets. See docs/SYNTY_WORKSHOP.md. Preview animations: Quaternius Universal Animation Library, CC0.

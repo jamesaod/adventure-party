@@ -49,86 +49,37 @@ function leavingHexFreeAttackers(mover,destination){
     .sort((a,b)=>a.id.localeCompare(b.id));
 }
 
-async function performLeavingHexFreeAttacks(mover,destination){
-  if(
-    !game ||
-    game.over ||
-    !mover?.alive ||
-    freeStrikeInProgress
-  ){
-    return !!(
-      mover?.alive &&
-      !mover?.fled &&
-      !game?.over
-    );
-  }
-
-  const attackers=leavingHexFreeAttackers(mover,destination);
-
-  if(!attackers.length){
-    return true;
-  }
-
+async function performLeavingHexFreeAttacks(mover,destination,presentStep=null){
+  const session=game;
+  const valid=()=>game===session&&!game?.over&&mover?.alive&&!mover.fled;
+  if(!valid())return false;
+  const attackers=freeStrikeInProgress?[]:leavingHexFreeAttackers(mover,destination);
+  if(!attackers.length)return presentStep?await presentStep():true;
   freeStrikeInProgress=true;
-
   try{
-    for(const attacker of attackers){
-      if(
-        game.over ||
-        !mover.alive ||
-        mover.fled
-      ){
-        break;
+    // Wind-ups and attack poses overlap; shared result bookkeeping stays ordered.
+    const prepared=Promise.all(attackers.map(async attacker=>{
+      faceEntityToward(attacker,mover);attacker.weaponInHand='melee';
+      await prepareUnitAttackWindup(attacker);
+      if(!valid()||!attacker.alive)return false;
+      triggerUnitAttackPose(attacker);return true;
+    }));
+    const movement=presentStep?presentStep():Promise.resolve(true);
+    const reactions=(async()=>{
+      const ready=await prepared;
+      for(let i=0;i<attackers.length&&valid();i++){
+        const attacker=attackers[i];if(!ready[i]||!attacker.alive)continue;
+        log(mover.name+' leaves melee reach — '+attacker.name+' gets a free attack.',attacker.faction==='player'?'good':'bad');
+        await attack(attacker,mover,{preparedReaction:true,actionLabel:'Free Attack with '+unitActionWeapon(attacker)});
+        if(game===session){updateUi();draw();}
       }
-
-      if(!unitCanMakeLeavingHexFreeAttack(attacker,mover)||!movementLeavesMeleeReach(attacker,mover,destination)){
-        continue;
-      }
-
-      log(
-        `${mover.name} leaves melee reach — ${attacker.name} gets a free attack.`,
-        attacker.faction==="player" ? "good" : "bad"
-      );
-
-      const result=await attack(
-        attacker,
-        mover,
-        {
-          actionLabel:
-            `Free Attack with ${unitActionWeapon(attacker)}`
-        }
-      );
-
-      updateUi();
-      draw();
-
-      /*
-        This reaction does not consume the attacker's normal initiative
-        action. Keep only a short beat so the reaction still reads as
-        immediate.
-      */
-      if(result?.killed){
-        await waitForCombatActionPause();
-        break;
-      }
-
-      await sleep(result?.hit ? 220 : 140);
-    }
+    })();
+    const [moved]=await Promise.all([movement,reactions]);
+    return !!moved&&valid();
   }finally{
     freeStrikeInProgress=false;
+    if(game===session&&!game.over){refreshTurnBanner();updateUi();draw();}
   }
-
-  if(!game.over){
-    refreshTurnBanner();
-    updateUi();
-    draw();
-  }
-
-  return !!(
-    mover.alive &&
-    !mover.fled &&
-    !game.over
-  );
 }
 
 function adjacentHostileIdsFor(unit){

@@ -1,5 +1,5 @@
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {createSnowCoatCoverage} from './combat-snow-coats.mjs?v=tree-snow-grains1';
+import {createSnowCoatCoverage} from './combat-snow-coats.mjs?v=natural-ac1';
 export const CORPSE_SNOW_LAYER_METRES=.0127;
 export const CORPSE_SNOW_LAYERS=4;
 export const CORPSE_SNOW_LAYER_SECONDS=30;

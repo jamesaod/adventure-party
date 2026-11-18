@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {firSnowOpacity,createFirSnowCaps} from '../js/combat-fir-snow.mjs?v=tree-snow-grains1';
-import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=tree-snow-grains1';
+import {firSnowOpacity,createFirSnowCaps} from '../js/combat-fir-snow.mjs?v=natural-ac1';
+import {createSnowCoatCoverage} from '../js/combat-snow-coats.mjs?v=natural-ac1';
 assert.equal(firSnowOpacity(0),0);assert.equal(firSnowOpacity(1),.62);assert(firSnowOpacity(1.999)<1);assert.equal(firSnowOpacity(2),1);assert.equal(firSnowOpacity(3),1);
 const ground=createSnowCoatCoverage(),a={x:0,y:0},b={x:16,y:0},c={x:16,y:16},d={x:0,y:16};ground.configure([0,0,16,16],16,16,new Map([['tree',{triangles:[{a,b,c},{a,c,b:d}]}]]));
 let seed=12;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/2**32);let reached=false;

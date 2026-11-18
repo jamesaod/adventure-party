@@ -1,7 +1,8 @@
+import {workshopPreparedSpells} from './workshop-spells.mjs';
 import {raceProfile} from './racial-traits.mjs?v=R238C311';
-import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C313';
-import {readiness} from './mob-workshop-core.mjs?v=R238C313';
-import {instantiateCreature} from './mob-workshop-creature.mjs?v=R238C313';
+import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C471';
+import {readiness} from './mob-workshop-core.mjs?v=scored-ai1';
+import {instantiateCreature} from './mob-workshop-creature.mjs?v=scored-ai1';
 import {ITEM_CATALOG} from './item-catalog.mjs';
 import {savedFit} from './mob-workshop-fit-store.mjs';
 
@@ -55,8 +56,8 @@ export function workshopCombatFits(draft,inventory=workshopCombatInventory(draft
 export function instantiateWorkshopCombat(draft,{id,random=Math.random}={}) {
   const instance=instantiateCreature(clone({...draft,clips:[]}),{id,random}),c=instance.definition;
   const abilities=Object.fromEntries(['str','dex','con','int','wis','cha'].map(k=>[k,draft.stats[k]]));
-  return {id,name:draft.name,raceId:c.raceId,race:raceProfile(c.raceId).label,gender:c.gender,moraleOverride:c.moraleOverride,hp:instance.hp,maxHp:instance.maxHp,
-    ac:instance.ac,authoredBaseAc:draft.stats.ac,unarmoredAc:draft.stats.ac,
+  return {...workshopPreparedSpells(draft),id,name:draft.name,raceId:c.raceId,race:raceProfile(c.raceId).label,gender:c.gender,moraleOverride:c.moraleOverride,hp:instance.hp,maxHp:instance.maxHp,
+    ac:instance.ac,authoredBaseAc:draft.stats.ac,unarmoredAc:draft.stats.ac,naturalArmorClass:c.combat.naturalArmorClass??null,
     thaco:instance.thaco,move:draft.stats.move,authoredMove:draft.stats.move,
     attacksPerRound:1,hitDiceLabel:instance.hitDiceLabel,
     hitDiceValue:instance.hitDiceValue,lessThanOneHitDie:instance.lessThanOneHitDie,

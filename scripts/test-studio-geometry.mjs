@@ -14,7 +14,7 @@ const close = (actual, expected, message) => assert.ok(Math.abs(actual - expecte
 const combatVertices = [[0, -21], [32, -10.5], [32, 10.5], [0, 21], [-32, 10.5], [-32, -10.5]];
 
 // Calibrate against the actual game, not imported FBX/glTF unit conventions.
-const game = readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url), 'utf8');
+const game = readCombatFixture(new URL('../js/adventure-party.js?v=natural-ac1', import.meta.url), 'utf8');
 assert.equal(STUDIO_FEET_PER_HEX, Number(game.match(/const TACTICAL_FEET_PER_HEX=(\d+);/)[1]));
 assert.equal(Number(game.match(/const HEX_W=(\d+);/)[1]), 64);
 assert.equal(STUDIO_HEIGHT_RULER_FEET, 75);

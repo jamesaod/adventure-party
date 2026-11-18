@@ -1,7 +1,7 @@
 import {joinedWallPrism} from '../js/wall-joins.mjs';
 import assert from 'node:assert/strict';
 import {wallSurfaceProbe,wallSurfaceNeighbours,wallFaceFacesCamera} from '../js/wall-surface-visibility.mjs';
-import {triangulateSurfaces} from '../js/combat-webgl.mjs?v=tree-snow-grains1';
+import {triangulateSurfaces} from '../js/combat-webgl.mjs?v=cover-profile1';
 const wall={id:'wall',a:{x:-64,y:0},b:{x:64,y:0},thickness:3};
 const eye={x:0,y:100},face={x:0,y:1.5*72/128};
 assert(face.y+.025*72/3<1.5,'Old compressed-face probe remains inside collision shell');

@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+import {extractCombatFunction} from './combat-test-source.mjs';
+import {newDraft} from '../js/mob-workshop-core.mjs';
+import {ensureCreature,equipmentSummary,creatureIssues} from '../js/mob-workshop-creature.mjs';
+const d=newDraft();ensureCreature(d);assert.equal(d.creature.combat.naturalArmorClass,null);assert.equal(equipmentSummary(d).finalAC,10);
+d.creature.combat.naturalArmorClass=4;assert.equal(equipmentSummary(d).finalAC,4);d.equipment.armor='leather';assert.equal(equipmentSummary(d).finalAC,4);d.equipment.armor='plate-mail';assert.equal(equipmentSummary(d).finalAC,3);d.creature.combat.acMode='manual';assert.equal(equipmentSummary(d).finalAC,10);d.creature.combat.naturalArmorClass=1.5;assert(creatureIssues(d).errors.some(x=>x.includes('Natural Armor')));
+const c={window:{adventurePartyArmorRules:{resolveArmorItem:i=>i}},getArmorCatalogEntry(){},dexterityAdjustments:()=>({defensive:0}),clamp:(v,a,b)=>Math.max(a,Math.min(b,v))};vm.createContext(c);vm.runInContext(extractCombatFunction(readFileSync('js/adventure-party.js','utf8'),'calculateArmorClass'),c);
+const u={stats:{dex:10},authoredBaseAc:10,naturalArmorClass:4,inventory:[],workshopDefinition:{combat:{acMode:'equipment',acModifier:0}}};assert.equal(c.calculateArmorClass(u),4);u.inventory=[{slot:'armor',equipped:true,baseArmorClass:8}];assert.equal(c.calculateArmorClass(u),4);u.inventory[0].baseArmorClass=3;assert.equal(c.calculateArmorClass(u),3);u.inventory.push({slot:'shield',equipped:true,acBonus:1});assert.equal(c.calculateArmorClass(u),2);u.inventory=[];u.workshopDefinition.combat.acModifier=-1;assert.equal(c.calculateArmorClass(u),3);u.workshopDefinition.combat.acMode='manual';assert.equal(c.calculateArmorClass(u),10);u.naturalArmorClass=null;assert.equal(c.calculateArmorClass(u),10);
+console.log('PASS optional Natural AC, validation, better armor selection, shields, modifiers, manual override and legacy defaults');

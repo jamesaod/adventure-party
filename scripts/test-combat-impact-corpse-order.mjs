@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {orderSurfaceActors} from '../js/combat-surface-lighting.mjs';
+const giant={id:'giant',alive:true,poseStartedAt:100,poseUntil:performance.now()+10000};
+const victim={id:'elf',alive:false,deathImpactOccluder:{unitId:'giant',poseStartedAt:100}};
+const a={entity:giant,sortY:0,sortX:0},b={entity:victim,sortY:100,sortX:0};
+const order=()=>orderSurfaceActors([a,b],p=>p,u=>({x:0,y:u===giant?0:100}));
+assert.deepEqual(order().map(a=>a.entity.id),['elf','giant']);
+giant.poseStartedAt=200;assert.deepEqual(order().map(a=>a.entity.id),['giant','elf']);
+giant.poseStartedAt=100;giant.poseUntil=0;assert.deepEqual(order().map(a=>a.entity.id),['giant','elf']);
+console.log('PASS impact club above corpse, expired/changed attack restores normal order');

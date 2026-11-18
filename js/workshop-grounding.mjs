@@ -1,4 +1,10 @@
 import {semanticBoneMap} from './humanoid-rig.mjs';
+import {createGiantCorpseSettler} from './giant-corpse-settle.mjs';
+
+// Metadata covers newly imported clips; names keep older saved drafts compatible.
+export function isWorkshopLocomotionClip(draft,clip){
+ return !!clip&&(clip.actionProfiles?.includes('move')||['move','armed-move'].some(slot=>draft.assignments?.[slot]?.some(a=>a.clipId===clip.id))||/\b(walk(?:ing)?|run(?:ning)?)\b/i.test(clip.name||''));
+}
 
 // Root travel belongs to combat movement. Preserve authored limb translations.
 export function removeWorkshopRootTravel(clip, model) {
@@ -12,6 +18,7 @@ export function removeWorkshopRootTravel(clip, model) {
 }
 
 export function createWorkshopGrounding(THREE,model,group){
+ const settleGiant=createGiantCorpseSettler(THREE,model);
  const bones=semanticBoneMap(model);
  const contacts=['leftFoot','rightFoot','leftToe','rightToe'].map(key=>bones.get(key)).filter(Boolean);
  const base=model.position.clone(),point=new THREE.Vector3();
@@ -36,7 +43,7 @@ export function createWorkshopGrounding(THREE,model,group){
  }
  return {
   reset(){model.position.copy(base);},
-  applyCorpse(){if(restContact){group.updateMatrixWorld(true);shift(group.localToWorld(restContact.clone()).y-bodyFloor());}},
+  applyCorpse(settle=0){settleGiant(settle);if(restContact){group.updateMatrixWorld(true);shift(group.localToWorld(restContact.clone()).y-bodyFloor());}},
   apply(){
    if(ground===null)return;
    group.updateMatrixWorld(true);

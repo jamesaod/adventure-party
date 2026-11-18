@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {canopySample,canopyPlacements} from '../js/grass-canopy.mjs';
-import {coverHash,coverContains,coverPlacements,GROUND_COVER_DEFAULTS,ORIGINAL_GRASS_DEFAULTS} from '../js/combat-ground-cover.mjs?v=tree-snow-grains1';
+import {coverHash,coverContains,coverPlacements,GROUND_COVER_DEFAULTS,ORIGINAL_GRASS_DEFAULTS} from '../js/combat-ground-cover.mjs?v=cover-profile1';
 import {DEFAULTS,exportPreset,importPreset} from '../js/terrain-lab-preset.mjs';
 const face=(x0,x1)=>({grass:true,snowEligible:1,grassUnit:1,grassSquash:1,points:[{x:x0,y:-6},{x:x1,y:-6},{x:x1,y:6},{x:x0,y:6}]}),whole=face(-6,6),tuning={canopyEnabled:true,canopyX:0,canopyY:0};
 const roots=f=>canopyPlacements(f,tuning,coverHash,coverContains),all=roots(whole),split=[...roots(face(-6,0)),...roots(face(0,6))];

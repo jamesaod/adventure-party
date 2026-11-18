@@ -1,0 +1,75 @@
+SUGAR MAPLE AUTHORING NOTES - 2026-11-15
+Status: WORK IN PROGRESS. Native tree is not exported or integrated into the game.
+
+Species: Acer saccharum (Sugar Maple), exactly one authored specimen.
+Leaf dimensions verified:
+- Cornell Cooperative Extension: typically 3-5 inches long.
+  https://s3.amazonaws.com/assets.cce.cornell.edu/attachments/22873/Sugar-maple-2012.pdf
+- University of Kentucky: 3-6 inches long and wide, usually five lobes.
+  https://horticulture.mgcafe.uky.edu/sites/horticulture.ca.uky.edu/files/Sugar%20Maple%20-%20Acer%20saccharum.pdf
+Target blade width: 0.10 m (about 4 inches), natural variation approximately 0.076-0.127 m.
+Measure actual opaque blade, excluding transparent card margins and petiole. Do not confuse a cluster card's dimensions with a single leaf.
+Native Scene Unit Conversion dialog explicitly confirmed current scene unit Foot.
+0.10 m = 0.328084 feet. Export geometry must be measured to verify physical leaf size.
+Current displayed tree height 69.41 feet (approximately 21.16 m).
+Current leaves are still oversized and must be corrected before export.
+The lower Leaf Mesh generator uses Large Leaf Clusters; its Skin Size is 6.87 feet. Inspect both it and its child generator, including assigned maps, before adjusting.
+
+Native working source: SugarMaple_Working.spm.
+Bark: Maple_Bark_1 family from installed SpeedTree samples/Learning/Photogrammetry/Oak_Photogrammetry/Bark; assigned to trunk and inherited by branches. Latest assignment may be unsaved: input helper failed while attempting Ctrl+S. Preserve open document.
+Green and autumn individual leaves generated with built-in imagegen; PNG files alongside source.
+Green prompt:
+Game foliage texture asset, photorealistic-natural. One single fresh green sugar maple leaf (Acer saccharum), flat front-facing orthographic view, five pointed lobes, broad shallow U shaped sinuses, subtle natural vein network, short thin petiole pointing straight downward, central main lobe pointing straight upward. Leaf occupies 85 percent of a square canvas, centered, entire silhouette and stem visible with generous transparent margins, no other objects, no text, no shadows cast on backdrop, no lighting highlights baked in, diffuse neutral even albedo illumination. Realistic medium green muted game material, not neon. This leaf will be mapped to a 3D foliage card and reused for airborne and ground litter. Transparent background required.
+Fall edit prompt:
+Edit this game sugar maple leaf texture ONLY its seasonal color. Preserve the identical silhouette, every lobe, vein, petiole, position, size and transparent alpha background. Replace green with vivid autumn scarlet and red-orange with subtle warm orange along some veins and minor burgundy mottling. Match a flaming red-orange autumn sugar maple crown. Neutral diffuse albedo, no directional illumination or cast shadow. No added objects. Keep leaf exactly aligned for seasonal 3D material swap.
+
+Outstanding: realistic blade scaling and dense rounded crown; fine winter twigs; seasonal exports; matching stump/log/limbs; species-aware runtime integration with the full existing White Oak behavior; focused regression checks; archive source and workflow in repository.
+Do not present current working template as final tree.
+
+TUTORIAL RESEARCH (requested before further modeling)
+- Making a Maple Tree SpeedTree by hand, Mattscreative (2015): https://www.youtube.com/watch?v=_jHWcaNAOLw
+  Maple-specific video located; full video/transcript not reviewed. Older UI.
+- The Great Sugar Maple, Jarik Grin: https://jarikgrin.artstation.com/projects/2BG3bK
+  Artist production breakdown, not step-by-step tutorial. Game-ready Acer saccharum, seasonal views, procedural leaves, bark vertex-color blending, individual leaf color variations.
+- SpeedTree 8.3: Modeling a Tree for Games, official Sonia Piasecki: https://www.youtube.com/watch?v=S_-HOFEhsg8
+- SpeedTree 8.3: How to Make Clusters, official Sonia Piasecki: https://www.youtube.com/watch?v=OIR6zpisaMM
+  Official description: clusters build upper branches/leaves of game-resolution models.
+- SpeedTree 8: Mesh Anchors, official: https://www.youtube.com/watch?v=y0crJqFDCD8
+  Official description: image-based branch and leaf structures for low-polygon models.
+- Collisions and Clusters / Anchor Points, Andrew Krivulya: https://artofcharly.artstation.com/blog/MM3B/speedtree-cinema-8-collisions-and-clusters-anchor-points
+  Author's written chapter guide reviewed. 1:42-9:35 cluster textures, anchors and leaf attachment; 9:39-12:27 leaf collision controls.
+- How to make lifelike trees and vegetation with SpeedTree, Mario Leone (2025): https://www.creativebloq.com/3d/how-to-make-lifelike-trees-and-vegetation-with-speedtree
+  Author explains primary/secondary/tertiary hierarchy and species-specific branch length, gravity and distribution; says workflow applicable to SpeedTree 10.
+
+Next modeling approach: establish maple silhouette and branch hierarchy, author calibrated leaf-bearing twig clusters, bake to efficient cards and attach through correctly oriented mesh anchors, then tune density and LOD. Preserve true fine branch geometry for winter/fall debris. Do not increase leaf size simply to fill crown gaps.
+Native retry succeeded; Ctrl+S saved prior work. Subsequent unsaved edits: child leaf Size .4 feet and Sample material; parent cluster Size1.5 feet; added Branch child to Branch2, Length segments Absolute5 Relative0, Radial Absolute3 Relative still2 (attempt to change to0 interrupted by focus/layout change). New Branch is not yet parent of leaf generators. Modeling paused on user tutorial-research request.
+
+CURRENT CHECKPOINT (supersedes working-template notes above):
+SugarMaple_Green.spm saved with corrected trunk and denser crown.
+Trunk radius profile tip .218, radial displacement .04, length segments24 and radial10.
+Parent leaf cluster size2.3 feet, fold/curl0, unificationNone, sky influence.25.
+Leaf generation interval frequency60 count2 spiral.618 first.1 last1.
+Fine branch generation absolute6, parentlength.25, radialrelative0, optimization.4.
+Secondary Branch2 bifurcation spacing .23 (previous .415).
+Green export completed: OBJ, metres, Z up, scale1, all three LODs.
+LOD0 93262 triangles (38354 wood / 54908 foliage).
+LOD1 43352 triangles (13162 wood / 30190 foliage).
+LOD2 14891 triangles (2109 wood / 12782 foliage).
+LOD0 bounding box: x -8.39206..8.76346, y -9.07808..8.1256, z -.349758..20.0824 metres.
+Do not use full-detail mesh as default without performance review.
+SugarMaple_Fall.spm saved with identical structure and SugarMaple_Cluster_Fall map family. Fall export initiated.
+No game integration has been performed yet. Winter, matching debris, blade-size verification and runtime checks remain outstanding.
+
+Written tutorials reviewed in full:
+https://docs.unity3d.com/speedtree-modeler/manual/clusters.html
+https://docs.unity3d.com/speedtree-modeler/manual/mesh-anchors.html
+https://docs.unity3d.com/speedtree-modeler/manual/generation-editor.html
+https://docs.unity3d.com/speedtree-modeler/manual/leaf-mesh-generator-properties.html
+https://docs.unity3d.com/speedtree-modeler/manual/materials-bar.html
+https://docs.unity3d.com/speedtree-modeler/manual/common-asset-settings.html
+https://magazine.artstation.com/2019/11/creating-beautifully-merged-photogrammetry-trees-with-speedtree/
+Applied: connected twig clusters baked in XY ortho; matching seasonal texture layout; base anchor at twig base; 2-triangle cluster cutout; real fine-branch hierarchy; leaf scale kept fixed while changing branching density. YouTube playback unavailable, do not claim videos watched.
+
+FINAL IMPLEMENTATION CHECKPOINT: Fall and Winter exports completed. LOD1 seasonal family installed locally; same native ground Z=0 and matching wood. Eight matching limbs plus one-metre stump/trunk split, same-source leaf cards, all inherited gameplay/environment features. Sugar Maple replaces the single grass-test broadleaf; oak retained in registry. Runtime 43,352 leafy / 13,162 winter triangles. Leaf blade nominal10cm, card13cm including petiole. Sources/tutorials/production guide archived in repository. Visual approval remains with user.
+
+TWO-TREE FOLLOW-UP: User clarified maple must accompany oak. Grass test now has one of each; fir placements hidden, assets preserved. Right-side God Tool cuts either tree via its base hex; Reset Trees restores both. Independent per-family render/leaf/snow channels, per-tree fall/nav/shelter records, separate filled grass-pressure hulls. Polygon counts unchanged. Flat-looking trunk side remains a native-shape review item; measured cross-section at 1.8m is about1.03x.88m, not a collapsed axis. See docs/SUGAR_MAPLE_PRODUCTION.md.

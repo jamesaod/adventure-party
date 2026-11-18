@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {updateSurfaceBuffers,createTargetPool} from '../js/combat-render-cache.mjs';
-import {triangulateSurfaces} from '../js/combat-webgl.mjs?v=tree-snow-grains1';
+import {triangulateSurfaces} from '../js/combat-webgl.mjs?v=cover-profile1';
 import {orderSurfaceActors} from '../js/combat-surface-lighting.mjs';
 // Original exhaustive ordering retained as a regression oracle.
 function reference(actors,project,unitPoint){

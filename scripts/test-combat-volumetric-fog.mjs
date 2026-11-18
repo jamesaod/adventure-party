@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+import {createVolumetricFog} from '../js/combat-volumetric-fog.mjs';
+import {combatPerformance,drawCombatPerformanceChart} from '../js/combat-performance.mjs';
+const source=fs.readFileSync('js/adventure-party.js','utf8');const start=source.indexOf('function treeYawDegrees('),end=source.indexOf('\n}',source.indexOf('function treeRotationFrame('))+2;
+const state={terrainHash:x=>x,battlefieldRotation:0};vm.createContext(state);vm.runInContext(source.slice(start,end),state);
+const angles=new Set();for(let i=0;i<6000;i++){const tree={x:i-7901,y:0};angles.add(state.treeRotationFrame({treeRotationFrames:12},tree,true));assert(Number.isInteger(state.treeRotationFrame({treeRotationFrames:12},tree)));}assert.equal(angles.size,360);
+const labels=[],ctx=new Proxy({fillText:s=>labels.push(s)},{get:(t,p)=>t[p]||(()=>{})});const old=combatPerformance.snapshot;combatPerformance.snapshot=()=>({averageCpuMs:{groundCover:12,woodMasks:0,modelTotal:3},counters:{}});globalThis.adventurePartyGpuPerformance={snapshot:()=>({supported:true,samples:1,times:{'Volumetric fog':8,'Ground cover':3}})};
+drawCombatPerformanceChart(ctx,1080);assert(labels.indexOf('Ground cover')<labels.indexOf('Models total'));const gpu=labels.indexOf('GPU PASS COST — sampled average');assert.equal(labels[gpu+1],'Volumetric fog');combatPerformance.snapshot=old;delete globalThis.adventurePartyGpuPerformance;
+const fog=createVolumetricFog(),view={matrix:[1,0,0,1,300,300],anchor:{x:300,y:300},zoom:1,width:600,height:600},p={x:0,y:0,radius:3,height:2,density:.6,time:0,solar:{sky:.9,daylight:.25}};
+assert(fog.configure(p,view));assert.equal(fog.mesh.material.uniforms.density.value,.6);assert.equal(fog.mesh.material.uniforms.sky.value,.9);assert.equal(fog.mesh.material.uniforms.sun.value,.25);fog.dispose();console.log('PASS 360 stable tree angles, descending CPU/GPU rows, bounded volume projection and independent sky/density');

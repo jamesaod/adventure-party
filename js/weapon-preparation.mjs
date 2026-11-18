@@ -1,11 +1,11 @@
 import {pendingPreparedAssets,writePreparedAsset,finishPreparedAsset} from './combat-prepared-store.mjs';
-import {serializePreparedAsset,preparedAssetKey} from './combat-prepared-assets.mjs?v=tree-snow-grains1';
+import {serializePreparedAsset,preparedAssetKey} from './combat-prepared-assets.mjs?v=natural-ac1';
 const status=document.querySelector('#status'),button=document.querySelector('#build');
 button.onclick=async()=>{
  button.disabled=true;
  try{
   const recipes=(await pendingPreparedAssets()).filter(r=>r.equipment?.asset?.includes('/low-poly-medieval/'));
-  const {generateCombatSpriteSet}=await import('./combat-mob-renderer.mjs?v=tree-snow-grains1');
+  const {generateCombatSpriteSet}=await import('./combat-mob-renderer.mjs?v=natural-ac1');
   for(let i=0;i<recipes.length;i++){
    const recipe=recipes[i],key=preparedAssetKey(recipe),label=`${i+1}/${recipes.length}: ${recipe.equipment.itemName} / ${recipe.shield?.itemName||'No shield'}`;
    const exists=await fetch(`assets/combat-units/${key}.json.gz`,{method:'HEAD'});

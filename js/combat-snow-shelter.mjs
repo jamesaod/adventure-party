@@ -3,10 +3,22 @@ import * as THREE from '../assets/vendor/three/three.module.min.js';
 const size=1024,data=new Uint8Array(size*size);data.fill(255);
 const texture=new THREE.DataTexture(data,size,size,THREE.RedFormat);texture.minFilter=texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
 export const snowShelterUniforms={snowShelter:{value:texture},snowShelterBounds:{value:new THREE.Vector4(0,0,1,1)}};
-let revision=0;
+let revision=0,finalRevision=null,previousField=null,previousBounds=null,change=null;
+export const snowShelterChange=()=>change;
 // Interception controls incoming grains. Snow history lives in the retained coat
 // field, so removing a canopy needs no opacity fade or separate recovery clock.
-export function finalizeSnowShelter(){texture.needsUpdate=true;}
+export function finalizeSnowShelter(){
+ const bounds=snowShelterUniforms.snowShelterBounds.value.toArray();let areas=null;
+ if(previousField&&previousBounds.every((v,i)=>v===bounds[i])){
+  const tile=32,columns=size/tile,dirty=new Uint8Array(columns*columns);
+  for(let i=0;i<data.length;i++)if(data[i]!==previousField[i])dirty[Math.floor(i/size/tile)*columns+Math.floor((i%size)/tile)]=1;
+  // Separate dirty tiles avoid a map-wide rectangle when distant trees land together.
+  areas=[];for(let y=0;y<columns;y++)for(let x=0;x<columns;x++){if(!dirty[y*columns+x])continue;const start=x;while(x+1<columns&&dirty[y*columns+x+1])x++;
+   areas.push([bounds[0]+(start*tile-1)*bounds[2]/size,bounds[1]+(y*tile-1)*bounds[3]/size,bounds[0]+((x+1)*tile+1)*bounds[2]/size,bounds[1]+((y+1)*tile+1)*bounds[3]/size]);
+  }
+ }
+ change={revision,previousRevision:finalRevision,areas};previousField??=new Uint8Array(data.length);previousField.set(data);previousBounds=bounds;finalRevision=revision;texture.needsUpdate=true;
+}
 export function resetSnowShelterHistory(){}
 export function advanceSnowShelter(){return false;}
 export const snowShelterRevision=()=>revision;

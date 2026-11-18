@@ -497,9 +497,9 @@ async function castShockingGraspSpell(action,target){
   const attackBonus=attackEffectModifier(caster,target)+(throughHand && !adjacent ? 2 : 0);
   const targetAC=effectiveArmorClassForAttack(caster,target,"melee");
   const targetNumber=caster.thaco-targetAC;
-  const resolution=resolveMeleeAttackD20(rawRoll,targetNumber,attackBonus);
+  const resolution=resolveMeleeAttackD20(rawRoll,targetNumber,attackBonus,target);
 
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
 
   if(!resolution.hit){
     playMissSound();
@@ -558,9 +558,9 @@ async function castMelfsAcidArrowSpell(action,target){
   const targetAC=effectiveArmorClassForAttack(caster,target,"small-device-missile");
   const targetNumber=fighterThaco-targetAC;
   const modifier=attackEffectModifier(caster,target);
-  const resolution=resolveMissileAttackD20(rawRoll,targetNumber,modifier);
+  const resolution=resolveMissileAttackD20(rawRoll,targetNumber,modifier,target);
 
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
   await animateElementalArrowProjectile(
     caster,
     target,

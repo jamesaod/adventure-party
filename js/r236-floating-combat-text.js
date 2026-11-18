@@ -260,7 +260,7 @@ function r236FloatingTextStyle(kind,alpha){
       return {
         fontSize:12,
         fill:
-          "rgba(255,241,183,"+
+          "rgba(255,255,255,"+
           alpha+
           ")",
         stroke:
@@ -305,7 +305,7 @@ function r236DrawFloatingCombatText(){
       continue;
     }
 
-    if(entry.kind.includes('damage')&&unit){
+    if(unit){
       const anchor=combatUnitTextAnchor(unit),style=r236FloatingTextStyle(entry.kind,1);
       ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
       ctx.font='400 14px "Press Start 2P", "Courier New", monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=3;ctx.globalAlpha=1;

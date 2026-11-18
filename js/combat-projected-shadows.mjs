@@ -1,3 +1,4 @@
+import {STREAM_SHADOW_GLSL,streamShadowUniforms,updateStreamShadowUniforms} from './combat-stream-shadows.mjs';
 import {gpuCasterVertex} from './combat-gpu-casters.mjs';
 import {combatPerformance as perf} from './combat-performance.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
@@ -92,39 +93,46 @@ void main(){
 
 // Per-source union mask: R stores local penumbra radius, A stores shadow coverage.
 export const projectedShadowComposite=`
+${STREAM_SHADOW_GLSL}
 uniform sampler2D snowMask;uniform vec4 snowBounds;uniform mat3 inverseView;uniform vec2 viewport,viewAnchor;uniform float viewZoom;uniform bool snowGround;
 uniform sampler2D mask;uniform vec2 texel;uniform bool localShadow;varying vec2 vUv;
 void main(){
+ vec2 outputScreen=vec2(vUv.x,1.-vUv.y)*viewport;
+ vec2 base=(inverseView*vec3(viewAnchor+(outputScreen-viewAnchor)/viewZoom,1.)).xy;
+ vec3 bed=bedShadowReceiver(base);vec2 sampleScreen=(bedShadowView*vec3(bed.xy,1.)).xy;
+ sampleScreen=viewAnchor+(sampleScreen-viewAnchor)*viewZoom;
+ vec2 shadowUv=bedShadowEnabled?vec2(sampleScreen.x/viewport.x,1.-sampleScreen.y/viewport.y):vUv;
+ if(any(lessThan(shadowUv,vec2(0.)))||any(greaterThan(shadowUv,vec2(1.))))discard;
  float a;
  if(!localShadow){
   // Preserve the sun's existing edge filter.
-  a=texture2D(mask,vUv).a*.6;
-  a+=(texture2D(mask,vUv+vec2(texel.x,0.)).a+texture2D(mask,vUv-vec2(texel.x,0.)).a+
-      texture2D(mask,vUv+vec2(0.,texel.y)).a+texture2D(mask,vUv-vec2(0.,texel.y)).a)*.1;
+  a=texture2D(mask,shadowUv).a*.6;
+  a+=(texture2D(mask,shadowUv+vec2(texel.x,0.)).a+texture2D(mask,shadowUv-vec2(texel.x,0.)).a+
+      texture2D(mask,shadowUv+vec2(0.,texel.y)).a+texture2D(mask,shadowUv-vec2(0.,texel.y)).a)*.1;
  }else{
-  vec4 center=texture2D(mask,vUv);float radius=center.r,nearby=center.a;
+  vec4 center=texture2D(mask,shadowUv);float radius=center.r,nearby=center.a;
   // Extend the radius field outside the silhouette so softness expands its edge.
   for(int i=0;i<8;i++){
    float angle=float(i)*.78539816339;vec2 offset=vec2(cos(angle),sin(angle))*texel*18.;
-   vec4 sampleValue=texture2D(mask,vUv+offset);radius=max(radius,sampleValue.r);nearby=max(nearby,sampleValue.a);
+   vec4 sampleValue=texture2D(mask,shadowUv+offset);radius=max(radius,sampleValue.r);nearby=max(nearby,sampleValue.a);
   }
   if(nearby<.00001)discard;
   vec2 spread=texel*(.35+24.*radius);
   a=center.a*.2;
   for(int i=0;i<4;i++){
    float angle=float(i)*1.57079632679;
-   a+=texture2D(mask,vUv+vec2(cos(angle),sin(angle))*spread*.45).a*.1;
+   a+=texture2D(mask,shadowUv+vec2(cos(angle),sin(angle))*spread*.45).a*.1;
   }
   for(int i=0;i<8;i++){
    float angle=float(i)*.78539816339;
-   a+=texture2D(mask,vUv+vec2(cos(angle),sin(angle))*spread).a*.05;
+   a+=texture2D(mask,shadowUv+vec2(cos(angle),sin(angle))*spread).a*.05;
   }
  }
  vec2 screen=vec2(vUv.x,1.-vUv.y)*viewport;
  vec2 world=(inverseView*vec3(viewAnchor+(screen-viewAnchor)/viewZoom,1.)).xy;
  vec2 suv=(world-snowBounds.xy)/snowBounds.zw;
  float snow=0.;if(!localShadow&&snowGround&&all(greaterThanEqual(suv,vec2(0.)))&&all(lessThanEqual(suv,vec2(1.))))snow=texture2D(snowMask,suv).r;
- gl_FragColor=vec4(vec3(.16,.34,.60)*snow,a);
+ gl_FragColor=vec4(vec3(.16,.34,.60)*snow,a*bed.z);
 }`;
 
 // A point above a lamp cannot cast onto the floor below it. Clip crossing
@@ -139,13 +147,13 @@ export function clipShadowTriangleAtLight(points,uv,lightHeight){
  return result;
 }
 
-export function createProjectedShadowPass({renderer,camera,texture,flush,getView,getSnow=()=>null,onPaint}){
+export function createProjectedShadowPass({renderer,camera,texture,flush,getView,getSnow=()=>null,getStream=()=>null,onPaint}){
  const solidMask=new THREE.DataTexture(new Uint8Array([255,255,255,255]),1,1);solidMask.needsUpdate=true;
  const palettes=new Map(),identityBones=new Float32Array(new THREE.Matrix4().elements);let paletteFrame=0;
  const scene=new THREE.Scene(),records=[],batches=new Map(),ids=new WeakMap();let lighting={solar:null,sources:[]};let sequence=0,slot=0,receiver=null,stats={batches:0,triangles:0};
  let retainedMaskKey=null,retainedTriangles=0;
  const maskTarget=new THREE.WebGLRenderTarget(1,1,{depthBuffer:false,stencilBuffer:false});
- const maskQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{snowMask:{value:null},snowBounds:{value:new THREE.Vector4()},inverseView:{value:new THREE.Matrix3()},viewport:{value:new THREE.Vector2()},viewAnchor:{value:new THREE.Vector2()},viewZoom:{value:1},snowGround:{value:false},mask:{value:maskTarget.texture},texel:{value:new THREE.Vector2(1,1)},localShadow:{value:false}},
+ const maskQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{...streamShadowUniforms(THREE),snowMask:{value:null},snowBounds:{value:new THREE.Vector4()},inverseView:{value:new THREE.Matrix3()},viewport:{value:new THREE.Vector2()},viewAnchor:{value:new THREE.Vector2()},viewZoom:{value:1},snowGround:{value:false},mask:{value:maskTarget.texture},texel:{value:new THREE.Vector2(1,1)},localShadow:{value:false}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
   fragmentShader:projectedShadowComposite,transparent:true,depthTest:false,depthWrite:false}));
  maskQuad.frustumCulled=false;
@@ -246,7 +254,7 @@ export function createProjectedShadowPass({renderer,camera,texture,flush,getView
     else stats.triangles+=batch.positions.length/9;
     stats.batches++;
     }renderer.render(scene,camera);scene.clear();perf.count('shadowSceneSubmissions');}
-    const su=maskQuad.material.uniforms,snow=getSnow();su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
+    const su=maskQuad.material.uniforms,snow=getSnow();const field=getStream();updateStreamShadowUniforms(su,field&&{...field,enabled:field.enabled&&group.every(b=>!b.wall)},view,group[0].light.vector,group[0].scale);su.snowGround.value=!!snow&&!group[0].wall;if(snow){su.snowMask.value=snow.texture;su.snowBounds.value.copy(snow.bounds);}const [va,vb,vc,vd,vtx,vty]=view.matrix;su.inverseView.value.set(va,vc,vtx,vb,vd,vty,0,0,1).invert();su.viewport.value.set(view.width,view.height);su.viewAnchor.value.set(view.anchor.x,view.anchor.y);su.viewZoom.value=view.zoom;
  maskQuad.material.uniforms.localShadow.value=group[0].light.vector[3]>.5;renderer.setRenderTarget(target);scene.add(maskQuad);renderer.render(scene,camera);scene.remove(maskQuad);
    }}finally{scene.clear();renderer.setRenderTarget(target);renderer.setClearColor(oldColor,oldAlpha);}
    retainedMaskKey=key;retainedTriangles=stats.triangles;batches.clear();onPaint();

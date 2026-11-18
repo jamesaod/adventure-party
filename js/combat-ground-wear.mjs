@@ -1,5 +1,5 @@
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {coverField} from './combat-ground-cover.mjs?v=tree-snow-grains1';
+import {coverField} from './combat-ground-cover.mjs?v=cover-profile1';
 import {basinDepth,BASIN_MAX_METRES} from './combat-wet-basins.mjs';
 export const WEAR_SETTINGS=Object.freeze({patchCoverage:.25,patchSize:3.4,patchSoftness:.4,patchWear:1,soilRelief:-1.8});
 export function createGroundWear(){

@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {captureDirectUnit,sampleDirectPose,settledCorpseImage,corpseSnowAmount} from '../js/combat-direct-units.mjs?v=tree-snow-grains1';
+import {captureDirectUnit,sampleDirectPose,settledCorpseImage,corpseSnowAmount} from '../js/combat-direct-units.mjs?v=outline-reuse2';
 import {shadowGeometryFor,registerShadowGeometry} from '../js/combat-shadow-geometry.mjs';
 import {snapshotGpuCaster} from '../js/combat-gpu-casters.mjs';
 import {createUnitImageCache} from '../js/combat-unit-image-cache.mjs';
-import {advanceCorpseSnow,resetCorpseSnow,meltCorpseSnow} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {advanceCorpseSnow,resetCorpseSnow,meltCorpseSnow} from '../js/combat-corpse-snow.mjs?v=natural-ac1';
 import {extractCombatFunction} from './combat-test-source.mjs';
 // A lethal result precedes the queued death beat: neither cache nor timestamp exists.
 for(const pending of [undefined,null,{alive:true},{alive:false},{alive:false,deathPresentationStartedAt:0}])assert.equal(corpseSnowAmount(pending),0,'Uncached or pending death must not abort model rendering');

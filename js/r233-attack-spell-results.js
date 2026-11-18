@@ -44,10 +44,9 @@ AdventurePartyCombatServices.register('castMelfsAcidArrowSpell','r233-attack-spe
   const resolution=resolveMissileAttackD20(
     rawRoll,
     targetNumber,
-    modifier
-  );
+    modifier,target);
 
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
 
   setLastRoll(
     "Melf's Acid Arrow: RAW d20 "+
@@ -243,10 +242,9 @@ AdventurePartyCombatServices.register('castShockingGraspSpell','r233-attack-spel
     resolveMeleeAttackD20(
       rawRoll,
       targetNumber,
-      attackBonus
-    );
+      attackBonus,target);
 
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
 
   setLastRoll(
     "Shocking Grasp: RAW d20 "+
@@ -589,10 +587,9 @@ AdventurePartyCombatServices.register('r226CastFlameArrow','r233-attack-spell-re
     const resolution=resolveMissileAttackD20(
       raw,
       targetNumber,
-      modifier
-    );
+      modifier,target);
 
-    playNaturalAttackRollSound(raw);
+    if(!resolution.helpless)playNaturalAttackRollSound(raw);
 
     await r233FocusTarget(target);
 

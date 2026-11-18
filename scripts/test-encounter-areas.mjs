@@ -36,7 +36,7 @@ setEncounterArea(resize,{...record,spawnX:20,spawnZ:20},[{x:20,z:20}]);assert.th
 console.log('PASS irregular encounter triggers, shared victory, legacy migration, overlap rejection, partial/bulk removal, undo snapshots, export and resize protection');
 
 // Exercise the production movement geometry, including wall-bisected hex rejection.
-const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const names=['worldPointForHex','cross2','pointOnSegment','segmentsIntersect','pointInConvexPolygon','architecturalHexCoreVertices','architecturalWallLength','architecturalWallPointAt','wallOpeningCenterT','wallOpeningPassesMode','wallBlockingSubsegments','wallSegmentCutsHexInterior','rebuildArchitecturalBlockedHexes','isArchitecturalBlockedHex','architecturalWallBlocksWorldLine','architecturalWallBlocksStep'];
 const functions=names.map(name=>{const start=source.indexOf(`function ${name}(`);assert(start>=0,name);const end=source.indexOf('\nfunction ',start+1);return source.slice(start,end<0?undefined:end);}).join('\n');
 function canTraverse(horizontal,open){

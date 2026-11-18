@@ -15,3 +15,7 @@ for(const shield of [false,true]){
  assert.ok(q.angleTo(target)<1e-7);assert.equal(changed.sizePercent,100);assert.deepEqual(settings.position,[.1,.2,.3]);
 }
 console.log('Equipment fit preserves weapon roll, shield mounting offsets and saved transforms.');
+
+const socket=new THREE.Object3D(),settings={position:[0,0,0],rotation:[0,0,0]};const start=captureFit(THREE,socket,settings);socket.position.set(1.75,-1.75,3);assert.deepEqual(readFit(THREE,socket,start).position,[1.75,-1.75,3]);
+
+const {normalizeEquipment}=await import('../js/studio-equipment.mjs');assert.deepEqual(normalizeEquipment({position:[12,-15,3]}).position,[12,-15,3]);socket.position.set(30,-30,12);assert.deepEqual(readFit(THREE,socket,start).position,[20,-20,12]);console.log('Expanded range survives dragging and runtime normalization.');

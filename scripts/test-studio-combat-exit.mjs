@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const source = readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url), 'utf8');
+const source = readCombatFixture(new URL('../js/adventure-party.js?v=natural-ac1', import.meta.url), 'utf8');
 function productionFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function ${name}`);

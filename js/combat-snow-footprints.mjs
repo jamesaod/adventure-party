@@ -80,7 +80,7 @@ export function sampleSnowFootfalls(group,entity,options,view,camera){
   const current={...p,t,contact,clearance,raised:!!old?.raised||clearance>.05};state.feet.set(bone.name,current);
   // Trigger at sole planting, not at entering the snow surface: deep snow
   // can surround a foot for the whole stride. No clock-based step cadence.
-  if(old&&t>old.t&&t-old.t<=.2&&current.raised&&clearance<=.025){current.raised=false;if(groundWalking&&height<=.003&&options.outdoor!==false)options.onGroundFootfall?.(p.x,p.y);if(height>.003&&options.outdoor!==false)globalThis.adventurePartySnowStep?.(Math.min(1,height/(SNOW_LAYER_METRES*3)));}
+  if(old&&t>old.t&&t-old.t<=.2&&current.raised&&clearance<=.025){current.raised=false;if(groundWalking&&height<=.003&&options.outdoor!==false)options.onGroundFootfall?.(p.x,p.y);if(height>.003&&options.outdoor!==false)globalThis.adventurePartySnowStep?.(Math.min(1,height/(SNOW_LAYER_METRES*3)),entity);}
   if(!contact)continue;
   let angle=old?.angle||0;const toe=bone.children.find(n=>n.isBone);
   if(toe){toe.getWorldPosition(toePoint);const tip=groundPoint(toePoint,options,view,camera);angle=Math.atan2((tip.y-p.y)/scale[1],(tip.x-p.x)/scale[0]);}

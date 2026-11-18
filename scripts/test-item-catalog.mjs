@@ -67,7 +67,7 @@ assert.ok(json.images.every(image=>image.mimeType==='image/jpeg'&&Number.isInteg
 assert.deepEqual(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].min,[-0.4998169541358948,0,-0.12459565699100494]);
 assert.deepEqual(json.accessors[json.meshes[0].primitives[0].attributes.POSITION].max,[0.4998169541358948,1,0.12459565699100494]);
 
-const game=readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const game=readCombatFixture(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 assert.ok(game.includes('fighter:76'));
 assert.ok(game.includes('heightInches:76'));
 assert.ok(game.includes('f.heightInches=76'));

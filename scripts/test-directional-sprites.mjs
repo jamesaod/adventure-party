@@ -8,7 +8,7 @@ import { SPRITE_LAYOUTS, spriteLayout, spriteMob } from "../js/sprite-layouts.mj
 
 // Exercise the production pose resolver and draw path without booting audio,
 // terrain, or the DOM. Images and the clock are the only inputs replaced here.
-const source = readCombatFixture(new URL("../js/adventure-party.js?v=tree-snow-grains1", import.meta.url), "utf8").replace(/\r\n/g, "\n");
+const source = readCombatFixture(new URL("../js/adventure-party.js?v=natural-ac1", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 function productionFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing production function: ${name}`);
@@ -500,7 +500,7 @@ function startupHarness({ repository = [], draft = false, fetchError = false, wa
       "selectStudioSpriteSet", "isStudioPlayerSpriteTarget", "configureDefaultPlayerSpriteSets", "playerSpriteSetForType", "applyPlayerSpriteSet"].map(productionFunction),
     runtimeFunction("start"), runtimeFunction("loadDraft")
   ].join("\n"), context);
-  const sharedSource=readCombatFixture(new URL('../js/combat-runtime.js?v=tree-snow-grains1',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
+  const sharedSource=readCombatFixture(new URL('../js/combat-runtime.js?v=natural-ac1',import.meta.url),'utf8'),sharedStart=sharedSource.indexOf('async function startCombatSession(');
   vm.runInContext('let combatSessionGeneration=0,combatFirTreesLoading=Promise.resolve(),combatTreeCollision={},combatTreeAssets={select:async()=>({})},combatFirTrees=null,combatGpu=null,combatSceneContext=null; function initializeFirMovementObstacles(){}\n'+sharedSource.slice(sharedStart,sharedSource.indexOf('\n}',sharedStart)+2),context);
   context.studioSpriteLoading = context.createStudioSpriteLoadingGate();
   context.api = {

@@ -1,5 +1,5 @@
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {loadRagdollRig,beginDeath,beginRecovery,advanceDeath,advanceRecovery} from './ragdoll-lab-rig.mjs?v=tree-snow-grains1';
+import {loadRagdollRig,beginDeath,beginRecovery,advanceDeath,advanceRecovery} from './ragdoll-lab-rig.mjs?v=natural-ac1';
 import {createCombatFrameScheduler} from './combat-frame-scheduler.mjs?v=R238C395';
 const $=id=>document.getElementById(id),canvas=$('view'),host=$('viewport');
 let rig,units=[],paused=false,lastTime=null,elapsed=0,blastTime=-100,ready=false,benchmark=null,poseMs=0,peakPoseMs=0,totalPoseMs=0,poseSamples=0,frames=0,animationTicks=0;

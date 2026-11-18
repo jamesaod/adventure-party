@@ -30,7 +30,7 @@ for(const displayHz of [54,60,144]){
  h.setActive(false);assert.equal(await s.nextFrame(),false);s.dispose();assert.equal(await s.nextFrame(),false);
 }
 // Exercise actual finite production animations with a simulated display clock.
-const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const extract=(name,prefix='function ')=>{const a=source.indexOf(prefix+name+'(');assert(a>=0,name);return source.slice(a,source.indexOf('\n}',a)+2);};
 let now=0;const samples=[];
 const context={...combatPresentationTestServices(),warmCombatGround(){},addTerrainScorch(){},igniteFirTrees(){},performance:{now:()=>now},hexCenter:(x,y)=>({x:x*100,y:y*100}),arrowMissEndpoint:()=>({x:200,y:0}),projectileFx:null,fireballExplosionFx:null,

@@ -383,6 +383,20 @@
       "sourceArchive": "Universal Animation Library[Standard].zip",
       "sourceMember": "Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb",
       "license": "assets/animations/ual1/LICENSE.txt"
+    },
+    {
+      "id": "great-sword-walk",
+      "label": "Great Sword Walk",
+      "file": "assets/animations/two-handed-swing/great-sword-walk.fbx",
+      "bytes": 369872,
+      "sha256": "e6619d06982068e1bf31760f89bc3bde7728f0436645c43d6d7bbf926382f8de",
+      "actionProfiles": [
+        "two-handed-swing",
+        "move"
+      ],
+      "status": "source-supplied",
+      "assignedPoses": {},
+      "rigCompatibility": "unverified"
     }
   ]
 }

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import * as sceneApi from '../js/exploration-encounters.mjs';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
-const source=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const source=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const draw=extractCombatFunction(source,'draw');
 for(const exploration of [true,false]){
   const calls=[],sun={drawingGround:false};

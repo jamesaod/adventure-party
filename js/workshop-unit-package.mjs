@@ -1,5 +1,5 @@
-import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C313';
-import {readiness} from './mob-workshop-core.mjs?v=R238C313';
+import {validateWorkshopProject} from './mob-workshop-project.mjs?v=R238C471';
+import {readiness} from './mob-workshop-core.mjs?v=scored-ai1';
 export const PACKAGE_SCHEMA='adventure-party.workshop-unit';
 export function isWorkshopUnit(value){return value?.schema===PACKAGE_SCHEMA;}
 export function createWorkshopUnit(project,{id,modelFile,sha256}={}){

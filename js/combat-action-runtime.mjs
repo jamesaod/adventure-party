@@ -1,8 +1,8 @@
 import {loadCombatModel} from './combat-model-source.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {readActionLibrary,validateActionLibrary,bindActionEntry,chooseDeath,actionSample} from './combat-action-clips.mjs';
-import {buildSceneGraph,normalizedFrame,configureCamera,mountCombatEquipment} from './combat-mob-renderer.mjs?v=tree-snow-grains1';
-import {restoreDirectMaterials,directUnitFrame} from './combat-direct-units.mjs?v=tree-snow-grains1';
+import {buildSceneGraph,normalizedFrame,configureCamera,mountCombatEquipment} from './combat-mob-renderer.mjs?v=natural-ac1';
+import {restoreDirectMaterials,directUnitFrame} from './combat-direct-units.mjs?v=outline-reuse2';
 import {applyWarriorRecolor,isWarriorRecolorModel} from './warrior-recolor.mjs?v=R238C127';
 
 export async function attachCombatActions(recipe,set){
@@ -22,8 +22,8 @@ export async function attachCombatActions(recipe,set){
   const stamp=entity.deathPresentationStartedAt;
   let choice=choices.get(entity);
   if(!choice||choice.stamp!==stamp){choice={stamp,entry:chooseDeath(entries)};choices.set(entity,choice);}
-  entity.deathAnimationDurationMs=choice.entry.clip.duration/choice.entry.speed*1000;
-  const entry=choice.entry,elapsed=Math.max(0,(now-stamp)/1000);
+  entity.deathAnimationDurationMs=entity.giantClubProneDeath?0:choice.entry.clip.duration/choice.entry.speed*1000;
+  const entry=choice.entry,elapsed=entity.giantClubProneDeath?entry.clip.duration/entry.speed:Math.max(0,(now-stamp)/1000);
   mixer.stopAllAction();
   const action=mixer.clipAction(clips.get(entry.id)).reset().setLoop(THREE.LoopOnce,1);
   action.clampWhenFinished=true;action.play();

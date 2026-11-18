@@ -19,8 +19,8 @@ const unsafe={models:[{id:'test',mobType:'fighter',file:'../../escape.glb'}]};
 assert.equal(compatibleStudioCombatModel({libraryModelId:'test'},unsafe,'fighter'),null,
   'Model selection is limited to versioned assets in the repository');
 
-const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
-const renderer=readFileSync(new URL('../js/combat-mob-renderer.mjs?v=tree-snow-grains1',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
+const renderer=readFileSync(new URL('../js/combat-mob-renderer.mjs?v=natural-ac1',import.meta.url),'utf8');
 const recipe=readFileSync(new URL('../js/combat-pose-recipe.mjs',import.meta.url),'utf8');
 const manifest=readFileSync(new URL('../js/sprite-set-core.mjs',import.meta.url),'utf8');
 assert.ok(game.includes('...(captured.model || {})'), 'Equipment refresh must select the matching captured model');

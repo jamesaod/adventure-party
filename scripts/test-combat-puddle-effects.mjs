@@ -20,3 +20,8 @@ assert.equal(puddleRainRate({type:'rain',intensity:.55}),80*.55**2);
 const wet=new CombatPuddleEffects({elevation:()=>-.1524,water:()=>.12,random:()=>.5});wet.collect([face]);wet.emit(wet.sample(0,0));
 const drop=wet.particles[0],peak=drop.vz**2/(4*1.8);
 assert(peak>.2&&drop.life>=.6,'Rain impacts rise visibly instead of less than one display pixel');
+
+let steps=0;const fallback=new CombatPuddleEffects({elevation:()=>-.1524,water:()=>.12,step:()=>steps++});fallback.collect([face]);fallback.trackRig(entity);fallback.walk([{entity,x:0,y:0}]);fallback.walk([{entity,x:22,y:0}]);assert.equal(steps,1,'Rig water fallback plays a footstep when foot planting is unavailable');fallback.walk([{entity,x:44,y:0}]);assert.equal(steps,1,'Recent water contact suppresses duplicate sound');
+
+const impactFx=new CombatPuddleEffects({elevation:()=>-.1524,water:()=>.12,random:()=>.5});impactFx.collect([face]);assert.equal(impactFx.impact(0,0),true);assert.equal(impactFx.particles.filter(p=>!p.mist).length,120);assert.equal(impactFx.particles.filter(p=>p.mist).length,20);assert.equal(impactFx.rings.length,3);assert(impactFx.particles.filter(p=>!p.mist).every(p=>p.vz>=2.6&&p.size===1.75));for(let i=0;i<20;i++)impactFx.impact(0,0);assert(impactFx.particles.length<=PUDDLE_PARTICLE_LIMIT);assert(impactFx.rings.length<=PUDDLE_RING_LIMIT);assert.equal(impactFx.impact(1000,1000),false);const dryImpact=new CombatPuddleEffects({elevation:()=>0,water:()=>0});dryImpact.collect([face]);assert.equal(dryImpact.impact(0,0),false);
+console.log('PASS club splash burst, three rings, water-only placement and repeated-impact budgets');

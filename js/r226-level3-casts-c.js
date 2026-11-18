@@ -62,8 +62,8 @@ async function r226FireMeteorVolley(caster,target,count,spellName="Melf's Minute
     const ac=effectiveArmorClassForAttack(caster,target,"small-device-missile");
     const targetNumber=thaco-ac;
     const modifier=2+attackEffectModifier(caster,target);
-    const resolution=resolveMissileAttackD20(raw,targetNumber,modifier);
-    playNaturalAttackRollSound(raw);
+    const resolution=resolveMissileAttackD20(raw,targetNumber,modifier,target);
+    if(!resolution.helpless)playNaturalAttackRollSound(raw);
     await animateMagicMissile(caster,target,i,count);
 
     if(!resolution.hit){ playMissSound(); continue; }

@@ -155,9 +155,9 @@ Connections:  {
   {
     const THREE = await import(pathToFileURL(path.join(three, 'three.core.min.js')));
     const modelCatalog = JSON.parse(await fs.readFile(new URL('../data/studio-models.json', import.meta.url), 'utf8'));
-    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2','male-orc-blue']);
+    assert.deepEqual(modelCatalog.studioModelIds, ['dungeon-crawler-carl-v3','blond-scale-mail-woman','male-orc','orc-leader-male-uniformed','orc-female-shaman','orc-female-shaman-v2','male-orc-blue','hill-giant']);
     // Independent Blender pose references exist for these six original rigs. Blue Orc is covered by its separate import/runtime tests.
-    for(const modelId of modelCatalog.studioModelIds.filter(id=>id!=='male-orc-blue')){
+    for(const modelId of modelCatalog.studioModelIds.filter(id=>!['male-orc-blue','hill-giant'].includes(id))){
     const modelEntry = modelCatalog.models.find(model => model.id === modelId);
     if(modelId==='dungeon-crawler-carl-v3')assert.equal(modelEntry.label, 'Dungeon Crawler Carl Ver 3');
     assert.equal(modelEntry.animationLibrary, 'uploaded-fbx');
@@ -200,7 +200,7 @@ Connections:  {
     const appRoot = new URL('https://studio.test/candidate/');
     const catalog = JSON.parse(await fs.readFile(new URL('../data/animation-library-sources.json',import.meta.url),'utf8'));
     const fbxEntries=catalog.animations.filter(entry=>/\.fbx$/i.test(entry.file));
-    assert.equal(fbxEntries.length,23);assert.equal(catalog.animations.length,28);
+    assert.equal(fbxEntries.length,24);assert.equal(catalog.animations.length,29);
     for(const entry of catalog.animations){
       const source=await fs.readFile(new URL('../'+entry.file,import.meta.url));
       assert.equal(source.length,entry.bytes);
@@ -218,8 +218,8 @@ Connections:  {
     try {
       const clips=await loadUploadedFbxAnimations({appRoot,targetModel,THREE,FBXLoader,
         prepareStudioAnimations,retargetHumanoidClip,fetchAsset,disposeModel(){disposed++;}});
-      assert.equal(clips.length,23);
-      assert.equal(disposed,23);
+      assert.equal(clips.length,24);
+      assert.equal(disposed,24);
       assert.deepEqual(clips.map(clip=>clip.name),fbxEntries.map(entry=>entry.label));
       assert.ok(clips.every(clip=>clip.duration>0 && clip.tracks.length>=(modelId==='orc-female-shaman-v2'||clip.name==='Axe Stance'?20:60)));
       assert.ok(clips.every(clip=>clip.userData.studioAnimationId.startsWith('uploaded:')));
@@ -231,13 +231,13 @@ Connections:  {
       assert.deepEqual(idle.userData.actionProfiles,['unarmed']);
       assert.deepEqual(catalog.animations.slice(0,14).map(entry=>entry.id),["goalie-throw", "standing-2h-cast-spell-01", "standing-2h-magic-attack-04", "boxing", "rifle-aim-to-down", "stabbing", "bayonet-stab", "sword-and-shield-slash", "sword-and-shield-idle", "standing-aim-recoil", "great-sword-idle", "great-sword-slash-01", "great-sword-slash-02", "standing-idle"],'Append new clips to preserve existing saved indices');
       assert.deepEqual(clips.map(clip=>clip.userData.studioAnimationId),fbxEntries.map(entry=>`uploaded:${entry.id}:0`));
-      assert.equal(reference.clips.length,22);
+      assert.equal(reference.clips.length,23);
       const mixer=new THREE.AnimationMixer(targetModel);
       let maxAngularError=0, maxHipError=0;
-      for(const [index,clip] of clips.slice(0,22).entries()){
-        const expected=reference.clips[index];
-        assert.equal(expected.id,catalog.animations[index].id);
-        assert.equal(expected.sourceSha256,catalog.animations[index].sha256);
+      for(const expected of reference.clips){
+        const index=fbxEntries.findIndex(entry=>entry.id===expected.id),clip=clips[index];
+        assert(clip,expected.id+' exists');
+        assert.equal(expected.sourceSha256,fbxEntries[index].sha256);
         assert.equal(clip.userData.animationRecipe,'carl-v2-mixamo-world-v1');
         assert.equal(clip.userData.humanoidImport.retargetMode,'semantic-world-bind-delta');
         assert.equal(clip.userData.humanoidImport.hipYTransferred,true);

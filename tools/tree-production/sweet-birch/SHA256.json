@@ -1,0 +1,147 @@
+[
+  {
+    "file": "Birch_Bark_Color.png",
+    "bytes": 3395695,
+    "sha256": "5aae1779076959652e0cbb5e828fe8ea8cebd558f05cdad9d322a3a45a6363da"
+  },
+  {
+    "file": "Birch_Leaf_Fall.png",
+    "bytes": 1848843,
+    "sha256": "7db7837379372e17b09abe5e72fc4a70752bc650370266e58b265973ca541822"
+  },
+  {
+    "file": "Birch_Leaf_Green.png",
+    "bytes": 1727859,
+    "sha256": "5631439b6aa8fb3f3d61ab20d533bb4bc6179e178638607f2a3ea94572054221"
+  },
+  {
+    "file": "build-matching-wood.mjs",
+    "bytes": 3353,
+    "sha256": "4fff10337936e81e68d555e83c126a303492b56c24d6e37a377b02d16bd941b2"
+  },
+  {
+    "file": "export-inventory.json",
+    "bytes": 2228,
+    "sha256": "840513607754acb6d5fe12493845471fc55a0d16b2c7c1f67c6a6114bed25dc1"
+  },
+  {
+    "file": "package-birch.cjs",
+    "bytes": 5579,
+    "sha256": "25c9ef32e81376c97b37d68b927ca1aed8e4e810707df547026c2b21c0911aea"
+  },
+  {
+    "file": "PRODUCTION.md",
+    "bytes": 5956,
+    "sha256": "0dc0be648b86f5ba9cf4c71b16bdb2a8c16896733b2ce07ca6670eade87d27ce"
+  },
+  {
+    "file": "RESEARCH_AND_AUTHORING.txt",
+    "bytes": 2049,
+    "sha256": "d31f1255a1ad6f3cfa8842931b3f15da2093456baf3c03bd48eee7e3b0278bab"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall.png",
+    "bytes": 1270675,
+    "sha256": "b8a420b35f0711cc7863272267175f4053ea1a436218a6052cf399287969029b"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall.spm",
+    "bytes": 88503,
+    "sha256": "19f1b0a096e938bc9ab0c8e9d6a8a9cf543667f9e3f3319efcf62a121c88ca3f"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall_AO.png",
+    "bytes": 203457,
+    "sha256": "05bbedc222a496315168c04d2d4909a75032527aa03a70e913e1fac3bcd3f429"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall_Gloss.png",
+    "bytes": 187831,
+    "sha256": "d147547247971aae597754da95184563b550d58a30886914d8a53d60c93828ba"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall_Normal.png",
+    "bytes": 502802,
+    "sha256": "c200c1dd7c60233622a9fbbbeb90f882d6fdde62abe820d9d583892ff6ea8d60"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall_Opacity.png",
+    "bytes": 77812,
+    "sha256": "6934559d3bdb861c135cf1ec82beb24ab23ab1a3cc85d5d580cab354bad46b41"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall_Subsurface.png",
+    "bytes": 63014,
+    "sha256": "13cb9b195f4d4c7cccc33905a446a157ac1f3bbf84ebd0f5a084ffe84794ec8e"
+  },
+  {
+    "file": "SweetBirch_Cluster_Fall_SubsurfaceAmount.png",
+    "bytes": 12332,
+    "sha256": "766ed13d904fbae3073b78eb5acc7f332e174b1ffc207daf1b4ba6b22385c3fd"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green.png",
+    "bytes": 1272582,
+    "sha256": "829be87a0be0242ae0a5c4fd8b64e337fd1b417673f2a6b08fc4c1a40f9c5b70"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green.spm",
+    "bytes": 84942,
+    "sha256": "54786eec872aa17d7be0db4fdc663cf9b86305f15b9633d49da6288c33259c33"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green_AO.png",
+    "bytes": 203465,
+    "sha256": "ff1af10b63cb4c8305f9b03112b068d2825c2cff37542adeebeb75a855c20db0"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green_Gloss.png",
+    "bytes": 187831,
+    "sha256": "d147547247971aae597754da95184563b550d58a30886914d8a53d60c93828ba"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green_Normal.png",
+    "bytes": 502802,
+    "sha256": "c200c1dd7c60233622a9fbbbeb90f882d6fdde62abe820d9d583892ff6ea8d60"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green_Opacity.png",
+    "bytes": 77812,
+    "sha256": "6934559d3bdb861c135cf1ec82beb24ab23ab1a3cc85d5d580cab354bad46b41"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green_Subsurface.png",
+    "bytes": 63014,
+    "sha256": "13cb9b195f4d4c7cccc33905a446a157ac1f3bbf84ebd0f5a084ffe84794ec8e"
+  },
+  {
+    "file": "SweetBirch_Cluster_Green_SubsurfaceAmount.png",
+    "bytes": 12332,
+    "sha256": "766ed13d904fbae3073b78eb5acc7f332e174b1ffc207daf1b4ba6b22385c3fd"
+  },
+  {
+    "file": "SweetBirch_Fall.spm",
+    "bytes": 105360,
+    "sha256": "88b80742b06597a78e243574ee83a40722fcdea652ab8b3d9b3abde957582b7f"
+  },
+  {
+    "file": "SweetBirch_Green.spm",
+    "bytes": 103222,
+    "sha256": "1ac1c5256c8552c26d51e1a9743fa4802a7e90ae92e31242d984ded3aa49c5d6"
+  },
+  {
+    "file": "SweetBirch_Winter.spm",
+    "bytes": 96334,
+    "sha256": "6e9c8a423496e4943513fcec3c868e4bde0b5650f4b0cc321cb7e2f27000ef48"
+  },
+  {
+    "file": "SweetBirch_Working.spm",
+    "bytes": 100490,
+    "sha256": "42237afee3328d4d12cbbe9c12e495e5702e4a5658ddbadded1192ee9ce86e5f"
+  },
+  {
+    "file": "wood-measurements.json",
+    "bytes": 18396,
+    "sha256": "c79856ae4586dc360dd24355028996e04d7fa9ea96b7848cc15e0af83908b894"
+  }
+]

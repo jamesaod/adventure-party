@@ -1,5 +1,5 @@
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {createCorpseSnowMap} from './combat-corpse-snow-map.mjs?v=tree-snow-grains1';
+import {createCorpseSnowMap} from './combat-corpse-snow-map.mjs?v=natural-ac1';
 import {SNOW_MAX_METRES} from './combat-snow-depth.mjs?v=shore-snow1';
 
 // Match terrain: thin coat is translucent; the completed powder coat is opaque.

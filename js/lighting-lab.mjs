@@ -1,14 +1,14 @@
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {createCombatRenderer} from './combat-webgl.mjs?v=tree-snow-grains1';
-import {loadWorkshopCombatUnit} from './combat-workshop-unit.mjs?v=tree-snow-grains1';
+import {createCombatRenderer} from './combat-webgl.mjs?v=cover-profile1';
+import {loadWorkshopCombatUnit} from './combat-workshop-unit.mjs?v=spell-poses1';
 import {createWorkshopRepositoryMob} from './workshop-repository-mob.mjs';
 import {appearanceRecipeForMob} from './mob-appearance.mjs?v=R238C204';
-import {directUnitFrame,sampleDirectPose,captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs?v=tree-snow-grains1';
+import {directUnitFrame,sampleDirectPose,captureDirectUnit,setDirectUnit} from './combat-direct-units.mjs?v=outline-reuse2';
 import {loadCombatModel} from './combat-model-source.mjs';
 import {solarState,weatherSolarState,solarAmbient,solarFaceGain,solarTimeLabel} from './solar-clock.mjs?v=R238C380';
 import {OUTDOOR_AMBIENT} from './exploration-environment.mjs?v=R238C262';
 import {surfaceLight} from './exploration-scene-style.mjs';
-import {snowAmbientDisplay,corpseSnowTint} from './combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {snowAmbientDisplay,corpseSnowTint} from './combat-corpse-snow.mjs?v=natural-ac1';
 import {COMBAT_LIGHTING_DEFAULTS,lightingProfile} from './combat-lighting-profile.mjs';
 
 const $=id=>document.getElementById(id);

@@ -219,8 +219,8 @@ async function r226CastFlameArrow(action,target){
     const targetAC=effectiveArmorClassForAttack(caster,target,"small-device-missile");
     const targetNumber=thaco-targetAC;
     const modifier=attackEffectModifier(caster,target);
-    const resolution=resolveMissileAttackD20(raw,targetNumber,modifier);
-    playNaturalAttackRollSound(raw);
+    const resolution=resolveMissileAttackD20(raw,targetNumber,modifier,target);
+    if(!resolution.helpless)playNaturalAttackRollSound(raw);
     await animateElementalArrowProjectile(
       caster,
       target,

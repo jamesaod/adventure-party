@@ -1,0 +1,741 @@
+{
+  "created": "2026-11-15",
+  "originalDirectory": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\white-oak",
+  "notes": "SPM copies preserved here. OBJ/MTL/texture dependencies remain in originalDirectory; not a standalone material bundle. Historical scripts are references, not current integration commands.",
+  "files": [
+    {
+      "file": "Bark_Base_Color.png",
+      "bytes": 530128,
+      "sha256": "7b48a46b7a7497f3609f945ad608090d6933d83a7b005faf17be1281b3e85e55"
+    },
+    {
+      "file": "Bark_Base_Normal.png",
+      "bytes": 845593,
+      "sha256": "ce0ce06ad763fe120b203e56e133be293259914c52c87d5e07f14783f1bdfce0"
+    },
+    {
+      "file": "Bark_Base_SS.png",
+      "bytes": 311009,
+      "sha256": "636eb1c9fb65e82ab4d6ede90008d962eb1f224d21dbe21724bd233d30bdd1d0"
+    },
+    {
+      "file": "family-debris.png",
+      "bytes": 124744,
+      "sha256": "d5f3c1fcec7789f88355076cea8f039a52b4b30cf930c690038935e1057def6b"
+    },
+    {
+      "file": "family-seasons.png",
+      "bytes": 378498,
+      "sha256": "c4f7792dba998acbfd1af5f16a40de2919770158717b0dc92209d4edb5d94c11"
+    },
+    {
+      "file": "litter-full.png",
+      "bytes": 280871,
+      "sha256": "291ac85f2a9325a5c8518d5465e07a7ec36798783ba30cc12a6e1c9e293458be"
+    },
+    {
+      "file": "litter-patches.png",
+      "bytes": 270373,
+      "sha256": "ce9b4ddce98b071530ba1737ac1e6ddb2fff69f8f5a3bf278bf6cd2b36466f92"
+    },
+    {
+      "file": "Oak_English_Cluster_Atlas_Dead_Color.png",
+      "bytes": 660757,
+      "sha256": "5ac59ded13e9aa77347eeda958cf2af8a128de902d65966a84fdcafbc0f21835"
+    },
+    {
+      "file": "Oak_English_Cluster_Atlas_Dead_Normal.png",
+      "bytes": 886514,
+      "sha256": "8695d07d43618040d7dd5e96e68c63a5d373c30f7079d7c511e567f365e2745e"
+    },
+    {
+      "file": "Oak_English_Cluster_Atlas_Dead_SS.png",
+      "bytes": 694677,
+      "sha256": "f80602c6b808e9d07fb87c936bfc0d18706cda0b1f2de77f02591d0d63979376"
+    },
+    {
+      "file": "Oak_English_Cluster_Branch_Color.png",
+      "bytes": 711418,
+      "sha256": "965987fc48026951a2eb266b35bcd942dd49d149141755e7034aae1d51bd1562"
+    },
+    {
+      "file": "Oak_English_Cluster_Branch_Normal.png",
+      "bytes": 1092065,
+      "sha256": "de5fb66f758de4103050a8a67aeb4def84768e63e3970cb6b846079d79d532c0"
+    },
+    {
+      "file": "Oak_English_Cluster_Branch_SS.png",
+      "bytes": 471173,
+      "sha256": "ee5dbfb6b7ee7b5180186c631ba1be10a8ae2dd20808a21f53c35511544602a7"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_FallTransition_Color.png",
+      "bytes": 965010,
+      "sha256": "6ce34d65ed316d5435b7575161a0db104dba33074f6a88f67452548fa318f4ef"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_FallTransition_Normal.png",
+      "bytes": 1121369,
+      "sha256": "961ba82e871c0717c4504caf327400c32815760ccf4f56247257b8e9b5a6110a"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_FallTransition_SS.png",
+      "bytes": 1049545,
+      "sha256": "519c46e371036bbf3aa4b7b4105e02554cf11065ce16b9f3413e958a545a91c6"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Fall_Color.png",
+      "bytes": 939553,
+      "sha256": "d449ca1240117cfc066fdc1ee212f8ce4f4af06f7fbe60b520551a98b089c7a8"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Fall_Normal.png",
+      "bytes": 1212634,
+      "sha256": "aaa45a2c0b089e07fc2b016446dad2b73ac4b709f1f67fc468109fb807e3cc35"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Fall_SS.png",
+      "bytes": 1000441,
+      "sha256": "1c520c973e7323add6b8ba9cceeb21f46f9a4dea9b5409abc64033d61d876c27"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Summer_Color.png",
+      "bytes": 946407,
+      "sha256": "a2816bf75ae5b34e8abacd28d9eac97ea1d105541524eb5ef30376f1efcf938a"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Summer_Normal.png",
+      "bytes": 1191589,
+      "sha256": "32bda0e60bc73deeea59c4b41d6bf7eb97fad59cd24e51a1a8214d3fc6acc0a5"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Summer_SS.png",
+      "bytes": 716444,
+      "sha256": "24381e15278a01967135ac215ec7f9f1a34572feb511e5bde1b32ed54f821a02"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Winter_Color.png",
+      "bytes": 881527,
+      "sha256": "fc2362e525f733e44e184ce7b99454ee79534e21ca42d40c3c5ae87c1bbf3cfe"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Winter_Normal.png",
+      "bytes": 1172493,
+      "sha256": "a5d4e759bae14205138a7c73caa8e206654b4cf0a99e0c07b2e3fced5e122157"
+    },
+    {
+      "file": "Oak_English_Cluster_Leaf_Winter_SS.png",
+      "bytes": 967065,
+      "sha256": "33f4763ec4fff8e1905e642941bd574c31829b7d61fca4dfcb80ef1cd95e15d8"
+    },
+    {
+      "file": "Oak_FullCrown.mtl",
+      "bytes": 715,
+      "sha256": "4fa3e6939ff4c6f0053d27e099cb3c2e309c915ab320367b51d7a2beae73d3a5"
+    },
+    {
+      "file": "Oak_FullCrown.obj",
+      "bytes": 3180326,
+      "sha256": "a7c23dbf86d31d5b14a702f08f589171a5e3b6b5b3aabbee336c69d84cd8e8a1"
+    },
+    {
+      "file": "Oak_FullCrown.stgmat",
+      "bytes": 1383,
+      "sha256": "bb7dd874c52bf42a8206d911f0705ed53d30312cb2252a3b04b9c52dbcab42f3"
+    },
+    {
+      "file": "Oak_FullCrown_Color.png",
+      "bytes": 1283083,
+      "sha256": "021ee65c2d927745448769c37a63181cdb4aed1f83f9715484d75f06612f4141"
+    },
+    {
+      "file": "Oak_FullCrown_LOD1.obj",
+      "bytes": 2541459,
+      "sha256": "8912800255529cca96c6df092961072f7af87ccf4b8b6527cde23bc1b33325da"
+    },
+    {
+      "file": "Oak_FullCrown_LOD2.obj",
+      "bytes": 2279274,
+      "sha256": "24aa53b55001d3bf40aff3de95970a850248821aee18504adf9d6294f1dc38f8"
+    },
+    {
+      "file": "Oak_FullCrown_LOD3.obj",
+      "bytes": 1998956,
+      "sha256": "a5f47b64ee704f0a03f4ad5bfc34f690ab5fe75cb13d727eea3f5f2962478770"
+    },
+    {
+      "file": "Oak_FullCrown_LOD4.obj",
+      "bytes": 1723130,
+      "sha256": "f43d8dfad08c38639d18dc20f0637afa17d11981075682beb076b53cf3ac6a57"
+    },
+    {
+      "file": "Oak_FullCrown_LOD5.obj",
+      "bytes": 1504733,
+      "sha256": "93bf22f075f46b5a36f4e2ada7a080d25694c96f76dbe74853fac760ef09c6ca"
+    },
+    {
+      "file": "Oak_FullCrown_Normal.png",
+      "bytes": 1567002,
+      "sha256": "0ec51241ab58851e498a548c8b1c4d7cfd4f5bdb2a996bad9a08fcae85eb83de"
+    },
+    {
+      "file": "Oak_FullCrown_SS.png",
+      "bytes": 914511,
+      "sha256": "ed9b2c4634c852be5b210da7301fdc274936158815447a60c6812eedc4197fbd"
+    },
+    {
+      "file": "Oak_LOD_Audit.mtl",
+      "bytes": 323,
+      "sha256": "0676d3a53273b1cb6305c3440cabd150095f0f7a983af82032e89d0ee332b287"
+    },
+    {
+      "file": "Oak_LOD_Audit.obj",
+      "bytes": 1807285,
+      "sha256": "30c26f6b7280537caee063440b8e69517ccc7d15bde81b170e87c514b591d723"
+    },
+    {
+      "file": "Oak_LOD_Audit.stgmat",
+      "bytes": 693,
+      "sha256": "7437b7a6fcacbac2e3a16563bc3f8a518fa2a267cac32752d9521f798717b401"
+    },
+    {
+      "file": "Oak_LOD_Audit_Color.png",
+      "bytes": 771583,
+      "sha256": "54c25ccf4d2cf6c346851dd267fc7b0bb7206143c5c120e74faf73d39bdd4f04"
+    },
+    {
+      "file": "Oak_LOD_Audit_LOD1.obj",
+      "bytes": 999852,
+      "sha256": "8215c6e922fc8600f778983dbad74753b4d6b67320c5e6571aa748a9998d01d0"
+    },
+    {
+      "file": "Oak_LOD_Audit_LOD2.obj",
+      "bytes": 689435,
+      "sha256": "6c30cfe373b3d0b9ebc541df8061cd2e3678fa5f819c7bdb3546f0d38cd5af14"
+    },
+    {
+      "file": "Oak_LOD_Audit_LOD3.obj",
+      "bytes": 447566,
+      "sha256": "86b2a24bcdc20c3fdb4586f4f604169a6e7b07493815ddb0aecf76754f1f6f2b"
+    },
+    {
+      "file": "Oak_LOD_Audit_LOD4.obj",
+      "bytes": 261541,
+      "sha256": "55199f6f9dffb89ead700d07e7d1ce47bc9788c7deab8f3aa6eae4374cd836ab"
+    },
+    {
+      "file": "Oak_LOD_Audit_LOD5.obj",
+      "bytes": 124817,
+      "sha256": "3ee8bfe201587b4b8043c5203a41c0bae87480e04aaa5987cf378d71949c5f7d"
+    },
+    {
+      "file": "Oak_LOD_Audit_Normal.png",
+      "bytes": 912120,
+      "sha256": "db4716ec383ea4c7a8ea8ef91a8bfb5f63410f12ac6b614ab8089d416d507847"
+    },
+    {
+      "file": "Oak_LOD_Audit_SS.png",
+      "bytes": 590191,
+      "sha256": "41024450f02aaf915d64bfe225ed5581293072da01765dbae988e6c814b13db2"
+    },
+    {
+      "file": "Oak_Refined.mtl",
+      "bytes": 315,
+      "sha256": "36fe0c8a4ddfeebbc5d4305449fb4e65345b4c2031b057c8184e1783687ef053"
+    },
+    {
+      "file": "Oak_Refined.obj",
+      "bytes": 1569273,
+      "sha256": "8d5673a2dac8c3b1b26cbb930eb1e19c752edb6a2cdfe56ba0ea1abe4069eb1a"
+    },
+    {
+      "file": "Oak_Refined.stgmat",
+      "bytes": 685,
+      "sha256": "cf9e1cfbcbc3a24b314c62d1c3aa1c7ce382147138c826c5be7c093f02489580"
+    },
+    {
+      "file": "Oak_Refined_Color.png",
+      "bytes": 751204,
+      "sha256": "9d7774b542023f4a27839f8c33beb3f4717c725c21bc4bd309d3b316abcbf6ec"
+    },
+    {
+      "file": "Oak_Refined_LOD1.obj",
+      "bytes": 965454,
+      "sha256": "f1690574027ed453498ef0ca28a6ebe5a427ecb81f2f3fbd8f666997d78093bf"
+    },
+    {
+      "file": "Oak_Refined_LOD2.obj",
+      "bytes": 817731,
+      "sha256": "ced43d5a4b1ff083f7fbd8b394233d5f898798254ed6e6381f4ce66c47ea1ad4"
+    },
+    {
+      "file": "Oak_Refined_LOD3.obj",
+      "bytes": 623822,
+      "sha256": "56ffe3749909fecc267aff37ba719a421b301356026cf049f6cf72d859ce86dc"
+    },
+    {
+      "file": "Oak_Refined_LOD4.obj",
+      "bytes": 409267,
+      "sha256": "d3090e14711272e5e2bf71a4af5ea3e128c379dc0a4b258e0524c3dc93142d8f"
+    },
+    {
+      "file": "Oak_Refined_LOD5.obj",
+      "bytes": 232525,
+      "sha256": "04dcef9e7c4a146ef30f7bc43d5e9a7b75c930cf8640c8907878199b61b0ac29"
+    },
+    {
+      "file": "Oak_Refined_Normal.png",
+      "bytes": 861938,
+      "sha256": "0b97c10a98188a32dbdf68a13e2d4f1447da26f61f5a645719264f6704790f69"
+    },
+    {
+      "file": "Oak_Refined_SS.png",
+      "bytes": 583537,
+      "sha256": "65ce116217609d44a8a9ddd9d5821fc98cbcf3829cf2e753dfee61c831e66681"
+    },
+    {
+      "file": "SpeedTree_Preview.png",
+      "bytes": 480710,
+      "sha256": "99e37eb53cbf77eb3b6a42f9da2e62d04a86c04f4e6d5b98000a18b8a715304a"
+    },
+    {
+      "file": "WhiteOak_Fall.mtl",
+      "bytes": 1151,
+      "sha256": "cf3374284a1e04f4d6d4e7501b77b45d3d792be9225e68f86466266e3c396a7b"
+    },
+    {
+      "file": "WhiteOak_Fall.obj",
+      "bytes": 1717117,
+      "sha256": "24d3a392d54dcd21e241290fb4463cdc86e02528f41560bc07f5172ea7040b0d"
+    },
+    {
+      "file": "WhiteOak_Fall.spm",
+      "bytes": 563672,
+      "sha256": "58aeca534a9460e555ee01e642a90f1505c93a0eb7a356f43e91d356d9eb1073",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_Fall.spm"
+    },
+    {
+      "file": "WhiteOak_Fall.stgmat",
+      "bytes": 2114,
+      "sha256": "dbaffe8e8ab2d9ec7c2e2bd105f978cbb9dd0696d94cd6dcc0f2abb5f5636a78"
+    },
+    {
+      "file": "WhiteOak_Fallen.mtl",
+      "bytes": 331,
+      "sha256": "24d5cd98a9c3a56b8a7a507cfee0912c3274b1146941d4e04c8fa926bb835a29"
+    },
+    {
+      "file": "WhiteOak_Fallen.obj",
+      "bytes": 161793,
+      "sha256": "5daf5eee7290d3aa82056cb1dcc6ae6a25ba00658c8b76ed16619c65ae45b6c3"
+    },
+    {
+      "file": "WhiteOak_Fallen.spm",
+      "bytes": 488472,
+      "sha256": "2a038cd7c2f825436da65091a9eb35f635701e48dd69245e6ec3b70b5b1ce567",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_Fallen.spm"
+    },
+    {
+      "file": "WhiteOak_Fallen.stgmat",
+      "bytes": 701,
+      "sha256": "21224e2715029852523eed2acc252bdd8566d627b1777535c15908cc5b38acb7"
+    },
+    {
+      "file": "WhiteOak_Fallen_Color.png",
+      "bytes": 1086547,
+      "sha256": "0b0d6676f0e70b2f7dadd8c1fe611f9c357c8395e3cd14b915cecd375cc6f53a"
+    },
+    {
+      "file": "WhiteOak_Fallen_LOD1.obj",
+      "bytes": 81991,
+      "sha256": "20e8fcfd4a28f89f2b0fd402c0f9776e26121958f57c7086dd18254cfbfd4907"
+    },
+    {
+      "file": "WhiteOak_Fallen_LOD2.obj",
+      "bytes": 59958,
+      "sha256": "7ce487cc01c112c2ad729685e63bc87cbee9108fe24e0446009c697b8bc61ae7"
+    },
+    {
+      "file": "WhiteOak_Fallen_LOD3.obj",
+      "bytes": 43312,
+      "sha256": "43a5c6e908a6ada4d470a7474cb15f0bf91432e970cdc20225d1b2562481e2f0"
+    },
+    {
+      "file": "WhiteOak_Fallen_LOD4.obj",
+      "bytes": 34564,
+      "sha256": "dfdab3c46a200a9e28e974f7ae617d0b7bb0330ca86ad53fd8ecdb28fc54544d"
+    },
+    {
+      "file": "WhiteOak_Fallen_LOD5.obj",
+      "bytes": 25191,
+      "sha256": "0263ab3481b9b3f2b861ce65932b983c77ee6e966979f901bd0217d6e977be11"
+    },
+    {
+      "file": "WhiteOak_Fallen_Normal.png",
+      "bytes": 1685060,
+      "sha256": "6b8f41bef310b1a336b6a286fb83bd5c10bad08f1f321714acc4e286bc2610df"
+    },
+    {
+      "file": "WhiteOak_Fallen_SS.png",
+      "bytes": 604006,
+      "sha256": "a33ceb9fdaae2ffb0b8a0f19c7ad2feda7f002426c6b9d6d832189d66d31338f"
+    },
+    {
+      "file": "WhiteOak_Fall_Color.png",
+      "bytes": 984839,
+      "sha256": "a90cd51ec0e4eed0cf3ec5734aeafe70b5824c51dace8ac2ddbcba87e0248a2c"
+    },
+    {
+      "file": "WhiteOak_Fall_LOD1.obj",
+      "bytes": 1333527,
+      "sha256": "d1ead12475e1de4c592aa3ee5cc231270c5819ab2bcda75c22bcb8ea7719c665"
+    },
+    {
+      "file": "WhiteOak_Fall_LOD2.obj",
+      "bytes": 1179961,
+      "sha256": "a04c192744a5994b63c6eea505b25c98f17ef148620d7cfd9f436c95bc870c2c"
+    },
+    {
+      "file": "WhiteOak_Fall_LOD3.obj",
+      "bytes": 1038929,
+      "sha256": "ee8e31fc1a63af847184b69b9d7c83a257a054988de49fbc96908059e12ec1f2"
+    },
+    {
+      "file": "WhiteOak_Fall_LOD4.obj",
+      "bytes": 912141,
+      "sha256": "1ccdd0b1dfa0751e7db3d53cfcc283f414e75c91dba7b55b31c57320fa3cab04"
+    },
+    {
+      "file": "WhiteOak_Fall_LOD5.obj",
+      "bytes": 790704,
+      "sha256": "736ec853d9fbc9494e7873ef3177d2b55b78278d83a2ebad8bf945c3ac714286"
+    },
+    {
+      "file": "WhiteOak_Fall_Normal.png",
+      "bytes": 1203542,
+      "sha256": "b68c9f24c868e2dbc67290bcc74b3ea9fe5589d5228b26bddc1adeda389a44b1"
+    },
+    {
+      "file": "WhiteOak_Fall_SS.png",
+      "bytes": 725188,
+      "sha256": "6e91f83ae8e2aae35b11e0915943d2d3e811d252d5dcfafec0d799562f137cdd"
+    },
+    {
+      "file": "WhiteOak_FullCrown.spm",
+      "bytes": 662818,
+      "sha256": "baed5bbedab0a37166beb2bf83f3ac134892abe987d37a4d6e00141d39eb8423",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_FullCrown.spm"
+    },
+    {
+      "file": "WhiteOak_LeafFall.mtl",
+      "bytes": 1131,
+      "sha256": "8d09e4c2a1c243349dbfaf0445fb1984f638b52c91b7ac189c6888046f085e47"
+    },
+    {
+      "file": "WhiteOak_LeafFall.obj",
+      "bytes": 2119745,
+      "sha256": "fbbe6bba719f351fa3792e31e8b6ba12b0a9029abca181655245b23df5a9316a"
+    },
+    {
+      "file": "WhiteOak_LeafFall.spm",
+      "bytes": 566834,
+      "sha256": "520ca544063fb9e6426b75029e4ffc202cd1562a65cb7f38970cbc7dfbe426cf",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_LeafFall.spm"
+    },
+    {
+      "file": "WhiteOak_LeafFall.stgmat",
+      "bytes": 2095,
+      "sha256": "bd393ecbd622e1c96bb94aa598c6fc03f55e6130a9e1645e52faaece0ea87ae8"
+    },
+    {
+      "file": "WhiteOak_LeafFall_Color.png",
+      "bytes": 821775,
+      "sha256": "f81398c8e9705be3ee478c9360be64ec11d6da3f6a95fb56b8715b33e9397630"
+    },
+    {
+      "file": "WhiteOak_LeafFall_LOD1.obj",
+      "bytes": 1670805,
+      "sha256": "4407aa17d0176f799b22258294c17b8fe8f1b33595f97dd224d8128a302bb07f"
+    },
+    {
+      "file": "WhiteOak_LeafFall_LOD2.obj",
+      "bytes": 1491414,
+      "sha256": "234b743cd9f4f96bee6b0e48619ceef570a7d3368ae40f7af96d07478728d107"
+    },
+    {
+      "file": "WhiteOak_LeafFall_LOD3.obj",
+      "bytes": 1316213,
+      "sha256": "47551f82088ad3a1e23fd31e6bda84f91a8494d87ca29563add415b5d682c17c"
+    },
+    {
+      "file": "WhiteOak_LeafFall_LOD4.obj",
+      "bytes": 1144940,
+      "sha256": "97db2e0d7a6f39d5cc932f1af623989c191f173634ffe543ef6ba5824d9d305f"
+    },
+    {
+      "file": "WhiteOak_LeafFall_LOD5.obj",
+      "bytes": 1008137,
+      "sha256": "3fe24751258294d1f319e1a76d17ea4d1d8692d2c135c1a95b6d9f6716b786df"
+    },
+    {
+      "file": "WhiteOak_LeafFall_Normal.png",
+      "bytes": 1037743,
+      "sha256": "155e4a2a326d0bd00dcb242fb87917007014226b65bb7e7bb87dd242814708ff"
+    },
+    {
+      "file": "WhiteOak_LeafFall_SS.png",
+      "bytes": 578720,
+      "sha256": "f952df1931865035e97a9c381628d60cb7ffce4dd52e82ecd7b0895146e727de"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown.mtl",
+      "bytes": 743,
+      "sha256": "205581c4733641e619e2357584877a1c6f87a60a79757436bbb4aa3e3c515b51"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown.obj",
+      "bytes": 1812622,
+      "sha256": "86c8fbcfba8229b22396d012b8a30deffb5beeefa6bf10d83d90668d0be77f35"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown.spm",
+      "bytes": 636752,
+      "sha256": "76044629dc456b22a87575d5e055204a82493f31ff4f97fe5747c389d47e24a7",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_RaisedCrown.spm"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown.stgmat",
+      "bytes": 1411,
+      "sha256": "0f847ed7894f11f1e14a7eb99635eeaaf88f2b57180fc042363e1b47996b43c4"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_Color.png",
+      "bytes": 1086975,
+      "sha256": "94be62d020c9dbc9113e448cc24ce226c0ec1d29d1eed3073324233f59e8f08f"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_LOD1.obj",
+      "bytes": 1402094,
+      "sha256": "f35dc23e55f1d031a96b668a253837def1c887f2d1a2c6c101e78a3ebc0bb110"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_LOD2.obj",
+      "bytes": 1230928,
+      "sha256": "c0b19187a5954c98f268f99b0f67517457d7dd1e56f752d30bd26cac88e2961f"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_LOD3.obj",
+      "bytes": 1078350,
+      "sha256": "f752ff4a4d5b7b7d3cfb81f422e91af251b33f1ebe0f0f908f76b4857c1af44b"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_LOD4.obj",
+      "bytes": 936233,
+      "sha256": "85a38b28bd6c84b61263e5b2dfff605c799dd8c1988cc3b430c7479836993315"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_LOD5.obj",
+      "bytes": 816736,
+      "sha256": "148125f88cfbacb4e9d3e1d765e841dcc7327f43ab082c6e3b5269b92ba522b5"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_Normal.png",
+      "bytes": 1369851,
+      "sha256": "b5cdb523c379a495796c38bb1b1e23821c3dc0207723c89f4b6202b57109f09b"
+    },
+    {
+      "file": "WhiteOak_RaisedCrown_SS.png",
+      "bytes": 741386,
+      "sha256": "77253b8906814d52aa72d55f7e5b0b07e5033b9ef2ffa2ab50cdb9ab698841e7"
+    },
+    {
+      "file": "WhiteOak_Stump.mtl",
+      "bytes": 327,
+      "sha256": "3660e611913da56157881fe1381ea3735ffebff70bc4d5692bf37f3e258da755"
+    },
+    {
+      "file": "WhiteOak_Stump.obj",
+      "bytes": 33357,
+      "sha256": "cea8cbf1d8b54fdaa480a449ca19ae79215e630f002d602e5ce0a78154f72618"
+    },
+    {
+      "file": "WhiteOak_Stump.spm",
+      "bytes": 352046,
+      "sha256": "34f590deed93b5ea3b7496e649aaf1b5f9c23b4c2b9b777fc567e6df0c972dfc",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_Stump.spm"
+    },
+    {
+      "file": "WhiteOak_Stump.stgmat",
+      "bytes": 697,
+      "sha256": "f660adb7839cea8a538cb43305fd9aca9250d31ef262382077fed196e546c39c"
+    },
+    {
+      "file": "WhiteOak_Stump_Color.png",
+      "bytes": 987721,
+      "sha256": "e627ad2e704e7027be06856e0d236f30f9f85e63fbf3a6dec286ff442521a968"
+    },
+    {
+      "file": "WhiteOak_Stump_LOD1.obj",
+      "bytes": 14085,
+      "sha256": "8c46499291559c54deddc9aad6fb220537078b4165abad3e04a46849f5396e45"
+    },
+    {
+      "file": "WhiteOak_Stump_LOD2.obj",
+      "bytes": 14054,
+      "sha256": "44834db4ad8c904c3e6c333d5d8548f6435e48866472ed90a19d5e321276d877"
+    },
+    {
+      "file": "WhiteOak_Stump_LOD3.obj",
+      "bytes": 11269,
+      "sha256": "6ebd28d721102919638f0a30d1a81aba7bf0257480439caf6e87890910231fd9"
+    },
+    {
+      "file": "WhiteOak_Stump_LOD4.obj",
+      "bytes": 9674,
+      "sha256": "328f4435e8e6ae37f10d506476ffc81755ae80ee860aceafddf609ddf8b5a04c"
+    },
+    {
+      "file": "WhiteOak_Stump_LOD5.obj",
+      "bytes": 8613,
+      "sha256": "8f5bfbe0f78a731020372c47a5441f9f7c24dad36cfaea70fbb12dbe5f1484d9"
+    },
+    {
+      "file": "WhiteOak_Stump_Normal.png",
+      "bytes": 1320568,
+      "sha256": "065d4de7e62e368d0a02c3c0187a1798da355b56ccc656492774ace0b8bf017a"
+    },
+    {
+      "file": "WhiteOak_Stump_SS.png",
+      "bytes": 529379,
+      "sha256": "da3b5b23f92a0e86fe496994f2f2410d17b1d6cb3f1da8cb19ad14b79eed28a0"
+    },
+    {
+      "file": "WhiteOak_Winter.mtl",
+      "bytes": 517,
+      "sha256": "ff2ed5a1cf09bab0e5b4714484eabb7bf4118804173887385114155bf42f7cf0"
+    },
+    {
+      "file": "WhiteOak_Winter.obj",
+      "bytes": 976218,
+      "sha256": "438ddc635b21a9b1c8b1b0772b315e36b2465458c183b5b27ec18c889c1db0ec"
+    },
+    {
+      "file": "WhiteOak_Winter.spm",
+      "bytes": 608753,
+      "sha256": "60aa653197a93b72688d74976463c9612aeed802f911657bdb96afc23d651d39",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_Winter.spm"
+    },
+    {
+      "file": "WhiteOak_Winter.stgmat",
+      "bytes": 1036,
+      "sha256": "5e47ede1c61448b90da29b110b01a4ec5c35ee3e8741dc051972ffd3f68a09e6"
+    },
+    {
+      "file": "WhiteOak_Winter_Color.png",
+      "bytes": 1120625,
+      "sha256": "7169f97094b5e81aafc1febde2838ba3a2673a1537495baa1157dbbb3215cabb"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches.mtl",
+      "bytes": 569,
+      "sha256": "f9c9a139950b2a3c49de5027eed451e4aa002f85b9ed04528924b6ec14cd3e43"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches.obj",
+      "bytes": 4050300,
+      "sha256": "b4a38f8aad33890ebcd392456884a3787ab61ccc34199b9302e79c6327d5a144"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches.spm",
+      "bytes": 538056,
+      "sha256": "8528a64039d34ee3e53407c5dde9e1c6823ca18552fd726312d62a907b424dfa",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_Winter_FineBranches.spm"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches.stgmat",
+      "bytes": 1088,
+      "sha256": "39192a962be0dfab3abf08ede4fc7439657ac650c2bdf172eb68129fec4dbcb1"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_Color.png",
+      "bytes": 1120625,
+      "sha256": "7169f97094b5e81aafc1febde2838ba3a2673a1537495baa1157dbbb3215cabb"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_LOD1.obj",
+      "bytes": 2994474,
+      "sha256": "66f5165dcf37db3a719511e6a9ffc9abf38c2e94766720a71b4adc70bce8fa37"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_LOD2.obj",
+      "bytes": 2697382,
+      "sha256": "b7b6f13e3e41f489fb458488da62c3abe1aab5372342b54ad2ef05058d981ba0"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_LOD3.obj",
+      "bytes": 2418643,
+      "sha256": "0b824c00f015e528eaf849f7733a5e5e51ec92ccb76e4d799dcb9fe402405276"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_LOD4.obj",
+      "bytes": 2177469,
+      "sha256": "81febfd90f26dffab8d8f1b4a910a44dab7365338228adf2766c1a97847b3309"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_LOD5.obj",
+      "bytes": 1920876,
+      "sha256": "77f3a94f2ba01d2fae8989d3a50c2aa8510845fad47a340550276fdc125a97d1"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_Normal.png",
+      "bytes": 1762026,
+      "sha256": "63911e86243e3f815f54a38de9f164c78fa586285548ab44cec6e11a86dda5c9"
+    },
+    {
+      "file": "WhiteOak_Winter_FineBranches_SS.png",
+      "bytes": 617142,
+      "sha256": "3de6e6558e3feda582862cc4c849d94710c03b6acd38854f5c12b65d3adb8ff0"
+    },
+    {
+      "file": "WhiteOak_Winter_LOD1.obj",
+      "bytes": 678221,
+      "sha256": "eeceecd53d1f0eced54278d69bd38bdd2519b2b722ee7d163582654c367b3a00"
+    },
+    {
+      "file": "WhiteOak_Winter_LOD2.obj",
+      "bytes": 561540,
+      "sha256": "c37233a1acb20fc2adb37cd229977990f1fc4b19de2c90056189444a3ce01875"
+    },
+    {
+      "file": "WhiteOak_Winter_LOD3.obj",
+      "bytes": 461097,
+      "sha256": "6626e214c0ad2aa25dd54ec82768b78c5973ce9225621bae83f0bdba8ada44c7"
+    },
+    {
+      "file": "WhiteOak_Winter_LOD4.obj",
+      "bytes": 397552,
+      "sha256": "c39ba65672bfe3003a62170688f1a55d1eea834c4750d57c71a96429105d9f60"
+    },
+    {
+      "file": "WhiteOak_Winter_LOD5.obj",
+      "bytes": 322639,
+      "sha256": "840680235ed35621437aa772c07f186d107b943f787070ff40a149dae822ebbb"
+    },
+    {
+      "file": "WhiteOak_Winter_Normal.png",
+      "bytes": 1762026,
+      "sha256": "63911e86243e3f815f54a38de9f164c78fa586285548ab44cec6e11a86dda5c9"
+    },
+    {
+      "file": "WhiteOak_Winter_SS.png",
+      "bytes": 617142,
+      "sha256": "3de6e6558e3feda582862cc4c849d94710c03b6acd38854f5c12b65d3adb8ff0"
+    },
+    {
+      "file": "WhiteOak_Working.spm",
+      "bytes": 740343,
+      "sha256": "ff395920ddef2cab51bf08e5a7b76914cd59129e67ca595845510c5d0980bc4d",
+      "repositoryCopy": "tools/tree-production/white-oak/sources/WhiteOak_Working.spm"
+    }
+  ]
+}

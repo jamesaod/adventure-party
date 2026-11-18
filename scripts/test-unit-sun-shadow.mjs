@@ -103,7 +103,7 @@ for(const flip of [false,true])for(const scale of [0.5,1,2.4]){
 
 // Exercise the production sprite ground pass: exact facing, pose, scale and
 // anchor, without drawing the body twice or revealing invisible units.
-const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const engine=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const a=engine.indexOf('function drawSpriteFacing('),b=engine.indexOf('function clearCombatMessage(',a);
 const calls=[];
 const sandbox={ctx:{save(){},restore(){},translate(){},scale(){},drawImage(){calls.push('body');}},

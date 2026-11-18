@@ -92,8 +92,27 @@ export function createSnowCoatCoverage(){
   eligible[i]=on?1:0;return true;
  }
  return {
-  setExposureField(revision,sample){
-   if(exposureRevision===revision)return false;exposureRevision=revision;exposure=new Float32Array(width*height);
+  setExposureField(revision,sample,change=null){
+   if(exposureRevision===revision)return false;
+   if(exposure&&change?.revision===revision&&change.previousRevision===exposureRevision&&Array.isArray(change.areas)){
+    const fields=[first,second,depth];
+    for(const area of change.areas){
+     const x0=Math.max(0,Math.floor((area[0]-bounds[0])*width/bounds[2])),x1=Math.min(width,Math.ceil((area[2]-bounds[0])*width/bounds[2]));
+     const y0=Math.max(0,Math.floor((area[1]-bounds[1])*height/bounds[3])),y1=Math.min(height,Math.ceil((area[3]-bounds[1])*height/bounds[3]));
+     for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+      const i=y*width+x,next=Math.fround(Math.max(0,Math.min(1,sample(bounds[0]+(x+.5)*bounds[2]/width,bounds[1]+(y+.5)*bounds[3]/height))));
+      const before=exposure[i];if(before===next)continue;
+      // Only complete interception changes completion/progress accounting.
+      if(eligible[i]&&((before===0)!==(next===0)))for(let layer=0;layer<3;layer++){
+       exposure[i]=before;const value=fields[layer][i],was=value>=threshold(layer,i),oldProgress=valueProgress(layer,value,i);
+       exposure[i]=next;progress[layer]+=valueProgress(layer,value,i)-oldProgress;changeCoverage(layer,i,was,value>=threshold(layer,i));
+      }
+      exposure[i]=next;
+     }
+    }
+    exposureRevision=revision;return true;
+   }
+   exposureRevision=revision;exposure=new Float32Array(width*height);
    for(let i=0;i<exposure.length;i++)exposure[i]=Math.max(0,Math.min(1,sample(bounds[0]+(i%width+.5)*bounds[2]/width,bounds[1]+(Math.floor(i/width)+.5)*bounds[3]/height)));
    // Interception changes future deposits only. Never reveal hidden snow or erase retained coats.
    recount();return true;

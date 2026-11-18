@@ -66,9 +66,9 @@ function combatWalkCurveClear(unit,curve,facing){
   for(const o of offsets)for(let k=0;k<9;k++){
    const angle=k*Math.PI/4,dy=k===8?0:Math.sin(angle)*radius/.8660254,dx=k===8?0:Math.cos(angle)*radius-dy/2;
    const q={x:p.x+o.x+dx,y:p.y+o.y+dy},cell=roundedMovementHex(q);
-   if(!inside(cell.x,cell.y)||isWall(cell.x,cell.y)||isFirBlockedHex(cell.x,cell.y)||occupiedByAnyUnit(cell.x,cell.y,unit.id))return false;
+   if(!inside(cell.x,cell.y)||isWall(cell.x,cell.y)||isFirBlockedHex(cell.x,cell.y,unit)||occupiedByAnyUnit(cell.x,cell.y,unit.id))return false;
    if(architecturalWallBlocksWorldLine(worldPointForHex(p.x+o.x,p.y+o.y),worldPointForHex(q.x,q.y),'movement'))return false;
-   if(k===8&&previous&&typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep({x:previous.x+o.x,y:previous.y+o.y},{x:p.x+o.x,y:p.y+o.y}))return false;
+   if(k===8&&previous&&typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep({x:previous.x+o.x,y:previous.y+o.y},{x:p.x+o.x,y:p.y+o.y},unit))return false;
    if(previous&&architecturalWallBlocksWorldLine(worldPointForHex(previous.x+o.x+dx,previous.y+o.y+dy),worldPointForHex(q.x,q.y),'movement'))return false;
   }
   previous=p;
@@ -235,7 +235,7 @@ function canUnitStandAt(unit,x,y,facingHex=facingDirectionIndex(unit)){
   if(!unit) return false;
 
   for(const cell of occupiedHexesAt(unit,x,y,facingHex)){
-    if(!inside(cell.x,cell.y) || isWall(cell.x,cell.y) || isFirBlockedHex(cell.x,cell.y)){
+    if(!inside(cell.x,cell.y) || isWall(cell.x,cell.y) || isFirBlockedHex(cell.x,cell.y,unit)){
       return false;
     }
 
@@ -261,7 +261,7 @@ function canUnitRotateAt(unit,x,y,toFacing,fromFacing=facingDirectionIndex(unit)
       if(!canUnitStandAt(unit,x,y,facing)) return false;
       const from=occupiedHexesAt(unit,x,y,previous);
       const to=occupiedHexesAt(unit,x,y,facing);
-      if(from.some((cell,index)=>architecturalWallBlocksStep(cell,to[index])||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cell,to[index])))) return false;
+      if(from.some((cell,index)=>architecturalWallBlocksStep(cell,to[index])||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cell,to[index],unit)))) return false;
       previous=facing;
     }
     return true;
@@ -280,7 +280,7 @@ function unitTransitionBlocked(unit,from,to,facingHex=null){
 
   const sourceCells=occupiedHexesAt(unit,from.x,from.y,destinationFacing);
   const targetCells=occupiedHexesAt(unit,to.x,to.y,destinationFacing);
-  return sourceCells.some((cell,index)=>architecturalWallBlocksStep(cell,targetCells[index])||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cell,targetCells[index])));
+  return sourceCells.some((cell,index)=>architecturalWallBlocksStep(cell,targetCells[index])||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cell,targetCells[index],unit)));
 }
 
 function pathToNearestRangedFiringHex(unit,{avoidThreatened=true}={}){
@@ -445,8 +445,9 @@ async function tryPlayerMove(dx,dy,{continuous=false,walkCurve=null}={}){
   const maxMove=p.fullMove ? p.move : p.halfMove;
   if(p.turnMoves+moveCost>maxMove){ log(`Not enough movement remaining (${moveCost} required, ${Math.max(0,maxMove-p.turnMoves)} left).`,"system"); return; }
 
-  const canLeave=await performLeavingHexFreeAttacks(p,{x:nx,y:ny});
+  const canLeave=await performLeavingHexFreeAttacks(p,{x:nx,y:ny},()=>{updateFacingForStep(p,dx,dy);setUnitActionBanner(p,"Moving");return presentWalkTestStep(p,{x:nx,y:ny,walkCurve},true);});
   if(!canLeave){
+    delete p.walkPresentation;delete p.walkStepClock;
     if(!game.over && !p.alive) endTurn();
     return;
   }
@@ -458,9 +459,10 @@ async function tryPlayerMove(dx,dy,{continuous=false,walkCurve=null}={}){
   }
   updateFacingForStep(p,dx,dy);
   setUnitActionBanner(p,"Moving");
-  if(!await presentWalkTestStep(p,{x:nx,y:ny,walkCurve},continuous))return;
+
   if(!p.alive||game.over)return;
   p.x=nx; p.y=ny; p.turnMoves+=moveCost;
+  if(!continuous){delete p.walkPresentation;delete p.walkStepClock;}
   maybeRecenterCamera(p);
   playMoveSound();
   log(`${p.name} moves to hex ${nx},${ny} (${p.turnMoves}/${maxMove}).`);
@@ -681,7 +683,7 @@ function pathToHex(start,target,mover){
         if(unitTransitionBlocked(mover,cur,next)) continue;
       }else{
         if(isWall(nx,ny)) continue;
-        if(architecturalWallBlocksStep(cur,next)||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cur,next))) continue;
+        if(architecturalWallBlocksStep(cur,next)||(typeof oakDebrisBlocksStep==='function'&&oakDebrisBlocksStep(cur,next,mover))) continue;
         if(occupiedByAnyUnit(nx,ny,null)) continue;
       }
 
@@ -985,10 +987,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       return false;
     }
 
-    const canLeave=await performLeavingHexFreeAttacks(
-      entity,
-      next
-    );
+    const canLeave=await performLeavingHexFreeAttacks(entity,next,()=>{if(unitTransitionBlocked(entity,entity,next))return false;updateFacingForStep(entity,next.x-entity.x,next.y-entity.y);return mobMovementPresentationMode(entity,next,senseContext)==='visible'?presentWalkTestStep(entity,prepareCombatReactiveWalkStep(entity,next,i<steps-1),true):true;});
 
     if(!canLeave){
       return false;
@@ -1013,7 +1012,7 @@ async function animateEntitySteps(entity,steps,stepProvider,delay=145){
       );
     }
 
-    if(mode==='visible'&&!await presentWalkTestStep(entity,prepareCombatReactiveWalkStep(entity,next,i<steps-1),true))return false;
+
     if(!entity.alive||game.over)return false;
     entity.x=next.x;
     entity.y=next.y;
@@ -1085,10 +1084,7 @@ async function animateMobAlongPath(mob,path,maxSteps){
 
     if(unitTransitionBlocked(mob,mob,path[i])) return false;
 
-    const canLeave=await performLeavingHexFreeAttacks(
-      mob,
-      path[i]
-    );
+    const canLeave=await performLeavingHexFreeAttacks(mob,path[i],()=>{if(unitTransitionBlocked(mob,mob,path[i]))return false;updateFacingForStep(mob,path[i].x-mob.x,path[i].y-mob.y);return mobMovementPresentationMode(mob,path[i],senseContext)==='visible'?presentWalkTestStep(mob,path[i],true):true;});
 
     if(!canLeave){
       return false;
@@ -1108,7 +1104,7 @@ async function animateMobAlongPath(mob,path,maxSteps){
       setUnitActionBanner(mob,"Moving");
     }
 
-    if(mode==='visible'&&!await presentWalkTestStep(mob,path[i],true))return false;
+
     if(!mob.alive||game.over)return false;
     mob.x=path[i].x;
     mob.y=path[i].y;

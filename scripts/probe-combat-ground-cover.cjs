@@ -1,7 +1,7 @@
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE);
-(async()=>{const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE,headless:true});try{const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8276/js/combat-ground-cover.mjs');
+(async()=>{const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE,headless:true});try{const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8276/js/combat-ground-cover.mjs?v=cover-profile1');
 const result=await page.evaluate(async()=>{
- const T=await import('/assets/vendor/three/three.module.min.js'),{createGroundCover}=await import('/js/combat-ground-cover.mjs');
+ const T=await import('/assets/vendor/three/three.module.min.js'),{createGroundCover}=await import('/js/combat-ground-cover.mjs?v=cover-profile1');
  const renderer=new T.WebGLRenderer({canvas:document.createElement('canvas'),antialias:false});renderer.setSize(256,256);renderer.setClearColor(0,0);renderer.autoClear=false;renderer.debug.onShaderError=(g,p,v,f)=>{throw Error(g.getShaderInfoLog(v)+g.getShaderInfoLog(f));};
  const tex=data=>{const t=new T.DataTexture(new Uint8Array(data),1,1);t.needsUpdate=true;return t;},coats=tex([0,0,0,0]),tracks=tex([0,0,0,0]),white=tex([255,255,255,255]),black=tex([0,0,0,255]),dark=tex([40,40,40,255]);
  const snow={texture:coats,footprintTexture:tracks,bounds:new T.Vector4(0,0,256,256)},scene=new T.Scene(),camera=new T.OrthographicCamera(0,256,0,256,-1,1),target=new T.WebGLRenderTarget(256,256),texture=t=>t;

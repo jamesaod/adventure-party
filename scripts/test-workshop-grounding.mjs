@@ -37,3 +37,12 @@ assert(Math.abs(skin.boundingBox.clone().applyMatrix4(skin.matrixWorld).min.y-5)
 cg.reset();bone.position.y=3;cg.applyCorpse();skin.computeBoundingBox();
 assert(Math.abs(skin.boundingBox.clone().applyMatrix4(skin.matrixWorld).min.y-5)<1e-6);
 console.log('PASS corpse body grounding after animation, translation and repeated reset.');
+
+const {isWorkshopLocomotionClip}=await import('../js/workshop-grounding.mjs');
+assert(isWorkshopLocomotionClip({assignments:{}},{id:'walk',name:'Great Sword Walk'}));
+assert(isWorkshopLocomotionClip({assignments:{'armed-move':[{clipId:'custom'}]}},{id:'custom',name:'Swagger'}));
+assert(isWorkshopLocomotionClip({assignments:{}},{id:'custom',name:'Locomotion',actionProfiles:['move']}));
+assert(!isWorkshopLocomotionClip({assignments:{}},{id:'attack',name:'Great Sword Attack'}));
+for(let loop=0;loop<4;loop++)for(const y of [-3,-1,0,2,0]){grounding.reset();hips.position.y=y;grounding.apply();assert(Math.abs(feet[0].getWorldPosition(point).y-4)<1e-6);}
+grounding.reset();assert.equal(model.position.y,0);
+console.log('PASS saved Great Sword Walk identification, armed walk assignment, and repeated below-ground/root-loop correction without drift');

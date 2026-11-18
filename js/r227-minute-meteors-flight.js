@@ -29,8 +29,7 @@ function r227BuildMeteorAttackResults(caster,targetIds,effect){
     const resolution=resolveMissileAttackD20(
       raw,
       targetNumber,
-      modifier
-    );
+      modifier,target);
 
     results.push({
       index,

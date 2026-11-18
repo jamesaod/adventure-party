@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
+const caster={id:'mage',classId:'mage',level:2,faction:'friendly',alive:true,x:0,y:0,hp:10,maxHp:10,memorizedSpellIds:['magic-missile','sleep','shield']};
+const enemy={id:'orc',faction:'hostile',alive:true,x:3,y:0,hp:10,maxHp:10},second={...enemy,id:'orc2',x:4},ally={...caster,id:'ally',x:3,hp:1};let units=[caster,enemy,second],affected=[enemy,second];
+const c={game:{round:1,areaEffects:[]},isUndeadUnit:()=>false,inside:()=>true,key:(x,y)=>x+','+y,allUnits:()=>units,unitVisibleToObserver:(u,t)=>!t.hidden,getUnitEffect:(u,id)=>u.effects?.includes(id),canMeleeAttackTarget:(u,t)=>Math.abs(u.x-t.x)<=1,unitCanMakeLeavingHexFreeAttack:()=>false,hexDistance:(a,b)=>Math.abs(a.x-b.x),getSpellEntry:id=>({id,combatImplemented:true,targetMode:id==='shield'?'self':id.includes('cure')?'touch-creature':'hostile-creature'}),spellRangeHexes:()=>10,lineOfSightBlocked:()=>false,hexesWithinRadius:p=>[p],fireballBlastCells:()=>[],livingUnitsInAreaCells:()=>affected,spellHitDiceValue:()=>1};vm.createContext(c);vm.runInContext(fs.readFileSync('js/combat-wizard-tactics.js','utf8'),c);vm.runInContext(fs.readFileSync('js/combat-caster-ai.js','utf8'),c);
+const best=()=>c.casterSpellChoices(caster,caster,c.casterDecisionContext(caster))[0];
+assert.equal(best().action.spellId,'sleep','Control a group over single-target damage');
+affected=[enemy,ally];assert.notEqual(best()?.action.spellId,'sleep','Do not catch allies');
+affected=[enemy,second];enemy.effects=second.effects=['sleep'];assert.notEqual(best()?.action.spellId,'sleep','Do not disable sleepers again');
+caster.memorizedSpellIds=['magic-missile'];enemy.hidden=second.hidden=true;assert.equal(best(),undefined,'Hidden coordinates never become targets');enemy.hidden=second.hidden=false;enemy.effects=second.effects=[];
+enemy.hp=1;assert.equal(best().target.id,'orc','Prefer a useful finishing attack');
+caster.memorizedSpellIds=['shield'];caster.effects=['shield'];assert.equal(best(),undefined,'Do not duplicate a buff');caster.effects=[];
+caster.classId='cleric';caster.memorizedPriestSpellIds=['priest-cure-light-wounds'];units.push(ally);assert.equal(best().target.id,'ally','Heal injured allies');ally.hp=10;assert.equal(best(),undefined,'Do not heal full health');
+caster.classId='mage';caster.memorizedSpellIds=['sleep'];affected=[enemy,second];units=units.filter(u=>u!==ally);enemy.effects=second.effects=[];
+caster.workshopBehavior={spellSpending:'conserve'};const conserve=best().score;caster.workshopBehavior={spellSpending:'aggressive',spellRole:'controller'};assert(best().score>conserve,'Role and spending affect score');
+caster.memorizedSpellIds=['unhandled'];assert.equal(best(),undefined,'Unsupported tactics safely fall back');
+console.log('PASS group control, ally safety, disabled targets, perception, finishing damage, healing, buff duplication and policy scoring');

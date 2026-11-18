@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {extractCombatFunction} from './combat-test-source.mjs';
+const src=readFileSync('js/adventure-party.js','utf8');let casts=0,ended=0,moves=0;const unit={id:'mage',repositoryMobId:'wood-elf-mage',classId:'mage',memorizedSpellIds:['sleep'],x:0,y:0,move:4,halfMove:2,alive:true,faction:'friendly',hp:10,maxHp:10};
+const enemy={x:4,y:0,alive:true,faction:'hostile'},context={enemies:[enemy],rejections:new Set()};
+const choice={score:50,action:{spellId:'sleep'},reason:'control'};
+const c={casterDecisionContext:()=>context,casterWeaponScore:()=>0,casterHelpless:()=>false,explainCasterDecision(){},getSpellEntry:()=>({name:'Sleep'}),game:{active:'mage'},repositoryMobCast:async u=>{casts++;return u.x===2;},repositoryMobSpellChoice:(u,p)=>p.x===2?choice:null,key:(x,y)=>x+','+y,hexDistance:(a,b)=>Math.abs(a.x-b.x),HEX_DIRS:[{x:1,y:0}],inside:()=>true,unitTransitionBlocked:()=>false,leavingHexFreeAttackers:()=>[],unitCanMakeLeavingHexFreeAttack:()=>false,setUnitActionBanner(){},animateMobAlongPath:async(u,path)=>{moves++;Object.assign(u,path.at(-1));},areaEffectActionLostThisTurn:()=>false,endTurn:()=>ended++};vm.createContext(c);vm.runInContext(extractCombatFunction(src,'repositoryCasterTurn'),c);
+assert.equal(await c.repositoryCasterTurn(unit),true);assert.equal(unit.x,2);assert.equal(casts,1);assert.equal(ended,0);assert.equal(moves,1);
+unit.memorizedSpellIds=[];assert.equal(await c.repositoryCasterTurn(unit),false);
+unit.memorizedSpellIds=['sleep'];unit.x=0;c.unitTransitionBlocked=()=>true;assert.equal(await c.repositoryCasterTurn(unit),false,'Blocked caster uses ordinary combat, never holds forever');
+c.unitTransitionBlocked=()=>false;c.casterWeaponScore=()=>65;assert.equal(await c.repositoryCasterTurn(unit),false,'Good helpless melee target beats a weaker spell plan');
+c.casterWeaponScore=()=>0;c.repositoryMobCast=async()=>false;assert.equal(await c.repositoryCasterTurn(unit),true);assert.equal(ended,1,'Failed recheck after movement ends turn without spending extra movement');
+console.log('PASS purposeful movement, short-move casting, exhausted/blocked/melee fallback and post-move recheck');

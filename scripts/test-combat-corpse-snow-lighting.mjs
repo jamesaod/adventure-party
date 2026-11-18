@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {snowAmbientDisplay,corpseSnowTint} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {snowAmbientDisplay,corpseSnowTint} from '../js/combat-corpse-snow.mjs?v=natural-ac1';
 import {composeSnowDisplay} from '../js/combat-lighting-profile.mjs';
 for(const factor of [[0,0,0],[.08,.11,.16],[.3,.35,.42],[.7,.74,.78],[.7,.4,.15],[1,1,1],[1.6,1.8,2.1]])for(const amount of [2,3,3.5,4]){
  const input=factor.map((v,i)=>v*corpseSnowTint(amount)[i]);

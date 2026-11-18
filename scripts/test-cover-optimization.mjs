@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createCoverDepthSorter} from '../js/cover-depth-sort.mjs';
 import {indexCoverGeometry} from '../js/cover-geometry.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
-import {createGroundCover} from '../js/combat-ground-cover.mjs?v=tree-snow-grains1';
+import {createGroundCover} from '../js/combat-ground-cover.mjs?v=cover-profile1';
 const sort=createCoverDepthSorter();
 for(const n of [0,30,512,10000,1024,60000]){
  const items=Array.from({length:n},(_,i)=>({sortY:i%13===0?(i%2?0:-0):i%7===0?100+1e-10*(i%5):Math.sin(i)*1000,x:Math.cos(i%67)}));

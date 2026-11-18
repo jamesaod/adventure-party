@@ -1,7 +1,7 @@
 import {solarState,weatherSolarState} from './solar-clock.mjs?v=R238C380';
 import {GLTFLoader} from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {createGroundCover,GROUND_COVER_DEFAULTS,coverField} from './combat-ground-cover.mjs?v=tree-snow-grains1';
+import {createGroundCover,GROUND_COVER_DEFAULTS,coverField} from './combat-ground-cover.mjs?v=cover-profile1';
 const specs=[['height','Blade height',.25,3,.05,1],['width','Blade width',.25,3,.05,1],['spread','Clump spread',.25,2,.05,1],['bend','Blade bend',0,3,.05,1],['tufts','Tufts per cell',1,8,1,3],['wind','Wind strength',0,3,.05,1],['brightness','Leaf brightness',.5,1.6,.05,1],['dry','Dry color mix',0,1,.05,.65],['light','Light level',.1,1,.05,1],['zoom','Zoom',.5,3,.05,1.5]];
 specs.push(['patchCoverage','Worn patch coverage',0,1,.05,.25],['patchSize','Patch size (metres)',.5,8,.1,3.4],['patchSoftness','Patch edge softness',.02,.5,.02,.4],['patchWear','Wear / bare soil',0,1,.05,1],['soilRelief','Soil bump strength',-3,3,.1,-1.8]);
 for(const spec of specs)if(spec[0] in GROUND_COVER_DEFAULTS)spec[5]=GROUND_COVER_DEFAULTS[spec[0]];

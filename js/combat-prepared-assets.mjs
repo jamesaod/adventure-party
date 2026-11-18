@@ -1,9 +1,9 @@
 import {markFlamingBlade,preparedBladeTemplates,restorePreparedBlade} from './combat-weapon-flame.mjs?v=R238C299';
-import {studioWeapon,weaponAssetUrl} from './studio-equipment.mjs?v=R238C312';
+import {studioWeapon,weaponAssetUrl} from './studio-equipment.mjs?v=hand-range20';
 import {preparedVisualKey} from './prepared-visual-key.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {appearanceCacheKey} from './mob-appearance.mjs?v=R238C204';
-import {directUnitFrame,setDirectUnit,restoreDirectMaterials} from './combat-direct-units.mjs?v=tree-snow-grains1';
+import {directUnitFrame,setDirectUnit,restoreDirectMaterials} from './combat-direct-units.mjs?v=outline-reuse2';
 import {getModelShadow,setModelShadow} from './combat-model-shadow.mjs';
 import {readPreparedAsset,requestPreparedAsset} from './combat-prepared-store.mjs';
 import {expandPreparedChunks} from './combat-prepared-chunks.mjs';
@@ -67,7 +67,7 @@ export async function hydratePreparedAsset(pack){
   return {manifest:pack.manifest,images,runtimeImages,sourceUrls:pack.sources};
 }
 export async function loadPreparedCombatUnit(recipe,{onProgress}={}){
-  if(recipe.renderSettings?.workshopUnit){const {loadWorkshopCombatUnit}=await import('./combat-workshop-unit.mjs?v=tree-snow-grains1');return loadWorkshopCombatUnit(recipe,{onProgress});}
+  if(recipe.renderSettings?.workshopUnit){const {loadWorkshopCombatUnit}=await import('./combat-workshop-unit.mjs?v=spell-poses1');return loadWorkshopCombatUnit(recipe,{onProgress});}
   const key=preparedAssetKey(recipe);onProgress?.({step:'Loading prepared 3D model',reason:'Reading saved geometry and shadow meshes; no sprite generation or simplification.'});
   const started=performance.now();
   let pack=null;
@@ -113,11 +113,11 @@ export async function loadPreparedCombatUnit(recipe,{onProgress}={}){
   const result=await hydratePreparedAsset(pack);
   if(new URLSearchParams(location.search).get('walkTest')!=='0'){
     onProgress?.({step:'Loading experimental walk rig',reason:'Playing the supplied walk animation on the actual model; no sprite baking.'});
-    const {attachWalkTest}=await import('./combat-walk-test.mjs?v=tree-snow-grains1');
+    const {attachWalkTest}=await import('./combat-walk-test.mjs?v=natural-ac1');
     await attachWalkTest(pack.recipe,result);
   }
   try{
-    const {attachCombatActions}=await import('./combat-action-runtime.mjs?v=tree-snow-grains1');
+    const {attachCombatActions}=await import('./combat-action-runtime.mjs?v=natural-ac1');
     await attachCombatActions(pack.recipe,result);
   }catch(error){console.warn('Saved action animations could not load; using prepared poses.',error);}
   const elapsed=performance.now()-started;

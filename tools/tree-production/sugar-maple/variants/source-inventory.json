@@ -1,0 +1,146 @@
+[
+  {
+    "file": "SugarMaple_Tall_Green.spm",
+    "sha256": "4e68cc25ccaed8d3d2f233375d7987d8ffb6a765a8195513ffb8fd5292fb6594",
+    "bytes": 120225,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Green.spm"
+  },
+  {
+    "file": "SugarMaple_Tall_Green.obj",
+    "sha256": "e626f41a3ddda018594982c1eff3ddb4bd33dfa3f61684dabc93972604696469",
+    "bytes": 14342212,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Green.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Green_LOD1.obj",
+    "sha256": "6dd0a4bae17858881c08dadc7207197a07542ceeb511279be167f1a152c03ded",
+    "bytes": 6765268,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Green_LOD1.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Green_LOD2.obj",
+    "sha256": "8e4f7a64d7b627db80f6b49999540b623fee1b0d312abf58f94276fffd243f43",
+    "bytes": 2491814,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Green_LOD2.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Fall.spm",
+    "sha256": "49c2ae1085f5e660b9644357a7b1bf6333197b3fddea043a94f14ddbab1deaa1",
+    "bytes": 124632,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Fall.spm"
+  },
+  {
+    "file": "SugarMaple_Tall_Fall.obj",
+    "sha256": "2ab8da4853de7b82754fb936ae0f93c741ccbaade5500c7d846e7f6171170aab",
+    "bytes": 14342210,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Fall.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Fall_LOD1.obj",
+    "sha256": "535b76dd92582a87720186dbc56c9f94aaa3771d5e30e5c7d53ada16674f89d6",
+    "bytes": 6765266,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Fall_LOD1.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Fall_LOD2.obj",
+    "sha256": "6f23322e61ceaa2e5f2bbf1753ed9972de9e02e1df1f737c82a9035e1edcfd8d",
+    "bytes": 2491812,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Fall_LOD2.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Winter.spm",
+    "sha256": "334252b1c9d90e677fe927345fc6c0e0ef03f003292c6dfd33d2381aa5936686",
+    "bytes": 108392,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Winter.spm"
+  },
+  {
+    "file": "SugarMaple_Tall_Winter.obj",
+    "sha256": "1d00a1b8fdc16dfb6ba15a70dd97e22fb6ef18bbdc08293c3666a333cc4dc357",
+    "bytes": 4328649,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Winter.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Winter_LOD1.obj",
+    "sha256": "f7b0d2fc4019ea5a7e578f4d8cd19b4bf5aa86bfc2cda71b2dd1fa687e4c6246",
+    "bytes": 1344377,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Winter_LOD1.obj"
+  },
+  {
+    "file": "SugarMaple_Tall_Winter_LOD2.obj",
+    "sha256": "97ec4de8fa6e1b1911b464ebb74626ebc979ad308bbf73e420cc86e2ffdab3bd",
+    "bytes": 232776,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Tall_Winter_LOD2.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Green.spm",
+    "sha256": "2e69646872eced4523aa8adc62695a931ad72a7a169ede646e06e3bd50cda9d1",
+    "bytes": 131573,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Green.spm"
+  },
+  {
+    "file": "SugarMaple_Broad_Green.obj",
+    "sha256": "61a454c22933a9e3a9a3bea543310814120e09ca9cabaea621e65f7717eb6497",
+    "bytes": 14434475,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Green.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Green_LOD1.obj",
+    "sha256": "f2bf02eeb24c9e120d20f6ae7eb64b917d47ac69607edf3219a2cba0dbd95635",
+    "bytes": 6864815,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Green_LOD1.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Green_LOD2.obj",
+    "sha256": "3132ebdd68460303f2798bd32747f7bebfd0bfe777e48ef9e3f7e6553cfb901f",
+    "bytes": 2562710,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Green_LOD2.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Fall.spm",
+    "sha256": "ab8ffeba21ca3d213345cb9218cb49e0534e97e370807fb5f4aba15efc8002b8",
+    "bytes": 134248,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Fall.spm"
+  },
+  {
+    "file": "SugarMaple_Broad_Fall.obj",
+    "sha256": "4975958adb5152774c01d9f538acfb055af74dd2d8a8a09fe03cfe1b9138c049",
+    "bytes": 14434473,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Fall.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Fall_LOD1.obj",
+    "sha256": "3783d554fc4c4bae88e9d7e79bcd038cfdd8985eeab9de9d8a8c823b16cd787b",
+    "bytes": 6864813,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Fall_LOD1.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Fall_LOD2.obj",
+    "sha256": "ecabbb1b0b281275dbe9675929517db178ec09c5639b1033ea5584526e0ed9f9",
+    "bytes": 2562708,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Fall_LOD2.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Winter.spm",
+    "sha256": "946f2f2a05e3281513fa694547b8ca05e193e9ccc5dc43ad9d830753691b256d",
+    "bytes": 109152,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Winter.spm"
+  },
+  {
+    "file": "SugarMaple_Broad_Winter.obj",
+    "sha256": "a044d07736195e65c1b493a5a96e5ee86b307ba3b1e8cf7e3872259175941da1",
+    "bytes": 4119343,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Winter.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Winter_LOD1.obj",
+    "sha256": "45e8d509c4feb76d0e2a0ba3f06300919b25156fe728b032360c7b74a9a6779e",
+    "bytes": 1281817,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Winter_LOD1.obj"
+  },
+  {
+    "file": "SugarMaple_Broad_Winter_LOD2.obj",
+    "sha256": "879f4230898165a7d8736909d9bd8a208dfc4b70ebd6455ee1c1347bcfd42b9f",
+    "bytes": 233800,
+    "source": "C:\\Users\\james\\OneDrive\\Documents\\ChatGPT\\_Adventure Party Development_\\outputs\\sugar-maple\\SugarMaple_Broad_Winter_LOD2.obj"
+  }
+]

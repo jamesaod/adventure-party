@@ -1,0 +1,19 @@
+const fs=require('fs'),path=require('path'),vm=require('vm');
+const repo='C:/Users/james/Documents/Codex/2026-10-26/continue-development-of-adventure-party-using/work/repo';
+const family=path.join(__dirname,'comparison/assets/family');
+const backup=path.join(__dirname,'before-seasonal-integration');fs.mkdirSync(backup,{recursive:true});
+const template=fs.readFileSync(path.join(__dirname,'integrate-oak.cjs'),'utf8').split('const backup=')[0];
+for(const [source,id,count] of [['RaisedCrown','green',14447],['Fall','fall',13894],['Winter','winter',9036]]){
+ let code=template.replace("path.resolve(__dirname)",JSON.stringify(family)).replaceAll('Oak_FullCrown_LOD5.obj','WhiteOak_'+source+'.obj').replaceAll('oak-10726','oak-raised-'+id).replace('assert.equal(total,10726)','assert.equal(total,'+count+')').replaceAll('White oak full crown 10726','White oak raised crown '+id).replace("'WhiteOak_'+name","'WhiteOak_"+id+"_'+name").replace("'provenance.json'","'provenance-"+id+".json'").replaceAll('WhiteOak_FullCrown.spm','WhiteOak_'+source+'.spm');
+ vm.runInNewContext(code,{require,Buffer,__dirname,console});
+}
+function edit(file,fn){const p=path.join(repo,file),old=fs.readFileSync(p,'utf8'),next=fn(old);if(old===next)throw Error('No change '+file);fs.writeFileSync(path.join(backup,file.replaceAll('/','__')),old);fs.writeFileSync(p,next);}
+edit('js/combat-fir-trees.mjs',s=>s.replace("import {treeScreenBounds}","import {getSeason} from './combat-seasons.mjs';\nimport {treeScreenBounds}").replace("  const oak=(await loader.loadAsync(new URL('../assets/terrain/white-oak/oak-10726.gltf?v=oak1',import.meta.url).href)).scene;\n  oak.userData.whiteOak=true;models.push(oak);",`  const seasonalOaks=await Promise.all(['green','fall','winter'].map(async season=>{
+    const oak=(await loader.loadAsync(new URL('../assets/terrain/white-oak/oak-raised-'+season+'.gltf?v=1',import.meta.url).href)).scene;
+    oak.userData.whiteOak=true;return oak;
+  }));models.push(...seasonalOaks);
+  const resolveVariant=variant=>variant===5?({fall:6,winter:7}[getSeason()]??5):variant;`).replace("shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',","if(!model.userData.whiteOak)shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',").replace("original.customProgramCacheKey=()=> 'combat-fir-foliage-canopy-shading-v2';","original.customProgramCacheKey=()=> model.userData.whiteOak?'combat-oak-foliage-v1':'combat-fir-foliage-canopy-shading-v2';").replace('    if(lost)return null;','    variant=resolveVariant(variant);\n    if(lost)return null;').replace('  function silhouette(variant,rotation,burnt){','  function silhouette(variant,rotation,burnt){\n    variant=resolveVariant(variant);').replace('return {canopyRadius(variant){const b=treeBounds[variant]?.healthy;','return {seasonalVariant:()=>resolveVariant(5),canopyRadius(variant){const b=treeBounds[resolveVariant(variant)]?.healthy;'));
+edit('js/combat-runtime.js',s=>s.replace('combat-fir-trees.mjs?v=R238C456-oak1','combat-fir-trees.mjs?v=seasonal-oak1'));
+edit('index.html',s=>s.replace(/combat-runtime.js\?v=[^"']+/,'combat-runtime.js?v=seasonal-oak1'));
+edit('docs/TREE_ENVIRONMENT_PROFILES.md',s=>s.replace('This is the selector/state framework; seasonal model swapping and leaf litter are not yet connected.','The raised-crown SpeedTree oak replaces the original Big Tree: Spring/Summer use green (14,447 triangles), Fall uses autumn (13,894), Winter uses bare branches (9,036). All share the original world scale and 0.20 m root burial. The original oak assets remain archived in place. Seasonal model indices keep image, silhouette, bounds, snow and shadow caches distinct. Leaf litter is not yet connected.'));
+console.log('Integrated raised-crown seasonal oaks; original oak retained.');

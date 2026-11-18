@@ -240,8 +240,8 @@ function r226SpellTouchAttack(caster,target,bonus=0){
   const targetNumber=thaco-ac;
   const raw=d(20);
   const modifier=bonus+attackEffectModifier(caster,target);
-  const resolution=resolveMeleeAttackD20(raw,targetNumber,modifier);
-  playNaturalAttackRollSound(raw);
+  const resolution=resolveMeleeAttackD20(raw,targetNumber,modifier,target);
+  if(!resolution.helpless)playNaturalAttackRollSound(raw);
   setLastRoll(
     `${caster.name} spell touch: RAW d20 ${raw}`+
     (resolution.automatic

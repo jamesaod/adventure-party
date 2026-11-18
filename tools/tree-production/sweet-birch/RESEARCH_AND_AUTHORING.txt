@@ -1,0 +1,15 @@
+Sweet Birch / Betula lenta — research and proposed authoring contract
+16 November 2026. Local work; visual review remains with James.
+
+References (botanical reference only; do not copy reference photographs into runtime assets):
+https://plantdatabase.uconn.edu/detail.php?pid=64
+https://dendro.cnre.vt.edu/dendrology/syllabus/factsheet.cfm?ID=11
+https://mortonarb.org/plant-and-protect/trees-and-plants/sweet-birch/
+
+Research: single straight trunk; young pyramidal form broadens into a rounded irregular crown. Young wood is reddish-brown/dark with horizontal lenticels; older trunk becomes dark and plated. No white peeling paper-birch bark. Alternate pointed ovate leaves with heart-shaped bases, sharp serrations and strong pinnate veins. Green upper surfaces, paler undersides; golden-yellow autumn foliage.
+
+Proposed first specimen: 45 ft / 13.716 m above authored ground, approximately 24–30 ft crown width, slightly asymmetrical woodland-edge form. Preserve a single tapered trunk and restrained roots. Start major limbs above 10 ft as the established woodland asset convention, and explicitly measure export clearance. Branch/crown proportions must be authored for birch rather than merely recoloring a maple.
+
+Family: green spring/summer, golden fall, bare winter sharing identical wood. Save new SPM sources and original exports; preserve existing species. Use existing coordinate contract and species registration. Derive matching stump/log/limbs from its own wood if integrated with the existing falling system. Target runtime approximately 12k–23k triangles leafy, lower bare; measure actual exports before selecting LOD. New species-specific leaves should serve canopy, particles and litter. Keep existing snow timing and water/grass fixes.
+
+Completed with user-authorized computer control: seasonal native sources, exports, runtime integration and functional checks. See PRODUCTION.md for final measured dimensions, clearance limitations and validation; the proposed dimensions above were superseded by the authored specimen.

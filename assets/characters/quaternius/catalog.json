@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "source": "https://quaternius.itch.io/modular-character-outfits-fantasy",
+  "license": "CC0-1.0",
+  "edition": "Free Standard",
+  "parts": [
+    {
+      "id": "Female_Peasant_Arms",
+      "gender": "female",
+      "outfit": "Peasant",
+      "slot": "arms",
+      "label": "Peasant Arms",
+      "file": "Female_Peasant_Arms.gltf"
+    },
+    {
+      "id": "Female_Peasant_Body",
+      "gender": "female",
+      "outfit": "Peasant",
+      "slot": "body",
+      "label": "Peasant Body",
+      "file": "Female_Peasant_Body.gltf"
+    },
+    {
+      "id": "Female_Peasant_Feet",
+      "gender": "female",
+      "outfit": "Peasant",
+      "slot": "feet",
+      "label": "Peasant Feet",
+      "file": "Female_Peasant_Feet.gltf"
+    },
+    {
+      "id": "Female_Peasant_Legs",
+      "gender": "female",
+      "outfit": "Peasant",
+      "slot": "legs",
+      "label": "Peasant Legs",
+      "file": "Female_Peasant_Legs.gltf"
+    },
+    {
+      "id": "Female_Ranger_Acc_Pauldrons",
+      "gender": "female",
+      "outfit": "Ranger",
+      "slot": "shoulders",
+      "label": "Ranger Acc Pauldrons",
+      "file": "Female_Ranger_Acc_Pauldrons.gltf"
+    },
+    {
+      "id": "Female_Ranger_Arms",
+      "gender": "female",
+      "outfit": "Ranger",
+      "slot": "arms",
+      "label": "Ranger Arms",
+      "file": "Female_Ranger_Arms.gltf"
+    },
+    {
+      "id": "Female_Ranger_Body",
+      "gender": "female",
+      "outfit": "Ranger",
+      "slot": "body",
+      "label": "Ranger Body",
+      "file": "Female_Ranger_Body.gltf"
+    },
+    {
+      "id": "Female_Ranger_Feet",
+      "gender": "female",
+      "outfit": "Ranger",
+      "slot": "feet",
+      "label": "Ranger Feet",
+      "file": "Female_Ranger_Feet.gltf"
+    },
+    {
+      "id": "Female_Ranger_Head_Hood",
+      "gender": "female",
+      "outfit": "Ranger",
+      "slot": "hood",
+      "label": "Ranger Head Hood",
+      "file": "Female_Ranger_Head_Hood.gltf"
+    },
+    {
+      "id": "Female_Ranger_Legs",
+      "gender": "female",
+      "outfit": "Ranger",
+      "slot": "legs",
+      "label": "Ranger Legs",
+      "file": "Female_Ranger_Legs.gltf"
+    },
+    {
+      "id": "Male_Peasant_Arms",
+      "gender": "male",
+      "outfit": "Peasant",
+      "slot": "arms",
+      "label": "Peasant Arms",
+      "file": "Male_Peasant_Arms.gltf"
+    },
+    {
+      "id": "Male_Peasant_Body",
+      "gender": "male",
+      "outfit": "Peasant",
+      "slot": "body",
+      "label": "Peasant Body",
+      "file": "Male_Peasant_Body.gltf"
+    },
+    {
+      "id": "Male_Peasant_Feet",
+      "gender": "male",
+      "outfit": "Peasant",
+      "slot": "feet",
+      "label": "Peasant Feet",
+      "file": "Male_Peasant_Feet.gltf"
+    },
+    {
+      "id": "Male_Peasant_Legs",
+      "gender": "male",
+      "outfit": "Peasant",
+      "slot": "legs",
+      "label": "Peasant Legs",
+      "file": "Male_Peasant_Legs.gltf"
+    },
+    {
+      "id": "Male_Ranger_Acc_Pauldron",
+      "gender": "male",
+      "outfit": "Ranger",
+      "slot": "shoulders",
+      "label": "Ranger Acc Pauldron",
+      "file": "Male_Ranger_Acc_Pauldron.gltf"
+    },
+    {
+      "id": "Male_Ranger_Arms",
+      "gender": "male",
+      "outfit": "Ranger",
+      "slot": "arms",
+      "label": "Ranger Arms",
+      "file": "Male_Ranger_Arms.gltf"
+    },
+    {
+      "id": "Male_Ranger_Body",
+      "gender": "male",
+      "outfit": "Ranger",
+      "slot": "body",
+      "label": "Ranger Body",
+      "file": "Male_Ranger_Body.gltf"
+    },
+    {
+      "id": "Male_Ranger_Feet_Boots",
+      "gender": "male",
+      "outfit": "Ranger",
+      "slot": "feet",
+      "label": "Ranger Feet Boots",
+      "file": "Male_Ranger_Feet_Boots.gltf"
+    },
+    {
+      "id": "Male_Ranger_Head_Hood",
+      "gender": "male",
+      "outfit": "Ranger",
+      "slot": "hood",
+      "label": "Ranger Head Hood",
+      "file": "Male_Ranger_Head_Hood.gltf"
+    },
+    {
+      "id": "Male_Ranger_Legs",
+      "gender": "male",
+      "outfit": "Ranger",
+      "slot": "legs",
+      "label": "Ranger Legs",
+      "file": "Male_Ranger_Legs.gltf"
+    }
+  ],
+  "heads": [
+    {
+      "id": "Male_Head",
+      "gender": "male",
+      "file": "Male_Head.gltf",
+      "label": "Male head"
+    },
+    {
+      "id": "Female_Head",
+      "gender": "female",
+      "file": "Female_Head.gltf",
+      "label": "Female head"
+    }
+  ],
+  "hair": [
+    {
+      "id": "Hair_Beard",
+      "label": "Beard",
+      "file": "Hair_Beard.gltf",
+      "slot": "beard"
+    },
+    {
+      "id": "Hair_Buns",
+      "label": "Buns",
+      "file": "Hair_Buns.gltf",
+      "slot": "hair"
+    },
+    {
+      "id": "Hair_Buzzed",
+      "label": "Buzzed",
+      "file": "Hair_Buzzed.gltf",
+      "slot": "hair"
+    },
+    {
+      "id": "Hair_BuzzedFemale",
+      "label": "Buzzed Female",
+      "file": "Hair_BuzzedFemale.gltf",
+      "slot": "hair"
+    },
+    {
+      "id": "Hair_Long",
+      "label": "Long",
+      "file": "Hair_Long.gltf",
+      "slot": "hair"
+    },
+    {
+      "id": "Hair_SimpleParted",
+      "label": "Simple Parted",
+      "file": "Hair_SimpleParted.gltf",
+      "slot": "hair"
+    }
+  ],
+  "textures": {
+    "Peasant": [
+      {
+        "label": "Palette 1",
+        "file": "tex-a43635628d95571c.png"
+      },
+      {
+        "label": "Palette 2",
+        "file": "tex-0019ae4ae3f1a900.png"
+      }
+    ],
+    "Ranger": [
+      {
+        "label": "Palette 1",
+        "file": "tex-846ef2170b04ee58.png"
+      },
+      {
+        "label": "Palette 2",
+        "file": "tex-018b93098e400421.png"
+      }
+    ],
+    "Male skin": [
+      {
+        "label": "Deep",
+        "file": "tex-df680cbc1967a61e.png"
+      },
+      {
+        "label": "Light",
+        "file": "tex-419f96dbb8811511.png"
+      }
+    ],
+    "Female skin": [
+      {
+        "label": "Deep",
+        "file": "tex-d366843ee7d9e9f3.png"
+      },
+      {
+        "label": "Light",
+        "file": "tex-743f811857db0b95.png"
+      }
+    ]
+  },
+  "animations": [
+    {
+      "id": "ual1-idle",
+      "label": "Idle",
+      "file": "ual1-idle.glb"
+    },
+    {
+      "id": "ual1-walk-loop",
+      "label": "Walk",
+      "file": "ual1-walk-loop.glb"
+    },
+    {
+      "id": "ual1-jog-fwd",
+      "label": "Jog",
+      "file": "ual1-jog-fwd.glb"
+    }
+  ],
+  "archives": {
+    "outfits": "c3468b18871cc8c8f05ab14df7712baf22cb9f389cbd870babf130e595187f70",
+    "base": "fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40"
+  }
+}

@@ -55,7 +55,7 @@ function drawHiddenUnitOutlines(ordered){
     const signature=[frame.ring.width,frame.ring.height,unit.waterClip==null?null:unit.waterClip-top];
     for(const {actor,polygons} of candidates){if(actor.tree){const f=actor.tree.outlineFrame;signature.push(actor.tree.x,actor.tree.y,actor.tree.tileIndex,f?null:combatLightingFrame,f?.image,f?.sx,f?.sy,f?.sourceTileWidth,f?.sourceTileHeight,f?.drawX-left,f?.drawY-top,f?.drawW,f?.drawH);}else {signature.push(polygons.length);for(const polygon of polygons){signature.push(polygon.length);for(const p of polygon)signature.push(p.x-left,p.y-top);}}}
     let cached=hiddenOutlineMaskCache.get(unit.entity);
-    const reusable=cached&&signature.length===cached.signature.length&&signature.every((v,i)=>Object.is(v,cached.signature[i]));
+    const reusable=cached&&signature.length===cached.signature.length&&signature.every((v,i)=>Object.is(v,cached.signature[i])||(typeof v==='number'&&typeof cached.signature[i]==='number'&&Math.abs(v-cached.signature[i])<1e-8));
     if(!reusable){
     const mask=cached?.mask||document.createElement('canvas');if(mask.width!==frame.ring.width||mask.height!==frame.ring.height){mask.width=frame.ring.width;mask.height=frame.ring.height;}const m=mask.getContext('2d',{willReadFrequently:true});
 m.setTransform(1,0,0,1,0,0);m.clearRect(0,0,mask.width,mask.height);m.translate(-left,-top);
@@ -205,6 +205,13 @@ function drawSpriteFacing(image,c,drawW,drawH,facing,nativeFacing="right",entity
 }
 
 function drawFighter(p){
+  // Autonomous tests use an actual friendly MOB as the primary party actor.
+  if(game?.session?.autonomous&&p.type!=="fighter"){
+    if(unitPoseDefinition(p)?.spriteLayout||p.repositoryMobId)return drawStudioSpriteMob(p);
+    if(p.species==="orc"||p.type?.startsWith("orc"))return drawOrc(p);
+    if(p.type==="juvenile-red-dragon")return drawLargeTestMob(p);
+    return drawKobold(p);
+  }
   if(unitPoseDefinition(p)?.spriteLayout) return drawStudioSpriteMob(p);
   const c=hexCenter(p.x,p.y);
 
@@ -323,11 +330,12 @@ function drawKobold(k){
 // Death feedback is the animated model and corpse, without a skull overlay.
 function drawDeathFx(){}
 
-// Screen-space font, world-space clearance: three feet above authored height.
+// Same physical-height calibration as repository-mob-frame, with three feet of clearance.
 function combatUnitTextAnchor(unit){
  const move=unit.walkPresentation,t=move?Math.max(0,Math.min(1,move.t)):0;
- const c=move?hexCenter(move.from.x+(move.to.x-move.from.x)*t,move.from.y+(move.to.y-move.from.y)*t):unitFootprintScreenCenter(unit);
- const scale=typeof combatShadowScale==='function'?combatShadowScale()[1]:10;
+ const c=unitFootprintScreenCenter(unit);
+ if(move){const from=hexCenter(move.from.x,move.from.y),to=hexCenter(move.to.x,move.to.y),base=hexCenter(unit.x,unit.y);c.x+=from.x+(to.x-from.x)*t-base.x;c.y+=from.y+(to.y-from.y)*t-base.y;}
+ const scale=(64/3.048)*Math.sqrt(1-(42*Math.sqrt(3)/128)**2);
  const height=(Number(unit.heightInches)||72)*.0254*(typeof enlargeVisualScale==='function'?enlargeVisualScale(unit):1);
  const drop=typeof combatUnitStreamPresentation==='function'?combatUnitStreamPresentation(unit).drop:0;
  const zoom=battlefieldZoom,anchor=battlefieldZoomAnchor();
@@ -357,7 +365,7 @@ function drawUnitBarks(){
   }
   if(y<12){y=14;while(placed.some(p=>Math.abs(x-p.x)<(width+p.width)/2&&Math.abs(y-p.y)<22))y+=24;}
   placed.push({x,y,width});
-  ctx.fillStyle=isPlayerControlledUnit(unit)||unit.faction==='player'?'#59aaff':'#ff5757';
+  ctx.fillStyle='#ffffff';
   ctx.strokeText(unit.barkText,x,y,BATTLEFIELD_LOGICAL_WIDTH-20);ctx.fillText(unit.barkText,x,y,BATTLEFIELD_LOGICAL_WIDTH-20);
  }
  ctx.restore();

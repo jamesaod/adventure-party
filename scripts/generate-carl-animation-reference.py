@@ -14,6 +14,7 @@ catalog=json.loads((root/'data/animation-library-sources.json').read_text())
 parser=argparse.ArgumentParser()
 parser.add_argument('--target',default='assets/models/dungeon-crawler-carl/v2/dungeon-crawler-carl-v2.glb')
 parser.add_argument('--output',default='scripts/fixtures/carl-uploaded-animation-reference.json')
+parser.add_argument('--source-id',default=None,help='Generate just one cataloged FBX source')
 args=parser.parse_args()
 target=root/args.target
 doc,_,raw=read_glb(target)
@@ -41,6 +42,7 @@ target_basis=rig_basis(target_world,lookup)
 roles=['Hips','Spine','Spine1','Spine2','Neck','Head','LeftShoulder','LeftArm','LeftForeArm','LeftHand','RightShoulder','RightArm','RightForeArm','RightHand','LeftUpLeg','LeftLeg','LeftFoot','LeftToeBase','RightUpLeg','RightLeg','RightFoot','RightToeBase']
 reference={'method':'Rev 58 world delta + Rev 108 anatomical basis + Rev 110 stationary hips policy','targetSha256':hashlib.sha256(raw).hexdigest(),'clips':[]}
 for entry in catalog['animations']:
+    if not entry['file'].lower().endswith('.fbx') or (args.source_id and entry['id'] != args.source_id):continue
     if entry.get('restoreSkinBindPose') or entry.get('retargetMode')=='anatomical-aim':continue # Posed-only sources use direction checks in test-fbx-animations.mjs.
     path=root/entry['file']
     records,curves,evaluate=fbx_skeleton(path)

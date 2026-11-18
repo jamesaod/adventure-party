@@ -1,17 +1,21 @@
+import {createCoverRangeIndex} from './cover-range-index.mjs?v=scroll-pacing1';
+import {combatPerformance as perf} from './combat-performance.mjs';
+import {createCameraMotionBudget} from './combat-camera-motion-budget.mjs';
 import {BROADLEAF_FAMILIES,broadleafAsset} from './broadleaf-family.mjs?v=sweet-birch1';
-import {createLeafSnowLanding,LEAF_SNOW_DECODE} from './leaf-snow-landing.mjs?v=tree-snow-grains1';
+import {createLeafSnowLanding,LEAF_SNOW_DECODE} from './leaf-snow-landing.mjs?v=natural-ac1';
 import {indexCoverGeometry} from './cover-geometry.mjs';
+import {createCoverPatchCache,createCoverSpatialIndex} from './cover-patch-cache.mjs';
 import {createCoverDepthSorter} from './cover-depth-sort.mjs';
 import {createDebrisGrassPressure} from './debris-grass-pressure.mjs?v=two-tree1';
 import {getSeason} from './combat-seasons.mjs';
 import {LEAF_POSITIONS,LEAF_UVS,MAPLE_LEAF_POSITIONS,MAPLE_LEAF_UVS,BEECH_LEAF_POSITIONS,BIRCH_LEAF_POSITIONS,leafScatter} from './combat-tree-litter.mjs?v=sweet-birch1';
 import {grassRetention} from './tree-environment-profiles.mjs?v=sweet-birch1';
 import {canopyPlacements} from './grass-canopy.mjs?v=soft-grass1';
-import {corpseGroundFootprints,corpseGroundFootprintRevision} from './combat-snow-footprints.mjs?v=shore-snow1';
+import {corpseGroundFootprints,corpseGroundFootprintRevision} from './combat-snow-footprints.mjs?v=giant-snow1';
 import {createCorpseCoverIndex} from './combat-corpse-cover.mjs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {SNOW_DEPTH_GLSL} from './combat-snow-depth.mjs?v=shore-snow1';
-import {SNOW_SHELTER_GLSL,snowShelterUniforms,snowExposureAt,snowShelterRevision} from './combat-snow-shelter.mjs?v=tree-snow-grains1';
+import {SNOW_SHELTER_GLSL,snowShelterUniforms,snowExposureAt,snowShelterRevision} from './combat-snow-shelter.mjs?v=natural-ac1';
 import {SCENE_STYLE} from './exploration-scene-style.mjs';
 
 import {CANOPY_GRASS_DEFAULTS} from './grass-presets.mjs?v=foliage-restored1';
@@ -62,7 +66,7 @@ function templates(type,low=false,tuning={}){
    const h=(.65+r(3)*.5)*(tuning.height??.4)/.4,w=(.014+r(4)*.012)*(tuning.width??2.3)/2.3,bend=(.13+r(5)*.2)*(tuning.bend??.9)/.9;
    bladeFrame=t=>({across:[-Math.sin(a)*w*(1-t),Math.cos(a)*w*(1-t)],tangent:[Math.cos(a)*2*bend*t,h,Math.sin(a)*2*bend*t]});
    const point=(t,side)=>[ox+Math.cos(a)*bend*t*t-Math.sin(a)*w*(1-t)*side,h*t,oz+Math.sin(a)*bend*t*t+Math.cos(a)*w*(1-t)*side];
-   for(let s=0;s<3;s++){const a=s/3,b=(s+1)/3;tri(point(a,-1),point(a,1),point(b,1),[[0,a],[1,a],[1,b]],0);if(s<2)tri(point(a,-1),point(b,1),point(b,-1),[[0,a],[1,b],[0,b]],0);}
+   const segments=low?2:3;for(let s=0;s<segments;s++){const a=s/segments,b=(s+1)/segments;tri(point(a,-1),point(a,1),point(b,1),[[0,a],[1,a],[1,b]],0);if(s<segments-1)tri(point(a,-1),point(b,1),point(b,-1),[[0,a],[1,b],[0,b]],0);}
   }
  }else if(type===0){
   // Tapered, twisting blades: compact roots, varied arches and a curled tip.
@@ -123,7 +127,7 @@ const vertex=`
  if(kind<.5){float t=position.y/.72;
  float gust=sin(time*.8+root.x*.009+root.y*.007)*.6+sin(time*1.7+root.x*.031-root.y*.012)*.25;
  local.xz+=vec2(.075,.035)*gust*t*t*windStrength*(1.-press);tangent.xz+=vec2(.075,.035)*gust*2.*t*(bladeTangent.y/.72)*windStrength*(1.-press);
- for(int i=0;i<32;i++){if(i>=moverCount)break;vec2 d=(root.xy-movers[i].xy)/vec2(root.z,root.z*root.w);float distance=length(d),push=1.-smoothstep(.08,movers[i].z,distance);local.xz+=d/max(.05,distance)*push*.24*t;local.y*=1.-push*movers[i].w;tangent.xz+=d/max(.05,distance)*push*.24*(bladeTangent.y/.72);tangent.y*=1.-push*movers[i].w;}}
+ for(int i=0;i<32;i++){if(i>=moverCount)break;vec2 d=(root.xy-movers[i].xy)/vec2(root.z,root.z*root.w);if(movers[i].z>.08&&any(greaterThan(abs(d),vec2(movers[i].z))))continue;float distance=length(d),push=1.-smoothstep(.08,movers[i].z,distance);local.xz+=d/max(.05,distance)*push*.24*t;local.y*=1.-push*movers[i].w;tangent.xz+=d/max(.05,distance)*push*.24*(bladeTangent.y/.72);tangent.y*=1.-push*movers[i].w;}}
  if(press>0.){
   // A continuous shear and compression keeps roots fixed and lays tips sideways.
   // At full load even the tallest authored blades fit beneath a thin snow layer.
@@ -198,21 +202,25 @@ export function createGroundCover({renderer,snow,texture,paint,flush,markBackdro
   const data=new Float32Array(2*8192*4),map=new THREE.DataTexture(data,256,64,THREE.RGBAFormat,THREE.FloatType);map.needsUpdate=true;
   const viewport=new THREE.Vector4();
   const uniforms={leafLandingSnow:leafSnows[Math.max(0,kind-4)].uniform,...debris.uniforms,landingTime:{value:0},leafAutumn:{value:1},leafArtwork:{value:leafArtwork},viewSize:{value:new THREE.Vector2()},snowPress:{value:kind===3&&tuning.snowPress!==false},canopyBlade:{value:kind===3},grassTint:{value:new THREE.Vector3(...tuning.tint)},coverViewport:{value:new THREE.Vector2(1,1)},edgeAntialiasing:{value:tuning.edgeAntialiasing!==false},windStrength:{value:tuning.wind??1},grassBrightness:{value:tuning.brightness??1},dryAmount:{value:tuning.dry??.65},...snowShelterUniforms,instances:{value:map},snowAccumulation:{value:snow.texture},snowFootprints:{value:snow.footprintTexture},snowBounds:{value:snow.bounds},combatView:{value:new THREE.Matrix3()},anchor:{value:new THREE.Vector2()},zoom:{value:1},time:{value:0},instanceStart:{value:0},kind:{value:kind===3?0:kind},moverCount:{value:0},movers:{value:new Float32Array(128)},lightMultiply:{value:null},lightBoost:{value:null},lightBounds:{value:new THREE.Vector4()},useLightMap:{value:false},useScorch:{value:false},groundScorch:{value:null},scorchBounds:{value:new THREE.Vector4()},sunDirection:{value:new THREE.Vector3(.4,.8,.3)},daylight:{value:1}};
-  const mesh=new THREE.Mesh(templates(kind,false,tuning),new THREE.ShaderMaterial({uniforms,vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));mesh.frustumCulled=false;
+  const mesh=new THREE.Mesh(templates(kind,false,tuning),new THREE.ShaderMaterial({uniforms,vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));mesh.frustumCulled=false;mesh.userData.coverKind=kind;
   // getCurrentViewport includes DPR and active render-target sizing. Reuse the
   // vectors across ordered draws; this adds no target, pass or animation loop.
   mesh.onBeforeRender=renderer=>{renderer.getCurrentViewport(viewport);uniforms.coverViewport.value.set(Math.max(1,viewport.z),Math.max(1,viewport.w));};
-  return {kind,mesh,high:mesh.geometry,low:kind===0?templates(0,true,tuning):mesh.geometry,data,map,items:[],sort:createCoverDepthSorter(),cursor:0,key:''};
+  return {kind,mesh,high:mesh.geometry,low:kind===0||kind===3?templates(kind,true,tuning):mesh.geometry,data,map,items:[],sort:createCoverDepthSorter(),cursor:0,key:''};
  });
  let faceMapSnapshot=[],faceMapVisibility=[],retainedFaceMap=null;
  let residentFaces=new Map(),depositSource=null,depositBuckets=new Map();
+ const patchCache=createCoverPatchCache();
  let layoutSnapshot=[],layoutValid=false,corpseVersion=-1,corpseIndex=createCorpseCoverIndex([]);
+ const cameraBudget=createCameraMotionBudget();let cameraMoving=false;
+ let activeMovers=[];
  let faces=[],view,sceneId,settings=null,stats={instances:0,draws:0,triangles:0,cacheEntries:0},enabled=true;
- function begin(v){view=v;faces=[];settings=null;enabled=globalThis.adventurePartyGroundCover!==false;stats={instances:0,draws:0,triangles:0,cacheEntries:cache.size};for(const b of batches)b.cursor=0;}
+ function begin(v){cameraMoving=cameraBudget.update(v,performance.now());view=v;faces=[];settings=null;enabled=globalThis.adventurePartyGroundCover!==false;stats={instances:0,draws:0,triangles:0,cacheEntries:cache.size};for(const b of batches)b.cursor=0;}
  function collect(group,options){if(!enabled)return;for(const f of group)if(f.grass&&f.snowEligible>0){faces.push(f);settings=options;}}
  function prepare(movers=[],corpses=[],spreadingCrowns=[],treeExclusions=[],fallenLeaves=null,woodFootprints=null,woodPressure=0){
-  debris.update(woodFootprints,woodPressure);
+  perf.measure('coverDebris',()=>debris.update(woodFootprints,woodPressure));
   if(!enabled||!settings)return;const [a,b,c,d,tx,ty]=view.matrix,seen=new Set(),shelterRevision=snowShelterRevision(),frameTime=matchMedia('(prefers-reduced-motion: reduce)').matches?0:performance.now()/1000;
+  let finishPhase=perf.start('coverValidation');
   // Numeric snapshots detect in-place edits without allocating a frame-size key.
   const nextCorpseVersion=corpseGroundFootprintRevision();
   if(nextCorpseVersion!==corpseVersion){corpseVersion=nextCorpseVersion;corpseIndex=createCorpseCoverIndex(corpseGroundFootprints());}
@@ -220,11 +228,14 @@ export function createGroundCover({renderer,snow,texture,paint,flush,markBackdro
   // Camera subtraction can differ by ~1e-13 for an unchanged world point.
   // Tolerate only that projected-coordinate noise; geometry/visibility stay exact.
   const crowns=spreadingCrowns.map(t=>({...t,x:t.x-tx,y:t.y-ty,sortY:t.sortY-ty}));
-  let cursor=0,rebuild=!layoutValid;const check=(value,projected=false)=>{const previous=layoutSnapshot[cursor];const sameProjection=projected&&Number.isFinite(previous)&&Math.abs(previous-value)<=1e-8;if(previous!==value&&!sameProjection){rebuild=true;layoutSnapshot[cursor]=value;}cursor++;};
+  // Crown constraints combine with min(), so painter-list order is irrelevant.
+  // Canonicalize before snapshotting; panning can reorder equal-depth actors.
+  crowns.sort((a,b)=>{for(const k of ["x","y","rx","ry","sortY"]){const delta=a[k]-b[k];if(Math.abs(delta)>1e-8)return delta;}return 0;});
+  let reason='initial';const rebuildReasons=new Set();if(!layoutValid)rebuildReasons.add(reason);let cursor=0,rebuild=!layoutValid;const check=(value,projected=false)=>{const previous=layoutSnapshot[cursor];const sameProjection=projected&&Number.isFinite(previous)&&Math.abs(previous-value)<=1e-8;if(previous!==value&&!sameProjection){rebuild=true;rebuildReasons.add(reason);layoutSnapshot[cursor]=value;}cursor++;};
   if(leafInput!==fallenLeaves){leafInput=fallenLeaves;for(let i=0;i<leafSnows.length;i++){const next=(fallenLeaves||[]).filter(p=>p.type===i+4),prior=leafSources[i];if(!prior||next.length!==prior.length||next.some((p,j)=>p!==prior[j]))leafSources[i]=next;}}for(let i=0;i<leafSnows.length;i++)leafSnows[i].update(leafSources[i]);
-  const season=getSeason();check(season);check(fallenLeaves);check(treeExclusions.length);for(const t of treeExclusions)for(const key of ['x','y','width','row','radius','feather','species'])check(t[key]);
-  check(crowns.length);for(const t of crowns){check(t.x,true);check(t.y,true);check(t.sortY,true);check(t.rx);check(t.ry);}
-  for(const value of view.matrix.slice(0,4))check(value);check(shelterRevision);check(corpseVersion);check(corpses.length);for(const corpse of corpses){check(corpse.entity);check(corpse.sortY-ty,true);}
+  const season=getSeason();reason='season';check(season);reason='leaves';check(fallenLeaves);reason='trees';check(treeExclusions.length);for(const t of treeExclusions)for(const key of ['x','y','width','row','radius','feather','species'])check(t[key]);
+  reason='crowns';check(crowns.length);for(const t of crowns){check(t.x,true);check(t.y,true);check(t.sortY,true);check(t.rx);check(t.ry);}
+  reason='rotation';for(const value of view.matrix.slice(0,4))check(value);reason='shelter';check(shelterRevision);reason='corpses';check(corpseVersion);check(corpses.length);for(const corpse of corpses){check(corpse.entity);check(corpse.sortY-ty,true);}
   // The collected floor has a guard band. Retain its root buffers until a new
   // face actually reaches the root clip rectangle; GPU clipping handles the pan.
   const faceKey=f=>f._groundKey??(f.grassUnit+':'+f.grassSquash+':'+f.points.map(p=>p.x+','+p.y).join(';'));
@@ -232,23 +243,37 @@ export function createGroundCover({renderer,snow,texture,paint,flush,markBackdro
   const currentFaces=sameFaces?retainedFaceMap:new Map(faces.map(f=>[faceKey(f),f]));
   if(!sameFaces){faceMapSnapshot=faces.slice();faceMapVisibility=faces.map(f=>f.visibility??1);retainedFaceMap=currentFaces;}stats.faceMapReused=!!sameFaces;
   const reachesView=f=>{let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;for(const p of f.points){const x=view.anchor.x+(a*p.x+c*p.y+tx-view.anchor.x)*view.zoom,y=view.anchor.y+(b*p.x+d*p.y+ty-view.anchor.y)*view.zoom;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}return right>=-35&&left<=view.width+35&&bottom>=-15&&top<=view.height+40;};
-  for(const [key,f] of currentFaces){const old=residentFaces.get(key);if(old?(old.visibility??1)!==(f.visibility??1):reachesView(f))rebuild=true;}
-  for(const [key,f] of residentFaces)if(!currentFaces.has(key)&&reachesView(f))rebuild=true;
+  for(const [key,f] of currentFaces){const old=residentFaces.get(key);if(old?(old.visibility??1)!==(f.visibility??1):reachesView(f)){rebuild=true;rebuildReasons.add('faces');}}
+  for(const [key,f] of residentFaces)if(!currentFaces.has(key)&&reachesView(f)){rebuild=true;rebuildReasons.add('faces');}
   if(layoutSnapshot.length!==cursor)rebuild=true;layoutSnapshot.length=cursor;layoutValid=true;stats.layoutReused=!rebuild;
   if(fallenLeaves!==depositSource){depositSource=fallenLeaves;depositBuckets=new Map();for(const p of fallenLeaves||[]){const k=Math.floor(p.x/64)+','+Math.floor(p.y/64);if(!depositBuckets.has(k))depositBuckets.set(k,[]);depositBuckets.get(k).push(p);}}
-  if(rebuild){residentFaces=new Map([...currentFaces].map(([key,f])=>[key,{...f,points:f.points.map(p=>({...p}))}]));for(const b of batches)b.items.length=0;
-  for(const f of faces){const key=faceKey(f);let items=cache.get(key);if(speculative.has(key)){speculativeInstances-=speculative.get(key);speculative.delete(key);stats.preparedHits=(stats.preparedHits||0)+1;}if(!items){items=coverPlacements(f,tuning);if(cache.size>=16000)cache.delete(cache.keys().next().value);cache.set(key,items);}
-   const placements=season==='fall'?items.concat(leafScatter(f,treeExclusions,tuning,coverHash,coverContains)):items.slice();
+  finishPhase();finishPhase=perf.start('coverLayout');
+  if(rebuild){stats.rebuildReasons=[...rebuildReasons];for(const reason of rebuildReasons)perf.count('coverRebuild_'+reason);perf.count('coverLayoutRebuilds');
+  const treeIndex=createCoverSpatialIndex(treeExclusions,t=>({left:t.x-t.radius*t.width*1.25,right:t.x+t.radius*t.width*1.25,top:t.y-t.radius*t.row*1.25,bottom:t.y+t.radius*t.row*1.25}));
+  const crownIndex=createCoverSpatialIndex(crowns,t=>({left:t.x-t.rx,right:t.x+t.rx,top:t.y-t.ry,bottom:t.y+t.ry}));residentFaces=new Map([...currentFaces].map(([key,f])=>[key,{...f,points:f.points.map(p=>({...p}))}]));for(const b of batches)b.items.length=0;
+  for(const f of faces){const key=faceKey(f);let items=cache.get(key);if(speculative.has(key)){speculativeInstances-=speculative.get(key);speculative.delete(key);stats.preparedHits=(stats.preparedHits||0)+1;}if(!items){items=perf.measure('coverPlacement',()=>coverPlacements(f,tuning));perf.count('coverPlacementMisses');if(cache.size>=16000)cache.delete(cache.keys().next().value);cache.set(key,items);}
+   const bounds={left:Math.min(...f.points.map(p=>p.x)),right:Math.max(...f.points.map(p=>p.x)),top:Math.min(...f.points.map(p=>p.y)),bottom:Math.max(...f.points.map(p=>p.y))};
+   const localTrees=treeIndex.within(bounds);
+   const patchSignature=JSON.stringify([season,shelterRevision,tuning.grass,tuning.rocks,tuning.sticks,...localTrees.map(t=>[t.x,t.y,t.width,t.row,t.radius,t.feather,t.species])]);
+   const patch=patchCache.get(key,items,patchSignature,()=>{
+    const source=season==='fall'?items.concat(leafScatter(f,localTrees,tuning,coverHash,coverContains)):items;
+    return source.filter(p=>{if(((p.type===0||p.type===3)&&tuning.grass===false)||(p.type===1&&tuning.rocks===false)||(p.type===2&&tuning.sticks===false))return false;if((p.type===0||p.type===3)&&p.seed>=grassRetention(p.x,p.y,localTrees))return false;
+     if(p.shelterRevision!==shelterRevision){p.exposure=snowExposureAt(p.x,p.y);p.shelterRevision=shelterRevision;}return !((p.type===0||p.type===3)&&p.exposure<.40&&p.seed>p.exposure)&&!(p.type===2&&p.exposure>.9&&p.seed>.3);
+    });
+   });perf.count(patch.reused?'coverPatchHits':'coverPatchBuilds');
+   const placements=fallenLeaves?.length?patch.items.slice():patch.items;
    if(fallenLeaves?.length){const xs=f.points.map(p=>p.x),ys=f.points.map(p=>p.y);for(let bx=Math.floor(Math.min(...xs)/64);bx<=Math.floor(Math.max(...xs)/64);bx++)for(let by=Math.floor(Math.min(...ys)/64);by<=Math.floor(Math.max(...ys)/64);by++)for(const p of depositBuckets.get(bx+','+by)||[]){if(coverContains(f.points,p.x,p.y)&&!(tuning.groundWater?.(p.x,p.y,f.grassUnit,f.grassSquash)>.02))placements.push({...p,unit:f.grassUnit||128/3,squash:f.grassSquash||.568329,groundElevation:tuning.groundElevation?.(p.x,p.y,f.grassUnit,f.grassSquash)||0});}}
-   for(const p of placements){if(((p.type===0||p.type===3)&&tuning.grass===false)||(p.type===1&&tuning.rocks===false)||(p.type===2&&tuning.sticks===false))continue;if((p.type===0||p.type===3)&&p.seed>=grassRetention(p.x,p.y,treeExclusions))continue;if(seen.has(p.key))continue;seen.add(p.key);if(p.shelterRevision!==shelterRevision){p.exposure=snowExposureAt(p.x,p.y);p.shelterRevision=shelterRevision;}const exposure=p.exposure;if((p.type===0||p.type===3)&&exposure<.40&&p.seed>exposure)continue;if(p.type===2&&exposure>.9&&p.seed>.3)continue;const y=b*p.x+d*p.y;p.sortY=corpseOrder.size&&(p.type===0||p.type===3)?corpseIndex.sortY(p.x,p.y,y,corpseOrder):y;// Low spreading branches must composite over ground cover beneath their crown.
+   for(const p of placements){if(seen.has(p.key))continue;seen.add(p.key);const y=b*p.x+d*p.y;p.sortY=corpseOrder.size&&(p.type===0||p.type===3)?corpseIndex.sortY(p.x,p.y,y,corpseOrder):y;// Low spreading branches must composite over ground cover beneath their crown.
    // Only adjust cached painter order; root elevation and GPU wind stay unchanged.
-   if(p.type===0||p.type===3){const x=a*p.x+c*p.y;for(const t of crowns)if(((x-t.x)/t.rx)**2+((y-t.y)/t.ry)**2<=1)p.sortY=Math.min(p.sortY,t.sortY-.01);}
+   if(p.type===0||p.type===3){const x=a*p.x+c*p.y;for(const t of crownIndex.at(x,y))if(((x-t.x)/t.rx)**2+((y-t.y)/t.ry)**2<=1)p.sortY=Math.min(p.sortY,t.sortY-.01);}
    p.visibility=f.visibility??1;batches[p.type].items.push(p);}}
   }
-  for(const batch of batches){if(rebuild)batch.sort(batch.items);const items=batch.items;
+  finishPhase();
+  activeMovers=movers.slice(0,cameraMoving?8:32);
+  for(const batch of batches){if(rebuild)perf.measure('coverSorting',()=>{batch.sort(batch.items);batch.rangeIndex=createCoverRangeIndex(batch.items);});finishPhase=perf.start('coverPacking');const items=batch.items;
    // Pack 128 instances per texture row and grow capacity without dropping sorted rows.
    if(items.length*8>batch.data.length){const rows=2**Math.ceil(Math.log2(Math.ceil(items.length/128)));batch.data=new Float32Array(256*rows*4);batch.map.dispose();batch.map.image={data:batch.data,width:256,height:rows};batch.key='';batch.map.needsUpdate=true;}
-   batch.mesh.geometry=view.zoom<.85?batch.low:batch.high;
+   batch.mesh.geometry=(cameraMoving||(batch.kind===0&&view.zoom<.85))?batch.low:batch.high;
    // Compare packed numeric records, avoiding a long joined string and temporary arrays.
    if(rebuild){let changed=false;const data=batch.data;
    let offset=0;const write=(slot,value)=>{const v=Math.fround(value);if(data[offset+slot]!==v){data[offset+slot]=v;changed=true;}};
@@ -256,15 +281,33 @@ export function createGroundCover({renderer,snow,texture,paint,flush,markBackdro
     write(0,p.x);write(1,p.y);write(2,p.unit);write(3,p.squash);write(4,p.seed);write(5,p.type>=4&&p.field>0?leafSnows[p.type-4].index(p.key):p.field);write(6,p.visibility);write(7,p.groundElevation||0);
    }
    if(changed)batch.map.needsUpdate=true;}
-   stats.instances+=items.length;const u=batch.mesh.material.uniforms;u.viewSize.value.set(view.width,view.height);u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;u.time.value=frameTime;u.landingTime.value=performance.now()/1000;const weather=globalThis.getWeatherSnapshot?.();u.windStrength.value=(tuning.wind??1)*(weather?.amounts?weather.amounts.wind:1);
-   u.movers.value.fill(0);u.moverCount.value=Math.min(32,movers.length);for(let i=0;i<u.moverCount.value;i++)u.movers.value.set(movers[i],i*4);
+   finishPhase();finishPhase=perf.start('coverUniforms');
+   stats.cameraReducedDetail=cameraMoving;stats.instances+=items.length;const u=batch.mesh.material.uniforms;u.viewSize.value.set(view.width,view.height);u.combatView.value.set(a,c,tx,b,d,ty,0,0,1);u.anchor.value.set(view.anchor.x,view.anchor.y);u.zoom.value=view.zoom;u.time.value=frameTime;u.landingTime.value=performance.now()/1000;const weather=globalThis.getWeatherSnapshot?.();u.windStrength.value=(tuning.wind??1)*(weather?.amounts?weather.amounts.wind:1);
+   u.movers.value.fill(0);u.moverCount.value=Math.min(cameraMoving?8:32,movers.length);for(let i=0;i<u.moverCount.value;i++)u.movers.value.set(movers[i],i*4);
    u.leafArtwork.value=leafMaps[Math.max(0,batch.kind-4)][season==='fall'?'fallLeaf':'greenLeaf'];u.leafAutumn.value=season==='fall'?1:0;
    const light=settings.lightMap;u.useLightMap.value=!!light;if(light){u.lightMultiply.value=texture(light.layers[0]);u.lightBoost.value=texture(light.layers[1]);u.lightBounds.value.set(light.left,light.top,light.spanWidth,light.spanHeight);}
    const scorch=settings.groundScorch;u.useScorch.value=!!scorch;if(scorch){u.groundScorch.value=texture(scorch.image);u.scorchBounds.value.set(scorch.left,scorch.top,scorch.spanX,scorch.spanY);}
    const solar=globalThis.adventurePartySolar?.state?.();if(solar){u.sunDirection.value.set(solar.direction.x,solar.direction.y,solar.direction.z).normalize();u.daylight.value=solar.daylight;}
+   finishPhase();
   }stats.cacheEntries=cache.size;
  }
- function drawUntil(y=Infinity){if(!enabled)return;const limit=y-view.matrix[5];for(const b of [...batches.slice(4),...batches.slice(0,4)]){const start=b.cursor;let lo=start,hi=b.items.length;while(lo<hi){const mid=(lo+hi)>>>1;if(b.mesh.material.uniforms.kind.value>3.5||b.items[mid].sortY<=limit)lo=mid+1;else hi=mid;}b.cursor=lo;const count=b.cursor-start;if(!count)continue;flush();b.mesh.geometry.instanceCount=count;b.mesh.material.uniforms.instanceStart.value=start;paint(b.mesh,'Ground cover');markBackdrop();stats.draws++;stats.triangles+=(b.mesh.geometry.index?.count??b.mesh.geometry.attributes.position.count)/3*count;}}
+ function drawUntil(y=Infinity){return perf.measure('coverDraw',()=>drawUntilImpl(y));}
+ function drawUntilImpl(y=Infinity){
+  if(!enabled)return;const limit=y-view.matrix[5];let flushed=false;
+  // Preserve the established painter order. Flush preceding actors once before
+  // this uninterrupted run of synchronous cover draws, never across an actor.
+  for(let order=0;order<batches.length;order++){const b=batches[(order+4)%batches.length],start=b.cursor;let lo=start,hi=b.items.length;
+   while(lo<hi){const mid=(lo+hi)>>>1;if(b.mesh.material.uniforms.kind.value>3.5||b.items[mid].sortY<=limit)lo=mid+1;else hi=mid;}b.cursor=lo;const count=b.cursor-start;if(!count)continue;
+   if(!flushed){perf.measure('coverFlush',()=>flush());flushed=true;}
+   const u=b.mesh.material.uniforms;
+   // Only the known grass materials bend. Unknown future types retain the
+   // original full mover list; absent/invalid bounds also fall back safely.
+   const selected=(b.kind===0||b.kind===3)?b.rangeIndex?.select(start,lo,activeMovers)??activeMovers:activeMovers;
+   u.moverCount.value=selected.length;for(let i=0;i<selected.length;i++)u.movers.value.set(selected[i],i*4);
+   perf.count('coverMoverCandidates',activeMovers.length*count);perf.count('coverMoverSelected',selected.length*count);
+   b.mesh.geometry.instanceCount=count;u.instanceStart.value=start;perf.measure('coverSubmit',()=>paint(b.mesh,'Ground cover'));markBackdrop();stats.draws++;stats.triangles+=(b.mesh.geometry.index?.count??b.mesh.geometry.attributes.position.count)/3*count;
+  }
+ }
  function setTuning(next){
  const geometryKeys=['height','width','bend','spread'];
  const geometryChanged=geometryKeys.some(k=>next[k]!==undefined&&next[k]!==tuning[k]);
@@ -273,9 +316,9 @@ export function createGroundCover({renderer,snow,texture,paint,flush,markBackdro
  for(let kind=0;kind<batches.length;kind++){const b=batches[kind],u=b.mesh.material.uniforms;
  u.snowPress.value=kind===3&&tuning.snowPress!==false;u.grassBrightness.value=tuning.brightness;u.dryAmount.value=tuning.dry;
  if(next.tint)u.grassTint.value.fromArray(next.tint);
- if(geometryChanged){b.high.dispose();if(b.low!==b.high)b.low.dispose();b.high=templates(kind,false,tuning);b.low=kind===0?templates(0,true,tuning):b.high;b.mesh.geometry=b.high;}
+ if(geometryChanged){b.high.dispose();if(b.low!==b.high)b.low.dispose();b.high=templates(kind,false,tuning);b.low=kind===0||kind===3?templates(kind,true,tuning):b.high;b.mesh.geometry=b.high;}
  }
- if(layoutChanged){preparationRevision++;speculative.clear();speculativeInstances=0;cache.clear();layoutValid=false;}
+ if(layoutChanged){preparationRevision++;speculative.clear();speculativeInstances=0;cache.clear();patchCache.clear();layoutValid=false;}
  }
  function prepareAhead(face){
   if(!enabled||!face.grass||face.snowEligible<=0)return;
@@ -284,7 +327,7 @@ export function createGroundCover({renderer,snow,texture,paint,flush,markBackdro
   const items=coverPlacements(face,tuning);if(speculativeInstances+items.length>32768)return;
   if(cache.size>=16000)cache.delete(cache.keys().next().value);cache.set(key,items);speculative.set(key,items.length);speculativeInstances+=items.length;
  }
- return {prepareAhead,get preparationRevision(){return preparationRevision;},get preparationFull(){return speculative.size>=256||speculativeInstances>=32768;},invalidate(){preparationRevision++;speculative.clear();speculativeInstances=0;cache.clear();layoutValid=false;},setTuning,begin,collect,prepare,drawUntil,get active(){return enabled&&stats.instances>0;},diagnostics:()=>({...stats,preparedFaces:speculative.size,preparedInstances:speculativeInstances,debrisPressure:debris.diagnostics(),leafSnow:{leaves:leafSnows.reduce((n,s)=>n+s.diagnostics().leaves,0),passes:leafSnows.reduce((n,s)=>n+s.diagnostics().passes,0)},leafInstances:batches.slice(4).reduce((n,b)=>n+b.items.length,0),leafSpeciesCounts:batches.slice(4).map(b=>b.items.length),leafTriangles:(batches.slice(4).reduce((n,b)=>n+b.items.length,0))*2,canopyInstances:batches[3].items.length,canopyBlades:batches[3].items.length*4}),scene(id){if(id!==sceneId){preparationRevision++;speculative.clear();speculativeInstances=0;layoutValid=false;cache.clear();for(const b of batches)b.key='';sceneId=id;}},dispose(){for(const s of leafSnows)s.dispose();debris.dispose();for(const maps of leafMaps)for(const map of Object.values(maps))map.dispose();for(const b of batches){b.map.dispose();b.high.dispose();if(b.low!==b.high)b.low.dispose();b.mesh.material.dispose();}cache.clear();}};
+ return {prepareAhead,get preparationRevision(){return preparationRevision;},get preparationFull(){return speculative.size>=256||speculativeInstances>=32768;},invalidate(){preparationRevision++;speculative.clear();speculativeInstances=0;cache.clear();patchCache.clear();layoutValid=false;},setTuning,begin,collect,prepare,drawUntil,get active(){return enabled&&stats.instances>0;},diagnostics:()=>({...stats,preparedFaces:speculative.size,preparedInstances:speculativeInstances,debrisPressure:debris.diagnostics(),leafSnow:{leaves:leafSnows.reduce((n,s)=>n+s.diagnostics().leaves,0),passes:leafSnows.reduce((n,s)=>n+s.diagnostics().passes,0)},leafInstances:batches.slice(4).reduce((n,b)=>n+b.items.length,0),leafSpeciesCounts:batches.slice(4).map(b=>b.items.length),leafTriangles:(batches.slice(4).reduce((n,b)=>n+b.items.length,0))*2,canopyInstances:batches[3].items.length,canopyBlades:batches[3].items.length*4}),scene(id){if(id!==sceneId){preparationRevision++;speculative.clear();speculativeInstances=0;layoutValid=false;cache.clear();patchCache.clear();for(const b of batches)b.key='';sceneId=id;}},dispose(){for(const s of leafSnows)s.dispose();debris.dispose();for(const maps of leafMaps)for(const map of Object.values(maps))map.dispose();for(const b of batches){b.map.dispose();b.high.dispose();if(b.low!==b.high)b.low.dispose();b.mesh.material.dispose();}cache.clear();patchCache.clear();}};
 }
 
 

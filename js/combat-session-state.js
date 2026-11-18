@@ -87,7 +87,12 @@ async function showCombat(condition=selectedCombatCondition){
     if(!continued||request.cancelled||currentScreen!=="combat"){rendering.finish();return false;}
     rendering.finish();
     syncWeatherAudio();
-    await beginCombatFromPrompt();
+    if(game.session?.autonomous){
+      combatAwaitingStart=true;
+      ui.turnBanner.textContent="<Press Space to Begin>";
+      setCombatMessage("<Press Space to Begin>",0,0);
+      updateUi();draw();
+    }else await beginCombatFromPrompt();
   }catch(error){
     rendering.fail(error);
     console.error("Combat initialization failed:",error);
@@ -156,7 +161,7 @@ function checkCombatVictory(){
   return false;
 }
 
-function deployConfiguredCombatMobs(condition,player){
+function deployConfiguredCombatMobs(condition,player,{autonomous=false}={}){
   const allies=[],enemies=[];
   let index=0;
   for(const group of readCombatMobRoster())for(let n=0;n<group.count;n++){
@@ -164,6 +169,7 @@ function deployConfiguredCombatMobs(condition,player){
     mob.id='roster-'+group.type+'-'+(++index);
     const friendly=group.faction==='friendly';
     mob.faction=friendly?'player':'enemy';mob.controller=friendly?'player':'mob';
+    if(autonomous||mob.treeHauler)mob.controller='mob';
     (friendly?allies:enemies).push(mob);
   }
   const positions=axialDisk({x:0,y:0},17).filter(p=>inside(p.x,p.y)&&!isWall(p.x,p.y));
@@ -171,8 +177,9 @@ function deployConfiguredCombatMobs(condition,player){
   // opposing cells, including the player's footprint, rather than ring radii.
   for(const direction of HEX_DIRS){
     const enemyAnchor={x:player.x+direction.x*10,y:player.y+direction.y*10};
-    const occupied=new Set(occupiedHexes(player).map(c=>key(c.x,c.y)));
-    const friendlyCells=[...occupiedHexes(player)];let valid=true;
+    const initialCells=autonomous?[]:occupiedHexes(player);
+    const occupied=new Set(initialCells.map(c=>key(c.x,c.y)));
+    const friendlyCells=[...initialCells];let valid=true;
     for(const [units,anchor,friendly] of [[allies,player,true],[enemies,enemyAnchor,false]]){
       for(const mob of units){
         const toward=friendly?enemyAnchor:player;
@@ -216,7 +223,12 @@ function newGame(condition=selectedCombatCondition,scenario={}){
   else if(typeof configureStandaloneCombatScene==='function')configureStandaloneCombatScene(condition);
 
   const explorationRoster=scenario.roster||(typeof explorationEncounter!=='undefined'&&explorationEncounter?explorationUnits():null);
-  const player=explorationRoster?.player || libraryTestPlayer() || (selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter());
+  const autonomous=!explorationRoster&&!explorationEncounter&&(!scenario.source||scenario.source==="combat-test")&&!new URLSearchParams(window.location.search).has("testMob")&&typeof combatIncludeCarl!=="undefined"&&!combatIncludeCarl;
+  if(autonomous){
+    const roster=readCombatMobRoster();
+    if(!["friendly","hostile"].every(faction=>roster.some(row=>row.faction===faction&&row.count>0)))throw Error("An autonomous battle needs at least one Friendly and one Hostile MOB. Add both sides in Combat Conditions.");
+  }
+  let player=autonomous?{x:0,y:0}:explorationRoster?.player || libraryTestPlayer() || (selectedMobEncounter==="studio-kobold" ? makeStudioTestPlayer(condition) : makeFighter());
   if(!explorationRoster&&player.type==="fighter"&&player.name==="Dungeon Crawler Carl"){
     equipCarlBowForCombatTest(player);
     syncFighterEquipment(player);
@@ -226,7 +238,9 @@ function newGame(condition=selectedCombatCondition,scenario={}){
     delete player.studioSpriteTest;
     delete player.studioPoseInspection;
   }
-  const configured=explorationRoster || deployConfiguredCombatMobs(condition,player);
+  const configured=explorationRoster || deployConfiguredCombatMobs(condition,player,{autonomous});
+  // Keep the primary-party reference pointed at a real AI MOB, never a dummy Carl.
+  if(autonomous){player=configured.allies.shift();scenario={...scenario,autonomous:true};}
   const allies=configured.allies;
   const enemies=configured.enemies;
   const groupKobolds=enemies.filter(isKoboldUnit);
@@ -235,9 +249,10 @@ function newGame(condition=selectedCombatCondition,scenario={}){
   camera.x=player.x;
   camera.y=player.y;
 
-  game=createCombatGame(condition,{player,allies,enemies},{...scenario,source:scenario.source||(explorationEncounter?'exploration':'combat-test'),studioSpriteTest:!scenario.roster&&selectedMobEncounter==='studio-kobold'});
+  game=createCombatGame(condition,{player,allies,enemies},{...scenario,source:scenario.source||(explorationEncounter?'exploration':'combat-test'),studioSpriteTest:!autonomous&&!scenario.roster&&selectedMobEncounter==='studio-kobold'});
 
   for(const unit of [player,...allies,...enemies]){
+    delete unit.giantClubProneDeath;delete unit.corpsePlacementDurationMs;delete unit.corpseGroundPlane;delete unit.corpseDropInPlace;delete unit.deathImpactOccluder;
     if(!Object.prototype.hasOwnProperty.call(unit,"heightInches")){
       unit.heightInches=unit.type==="fighter" ? 76 : null;
     }
@@ -504,6 +519,8 @@ function finishCombat(title,text,confirmed=false){
 
   if(typeof returnFromExplorationCombat==='function'&&returnFromExplorationCombat(title==="Victory"?"victory":"defeat"))return;
   if(returnToStudioFromCombat()) return;
+
+  if(game.session?.autonomous){showCombatConditions();return;}
 
   let xpAwarded=0;
   let xpText="";

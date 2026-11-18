@@ -11,9 +11,9 @@ const allLayoutPresets = [...SPRITE_LAYOUT_PRESETS, ...SPRITE_LEGACY_LAYOUT_PRES
 
 // Run the game's actual footprint, movement, factory, and rendering functions.
 const lifecycleSource=readCombatFixture(new URL('../js/combat-casting-lifecycle.js',import.meta.url),'utf8');
-const source = readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url), 'utf8');
+const source = readCombatFixture(new URL('../js/adventure-party.js?v=natural-ac1', import.meta.url), 'utf8');
 function productionFunction(name) {
-  const code = ['r230InitiativeStore','r230PendingCastings','r230CastingStore','castingInitiativeSlots'].includes(name)?lifecycleSource:name==='createCombatGame'?readCombatFixture(new URL('../js/combat-runtime.js?v=tree-snow-grains1',import.meta.url),'utf8'):source;
+  const code = ['r230InitiativeStore','r230PendingCastings','r230CastingStore','castingInitiativeSlots'].includes(name)?lifecycleSource:name==='createCombatGame'?readCombatFixture(new URL('../js/combat-runtime.js?v=natural-ac1',import.meta.url),'utf8'):source;
   return extractCombatFunction(code,name);
 }
 function productionDeclaration(name, endMarker = '\n};') {

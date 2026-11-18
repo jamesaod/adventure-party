@@ -64,3 +64,6 @@ Persistent notes requested by James. Add new requested follow-ups here; retain c
 - [ ] **Tree catalog expansion — 2026-11-15:** Create two additional variants each of White Oak and Sugar Maple (three of each total). User asked to explore and establish tree wind/explosion response first; catalog authoring remains queued.
 
 - [ ] **Jagged major branch ends — deferred (2026-11-15):** User rejected the native-cap fitting experiment. Active fall rendering is restored to the original detached limbs; torn trunk/stump remains. Source experiment is preserved under tools/tree-production/branch-breaks for later, low-priority work.
+
+- [x] **Next pass — submerged shadows (2026-11-17):** Shadows appear to fall on the water surface rather than the streambed beneath it. Investigate receiver elevation and water compositing so submerged shadows follow bottom terrain. Implemented locally with shared streambed remapping and depth attenuation for tree/unit shadows; user visual QA pending.
+- [ ] **Next pass — night rain (2026-11-17):** Rain particles remain too bright at night; apply appropriate scene lighting/darkening. Pending from the earlier performance pass.

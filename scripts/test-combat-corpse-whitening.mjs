@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {corpseWhitening,advanceCorpseSnow,registerCorpseSnow,resetCorpseSnow,meltCorpseSnow} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {corpseWhitening,advanceCorpseSnow,registerCorpseSnow,resetCorpseSnow,meltCorpseSnow} from '../js/combat-corpse-snow.mjs?v=natural-ac1';
 for(const [snow,white] of [[0,0],[.25,0],[.5,.25],[.75,.5],[1,.75],[2,.75]])assert.equal(corpseWhitening(snow),white);
 resetCorpseSnow(true);const entity={alive:false,x:0,y:0},amount=registerCorpseSnow(entity),ground=new Map([['0,0',{amount:1}]]);
 assert.equal(amount.value,0,'Full ground snow must not instantly coat a new corpse');

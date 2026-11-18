@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {createStreamField,COMBAT_STREAM_PATH} from '../js/combat-stream-field.mjs';
-import {installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
+import {installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs?v=natural-ac1';
 const field=createStreamField({size:1024,fit:true});field.configure(COMBAT_STREAM_PATH);
 assert(field.bounds[2]/field.size<.03,'Fitted mask resolves narrow shores');
 assert(field.bounds[3]/field.size<.1,'Longitudinal resolution improves on old 25cm grid');

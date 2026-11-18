@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {configureSnowShelter,snowExposureAt} from '../js/combat-snow-shelter.mjs?v=tree-snow-grains1';
-const source=fs.readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+import {configureSnowShelter,snowExposureAt} from '../js/combat-snow-shelter.mjs?v=natural-ac1';
+const source=fs.readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const functionText=name=>source.slice(source.indexOf('function '+name+'('),source.indexOf('\n}',source.indexOf('function '+name+'('))+2);
 const context=vm.createContext({adventurePartyTreeEnvironment:{isBroadleaf:t=>!!t.species}});vm.runInContext(functionText('terrainHash')+'\n'+functionText('treeSizeScale'),context);
 const scale=context.treeSizeScale;

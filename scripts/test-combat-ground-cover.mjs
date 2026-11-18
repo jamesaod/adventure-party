@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {coverPlacements as placements,coverField,ORIGINAL_GRASS_DEFAULTS} from '../js/combat-ground-cover.mjs?v=tree-snow-grains1';
+import {coverPlacements as placements,coverField,ORIGINAL_GRASS_DEFAULTS} from '../js/combat-ground-cover.mjs?v=cover-profile1';
 const coverPlacements=face=>placements(face,ORIGINAL_GRASS_DEFAULTS);
 const face=(left=0,right=512)=>({grass:true,grassUnit:128/3,grassSquash:.568329,snowEligible:1,points:[{x:left,y:0},{x:right,y:0},{x:right,y:290},{x:left,y:290}]});
 const all=coverPlacements(face()),split=[...coverPlacements(face(0,137)),...coverPlacements(face(137,512))],sorted=a=>a.map(x=>JSON.stringify(x)).sort();

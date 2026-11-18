@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';import {readFileSync} from 'node:fs';
 import * as T from '../assets/vendor/three/three.module.min.js';
-import {prepareCorpseSnow,advanceCorpseSnow,resetCorpseSnow} from '../js/combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {prepareCorpseSnow,advanceCorpseSnow,resetCorpseSnow} from '../js/combat-corpse-snow.mjs?v=natural-ac1';
 import {extractCombatFunction} from './combat-test-source.mjs';
 const group=new T.Group();group.add(new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial()));
 const amount=prepareCorpseSnow(group,{alive:false,x:0,y:0});const cells=new Set(['0,0']);

@@ -145,11 +145,10 @@ async function resolveLongbowHit(attacker,defender){
   const resolution=resolveMissileAttackD20(
     rawRoll,
     targetNumber,
-    totalAttackBonus
-  );
+    totalAttackBonus,defender);
 
   attacker.environmentMissileRoll={rawRoll,targetNumber,modifiedRoll:resolution.modifiedRoll};
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
 
   setLastRoll(
     `${attacker.name} longbow [${position.label}]: RAW d20 ${rawRoll}`+
@@ -404,10 +403,9 @@ async function resolveSlingHit(attacker,defender){
   const resolution=resolveMissileAttackD20(
     rawRoll,
     targetNumber,
-    totalAttackBonus
-  );
+    totalAttackBonus,defender);
 
-  playNaturalAttackRollSound(rawRoll);
+  if(!resolution.helpless)playNaturalAttackRollSound(rawRoll);
 
   const hit=resolution.hit;
 

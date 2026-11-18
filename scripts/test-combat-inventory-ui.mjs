@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
-const game=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const game=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const page=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const catalog=readFileSync(new URL('../mob-catalog.html',import.meta.url),'utf8');
 for(const id of ['inventoryButton','inventoryOverlay','inventoryList','closeInventoryButton'])

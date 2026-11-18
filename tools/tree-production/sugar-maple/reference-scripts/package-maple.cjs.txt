@@ -1,0 +1,33 @@
+// Staging-only, reproducible conversion. Never patches the game.
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
+const root=__dirname,repo='C:/Users/james/Documents/Codex/2026-10-26/continue-development-of-adventure-party-using/work/repo';
+const dest=path.join(root,'runtime');fs.mkdirSync(dest,{recursive:true});
+const template=fs.readFileSync(path.join(repo,'tools/tree-production/historical-scripts/integrate-oak.cjs.txt'),'utf8').split('const backup=')[0];
+for(const [season,count] of [['Green',43352],['Fall',43352],['Winter',13162]]){
+ let code=template.replace("const dest=path.join(repo,'assets/terrain/white-oak')",'const dest='+JSON.stringify(dest)).replace('ground=.20','ground=0').replaceAll('Oak_FullCrown_LOD5.obj',`SugarMaple_${season}_LOD1.obj`).replaceAll('oak-10726','maple-'+season.toLowerCase()).replace('assert.equal(total,10726)',`assert.equal(total,${count})`).replaceAll('White oak full crown 10726','Sugar maple '+season).replace("'WhiteOak_'+name","'SugarMaple_'+(foliage?'Leaf_':'')+name").replace("'provenance.json'",`'provenance-${season.toLowerCase()}.json'`).replaceAll('WhiteOak_FullCrown.spm',`SugarMaple_${season}.spm`).replace('Ground 0.20 m above authored trunk origin','Native ground at authored Z=0');
+ vm.runInNewContext(code,{require,Buffer,__dirname:root,console});
+}
+// SpeedTree's leaf-hidden export shifts bark UVs by whole repeats. Normalize those
+// equivalent wraps so the seasonal runtime wood is byte-identical as well as spatially identical.
+{
+ const green=JSON.parse(fs.readFileSync(path.join(dest,'maple-green.gltf'))),winter=JSON.parse(fs.readFileSync(path.join(dest,'maple-winter.gltf'))),a=fs.readFileSync(path.join(dest,green.buffers[0].uri)),b=fs.readFileSync(path.join(dest,winter.buffers[0].uri)),v=green.bufferViews[0];
+ assert.equal(v.byteLength,winter.bufferViews[0].byteLength);
+ for(let i=0;i<v.byteLength;i+=4){const d=a.readFloatLE(i)-b.readFloatLE(i);assert(i/4%8<6?d===0:Math.abs(d-Math.round(d))<.00002,'Winter wood differs beyond equivalent UV repeats');}
+ a.copy(b,0,0,v.byteLength);fs.writeFileSync(path.join(dest,winter.buffers[0].uri),b);
+}
+// Preserve authored connected branch surfaces, assigning small branches to eight major limbs.
+let limbs=fs.readFileSync(path.join(repo,'tools/tree-production/historical-scripts/build-fall-assets.cjs.txt'),'utf8').split('// Recover connected')[1];
+limbs='const fs=require("fs"),path=require("path"),dest='+JSON.stringify(dest)+';\n// Recover connected'+limbs;
+limbs=limbs.replaceAll('WhiteOak_Winter.obj','SugarMaple_Winter_LOD1.obj').replaceAll('WhiteOak_Winter.spm','SugarMaple_Winter.spm').replaceAll('Bark_Base_Mat','Maple_Bark_1_Mat').replaceAll('Bark_Base_Color.png','Maple_Bark_1_Color.png').replaceAll('Bark_Base_Normal.png','Maple_Bark_1_Normal.png').replaceAll('WhiteOak_debris_Bark','SugarMaple_debris_Bark').replaceAll('oak-detached-limbs','maple-detached-limbs').replaceAll('center[2]-.2','center[2]').replaceAll('Oak_detached','Maple_detached');
+vm.runInNewContext(limbs,{require,Buffer,__dirname:root,console});
+// Exactly the same individual artwork as the native SpeedTree cluster sources.
+for(const season of ['Green','Fall'])fs.copyFileSync(path.join(root,`SugarMaple_Leaf_${season}.png`),path.join(dest,`SugarMaple_Leaf_${season}.png`));
+const card=JSON.parse(fs.readFileSync(path.join(repo,'assets/terrain/white-oak/oak-fall-particle-leaf.gltf'),'utf8'));
+const bin=Buffer.from(fs.readFileSync(path.join(repo,'assets/terrain/white-oak/oak-fall-particle-leaf.bin')));
+// A 0.13 m square includes the petiole: blade is approximately 0.10 m.
+const h=.065;[-h,-h,0,h,-h,0,h,h,0,-h,h,0].forEach((x,i)=>bin.writeFloatLE(x,i*4));
+[0,1,1,1,1,0,0,0].forEach((x,i)=>bin.writeFloatLE(x,96+i*4));
+card.buffers[0].uri='maple-particle-leaf.bin';card.images[0].uri='SugarMaple_Leaf_Fall.png';card.nodes[0].name='Sugar maple individual leaf';card.materials[0].name='SugarMapleParticleLeaf';card.materials[0].pbrMetallicRoughness.baseColorFactor=[.5,.5,.5,1];card.accessors[0].min=[-h,-h,0];card.accessors[0].max=[h,h,0];card.extras={source:'SugarMaple_Leaf_Fall.png; shared with native cluster bake',cardWidthMetres:.13,nominalBladeMetres:.10};
+fs.writeFileSync(path.join(dest,'maple-particle-leaf.bin'),bin);fs.writeFileSync(path.join(dest,'maple-particle-leaf.gltf'),JSON.stringify(card));
+for(const file of fs.readdirSync(dest).filter(f=>f.endsWith('.gltf'))){const g=JSON.parse(fs.readFileSync(path.join(dest,file)));for(const b of [...g.buffers,...g.images])assert(fs.existsSync(path.join(dest,b.uri)),file+' missing '+b.uri);}
+console.log('Staged matching seasonal models, detached limbs and individual leaf card:',dest);

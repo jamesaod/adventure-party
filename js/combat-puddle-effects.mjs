@@ -1,5 +1,5 @@
 import {basinWaterDepth,BASIN_MAX_METRES} from './combat-wet-basins.mjs';
-export const PUDDLE_RING_LIMIT=96,PUDDLE_PARTICLE_LIMIT=128;
+export const PUDDLE_RING_LIMIT=96,PUDDLE_PARTICLE_LIMIT=384;
 export function puddleRainRate(weather){return weather?.type==='rain'?80*Math.max(0,Math.min(1,Number(weather.intensity)||0))**2:0;}
 function contains(points,x,y){let odd=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)odd=!odd;}return odd;}
 // Fixed budgets; no map-wide simulation, independent timer or per-drop mesh.
@@ -33,6 +33,22 @@ export class CombatPuddleEffects {
    this.particles.push({...hit,age:0,life:foot?.72:.65,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,vz:foot?1.15+this.random()*.35:1.35});
   }
   if(foot)this.footHits++;else this.rainHits++;
+ }
+ impact(x,y){
+  const hit=this.sample(x,y);if(!hit)return false;
+  // Reserve a bounded burst even during heavy rain; reuse the existing buffers.
+  const count=120,mistCount=20;this.particles.splice(0,Math.max(0,this.particles.length+count+mistCount-PUDDLE_PARTICLE_LIMIT));
+  this.rings.splice(0,Math.max(0,this.rings.length+3-PUDDLE_RING_LIMIT));
+  for(let i=0;i<3;i++)this.rings.push({...hit,age:0,life:1.35+i*.22,reach:1.35+i*.5,strength:.95-i*.18});
+  for(let i=0;i<count;i++){
+   const a=i/count*Math.PI*2+this.random()*.2,speed=.65+this.random()*1.6;
+   this.particles.push({...hit,age:0,size:1.75,life:1.3+this.random()*.45,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,vz:2.6+this.random()*1.9});
+  }
+  for(let i=0;i<mistCount;i++){
+   const a=this.random()*Math.PI*2,speed=.25+this.random()*.65;
+   this.particles.push({...hit,mist:true,size:12+this.random()*10,age:0,life:.8+this.random()*.5,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,vz:.65+this.random()*.7});
+  }
+  return true;
  }
  begin(now,weather,{hidden=false,snow=false}={}){
   this.wetUnits=0;
@@ -70,7 +86,7 @@ export class CombatPuddleEffects {
    const rig=performance.now()-(this.rigContacts.get(m.entity)??-Infinity)<250;
    if((rig&&!hit)||(hit&&this.elapsed-(this.waterSteps.get(m.entity)??-Infinity)<.25)){next.distance=0;continue;}
    if(next.distance<.45)continue;next.distance%=.45;next.side=-next.side;
-   const floor=this.candidates('stepFaces',m.x,m.y).find(f=>contains(f.points,m.x,m.y)&&this.visible(f));if(floor&&!rig)this.step(m.x,m.y,m.entity,floor);
+   const floor=this.candidates('stepFaces',m.x,m.y).find(f=>contains(f.points,m.x,m.y)&&this.visible(f));if(floor&&(!rig||hit))this.step(m.x,m.y,m.entity,floor);
    if(!hit)continue;
    const length=Math.hypot(dx,dy)||1,offset=.10*hit.unit*next.side;
    this.emit(this.sample(m.x-dy/length*offset,m.y+dx/length*offset*hit.squash)||hit,true);

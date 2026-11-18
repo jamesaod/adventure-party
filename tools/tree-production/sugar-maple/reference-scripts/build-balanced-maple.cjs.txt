@@ -1,0 +1,14 @@
+// Combine the preserved native LOD2 crown with unchanged production LOD1 wood.
+const fs=require('fs'),path=require('path'),assert=require('assert/strict');
+const root=__dirname,repo='C:/Users/james/Documents/Codex/2026-10-26/continue-development-of-adventure-party-using/work/repo',assets=path.join(repo,'assets/terrain/sugar-maple'),dest=path.join(root,'balanced');fs.mkdirSync(dest,{recursive:true});
+const units=43.38933076913966;
+for(const season of ['Green','Fall']){
+ const id=season.toLowerCase(),g=JSON.parse(fs.readFileSync(path.join(assets,`maple-${id}.gltf`))),old=fs.readFileSync(path.join(assets,g.buffers[0].uri)),positions=[],normals=[],uvs=[],data=[];let material='';
+ for(const line of fs.readFileSync(path.join(root,`SugarMaple_${season}_LOD2.obj`),'utf8').split('\n')){const a=line.trim().split(/\s+/),tag=a.shift();if(tag==='v')positions.push(a.map(Number));if(tag==='vn')normals.push(a.map(Number));if(tag==='vt')uvs.push(a.map(Number));if(tag==='usemtl')material=a[0];if(tag==='f'&&!material.includes('Bark'))for(let k=1;k<a.length-1;k++)for(const token of [a[0],a[k],a[k+1]]){const [p,t,n]=token.split('/').map(v=>Number(v)-1),v=positions[p],normal=normals[n],uv=uvs[t];data.push(v[0]*units,v[2]*units,-v[1]*units,normal[0],normal[2],-normal[1],uv[0],1-uv[1]);}}
+ const wood=g.meshes[0].primitives.find(p=>g.materials[p.material].name.includes('Bark')),leaf=g.meshes[0].primitives.find(p=>!g.materials[p.material].name.includes('Bark')),woodView=g.bufferViews[g.accessors[wood.attributes.POSITION].bufferView],leafView=g.bufferViews[g.accessors[leaf.attributes.POSITION].bufferView],count=data.length/8;
+ assert.equal(count/3,12782);assert.equal(g.accessors[wood.attributes.POSITION].count/3,13162);assert.equal(woodView.byteOffset,0);
+ const woodBytes=old.subarray(0,woodView.byteLength),leafBytes=Buffer.from(new Float32Array(data).buffer),min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<data.length;i+=8)for(let j=0;j<3;j++){min[j]=Math.min(min[j],data[i+j]);max[j]=Math.max(max[j],data[i+j]);}
+ leafView.byteOffset=woodBytes.length;leafView.byteLength=leafBytes.length;for(const accessor of Object.values(leaf.attributes))g.accessors[accessor].count=count;Object.assign(g.accessors[leaf.attributes.POSITION],{min,max});
+ g.asset.generator='Sugar Maple: native SpeedTree LOD2 foliage with unchanged LOD1 wood';g.nodes[0].name='Sugar Maple balanced '+season;g.buffers[0]={uri:`maple-${id}-balanced.bin`,byteLength:woodBytes.length+leafBytes.length};g.extras={woodSource:`maple-${id}.gltf`,foliageSource:`SugarMaple_${season}_LOD2.obj`,woodTriangles:13162,foliageTriangles:12782,totalTriangles:25944,previousTriangles:43352};
+ fs.writeFileSync(path.join(dest,g.buffers[0].uri),Buffer.concat([woodBytes,leafBytes]));fs.writeFileSync(path.join(dest,`maple-${id}-balanced.gltf`),JSON.stringify(g));console.log(id,g.extras);
+}

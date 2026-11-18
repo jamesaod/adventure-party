@@ -1,0 +1,36 @@
+const fs=require('fs'),path=require('path'),vm=require('vm');
+const repo='C:/Users/james/Documents/Codex/2026-10-26/continue-development-of-adventure-party-using/work/repo',dest=path.join(repo,'assets/terrain/white-oak');
+const template=fs.readFileSync(path.join(__dirname,'integrate-oak.cjs'),'utf8').split('const backup=')[0];
+for(const [source,id,count] of [['Fallen','fallen',1726],['Stump','stump',326]]){
+ const code=template.replaceAll('Oak_FullCrown_LOD5.obj','WhiteOak_'+source+'.obj').replaceAll('oak-10726','oak-'+id).replace('assert.equal(total,10726)','assert.equal(total,'+count+')').replaceAll('White oak full crown 10726','White oak '+id).replace("'WhiteOak_'+name","'WhiteOak_"+id+"_'+name").replace("'provenance.json'","'provenance-"+id+".json'").replaceAll('WhiteOak_FullCrown.spm','WhiteOak_'+source+'.spm');
+ vm.runInNewContext(code,{require,Buffer,__dirname,console});
+}
+// Recover connected, authored limbs from the preserved winter export. No remeshing.
+const positions=[],normals=[],uvs=[],faces=[];let mat='';
+for(const line of fs.readFileSync(path.join(__dirname,'WhiteOak_Winter.obj'),'utf8').split('\n')){
+ const a=line.trim().split(/\s+/),tag=a.shift();if(tag==='v')positions.push(a.map(Number));if(tag==='vn')normals.push(a.map(Number));if(tag==='vt')uvs.push(a.map(Number));if(tag==='usemtl')mat=a[0];
+ if(tag==='f'&&mat==='Bark_Base_Mat')faces.push(a.map(t=>t.split('/').map(n=>Number(n)-1)));
+}
+const parent=positions.map((_,i)=>i);function root(i){return parent[i]===i?i:parent[i]=root(parent[i]);}
+for(const f of faces)for(const v of f)parent[root(v[0])]=root(f[0][0]);
+const groups=new Map();for(const f of faces){const r=root(f[0][0]);if(!groups.has(r))groups.set(r,[]);groups.get(r).push(f);}
+const components=[...groups.values()].map(fs=>{const ids=[...new Set(fs.flat().map(v=>v[0]))];return {faces:fs,ids,min:Math.min(...ids.map(i=>positions[i][2]))};}).filter(c=>c.min>3);
+components.sort((a,b)=>b.faces.length-a.faces.length);
+const limbs=components.slice(0,8).map(c=>({...c,faces:[...c.faces],points:c.ids.map(i=>positions[i])}));
+for(const c of components.slice(8)){
+ const base=positions[c.ids.reduce((a,b)=>positions[a][2]<positions[b][2]?a:b)];let best=0,d=Infinity;
+ limbs.forEach((l,i)=>{for(const p of l.points){const n=p.reduce((s,v,j)=>s+(v-base[j])**2,0);if(n<d){d=n;best=i;}}});
+ limbs[best].faces.push(...c.faces);
+}
+const g={asset:{version:'2.0',generator:'Preserved SpeedTree WhiteOak_Winter connected limb extraction'},scene:0,scenes:[{nodes:[]}],nodes:[],meshes:[],buffers:[],bufferViews:[],accessors:[],materials:[{name:'WhiteOak_debris_Bark',pbrMetallicRoughness:{baseColorTexture:{index:0},metallicFactor:0,roughnessFactor:.9},normalTexture:{index:1,scale:.45},doubleSided:true}],textures:[{source:0},{source:1}],images:[{uri:'Bark_Base_Color.png'},{uri:'Bark_Base_Normal.png'}]};
+const scale=724.35152/16.69423121213913,chunks=[],records=[];let offset=0;
+for(const [i,l] of limbs.entries()){
+ const points=l.faces.flat().map(v=>positions[v[0]]),min=[0,1,2].map(j=>Math.min(...points.map(p=>p[j]))),max=[0,1,2].map(j=>Math.max(...points.map(p=>p[j]))),center=min.map((v,j)=>(v+max[j])/2),data=[];
+ for(const f of l.faces)for(const [p,t,n] of f){const v=positions[p],normal=normals[n],uv=uvs[t];data.push((v[0]-center[0])*scale,(v[2]-center[2])*scale,-(v[1]-center[1])*scale,normal[0],normal[2],-normal[1],uv[0],1-uv[1]);}
+ const bytes=Buffer.from(new Float32Array(data).buffer),count=data.length/8,base=g.accessors.length;chunks.push(bytes);g.bufferViews.push({buffer:0,byteOffset:offset,byteLength:bytes.length,byteStride:32,target:34962});offset+=bytes.length;
+ const bounds=[0,1,2].map(j=>{const a=Array.from({length:count},(_,k)=>data[k*8+j]);return [Math.min(...a),Math.max(...a)];});
+ g.accessors.push({bufferView:i,byteOffset:0,componentType:5126,count,type:'VEC3',min:bounds.map(b=>b[0]),max:bounds.map(b=>b[1])},{bufferView:i,byteOffset:12,componentType:5126,count,type:'VEC3'},{bufferView:i,byteOffset:24,componentType:5126,count,type:'VEC2'});
+ g.meshes.push({primitives:[{attributes:{POSITION:base,NORMAL:base+1,TEXCOORD_0:base+2},material:0}]});
+ const origin=[center[0]*scale,(center[2]-.2)*scale,-center[1]*scale];g.nodes.push({name:'Oak_detached_limb_'+(i+1),mesh:i,extras:{origin}});g.scenes[0].nodes.push(i);records.push({name:g.nodes[i].name,triangles:count/3,origin});
+}
+g.buffers.push({uri:'oak-detached-limbs.bin',byteLength:offset});fs.writeFileSync(path.join(dest,'oak-detached-limbs.bin'),Buffer.concat(chunks));fs.writeFileSync(path.join(dest,'oak-detached-limbs.gltf'),JSON.stringify(g));fs.writeFileSync(path.join(dest,'provenance-detached-limbs.json'),JSON.stringify({source:'WhiteOak_Winter.spm / WhiteOak_Winter.obj',method:'Eight original connected major limbs; smaller connected branches assigned to nearest major limb. Bark geometry/UVs retained; mesh pivots centered for tumbling. Bare wood prototype; no new SpeedTree source authored.',pieces:records},null,2));console.log(records);

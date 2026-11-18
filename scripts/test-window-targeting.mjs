@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readCombatFixture as readFileSync} from './combat-test-source.mjs';
-const engine=readFileSync(new URL('../js/adventure-party.js?v=tree-snow-grains1',import.meta.url),'utf8');
+const engine=readFileSync(new URL('../js/adventure-party.js?v=natural-ac1',import.meta.url),'utf8');
 const source=readFileSync(new URL('../js/combat-environment-actions.js',import.meta.url),'utf8');
 const window={id:'pane',center:{x:1,y:0},broken:false};let committed=0,meleePicked=0;
 const context=vm.createContext({combatSceneTerrain:{windows:[window]},environmentHex:p=>p,worldPointForHex:(x,y)=>({x,y}),environmentRayHit:(from,to)=>!window.broken&&from.y>0&&to.y<=0?{windowId:'pane'}:null,pendingAimAction:{spellId:'fireball'},aimMode:true,aimCursor:{x:1,y:-1},spellCasterForAction:()=>({x:1,y:1,alive:true}),activePlayerControlledUnit:()=>({x:1,y:1,alive:true}),setCombatMessage(){},longbowAttack:async()=>{committed++;},missileMeleeTarget:(_a,b)=>{meleePicked++;return b;},resolvePreparedSpellAction:async()=>{committed++;return true;},resolveSlingAction:async()=>{committed++;return true;}});

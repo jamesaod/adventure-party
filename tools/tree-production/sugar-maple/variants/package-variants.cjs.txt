@@ -1,0 +1,14 @@
+const fs=require('fs'),path=require('path'),vm=require('vm'),cp=require('child_process');
+const root=__dirname;
+for(const [variant,wood,leaf,total] of [['Tall',12606,11798,40472],['Broad',12032,12148,40724]]){
+ const dest=path.join(root,'variants',variant.toLowerCase());fs.mkdirSync(dest,{recursive:true});
+ let code=fs.readFileSync(path.join(root,'package-maple.cjs'),'utf8').replace("path.join(root,'runtime')",JSON.stringify(dest)).replace("[['Green',43352],['Fall',43352],['Winter',13162]]",JSON.stringify([['Green',total],['Fall',total],['Winter',wood]]));
+ code=code.replaceAll('SugarMaple_${season}',`SugarMaple_${variant}_\${season}`).replaceAll('SugarMaple_Winter_LOD1.obj',`SugarMaple_${variant}_Winter_LOD1.obj`).replaceAll('SugarMaple_Winter.spm',`SugarMaple_${variant}_Winter.spm`);
+ code=code.replace(' <.00002',' <.0001').replace('<.00002','<.0001');
+ vm.runInNewContext(code,{require,Buffer,__dirname:root,console});
+ let balanced=fs.readFileSync(path.join(root,'build-balanced-maple.cjs'),'utf8').replace("assets=path.join(repo,'assets/terrain/sugar-maple'),dest=path.join(root,'balanced')",'assets='+JSON.stringify(dest)+',dest=assets').replaceAll('SugarMaple_${season}',`SugarMaple_${variant}_\${season}`).replaceAll('13162',String(wood)).replaceAll('12782',String(leaf)).replaceAll('25944',String(wood+leaf)).replaceAll('43352',String(total));
+ vm.runInNewContext(balanced,{require,Buffer,__dirname:root,console});
+ let matching=fs.readFileSync(path.join(root,'build-matching-wood.mjs'),'utf8').replace("dest=path.join(root,'runtime')",'dest='+JSON.stringify(dest));
+ const script=path.join(root,`build-${variant.toLowerCase()}-matching.mjs`);fs.writeFileSync(script,matching);cp.execFileSync(process.execPath,[script],{stdio:'inherit'});
+}
+

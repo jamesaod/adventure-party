@@ -1,3 +1,4 @@
+import {giantSettleProgress} from './giant-corpse-settle.mjs';
 import {savedFit} from './mob-workshop-fit-store.mjs?v=R238C306';
 import {normalizeQuiverArrows} from './quiver-arrow-settings.mjs?v=R238C312';
 import {loadWorkshopBackAttachment} from './studio-back-equipment.mjs?v=R238C312';
@@ -7,10 +8,10 @@ import {applyModelUpAxis} from './workshop-model-axis.mjs';
 import {bowArrowStateAt,bowPickupTime} from './equipment-visual-states.mjs?v=R238C304';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {loadCombatModel} from './combat-model-source.mjs';
-import {validateWorkshopUnit} from './workshop-unit-package.mjs?v=R238C313';
-import {buildSceneGraph,configureCamera,normalizedFrame,mountCombatEquipment} from './combat-mob-renderer.mjs?v=tree-snow-grains1';
-import {restoreDirectMaterials,setDirectUnit} from './combat-direct-units.mjs?v=tree-snow-grains1';
-import {createWorkshopAnimationSelector,workshopAttackTiming} from './workshop-animation-runtime.mjs';
+import {validateWorkshopUnit} from './workshop-unit-package.mjs?v=scored-ai1';
+import {buildSceneGraph,configureCamera,normalizedFrame,mountCombatEquipment} from './combat-mob-renderer.mjs?v=natural-ac1';
+import {restoreDirectMaterials,setDirectUnit} from './combat-direct-units.mjs?v=outline-reuse2';
+import {createWorkshopAnimationSelector,workshopAttackTiming} from './workshop-animation-runtime.mjs?v=spell-poses1';
 import {createHandPose} from './mob-workshop-hand-pose.mjs';
 import {removeWorkshopRootTravel,createWorkshopGrounding} from './workshop-grounding.mjs';
 import {HEX_FACINGS} from './studio-core.mjs';
@@ -27,6 +28,9 @@ export async function loadWorkshopCombatUnit(recipe,{onProgress}={}){
  }
  const oriented=new THREE.Group();oriented.add(model);applyModelUpAxis(THREE,oriented,draft.modelUpAxis||'Y');oriented.updateMatrixWorld(true);
  const local=structuredClone(recipe),group=buildSceneGraph(oriented,local),frame=normalizedFrame(local),camera=configureCamera(local,frame);
+ // Refresh calibrated ancestors before measuring world-space body height.
+ group.updateMatrixWorld(true);
+ const treeMetresToModel=new THREE.Box3().setFromObject(model,true).getSize(new THREE.Vector3()).y/(recipe.renderSettings.heightInches*.0254);
  model.userData.workshopPhysicalEquipment=true;
  const equipment=await mountCombatEquipment(model,local);
  const hand=createHandPose(THREE);hand.bind(model);
@@ -44,8 +48,9 @@ export async function loadWorkshopCombatUnit(recipe,{onProgress}={}){
  restoreDirectMaterials(group);
  let triangles=0;group.traverse(o=>{if(o.isMesh)triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;});
  const grounding=createWorkshopGrounding(THREE,model,group);
+ const treeHauler=recipe.renderSettings.treeHauler?await (await import('./tree-hauler-presentation.mjs')).prepareTreeHauler(model,group,mixer,actions,restoreDirectMaterials,draft,treeMetresToModel):null;
  const select=createWorkshopAnimationSelector(draft),shared={key:null,entity:null};
- const weaponSlot=recipe.equipment?.poseProfileId||'one-handed-swing';
+ const weaponSlot=treeHauler?'two-handed-swing':recipe.equipment?.poseProfileId||'one-handed-swing';
  const poses={},images={},sourceUrls={};
  const mapping={ready:'idle',windup:weaponSlot,attack:weaponSlot,falling:'death',prone:'death','casting-windup':'cast',cast:'aim-fire-spell'};
  // Dimensions-only handles preserve the existing renderer dispatch interface.
@@ -54,18 +59,20 @@ export async function loadWorkshopCombatUnit(recipe,{onProgress}={}){
  for(const [pose,slot] of Object.entries(mapping)){
   poses[pose]={frames:{}};
   const asset={group,camera,triangles,workshopSample(entity,walkSeconds,now,arrowScale=1){
-   const selected=select(entity,slot,walkSeconds,now);
-   if(shared.key!==selected.key||shared.ammo!==entity?.missileAmmoQuantity||shared.arrowScale!==arrowScale){
+   let selected=treeHauler?.select(entity,now)||select(entity,slot,walkSeconds,now);
+   treeHauler?.update(entity);
+   if(shared.gripSlot!==selected.slot||shared.held!==entity?.carriedTreeLog||shared.key!==selected.key||shared.ammo!==entity?.missileAmmoQuantity||shared.arrowScale!==arrowScale){
       perf.count('workshopPoseEvaluations');
-    hand.restore();mixer.stopAllAction();grounding.reset();
+    treeHauler?.restore();hand.restore();mixer.stopAllAction();grounding.reset();
     if(selected.assignment){const action=actions.get(selected.assignment.clipId);action.reset();action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();mixer.setTime(selected.time);}
-    if(selected.slot==='move')grounding.apply();
-    if(selected.slot==='death')grounding.applyCorpse();
-    hand.apply(draft.equipment.primaryHandPose);group.updateMatrixWorld(true);
+    if(selected.slot==='move'||selected.slot==='armed-move'||selected.slot==='tree-action')grounding.apply();
+    if(selected.slot==='death')grounding.applyCorpse(giantSettleProgress(entity,now));
+    if(selected.slot!=='tree-action')hand.apply(draft.equipment.primaryHandPose);group.updateMatrixWorld(true);
+    treeHauler?.constrain(entity,selected.slot);
     equipment.attachment?.setBowState(bowArrowStateAt(selected.assignment,selected.time,entity?.missileAmmoQuantity),arrowScale);
-    shared.key=selected.key;shared.entity=entity;shared.ammo=entity?.missileAmmoQuantity;shared.arrowScale=arrowScale;
+    shared.gripSlot=selected.slot;shared.held=entity?.carriedTreeLog;shared.key=selected.key;shared.entity=entity;shared.ammo=entity?.missileAmmoQuantity;shared.arrowScale=arrowScale;
    }
-   asset.workshopPoseKey=selected.key+'|arrows:'+(entity?.missileAmmoQuantity??'default')+'|arrowScale:'+arrowScale;return selected.animating;
+   asset.workshopPoseKey=selected.slot+'|'+selected.key+'|treeLog:'+!!entity?.carriedTreeLog+'|arrows:'+(entity?.missileAmmoQuantity??'default')+'|arrowScale:'+arrowScale;return selected.animating;
   }};
   for(const facing of HEX_FACINGS){const file=pose+'-'+facing.id+'.png';const image=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(Error('Cannot initialize direct model frame handle.'));i.src=src;});setDirectUnit(image,asset,facing.yawRadians);images[file]=image;sourceUrls[file]=src;poses[pose].frames[facing.id]=file;}
  }

@@ -9,9 +9,9 @@ import {importWorkshopMob,verifyLiveWorkshopImport} from './import-workshop-mob.
 const root=await mkdtemp(join(tmpdir(),'workshop-import-'));
 const read=async p=>JSON.parse(await readFile(join(root,p),'utf8'));
 const exists=async p=>access(join(root,p)).then(()=>true,()=>false);
-const draft=newDraft();draft.name='Import fixture';draft.model={id:'fixture-model',file:'fixture.glb'};draft.checks={ground:true,equipment:true};
+const draft=newDraft();draft.name='Import fixture';draft.creature={combat:{naturalArmorClass:4},behavior:{spellRole:'controller',spellSpending:'conserve',spellRisk:'balanced',spellFriendlyFire:'permitted',spellExplain:true}};draft.model={id:'fixture-model',file:'fixture.glb'};draft.checks={ground:true,equipment:true};
 draft.clips=[{id:'clip',name:'Fixture',duration:2,data:{duration:2,tracks:[{name:'hips.quaternion',type:'quaternion',times:[0,2],values:[0,0,0,1,0,0,0,1]}]}}];
-for(const slot of ['idle','move','one-handed-swing','death','bow'])assignClip(draft,slot,{clipId:'clip',start:0,end:2,speed:1,loop:false,...(slot==='bow'?{bowTiming:{draw:.5,release:1.5}}:{})});
+for(const slot of ['idle','move','armed-idle','armed-move','one-handed-swing','death','bow'])assignClip(draft,slot,{clipId:'clip',start:0,end:2,speed:1,loop:false,...(slot==='bow'?{bowTiming:{draw:.5,release:1.5}}:{})});
 function glb(){let s=JSON.stringify({asset:{version:'2.0'},nodes:[{name:'hips'}]});s+=' '.repeat((4-s.length%4)%4);const b=new Uint8Array(20+s.length),v=new DataView(b.buffer);v.setUint32(0,0x46546c67,true);v.setUint32(4,2,true);v.setUint32(8,b.length,true);v.setUint32(12,s.length,true);v.setUint32(16,0x4e4f534a,true);b.set(strToU8(s),20);return b;}
 const bytes=glb(),zip=join(root,'fixture.zip'),packagePath='data/mobs/import-fixture.workshop-unit.json',sourcePath='assets/workshop-units/import-fixture/source-workshop.zip';
 const archive=async (d=draft,model=bytes)=>writeFile(zip,zipSync({'workshop.json':strToU8(JSON.stringify(d)),'model.bin':model},{mtime:new Date('2020-01-01T00:00:00Z')}));

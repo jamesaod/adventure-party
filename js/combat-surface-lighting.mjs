@@ -72,6 +72,24 @@ export function orderSurfaceActors(actors,project,unitPoint,unitScreenPoint=u=>p
    add(i,j);
   }
  }
+ // A giant landing in place covers older bodies beneath its own reach.
+ for(let i=0;i<base.length;i++)if(base[i].entity?.corpseDropInPlace&&!base[i].entity.alive){
+  const p=unitScreenPoint(base[i].entity),r=base[i].groundRadius;if(!r)continue;
+  for(let j=0;j<base.length;j++){const other=base[j].entity;if(j===i||!other||other.alive||!(other.deathPresentationStartedAt<base[i].entity.deathPresentationStartedAt))continue;
+   const q=unitScreenPoint(other);if(((p.x-q.x)/r.x)**2+((p.y-q.y)/r.y)**2>1)continue;
+   if(base.some((a,k)=>a.wall&&((edges[j].has(k)&&edges[k].has(i))||(edges[i].has(k)&&edges[k].has(j)))))continue;
+   add(j,i);
+  }
+ }
+ // A lethal impact weapon remains above its victim through that attack pose.
+ // This explicit pair does not override intervening wall constraints.
+ for(let i=0;i<base.length;i++){
+  const victim=base[i].entity,impact=victim?.deathImpactOccluder;if(!impact||victim.alive!==false)continue;
+  const j=base.findIndex(a=>a.entity?.id===impact.unitId);
+  if(j<0||!base[j].entity.alive||base[j].entity.poseStartedAt!==impact.poseStartedAt||!(base[j].entity.poseUntil>performance.now()))continue;
+  if(base.some((a,k)=>a.wall&&((edges[j].has(k)&&edges[k].has(i))||(edges[i].has(k)&&edges[k].has(j)))))continue;
+  add(i,j);
+ }
  const done=new Uint8Array(base.length),result=[],heap=[];
  const push=v=>{let i=heap.length;heap.push(v);while(i){const p=(i-1)>>1;if(heap[p]<=v)break;heap[i]=heap[p];i=p;}heap[i]=v;};
  const pop=()=>{const value=heap[0],last=heap.pop();if(heap.length){let i=0;while(i*2+1<heap.length){let c=i*2+1;if(c+1<heap.length&&heap[c+1]<heap[c])c++;if(heap[c]>=last)break;heap[i]=heap[c];i=c;}heap[i]=last;}return value;};

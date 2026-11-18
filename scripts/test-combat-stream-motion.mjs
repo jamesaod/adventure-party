@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';import {readFileSync} from 'node:fs';
 import * as THREE from '../assets/vendor/three/three.module.min.js';
 import {streamSettings,createStreamField,COMBAT_STREAM_PATH} from '../js/combat-stream-field.mjs';
-import {installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
+import {installUnitSnowOcclusion,bindUnitSnowOcclusion} from '../js/combat-unit-snow-occlusion.mjs?v=natural-ac1';
 
 assert.equal(streamSettings({speed:0}).speed,0);assert.equal(streamSettings({speed:1.2,ripple:.8}).ripple,.8);assert.throws(()=>streamSettings({ripple:2}));
 const src=readFileSync('js/combat-lighting-services.js','utf8'),body=src.slice(src.indexOf('function combatUnitStreamPresentation'),src.indexOf('function drawDirectCombatUnit'));

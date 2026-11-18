@@ -1,0 +1,31 @@
+{
+  "id": "hill-giant",
+  "sourceArchive": "tripo_convert_ef101189-70bc-4ea0-b111-b839ea4b071d.zip",
+  "sourceSha256": "ecf197d1842b7eb5fd28471f1a2179186147b22b05f2d607adcd24949e4b7852",
+  "sourceTextureSha256": "d12489184198a2b829d23e864fdd920546f2c4f179b83c1421cf92b41865f542",
+  "sha256": "7aaf499f8f03deff15b95437aeb6886cc8518328bc894b659e751b0454464419",
+  "bytes": 2664580,
+  "triangles": 15714,
+  "bones": 65,
+  "animations": [
+    {
+      "name": "Swagger",
+      "frames": [
+        1,
+        89
+      ]
+    }
+  ],
+  "textureSize": [
+    1024,
+    1024
+  ],
+  "importer": "5.1.1",
+  "notes": "Supplied rig, weights, geometry and animation retained. Y-up embedded GLB; source Color.png with matte nonmetallic material. No gameplay stats or animation slot assignments.",
+  "repair": {
+    "opaque": true,
+    "normalizedFourWeights": true,
+    "affectedVertices": 0,
+    "minimumPreviousWeightSum": 0.999999862164259
+  }
+}

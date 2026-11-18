@@ -3,9 +3,9 @@ import {readCombatFixture} from './combat-test-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const renderer=readCombatFixture(new URL('../js/combat-mob-renderer.mjs?v=tree-snow-grains1', import.meta.url),'utf8');
+const renderer=readCombatFixture(new URL('../js/combat-mob-renderer.mjs?v=natural-ac1', import.meta.url),'utf8');
 const recipe=readCombatFixture(new URL('../js/combat-pose-recipe.mjs', import.meta.url),'utf8');
-const game=readCombatFixture(new URL('../js/adventure-party.js?v=tree-snow-grains1', import.meta.url),'utf8');
+const game=readCombatFixture(new URL('../js/adventure-party.js?v=natural-ac1', import.meta.url),'utf8');
 
 const index=readCombatFixture(new URL('../index.html', import.meta.url),'utf8');
 

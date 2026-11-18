@@ -254,6 +254,8 @@ function createSpellCastingRecord(caster,spell,action,context){
 
   r230CastingStore()[token]=record;
   caster.r230CastingToken=token;
+  caster.castingPoseStartedAt=record.startedAt;
+  action.workshopWindupPresented=true;
 
   /*
     Same-round completions are inserted immediately. Longer castings are added

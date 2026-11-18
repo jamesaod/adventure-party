@@ -165,6 +165,8 @@ function showLauncher(){
 
 let selectedCombatCondition="grass";
 let selectedMobEncounter="custom";
+let combatIncludeCarl=true;
+document.getElementById("combatIncludeCarl")?.addEventListener("change",event=>{combatIncludeCarl=event.target.checked;if(!combatIncludeCarl)selectedMobEncounter="custom";cancelPendingCombatStart();updateCombatMobSelection();});
 const combatMobRoster=[
   {rowId:1,type:"mob:orc-warrior",count:12,faction:"hostile"},
   {rowId:2,type:"mob:wood-elf-archer",count:6,faction:"friendly"}
@@ -178,9 +180,12 @@ const COMBAT_MOB_CHOICES=[
 ];
 function availableCombatMobChoices(){
  const registry=window.adventurePartyRepositoryMobs;
- if(!registry?.choices)return COMBAT_MOB_CHOICES;
- return [...registry.choices(),...COMBAT_MOB_CHOICES.filter(([id])=>!registry.managedTypes.includes(id)).map(([id,label])=>[id,label+' (built-in)'])];
+ // Retire only the selected legacy entries; newly authored MOBs remain eligible.
+ const retired=new Set(['mob:orc-archer','mob:orc-male-uniformed','mob:orc-male-uniformed-blue','kobold','kobold-bodyguard','kobold-slinger','orc','orc-archer','orc-leader','orc-shaman','juvenile-red-dragon']);
+ const choices=registry?.choices?[...registry.choices(),...COMBAT_MOB_CHOICES.filter(([id])=>!registry.managedTypes.includes(id)).map(([id,label])=>[id,label+' (built-in)'])]:COMBAT_MOB_CHOICES;
+ return choices.filter(([id])=>!retired.has(id));
 }
+
 function readCombatMobRoster(){
   const valid=new Set(availableCombatMobChoices().map(([id])=>id));
   for(const row of combatMobRoster)if(!valid.has(row.type))throw Error('A selected MOB is disabled or deleted. Return to setup and choose an available MOB.');
@@ -193,6 +198,12 @@ function updateCombatMobSelection(){
     : "Dungeon Crawler Carl";
   const testId=new URLSearchParams(window.location?.search||'').get('testMob');
   if(playerLabel&&testId&&new URLSearchParams(window.location?.search||'').get('testRole')!=='hostile')playerLabel.textContent=window.adventurePartyRepositoryMobs.get(testId)?.name||'Unavailable MOB';
+  const include=document.getElementById("combatIncludeCarl");
+  const special=!!testId;
+  if(include){include.checked=special||combatIncludeCarl;include.disabled=special;}
+  const autonomousHint=document.getElementById("combatAutonomousHint");
+  if(autonomousHint)autonomousHint.textContent=special?"The selected Workshop test character is included.":combatIncludeCarl?"Uncheck Include Carl to watch an autonomous battle between Friendly and Hostile MOBs.":"Autonomous battle: add at least one Friendly and one Hostile MOB. All units use AI; Carl is excluded.";
+  if(playerLabel&&!special&&!combatIncludeCarl)playerLabel.textContent="None — autonomous battle";
   const container=document.getElementById("combatMobRows");
   if(!container)return;
   container.replaceChildren();
@@ -409,6 +420,8 @@ async function activateLauncherSelection(){
   }
 
 
+  if(target==="synty-workshop"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./synty-workshop.html");return;}
+  if(target==="character-creator"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./character-creator.html");return;}
   if(target==="mob-workshop"){globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-workshop.html");return;}
   if(target==="mob-catalog"){
     globalThis.adventurePartyUiAudio?.prepareNavigation('open');window.location.assign("./mob-catalog.html");
@@ -1417,6 +1430,10 @@ function triggerDeathFx(entity){
     entity.deathFacingHex=facingDirectionIndex(entity);
     entity.deathRotationDelta=(Math.random()*2-1)*Math.PI;
     entity.deathWorldOffset=sampleCorpseOffset(entity);
+    if(typeof isGiantCorpse==='function'&&isGiantCorpse(entity)){
+      entity.corpseDropInPlace=true;
+      entity.deathRotationDelta=(Math.random()<.5?-1:1)*Math.PI/6;
+    }
     if(!entity.fireDeath)startArrowBlood(entity,entity,1,{death:true});
   }
 
@@ -1523,7 +1540,7 @@ async function presentCombatFrame(){
 }
 addEventListener('visibilitychange',()=>combatFrames?.wake());
 async function ensureCombatRenderer(){
- if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=tree-snow-grains1"),import("./combat-frame-scheduler.mjs?v=R238C395")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
+ if(!combatGpuReady)combatGpuReady=Promise.all([import("./combat-webgl.mjs?v=scroll-pacing1"),import("./combat-frame-scheduler.mjs?v=R238C395")]).then(([{createCombatRenderer},{createCombatFrameScheduler}])=>{
   const status=document.createElement("div");status.setAttribute("role","alert");status.hidden=true;
   status.style.cssText="position:absolute;inset:0;z-index:30;background:#08080cee;color:#ffe4a0;padding:24px;place-content:center;text-align:center";
   status.textContent="Graphics connection lost. Waiting for the browser to restore combat…";
@@ -2824,6 +2841,8 @@ function activeUnitPoseName(unit,now=performance.now()){
     unit.fallingPoseStartedAt=null;
   }
 
+  if(unit.alive&&unit.r230CastingToken&&unitPoseSupportsPose(definition,'casting-windup'))return 'casting-windup';
+
   if(
     unit.poseName &&
     Number.isFinite(unit.poseUntil) &&
@@ -3342,9 +3361,14 @@ function treeSizeScale(tree){
   return .33+.67*(terrainHash(tree.x+12071,tree.y-3907)%10001)/10000;
 }
 
+function treeYawDegrees(tree){
+ let h=Math.imul(tree.x+7901,374761393)^Math.imul(tree.y-5107,668265263);
+ h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)%360;
+}
 function treeRotationFrame(tileSet,decoration,continuous=false){
   const frames=tileSet.treeRotationFrames || 1;
-  const rotation=terrainHash(decoration.x+7901,decoration.y-5107)%frames;
+  const degrees=treeYawDegrees(decoration);
+  const rotation=continuous?degrees/30:Math.round(degrees/30);
   return ((rotation-(continuous?battlefieldRotation*2:Math.round(battlefieldRotation*2)))%frames+frames)%frames;
 }
 
@@ -4003,14 +4027,39 @@ function tacticalFacingLabel(entity){
   return HEX_DIRS[facingDirectionIndex(entity)]?.name || "E";
 }
 
+const combatFacingTurns=new Map();
+let combatFacingFrame=null;
+function combatFacingAngle(value){return Math.atan2(Math.sin(value),Math.cos(value));}
+function combatFacingTurnTick(now=performance.now()){
+  combatFacingFrame=null;
+  for(const [entity,turn] of combatFacingTurns){
+    if(game!==turn.session||currentScreen!=='combat'||!entity.alive||entity.walkPresentation){combatFacingTurns.delete(entity);continue;}
+    const t=Math.max(0,Math.min(1,(now-turn.started)/turn.duration));
+    const eased=t*t*(3-2*t),correction=turn.delta*(1-eased);
+    // Add only this turn's change, preserving separate aim adjustments (e.g. a giant miss).
+    entity.aimYawOffset=(entity.aimYawOffset||0)+correction-turn.correction;
+    turn.correction=correction;
+    if(t===1)combatFacingTurns.delete(entity);
+  }
+  if(currentScreen==='combat'&&game)draw();
+  if(combatFacingTurns.size)combatFacingFrame=requestCombatAnimationTick(combatFacingTurnTick);
+}
 function faceEntityToward(entity,target){
-  if(!entity || !target) return;
-
-  updateFacingForStep(
-    entity,
-    target.x-entity.x,
-    target.y-entity.y
-  );
+  if(!entity||!target)return;
+  const dx=target.x-entity.x,dy=target.y-entity.y;
+  if(!dx&&!dy)return;
+  const desired=Math.atan2(-dy*Math.sqrt(3)/2,dx+dy*.5);
+  const previous=combatFacingTurns.get(entity);
+  if(previous?.session===game&&Math.abs(combatFacingAngle(previous.target-desired))<1e-6)return;
+  const from=facingDirectionIndex(entity)*Math.PI/3+(entity.aimYawOffset||0);
+  if(updateFacingForStep(entity,dx,dy)===false)return;
+  if(!game||currentScreen!=='combat'||!entity.alive)return;
+  const to=facingDirectionIndex(entity)*Math.PI/3+(entity.aimYawOffset||0);
+  const delta=combatFacingAngle(from-to);
+  if(Math.abs(delta)<.001)return;
+  entity.aimYawOffset=(entity.aimYawOffset||0)+delta;
+  combatFacingTurns.set(entity,{session:game,target:desired,started:performance.now(),duration:Math.max(120,Math.min(500,Math.abs(delta)/(Math.PI*2)*1000)),delta,correction:delta});
+  if(combatFacingFrame===null)combatFacingFrame=requestCombatAnimationTick(combatFacingTurnTick);
 }
 
 
@@ -4428,6 +4477,7 @@ function canMeleeReach(a,b){
 }
 
 function canMeleeAttackTarget(attacker,target){
+  if(attacker?.treeHauler&&attacker.treeHauler.stage!=='armed')return false;
   if(!attacker || !target) return false;
   const reach=Math.max(1,Number(attacker.meleeRange)||1);
 
@@ -5116,7 +5166,7 @@ async function refreshCombatMobAppearance(unit,requestedRevision,{reason="equipm
       const moduleUrl=path=>new URL(path,document.baseURI).href;
       combatMobAppearanceRuntimePromise=Promise.all([
         import(moduleUrl("js/mob-appearance-runtime.mjs?v=R238C432")),
-        import(moduleUrl("js/combat-prepared-assets.mjs?v=tree-snow-grains1"))
+        import(moduleUrl("js/combat-prepared-assets.mjs?v=natural-ac1"))
       ]).then(([runtimeModule,rendererModule])=>new runtimeModule.MobAppearanceRuntime({
         generateSpriteSet:rendererModule.loadPreparedCombatUnit,
         cacheLimit:24
@@ -5325,7 +5375,9 @@ function clamp(n,min,max){
    into a hit or turn a natural 20 into a miss.
 
    Future physical attack types must route through this resolver. */
-function resolvePhysicalAttackD20(rawRoll,targetNumber,attackModifier=0){
+function resolvePhysicalAttackD20(rawRoll,targetNumber,attackModifier=0,defender=null){
+  const helpless=defender&&['sleep','held-person','held-undead'].some(id=>getUnitEffect(defender,id));
+  if(helpless)return {hit:true,automatic:'AUTO HIT — sleeping or held',rawRoll,attackModifier:0,modifiedRoll:rawRoll,targetNumber,helpless:true};
   if(rawRoll===1){
     return {
       hit:false,
@@ -5364,19 +5416,21 @@ function resolvePhysicalAttackD20(rawRoll,targetNumber,attackModifier=0){
 
 /* Semantic wrappers for future combat code.
    Both deliberately route to the same universal physical resolver. */
-function resolveMeleeAttackD20(rawRoll,targetNumber,attackModifier=0){
+function resolveMeleeAttackD20(rawRoll,targetNumber,attackModifier=0,defender=null){
   return resolvePhysicalAttackD20(
     rawRoll,
     targetNumber,
-    attackModifier
+    attackModifier,
+    defender
   );
 }
 
-function resolveMissileAttackD20(rawRoll,targetNumber,attackModifier=0){
+function resolveMissileAttackD20(rawRoll,targetNumber,attackModifier=0,defender=null){
   return resolvePhysicalAttackD20(
     rawRoll,
     targetNumber,
-    attackModifier
+    attackModifier,
+    defender
   );
 }
 
@@ -5436,6 +5490,7 @@ function isAdjacent(a,b){
 function updateFacingForStep(entity,dx,dy){
   if(!entity) return;
   entity.walkStartHeading=facingDirectionIndex(entity)*Math.PI/3+(entity.aimYawOffset||0);
+  combatFacingTurns.delete(entity);
 
   const target={
     x:(entity.x||0)+dx,
@@ -8774,6 +8829,9 @@ function commitSpellCast(caster,spell,action,durationMs=1800,targetHex=null){
   }
 
   if(targetHex&&(targetHex.x!==caster.x||targetHex.y!==caster.y))faceEntityToward(caster,targetHex);
+  const release=caster.workshopDefinition?.animations?.['aim-fire-spell']?.[0]||caster.workshopDefinition?.animations?.cast?.[0];
+  const releaseMs=release?(release.end-release.start)/release.speed*1000:durationMs;
+  setTemporaryUnitPose(caster,'cast',Math.max(durationMs,releaseMs));
   speakSpellIncantation(caster,spell,durationMs);
   return true;
 }
@@ -11499,6 +11557,8 @@ function awardFighterXp(baseXp){
 }
 
 function strengthMods(score,exceptional=0){
+  // PHB Table 1: giant-strength scores must not fall through to ordinary 18.
+  if(score>=19){const [hit,damage]=[[3,7],[3,8],[4,9],[4,10],[5,11],[6,12],[7,14]][Math.min(25,Math.floor(score))-19];return {hit,damage};}
   if(score<=3) return {hit:-3,damage:-1};
   if(score<=5) return {hit:-2,damage:-1};
   if(score<=7) return {hit:-1,damage:0};
@@ -11564,6 +11624,7 @@ function formatSignedAdjustment(value){
 
 function calculateArmorClass(unit){
   if(!unit) return 10;
+  if(Number.isFinite(unit.naturalArmorClass)&&unit.workshopDefinition?.combat?.acMode==='manual')return unit.authoredBaseAc;
 
   const inventory=Array.isArray(unit.inventory)
     ? unit.inventory
@@ -11594,8 +11655,8 @@ function calculateArmorClass(unit){
   */
   const armorBaseAc=
     Number.isFinite(armor?.baseArmorClass)
-      ? armor.baseArmorClass
-      : 10;
+      ? Math.min(armor.baseArmorClass,Number.isFinite(unit?.naturalArmorClass)?Math.min(unit.authoredBaseAc??10,unit.naturalArmorClass):armor.baseArmorClass)
+      : Number.isFinite(unit?.naturalArmorClass)?Math.min(unit.authoredBaseAc??10,unit.naturalArmorClass):10;
 
   const dexAdjustments=
     dexterityAdjustments(unit.stats?.dex ?? 10);
@@ -11614,6 +11675,7 @@ function calculateArmorClass(unit){
   const result=
     armorBaseAc
     + dexDefensiveAdjustment
+    + (Number.isFinite(unit.naturalArmorClass)?unit.workshopDefinition?.combat?.acModifier||0:0)
     - shieldBonus
     - otherBonus;
 
@@ -11643,8 +11705,8 @@ function armorClassBreakdown(unit){
 
   const armorBaseAc=
     Number.isFinite(armor?.baseArmorClass)
-      ? armor.baseArmorClass
-      : 10;
+      ? Math.min(armor.baseArmorClass,Number.isFinite(unit?.naturalArmorClass)?Math.min(unit.authoredBaseAc??10,unit.naturalArmorClass):armor.baseArmorClass)
+      : Number.isFinite(unit?.naturalArmorClass)?Math.min(unit.authoredBaseAc??10,unit.naturalArmorClass):10;
 
   const dexAdjustments=
     dexterityAdjustments(unit?.stats?.dex ?? 10);
@@ -11659,7 +11721,7 @@ function armorClassBreakdown(unit){
 
   return {
     armorName:armor?.name || "Unarmored",
-    armorBaseAc,
+    armorBaseAc,naturalArmorClass:unit?.naturalArmorClass??null,
 
     dexReactionAdjustment:dexAdjustments.reaction,
     dexMissileAdjustment:dexAdjustments.missile,
@@ -11696,7 +11758,7 @@ function makeFighter(){
     f.x=0;
     f.y=0;
     f.alive=true;
-    delete f.fireDeath;delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;delete f.deathRotationDelta;delete f.deathAnimationDurationMs;
+    delete f.fireDeath;delete f.deathPresentationStartedAt;delete f.deathFacingHex;delete f.deathWorldOffset;delete f.deathRotationDelta;delete f.deathAnimationDurationMs;delete f.corpsePlacementDurationMs;delete f.corpseGroundPlane;delete f.corpseDropInPlace;delete f.deathImpactOccluder;
     f.fled=false;
     f.turnMoves=0;
     f.fullMove=false;
@@ -12536,7 +12598,12 @@ function makeLibraryMob(id,index,position){
  const unit=makeLegacyOrc(index,position);
  window.adventurePartyRepositoryMobs.apply(unit,Math.random,id);
  unit.type='library-mob';unit.id=`library-mob-${index+1}`;
- syncFighterEquipment(unit);if(!unit.monsterBaselineId&&!unit.inventory.some(i=>i.slot==='armor'&&i.equipped))unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
+ if(id==='hill-giant'){
+  const strength=strengthMods(Number(unit.stats.str),Number(unit.stats.strExceptional)||0);
+  unit.attackBonus=strength.hit;unit.damageBonus=strength.damage;
+  configureTreeHauler(unit);
+ }
+ syncFighterEquipment(unit);if(!unit.monsterBaselineId&&!Number.isFinite(unit.naturalArmorClass)&&!unit.inventory.some(i=>i.slot==='armor'&&i.equipped))unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==='shield'&&i.equipped)?1:0);
  unit.halfMove=Math.floor(unit.move/2);return unit;
 }
 function libraryTestPlayer(){
@@ -12552,7 +12619,7 @@ function makeOrc(index,position,templateId){
   authored.apply(unit,Math.random,templateId);
   if(templateId==="orc-archer"){unit.type="orc-archer";unit.id=`orc-archer-${String(index+1).padStart(2,"0")}`;}
   syncFighterEquipment(unit);
-  if(!unit.monsterBaselineId&&!unit.inventory.some(i=>i.slot==='armor'&&i.equipped))unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
+  if(!unit.monsterBaselineId&&!Number.isFinite(unit.naturalArmorClass)&&!unit.inventory.some(i=>i.slot==='armor'&&i.equipped))unit.ac=unit.authoredBaseAc-(unit.inventory.some(i=>i.slot==="shield"&&i.equipped)?1:0);
   unit.halfMove=Math.floor(unit.move/2);
   return unit;
 }
@@ -13490,7 +13557,7 @@ function livingUnitAt(x,y){
 
 function getUnitById(id){
   if(!game || !id) return null;
-  if(id==="player") return game.player;
+  if(id==="player" || id===game.player?.id) return game.player;
 
   const ally=(game.allies || []).find(unit=>unit.id===id);
   if(ally) return ally;
@@ -13707,6 +13774,14 @@ async function slingAttack(attacker,defender){
 }
 async function castPreparedCombatSpell(action,targetHex,targetUnit){
   if(typeof rejectWindowTarget==='function'&&rejectWindowTarget(spellCasterForAction(action),targetHex||targetUnit))return false;
+  const caster=spellCasterForAction(action),windup=caster?.workshopDefinition?.animations?.cast?.[0];
+  if(windup&&!action.workshopWindupPresented){
+    action.workshopWindupPresented=true;const session=game,duration=(windup.end-windup.start)/windup.speed*1000;
+    if(targetHex)faceEntityToward(caster,targetHex);
+    centerCameraOn(caster);setTemporaryUnitPose(caster,'casting-windup',duration);
+    await presentCombatFrame();await sleep(duration);
+    if(game!==session||game.over||!caster.alive||caster.fled)return false;
+  }
   return resolvePreparedSpellAction(action,targetHex,targetUnit);
 }
 async function activateAimTarget(){
@@ -16461,16 +16536,53 @@ async function repositoryMobAttack(unit,target){
   result=await attack(unit,target);if(result?.criticalMiss)break;
  }return result;
 }
-async function repositoryMobCast(unit){
+function repositoryMobSpellChoice(unit,source=unit,context=casterDecisionContext(unit)){
  if(!unit.repositoryMobId||!['mage','cleric'].includes(unit.classId))return false;
- const ids=unit.classId==='cleric'?unit.memorizedPriestSpellIds:unit.memorizedSpellIds;
- for(const id of ids||[]){const spell=getSpellEntry(id);if(!spell?.combatImplemented)continue;
-  let target=null;
-  if(spell.kind==='heal')target=allUnits().filter(u=>u.alive&&!u.fled&&u.faction===unit.faction&&u.hp<u.maxHp&&hexDistance(unit,u)<=1).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
-  else if(spell.targetMode==='self'&&!getUnitEffect(unit,id))target=unit;
-  else if(['hostile-creature','adjacent-hostile'].includes(spell.targetMode))target=allUnits().filter(u=>u.alive&&!u.fled&&u.faction!==unit.faction&&hexDistance(unit,u)<=(spell.targetMode==='adjacent-hostile'?1:spellRangeHexes(spell,unit.level))&&!lineOfSightBlocked(unit,u)).sort((a,b)=>hexDistance(unit,a)-hexDistance(unit,b))[0];
-  if(target&&await castPreparedCombatSpell({type:unit.classId==='cleric'?'priest-spell':'memorized-spell',spellId:id,casterLevel:unit.level,sourceUnitId:unit.id,spellCommitted:false},{x:target.x,y:target.y},target))return true;
- }return false;
+ return casterSpellChoices(unit,source,context)[0]||false;
+}
+async function repositoryMobCast(unit){
+ const context=casterDecisionContext(unit),choice=repositoryMobSpellChoice(unit,unit,context);
+ if(!choice||choice.score<=casterWeaponScore(unit,context))return false;
+ explainCasterDecision(unit,choice.action.spellId+': '+choice.reason,context);
+ return castPreparedCombatSpell(choice.action,{x:choice.target.x,y:choice.target.y},choice.target);
+}
+async function repositoryCasterTurn(unit){
+ const ids=unit.classId==='cleric'?unit.memorizedPriestSpellIds:unit.classId==='mage'?unit.memorizedSpellIds:null;
+ if(!unit.repositoryMobId||!ids?.length||unit.fleeing)return false;
+ const context=casterDecisionContext(unit),weaponScore=casterWeaponScore(unit,context),current=repositoryMobSpellChoice(unit,unit,context);
+ const session=game,prior=unit.turnMoves||0,budget=Math.max(0,Math.floor((unit.move||0)-prior)),half=unit.halfMove??Math.floor((unit.move||0)/2);
+ let best=current&&current.score>weaponScore?{choice:current,score:current.score,path:[{x:unit.x,y:unit.y}]}:null;
+ const policy=unit.workshopBehavior||{},queue=[{x:unit.x,y:unit.y,path:[{x:unit.x,y:unit.y}]}],seen=new Set([key(unit.x,unit.y)]);
+ const activeEnemies=context.enemies.filter(e=>!casterHelpless(e)),distance=p=>Math.min(20,...activeEnemies.map(e=>hexDistance(p,e)));
+ const retreat=unit.hp/unit.maxHp<.35&&policy.retreat!==false&&policy.spellRisk!=='reckless'&&distance(unit)<=2;
+ // Bounded local search; only pursue a concrete spell opportunity or a safer retreat.
+ for(let i=0;i<queue.length&&i<192;i++){
+  const node=queue[i],steps=node.path.length-1,proxy={...unit,x:node.x,y:node.y};
+  if(steps){
+   const choice=repositoryMobSpellChoice(unit,proxy,context),risk=typeof r220MobHazardCostAt==='function'?r220MobHazardCostAt(unit,node.x,node.y):0;
+   const score=choice?choice.score-steps*3-(prior+steps>half?18:0)-risk:0;
+   if(choice&&score>weaponScore&&(!best||score>best.score))best={choice,score,path:node.path};
+   if(retreat&&distance(node)>distance(unit)){const value=30+(distance(node)-distance(unit))*8-steps*2-risk;if(value>weaponScore&&(!best||value>best.score))best={score:value,path:node.path,retreat:true};}
+  }
+  if(steps>=budget)continue;
+  for(const dir of HEX_DIRS){const next={x:node.x+dir.x,y:node.y+dir.y},id=key(next.x,next.y);if(seen.has(id)||!inside(next.x,next.y)||unitTransitionBlocked(unit,node,next))continue;
+   const from={...unit,x:node.x,y:node.y},to={...unit,...next};
+   if(leavingHexFreeAttackers(from,next).length||activeEnemies.some(e=>unitCanMakeLeavingHexFreeAttack(e,to)))continue;
+   if(policy.spellRisk!=='reckless'&&typeof r220MobHazardCostAt==='function'&&r220MobHazardCostAt(unit,next.x,next.y)>0)continue;
+   seen.add(id);queue.push({...next,path:[...node.path,next]});
+  }
+ }
+ if(!best){explainCasterDecision(unit,'weapon / guard fallback; no better spell opportunity',context);return false;}
+ explainCasterDecision(unit,best.retreat?'retreat to safer ground':best.choice.action.spellId+': '+best.choice.reason+(best.path.length>1?' after repositioning':''),context);
+ if(best.path.length>1){setUnitActionBanner(unit,best.retreat?'Retreating':'Moving to cast '+getSpellEntry(best.choice.action.spellId).name);await animateMobAlongPath(unit,best.path,budget);
+  if(game!==session||game.over||!unit.alive||unit.fled)return true;
+  unit.turnMoves=prior+Math.max(0,best.path.findIndex(p=>p.x===unit.x&&p.y===unit.y));
+ }
+ if(!best.retreat&&!areaEffectActionLostThisTurn(unit)&&(unit.turnMoves||0)<=half){
+  // Re-evaluate after movement: deaths, occupancy and effects may have changed.
+  if(await repositoryMobCast(unit))return true;
+ }
+ if(game===session&&!game.over&&game.active===unit.id)endTurn();return true;
 }
 
 async function mobTurn(mob){
@@ -16485,10 +16597,11 @@ async function mobTurn(mob){
     return;
   }
 
+  if(typeof treeHaulerTurn==='function'&&await treeHaulerTurn(mob))return;
   await selectCombatAiWeapon(mob);
   if(await repositionElvenArcher(mob))return;
   if(typeof tryMobBreakCombatWindow==='function'&&await tryMobBreakCombatWindow(mob))return;
-  if(await repositoryMobCast(mob))return;
+  if(await repositoryCasterTurn(mob))return;
 
   const taunt=getUnitEffect(mob,"taunt");
   const tauntSource=taunt
@@ -17264,6 +17377,7 @@ function bestCombatWeapon(unit,preferRanged=false){
  return choices[0]?.item||null;
 }
 async function selectCombatAiWeapon(unit){
+ if(unit?.treeHauler)return;
  if(!Array.isArray(unit?.inventory)||!unit.inventory.some(i=>i.slot==='weapon'||i.slot==='backup-weapon'))return;
  const threatened=hostileCombatantsFor(unit).some(e=>canMeleeReach(unit,e));
  const preferRanged=(unit.id==='player'&&unit.name==='Dungeon Crawler Carl')||unit.workshopBehavior?.style==='melee'?false:!threatened;
@@ -17343,6 +17457,9 @@ function syncFighterEquipment(fighter){
     fighter.bonusDamageType=null;
   }
 
+  if((fighter.repositoryMobId==='hill-giant'||fighter.type==='mob:hill-giant')&&hillGiantWieldsTreeClub(fighter)){
+    fighter.weaponDamageSM='2d6';fighter.weaponDamageL='2d6';
+  }
   syncRepositoryMissileEquipment(fighter);
   const movement=window.adventurePartyArmorRules.inventoryMovement(fighter,item=>
     getArmorCatalogEntry(item.catalogArmorId)||getWeaponCatalogEntry(item.catalogWeaponId)||getMissileCatalogEntry(item.catalogWeaponId));
@@ -17565,7 +17682,7 @@ function renderCharacterSheet(){
       `<span>Spell</span><span>${saves.spell}</span>`;
 
     document.getElementById("sheetTraining").innerHTML=
-      `<div class="sheet-item"><b>Weapon Proficiency Slots</b><span>${mage.weaponProficiencySlots}</span><div class="detail">Allowed: ${mage.allowedWeapons.join(", ")}</div></div>`+
+      `<div class="sheet-item"><b>Weapon Proficiency Slots</b><span>${mage.weaponProficiencySlots}</span><div class="detail">Allowed: ${(mage.allowedWeapons||[]).join(", ")}</div></div>`+
       `<div class="sheet-item"><b>Nonweapon Proficiency Slots</b><span>${mage.nonweaponProficiencySlots}</span></div>`+
       `<div class="sheet-item"><b>Nonproficiency Penalty</b><span>${mage.weaponNonproficiencyPenalty}</span></div>`+
       `<div class="sheet-item"><b>Maximum Spell Level</b><span>${mage.maxSpellLevel}</span><div class="detail">Base slots ${slots || "—"}</div></div>`;
@@ -18134,42 +18251,19 @@ function visibleHexes(padding=0){
 
 
 
-function drawHpBar(entity,color){
-  if(globalThis.adventurePartySun?.drawingGround)return;
-  if(
-    !entity ||
-    !entity.maxHp ||
-    entity.hp<=0 ||
-    entity.hp>=entity.maxHp
-  ){
-    return;
-  }
-
-  const c=unitFootprintScreenCenter(entity);
-  // Match the model's walking position while retaining the footprint-center offset.
-  const motion=entity.walkPresentation;
-  if(motion){
-    const t=Math.max(0,Math.min(1,motion.t)),from=hexCenter(motion.from.x,motion.from.y),to=hexCenter(motion.to.x,motion.to.y),anchor=hexCenter(entity.x,entity.y);
-    c.x+=from.x+(to.x-from.x)*t-anchor.x;
-    c.y+=from.y+(to.y-from.y)*t-anchor.y;
-  }
-  const large=unitFootprintCellCount(entity)>1;
-  const width=Math.max(34,Number(entity.hpBarWidth)||(large ? 64 : 34));
+function drawHpBar(entity,color,overlay=false){
+  // Indicators render after units, scenery and weather, never in the shadow pass.
+  if(!overlay||!entity||!entity.maxHp||entity.hp<=0||entity.hp>=entity.maxHp)return;
+  const c=combatUnitTextAnchor(entity);
+  const width=Math.max(34,Number(entity.hpBarWidth)||(unitFootprintCellCount(entity)>1?64:34));
   const ratio=Math.max(0,Math.min(1,entity.hp/entity.maxHp));
-  const px=c.x-width/2;
-  const baseOffset=Number(entity.hpBarOffsetY)||(large ? 78 : 39);
-  const visualScale=enlargeVisualScale(entity);
-  const py=c.y-(baseOffset*Math.max(1,visualScale));
-
-  ctx.fillStyle="#17151a";
-  ctx.fillRect(px,py,width,4);
-
-  ctx.fillStyle=color;
-  ctx.fillRect(px,py,Math.round(width*ratio),4);
-
-  ctx.strokeStyle="#050508";
-  ctx.lineWidth=1;
-  ctx.strokeRect(px,py,width,4);
+  const px=Math.max(4,Math.min(BATTLEFIELD_LOGICAL_WIDTH-width-4,c.x-width/2));
+  // Keep the bar above the text line rather than overprinting damage numbers.
+  const py=Math.max(4,c.y-22);
+  ctx.save();ctx.setTransform(BATTLEFIELD_RENDER_DENSITY,0,0,BATTLEFIELD_RENDER_DENSITY,0,0);
+  ctx.fillStyle='#17151a';ctx.fillRect(px,py,width,4);
+  ctx.fillStyle=color;ctx.fillRect(px,py,Math.round(width*ratio),4);
+  ctx.strokeStyle='#050508';ctx.lineWidth=1;ctx.strokeRect(px,py,width,4);ctx.restore();
 }
 
 function drawCastingGlowSilhouette(
@@ -21169,7 +21263,7 @@ function handleCombatKey(event){
 
     if(
       (event.code==="Space" || event.key===" ") &&
-      combatOpeningSpeechDone &&
+      !event.repeat && combatOpeningSpeechDone &&
       combatAwaitingStart
     ){
       void beginCombatFromPrompt();

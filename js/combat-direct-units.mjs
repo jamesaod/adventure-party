@@ -1,9 +1,10 @@
+import {cacheCorpseWaterline} from './combat-corpse-waterline.mjs?v=1';
 import {lightingProfile,LIGHTING_GLSL,bindLightingProfile} from './combat-lighting-profile.mjs';
-import {installUnitSnowOcclusion,bindUnitSnowOcclusion,unitSnowGroundMatrix} from './combat-unit-snow-occlusion.mjs?v=tree-snow-grains1';
+import {installUnitSnowOcclusion,bindUnitSnowOcclusion,unitSnowGroundMatrix} from './combat-unit-snow-occlusion.mjs?v=natural-ac1';
 import {arrowScaleForFrame} from './arrow-visual-profile.mjs?v=R238C305';
 import {hasFlamingSword} from './combat-weapon-flame.mjs?v=R238C299';
-import {sampleSnowFootfalls,pressCorpseIntoSnow} from './combat-snow-footprints.mjs?v=shore-snow1';
-import {setCorpseSnowWater,renderCorpseSnowLayers,prepareCorpseSnow,updateCorpseSnowMap,registerCorpseSnow,snowAmbientDisplay,corpseSnowTint} from './combat-corpse-snow.mjs?v=tree-snow-grains1';
+import {sampleSnowFootfalls,pressCorpseIntoSnow} from './combat-snow-footprints.mjs?v=giant-snow1';
+import {setCorpseSnowWater,renderCorpseSnowLayers,prepareCorpseSnow,updateCorpseSnowMap,registerCorpseSnow,snowAmbientDisplay,corpseSnowTint} from './combat-corpse-snow.mjs?v=natural-ac1';
 import {warmBowMaterials} from './equipment-visual-states.mjs';
 import {shadowGeometryFor,registerShadowGeometry,captureShadowGeometry} from './combat-shadow-geometry.mjs';
 import {snapshotGpuCaster} from './combat-gpu-casters.mjs';
@@ -123,7 +124,6 @@ function draw(gpu,image,options){
       const [lx,ly,lz]=source.position;light.position.set((c*lx-s*lz)*factor,ly*factor,(s*lx+c*lz)*factor);
       light.color.setRGB(...source.color,profile.linearLightColors?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace);light.distance=source.range*factor;light.decay=2;light.intensity=source.intensity*factor*factor*profile.local;
     });
-    asset.group.rotation.y=yaw;
     asset.group.updateMatrixWorld(true);
     if(weaponFlame){weaponFlame.root=asset.group;weaponFlame.camera=camera;}
     sampleSnowFootfalls(asset.group,options.entity,{...options,y:options.y-(options.stream?.drop||0),poseSeconds:modelPoseSeconds(now/1000),modelUnitsPerMetre:factor,onGroundRig:()=>gpu.trackGroundFootfalls?.(options.entity),onGroundFootfall:(x,y)=>gpu.groundFootfall?.(options.entity,x,y)},view,original);
@@ -136,6 +136,9 @@ function draw(gpu,image,options){
     const snowSurface=options.entity&&options.outdoor!==false?gpu.unitSnowSurface:null;
     if(snowSurface||gpu.unitWaterSurface?.active||options.stream?.water>0||asset.workshopPoseKey==='settled')unitSnowGroundMatrix(original,groundOptions,view,snowGroundMatrix);
     if(asset.workshopPoseKey==='settled'&&options.outdoor!==false)pressCorpseIntoSnow(asset.group,options.entity,snowGroundMatrix);
+    if(asset.workshopPoseKey==='settled'&&options.outdoor!==false&&gpu.corpseWaterSample){
+      if(cacheCorpseWaterline(asset.group,options.entity,snowGroundMatrix,factor,options.stream?.depth||0,gpu.corpseWaterSample,[gpu.unitWaterSurface?.revision,gpu.unitWaterSurface?.level].join(':')))options.requestMotionFrame?.();
+    }
     const snowTint=asset.corpseSnow?.value>0?corpseSnowTint(asset.corpseSnow.value):null;
     const snowLight=asset.corpseSnow?.value>0?snowAmbientDisplay((options.snowGroundLight||[0,0,0]).map((v,i)=>v*snowTint[i])):null;
     asset.group.traverse(object=>{if(!object.isMesh)return;for(const m of Array.isArray(object.material)?object.material:[object.material]){
@@ -153,7 +156,7 @@ function draw(gpu,image,options){
     }finally{scene.remove(asset.group);}
     document.documentElement.dataset.directUnitTriangles=String(asset.triangles);
     return true;
-  },{x:x-width*anchor.x,y:y-height*anchor.y,width,height},burn,weaponFlame,settledCorpseImage(frame,{...options,waterSurfaceRevision:[gpu.unitWaterSurface?.revision,gpu.unitWaterSurface?.level,options.stream?.depth],snowSurfaceRevision:gpu.unitSnowSurface?gpu.unitSnowRevision:null}));
+  },options.entity?.carriedTreeLog?{x:x-width*(anchor.x+1),y:y-height*(anchor.y+1),width:width*3,height:height*3}:{x:x-width*anchor.x,y:y-height*anchor.y,width,height},burn,weaponFlame,settledCorpseImage(frame,{...options,waterSurfaceRevision:[gpu.unitWaterSurface?.revision,gpu.unitWaterSurface?.level,options.stream?.depth],snowSurfaceRevision:gpu.unitSnowSurface?gpu.unitSnowRevision:null}));
   return result===true;
 }
 // Zero means uncapped: sample the elapsed-time pose on every display frame.
@@ -166,7 +169,7 @@ export function settledCorpseImage(frame,options){
  const e=options.entity,c=settledCorpses.get(e);
  if(!e||e.alive||!c||c.source!==frame.asset||c.started!==e.deathPresentationStartedAt)return null;
  const {x,y,width,height,anchor,rotation,solar,ambientPercent,outdoor,localLights,opacity=1,saturation=1,snowGroundLight}=options;
- return {owner:c.asset,key:JSON.stringify([frame.yaw,globalThis.adventurePartyUnitViewYawOffset?.()||0,e.aimYawOffset||0,e.deathRotationDelta||0,
+ return {owner:c.asset,key:JSON.stringify([frame.yaw,globalThis.adventurePartyUnitViewYawOffset?.()||0,e.aimYawOffset||0,e.deathRotationDelta||0,e.corpseGroundPlane,
   x,y,width,height,anchor,rotation,solar,ambientPercent,outdoor,localLights,opacity,saturation,options.pixelsPerMetre,!!e.fireDeath,c.asset.corpseSnow?.value||0,snowGroundLight,options.snowSurfaceRevision,options.waterSurfaceRevision,options.stream?.wetShade,options.lightingProfile,globalThis.adventurePartyShieldSpecularTest])};
 }
 // Share animation sampling across body, shadow and occluded outline passes.
@@ -193,7 +196,16 @@ export function sampleDirectPose(frame,entity,walkSeconds=entity?.walkPresentati
  }
  const viewOffset=globalThis.adventurePartyUnitViewYawOffset?.()||0;
  const yaw=frame.yaw+viewOffset+(entity?.walkPresentation?.yawOffset??entity?.aimYawOffset??0)+(entity?.deathRotationDelta||0)*deathProgress;
- asset.group.rotation.y=yaw;asset.group.updateMatrixWorld(true);
+ asset.group.rotation.set(0,yaw,0);
+ if(corpse&&deathProgress>0&&globalThis.adventurePartyCorpseSlope&&width){
+  const camera=asset.camera;camera.updateMatrixWorld(true);const m=camera.matrixWorldInverse.elements,scale=width/(camera.right-camera.left),up=Math.sqrt(Math.max(.0001,1-camera.matrixWorld.elements[6]**2));
+  const sx=-globalThis.adventurePartyCorpseSlope(entity,scale*m[0],-scale*m[1])/(scale*up);
+  const sz=-globalThis.adventurePartyCorpseSlope(entity,scale*m[8],-scale*m[9])/(scale*up);
+  const normal=new THREE.Vector3(-sx,1,-sz).normalize(),tilt=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),normal);
+  const eased=new THREE.Quaternion().slerp(tilt,deathProgress);
+  asset.group.quaternion.premultiply(eased);
+ }
+ asset.group.updateMatrixWorld(true);
  return {asset,yaw,animating:animating||(deathProgress>0&&deathProgress<1),live:!!asset.workshopSample||asset!==frame.asset};
 }
 let maskRenderer;
@@ -205,7 +217,7 @@ function liveShadow(image,entity,width){
  // Older saved 2D shadow captures can have a different pose or scale.
  const pose=sampleDirectPose(frame,entity,undefined,undefined,width);
  const time=entity?.walkPresentation?modelPoseSeconds(entity.walkPresentation.seconds):(pose.animating?modelPoseSeconds(Math.max(0,performance.now()-entity.deathPresentationStartedAt)/1000):'held');
- const key=[pose.yaw,pose.asset.workshopPoseKey??time,entity?.deathPresentationStartedAt].join(':');
+ const key=[pose.yaw,...pose.asset.group.quaternion.toArray(),pose.asset.workshopPoseKey??time,entity?.deathPresentationStartedAt].join(':');
  const cached=entity&&liveShadowCache.get(entity);if(cached?.key===key&&cached.asset===pose.asset)return cached.geometry;
  const geometry=perf.measure('shadowSnapshot',()=>snapshotGpuCaster(pose.asset.group,pose.asset.camera));
  if(entity)liveShadowCache.set(entity,{key,asset:pose.asset,geometry});
@@ -223,9 +235,15 @@ function liveOutline(image,entity,width,height){
 }
 function gpuOutline(gpu,image,entity,options){
  const frame=frames.get(image);if(!frame||!gpu?.unitOutline)return false;
- const {pad,width,height}=options,pose=sampleDirectPose(frame,entity,undefined,undefined,width),camera=pose.asset.camera.clone();
- const dx=(camera.right-camera.left)/width*pad,dy=(camera.top-camera.bottom)/height*pad;camera.left-=dx;camera.right+=dx;camera.top+=dy;camera.bottom-=dy;camera.updateProjectionMatrix();
- return gpu.unitOutline(renderer=>{maskScene.overrideMaterial=maskMaterial;maskScene.add(pose.asset.group);try{renderer.render(maskScene,camera);}finally{maskScene.remove(pose.asset.group);}},options);
+ const {pad,width,height}=options,pose=sampleDirectPose(frame,entity,undefined,undefined,width),original=pose.asset.camera;
+ original.updateMatrixWorld(true);
+ const shapeCache=pose.animating?null:{owner:pose.asset,key:[pose.asset.workshopPoseKey||'held',pose.yaw,...pose.asset.group.quaternion.toArray(),width,height,pad,...original.projectionMatrix.elements,...original.matrixWorld.elements].join(':')};
+ return gpu.unitOutline(renderer=>{
+  const camera=original.clone(),dx=(camera.right-camera.left)/width*pad,dy=(camera.top-camera.bottom)/height*pad;
+  camera.left-=dx;camera.right+=dx;camera.top+=dy;camera.bottom-=dy;camera.updateProjectionMatrix();
+  maskScene.overrideMaterial=maskMaterial;maskScene.add(pose.asset.group);try{renderer.render(maskScene,camera);}finally{maskScene.remove(pose.asset.group);}
+ },{...options,shapeCache});
 }
+
 globalThis.adventurePartyDirectUnits={draw,gpuOutline,liveShadow,liveOutline,corpseSnowAmount,enabled:()=>true};
 

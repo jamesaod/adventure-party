@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+import {extractCombatFunction} from './combat-test-source.mjs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8').replace(/^ +function /gm,'function ');
+const built=[],added=[],sets={},assets={green:{season:'green'},fall:{season:'fall'},winter:{season:'winter'}};
+const context={sets,assets,family:{base:5},group:{add:(...items)=>added.push(...items)},continuousTrunk:(source,options)=>{built.push([source.season,options.breakType]);return {moving:{},model:{},stump:{}};}};
+vm.createContext(context);vm.runInContext(extractCombatFunction(read('js/combat-oak-fall.mjs'),'prepare'),context);
+const first=context.prepare('torn',5)[0];
+assert.equal(built.length,1);assert.equal(added.length,3);
+assert.equal(context.prepare('torn',5)[0],first);assert.equal(built.length,1);
+context.prepare('torn',7);assert.deepEqual(built,[['green','torn'],['winter','torn']]);
+context.prepare('cut',5);assert.equal(built.length,3);assert.equal(sets.torn[1],undefined);
+const ground=new Map(),self=new Map();let disposed=0;
+for(const key of ['5:0:false','fallen-5:0:false','11:0:false']){ground.set(key,{poseStamp:1,target:{dispose(){disposed++;}}});self.set(key,{needsUpdate:false,oakSettled:true,map:{dispose(){disposed++;}}});}
+const shadows={directGroundCache:ground,directSelfCache:self,broadleafForVariant:()=>({base:5})};vm.createContext(shadows);
+vm.runInContext(extractCombatFunction(read('js/combat-fir-trees.mjs'),'clearDirectShadows'),shadows);
+shadows.clearDirectShadows(5);
+assert.equal(disposed,0,'A fall reuses GPU shadow targets');
+assert.equal(typeof ground.get('fallen-5:0:false').poseStamp,'symbol');
+assert.equal(ground.get('11:0:false').poseStamp,1);
+assert.equal(self.get('11:0:false').needsUpdate,false);
+assert.equal(self.get('5:0:false').needsUpdate,true);
+shadows.clearDirectShadows();assert.equal(disposed,6);assert.equal(ground.size,0);assert.equal(self.size,0);
+console.log('PASS lazy seasonal fracture geometry and targeted shadow invalidation with full lifecycle disposal');

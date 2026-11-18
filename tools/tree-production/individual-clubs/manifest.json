@@ -1,0 +1,146 @@
+[
+  {
+    "id": "tree-05-club",
+    "tileIndex": 5,
+    "name": "White Oak Tree 05 Club",
+    "source": "WhiteOak_Individual05_Club.spm",
+    "sourceObjSha256": "1fc0def5bd1a379c9d96b6a08f1fa1f77867097aa39569562a16c48dd21ef7f5",
+    "asset": "assets/models/weapons/tree-as-club/individuals/tree-05-club.glb",
+    "sha256": "1a45d5fb7d7f48fefaaf0fea97f7c1f5d4e3ede6b65d074041e8ee0379ded652",
+    "lengthMetres": 3.3136051443964862,
+    "sourceToCombatScale": 0.4250914720210854,
+    "cutBottomSourceMetres": 1.2,
+    "cutTopSourceMetres": 8.995040273666381,
+    "secondaryGrip": [
+      0,
+      0.4,
+      0
+    ],
+    "triangles": 1184,
+    "fracturedBoundsMetres": [
+      -0.331360399723053,
+      3.0782856941223145
+    ],
+    "breakStyle": "stump-matching-torn"
+  },
+  {
+    "id": "tree-11-club",
+    "tileIndex": 11,
+    "name": "Sugar Maple Tree 11 Club",
+    "source": "SugarMaple_Individual11_Club.spm",
+    "sourceObjSha256": "d971f920b2338b3028800bde9cef2f5004d79a324bc0edb3397d9b82d201032a",
+    "asset": "assets/models/weapons/tree-as-club/individuals/tree-11-club.glb",
+    "sha256": "9087d2c838d8e36dac0d8f279d0439d776dcfef9e9ada38b19d0baa9d0591a4e",
+    "lengthMetres": 3.8983033273803858,
+    "sourceToCombatScale": 0.4250914720210854,
+    "cutBottomSourceMetres": 1,
+    "cutTopSourceMetres": 10.170504665374756,
+    "secondaryGrip": [
+      0,
+      0.4,
+      0
+    ],
+    "triangles": 1546,
+    "fracturedBoundsMetres": [
+      -0.38983023166656494,
+      3.600501537322998
+    ],
+    "breakStyle": "stump-matching-torn"
+  },
+  {
+    "id": "tree-17-club",
+    "tileIndex": 17,
+    "name": "Tall Sugar Maple Tree 17 Club",
+    "source": "SugarMaple_Individual17_Club.spm",
+    "sourceObjSha256": "c9c8e273a680e05a240b7a4a9b85772402aa8368659ac9d9cdb34dc678cc6a67",
+    "asset": "assets/models/weapons/tree-as-club/individuals/tree-17-club.glb",
+    "sha256": "25c1df5d9cc94c7daac6d92601d1b4958efd56b01637cc695da50511f8e031a6",
+    "lengthMetres": 5.144125559783912,
+    "sourceToCombatScale": 0.4250914720210854,
+    "cutBottomSourceMetres": 1,
+    "cutTopSourceMetres": 13.101220321655273,
+    "secondaryGrip": [
+      0,
+      0.4,
+      0
+    ],
+    "triangles": 1750,
+    "fracturedBoundsMetres": [
+      -0.5144125819206238,
+      4.719155311584473
+    ],
+    "breakStyle": "stump-matching-torn"
+  },
+  {
+    "id": "tree-23-club",
+    "tileIndex": 23,
+    "name": "Broad Sugar Maple Tree 23 Club",
+    "source": "SugarMaple_Individual23_Club.spm",
+    "sourceObjSha256": "69487cd4df7a8c24cbc53204b286e2fb2e08879767ea36294eaa28889ec05280",
+    "asset": "assets/models/weapons/tree-as-club/individuals/tree-23-club.glb",
+    "sha256": "8116b98573c9fba5f06c844d15d853bbc2b7f2e4eefe3d37bb224cfdc15cbd63",
+    "lengthMetres": 3.805586833722607,
+    "sourceToCombatScale": 0.4250914720210854,
+    "cutBottomSourceMetres": 1,
+    "cutTopSourceMetres": 9.952395153045654,
+    "secondaryGrip": [
+      0,
+      0.4,
+      0
+    ],
+    "triangles": 1522,
+    "fracturedBoundsMetres": [
+      -0.38055890798568726,
+      3.533787488937378
+    ],
+    "breakStyle": "stump-matching-torn"
+  },
+  {
+    "id": "tree-29-club",
+    "tileIndex": 29,
+    "name": "American Beech Tree 29 Club",
+    "source": "AmericanBeech_Individual29_Club.spm",
+    "sourceObjSha256": "447dbc5d890ad8eaeb8465a9c4010290487547cf7faf4fa59b0e32438790bc73",
+    "asset": "assets/models/weapons/tree-as-club/individuals/tree-29-club.glb",
+    "sha256": "d8ef3c84c1097568c4f60fb32797e98237ba2c5482599d0d6c0f3c4cce343c79",
+    "lengthMetres": 3.8282780191185153,
+    "sourceToCombatScale": 0.4250914720210854,
+    "cutBottomSourceMetres": 1,
+    "cutTopSourceMetres": 10.005774688720702,
+    "secondaryGrip": [
+      0,
+      0.4,
+      0
+    ],
+    "triangles": 1544,
+    "fracturedBoundsMetres": [
+      -0.3828277289867401,
+      3.5540566444396973
+    ],
+    "breakStyle": "stump-matching-torn"
+  },
+  {
+    "id": "tree-35-club",
+    "tileIndex": 35,
+    "name": "Sweet Birch Tree 35 Club",
+    "source": "SweetBirch_Individual35_Club.spm",
+    "sourceObjSha256": "5297e906df379fa4546a98b9cacca9ff41bef9b8b4e0a1de18ac5481b83705fd",
+    "asset": "assets/models/weapons/tree-as-club/individuals/tree-35-club.glb",
+    "sha256": "506bc5c2309ed63e794a147b4f7bc97c4aa2c787cfa5362b708961b56eaaa3c2",
+    "lengthMetres": 2.616850937364839,
+    "sourceToCombatScale": 0.4250914720210854,
+    "cutBottomSourceMetres": 1,
+    "cutTopSourceMetres": 7.155971384048462,
+    "secondaryGrip": [
+      0,
+      0.4,
+      0
+    ],
+    "triangles": 1419,
+    "fracturedBoundsMetres": [
+      -0.2616852819919586,
+      2.468029022216797
+    ],
+    "breakStyle": "stump-matching-torn"
+  }
+]
