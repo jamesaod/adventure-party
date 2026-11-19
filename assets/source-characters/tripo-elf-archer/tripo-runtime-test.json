@@ -1,0 +1,58 @@
+[
+  {
+    "name": "01 Idle",
+    "duration": 2.5,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "02 Jog",
+    "duration": 0.9333333373069763,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "03 One Handed Swing",
+    "duration": 1.5,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "04 Bow — Notch + Shoot",
+    "duration": 3.0866666666666664,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "05 Death Forward",
+    "duration": 3.6666667461395264,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "06 Death Sword",
+    "duration": 2.4000000953674316,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "04a Bow Notch",
+    "duration": 2.5,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  },
+  {
+    "name": "04b Bow Shoot",
+    "duration": 0.6666666865348816,
+    "tracks": 303,
+    "sampledPoses": 61,
+    "finiteDeformation": true
+  }
+]

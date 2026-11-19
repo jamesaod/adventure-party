@@ -1,0 +1,142 @@
+[
+  {
+    "path": "build-workshop.py",
+    "bytes": 4454,
+    "sha256": "85BE5880BC2A8B01ACB9BD4197FF25E1BC08A01068CE233200C221E97CED6318"
+  },
+  {
+    "path": "elf-reference-four-view.png",
+    "bytes": 1944778,
+    "sha256": "0FFC32685AECA70D3C19D90CA4D914DCD7C7345749C14D938C26497155142757"
+  },
+  {
+    "path": "README.txt",
+    "bytes": 4218,
+    "sha256": "7404242765A4023552EA0192461441CB71663124C28376A0641FB8A29C07D4D9"
+  },
+  {
+    "path": "Tripo-Elf-AccuRIG.ccProject",
+    "bytes": 6618038,
+    "sha256": "3E3DED084B5ABF165A8D1DD568A077D0F9B7AADEB3A9E244508F3782E82F4535"
+  },
+  {
+    "path": "Tripo-Elf-CC5.glb",
+    "bytes": 4125564,
+    "sha256": "8F0FD8FD9D321471EAF6B40A477D320C1F2892DD36202A5395B430D6A3B06431"
+  },
+  {
+    "path": "tripo-export-audit.json",
+    "bytes": 1414,
+    "sha256": "7178E9A589BABE8DECEF8E30E6A1A1A16634B80204B75F259572E855F7ED4AC8"
+  },
+  {
+    "path": "tripo-runtime-test.json",
+    "bytes": 1141,
+    "sha256": "B20E49F7B05E54A84CFB9C6450A32A9885B723216F8AC8ECBE4C533F898340F0"
+  },
+  {
+    "path": "cc5-export/t_01 Idle_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_01 Idle_Motion.fbx",
+    "bytes": 1916704,
+    "sha256": "29BFACF79BC16A5CCA78B6FCC2409BC1D75683072AE44D3E2621814FBB9AF37C"
+  },
+  {
+    "path": "cc5-export/t_02 Jog_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_02 Jog_Motion.fbx",
+    "bytes": 1248416,
+    "sha256": "A13A76BB29B722D591C7E616325F2CF7B2F5C5C0255E67AB2CACA375D123C88B"
+  },
+  {
+    "path": "cc5-export/t_03 One Handed Swing_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_03 One Handed Swing_Motion.fbx",
+    "bytes": 1623344,
+    "sha256": "A6D3BDB1DBF00DE3E7D2DFD5546184596230442A864E07F39326D506E2C649FC"
+  },
+  {
+    "path": "cc5-export/t_04a Bow Notch_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_04a Bow Notch_Motion.fbx",
+    "bytes": 1925136,
+    "sha256": "01B456414FD804B9BDB7170EAB24F0B6351776F4037AAD1A2B712C252D7A7BBF"
+  },
+  {
+    "path": "cc5-export/t_04b Bow Shoot_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_04b Bow Shoot_Motion.fbx",
+    "bytes": 1070992,
+    "sha256": "A6F2BD20440E809881067BF96947C40BA9E9E339E3A343AC67048C7C68F200E1"
+  },
+  {
+    "path": "cc5-export/t_05 Death Forward_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_05 Death Forward_Motion.fbx",
+    "bytes": 2503168,
+    "sha256": "39911428D808A7A4283E7BD1309B624E547E16DC40E53229BC74FF1524850202"
+  },
+  {
+    "path": "cc5-export/t_06 Death Sword_Motion.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t_06 Death Sword_Motion.fbx",
+    "bytes": 1870544,
+    "sha256": "CCB9A7137F46AB8B8FC12DBCC7E8886B079F74C1E7385D9B5C3ED23E88A52D09"
+  },
+  {
+    "path": "cc5-export/t.3dxProfile",
+    "bytes": 14496,
+    "sha256": "397386BC65C9303EA3F92E8D14E389B44025E873F5BEB84B24B791F03A1AD378"
+  },
+  {
+    "path": "cc5-export/t.fbx",
+    "bytes": 3346448,
+    "sha256": "5C5F0E84F346FB99D05C77D2E997D76BB7813BE91DA1F2A14720D3DC17C26281"
+  },
+  {
+    "path": "cc5-export/t.json",
+    "bytes": 17745,
+    "sha256": "0CB58870529C86B6FB0D389B038C17063080E002581A2610B6CEFA7BD8ADDB3B"
+  },
+  {
+    "path": "cc5-export/textures/t/t/tripo_node_30ca7bb2/tripo_mat_30ca7bb2/tripo_mat_30ca7bb2_metallic.png",
+    "bytes": 120,
+    "sha256": "852834E1A70297D135A1940556F6CA12C23CCE3C0F458E981384CFC6A74C11C9"
+  },
+  {
+    "path": "cc5-export/textures/t/t/tripo_node_30ca7bb2/tripo_mat_30ca7bb2/tripo_mat_30ca7bb2_roughness.png",
+    "bytes": 183,
+    "sha256": "A71A65D9D112BC8E405FE869ED34CB001CF97AAF75D7D56145E7D2AF7017C9CA"
+  },
+  {
+    "path": "original-tripo/tripo_convert_30ca7bb2-b8e1-48fd-aaa0-24bfade708c8.fbx",
+    "bytes": 2541276,
+    "sha256": "031ECD5D872D67CB822917162F6991428E2CB427D7BA35D535978497D8F3A2C2"
+  },
+  {
+    "path": "original-tripo/tripo_convert_30ca7bb2-b8e1-48fd-aaa0-24bfade708c8.fbm/tripo_rgb_ac9f0140-1b89-470b-8150-8b6f196c34d1.png",
+    "bytes": 2116027,
+    "sha256": "022A16156CF67B7829F205FEAD280BD2F3B50CEA8767A6B3AF934370312265FA"
+  }
+]

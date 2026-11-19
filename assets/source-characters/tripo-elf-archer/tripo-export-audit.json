@@ -1,0 +1,75 @@
+{
+  "motions": [
+    {
+      "name": "01 Idle",
+      "frames": [
+        1.0,
+        151.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    },
+    {
+      "name": "02 Jog",
+      "frames": [
+        1.0,
+        57.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    },
+    {
+      "name": "03 One Handed Swing",
+      "frames": [
+        1.0,
+        91.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    },
+    {
+      "name": "04a Bow Notch",
+      "frames": [
+        1.0,
+        151.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    },
+    {
+      "name": "04b Bow Shoot",
+      "frames": [
+        1.0,
+        41.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    },
+    {
+      "name": "05 Death Forward",
+      "frames": [
+        1.0,
+        221.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    },
+    {
+      "name": "06 Death Sword",
+      "frames": [
+        1.0,
+        145.0
+      ],
+      "fps": 60,
+      "restMatrixError": 0.00374603271484375
+    }
+  ],
+  "geometry": [
+    {
+      "name": "tripo_node_30ca7bb2",
+      "triangles": 10703
+    }
+  ],
+  "method": "CC5 retargeting; direct same-skeleton animation packaging; no decimation",
+  "triangles": 10703
+}
