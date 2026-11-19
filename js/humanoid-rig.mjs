@@ -15,32 +15,32 @@ export const HUMANOID_CORE_ROLES = Object.freeze([
 ]);
 
 const ROLE_ALIASES = Object.freeze({
-  hips: ['mixamorighips','hips','pelvis','rootpelvis','bip01pelvis','bip001pelvis','bip01hips'],
-  spine: ['mixamorigspine','spine','spine01','spine001','bip01spine','bip001spine'],
-  chest: ['mixamorigspine1','spine1','spine02','spine002','chest','chest1','bip01spine1','bip001spine1'],
-  upperChest: ['mixamorigspine2','spine2','spine03','spine003','upperchest','chest2','bip01spine2','bip001spine2'],
-  neck: ['mixamorigneck','neck','neck01','bip01neck','bip001neck'],
-  head: ['mixamorighead','head','head01','bip01head','bip001head'],
+  hips: ['ccbasehip','mixamorighips','hips','pelvis','rootpelvis','bip01pelvis','bip001pelvis','bip01hips'],
+  spine: ['ccbasewaist','mixamorigspine','spine','spine01','spine001','bip01spine','bip001spine'],
+  chest: ['ccbasespine01','mixamorigspine1','spine1','spine02','spine002','chest','chest1','bip01spine1','bip001spine1'],
+  upperChest: ['ccbasespine02','mixamorigspine2','spine2','spine03','spine003','upperchest','chest2','bip01spine2','bip001spine2'],
+  neck: ['ccbasenecktwist01','mixamorigneck','neck','neck01','bip01neck','bip001neck'],
+  head: ['ccbasehead','mixamorighead','head','head01','bip01head','bip001head'],
 
-  leftShoulder: ['mixamorigleftshoulder','leftshoulder','shoulderl','lshoulder','claviclel','leftclavicle','bip01lclavicle','bip001lclavicle'],
-  leftUpperArm: ['mixamorigleftarm','leftarm','leftupperarm','upperarml','lupperarm','arml','bip01lupperarm','bip001lupperarm'],
-  leftForeArm: ['mixamorigleftforearm','leftforearm','leftlowerarm','forearml','lowerarml','lforearm','bip01lforearm','bip001lforearm'],
-  leftHand: ['mixamoriglefthand','lefthand','handl','lhand','bip01lhand','bip001lhand'],
+  leftShoulder: ['ccbaselclavicle','mixamorigleftshoulder','leftshoulder','shoulderl','lshoulder','claviclel','leftclavicle','bip01lclavicle','bip001lclavicle'],
+  leftUpperArm: ['ccbaselupperarm','mixamorigleftarm','leftarm','leftupperarm','upperarml','lupperarm','arml','bip01lupperarm','bip001lupperarm'],
+  leftForeArm: ['ccbaselforearm','mixamorigleftforearm','leftforearm','leftlowerarm','forearml','lowerarml','lforearm','bip01lforearm','bip001lforearm'],
+  leftHand: ['ccbaselhand','mixamoriglefthand','lefthand','handl','lhand','bip01lhand','bip001lhand'],
 
-  rightShoulder: ['mixamorigrightshoulder','rightshoulder','shoulderr','rshoulder','clavicler','rightclavicle','bip01rclavicle','bip001rclavicle'],
-  rightUpperArm: ['mixamorigrightarm','rightarm','rightupperarm','upperarmr','rupperarm','armr','bip01rupperarm','bip001rupperarm'],
-  rightForeArm: ['mixamorigrightforearm','rightforearm','rightlowerarm','forearmr','lowerarmr','rforearm','bip01rforearm','bip001rforearm'],
-  rightHand: ['mixamorigrighthand','righthand','handr','rhand','bip01rhand','bip001rhand'],
+  rightShoulder: ['ccbaserclavicle','mixamorigrightshoulder','rightshoulder','shoulderr','rshoulder','clavicler','rightclavicle','bip01rclavicle','bip001rclavicle'],
+  rightUpperArm: ['ccbaserupperarm','mixamorigrightarm','rightarm','rightupperarm','upperarmr','rupperarm','armr','bip01rupperarm','bip001rupperarm'],
+  rightForeArm: ['ccbaserforearm','mixamorigrightforearm','rightforearm','rightlowerarm','forearmr','lowerarmr','rforearm','bip01rforearm','bip001rforearm'],
+  rightHand: ['ccbaserhand','mixamorigrighthand','righthand','handr','rhand','bip01rhand','bip001rhand'],
 
-  leftUpperLeg: ['mixamorigleftupleg','leftupleg','leftupperleg','thighl','leftthigh','lthigh','bip01lthigh','bip001lthigh'],
-  leftLowerLeg: ['mixamorigleftleg','leftleg','leftlowerleg','calfl','leftcalf','shinl','bip01lcalf','bip001lcalf'],
-  leftFoot: ['mixamorigleftfoot','leftfoot','footl','lfoot','bip01lfoot','bip001lfoot'],
-  leftToe: ['mixamoriglefttoebase','lefttoebase','lefttoe','toel','balll','bip01ltoe0','bip001ltoe0'],
+  leftUpperLeg: ['ccbaselthigh','mixamorigleftupleg','leftupleg','leftupperleg','thighl','leftthigh','lthigh','bip01lthigh','bip001lthigh'],
+  leftLowerLeg: ['ccbaselcalf','mixamorigleftleg','leftleg','leftlowerleg','calfl','leftcalf','shinl','bip01lcalf','bip001lcalf'],
+  leftFoot: ['ccbaselfoot','mixamorigleftfoot','leftfoot','footl','lfoot','bip01lfoot','bip001lfoot'],
+  leftToe: ['ccbaseltoebase','mixamoriglefttoebase','lefttoebase','lefttoe','toel','balll','bip01ltoe0','bip001ltoe0'],
 
-  rightUpperLeg: ['mixamorigrightupleg','rightupleg','rightupperleg','thighr','rightthigh','rthigh','bip01rthigh','bip001rthigh'],
-  rightLowerLeg: ['mixamorigrightleg','rightleg','rightlowerleg','calfr','rightcalf','shinr','bip01rcalf','bip001rcalf'],
-  rightFoot: ['mixamorigrightfoot','rightfoot','footr','rfoot','bip01rfoot','bip001rfoot'],
-  rightToe: ['mixamorigrighttoebase','righttoebase','righttoe','toer','ballr','bip01rtoe0','bip001rtoe0']
+  rightUpperLeg: ['ccbaserthigh','mixamorigrightupleg','rightupleg','rightupperleg','thighr','rightthigh','rthigh','bip01rthigh','bip001rthigh'],
+  rightLowerLeg: ['ccbasercalf','mixamorigrightleg','rightleg','rightlowerleg','calfr','rightcalf','shinr','bip01rcalf','bip001rcalf'],
+  rightFoot: ['ccbaserfoot','mixamorigrightfoot','rightfoot','footr','rfoot','bip01rfoot','bip001rfoot'],
+  rightToe: ['ccbasertoebase','mixamorigrighttoebase','righttoebase','righttoe','toer','ballr','bip01rtoe0','bip001rtoe0']
 });
 
 const ALIAS_TO_ROLE = new Map();
@@ -53,6 +53,8 @@ export function normalizeHumanoidBoneName(value) {
 }
 
 const fingerRole = normalized => {
+  // CC5 uses Mid for the middle finger; leave twist/share helpers unmapped.
+  normalized = normalized.replace(/^ccbase([lr])mid([1-3])$/, '$1middle$2').replace(/^ccbase([lr])(index|ring|pinky|thumb)([1-3])$/, '$1$2$3');
   const match = normalized.match(/(?:mixamorig)?(left|right)hand(index|middle|ring|pinky|little|thumb)([1-4])$/)
     || normalized.match(/(index|middle|ring|pinky|little|thumb)([1-4])([lr])$/)
     || normalized.match(/([lr])(index|middle|ring|pinky|little|thumb)([1-4])$/);

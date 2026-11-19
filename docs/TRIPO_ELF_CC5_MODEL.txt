@@ -1,0 +1,7 @@
+Tripo elf model registration (2026-11-19)
+Model ID: tripo-elf-archer-cc5
+MOB Workshop label: Elf Archer — Tripo / CC5
+Runtime: assets/models/elves/tripo-elf-cc5/elf.glb
+Source and accepted process: assets/source-characters/tripo-elf-archer/README.txt
+Runtime is byte-identical to the approved workshop GLB. Seven embedded CC5 animations; no automatic shared-library retargeting. Shared semantic rig adapter recognizes CC5 core joints and all five finger chains on either hand, excluding twist/share helpers. Existing elf MOB definition and assignments are unchanged. User will select this model and author the MOB update in the Workshop. Loading another model clears incompatible old animation assignments and equipment fits through the existing workflow. Height and equipment fit require user review. Bow Notch and Shoot are separate embedded clips; use the existing bow sequence authoring controls to combine them.
+Validation: test-tripo-cc5-model.mjs, test-mixamo-retarget.mjs and test-mob-workshop.mjs pass. Model retains 10,703 triangles. No mesh reduction.

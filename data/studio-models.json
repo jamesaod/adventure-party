@@ -305,6 +305,14 @@
       "file": "assets/models/giants/hill-giant/hill-giant.glb",
       "upAxis": "Y",
       "mobType": "fighter"
+    },
+    {
+      "id": "tripo-elf-archer-cc5",
+      "label": "Elf Archer — Tripo / CC5",
+      "file": "assets/models/elves/tripo-elf-cc5/elf.glb",
+      "upAxis": "Y",
+      "mobType": "fighter",
+      "initialAnimation": "01 Idle"
     }
   ],
   "weaponAttachmentProfiles": {
@@ -640,6 +648,7 @@
     "orc-female-shaman",
     "orc-female-shaman-v2",
     "male-orc-blue",
-    "hill-giant"
+    "hill-giant",
+    "tripo-elf-archer-cc5"
   ]
 }
