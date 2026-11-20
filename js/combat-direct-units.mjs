@@ -1,3 +1,4 @@
+import {giantDustAge,renderGiantDust} from './combat-giant-dust.mjs';
 import {cacheCorpseWaterline} from './combat-corpse-waterline.mjs?v=1';
 import {lightingProfile,LIGHTING_GLSL,bindLightingProfile} from './combat-lighting-profile.mjs';
 import {installUnitSnowOcclusion,bindUnitSnowOcclusion,unitSnowGroundMatrix} from './combat-unit-snow-occlusion.mjs?v=natural-ac1';
@@ -95,7 +96,10 @@ function draw(gpu,image,options){
   const burn=burnT>=0&&burnT<1?{time:(now-burnState.started)/1000,opacity:Math.min(1,burnT*9,(1-burnT)*3)}:null;
   const weaponFlame=options.equipmentEffects!==false&&hasFlamingSword(options.entity)?{time:now/1000,opacity:opacity*.95,core:.25,scale:Math.max(.5,Math.min(4,height/160))}:null;
   if(weaponFlame)options.requestMotionFrame?.();
-  const result=gpu.unitScene((renderer,view)=>{
+  const dustActive=giantDustAge(options.entity,now)!==null;
+  if(dustActive)options.requestMotionFrame?.();
+  const submit=dustActive?(cb,bounds,burn,weaponFlame)=>gpu.treeScene(cb,{unit:true,bounds,burn,weaponFlame}):gpu.unitScene.bind(gpu);
+  const result=submit((renderer,view)=>{
     // Shared rigs must be sampled when the batch executes, not when queued.
     const {asset,yaw,animating}=sampleDirectPose(frame,options.entity,options.walkSeconds,undefined,width);
     if(animating)options.requestMotionFrame?.();
@@ -152,11 +156,11 @@ function draw(gpu,image,options){
     scene.add(asset.group);try{
       warmBowMaterials(renderer,scene,camera,asset.group);
       const target=renderer.getRenderTarget();if(target){target.userData??={};target.userData.corpseDisplaySpace=!!asset.corpseSnowPrepared;}
-      renderCorpseSnowLayers(renderer,scene,camera,asset.group,asset.corpseSnow?.value||0);
+      if(!renderGiantDust(renderer,scene,camera,asset,options.entity,now,factor,ambient,sun))renderCorpseSnowLayers(renderer,scene,camera,asset.group,asset.corpseSnow?.value||0);
     }finally{scene.remove(asset.group);}
     document.documentElement.dataset.directUnitTriangles=String(asset.triangles);
     return true;
-  },options.entity?.carriedTreeLog?{x:x-width*(anchor.x+1),y:y-height*(anchor.y+1),width:width*3,height:height*3}:{x:x-width*anchor.x,y:y-height*anchor.y,width,height},burn,weaponFlame,settledCorpseImage(frame,{...options,waterSurfaceRevision:[gpu.unitWaterSurface?.revision,gpu.unitWaterSurface?.level,options.stream?.depth],snowSurfaceRevision:gpu.unitSnowSurface?gpu.unitSnowRevision:null}));
+  },(dustActive||options.entity?.carriedTreeLog)?{x:x-width*(anchor.x+1),y:y-height*(anchor.y+1),width:width*3,height:height*3}:{x:x-width*anchor.x,y:y-height*anchor.y,width,height},burn,weaponFlame,settledCorpseImage(frame,{...options,waterSurfaceRevision:[gpu.unitWaterSurface?.revision,gpu.unitWaterSurface?.level,options.stream?.depth],snowSurfaceRevision:gpu.unitSnowSurface?gpu.unitSnowRevision:null}));
   return result===true;
 }
 // Zero means uncapped: sample the elapsed-time pose on every display frame.
@@ -167,6 +171,7 @@ const settledCorpses=new WeakMap();
 export function corpseSnowAmount(entity){const cached=settledCorpses.get(entity);return entity&&!entity.alive&&cached&&Number.isFinite(entity.deathPresentationStartedAt)&&cached.started===entity.deathPresentationStartedAt?cached.asset.corpseSnow?.value||0:0;}
 export function settledCorpseImage(frame,options){
  const e=options.entity,c=settledCorpses.get(e);
+ if(giantDustAge(e,performance.now())!==null)return null;
  if(!e||e.alive||!c||c.source!==frame.asset||c.started!==e.deathPresentationStartedAt)return null;
  const {x,y,width,height,anchor,rotation,solar,ambientPercent,outdoor,localLights,opacity=1,saturation=1,snowGroundLight}=options;
  return {owner:c.asset,key:JSON.stringify([frame.yaw,globalThis.adventurePartyUnitViewYawOffset?.()||0,e.aimYawOffset||0,e.deathRotationDelta||0,e.corpseGroundPlane,

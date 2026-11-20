@@ -5,6 +5,7 @@ import {normalizeQuiverArrows} from './quiver-arrow-settings.mjs?v=R238C312';
 
 // Extend this catalog for other back-mounted props; fits remain model/item/slot specific.
 export const BACK_ITEMS=Object.freeze([
+ {id:'elf-quiver',label:'Elf Quiver — carved leather',file:'assets/models/equipment/elf-quiver/elf-quiver.glb',height:.29,holdsArrows:true},
  {id:'empty-quiver',label:'Quiver',file:'assets/models/weapons/low-poly-medieval/quiver.glb',height:.29,holdsArrows:true}
 ]);
 export function backItem(id){return BACK_ITEMS.find(item=>item.id===id)||null;}
@@ -16,8 +17,9 @@ export function normalizeBackEquipment(value={}){
   ![position,rotation].every(a=>Array.isArray(a)&&a.length===3&&a.every(Number.isFinite)))throw Error('Invalid Back attachment fit.');
  return {item,sizePercent,position:[...position],rotation:[...rotation],arrows:normalizeQuiverArrows(value.arrows)};
 }
-export function createBackAttachment(THREE,rig,model,settings){
- muteBowLeather(model);
+export function createBackAttachment(THREE,rig,model,settings,{metresToWorld=1}={}){
+ if(!Number.isFinite(metresToWorld)||metresToWorld<=0)throw Error("Invalid back equipment physical scale.");
+ if(settings.item!=='elf-quiver')muteBowLeather(model);
  const value=normalizeBackEquipment(settings),item=backItem(value.item);
  if(!item)throw Error('Choose a Back item first.');
  const torso=findHumanoidBone(rig,'upperChest')||findHumanoidBone(rig,'chest')||findHumanoidBone(rig,'spine');
@@ -29,7 +31,7 @@ export function createBackAttachment(THREE,rig,model,settings){
  const back=new THREE.Vector3().crossVectors(right,up).normalize();right.crossVectors(up,back).normalize();
  const anchor=new THREE.Group();anchor.name='BackAttachmentFrame';torso.add(anchor);
  anchor.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,back));
- const inherited=torso.getWorldScale(new THREE.Vector3());anchor.scale.set(1/Math.abs(inherited.x),1/Math.abs(inherited.y),1/Math.abs(inherited.z));
+ const inherited=torso.getWorldScale(new THREE.Vector3());anchor.scale.set(metresToWorld/Math.abs(inherited.x),metresToWorld/Math.abs(inherited.y),metresToWorld/Math.abs(inherited.z));
  const socket=new THREE.Group();socket.name='StudioBackEquipment';socket.userData.studioEquipment=true;anchor.add(socket);
  model.scale.setScalar(item.height);model.position.set(0,-item.height,0);socket.add(model);
  const arrowSocket=item.holdsArrows?new THREE.Group():null;
@@ -59,10 +61,10 @@ export function createStudioBackEquipment({THREE,loadAsset,disposeObject=()=>{}}
   snapshot:()=>({settings:structuredClone(settings),loading,error}),getAttachmentSocket:()=>attachment?.socket||null,getArrowSocket:()=>attachment?.arrowSocket||null,
   dispose(){generation++;clear();rig=null;}};
 }
-export async function loadWorkshopBackAttachment(THREE,model,draft,loadAsset){
+export async function loadWorkshopBackAttachment(THREE,model,draft,loadAsset,options){
  const id=draft.equipment.back??'auto';normalizeBackEquipment({item:id});
  const item=backItem(id);if(!item)return null;
  const asset=await loadAsset(item);
  const settings=normalizeBackEquipment({...savedFit(draft,'back',id),item:id});
- return createBackAttachment(THREE,model,asset,settings);
+ return createBackAttachment(THREE,model,asset,settings,options);
 }

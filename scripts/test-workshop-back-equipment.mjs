@@ -27,6 +27,24 @@ for(const units of [1,100]){
  assert(attachment.socket.getWorldPosition(new THREE.Vector3()).distanceTo(old)>.01);assert(attachment.anchor.position.equals(relative),'Animation cannot rewrite the saved fit');
  attachment.detach();assert.equal(attachment.anchor.parent,null);
 }
+// Workshop metre fits must survive combat's independent scene calibration.
+for(const factor of [.4,2,64/3.048])for(const units of [1,100]){
+ const workshop=rig(units),combat=rig(units),holder=new THREE.Group();holder.scale.setScalar(factor);holder.add(combat.root);holder.updateMatrixWorld(true);
+ const authored={...settings,item:'elf-quiver'};
+ const a=createBackAttachment(THREE,workshop.root,prop(),authored);
+ const b=createBackAttachment(THREE,combat.root,prop(),authored,{metresToWorld:factor});
+ for(const angle of [0,.5,-.8]){
+  workshop.chest.rotation.y=combat.chest.rotation.y=angle;workshop.root.updateMatrixWorld(true);holder.updateMatrixWorld(true);
+  for(const key of ['socket','model','arrowSocket']){
+   const wp=a[key].getWorldPosition(new THREE.Vector3()),cp=b[key].getWorldPosition(new THREE.Vector3()).divideScalar(factor);
+   assert(wp.distanceTo(cp)<1e-6,key+' position matches Workshop after combat calibration');
+   const ws=a[key].getWorldScale(new THREE.Vector3()),cs=b[key].getWorldScale(new THREE.Vector3()).divideScalar(factor);
+   assert(ws.distanceTo(cs)<1e-6,key+' size matches Workshop after combat calibration');
+  }
+ }
+ a.detach();b.detach();
+}
+assert.throws(()=>createBackAttachment(THREE,rig().root,prop(),settings,{metresToWorld:0}),/physical scale/);
 let loads=0,disposed=0;const r=rig();
 const manager=createStudioBackEquipment({THREE,loadAsset:async()=>{loads++;return prop();},disposeObject:()=>disposed++});
 await manager.setModel(r.root,settings);const socket=manager.getAttachmentSocket();await manager.select({...settings,position:[.25,.1,.15]});assert.equal(loads,1,'Numeric/gizmo edits reuse the loaded asset');assert.equal(manager.getAttachmentSocket(),socket);

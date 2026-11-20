@@ -112,8 +112,8 @@ function firFireLightSources(){
   });
 }
 
-function treeDebrisCapsulesForMover(state,unit=null){const settled=oakDebrisSettled(state),capsules=(settled?state.obstacleCapsules:state.reservationCapsules)||[];return settled&&unit?.treeHauler?capsules.filter(c=>!c.piece.includes('detached_limb')):capsules;}
-function isFirBlockedHex(x,y,unit=null){return !!game?.firBlockedHexes?.has(key(x,y))||treeFallEntries().some(({state})=>unit?.treeHauler?oakCapsuleHitsCell(treeDebrisCapsulesForMover(state,unit),{x,y}):(oakDebrisSettled(state)?state.blockedHexes:state.reservedHexes)?.has(key(x,y)));}
+function treeDebrisCapsulesForMover(state,unit=null){const settled=oakDebrisSettled(state),capsules=(settled?state.obstacleCapsules:state.reservationCapsules)||[];return settled?capsules.filter(c=>c.piece==='continuous-oak-trunk'&&!state.logTaken):capsules;}
+function isFirBlockedHex(x,y,unit=null){return (typeof combatBoulderBlocks==='function'&&combatBoulderBlocks(x,y))||!!game?.firBlockedHexes?.has(key(x,y))||treeFallEntries().some(({state})=>oakCapsuleHitsCell(treeDebrisCapsulesForMover(state,unit),{x,y}));}
 
 function wallOpeningCenterT(wall,opening){
   if(!wall || !opening) return 0.5;

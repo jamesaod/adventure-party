@@ -132,7 +132,7 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
     model.traverse(mesh=>{if(!mesh.isMesh)return;mesh.geometry.computeBoundingBox();const box=mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);healthy.union(box);if(mesh.material.alphaTest<=0)bare.union(box);});
     return {healthy,bare};
   });
-  const familyFalls=new Map();for(const family of loadedFamilies){familyFalls.set(family.base,await createOakFall(broadleafNamedAssets(family,models),family));}
+  const familyFalls=new Map();for(const family of loadedFamilies){familyFalls.set(family.base,await createOakFall(broadleafNamedAssets(family,models),family,renderer));}
   const snowCaps=models.map(createFirSnowCaps);
   const familyLeaves=new Map();for(const family of loadedFamilies)familyLeaves.set(family.base,await createFallingLeaves(models[family.base+1],family));
   // Install after splitting wood and creating snow shells. Shared material uniforms
@@ -183,13 +183,13 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
     const width=Math.min(1536,Math.max(16,Math.ceil((bounds.max.x-bounds.min.x)*512/210))),height=Math.min(1536,Math.max(16,Math.ceil((bounds.max.y-bounds.min.y)*512/210)));
     const target=cached?.target||new THREE.WebGLRenderTarget(width,height,{depthBuffer:false,stencilBuffer:false}),originals=[];
     target.setSize(width,height);
-    model.traverse(mesh=>{if(mesh.isMesh){originals.push([mesh,mesh.material,mesh.castShadow]);mesh.material=shadowMaterial;mesh.castShadow=false;}});
+    model.traverse(mesh=>{if(mesh.isMesh){originals.push([mesh,mesh.material,mesh.castShadow,mesh.visible]);if(mesh.userData.debrisPatch)mesh.visible=false;mesh.material=shadowMaterial;mesh.castShadow=false;}});
     try{host.treeScene(gpu=>{
       gpu.shadowMap.enabled=false;
       shadowTarget.setSize(width,height);shadowDirection.value.copy(light);gpu.setRenderTarget(shadowTarget);gpu.setClearColor(0,0);gpu.clear();gpu.render(scene,camera);
       blurMaterial.uniforms.source.value=shadowTarget.texture;blurMaterial.uniforms.step.value.set(2/width,2/height);
       gpu.setRenderTarget(target);gpu.clear();gpu.render(blurScene,blurCamera);
-    });}finally{for(const [mesh,material,castShadow]of originals){mesh.material=material;mesh.castShadow=castShadow;}}
+    });}finally{for(const [mesh,material,castShadow,visible]of originals){mesh.material=material;mesh.castShadow=castShadow;mesh.visible=visible;}}
     const result={poseStamp,target,texture:target.texture,left:bounds.min.x,top:-bounds.max.y,width:bounds.max.x-bounds.min.x,height:bounds.max.y-bounds.min.y,opacity:.32*solar.daylight};directGroundCache.set(key,result);return result;
   }
   const cache=new Map();let fallWarmups=new WeakMap();let stateKey='',lost=false;
@@ -290,7 +290,7 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
       const height=Math.min(1536,Math.max(16,Math.ceil((bounds.max.y-bounds.min.y)*512/210)));
       renderer.setSize(width,height,false);shadowDirection.value.copy(light);
       const originals=[];
-      model.traverse(mesh=>{if(mesh.isMesh){originals.push([mesh,mesh.material,mesh.castShadow]);mesh.material=shadowMaterial;mesh.castShadow=false;}});
+      model.traverse(mesh=>{if(mesh.isMesh){originals.push([mesh,mesh.material,mesh.castShadow,mesh.visible]);if(mesh.userData.debrisPatch)mesh.visible=false;mesh.material=shadowMaterial;mesh.castShadow=false;}});
       shadowTarget.setSize(width,height);
       renderer.setRenderTarget(shadowTarget);renderer.clear();renderer.render(scene,camera);
       blurMaterial.uniforms.source.value=shadowTarget.texture;blurMaterial.uniforms.step.value.set(2/width,2/height);
@@ -299,7 +299,7 @@ export async function createCombatFirTrees({familyIds,includeFirs=true}={}){
       const context=image.getContext('2d');context.drawImage(renderer.domElement,0,0);
       shadow={image,left:bounds.min.x,top:-bounds.max.y,width:bounds.max.x-bounds.min.x,height:bounds.max.y-bounds.min.y,opacity:.32*solar.daylight};
       shadowCache.set(shadowKey,shadow);
-      for(const [mesh,material,castShadow]of originals){mesh.material=material;mesh.castShadow=castShadow;}
+      for(const [mesh,material,castShadow,visible]of originals){mesh.material=material;mesh.castShadow=castShadow;mesh.visible=visible;}
     }
     scene.remove(model);
     const result={body,shadow,lightKey};cache.set(key,result);return result;

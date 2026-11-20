@@ -1,0 +1,4 @@
+# Financial records remain local; do not force-add them.
+*
+!.gitignore
+!README.txt

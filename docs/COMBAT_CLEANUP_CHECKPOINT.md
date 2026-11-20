@@ -609,3 +609,13 @@ R238C445 validation: 131/131 combat regressions passed, including threshold, non
 
 
 Local 2026-11-15: environmental architecture pass and rejected branch-cap rollback. See COMBAT_ARCHITECTURE.md, Environmental ownership audit. Preserve collision metadata/loader ownership and active wind-service activation. Keep local; user visual QA pending.
+
+### Giant death integration — 19 November 2026
+Hill Giant retains only Two Handed Sword Death (2.4s). Combat uses back-profile skeletal settling and fixed clockwise 30-degree death yaw. Heavy Body Fall uses the existing SFX bus at 1.538667s (old lab 78% marker minus 1/3s), guarded by encounter, death clock and audio generation. Lab sound moves earlier independently of dust and defaults to assigned death. Dead Hill Giants block their anchor hex through shared occupancy; other corpses remain passable, removal/reset clears naturally. Existing movement cache includes alive/position state. No new chain-push or crushing-damage mechanics added. User visual QA pending.
+
+## 2026-11-19 — Giant death dust and weapon-fire corpse appearance (local)
+- Combat giant deaths reuse the lab's brown, depth-clipped volumetric dust shader (16 bounded puffs, three-second lifetime). Starts at 78% of the assigned 2.4-second Two Handed Sword Death, matching the lab body impact; the previously advanced sound remains unchanged.
+- The direct unit renderer samples the posed body footprint once per death, converts it to metres, and scales the effect through the same combat calibration. A padded isolated pass prevents crop clipping. Active dust bypasses retained corpse images and requests the existing motion scheduler; normal corpse caching resumes afterward. Shared renderer resources are bounded; per-entity footprint records are weakly held.
+- The shared dust depth target now uses the current cropped render-target dimensions and explicitly clears depth, supporting combat's autoClear=false renderer while retaining the standalone lab behavior.
+- Melee fire riders retain hit flames and damage but clear fireDeath, so sword-fire kills retain their original corpse colors. Spell-fire deaths retain existing behavior.
+- Validation: 199/199 existing combat regressions passed; new test-combat-giant-dust.mjs passed timing/eligibility, cropped depth target, 16-volume bound and expiry checks. User visual QA pending; local only, no publication.

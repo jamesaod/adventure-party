@@ -42,10 +42,10 @@ console.log('PASS harvested club retains physical length, palm-centered grip and
 const debrisContext={oakDebrisSettled:s=>s.settled};vm.createContext(debrisContext);
 vm.runInContext(extractCombatFunction(read('js/combat-environment-state.js'),'treeDebrisCapsulesForMover'),debrisContext);
 const debris={settled:true,obstacleCapsules:[{piece:'Maple_detached_limb_1'},{piece:'continuous-oak-trunk'},{piece:'matching-oak-stump'}],reservationCapsules:[{piece:'fall-sweep'}]};
-assert.equal(debrisContext.treeDebrisCapsulesForMover(debris,{}).length,3);
-assert.deepEqual(Array.from(debrisContext.treeDebrisCapsulesForMover(debris,{treeHauler:{}}),p=>p.piece),['continuous-oak-trunk','matching-oak-stump']);
-debris.settled=false;assert.equal(debrisContext.treeDebrisCapsulesForMover(debris,{treeHauler:{}})[0].piece,'fall-sweep');
-console.log('PASS Treebreakers step over settled limbs while preserving trunks, stumps, falling-tree safety and ordinary-unit collision');
+assert.equal(debrisContext.treeDebrisCapsulesForMover(debris,{}).length,1);
+assert.deepEqual(Array.from(debrisContext.treeDebrisCapsulesForMover(debris,{treeHauler:{}}),p=>p.piece),['continuous-oak-trunk']);
+debris.logTaken=true;assert.equal(debrisContext.treeDebrisCapsulesForMover(debris,{}).length,0);debris.logTaken=false;debris.settled=false;assert.equal(debrisContext.treeDebrisCapsulesForMover(debris,{treeHauler:{}})[0].piece,'fall-sweep');
+console.log('PASS All units step over settled branches; only uncollected trunks block; falling-tree safety remains');
 
 const {harvestedTreeClubScale,TREE_CLUB_LENGTH_METRES,TREE_CLUB_SCALE}=await import('../js/tree-trunk-club.mjs');
 const sourceLength=TREE_CLUB_LENGTH_METRES/TREE_CLUB_SCALE;

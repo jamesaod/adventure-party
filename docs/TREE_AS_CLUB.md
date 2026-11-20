@@ -54,3 +54,8 @@ The flat converter caps exported gray (0.8 RGB) despite the Blender viewport tin
 Lethal Hill Giant tree-club hits tag the victim with the attacking unit and attack-pose timestamp. The surface actor sorter draws that victim before the attacking giant for the remainder of that pose, while retaining wall constraints. The dependency expires when the pose ends or changes. Small/Medium immediate prone timing remains at the 2.4-second thump; larger victims retain their death animation.
 
 Corpse water fringing now intersects the cached settled mesh with the water surface, then rasterizes the segments into a shared 1024-square world-space distance mask (128 metres). The existing foam shader samples this mask. Geometry intersections and mask uploads are cached; dry and submerged bodies produce no contour. Visibility/body/level/view changes can invalidate the cached contour. This is a finite-resolution visual effect, not fluid simulation. Geometry, cache, Chrome shader/raster checks passed; user visual approval remains pending.
+
+## 19 November 2026 — Tree pickup sound
+The successful PickUp_Kneeling contact callback plays Sophia_C's Wood Drag 1 once, after the logTaken guard. Uses the shared preloaded selected-audio/SFX bus and its mute, session and voice limits, at gain 0.65. No looping or playback while merely approaching/pushing. Public HQ MP3 is preserved unedited; CC BY 4.0 credit is in ATTRIBUTIONS.md and wood-drag-source.json. Local only; listening/synchronization approval remains with user.
+
+19 November follow-up: Wood Drag 1 pickup playback was removed at the user's request. The file and credit remain archived, but it is no longer preloaded or triggered.

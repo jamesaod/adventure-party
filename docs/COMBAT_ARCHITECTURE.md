@@ -274,3 +274,5 @@ Wizard scenario tuning (2026-11-17): 16 deterministic rule/turn scenarios plus b
 - Giant corpse landing is a standalone experiment in `corpse-landing-test.html`, with no combat hooks. See `docs/CORPSE_LANDING.md`.
 
 - Giant in-place corpse policy lives in combat-environment-state.js / triggerDeathFx; articulated end-of-clip settling lives in giant-corpse-settle.mjs via Workshop grounding. Existing corpse caching and terrain slope owners remain authoritative. Older-body layering uses orderSurfaceActors; no corpse is displaced.
+
+19 November 2026: Hill Giant boulder combat is owned by combat-boulders.js and combat-boulder-rules.mjs; presentation uses combat-boulder-render.mjs and the existing tree-hauler animation adapter. See COMBAT_BOULDERS.md for house rules, test results and test-map placement scope.

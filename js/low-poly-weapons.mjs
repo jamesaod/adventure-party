@@ -45,6 +45,7 @@ export function installLowPolyWeapons(catalog){
  }
  catalog['arrow']={id:'arrow',name:'Arrow',category:'item',slot:'inventory',rules:{catalogWeaponId:'arrows',damageSM:'1d6',damageL:'1d6'},appearance:null,modelAsset:assets.arrow_1.asset};
  catalog['empty-quiver']={id:'empty-quiver',name:'Empty Quiver',category:'item',slot:'inventory',rules:{},appearance:null,modelAsset:assets.quiver.asset};
+ catalog['elf-quiver']={id:'elf-quiver',name:'Elf Quiver — carved leather',category:'item',slot:'inventory',rules:{},appearance:null,modelAsset:'assets/models/equipment/elf-quiver/elf-quiver.glb'};
  return catalog;
 }
 export function catalogWeaponPreset(item){

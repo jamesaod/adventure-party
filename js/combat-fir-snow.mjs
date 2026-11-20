@@ -32,7 +32,7 @@ export function branchSnowGeometry(source,{minimumHeight=-Infinity,transform=nul
 
 export function createFirSnowCaps(model){
  const started=performance.now(),foliage=[];
- model.traverse(o=>{if(o.isMesh&&o.material.alphaTest>0)foliage.push(o);});
+ model.traverse(o=>{if(o.isMesh&&!o.userData.debrisPatch&&o.material.alphaTest>0)foliage.push(o);});
  const mesh=new THREE.Group();mesh.name='fir-branch-surface-snow';mesh.visible=false;model.add(mesh);
  const records=[],opacityLimit={value:0},groundLight={value:new THREE.Vector3(1,1,1)},snowTint={value:new THREE.Vector3(.754,.775,.796)};let triangles=0,previous=-1;
  model.updateMatrixWorld(true);const inverse=model.matrixWorld.clone().invert();

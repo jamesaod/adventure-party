@@ -148,3 +148,6 @@ Quaternius Modular Character Outfits — Fantasy (free Standard), Universal Base
 
 ## Synty Starter Workshop
 Local-only experiment using user-supplied Synty SIDEKICK Starter v1.0.4. Proprietary Synty license; not CC0. Do not publicly redistribute source assets. See docs/SYNTY_WORKSHOP.md. Preview animations: Quaternius Universal Animation Library, CC0.
+
+### Giant tree pickup — Wood Drag 1
+“Wood Drag 1.wav” by **Sophia O. Caldwell (Sophia_C)**, [Freesound](https://freesound.org/people/Sophia_C/sounds/525178/), [author website](https://industrialgradenerd.com). Licensed under [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/). Uses the unedited public high-quality MP3 preview, with playback volume adjusted. Runtime file: assets/audio/sfx/hill-giant/wood-drag-1.mp3.

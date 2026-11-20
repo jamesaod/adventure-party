@@ -1433,6 +1433,7 @@ function triggerDeathFx(entity){
     if(typeof isGiantCorpse==='function'&&isGiantCorpse(entity)){
       entity.corpseDropInPlace=true;
       entity.deathRotationDelta=(Math.random()<.5?-1:1)*Math.PI/6;
+      if(entity.repositoryMobId==='hill-giant'||entity.type==='mob:hill-giant'){entity.deathRotationDelta=-Math.PI/6;scheduleGiantDeathImpact(entity);}
     }
     if(!entity.fireDeath)startArrowBlood(entity,entity,1,{death:true});
   }
@@ -13600,9 +13601,9 @@ function enemyAtHex(x,y,excludeId=null){
 function occupiedByAnyUnit(x,y,excludeId=null){
   return allUnits().some(unit=>
     unit?.id!==excludeId &&
-    unit?.alive &&
-    !unit.fled &&
-    unitOccupiesHex(unit,x,y)
+    !unit?.fled &&
+    (unit?.alive ? unitOccupiesHex(unit,x,y) :
+      !!unit&&(unit.repositoryMobId==='hill-giant'||unit.type==='mob:hill-giant')&&unit.x===x&&unit.y===y)
   );
 }
 

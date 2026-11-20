@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import * as T from '../assets/vendor/three/three.module.min.js';
+import {giantDustAge} from '../js/combat-giant-dust.mjs';
+import {createGiantImpactDust} from '../js/giant-impact-dust.mjs';
+const e={repositoryMobId:'hill-giant',alive:false,deathPresentationStartedAt:1000};
+assert.equal(giantDustAge(e,2871),null);assert.equal(giantDustAge(e,3000),.1280000000000001);assert.equal(giantDustAge(e,5872),null);
+assert.equal(giantDustAge({...e,alive:true},3000),null);assert.equal(giantDustAge({...e,repositoryMobId:'orc'},3000),null);assert.equal(giantDustAge({...e,fled:true},3000),null);
+const destination={width:192,height:128};let target=destination,clears=0,renders=0;
+const renderer={getRenderTarget:()=>target,setRenderTarget:t=>target=t,clear:()=>clears++,render:()=>renders++};
+const scene=new T.Scene(),camera=new T.PerspectiveCamera();camera.updateMatrixWorld();
+const dust=createGiantImpactDust(renderer,scene);dust.emit([{x:0,z:0,nx:1,nz:0}],new T.Vector3(),0);dust.update(.5);dust.render(camera,{intensity:1},{intensity:1},{intensity:0,position:new T.Vector3()});
+assert.equal(target,destination);assert.equal(clears,1);assert.equal(renders,2);assert.equal(dust.count,16);assert.deepEqual(dust.group.children[0].material.uniforms.screenSize.value.toArray(),[192,128]);
+dust.update(3);assert.equal(dust.count,0);dust.dispose();assert.equal(scene.children.length,0);
+console.log('PASS giant dust timing, eligibility, cropped depth target, bounded volumes and expiry');

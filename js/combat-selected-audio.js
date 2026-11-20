@@ -1,5 +1,7 @@
 // Selected recordings share the existing context, SFX gain and mute lifecycle.
 const selectedCombatAudioPools={
+
+  "death-hill-giant": ["assets/audio/sfx/hill-giant/heavy-body-fall.mp3"],
   "impact-hill-giant": ["assets/audio/sfx/hill-giant/earth1-club.wav"],
   "step-hill-giant": [1,2,3,4,5].map(n=>"assets/audio/sfx/hill-giant/step-"+n+".wav"),
   "step-grass": ["assets/audio/sfx/terrain-steps/approved/grass-trexlasso-01.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-02.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-03.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-04.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-05.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-06.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-07.wav","assets/audio/sfx/terrain-steps/approved/grass-trexlasso-08.wav"],
@@ -58,3 +60,10 @@ globalThis.adventurePartyTerrainStep=(kind,entity)=>{
 globalThis.adventurePartyPreloadSelectedAudio=preloadSelectedCombatAudio;
 globalThis.adventurePartyStopSelectedAudio=stopSelectedCombatAudio;
 globalThis.adventurePartySelectedAudioDiagnostics=()=>({loaded:[...selectedCombatAudioClips.values()].filter(c=>c.buffer).length,total:selectedCombatAudioClips.size,active:selectedCombatAudioVoices.size,last:Object.fromEntries(selectedCombatAudioLast)});
+
+// Same 2.4-second Two Handed Sword Death used by the fall lab.
+function scheduleGiantDeathImpact(entity){
+ const session=game,started=entity.deathPresentationStartedAt,generation=selectedCombatAudioGeneration;
+ const delay=Math.max(0,started+(2.4*.78-1/3)*1000-performance.now());
+ setTimeout(()=>{if(game===session&&currentScreen==='combat'&&!entity.alive&&!entity.fled&&entity.deathPresentationStartedAt===started&&generation===selectedCombatAudioGeneration)playSelectedCombatAudio('death-hill-giant',1);},delay);
+}

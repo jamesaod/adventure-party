@@ -35,7 +35,7 @@ export async function loadWorkshopCombatUnit(recipe,{onProgress}={}){
  const equipment=await mountCombatEquipment(model,local);
  const hand=createHandPose(THREE);hand.bind(model);
  const backId=draft.equipment.back??'auto';
- const backAttachment=await loadWorkshopBackAttachment(THREE,model,draft,item=>loadCombatModel(new URL('../'+item.file,import.meta.url)).then(g=>g.scene));
+ const backAttachment=await loadWorkshopBackAttachment(THREE,model,draft,item=>loadCombatModel(new URL('../'+item.file,import.meta.url)).then(g=>g.scene),{metresToWorld:treeMetresToModel});
  const bowAssignment=recipe.equipment?.poseProfileId==='bow'?draft.assignments.bow?.[0]:null;
  const pickupTime=bowPickupTime(bowAssignment),bundleSettings=normalizeQuiverArrows(savedFit(draft,'back')?.arrows);
  if(pickupTime!=null&&equipment.attachment?.calibrateArrowPickup&&(backId==='auto'||backAttachment?.arrowSocket)){
@@ -66,7 +66,7 @@ export async function loadWorkshopCombatUnit(recipe,{onProgress}={}){
     treeHauler?.restore();hand.restore();mixer.stopAllAction();grounding.reset();
     if(selected.assignment){const action=actions.get(selected.assignment.clipId);action.reset();action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();mixer.setTime(selected.time);}
     if(selected.slot==='move'||selected.slot==='armed-move'||selected.slot==='tree-action')grounding.apply();
-    if(selected.slot==='death')grounding.applyCorpse(giantSettleProgress(entity,now));
+    if(selected.slot==='death')grounding.applyCorpse(giantSettleProgress(entity,now),(entity?.repositoryMobId==='hill-giant'||entity?.type==='mob:hill-giant')?'back':null);
     if(selected.slot!=='tree-action')hand.apply(draft.equipment.primaryHandPose);group.updateMatrixWorld(true);
     treeHauler?.constrain(entity,selected.slot);
     equipment.attachment?.setBowState(bowArrowStateAt(selected.assignment,selected.time,entity?.missileAmmoQuantity),arrowScale);

@@ -23,6 +23,7 @@ function treeHaulerPickupGoal(unit,state){
  return proxy=>{const p=oakWorldPoint(proxy);return Math.hypot(p.x-center.x,p.y-center.y)<=log.radius+HEX_W*.95*Math.max(1,Math.min(2,(unit.heightInches||72)/72));};
 }
 async function treeHaulerTurn(unit){
+ if(typeof giantBoulderTurn==='function'&&await giantBoulderTurn(unit))return true;
  if(!unit.treeHauler||unit.treeHauler.stage==='armed')return false;
  const session=game,ai=unit.treeHauler;unit.fleeing=false;
  try{
@@ -62,6 +63,7 @@ async function treeHaulerTurn(unit){
   const club=treeClubForIndividual(ai.tree);
   await playTreeHaulerAction(unit,'PickUp_Kneeling',session,()=>{
    if(state.logTaken)return;
+
    unit.carriedTreeLog={clubId:club.id,sourceTree:ai.tree,lengthMetres:club.tree.lengthMetres};
    state.logTaken=true;state.obstacleCapsules=state.obstacleCapsules.filter(c=>c.piece!=='continuous-oak-trunk');state.blockedHexes=oakBlockedCells(state.obstacleCapsules);state.reservationCapsules=state.obstacleCapsules;state.reservedHexes=state.blockedHexes;
    for(const item of unit.inventory||[])if(['weapon','backup-weapon','shield'].includes(item.slot))item.equipped=false;

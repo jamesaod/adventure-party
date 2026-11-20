@@ -1,0 +1,72 @@
+[
+  {
+    "id": "mossy-boulder-1",
+    "file": "assets/models/terrain/boulders/mossy-boulder-1.glb",
+    "triangles": 3128,
+    "dimensionsMetres": [
+      0.9999999685068572,
+      0.3809754931700191,
+      0.979344529439538
+    ],
+    "source": "Meshy_AI_Mossy_Rock_LowPoly_20261119_texture_remesh_tri.fbx",
+    "textureSize": 1024,
+    "bytes": 4375512,
+    "sha256": "4d890dee19da76a660a19806c11f5ebf6061251fa9244e0bd75440bebafb9316"
+  },
+  {
+    "id": "mossy-boulder-2",
+    "file": "assets/models/terrain/boulders/mossy-boulder-2.glb",
+    "triangles": 3129,
+    "dimensionsMetres": [
+      0.9535709529786058,
+      0.8832877560238479,
+      1.0
+    ],
+    "source": "Meshy_AI_Mossy_Boulder_LowPoly_20261119_texture_remesh_tri.fbx",
+    "textureSize": 1024,
+    "bytes": 4517528,
+    "sha256": "0b2bf18bfb43ebc334018ada01a8d5ac1766806e0b08b63dd961d8ec82f75f30"
+  },
+  {
+    "id": "mossy-boulder-3",
+    "file": "assets/models/terrain/boulders/mossy-boulder-3.glb",
+    "triangles": 2990,
+    "dimensionsMetres": [
+      0.9636929232852022,
+      0.5713235954554395,
+      1.0
+    ],
+    "source": "Meshy_AI_Mossy_Boulder_3_LowPoly_20261119_texture_remesh_tri.fbx",
+    "textureSize": 1024,
+    "bytes": 4562292,
+    "sha256": "a31bef0609f4194cff9ddef70d9970d13ba26807f5098f8d91760832f84b4878"
+  },
+  {
+    "id": "mossy-boulder-4",
+    "file": "assets/models/terrain/boulders/mossy-boulder-4.glb",
+    "triangles": 3132,
+    "dimensionsMetres": [
+      1.0,
+      0.391149122308397,
+      0.9990928766978937
+    ],
+    "source": "Meshy_AI_Mossy_Rock_4_LowPoly_20261119_texture_remesh_tri.fbx",
+    "textureSize": 1024,
+    "bytes": 4431832,
+    "sha256": "14abd868211136c8487334e8dcabc6879d611ec7cbd0d3c6753bf0f5e847a0c5"
+  },
+  {
+    "id": "mossy-boulder-5",
+    "file": "assets/models/terrain/boulders/mossy-boulder-5.glb",
+    "triangles": 3129,
+    "dimensionsMetres": [
+      1.0,
+      0.415502805684802,
+      0.670025759028119
+    ],
+    "source": "Meshy_AI_Mossy_Rock_5_LowPoly_20261119_texture_remesh_tri.fbx",
+    "textureSize": 1024,
+    "bytes": 4420060,
+    "sha256": "5921445e5e5049d240901ef88d81a13c470688e17db385201b6bd05e2a9d73ae"
+  }
+]

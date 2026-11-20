@@ -324,7 +324,7 @@ async function resolveMeleeHit(attacker,defender,options={}){
   }
 
   if(secondaryDamage>0){
-    const aliveBeforeSecondary=defender.hp>0;
+
     defender.hp=Math.max(0,defender.hp-secondaryDamage);
 
     if(typeof candidateWithDamageBeatContext==="function"){
@@ -350,7 +350,8 @@ async function resolveMeleeHit(attacker,defender,options={}){
         "fire",
         secondaryDamage
       );
-      if(!aliveBeforeSecondary)defender.fireDeath=false;
+      // Weapon fire keeps the hit flames but does not char the corpse.
+      defender.fireDeath=false;
     }
   }
 

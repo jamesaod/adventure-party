@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';
+import {liftBoulder,throwBoulder,advanceBoulder,boulderBlocks,exposedDepth} from '../js/boulder-state.mjs';
+import {basinWaterDepth,BASIN_MAX_METRES} from '../js/combat-wet-basins.mjs';
+const holes=[],r={id:'one',state:'ground',buried:.15,x:0,z:0,width:2,depth:2,height:1};assert(boulderBlocks(r,0,0));assert(liftBoulder(r,holes));assert(!liftBoulder(r,holes));assert.equal(holes.length,1);assert(!boulderBlocks(r,0,0));assert.equal(exposedDepth(holes,0,0),.15);assert.equal(exposedDepth(holes,3,0),0);assert.equal(basinWaterDepth(.15,0),0);assert.equal(basinWaterDepth(.15,BASIN_MAX_METRES),.15);
+assert(throwBoulder(r,{x:0,y:3,z:0},{x:5,y:.5,z:0},1.5));advanceBoulder(r,.75);assert(r.y>3);advanceBoulder(r,5);assert.equal(r.state,'ground');assert.equal(r.x,5);assert(boulderBlocks(r,5,0));assert(!boulderBlocks(r,0,0));assert(liftBoulder(r,holes));assert.equal(holes.length,1,'Re-pickup does not duplicate the original hole');assert.equal(r.id,'one');console.log('PASS stable boulder identity, lift/flight/landing, obstacle policy and shared-water depression');

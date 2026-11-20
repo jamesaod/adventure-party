@@ -1,0 +1,11 @@
+Elf recolor / quiver experiment — 2026-11-19
+
+Open elf-color-test.html for independent color cycling, arbitrary colors, original reset, individual mask highlights and all seven embedded CC5 animations. Candidate grayscale masks: tunic-mask.png, trim-mask.png, hair-mask.png. Packed RGB is R=tunic G=trim B=hair. Original character GLB is untouched. Masks use color classification constrained by posed runtime mesh UV/height, and need user visual QA at seams and skin boundaries.
+
+New catalog item elf-quiver uses existing back attachment and arrow-bundle systems. Old empty-quiver remains available. Source ZIP preserved under assets/source-equipment/elf-quiver. Converted FBX with 1,307 triangles, no decimation, normalized +Y with bottom at zero, original proportions, PBR maps resized to 1024. The existing back attachment scales to .29 metres and allows per-model fitting. Original colors retained (no legacy brown override).
+
+Test-page colors are temporary; they are not persisted to combat yet. Physical fit and mask quality require user review. Local integration only.
+
+Fitting fix: main/off-hand/shield selection now switches Edit attachment to the selected slot before reloading equipment. Previously arrow-bundle fitting remained selected after changing weapons. Regression: scripts/test-workshop-fit-selection.mjs.
+
+Combat fit parity fix: back attachments accept metresToWorld (default 1 in Workshop). Combat supplies the calibrated body world height divided by authored physical height, measured before equipment mounts. The entire anchor, including quiver offset, size, and arrow socket, receives this conversion. Saved fits remain unchanged. Regression compares quiver/arrow positions and scales across metre/centimetre rigs, three combat scales and animated torso rotations.

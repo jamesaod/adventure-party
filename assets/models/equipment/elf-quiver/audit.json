@@ -1,0 +1,16 @@
+{
+  "quiverTriangles": 1307,
+  "maskSize": [
+    1024,
+    1024
+  ],
+  "maskPixels": {
+    "tunic": 74795,
+    "trim": 135611,
+    "hair": 48665
+  },
+  "elfHeightBounds": [
+    9.769937290677556e-08,
+    0.9995120407281747
+  ]
+}

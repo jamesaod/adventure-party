@@ -28,7 +28,7 @@ function queueForestMist(actors,tiles){
  * Extracted without changing rule or presentation bodies. */
 
 let groundCoverAnimation=null;
-function hasEnvironmentAnimation(){return forestMistActive()||combatGpu?.puddleEffectsActive?.()||(!!game?.testTrees?.length&&globalThis.adventurePartyTreeMotion?.active())||treeFallEntries().some(({state})=>!oakDebrisSettled(state))||combatGpu?.groundCover?.active||(globalThis.adventurePartySeasons?.getSeason()==='fall'&&game?.testTrees?.length&&combatFirTrees?.fallingLeafCount>0);}
+function hasEnvironmentAnimation(){return (game?.boulders||[]).some(r=>r.impactAt&&performance.now()-r.impactAt<3000)||forestMistActive()||combatGpu?.puddleEffectsActive?.()||(!!game?.testTrees?.length&&globalThis.adventurePartyTreeMotion?.active())||treeFallEntries().some(({state})=>!oakDebrisSettled(state))||combatGpu?.groundCover?.active||(globalThis.adventurePartySeasons?.getSeason()==='fall'&&game?.testTrees?.length&&combatFirTrees?.fallingLeafCount>0);}
 function ensureGroundCoverAnimation(){
  if(groundCoverAnimation!==null||!hasEnvironmentAnimation()||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  groundCoverAnimation=requestCombatAnimationTick(()=>{groundCoverAnimation=null;if(currentScreen==='combat'&&game&&!game.over&&hasEnvironmentAnimation()){draw();ensureGroundCoverAnimation();}});
@@ -45,6 +45,7 @@ function draw(){
   profile?.begin();let finishSection=profile?.start('frameSetup')||(()=>{});
   game.treeMotionTime=performance.now()/1000;
   updateTreeEnvironment(performance.now());
+  if(typeof updateCombatBoulderCarriers==='function')updateCombatBoulderCarriers();
   updateComputerCameraFollow();
 
   ensureFogAnimationLoop();
@@ -91,6 +92,7 @@ function draw(){
   drawSpellAreaEffects();
 
   const actors=[];
+ if(typeof queueCombatBoulders==='function')queueCombatBoulders(actors);
   queueForestMist(actors,tiles);
   // Keep lethal targets visible while their queued death beat is pending;
   // only that beat changes their standing body to falling/prone scenery.

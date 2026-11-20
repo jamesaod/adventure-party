@@ -43,7 +43,7 @@ export function createWorkshopGrounding(THREE,model,group){
  }
  return {
   reset(){model.position.copy(base);},
-  applyCorpse(settle=0){settleGiant(settle);if(restContact){group.updateMatrixWorld(true);shift(group.localToWorld(restContact.clone()).y-bodyFloor());}},
+  applyCorpse(settle=0,profile=null){settleGiant(settle,profile);if(restContact){group.updateMatrixWorld(true);shift(group.localToWorld(restContact.clone()).y-bodyFloor());}},
   apply(){
    if(ground===null)return;
    group.updateMatrixWorld(true);

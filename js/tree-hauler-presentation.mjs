@@ -15,6 +15,10 @@ export async function prepareTreeHauler(model,group,mixer,actions,prepareMateria
   const clip=removeWorkshopRootTravel(retargetHumanoidClip(T,original,source.scene,model,name,{mode:'world-bind-delta',hipTranslation:'scaled-world-y'}),model);
   actions.set(name,mixer.clipAction(clip));durations[name]=clip.duration;
  }
+ const throwSource=await loadCombatModel(new URL('../assets/animations/throwing/goalie-throw.fbx',import.meta.url));
+ const throwClip=removeWorkshopRootTravel(retargetHumanoidClip(T,throwSource.animations[0],throwSource.scene,model,'Boulder_Throw',{mode:'world-bind-delta',hipTranslation:'scaled-world-y'}),model);actions.set('Boulder_Throw',mixer.clipAction(throwClip));durations.Boulder_Throw=throwClip.duration;
+ const rockManifest=await fetch(new URL('../assets/models/terrain/boulders/manifest.json',import.meta.url)).then(r=>r.json());
+ const rockSources=await Promise.all(rockManifest.map(m=>loadCombatModel(new URL('../'+m.file,import.meta.url)).then(g=>g.scene)));
  globalThis.adventurePartyTreeHaulerDurations=durations;
  const bones=semanticBoneMap(model),hand=bones.get('rightHand');if(!hand)throw Error('Orc right hand is unavailable');
  if(!Number.isFinite(physicalScale)||physicalScale<=0)throw Error('Tree club physical scale is unavailable');
@@ -22,8 +26,9 @@ export async function prepareTreeHauler(model,group,mixer,actions,prepareMateria
  const carried=new WeakMap();let held=null,mesh=null,attachment=null,saved=[];
  return {restore(){for(const [bone,q]of saved)bone.quaternion.copy(q);saved=[];},constrain(entity,slot){if(!mesh||!treeClubUsesOffHand(entity,slot)){if(entity)entity.treeGripDiagnostic={active:false};return;}model.traverse(b=>{if(b.isBone)saved.push([b,b.quaternion.clone()]);});const result=solveTwoHandedGrip(T,{model,attachment,iterations:24,tolerance:.012});entity.treeGripDiagnostic={active:true,error:result.error,solved:result.solved};},select(entity,now){if(!entity)return null;entity.treeActionDurations=durations;const a=entity.alive&&entity.treeInteraction;if(!a)return null;const time=Math.min(a.seconds,Math.max(0,(now-a.started)/a.duration)*a.seconds);return {slot:'tree-action',assignment:{clipId:a.name},time,key:a.name+':'+time,animating:time<a.seconds};},update(entity){
   if(!entity)return;
-  if(held===entity.carriedTreeLog)return;held=entity.carriedTreeLog;mesh?.removeFromParent();mesh=null;attachment=null;if(!held)return;
+  const cargo=entity.alive?(entity.carriedBoulder||entity.carriedTreeLog):null;if(held===cargo)return;held=cargo;mesh?.removeFromParent();mesh=null;attachment=null;if(!held)return;
   const cached=carried.get(held);if(cached){mesh=cached.mesh;attachment=cached.attachment;hand.add(mesh);return;}
+  if(entity.carriedBoulder){const copy=cloneTreeLogObject(rockSources[held.variant]),height=rockManifest[held.variant].dimensionsMetres[1];copy.scale.setScalar(1.35*physicalScale);copy.position.y=-height*.675*physicalScale;mesh=new T.Group();mesh.add(copy);mesh.position.copy(inferHandGripLocal(T,hand,model,'right'));mesh.position.z+=height*.675*physicalScale;hand.add(mesh);hand.updateWorldMatrix(true,false);const scale=hand.getWorldScale(new T.Vector3());mesh.scale.set(1/scale.x,1/scale.y,1/scale.z);prepareMaterials(mesh);carried.set(held,{mesh,attachment:null});return;}
   const club=treeClubById(held.clubId),metresToModel=physicalScale,copy=cloneTreeLogObject(clubSources.get(club.id));
   const clubFit=savedFit(draft,'main',club.id);
   const assetScale=held.clubId?(clubFit?.sizePercent??100)/100:harvestedTreeClubScale(held.lengthMetres,clubFit?.sizePercent??75);

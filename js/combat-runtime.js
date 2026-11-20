@@ -37,6 +37,7 @@ async function startCombatSession(scenario,{isCurrent=()=>true}={}){
  newGame(scenario.condition||'grass',scenario);
  combatGpu?.setStreamScene?.(combatSceneContext?.map);
  initializeFirMovementObstacles();
+ await prepareCombatBoulders();if(generation!==combatSessionGeneration||!isCurrent())return false;initializeCombatBoulders();
  const combat=game;
  fitBattleCanvas();
  let timer,rejectStall;
