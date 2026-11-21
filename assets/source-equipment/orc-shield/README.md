@@ -1,8 +1,5 @@
-# Orc shield source assets
+# orc-shield
 
-Archived 2026-11-20. User-supplied Meshy shield generated from the accompanying four-view concept image with flattened rear straps.
+Original Meshy FBX/textures are preserved in source.zip alongside the four-view source image. Runtime GLB uses the unchanged source triangle mesh, normalized to unit Y height, with 1024px base-color, normal, roughness and metallic maps. Conversion: scripts/convert-orc-equipment.py (Blender, -- repository-root).
 
-- `source.zip`: original, unchanged Meshy FBX and textures archive (`Meshy_AI_Viking_Round_Shield_3K_20261120_texture_remesh_tri_fbx.zip`).
-- `orc-shield-four-view.png`: original four-view concept image, unchanged.
-
-Source archival only; no mesh reduction, texture edits, or game integration performed.
+Replaces the old shield-orc runtime asset, preserving saved item references and fits.

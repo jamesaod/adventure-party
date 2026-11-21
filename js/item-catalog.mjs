@@ -31,17 +31,17 @@ export const ITEM_CATALOG=freezeRecord(installLowPolyWeapons({
   "physical": {
     "sourceModelBounds": {
       "min": [
-        -0.5,
-        0,
-        0
+        -0.487163782119751,
+        0.0,
+        -0.11414655297994614
       ],
       "max": [
-        0.5,
-        1,
-        0.067735
+        0.487163782119751,
+        0.9999999403953552,
+        0.11414655297994614
       ]
     },
-    "status": "Matches the existing round shield mount and render size; physical dimensions are not yet calibrated."
+    "status": "Meshy shield normalized to unit height; fit remains adjustable."
   },
   "appearance": {
     "appearanceId": "shield-orc",
@@ -57,16 +57,15 @@ export const ITEM_CATALOG=freezeRecord(installLowPolyWeapons({
       0
     ],
     "source": {
-      "originalFilename": "SM_Wep_Shield_Set_54.fbx",
-      "originalBytes": 72464,
-      "originalSha256": "1a75d14b951298191a43e8b0dae8f3036702382d77ebca616cd6f8cfff1917ce"
+      "originalFilename": "source.zip",
+      "originalBytes": 99447598,
+      "originalSha256": "fb5a2750192f52d4f8bb315ad2dd1fbde23b31fbf5513fbb2a431fa8ef482fec"
     },
     "runtimeAsset": {
-      "bytes": 91180,
-      "sha256": "d3ea72f9591b911ebe953f0d751c7877c25eb89fffe6c41e70f6a2f3cc96d810",
-      "textureResolution": 256,
-      "triangles": 622,
-      "derivation": "User FBX with red/black atlas crop, front UV remap, plain backing and edge, normalized to the shared shield frame."
+      "bytes": 5123012,
+      "sha256": "523bb8e446f7b45639b97cdb6630f2eb761848e37ee7553c53c3047df316cc08",
+      "triangles": 2971,
+      "textureResolution": 1024
     }
   }
 },

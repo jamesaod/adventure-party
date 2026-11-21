@@ -1,0 +1,21 @@
+{
+  "bytes": 5123012,
+  "sha256": "523bb8e446f7b45639b97cdb6630f2eb761848e37ee7553c53c3047df316cc08",
+  "triangles": 2971,
+  "textureResolution": 1024,
+  "bounds": {
+    "min": [
+      -0.487163782119751,
+      0.0,
+      -0.11414655297994614
+    ],
+    "max": [
+      0.487163782119751,
+      0.9999999403953552,
+      0.11414655297994614
+    ]
+  },
+  "originalFilename": "source.zip",
+  "originalBytes": 99447598,
+  "originalSha256": "fb5a2750192f52d4f8bb315ad2dd1fbde23b31fbf5513fbb2a431fa8ef482fec"
+}

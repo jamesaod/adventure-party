@@ -5,6 +5,7 @@ import {normalizeQuiverArrows} from './quiver-arrow-settings.mjs?v=R238C312';
 
 // Extend this catalog for other back-mounted props; fits remain model/item/slot specific.
 export const BACK_ITEMS=Object.freeze([
+ {id:'orc-quiver',label:'Orc Quiver — leather',file:'assets/models/equipment/orc-quiver/orc-quiver.glb',height:.29,holdsArrows:true},
  {id:'elf-quiver',label:'Elf Quiver — carved leather',file:'assets/models/equipment/elf-quiver/elf-quiver.glb',height:.29,holdsArrows:true},
  {id:'empty-quiver',label:'Quiver',file:'assets/models/weapons/low-poly-medieval/quiver.glb',height:.29,holdsArrows:true}
 ]);
@@ -19,7 +20,7 @@ export function normalizeBackEquipment(value={}){
 }
 export function createBackAttachment(THREE,rig,model,settings,{metresToWorld=1}={}){
  if(!Number.isFinite(metresToWorld)||metresToWorld<=0)throw Error("Invalid back equipment physical scale.");
- if(settings.item!=='elf-quiver')muteBowLeather(model);
+ if(settings.item==='empty-quiver')muteBowLeather(model);
  const value=normalizeBackEquipment(settings),item=backItem(value.item);
  if(!item)throw Error('Choose a Back item first.');
  const torso=findHumanoidBone(rig,'upperChest')||findHumanoidBone(rig,'chest')||findHumanoidBone(rig,'spine');

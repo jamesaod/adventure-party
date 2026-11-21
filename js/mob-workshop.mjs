@@ -337,7 +337,7 @@ function fillGrips(refresh=true){
  $('saveHandFit').disabled=$('clearHandFit').disabled=!['main','off'].includes(slot);
  const s=manager.snapshot().settings;
  for(const [id] of gripFields)$('grip-'+id).value=id==='sizePercent'?(s[id]??100):s[id.replace(/\d/,'')]?.[Number(id.slice(-1))]??0;
- const arrows=fitManagers.quiverArrows.snapshot().settings,enabled=!!model&&['auto','empty-quiver','elf-quiver'].includes(draft.equipment.back??'auto');
+ const arrows=fitManagers.quiverArrows.snapshot().settings,enabled=!!model&&((draft.equipment.back??'auto')==='auto'||BACK_ITEMS.some(item=>item.id===draft.equipment.back&&item.holdsArrows));
  for(const [id,key] of quiverFields){$(id).value=arrows[key];$(id).disabled=!enabled;}
  $('editQuiverArrows').disabled=!enabled;
  if(refresh)fitTool.refresh();
